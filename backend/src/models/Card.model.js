@@ -1,0 +1,303 @@
+import mongoose from "mongoose";
+
+const UploadItemSchema = new mongoose.Schema(
+    {
+        kind: { type: String, default: null, trim: true },
+        url: { type: String, required: true, trim: true },
+        path: { type: String, required: true, trim: true },
+        createdAt: { type: Date, default: Date.now },
+    },
+    { _id: false }
+);
+
+const CardSchema = new mongoose.Schema(
+    {
+        user: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "User",
+            // Optional to support anonymous cards; keeps existing user-owned docs valid.
+            required: false,
+            index: true,
+        },
+
+        // One anonymous card per browser. Sparse+unique allows many docs without anonymousId.
+        anonymousId: {
+            type: String,
+            trim: true,
+            index: true,
+            unique: true,
+            sparse: true,
+        },
+
+        slug: {
+            type: String,
+            required: true,
+            unique: true,
+            lowercase: true,
+            trim: true,
+        },
+
+        plan: {
+            type: String,
+            enum: ["free", "monthly", "yearly"],
+            default: "free",
+        },
+
+        status: {
+            type: String,
+            enum: ["draft", "published"],
+            default: "draft",
+            index: true,
+        },
+
+        // Plain trial fields (no automatic behavior in the model).
+        trialStartedAt: { type: Date, default: null },
+        trialEndsAt: { type: Date, default: null },
+        trialDeleteAt: { type: Date, default: null, index: true },
+
+        // Authoritative billing (server-controlled only; client must NOT set directly).
+        billing: {
+            status: {
+                type: String,
+                enum: ["free", "trial", "active", "past_due", "canceled"],
+                default: "free",
+            },
+            plan: {
+                type: String,
+                enum: ["free", "monthly", "yearly"],
+                default: "free",
+            },
+            paidUntil: { type: Date, default: null },
+        },
+
+        // Support tool: temporary access override (not a billing source of truth).
+        adminOverride: {
+            plan: {
+                type: String,
+                enum: ["free", "monthly", "yearly"],
+                default: null,
+            },
+            until: { type: Date, default: null },
+            byAdmin: {
+                type: mongoose.Schema.Types.ObjectId,
+                ref: "User",
+                default: null,
+            },
+            reason: { type: String, default: "" },
+            createdAt: { type: Date, default: null },
+        },
+
+        business: {
+            // required minimal fields
+            name: String,
+            category: String,
+            address: String,
+            city: String,
+            lat: Number,
+            lng: Number,
+
+            // legacy fields (kept for backward compatibility)
+            businessName: String,
+            ownerName: String,
+            occupation: String,
+            slogan: String,
+        },
+
+        contact: {
+            // required minimal fields
+            phone: String,
+            whatsapp: String,
+            email: String,
+            website: String,
+
+            // legacy fields (kept for backward compatibility)
+            mobile: String,
+            officePhone: String,
+            fax: String,
+            facebook: String,
+            instagram: String,
+            linkedin: String,
+            extraLines: [String],
+        },
+
+        content: {
+            // required minimal fields
+            title: String,
+            description: String,
+
+            // legacy fields (kept for backward compatibility)
+            aboutTitle: String,
+            aboutText: String,
+            videoUrl: String,
+        },
+
+        seo: {
+            title: String,
+            description: String,
+
+            // Advanced SEO:
+            canonicalUrl: {
+                type: String,
+                trim: true,
+                default: null,
+                validate: {
+                    validator: (v) => {
+                        if (!v) return true;
+                        try {
+                            // Allow absolute URLs only
+                            const u = new URL(v);
+                            return Boolean(u.protocol && u.host);
+                        } catch {
+                            return false;
+                        }
+                    },
+                    message: "seo.canonicalUrl must be a valid absolute URL",
+                },
+            },
+            robots: {
+                type: String,
+                trim: true,
+                default: null,
+                // Keep flexible; validate only for obviously dangerous chars
+                validate: {
+                    validator: (v) => !v || !/[<>]/.test(v),
+                    message: "seo.robots contains invalid characters",
+                },
+            },
+
+            // Verification:
+            googleSiteVerification: { type: String, trim: true, default: null },
+            facebookDomainVerification: {
+                type: String,
+                trim: true,
+                default: null,
+            },
+
+            // Structured data:
+            jsonLd: {
+                type: String,
+                trim: true,
+                default: null,
+                validate: {
+                    validator: (v) => {
+                        if (!v) return true;
+                        try {
+                            const parsed = JSON.parse(v);
+                            return (
+                                parsed !== null &&
+                                (typeof parsed === "object" ||
+                                    Array.isArray(parsed))
+                            );
+                        } catch {
+                            return false;
+                        }
+                    },
+                    message: "seo.jsonLd must be a valid JSON string",
+                },
+            },
+
+            // Analytics & pixels (white-list):
+            gtmId: {
+                type: String,
+                trim: true,
+                default: null,
+                uppercase: true,
+                validate: {
+                    validator: (v) => !v || /^GTM-[A-Z0-9]+$/.test(v),
+                    message: "seo.gtmId must match GTM-XXXX",
+                },
+            },
+            gaMeasurementId: {
+                type: String,
+                trim: true,
+                default: null,
+                uppercase: true,
+                validate: {
+                    validator: (v) => !v || /^G-[A-Z0-9]+$/.test(v),
+                    message: "seo.gaMeasurementId must match G-XXXX",
+                },
+            },
+            metaPixelId: {
+                type: String,
+                trim: true,
+                default: null,
+                validate: {
+                    validator: (v) => !v || /^[0-9]{5,20}$/.test(v),
+                    message: "seo.metaPixelId must be a numeric string",
+                },
+            },
+
+            // Custom scripts: запрещаем произвольный HTML на первом этапе
+            // Instead allow safe snippets from a small whitelist (future-extensible)
+            headSnippets: [
+                new mongoose.Schema(
+                    {
+                        type: {
+                            type: String,
+                            required: true,
+                            enum: ["meta", "link"],
+                        },
+                        value: {
+                            type: String,
+                            required: true,
+                            trim: true,
+                            maxlength: 2048,
+                            validate: {
+                                validator: (v) => !/[<>]/.test(v),
+                                message:
+                                    "seo.headSnippets.value must not contain HTML",
+                            },
+                        },
+                    },
+                    { _id: false }
+                ),
+            ],
+        },
+
+        // Backward compatible: old cards store string URLs; new uploads store objects.
+        gallery: [{ type: mongoose.Schema.Types.Mixed, default: [] }],
+        reviews: [String],
+
+        design: {
+            templateId: { type: String, default: null },
+            primaryColor: String,
+            accentColor: String,
+            backgroundColor: String,
+            buttonTextColor: String,
+            font: String,
+
+            // new template assets
+            backgroundImage: String,
+            backgroundOverlay: { type: Number, default: 40 },
+            avatarImage: String,
+
+            // optional Supabase storage paths (for deletion)
+            backgroundImagePath: String,
+            avatarImagePath: String,
+
+            // legacy fields
+            coverImage: String,
+            logo: String,
+
+            // optional Supabase storage paths (for deletion)
+            coverImagePath: String,
+            logoPath: String,
+        },
+
+        // Tracks all uploaded objects (useful for deletion/cleanup even if client only stores URL fields).
+        uploads: { type: [UploadItemSchema], default: [] },
+
+        flags: {
+            isTemplateSeeded: { type: Boolean, default: false },
+            seededMap: { type: mongoose.Schema.Types.Mixed, default: {} },
+        },
+
+        isActive: { type: Boolean, default: true },
+    },
+    { timestamps: true }
+);
+
+// Model intentionally contains no product logic/middleware.
+// Trial start/expiry and ownership flows are handled outside the schema (e.g., controller/service).
+
+export default mongoose.model("Card", CardSchema);

@@ -1,0 +1,48 @@
+.page {
+    padding: 40px 20px 60px;
+}
+
+.hero {
+    max-width: 1100px;
+    margin: 0 auto 40px;
+    text-align: center;
+}
+
+.hero::after {
+    content: "";
+    display: block;
+    margin: 20px auto 0;
+    width: 80px;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--gold), transparent);
+}
+
+.hero h1 {
+    font-size: 2.2rem;
+    font-weight: 900;
+    margin-bottom: 12px;
+}
+
+.hero p {
+    color: var(--text-muted);
+    font-size: 1.1rem;
+    line-height: 1.6;
+}
+
+.content {
+    max-width: 1100px;
+    margin: 0 auto;
+    display: grid;
+    gap: 40px;
+}
+
+.sectionDivider {
+    height: 1px;
+    margin: 60px 0;
+    background: linear-gradient(
+        90deg,
+        transparent,
+        var(--gold-fade),
+        transparent
+    );
+}

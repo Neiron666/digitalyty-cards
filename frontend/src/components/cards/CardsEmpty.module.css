@@ -1,0 +1,34 @@
+.empty {
+    display: flex;
+    justify-content: center;
+}
+
+.box {
+    width: 100%;
+    max-width: 520px;
+    text-align: center;
+    padding: 26px;
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border);
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.box h3 {
+    font-size: 1.3rem;
+    font-weight: 900;
+    margin-bottom: 8px;
+}
+
+.box p {
+    color: var(--text-muted);
+    line-height: 1.7;
+    margin-bottom: 8px;
+}
+
+.actions {
+    margin-top: 18px;
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    flex-wrap: wrap;
+}

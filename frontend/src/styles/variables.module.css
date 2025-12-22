@@ -1,0 +1,28 @@
+:root {
+    /* Backgrounds */
+    --bg-main: #020617;
+    --bg-surface: #020617cc;
+    --bg-card: #020617f2;
+
+    /* Brand */
+    --primary: #3b82f6;
+    --primary-hover: #2563eb;
+
+    /* Accent */
+    --gold: #f59e0b;
+    --gold-fade: rgba(245, 158, 11, 0.28);
+    --gold-soft: rgba(245, 158, 11, 0.45);
+
+    /* Text */
+    --text-main: #f8fafc;
+    --text-muted: #94a3b8;
+
+    /* UI */
+    --border: #1e293b;
+    --radius-sm: 6px;
+    --radius-md: 10px;
+    --radius-lg: 16px;
+
+    /* Shadows */
+    --shadow-soft: 0 10px 30px rgba(0, 0, 0, 0.35);
+}

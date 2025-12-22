@@ -1,0 +1,29 @@
+.toggle {
+    display: inline-flex;
+    background: #e5e7eb;
+    border-radius: 999px;
+    padding: 4px;
+    gap: 4px;
+}
+
+.toggle button {
+    border: 0;
+    background: transparent;
+    padding: 8px 14px;
+    border-radius: 999px;
+    font-weight: 900;
+    cursor: pointer;
+    color: #334155;
+}
+
+.toggle button.active {
+    background: white;
+    color: #0f172a;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+}
+
+.save {
+    margin-right: 6px;
+    font-size: 0.75rem;
+    color: #16a34a;
+}

@@ -1,0 +1,11 @@
+.publicPage {
+    min-height: 100vh;
+    padding: 24px 12px;
+    background: var(--bg-main);
+    display: flex;
+    justify-content: center;
+}
+
+.publicContainer {
+    width: min(960px, 100%);
+}

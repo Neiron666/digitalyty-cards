@@ -1,0 +1,44 @@
+.footer {
+    padding: 12px 16px;
+    border-top: 1px solid var(--border);
+    font-size: 12px;
+    text-align: center;
+    color: var(--text-muted);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.platform {
+    font-size: 11px;
+    opacity: 0.8;
+}
+
+.platform a {
+    color: var(--primary);
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.platform a:hover {
+    color: var(--primary-hover);
+    text-decoration: underline;
+}
+
+.socials {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.socials a {
+    color: var(--text-muted);
+    font-size: 11px;
+    text-decoration: none;
+    transition: color 0.2s;
+}
+
+.socials a:hover {
+    color: var(--primary);
+}

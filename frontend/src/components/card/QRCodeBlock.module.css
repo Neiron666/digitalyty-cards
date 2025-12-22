@@ -1,0 +1,28 @@
+.wrap {
+    display: grid;
+    gap: 10px;
+    justify-items: center;
+    margin-top: 10px;
+}
+
+.code {
+    background: #ffffff;
+    border-radius: var(--radius-md);
+    padding: 10px;
+}
+
+.download {
+    padding: 10px 14px;
+    border-radius: var(--radius-md);
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    background: rgba(255, 255, 255, 0.06);
+    color: #ffffff;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: inherit;
+}
+
+.download:hover {
+    border-color: rgba(212, 175, 55, 0.45);
+    color: var(--gold);
+}

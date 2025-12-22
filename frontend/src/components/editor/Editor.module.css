@@ -1,0 +1,27 @@
+.editor {
+    display: grid;
+    grid-template-columns: 220px 420px 1fr;
+    min-height: calc(100vh - 64px); /* header */
+}
+
+/* Nav */
+.sidebar {
+    padding: 20px;
+    border-left: 1px solid var(--border);
+    background: var(--bg-surface);
+    overflow-y: auto;
+}
+
+/* Panel */
+.panel {
+    padding: 20px;
+    border-left: 1px solid var(--border);
+    background: var(--bg-card);
+    overflow-y: auto;
+}
+
+/* Preview */
+.preview {
+    padding: 40px 20px;
+    overflow-y: auto;
+}

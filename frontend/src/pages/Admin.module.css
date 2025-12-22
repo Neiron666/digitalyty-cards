@@ -1,0 +1,70 @@
+.grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 16px;
+}
+
+@media (min-width: 960px) {
+    .grid {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+
+.card {
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 16px;
+    background: var(--bg-card);
+}
+
+.table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.table th,
+.table td {
+    text-align: left;
+    padding: 10px 8px;
+    border-bottom: 1px solid var(--border);
+    font-size: 14px;
+}
+
+.rowBtn {
+    width: 100%;
+    text-align: left;
+    background: transparent;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    color: inherit;
+    font: inherit;
+}
+
+.muted {
+    opacity: 0.75;
+    font-size: 14px;
+}
+
+.actions {
+    display: grid;
+    gap: 12px;
+}
+
+.actionRow {
+    display: grid;
+    gap: 8px;
+}
+
+.inline {
+    display: grid;
+    gap: 8px;
+    grid-template-columns: 1fr;
+}
+
+@media (min-width: 520px) {
+    .inline {
+        grid-template-columns: 1fr 1fr;
+        align-items: end;
+    }
+}

@@ -1,0 +1,76 @@
+.page {
+    display: flex;
+    gap: 24px;
+}
+
+.templateGate {
+    width: 100%;
+    max-width: 720px;
+    margin-inline: auto;
+    padding: 20px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    background: var(--bg-card);
+}
+
+.preview {
+    display: grid;
+    gap: 10px;
+}
+
+.badgeRow {
+    display: flex;
+    justify-content: flex-end;
+}
+
+.badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 10px;
+    border-radius: 999px;
+    font-weight: 800;
+    font-size: 0.82rem;
+    letter-spacing: 0.02em;
+    border: 1px solid var(--gold-fade);
+    background: var(--bg-surface);
+    color: var(--text-main);
+}
+
+.dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 999px;
+    background: var(--gold);
+    box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.14);
+}
+
+.badgeDraft {
+    opacity: 0.72;
+}
+
+.badgePublished {
+    opacity: 1;
+}
+
+.actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.actionBtn {
+    padding: 10px 14px;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border);
+    background: var(--bg-card);
+    color: var(--text-main);
+    font-weight: 700;
+    cursor: pointer;
+    font-family: inherit;
+}
+
+.actionBtn:hover {
+    border-color: rgba(212, 175, 55, 0.45);
+    color: var(--gold);
+}

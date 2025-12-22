@@ -1,0 +1,51 @@
+.value {
+    margin: 18px auto 6px;
+    max-width: 980px;
+    padding: 14px 16px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    background: var(--bg-surface);
+    text-align: center;
+}
+
+.valueTitle {
+    margin: 0;
+    font-weight: 900;
+    color: var(--text-main);
+}
+
+.valueText {
+    margin: 6px 0 0;
+    color: var(--text-muted);
+}
+
+.seo {
+    margin: 26px auto 0;
+    max-width: 980px;
+    padding: 26px 22px 14px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    background: var(--card-bg);
+    color: var(--card-text);
+    box-shadow: 0 10px 22px rgba(0, 0, 0, 0.08);
+}
+
+.seo h2 {
+    margin: 0 0 14px;
+    font-size: 1.35rem;
+    font-weight: 900;
+    line-height: 1.35;
+    color: var(--card-text);
+    text-align: center;
+}
+
+.seo p {
+    color: var(--card-muted);
+    font-size: 1rem;
+    line-height: 1.85;
+    margin: 0 0 12px;
+}
+
+.seo p:last-child {
+    margin-bottom: 0;
+}

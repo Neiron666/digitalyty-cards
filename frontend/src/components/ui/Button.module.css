@@ -1,0 +1,116 @@
+.btn,
+.button {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 14px 22px;
+    border-radius: 999px;
+    font-family: inherit;
+    font-weight: 800;
+    font-size: 0.95rem;
+    cursor: pointer;
+    border: 0;
+    overflow: hidden;
+    text-decoration: none;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+    width: 100%;
+}
+
+.btn:focus,
+.btn:focus-visible,
+.button:focus,
+.button:focus-visible {
+    outline: 2px solid var(--gold);
+    outline-offset: 2px;
+}
+
+.btn:disabled,
+.button:disabled,
+.btn[aria-disabled="true"],
+.button[aria-disabled="true"] {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+
+.btn[aria-disabled="true"],
+.button[aria-disabled="true"] {
+    pointer-events: none;
+}
+
+.fullWidth {
+    width: 100%;
+}
+
+/* ===== PRIMARY (Premium CTA) ===== */
+.primary {
+    background: linear-gradient(135deg, #0f172a, #020617);
+    color: white;
+    box-shadow: 0 0 0 1px var(--gold-soft);
+}
+
+.primary::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at top, var(--gold), transparent 70%);
+    opacity: 0;
+    transition: opacity 0.25s ease;
+}
+
+.primary:hover::before {
+    opacity: 0.25;
+}
+
+.primary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4), 0 0 0 1px var(--gold);
+}
+
+/* ===== SECONDARY ===== */
+.secondary {
+    background: transparent;
+    color: var(--gold);
+    border: 1px solid var(--gold-soft);
+}
+
+.secondary:hover {
+    background: var(--gold-fade);
+    box-shadow: 0 0 0 1px var(--gold);
+}
+
+/* ===== GHOST ===== */
+.ghost {
+    background: transparent;
+    color: var(--text-muted);
+}
+
+.ghost:hover {
+    color: var(--gold);
+}
+
+/* label stays above glow */
+.label {
+    position: relative;
+    z-index: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    line-height: 1;
+}
+
+.small {
+    padding: 10px 16px;
+    font-size: 0.9rem;
+}
+
+.medium {
+    padding: 14px 22px;
+    font-size: 0.95rem;
+}
+
+.large {
+    padding: 16px 28px;
+    font-size: 1.05rem;
+}

@@ -1,0 +1,60 @@
+import styles from "./CardFooter.module.css";
+
+function CardFooter({ card }) {
+    const { contact } = card;
+
+    return (
+        <footer className={styles.footer}>
+            <div className={styles.platform}>
+                נבנה ע״י{" "}
+                <a
+                    href="https://digitalyty.co.il"
+                    target="_blank"
+                    rel="noreferrer"
+                >
+                    Digitalyty
+                </a>
+            </div>
+
+            {(contact?.facebook ||
+                contact?.instagram ||
+                contact?.linkedin ||
+                contact?.email) && (
+                <div className={styles.socials}>
+                    {contact?.facebook && (
+                        <a
+                            href={contact.facebook}
+                            target="_blank"
+                            rel="noreferrer"
+                        >
+                            Facebook
+                        </a>
+                    )}
+                    {contact?.instagram && (
+                        <a
+                            href={contact.instagram}
+                            target="_blank"
+                            rel="noreferrer"
+                        >
+                            Instagram
+                        </a>
+                    )}
+                    {contact?.linkedin && (
+                        <a
+                            href={contact.linkedin}
+                            target="_blank"
+                            rel="noreferrer"
+                        >
+                            LinkedIn
+                        </a>
+                    )}
+                    {contact?.email && (
+                        <a href={`mailto:${contact.email}`}>Email</a>
+                    )}
+                </div>
+            )}
+        </footer>
+    );
+}
+
+export default CardFooter;

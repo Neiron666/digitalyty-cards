@@ -1,0 +1,26 @@
+.card-root {
+    --primary-color: #0b5cff;
+    --background-color: #ffffff;
+    --button-text-color: #ffffff;
+    --text-color: #111111;
+    --font-family: Heebo, sans-serif;
+
+    background: var(--background-color);
+    color: var(--text-color);
+    font-family: var(--font-family);
+}
+
+.card-body button {
+    background: var(--primary-color);
+    color: var(--button-text-color);
+    border-radius: 8px;
+}
+
+.card-body a,
+.card-body svg {
+    color: var(--primary-color);
+}
+
+.card-body h2 {
+    color: var(--primary-color);
+}

@@ -1,0 +1,11 @@
+.preview {
+    display: grid;
+    justify-items: center;
+    gap: 14px;
+}
+
+.header,
+.footer {
+    width: 100%;
+    max-width: 380px;
+}

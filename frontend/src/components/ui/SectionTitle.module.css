@@ -1,0 +1,9 @@
+.title {
+    margin: 0 0 16px 0;
+    font-weight: 700;
+    color: #1a202c;
+}
+
+.title:first-child {
+    margin-top: 0;
+}

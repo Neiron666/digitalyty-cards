@@ -1,0 +1,126 @@
+import BusinessPanel from "./panels/BusinessPanel";
+import ContactPanel from "./panels/ContactPanel";
+import ContentPanel from "./panels/ContentPanel";
+import GalleryPanel from "./panels/GalleryPanel";
+import ReviewsPanel from "./panels/ReviewsPanel";
+import DesignPanel from "./panels/DesignPanel";
+import SettingsPanel from "./panels/SettingsPanel";
+import SeoPanel from "./panels/SeoPanel";
+import TemplateSelector from "./TemplateSelector";
+import { normalizeTemplateId } from "../../templates/templates.config";
+
+export default function EditorPanel({
+    tab,
+    card,
+    onFieldChange,
+    editingDisabled,
+    onDeleteCard,
+    onUpgrade,
+    onPublish,
+    onUnpublish,
+}) {
+    function applyPatch(sectionName, patch) {
+        if (!patch || typeof patch !== "object") return;
+        for (const key of Object.keys(patch)) {
+            onFieldChange?.(`${sectionName}.${key}`, patch[key]);
+        }
+    }
+
+    switch (tab) {
+        case "templates":
+            return (
+                <TemplateSelector
+                    value={normalizeTemplateId(card?.design?.templateId)}
+                    onSelect={(templateId) => {
+                        onFieldChange?.("design.templateId", templateId);
+                    }}
+                />
+            );
+
+        case "business":
+            return (
+                <BusinessPanel
+                    business={card.business}
+                    editingDisabled={editingDisabled}
+                    onFieldChange={(sectionName, patch) => {
+                        if (sectionName !== "business") return;
+                        onFieldChange?.("business", patch);
+                    }}
+                />
+            );
+
+        case "contact":
+            return (
+                <ContactPanel
+                    contact={card.contact}
+                    editingDisabled={editingDisabled}
+                    onFieldChange={(sectionName, patch) => {
+                        if (sectionName !== "contact") return;
+                        onFieldChange?.("contact", patch);
+                    }}
+                />
+            );
+
+        case "content":
+            return (
+                <ContentPanel
+                    content={card.content}
+                    disabled={editingDisabled}
+                    onChange={(patch) => applyPatch("content", patch)}
+                />
+            );
+
+        case "design":
+            return (
+                <DesignPanel
+                    design={card.design}
+                    plan={card.plan}
+                    cardId={card._id}
+                    onChange={(design) => onFieldChange?.("design", design)}
+                />
+            );
+
+        case "gallery":
+            return (
+                <GalleryPanel
+                    gallery={card.gallery}
+                    cardId={card._id}
+                    plan={card.plan}
+                    onChange={(gallery) => onFieldChange?.("gallery", gallery)}
+                    onUpgrade={onUpgrade}
+                />
+            );
+
+        case "reviews":
+            return (
+                <ReviewsPanel
+                    reviews={card.reviews}
+                    onChange={(reviews) => onFieldChange?.("reviews", reviews)}
+                />
+            );
+
+        case "seo":
+            return (
+                <SeoPanel
+                    seo={card.seo}
+                    disabled={editingDisabled}
+                    onChange={(patch) => applyPatch("seo", patch)}
+                />
+            );
+
+        case "settings":
+            return (
+                <SettingsPanel
+                    card={card}
+                    onDelete={onDeleteCard}
+                    onUpgrade={onUpgrade}
+                    editingDisabled={editingDisabled}
+                    onPublish={onPublish}
+                    onUnpublish={onUnpublish}
+                />
+            );
+
+        default:
+            return null;
+    }
+}

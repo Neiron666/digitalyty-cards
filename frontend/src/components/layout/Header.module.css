@@ -1,0 +1,221 @@
+.header {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    backdrop-filter: blur(12px);
+    background: rgba(2, 6, 23, 0.85);
+    border-bottom: 1px solid var(--gold-fade);
+}
+
+.inner {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 14px 20px;
+    display: grid;
+    grid-template-columns: 200px 1fr 280px;
+    align-items: center;
+    gap: 14px;
+}
+
+.logo {
+    font-weight: 900;
+    font-size: 1.1rem;
+    letter-spacing: 0.3px;
+}
+
+.nav {
+    display: flex;
+    justify-content: center;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+
+.navLink {
+    color: var(--text-muted);
+    font-size: 0.95rem;
+    padding: 8px 10px;
+    border-radius: var(--radius-sm);
+    transition: background 0.15s ease, color 0.15s ease;
+    position: relative;
+}
+
+.navLink:hover {
+    color: var(--gold);
+    background: rgba(255, 255, 255, 0.04);
+}
+
+.navLinkActive {
+    color: var(--gold);
+}
+
+.navLinkActive::after {
+    content: "";
+    position: absolute;
+    bottom: -6px;
+    right: 0;
+    width: 100%;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--gold), transparent);
+}
+
+.actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+.burger {
+    display: none;
+    width: 44px;
+    height: 44px;
+    border-radius: 999px;
+    border: 1px solid var(--gold-fade);
+    background: rgba(255, 255, 255, 0.04);
+    cursor: pointer;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    padding: 0;
+}
+
+.burgerLine {
+    display: block;
+    width: 18px;
+    height: 2px;
+    background: var(--gold);
+    border-radius: 999px;
+    transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+.burgerOpen .burgerLine:nth-child(1) {
+    transform: translateY(7px) rotate(45deg);
+}
+
+.burgerOpen .burgerLine:nth-child(2) {
+    opacity: 0;
+}
+
+.burgerOpen .burgerLine:nth-child(3) {
+    transform: translateY(-7px) rotate(-45deg);
+}
+
+.overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(2, 6, 23, 0.55);
+    backdrop-filter: blur(4px);
+    z-index: 60;
+}
+
+.drawer {
+    position: fixed;
+    top: 0;
+    right: 0;
+    height: 100vh;
+    width: min(86vw, 360px);
+    background: rgba(2, 6, 23, 0.97);
+    border-left: 1px solid var(--gold-fade);
+    box-shadow: -18px 0 45px rgba(0, 0, 0, 0.45);
+    z-index: 70;
+    transform: translateX(110%);
+    transition: transform 0.22s ease;
+
+    display: flex;
+    flex-direction: column;
+    padding: 14px;
+}
+
+.drawerOpen {
+    transform: translateX(0);
+}
+
+.drawerHeader {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 6px 2px 12px;
+    border-bottom: 1px solid var(--gold-fade);
+}
+
+.drawerTitle {
+    font-weight: 900;
+    letter-spacing: 0.2px;
+}
+
+.drawerClose {
+    width: 44px;
+    height: 44px;
+    border-radius: 999px;
+    border: 1px solid var(--gold-fade);
+    background: rgba(255, 255, 255, 0.04);
+    color: var(--gold);
+    cursor: pointer;
+}
+
+.drawerNav {
+    display: grid;
+    gap: 6px;
+    padding: 14px 0;
+}
+
+.drawerNav .navLink {
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(212, 175, 55, 0.12);
+}
+
+.drawerNav .navLinkActive {
+    border-color: var(--gold-fade);
+    background: rgba(212, 175, 55, 0.08);
+}
+
+.drawerNav .navLinkActive::after {
+    display: none;
+}
+
+.drawerActions {
+    margin-top: auto;
+    display: grid;
+    gap: 10px;
+    padding-top: 12px;
+    border-top: 1px solid var(--gold-fade);
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+    .inner {
+        grid-template-columns: 1fr auto;
+        grid-template-areas:
+            "logo actions"
+            "nav nav";
+    }
+
+    .logo {
+        grid-area: logo;
+    }
+
+    .actions {
+        grid-area: actions;
+    }
+
+    .nav {
+        grid-area: nav;
+        justify-content: flex-start;
+    }
+}
+
+@media (max-width: 560px) {
+    .inner {
+        grid-template-columns: 1fr auto;
+        align-items: center;
+    }
+
+    .nav,
+    .actions {
+        display: none;
+    }
+
+    .burger {
+        display: inline-flex;
+        flex-direction: column;
+    }
+}

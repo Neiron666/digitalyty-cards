@@ -1,0 +1,28 @@
+.reviews {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.review {
+    padding: 12px;
+    border-radius: 8px;
+    background: var(--bg-surface);
+    border-left: 3px solid var(--primary);
+}
+
+.text {
+    margin: 0;
+    font-size: 14px;
+    line-height: 1.5;
+    color: var(--text-main);
+    font-style: italic;
+}
+
+.author {
+    margin: 8px 0 0;
+    font-size: 13px;
+    color: var(--text-muted);
+    font-style: normal;
+    font-weight: 500;
+}

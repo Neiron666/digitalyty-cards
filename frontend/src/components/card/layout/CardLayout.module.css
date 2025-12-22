@@ -1,0 +1,20 @@
+.wrapper {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+}
+
+.card {
+    width: 100%;
+    max-width: 420px;
+    background: var(
+        --bg-card,
+        linear-gradient(180deg, rgba(2, 6, 23, 0.92), rgba(2, 6, 23, 0.98))
+    );
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-soft);
+    overflow: hidden;
+    border: 1px solid var(--border);
+    color: var(--text-main);
+    font-family: var(--font-family, Heebo, sans-serif);
+}

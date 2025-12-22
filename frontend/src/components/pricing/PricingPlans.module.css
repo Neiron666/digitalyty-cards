@@ -1,0 +1,135 @@
+.wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+
+    /* Make the shared Button secondary variant match the light plan cards */
+    --btn-secondary-bg: #fff;
+    --btn-secondary-color: var(--card-text);
+    --btn-secondary-border: var(--border);
+    --btn-secondary-hover-bg: #fff;
+    --btn-secondary-hover-border: rgba(15, 23, 42, 0.25);
+}
+
+.top {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+}
+
+.saving {
+    color: #16a34a;
+    font-weight: 900;
+    font-size: 0.9rem;
+}
+
+.grid {
+    width: 100%;
+    max-width: 980px;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 18px;
+}
+
+.plan {
+    position: relative;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    background: var(--card-bg);
+    color: var(--card-text);
+    padding: 22px;
+
+    display: flex;
+    flex-direction: column; /* ВАЖНО */
+
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.plan:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 22px rgba(0, 0, 0, 0.08);
+    border-color: var(--gold-soft);
+}
+
+.highlight {
+    border-color: var(--gold);
+    background: linear-gradient(180deg, #ffffff, #f1f5ff);
+}
+
+.badge {
+    position: absolute;
+    top: -12px;
+    right: 16px;
+    background: linear-gradient(135deg, #f5e7a3, var(--gold));
+    color: #1e293b;
+    font-size: 0.75rem;
+    font-weight: 900;
+    padding: 4px 10px;
+    border-radius: 999px;
+    border: 1px solid rgba(255, 255, 255, 0.35);
+    box-shadow: 0 8px 18px rgba(0, 0, 0, 0.18);
+}
+
+.header {
+    text-align: center;
+    margin-bottom: 16px;
+}
+
+.header h3 {
+    font-size: 1.3rem;
+    font-weight: 900;
+    margin-bottom: 6px;
+    color: var(--card-text);
+}
+
+.price {
+    font-size: 2.2rem;
+    font-weight: 900;
+    color: var(--card-text);
+}
+
+.note {
+    color: var(--card-muted);
+    font-size: 0.95rem;
+}
+
+.features {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 18px;
+    display: grid;
+    gap: 10px;
+
+    flex-grow: 1; /* ⬅️ ключевая строка */
+}
+
+.features li {
+    position: relative;
+    padding-right: 18px;
+    color: var(--card-muted);
+}
+
+.features li::before {
+    content: "✓";
+    position: absolute;
+    right: 0;
+    color: var(--gold);
+    font-weight: 900;
+}
+.warning {
+    margin-bottom: 16px;
+    padding: 10px 12px;
+    border-radius: var(--radius-md);
+    background: rgba(245, 158, 11, 0.15);
+    border: 1px solid rgba(245, 158, 11, 0.35);
+    color: #f59e0b;
+    font-size: 0.9rem;
+    text-align: center;
+}
+
+@media (max-width: 760px) {
+    .grid {
+        grid-template-columns: 1fr;
+    }
+}

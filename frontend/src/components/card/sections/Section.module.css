@@ -1,0 +1,19 @@
+.section {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.title {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text-main);
+    text-align: right;
+}
+
+.content {
+    font-size: 14px;
+    line-height: 1.5;
+    color: var(--text-main);
+}
