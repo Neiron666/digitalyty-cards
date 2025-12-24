@@ -68,6 +68,10 @@ const CardSchema = new mongoose.Schema(
                 default: "free",
             },
             paidUntil: { type: Date, default: null },
+            // Server-controlled feature flags (support/admin only).
+            features: {
+                analyticsPremium: { type: Boolean, default: false },
+            },
         },
 
         // Support tool: temporary access override (not a billing source of truth).
@@ -78,6 +82,10 @@ const CardSchema = new mongoose.Schema(
                 default: null,
             },
             until: { type: Date, default: null },
+            // Optional feature flags for temporary support overrides.
+            features: {
+                analyticsPremium: { type: Boolean, default: false },
+            },
             byAdmin: {
                 type: mongoose.Schema.Types.ObjectId,
                 ref: "User",
@@ -86,6 +94,23 @@ const CardSchema = new mongoose.Schema(
             reason: { type: String, default: "" },
             createdAt: { type: Date, default: null },
         },
+
+        // Admin-only feature tier override (does NOT affect billing/payment).
+        // Precedence: card.adminTier > user.adminTier > effectiveBilling-derived tier > default.
+        adminTier: {
+            type: String,
+            enum: ["free", "basic", "premium"],
+            default: null,
+            index: true,
+        },
+        adminTierUntil: { type: Date, default: null },
+        adminTierByAdmin: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "User",
+            default: null,
+        },
+        adminTierReason: { type: String, default: null },
+        adminTierCreatedAt: { type: Date, default: null },
 
         business: {
             // required minimal fields

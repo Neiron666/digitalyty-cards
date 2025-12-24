@@ -1,7 +1,21 @@
 import axios from "axios";
 
+function normalizeApiBaseUrl(raw) {
+    const v = String(raw || "").trim();
+    if (!v) return "/api";
+
+    // Remove trailing slashes
+    const noTrailing = v.replace(/\/+$/, "");
+
+    // Allow env to be either "https://host" or "https://host/api"
+    if (noTrailing.endsWith("/api")) return noTrailing;
+    return `${noTrailing}/api`;
+}
+
 const api = axios.create({
-    baseURL: import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api",
+    baseURL: normalizeApiBaseUrl(
+        import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api"
+    ),
 });
 
 api.defaults.headers.common.Accept = "application/json";

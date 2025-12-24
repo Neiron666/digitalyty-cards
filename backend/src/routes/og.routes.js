@@ -1,6 +1,6 @@
 import { Router } from "express";
 import Card from "../models/Card.model.js";
-import { isPaid, isTrialExpired } from "../utils/trial.js";
+import { isEntitled, isTrialExpired } from "../utils/trial.js";
 
 const router = Router();
 
@@ -26,7 +26,7 @@ router.get("/og/card/:slug", async (req, res) => {
     }
 
     const now = new Date();
-    if (isTrialExpired(card, now) && !isPaid(card, now)) {
+    if (isTrialExpired(card, now) && !isEntitled(card, now)) {
         return res.status(410).send("TRIAL_EXPIRED_PUBLIC");
     }
 

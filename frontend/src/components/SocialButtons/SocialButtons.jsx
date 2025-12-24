@@ -1,8 +1,11 @@
 import React from "react";
+import { trackClick } from "../../services/analytics.client";
 
 function getSocialStyle(design) {
     const s = design?.socialStyle;
-    return s === "pillsWide" || s === "icons" || s === "iconsDense" ? s : "pills";
+    return s === "pillsWide" || s === "icons" || s === "iconsDense"
+        ? s
+        : "pills";
 }
 
 function socialButtonStyle(style) {
@@ -19,7 +22,8 @@ function socialButtonStyle(style) {
         fontWeight: 600,
     };
 
-    if (style === "pillsWide") return { ...base, padding: "12px 16px", width: "100%" };
+    if (style === "pillsWide")
+        return { ...base, padding: "12px 16px", width: "100%" };
 
     if (style === "icons")
         return { ...base, width: 44, height: 44, padding: 0, borderRadius: 14 };
@@ -34,7 +38,7 @@ function shouldHideLabel(style) {
     return style === "icons" || style === "iconsDense";
 }
 
-export default function SocialButtons({ links = [], design = {} }) {
+export default function SocialButtons({ links = [], design = {}, slug }) {
     const style = getSocialStyle(design);
 
     return (
@@ -42,7 +46,9 @@ export default function SocialButtons({ links = [], design = {} }) {
             style={{
                 display: "grid",
                 gridTemplateColumns:
-                    style === "pillsWide" ? "1fr" : "repeat(auto-fit, minmax(44px, max-content))",
+                    style === "pillsWide"
+                        ? "1fr"
+                        : "repeat(auto-fit, minmax(44px, max-content))",
                 gap: 10,
             }}
         >
@@ -55,13 +61,23 @@ export default function SocialButtons({ links = [], design = {} }) {
                     style={socialButtonStyle(style)}
                     aria-label={l.platform}
                     title={l.platform}
+                    onClick={() =>
+                        trackClick(
+                            slug,
+                            String(l.platform || "other").toLowerCase()
+                        )
+                    }
                 >
                     {/* If you already render platform icons, keep that; otherwise this text fallback is safe */}
                     <span style={{ fontSize: 12, opacity: 0.9 }}>
-                        {String(l.platform || "").slice(0, 2).toUpperCase()}
+                        {String(l.platform || "")
+                            .slice(0, 2)
+                            .toUpperCase()}
                     </span>
                     {!shouldHideLabel(style) && (
-                        <span style={{ fontSize: 14 }}>{l.label || l.platform}</span>
+                        <span style={{ fontSize: 14 }}>
+                            {l.label || l.platform}
+                        </span>
                     )}
                 </a>
             ))}

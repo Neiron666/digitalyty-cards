@@ -6,6 +6,7 @@ import ReviewsPanel from "./panels/ReviewsPanel";
 import DesignPanel from "./panels/DesignPanel";
 import SettingsPanel from "./panels/SettingsPanel";
 import SeoPanel from "./panels/SeoPanel";
+import AnalyticsPanel from "./panels/AnalyticsPanel";
 import TemplateSelector from "./TemplateSelector";
 import { normalizeTemplateId } from "../../templates/templates.config";
 
@@ -19,6 +20,9 @@ export default function EditorPanel({
     onPublish,
     onUnpublish,
 }) {
+    const effectivePlan = card?.effectiveBilling?.plan || "free";
+    const galleryLimit = card?.entitlements?.galleryLimit;
+
     function applyPatch(sectionName, patch) {
         if (!patch || typeof patch !== "object") return;
         for (const key of Object.keys(patch)) {
@@ -74,7 +78,7 @@ export default function EditorPanel({
             return (
                 <DesignPanel
                     design={card.design}
-                    plan={card.plan}
+                    plan={effectivePlan}
                     cardId={card._id}
                     onChange={(design) => onFieldChange?.("design", design)}
                 />
@@ -85,7 +89,8 @@ export default function EditorPanel({
                 <GalleryPanel
                     gallery={card.gallery}
                     cardId={card._id}
-                    plan={card.plan}
+                    plan={effectivePlan}
+                    galleryLimit={galleryLimit}
                     onChange={(gallery) => onFieldChange?.("gallery", gallery)}
                     onUpgrade={onUpgrade}
                 />
@@ -112,6 +117,7 @@ export default function EditorPanel({
             return (
                 <SettingsPanel
                     card={card}
+                    plan={effectivePlan}
                     onDelete={onDeleteCard}
                     onUpgrade={onUpgrade}
                     editingDisabled={editingDisabled}
@@ -119,6 +125,9 @@ export default function EditorPanel({
                     onUnpublish={onUnpublish}
                 />
             );
+
+        case "analytics":
+            return <AnalyticsPanel card={card} />;
 
         default:
             return null;

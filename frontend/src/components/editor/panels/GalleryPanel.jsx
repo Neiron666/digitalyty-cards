@@ -11,9 +11,16 @@ export default function GalleryPanel({
     gallery = [],
     cardId,
     plan,
+    galleryLimit,
     onChange,
     onUpgrade,
 }) {
+    const limit =
+        typeof galleryLimit === "number" && Number.isFinite(galleryLimit)
+            ? galleryLimit
+            : 5;
+    const reachedLimit = gallery.length >= limit;
+
     async function handleUpload(e) {
         const file = e.target.files[0];
         if (!file) return;
@@ -28,11 +35,23 @@ export default function GalleryPanel({
             // Prefer storing object items when backend returns path.
             onChange([
                 ...gallery,
-                res?.path ? { url: res.url, path: res.path, createdAt: new Date().toISOString() } : res.url,
+                res?.path
+                    ? {
+                          url: res.url,
+                          path: res.path,
+                          createdAt: new Date().toISOString(),
+                      }
+                    : res.url,
             ]);
         } catch (err) {
             if (err.response?.data?.code === "GALLERY_LIMIT_REACHED") {
-                onUpgrade?.();
+                if (plan === "free") {
+                    onUpgrade?.();
+                } else {
+                    alert(
+                        err?.response?.data?.message || "Gallery limit reached"
+                    );
+                }
             } else {
                 alert(err?.response?.data?.message || "Upload error");
             }
@@ -81,13 +100,16 @@ export default function GalleryPanel({
                 })}
             </ul>
 
-            <input type="file" accept="image/*" onChange={handleUpload} />
+            <input
+                type="file"
+                accept="image/*"
+                onChange={handleUpload}
+                disabled={!cardId || reachedLimit}
+            />
 
-            {plan === "free" && (
-                <p className="hint">חבילת חינם מוגבלת ל־5 תמונות</p>
-            )}
+            <p className="hint">מוגבל ל־{limit} תמונות</p>
 
-            {plan === "free" && gallery.length >= 5 && (
+            {plan === "free" && reachedLimit && (
                 <Paywall text="הגעת למגבלת תמונות" onUpgrade={onUpgrade} />
             )}
         </Panel>

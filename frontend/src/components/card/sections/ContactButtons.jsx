@@ -1,4 +1,5 @@
 import styles from "./ContactButtons.module.css";
+import { trackClick } from "../../../services/analytics.client";
 
 function ContactButtons({ card }) {
     const { contact, business } = card;
@@ -42,6 +43,7 @@ function ContactButtons({ card }) {
                     href={`tel:${phone}`}
                     className={styles.link}
                     aria-label={`Call ${phone}`}
+                    onClick={() => trackClick(card?.slug, "call")}
                 >
                     📞 התקשרו עכשיו
                 </a>
@@ -54,6 +56,7 @@ function ContactButtons({ card }) {
                     rel="noreferrer"
                     className={styles.link}
                     aria-label={`Open WhatsApp chat ${whatsapp}`}
+                    onClick={() => trackClick(card?.slug, "whatsapp")}
                 >
                     💬 WhatsApp
                 </a>
@@ -66,6 +69,7 @@ function ContactButtons({ card }) {
                     rel="noreferrer"
                     className={styles.link}
                     aria-label="Navigate with Waze"
+                    onClick={() => trackClick(card?.slug, "navigate")}
                 >
                     📍 ניווט לעסק
                 </a>
@@ -76,6 +80,7 @@ function ContactButtons({ card }) {
                     href={`mailto:${contact.email}`}
                     className={styles.link}
                     aria-label={`Email ${contact.email}`}
+                    onClick={() => trackClick(card?.slug, "email")}
                 >
                     ✉️ Email
                 </a>
@@ -88,6 +93,7 @@ function ContactButtons({ card }) {
                     rel="noreferrer"
                     className={styles.link}
                     aria-label="Open website"
+                    onClick={() => trackClick(card?.slug, "website")}
                 >
                     🌐 אתר
                 </a>

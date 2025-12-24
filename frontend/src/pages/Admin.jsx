@@ -8,12 +8,227 @@ import {
     adminExtendTrial,
     adminOverridePlan,
     adminReactivateCard,
+    adminSetCardTier,
+    adminSetUserTier,
     getAdminCardById,
     getAdminStats,
     listAdminCards,
     listAdminUsers,
 } from "../services/admin.service";
 import styles from "./Admin.module.css";
+
+// Admin UI Hebrew + RTL (local strings dictionary, no i18n framework)
+// -------------------------------------------------------------------
+// Inventory of visible EN strings/placeholders translated in this file:
+// - "Admin"
+// - "Login is required to access admin panel."
+// - "Please login as an admin user."
+// - "Access denied"
+// - "Your user does not have admin permissions."
+// - "Secure admin cabinet"
+// - "Stats" / "No stats" / "Refresh" / "Failed to load admin data"
+// - "Selected card" / "Select a card from the list." / "Failed to load card"
+// - Field labels: "Id", "Slug", "Status", "Active", "Owner", "Effective plan",
+//   "Entitled", "Paid", "Effective tier", "Source", "until", "Trial ends",
+//   "Effective billing", "Admin override", "Card tier override", "User tier override"
+// - "Reason" / "Required for any admin action" / "Reason is required"
+// - Actions: "Deactivate card" / "Reactivate card" / "Trial mode" / "Days" / "Exact"
+//   / "Days (0..14)" / "Date (Israel)" / "Hour (0..23)" / "Minute (step 5)" / "Set"
+// - "Override plan" / "Override until" / placeholders "free | monthly | yearly", "YYYY-MM-DD"
+//   / "Override"
+// - "Card tier" / "(clear)" / "Card tier until" / "Apply"
+// - "User tier" / "User tier until" / "Selected card has no user owner"
+// - Tables: "Users" / headers "Email", "Card", "Role", "Created" / "missing"
+// - "Cards" / headers "Slug", "Owner", "Status", "Active", "Updated" / "(no slug)"
+//   / owner label "anonymous" / "Loading card…"
+
+const STR = {
+    he: {
+        title_admin: "לוח ניהול",
+        subtitle_login_required: "נדרשת התחברות כדי לגשת ללוח הניהול.",
+        subtitle_access_denied: "הגישה נדחתה",
+        subtitle_admin_secure: "לוח ניהול מאובטח",
+
+        msg_login_as_admin: "נא להתחבר כמשתמש בעל הרשאות מנהל.",
+        msg_no_admin_permissions: "למשתמש זה אין הרשאות מנהל.",
+
+        section_stats: "סטטיסטיקות",
+        stats_none: "אין נתונים",
+        stats_anonymous_cards: "כרטיסים אנונימיים",
+        stats_user_cards: "כרטיסים של משתמשים",
+        stats_published: "מפורסמים",
+        btn_refresh: "רענן",
+
+        section_selected_card: "כרטיס נבחר",
+        section_card_details: "פרטי כרטיס",
+        section_admin_actions: "פעולות מנהל",
+        msg_select_card: "בחר כרטיס מהרשימה.",
+
+        label_reason: "סיבה",
+        placeholder_reason: "נדרש לצורך תיעוד פעולה",
+
+        label_id: "מזהה כרטיס (ID פנימי)",
+        label_slug: "סלאג (כתובת קצרה לאחר /card/)",
+        label_status: "סטטוס",
+        label_active: "פעיל",
+        label_owner: "בעלות",
+        owner_user: "משתמש",
+        owner_anonymous: "אנונימי",
+
+        yes: "כן",
+        no: "לא",
+
+        role_user: "משתמש",
+        role_admin: "מנהל",
+
+        card_status_draft: "טיוטה",
+        card_status_published: "מפורסם",
+
+        plan_free: "חינמי",
+        plan_monthly: "חודשי",
+        plan_yearly: "שנתי",
+
+        billing_status_free: "חינמי",
+        billing_status_trial: "ניסיון",
+        billing_status_active: "פעיל",
+        billing_status_past_due: "באיחור תשלום",
+        billing_status_canceled: "בוטל",
+
+        label_effective_plan: "מסלול תשלום בפועל",
+        label_entitled: "גישה פעילה",
+        label_paid: "שולם",
+
+        label_effective_tier: "רמת פיצ'רים בפועל",
+        label_tier_source: "מקור",
+        label_until: "עד",
+
+        label_trial_ends: "סיום תקופת ניסיון",
+        label_effective_billing: "סטטוס תשלום בפועל",
+
+        label_analytics: "אנליטיקה",
+        label_can_view_analytics: "גישה לאנליטיקה",
+        label_analytics_retention: "שמירת נתונים (ימים)",
+
+        label_admin_override: "הטבת מסלול (ידני)",
+        label_card_tier_override: "רמת פיצ'רים לכרטיס (ידני)",
+        label_user_tier_override: "רמת פיצ'רים למשתמש (ידני)",
+
+        btn_deactivate: "השבת כרטיס(הפוך ללא פעיל)",
+        btn_reactivate: "הפעל כרטיס מחדש(הפוך לפעיל)",
+
+        label_trial_mode: "מצב ניסיון",
+        opt_trial_mode_days: "ימים מעכשיו",
+        opt_trial_mode_exact: "יום ושעה מדוייקים",
+        label_trial_days: "ימים (0–14)",
+        label_trial_date_il: "תאריך (ישראל)",
+        label_trial_hour: "שעה (0–23)",
+        label_trial_minute: "דקות (קפיצות של 5)",
+        btn_set: "קבע",
+
+        label_override_plan: "מסלול (ידני)",
+        placeholder_override_plan: "לדוגמה: free | monthly | yearly",
+        label_override_until: "עד תאריך",
+        placeholder_date_ymd: "YYYY-MM-DD",
+        btn_override: "החל",
+
+        label_card_tier: "רמת פיצ'רים לכרטיס",
+        label_user_tier: "רמת פיצ'רים למשתמש",
+        opt_clear: "(נקה)",
+        opt_tier_free: "חינמי",
+        opt_tier_basic: "בסיסי",
+        opt_tier_premium: "פרימיום",
+        label_card_tier_until: "עד תאריך (כרטיס)",
+        label_user_tier_until: "עד תאריך (משתמש)",
+        btn_apply: "החל",
+
+        section_users: "משתמשים",
+        th_email: "אימייל",
+        th_card: "כרטיס",
+        th_role: "תפקיד",
+        th_created: "נוצר",
+        label_missing: "חסר",
+
+        section_cards: "כרטיסים",
+        th_slug: "סלאג",
+        th_owner: "בעלות",
+        th_updated: "עודכן",
+        label_no_slug: "(אין סלאג)",
+        msg_loading_card: "טוען כרטיס…",
+
+        err_reason_required: "יש למלא סיבה.",
+        err_reason_too_long: "הסיבה ארוכה מדי.",
+        err_invalid_tier: "רמת פיצ'רים לא תקינה.",
+        err_invalid_until: "תאריך 'עד' לא תקין (חייב להיות בעתיד).",
+        err_card_has_no_user_owner: "לכרטיס הנבחר אין משתמש בעלים.",
+        err_generic: "אירעה שגיאה. נסה שוב.",
+        err_load_admin: "אירעה שגיאה בטעינת נתוני הניהול.",
+        err_load_card: "אירעה שגיאה בטעינת הכרטיס.",
+        err_unauthorized: "נדרשת התחברות.",
+        err_forbidden: "אין לך הרשאות לביצוע פעולה זו.",
+        err_rate_limited: "בוצעו יותר מדי ניסיונות. נסה שוב מאוחר יותר.",
+        err_validation: "נתונים לא תקינים.",
+        err_slug_taken: "הסלאג כבר תפוס.",
+        err_trial_expired: "תקופת הניסיון כבר הסתיימה.",
+        err_not_found: "לא נמצא.",
+    },
+};
+
+function t(key) {
+    return STR.he[key] ?? key;
+}
+
+function mapApiErrorToHebrew(err, fallbackKey = "err_generic") {
+    const status = err?.response?.status;
+    const code = err?.response?.data?.code;
+
+    if (status === 401 || code === "UNAUTHORIZED") return t("err_unauthorized");
+    if (status === 403 || code === "FORBIDDEN") return t("err_forbidden");
+    if (status === 429 || code === "RATE_LIMITED") return t("err_rate_limited");
+
+    if (status === 404) return t("err_not_found");
+
+    if (code === "REASON_REQUIRED") return t("err_reason_required");
+    if (code === "REASON_TOO_LONG") return t("err_reason_too_long");
+    if (code === "INVALID_TIER") return t("err_invalid_tier");
+    if (code === "INVALID_UNTIL") return t("err_invalid_until");
+
+    if (code === "SLUG_TAKEN") return t("err_slug_taken");
+    if (code === "TRIAL_EXPIRED") return t("err_trial_expired");
+    if (code === "VALIDATION_ERROR") return t("err_validation");
+    if (code === "NOT_FOUND") return t("err_not_found");
+
+    return t(fallbackKey);
+}
+
+function boolHe(v) {
+    return v ? t("yes") : t("no");
+}
+
+function roleHe(role) {
+    if (role === "admin") return t("role_admin");
+    if (role === "user") return t("role_user");
+    return String(role || "");
+}
+
+function cardStatusHe(status) {
+    if (status === "draft") return t("card_status_draft");
+    if (status === "published") return t("card_status_published");
+    return String(status || "");
+}
+
+function planHe(plan) {
+    if (plan === "free") return t("plan_free");
+    if (plan === "monthly") return t("plan_monthly");
+    if (plan === "yearly") return t("plan_yearly");
+    return String(plan || "");
+}
+
+function tierHe(tier) {
+    if (tier === "free") return t("opt_tier_free");
+    if (tier === "basic") return t("opt_tier_basic");
+    if (tier === "premium") return t("opt_tier_premium");
+    return String(tier || "");
+}
 
 function isAccessDenied(err) {
     const status = err?.response?.status;
@@ -29,12 +244,59 @@ function formatDate(value) {
     }
 }
 
+function getIsraelNowParts() {
+    const now = new Date();
+
+    const date = new Intl.DateTimeFormat("en-CA", {
+        timeZone: "Asia/Jerusalem",
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+    }).format(now);
+
+    const time = new Intl.DateTimeFormat("en-GB", {
+        timeZone: "Asia/Jerusalem",
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: false,
+    }).format(now);
+
+    const [hRaw, mRaw] = String(time).split(":");
+    const h = Number(hRaw);
+    const m = Number(mRaw);
+    const rounded = Number.isFinite(m) ? Math.floor(m / 5) * 5 : 0;
+
+    return {
+        date,
+        hour: String(Number.isFinite(h) ? h : 0).padStart(2, "0"),
+        minute: String(rounded).padStart(2, "0"),
+    };
+}
+
 export default function Admin() {
     const { token } = useAuth();
 
     const [loading, setLoading] = useState(false);
     const [accessDenied, setAccessDenied] = useState(false);
     const [error, setError] = useState("");
+
+    const [actionLoading, setActionLoading] = useState({
+        deactivate: false,
+        reactivate: false,
+        extend: false,
+        override: false,
+        cardTier: false,
+        userTier: false,
+    });
+
+    const [actionError, setActionError] = useState({
+        deactivate: "",
+        reactivate: "",
+        extend: "",
+        override: "",
+        cardTier: "",
+        userTier: "",
+    });
 
     const [stats, setStats] = useState(null);
     const [users, setUsers] = useState([]);
@@ -44,9 +306,19 @@ export default function Admin() {
     const [selectedCard, setSelectedCard] = useState(null);
 
     const [reason, setReason] = useState("");
-    const [trialDays, setTrialDays] = useState("7");
+    const [trialDays, setTrialDays] = useState(7);
+    const [trialMode, setTrialMode] = useState("days");
+    const ilNow = useMemo(() => getIsraelNowParts(), []);
+    const [trialUntilDate, setTrialUntilDate] = useState(ilNow.date);
+    const [trialUntilHour, setTrialUntilHour] = useState(ilNow.hour);
+    const [trialUntilMinute, setTrialUntilMinute] = useState(ilNow.minute);
     const [overridePlan, setOverridePlan] = useState("monthly");
     const [overrideUntil, setOverrideUntil] = useState("");
+
+    const [cardTier, setCardTier] = useState("");
+    const [cardTierUntil, setCardTierUntil] = useState("");
+    const [userTier, setUserTier] = useState("");
+    const [userTierUntil, setUserTierUntil] = useState("");
 
     const selectedCardOwner = useMemo(() => {
         if (!selectedCard) return "";
@@ -54,6 +326,85 @@ export default function Admin() {
         if (selectedCard?.anonymousId) return "anonymous";
         return "";
     }, [selectedCard]);
+
+    const selectedCardOwnerLabel = useMemo(() => {
+        if (selectedCardOwner === "user") return t("owner_user");
+        if (selectedCardOwner === "anonymous") return t("owner_anonymous");
+        return "";
+    }, [selectedCardOwner]);
+
+    const selectedEffectivePlan = useMemo(() => {
+        if (!selectedCard) return "";
+        return selectedCard?.effectiveBilling?.plan || "";
+    }, [selectedCard]);
+
+    const selectedIsPaid = useMemo(() => {
+        if (!selectedCard) return false;
+        return Boolean(selectedCard?.effectiveBilling?.isPaid);
+    }, [selectedCard]);
+
+    const selectedIsEntitled = useMemo(() => {
+        if (!selectedCard) return false;
+        return Boolean(selectedCard?.effectiveBilling?.isEntitled);
+    }, [selectedCard]);
+
+    const selectedBilling = useMemo(() => {
+        if (!selectedCard) return null;
+        return selectedCard?.effectiveBilling || null;
+    }, [selectedCard]);
+
+    const selectedEffectiveTier = useMemo(() => {
+        if (!selectedCard) return "";
+        return selectedCard?.effectiveTier || "";
+    }, [selectedCard]);
+
+    const selectedTierSource = useMemo(() => {
+        if (!selectedCard) return "";
+        return selectedCard?.tierSource || "";
+    }, [selectedCard]);
+
+    const selectedTierUntil = useMemo(() => {
+        if (!selectedCard) return "";
+        return selectedCard?.tierUntil || "";
+    }, [selectedCard]);
+
+    function toDateInputUtc(value) {
+        if (!value) return "";
+        try {
+            const d = new Date(value);
+            const y = d.getUTCFullYear();
+            const m = String(d.getUTCMonth() + 1).padStart(2, "0");
+            const day = String(d.getUTCDate()).padStart(2, "0");
+            return `${y}-${m}-${day}`;
+        } catch {
+            return "";
+        }
+    }
+
+    function updateCardInList(updated) {
+        if (!updated?._id) return;
+        setCards((prev) =>
+            Array.isArray(prev)
+                ? prev.map((c) =>
+                      c?._id === updated._id
+                          ? {
+                                ...c,
+                                slug: updated.slug,
+                                status: updated.status,
+                                isActive: updated.isActive,
+                                effectiveBilling: updated.effectiveBilling,
+                                effectiveTier: updated.effectiveTier,
+                                tierSource: updated.tierSource,
+                                tierUntil: updated.tierUntil,
+                                entitlements: updated.entitlements,
+                                updatedAt: updated.updatedAt,
+                                trialEndsAt: updated.trialEndsAt,
+                            }
+                          : c
+                  )
+                : prev
+        );
+    }
 
     async function loadAll() {
         setLoading(true);
@@ -72,7 +423,7 @@ export default function Admin() {
             if (isAccessDenied(err)) {
                 setAccessDenied(true);
             } else {
-                setError(err?.response?.data?.message || "Failed to load admin data");
+                setError(mapApiErrorToHebrew(err, "err_load_admin"));
             }
         } finally {
             setLoading(false);
@@ -83,6 +434,14 @@ export default function Admin() {
         setSelectedCardId(id);
         setSelectedCard(null);
         setError("");
+        setActionError({
+            deactivate: "",
+            reactivate: "",
+            extend: "",
+            override: "",
+            cardTier: "",
+            userTier: "",
+        });
         try {
             const res = await getAdminCardById(id);
             setSelectedCard(res.data);
@@ -90,7 +449,7 @@ export default function Admin() {
             if (isAccessDenied(err)) {
                 setAccessDenied(true);
             } else {
-                setError(err?.response?.data?.message || "Failed to load card");
+                setError(mapApiErrorToHebrew(err, "err_load_card"));
             }
         }
     }
@@ -98,30 +457,97 @@ export default function Admin() {
     function requireReason() {
         const r = String(reason || "").trim();
         if (!r) {
-            setError("Reason is required");
+            setError(t("err_reason_required"));
             return null;
         }
         return r;
     }
 
-    async function runAction(fn) {
+    function normalizeActionError(err) {
+        return mapApiErrorToHebrew(err, "err_generic");
+    }
+
+    async function runAction(actionKey, fn) {
         const r = requireReason();
         if (!r) return;
 
+        setActionError((prev) => ({ ...prev, [actionKey]: "" }));
+
         setLoading(true);
         setError("");
+        setActionLoading((prev) => ({ ...prev, [actionKey]: true }));
         try {
-            const card = await fn(r);
-            setSelectedCard(card);
-            await loadAll();
+            const updatedCard = await fn(r);
+            setSelectedCard(updatedCard);
+            updateCardInList(updatedCard);
+
+            // UX: after successful admin action, clear the reason field
+            setReason("");
+
+            // Keep tier inputs in sync after apply (selectedCard id stays the same)
+            if (actionKey === "cardTier") {
+                setCardTier(updatedCard?.adminTier || "");
+                setCardTierUntil(toDateInputUtc(updatedCard?.adminTierUntil));
+            }
         } catch (err) {
             if (isAccessDenied(err)) {
                 setAccessDenied(true);
             } else {
-                setError(err?.response?.data?.message || "Action failed");
+                const msg = normalizeActionError(err);
+                setActionError((prev) => ({ ...prev, [actionKey]: msg }));
             }
         } finally {
             setLoading(false);
+            setActionLoading((prev) => ({ ...prev, [actionKey]: false }));
+        }
+    }
+
+    async function runUserTierAction() {
+        const r = requireReason();
+        if (!r) return;
+        if (!selectedCard?.user) {
+            setError(t("err_card_has_no_user_owner"));
+            return;
+        }
+
+        setActionError((prev) => ({ ...prev, userTier: "" }));
+
+        setLoading(true);
+        setError("");
+        setActionLoading((prev) => ({ ...prev, userTier: true }));
+        try {
+            const until = userTierUntil
+                ? new Date(`${userTierUntil}T23:59:59.999Z`).toISOString()
+                : "";
+
+            await adminSetUserTier(selectedCard.user, {
+                tier: userTier || null,
+                until,
+                reason: r,
+            });
+
+            const refreshed = await getAdminCardById(selectedCard._id);
+            setSelectedCard(refreshed.data);
+            updateCardInList(refreshed.data);
+
+            // UX: after successful admin action, clear the reason field
+            setReason("");
+
+            // Keep tier inputs in sync after apply
+            setUserTier(refreshed.data?.ownerAdminTier || "");
+            setUserTierUntil(
+                toDateInputUtc(refreshed.data?.ownerAdminTierUntil)
+            );
+        } catch (err) {
+            if (isAccessDenied(err)) {
+                setAccessDenied(true);
+            } else {
+                const msg = normalizeActionError(err);
+                setActionError((prev) => ({ ...prev, userTier: msg }));
+            }
+        } finally {
+            setLoading(false);
+            setActionLoading((prev) => ({ ...prev, userTier: false }));
         }
     }
 
@@ -131,14 +557,29 @@ export default function Admin() {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [token]);
 
+    useEffect(() => {
+        if (!selectedCard) return;
+        setCardTier(selectedCard?.adminTier || "");
+        setCardTierUntil(toDateInputUtc(selectedCard?.adminTierUntil));
+        setUserTier(selectedCard?.ownerAdminTier || "");
+        setUserTierUntil(toDateInputUtc(selectedCard?.ownerAdminTierUntil));
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [
+        selectedCard?._id,
+        selectedCard?.adminTier,
+        selectedCard?.adminTierUntil,
+        selectedCard?.ownerAdminTier,
+        selectedCard?.ownerAdminTierUntil,
+    ]);
+
     if (!token) {
         return (
             <Page
-                title="Admin"
-                subtitle="Login is required to access admin panel."
+                title={t("title_admin")}
+                subtitle={t("subtitle_login_required")}
             >
-                <div className={styles.card}>
-                    <p className={styles.muted}>Please login as an admin user.</p>
+                <div dir="rtl" className={styles.card}>
+                    <p className={styles.muted}>{t("msg_login_as_admin")}</p>
                 </div>
             </Page>
         );
@@ -146,10 +587,13 @@ export default function Admin() {
 
     if (accessDenied) {
         return (
-            <Page title="Admin" subtitle="Access denied">
-                <div className={styles.card}>
+            <Page
+                title={t("title_admin")}
+                subtitle={t("subtitle_access_denied")}
+            >
+                <div dir="rtl" className={styles.card}>
                     <p className={styles.muted}>
-                        Your user does not have admin permissions.
+                        {t("msg_no_admin_permissions")}
                     </p>
                 </div>
             </Page>
@@ -157,18 +601,163 @@ export default function Admin() {
     }
 
     return (
-        <Page title="Admin" subtitle="Secure admin cabinet">
-            <div className={styles.grid}>
+        <Page title={t("title_admin")} subtitle={t("subtitle_admin_secure")}>
+            <div dir="rtl" className={styles.grid}>
                 <div className={styles.card}>
-                    <h2>Stats</h2>
+                    <h2>{t("section_stats")}</h2>
                     <p className={styles.muted}>
                         {stats
-                            ? `Users: ${stats.users} · Cards: ${stats.cardsTotal} · Anonymous cards: ${stats.cardsAnonymous} · User cards: ${stats.cardsUserOwned} · Published: ${stats.publishedCards} · Active: ${stats.activeCards}`
-                            : "No stats"}
+                            ? `${t("section_users")}: ${stats.users} · ${t(
+                                  "section_cards"
+                              )}: ${stats.cardsTotal} · ${t(
+                                  "stats_anonymous_cards"
+                              )}: ${stats.cardsAnonymous} · ${t(
+                                  "stats_user_cards"
+                              )}: ${stats.cardsUserOwned} · ${t(
+                                  "stats_published"
+                              )}: ${stats.publishedCards} · ${t(
+                                  "label_active"
+                              )}: ${stats.activeCards}`
+                            : t("stats_none")}
                     </p>
+                    <div className={styles.card}>
+                        <h2>{t("section_legend")}</h2>
+
+                        <div className={styles.legend}>
+                            <p>
+                                הלוח הזה מיועד למנהלים בלבד. כל פעולה אדמינית
+                                דורשת מילוי “סיבה” ונרשמת ביומן הפעולות לצורכי
+                                מעקב ובקרה.
+                            </p>
+
+                            <p>
+                                סטטיסטיקות: סיכום מהיר של כמות משתמשים, כרטיסים,
+                                כרטיסים אנונימיים, כרטיסים בבעלות משתמשים,
+                                כרטיסים מפורסמים וכרטיסים פעילים.
+                            </p>
+
+                            <p>
+                                טבלאות “משתמשים” ו“כרטיסים”: לחיצה על שורה טוענת
+                                את הכרטיס הנבחר ומציגה את כל הפרטים והפעולות
+                                האפשריות.
+                            </p>
+
+                            <p>
+                                מזהה כרטיס (ID פנימי): המזהה הפנימי של הכרטיס
+                                במסד הנתונים (MongoDB). זה לא הסלאג ולא כתובת
+                                האתר.
+                            </p>
+
+                            <p>
+                                סלאג: הכתובת הקצרה של הכרטיס — החלק שמופיע ב־URL
+                                אחרי ‎/card/‎. הסלאג מוצג משמאל לימין (LTR) כדי
+                                שיהיה קריא.
+                            </p>
+
+                            <p>
+                                סטטוס: “טיוטה” או “מפורסם”. רק כרטיס “מפורסם”
+                                יכול להיות נגיש לציבור, וגם זה רק אם הוא פעיל
+                                ובבעלות משתמש (לא אנונימי).
+                            </p>
+
+                            <p>
+                                פעיל: אם “לא” — הכרטיס מושבת (isActive=false).
+                                במצב זה הכרטיס לא נגיש לציבור לפי סלאג, לא
+                                נאספים לידים, ולא נאספת אנליטיקה.
+                            </p>
+
+                            <p>
+                                בעלות: “משתמש” או “אנונימי”. כרטיס אנונימי לא
+                                משויך למשתמש, ולכן אין אפשרות להחיל עליו “רמת
+                                פיצ’רים למשתמש (ידני)”.
+                            </p>
+
+                            <p>
+                                מסלול תשלום בפועל: המסלול שהמערכת מחשיבה כבתוקף
+                                לצורכי גישה (free / monthly / yearly), לפי
+                                תשלום/ניסיון/הטבות ידניות.
+                            </p>
+
+                            <p>
+                                גישה פעילה: האם יש זכאות לגישה עכשיו (למשל
+                                ניסיון בתוקף או תשלום בתוקף). ייתכן “כן” גם אם
+                                “שולם” הוא “לא” (לדוגמה בתקופת ניסיון או בהטבה
+                                ידנית).
+                            </p>
+
+                            <p>
+                                שולם: האם יש תשלום פעיל בפועל. זה מדד תשלום
+                                בלבד, לא בהכרח מדד גישה.
+                            </p>
+
+                            <p>
+                                רמת פיצ’רים בפועל: free / basic / premium. זה
+                                משפיע על פיצ’רים שהכרטיס מקבל (למשל יכולות), ולא
+                                משנה את החיוב או התשלום של הלקוח.
+                            </p>
+
+                            <p>
+                                מקור: מאיפה נקבעה “רמת הפיצ’רים בפועל” (לדוגמה:
+                                לפי כרטיס, לפי משתמש, או לפי חיוב).
+                            </p>
+
+                            <p>
+                                עד: תאריך/זמן תפוגה של הטבה/override. אם מוגדר
+                                “עד”, אחרי הזמן הזה ההטבה תסתיים והמערכת תחזור
+                                להתנהגות הרגילה.
+                            </p>
+
+                            <p>
+                                סיום תקופת ניסיון: מוצג בשעון ישראל. אחרי הזמן
+                                הזה, אם אין זכאות אחרת, הגישה תיחסם.
+                            </p>
+
+                            <p>
+                                סטטוס תשלום בפועל: מציג מקור + מסלול + תאריך
+                                “עד” (אם קיים), כדי להבין מה בדיוק המערכת מחשיבה
+                                כמצב החיוב/גישה הנוכחי.
+                            </p>
+
+                            <p>
+                                הטבת מסלול (ידני): מאפשרת לקבוע מסלול לצורכי
+                                זכאות בלבד (ללא שינוי תשלום בפועל). השדה “עד
+                                תאריך” מוחל עד סוף היום של התאריך שנבחר (UTC).
+                            </p>
+
+                            <p>
+                                רמת פיצ’רים לכרטיס (ידני): קובעת רמת פיצ’רים
+                                לכרטיס ספציפי. אם מוגדר — זה גובר על רמת
+                                הפיצ’רים של המשתמש ועל מה שנגזר מהחיוב.
+                            </p>
+
+                            <p>
+                                רמת פיצ’רים למשתמש (ידני): קובעת רמת פיצ’רים לכל
+                                הכרטיסים של המשתמש (אלא אם לכרטיס יש override
+                                משלו). מופיע רק אם הכרטיס בבעלות משתמש.
+                            </p>
+
+                            <p>
+                                השבת כרטיס: משבית את הכרטיס (isActive=false) בלי
+                                למחוק אותו. הפעל כרטיס: מחזיר את הכרטיס לפעיל
+                                (isActive=true).
+                            </p>
+
+                            <p>
+                                הארכת ניסיון: “ימים מעכשיו” קובע סיום לסוף היום
+                                בישראל לאחר N ימים. “יום ושעה מדויקים” קובע
+                                תאריך/שעה בישראל בדיוק. ימים=0 מסיים ניסיון
+                                מיידית.
+                            </p>
+
+                            <p>
+                                שים לב: ערכים טכניים כמו ID, אימייל וסלאג מוצגים
+                                כ־LTR כדי למנוע בלבול בתוך ממשק RTL.
+                            </p>
+                        </div>
+                    </div>
                     <div style={{ marginTop: 12 }}>
                         <Button onClick={loadAll} loading={loading}>
-                            Refresh
+                            {t("btn_refresh")}
                         </Button>
                     </div>
                     {error && (
@@ -179,28 +768,165 @@ export default function Admin() {
                 </div>
 
                 <div className={styles.card}>
-                    <h2>Selected card</h2>
+                    <h2>{t("section_selected_card")}</h2>
                     {!selectedCard && (
-                        <p className={styles.muted}>Select a card from the list.</p>
+                        <p className={styles.muted}>{t("msg_select_card")}</p>
                     )}
                     {selectedCard && (
                         <div className={styles.actions}>
+                            <div className={styles.subTitle}>
+                                {t("section_card_details")}
+                            </div>
                             <div className={styles.muted}>
-                                <div>Id: {selectedCard._id}</div>
-                                <div>Slug: {selectedCard.slug || ""}</div>
-                                <div>Status: {selectedCard.status || ""}</div>
-                                <div>Active: {String(!!selectedCard.isActive)}</div>
-                                <div>Owner: {selectedCardOwner}</div>
                                 <div>
-                                    Trial ends: {formatDate(selectedCard.trialEndsAt)}
+                                    {t("label_id")}:{" "}
+                                    <span
+                                        className={styles.ltr}
+                                        dir="ltr"
+                                        title={selectedCard._id}
+                                    >
+                                        {selectedCard._id}
+                                    </span>
                                 </div>
+                                <div>
+                                    {t("label_slug")}:{" "}
+                                    <span
+                                        className={styles.ltr}
+                                        dir="ltr"
+                                        title={selectedCard.slug || ""}
+                                    >
+                                        {selectedCard.slug || ""}
+                                    </span>
+                                </div>
+                                <div>
+                                    {t("label_status")}:{" "}
+                                    <span className={styles.ltr} dir="ltr">
+                                        {cardStatusHe(selectedCard.status)}
+                                    </span>
+                                </div>
+                                <div>
+                                    {t("label_active")}:{" "}
+                                    <span>
+                                        {boolHe(!!selectedCard.isActive)}
+                                    </span>
+                                </div>
+                                <div>
+                                    {t("label_owner")}: {selectedCardOwnerLabel}
+                                </div>
+                                <div>
+                                    {t("label_effective_plan")}:{" "}
+                                    <span>{planHe(selectedEffectivePlan)}</span>
+                                    {" · "}
+                                    {t("label_entitled")}:{" "}
+                                    <span>{boolHe(selectedIsEntitled)}</span>
+                                    {" · "}
+                                    {t("label_paid")}:{" "}
+                                    <span>{boolHe(selectedIsPaid)}</span>
+                                </div>
+                                <div>
+                                    {t("label_effective_tier")}:{" "}
+                                    <span>{tierHe(selectedEffectiveTier)}</span>
+                                    {" · "}
+                                    {t("label_tier_source")}:{" "}
+                                    <span className={styles.ltr} dir="ltr">
+                                        {selectedTierSource}
+                                    </span>
+                                    {selectedTierUntil
+                                        ? ` · ${t("label_until")} ${formatDate(
+                                              selectedTierUntil
+                                          )}`
+                                        : ""}
+                                </div>
+                                <div>
+                                    {t("label_trial_ends")}:{" "}
+                                    <span className={styles.ltr} dir="ltr">
+                                        {selectedCard?.trialEndsAtIsrael ||
+                                            formatDate(
+                                                selectedCard.trialEndsAt
+                                            )}
+                                    </span>
+                                </div>
+                                <div>
+                                    {t("label_effective_billing")}:{" "}
+                                    <span className={styles.ltr} dir="ltr">
+                                        {selectedBilling?.source || ""} /{" "}
+                                        {selectedBilling?.plan
+                                            ? planHe(selectedBilling.plan)
+                                            : ""}
+                                    </span>{" "}
+                                    {selectedBilling?.untilIsrael
+                                        ? `${t("label_until")} ${
+                                              selectedBilling.untilIsrael
+                                          }`
+                                        : selectedBilling?.until
+                                        ? `${t("label_until")} ${formatDate(
+                                              selectedBilling.until
+                                          )}`
+                                        : ""}
+                                </div>
+                                {selectedCard?.adminOverride && (
+                                    <div>
+                                        {t("label_admin_override")}:{" "}
+                                        <span className={styles.ltr} dir="ltr">
+                                            {selectedCard.adminOverride?.plan
+                                                ? planHe(
+                                                      selectedCard.adminOverride
+                                                          .plan
+                                                  )
+                                                : ""}
+                                        </span>{" "}
+                                        {selectedCard.adminOverride?.until
+                                            ? `${t("label_until")} ${formatDate(
+                                                  selectedCard.adminOverride
+                                                      .until
+                                              )}`
+                                            : ""}
+                                    </div>
+                                )}
+                                {(selectedCard?.adminTier ||
+                                    selectedCard?.adminTierUntil) && (
+                                    <div>
+                                        {t("label_card_tier_override")}:{" "}
+                                        <span>
+                                            {selectedCard.adminTier
+                                                ? tierHe(selectedCard.adminTier)
+                                                : ""}
+                                        </span>{" "}
+                                        {selectedCard.adminTierUntil
+                                            ? `${t("label_until")} ${formatDate(
+                                                  selectedCard.adminTierUntil
+                                              )}`
+                                            : ""}
+                                    </div>
+                                )}
+                                {(selectedCard?.ownerAdminTier ||
+                                    selectedCard?.ownerAdminTierUntil) && (
+                                    <div>
+                                        {t("label_user_tier_override")}:{" "}
+                                        <span>
+                                            {selectedCard.ownerAdminTier
+                                                ? tierHe(
+                                                      selectedCard.ownerAdminTier
+                                                  )
+                                                : ""}
+                                        </span>{" "}
+                                        {selectedCard.ownerAdminTierUntil
+                                            ? `${t("label_until")} ${formatDate(
+                                                  selectedCard.ownerAdminTierUntil
+                                              )}`
+                                            : ""}
+                                    </div>
+                                )}
                             </div>
 
+                            <div className={styles.subTitle}>
+                                {t("section_admin_actions")}
+                            </div>
                             <Input
-                                label="Reason"
+                                label={t("label_reason")}
                                 value={reason}
                                 onChange={(e) => setReason(e.target.value)}
-                                placeholder="Required for any admin action"
+                                placeholder={t("placeholder_reason")}
                                 required
                             />
 
@@ -208,97 +934,273 @@ export default function Admin() {
                                 {selectedCard.isActive ? (
                                     <Button
                                         variant="secondary"
-                                        disabled={loading}
+                                        disabled={
+                                            loading || actionLoading.deactivate
+                                        }
+                                        loading={actionLoading.deactivate}
                                         onClick={() =>
-                                            runAction(async (r) => {
-                                                const res = await adminDeactivateCard(
-                                                    selectedCard._id,
-                                                    r
-                                                );
-                                                return res.data;
-                                            })
+                                            runAction(
+                                                "deactivate",
+                                                async (r) => {
+                                                    const res =
+                                                        await adminDeactivateCard(
+                                                            selectedCard._id,
+                                                            r
+                                                        );
+                                                    return res.data;
+                                                }
+                                            )
                                         }
                                     >
-                                        Deactivate card
+                                        {t("btn_deactivate")}
                                     </Button>
                                 ) : (
                                     <Button
                                         variant="secondary"
-                                        disabled={loading}
+                                        disabled={
+                                            loading || actionLoading.reactivate
+                                        }
+                                        loading={actionLoading.reactivate}
                                         onClick={() =>
-                                            runAction(async (r) => {
-                                                const res = await adminReactivateCard(
-                                                    selectedCard._id,
-                                                    r
+                                            runAction(
+                                                "reactivate",
+                                                async (r) => {
+                                                    const res =
+                                                        await adminReactivateCard(
+                                                            selectedCard._id,
+                                                            r
+                                                        );
+                                                    return res.data;
+                                                }
+                                            )
+                                        }
+                                    >
+                                        {t("btn_reactivate")}
+                                    </Button>
+                                )}
+
+                                {selectedCard.isActive &&
+                                    actionError.deactivate && (
+                                        <p
+                                            className={styles.muted}
+                                            style={{ color: "var(--gold)" }}
+                                        >
+                                            {actionError.deactivate}
+                                        </p>
+                                    )}
+                                {!selectedCard.isActive &&
+                                    actionError.reactivate && (
+                                        <p
+                                            className={styles.muted}
+                                            style={{ color: "var(--gold)" }}
+                                        >
+                                            {actionError.reactivate}
+                                        </p>
+                                    )}
+                            </div>
+
+                            <div className={styles.actionRow}>
+                                <div className={styles.inline}>
+                                    <label className={styles.selectField}>
+                                        <span className={styles.selectLabel}>
+                                            {t("label_trial_mode")}
+                                        </span>
+                                        <select
+                                            className={styles.select}
+                                            value={trialMode}
+                                            onChange={(e) =>
+                                                setTrialMode(e.target.value)
+                                            }
+                                        >
+                                            <option value="days">
+                                                {t("opt_trial_mode_days")}
+                                            </option>
+                                            <option value="exact">
+                                                {t("opt_trial_mode_exact")}
+                                            </option>
+                                        </select>
+                                    </label>
+
+                                    <label className={styles.selectField}>
+                                        <span className={styles.selectLabel}>
+                                            {t("label_trial_days")}
+                                        </span>
+                                        <select
+                                            className={styles.select}
+                                            value={trialDays}
+                                            onChange={(e) =>
+                                                setTrialDays(
+                                                    Number(e.target.value)
+                                                )
+                                            }
+                                            disabled={trialMode !== "days"}
+                                        >
+                                            {Array.from(
+                                                { length: 15 },
+                                                (_, i) => i
+                                            ).map((n) => (
+                                                <option key={n} value={n}>
+                                                    {n}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </label>
+
+                                    <Input
+                                        label={t("label_trial_date_il")}
+                                        type="date"
+                                        value={trialUntilDate}
+                                        onChange={(e) =>
+                                            setTrialUntilDate(e.target.value)
+                                        }
+                                        disabled={trialMode !== "exact"}
+                                    />
+
+                                    <label className={styles.selectField}>
+                                        <span className={styles.selectLabel}>
+                                            {t("label_trial_hour")}
+                                        </span>
+                                        <select
+                                            className={styles.select}
+                                            value={trialUntilHour}
+                                            onChange={(e) =>
+                                                setTrialUntilHour(
+                                                    e.target.value
+                                                )
+                                            }
+                                            disabled={trialMode !== "exact"}
+                                        >
+                                            {Array.from(
+                                                { length: 24 },
+                                                (_, i) => i
+                                            ).map((h) => {
+                                                const hh = String(h).padStart(
+                                                    2,
+                                                    "0"
                                                 );
+                                                return (
+                                                    <option key={hh} value={hh}>
+                                                        {hh}
+                                                    </option>
+                                                );
+                                            })}
+                                        </select>
+                                    </label>
+
+                                    <label className={styles.selectField}>
+                                        <span className={styles.selectLabel}>
+                                            {t("label_trial_minute")}
+                                        </span>
+                                        <select
+                                            className={styles.select}
+                                            value={trialUntilMinute}
+                                            onChange={(e) =>
+                                                setTrialUntilMinute(
+                                                    e.target.value
+                                                )
+                                            }
+                                            disabled={trialMode !== "exact"}
+                                        >
+                                            {Array.from(
+                                                { length: 12 },
+                                                (_, i) => i * 5
+                                            ).map((m) => {
+                                                const mm = String(m).padStart(
+                                                    2,
+                                                    "0"
+                                                );
+                                                return (
+                                                    <option key={mm} value={mm}>
+                                                        {mm}
+                                                    </option>
+                                                );
+                                            })}
+                                        </select>
+                                    </label>
+
+                                    <Button
+                                        variant="secondary"
+                                        disabled={
+                                            loading || actionLoading.extend
+                                        }
+                                        loading={actionLoading.extend}
+                                        onClick={() =>
+                                            runAction("extend", async (r) => {
+                                                const payload =
+                                                    trialMode === "exact"
+                                                        ? {
+                                                              untilLocal: {
+                                                                  date: trialUntilDate,
+                                                                  hour: Number(
+                                                                      trialUntilHour
+                                                                  ),
+                                                                  minute: Number(
+                                                                      trialUntilMinute
+                                                                  ),
+                                                              },
+                                                              reason: r,
+                                                          }
+                                                        : {
+                                                              days: Number(
+                                                                  trialDays
+                                                              ),
+                                                              reason: r,
+                                                          };
+
+                                                const res =
+                                                    await adminExtendTrial(
+                                                        selectedCard._id,
+                                                        payload
+                                                    );
                                                 return res.data;
                                             })
                                         }
                                     >
-                                        Reactivate card
+                                        {t("btn_set")}
                                     </Button>
+                                </div>
+
+                                {actionError.extend && (
+                                    <p
+                                        className={styles.muted}
+                                        style={{ color: "var(--gold)" }}
+                                    >
+                                        {actionError.extend}
+                                    </p>
                                 )}
                             </div>
 
                             <div className={styles.actionRow}>
                                 <div className={styles.inline}>
                                     <Input
-                                        label="Extend trial (days)"
-                                        type="number"
-                                        value={trialDays}
-                                        onChange={(e) => setTrialDays(e.target.value)}
-                                        placeholder="1..14"
-                                    />
-                                    <Button
-                                        variant="secondary"
-                                        disabled={loading}
-                                        onClick={() =>
-                                            runAction(async (r) => {
-                                                const days = Number.parseInt(
-                                                    String(trialDays),
-                                                    10
-                                                );
-                                                const res = await adminExtendTrial(
-                                                    selectedCard._id,
-                                                    { days, reason: r }
-                                                );
-                                                return res.data;
-                                            })
-                                        }
-                                    >
-                                        Extend
-                                    </Button>
-                                </div>
-                            </div>
-
-                            <div className={styles.actionRow}>
-                                <div className={styles.inline}>
-                                    <Input
-                                        label="Override plan"
+                                        label={t("label_override_plan")}
                                         value={overridePlan}
                                         onChange={(e) =>
                                             setOverridePlan(e.target.value)
                                         }
-                                        placeholder="free | monthly | yearly"
+                                        placeholder={t(
+                                            "placeholder_override_plan"
+                                        )}
                                     />
                                     <Input
-                                        label="Override until"
+                                        label={t("label_override_until")}
                                         type="date"
                                         value={overrideUntil}
                                         onChange={(e) =>
                                             setOverrideUntil(e.target.value)
                                         }
-                                        placeholder="YYYY-MM-DD"
+                                        placeholder={t("placeholder_date_ymd")}
                                     />
                                 </div>
                                 <Button
                                     variant="secondary"
-                                    disabled={loading}
+                                    disabled={loading || actionLoading.override}
+                                    loading={actionLoading.override}
                                     onClick={() =>
-                                        runAction(async (r) => {
+                                        runAction("override", async (r) => {
                                             const until = overrideUntil
                                                 ? new Date(
-                                                      `${overrideUntil}T00:00:00.000Z`
+                                                      `${overrideUntil}T23:59:59.999Z`
                                                   ).toISOString()
                                                 : "";
                                             const res = await adminOverridePlan(
@@ -315,28 +1217,218 @@ export default function Admin() {
                                         })
                                     }
                                 >
-                                    Override
+                                    {t("btn_override")}
                                 </Button>
+
+                                {actionError.override && (
+                                    <p
+                                        className={styles.muted}
+                                        style={{ color: "var(--gold)" }}
+                                    >
+                                        {actionError.override}
+                                    </p>
+                                )}
                             </div>
+
+                            <div className={styles.actionRow}>
+                                <div className={styles.inline}>
+                                    <label className={styles.selectField}>
+                                        <span className={styles.selectLabel}>
+                                            {t("label_card_tier")}
+                                        </span>
+                                        <select
+                                            className={styles.select}
+                                            value={cardTier}
+                                            onChange={(e) =>
+                                                setCardTier(e.target.value)
+                                            }
+                                        >
+                                            <option value="">
+                                                {t("opt_clear")}
+                                            </option>
+                                            <option value="free">
+                                                {t("opt_tier_free")}
+                                            </option>
+                                            <option value="basic">
+                                                {t("opt_tier_basic")}
+                                            </option>
+                                            <option value="premium">
+                                                {t("opt_tier_premium")}
+                                            </option>
+                                        </select>
+                                    </label>
+                                    <Input
+                                        label={t("label_card_tier_until")}
+                                        type="date"
+                                        value={cardTierUntil}
+                                        onChange={(e) =>
+                                            setCardTierUntil(e.target.value)
+                                        }
+                                        placeholder={t("placeholder_date_ymd")}
+                                    />
+                                </div>
+                                <Button
+                                    variant="secondary"
+                                    disabled={loading || actionLoading.cardTier}
+                                    loading={actionLoading.cardTier}
+                                    onClick={() =>
+                                        runAction("cardTier", async (r) => {
+                                            const until = cardTierUntil
+                                                ? new Date(
+                                                      `${cardTierUntil}T23:59:59.999Z`
+                                                  ).toISOString()
+                                                : "";
+                                            const res = await adminSetCardTier(
+                                                selectedCard._id,
+                                                {
+                                                    tier: cardTier || null,
+                                                    until,
+                                                    reason: r,
+                                                }
+                                            );
+                                            return res.data;
+                                        })
+                                    }
+                                >
+                                    {t("btn_apply")}
+                                </Button>
+
+                                {actionError.cardTier && (
+                                    <p
+                                        className={styles.muted}
+                                        style={{ color: "var(--gold)" }}
+                                    >
+                                        {actionError.cardTier}
+                                    </p>
+                                )}
+                            </div>
+
+                            {selectedCardOwner === "user" && (
+                                <div className={styles.actionRow}>
+                                    <div className={styles.inline}>
+                                        <label className={styles.selectField}>
+                                            <span
+                                                className={styles.selectLabel}
+                                            >
+                                                {t("label_user_tier")}
+                                            </span>
+                                            <select
+                                                className={styles.select}
+                                                value={userTier}
+                                                onChange={(e) =>
+                                                    setUserTier(e.target.value)
+                                                }
+                                            >
+                                                <option value="">
+                                                    {t("opt_clear")}
+                                                </option>
+                                                <option value="free">
+                                                    {t("opt_tier_free")}
+                                                </option>
+                                                <option value="basic">
+                                                    {t("opt_tier_basic")}
+                                                </option>
+                                                <option value="premium">
+                                                    {t("opt_tier_premium")}
+                                                </option>
+                                            </select>
+                                        </label>
+                                        <Input
+                                            label={t("label_user_tier_until")}
+                                            type="date"
+                                            value={userTierUntil}
+                                            onChange={(e) =>
+                                                setUserTierUntil(e.target.value)
+                                            }
+                                            placeholder={t(
+                                                "placeholder_date_ymd"
+                                            )}
+                                        />
+                                    </div>
+                                    <Button
+                                        variant="secondary"
+                                        disabled={
+                                            loading || actionLoading.userTier
+                                        }
+                                        loading={actionLoading.userTier}
+                                        onClick={runUserTierAction}
+                                    >
+                                        {t("btn_apply")}
+                                    </Button>
+
+                                    {actionError.userTier && (
+                                        <p
+                                            className={styles.muted}
+                                            style={{ color: "var(--gold)" }}
+                                        >
+                                            {actionError.userTier}
+                                        </p>
+                                    )}
+                                </div>
+                            )}
                         </div>
                     )}
                 </div>
 
                 <div className={styles.card}>
-                    <h2>Users</h2>
+                    <h2>{t("section_users")}</h2>
                     <table className={styles.table}>
                         <thead>
                             <tr>
-                                <th>Email</th>
-                                <th>Role</th>
-                                <th>Created</th>
+                                <th>{t("th_email")}</th>
+                                <th>{t("th_card")}</th>
+                                <th>{t("th_role")}</th>
+                                <th>{t("th_created")}</th>
                             </tr>
                         </thead>
                         <tbody>
                             {users.map((u) => (
                                 <tr key={u._id}>
-                                    <td>{u.email}</td>
-                                    <td>{u.role}</td>
+                                    <td>
+                                        <span className={styles.ltr} dir="ltr">
+                                            {u.email}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        {u?.cardSummary?.slug ? (
+                                            <button
+                                                className={styles.rowBtn}
+                                                type="button"
+                                                onClick={() =>
+                                                    loadCard(
+                                                        u.cardSummary.cardId
+                                                    )
+                                                }
+                                                disabled={loading}
+                                                title={u.cardSummary.cardId}
+                                                style={{ width: "auto" }}
+                                            >
+                                                <span
+                                                    className={styles.ltr}
+                                                    dir="ltr"
+                                                >
+                                                    {u.cardSummary.slug}
+                                                </span>{" "}
+                                                (
+                                                <span
+                                                    className={styles.ltr}
+                                                    dir="ltr"
+                                                >
+                                                    {cardStatusHe(
+                                                        u.cardSummary.status
+                                                    )}
+                                                </span>
+                                                )
+                                            </button>
+                                        ) : u?.cardSummary?.missing ? (
+                                            <span className={styles.muted}>
+                                                {t("label_missing")}
+                                            </span>
+                                        ) : (
+                                            "—"
+                                        )}
+                                    </td>
+                                    <td>{roleHe(u.role)}</td>
                                     <td>{formatDate(u.createdAt)}</td>
                                 </tr>
                             ))}
@@ -345,14 +1437,15 @@ export default function Admin() {
                 </div>
 
                 <div className={styles.card}>
-                    <h2>Cards</h2>
+                    <h2>{t("section_cards")}</h2>
                     <table className={styles.table}>
                         <thead>
                             <tr>
-                                <th>Slug</th>
-                                <th>Status</th>
-                                <th>Active</th>
-                                <th>Updated</th>
+                                <th>{t("th_slug")}</th>
+                                <th>{t("th_owner")}</th>
+                                <th>{t("label_status")}</th>
+                                <th>{t("label_active")}</th>
+                                <th>{t("th_updated")}</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -366,11 +1459,49 @@ export default function Admin() {
                                             disabled={loading}
                                             title={c._id}
                                         >
-                                            {c.slug || "(no slug)"}
+                                            <span
+                                                className={styles.ltr}
+                                                dir="ltr"
+                                            >
+                                                {c.slug || t("label_no_slug")}
+                                            </span>
                                         </button>
                                     </td>
-                                    <td>{c.status}</td>
-                                    <td>{String(!!c.isActive)}</td>
+                                    <td>
+                                        {c?.ownerSummary?.type === "user" ? (
+                                            <span
+                                                title={
+                                                    c.ownerSummary.email || ""
+                                                }
+                                                style={{
+                                                    display: "inline-block",
+                                                    maxWidth: 240,
+                                                    overflow: "hidden",
+                                                    textOverflow: "ellipsis",
+                                                    whiteSpace: "nowrap",
+                                                    direction: "ltr",
+                                                    textAlign: "left",
+                                                }}
+                                            >
+                                                <span
+                                                    className={styles.ltr}
+                                                    dir="ltr"
+                                                >
+                                                    {c.ownerSummary.email ||
+                                                        "—"}
+                                                </span>
+                                            </span>
+                                        ) : c?.ownerSummary?.type ===
+                                          "anonymous" ? (
+                                            <span className={styles.muted}>
+                                                {t("owner_anonymous")}
+                                            </span>
+                                        ) : (
+                                            "—"
+                                        )}
+                                    </td>
+                                    <td>{cardStatusHe(c.status)}</td>
+                                    <td>{boolHe(!!c.isActive)}</td>
                                     <td>{formatDate(c.updatedAt)}</td>
                                 </tr>
                             ))}
@@ -379,7 +1510,7 @@ export default function Admin() {
 
                     {selectedCardId && !selectedCard && (
                         <p className={styles.muted} style={{ marginTop: 10 }}>
-                            Loading card…
+                            {t("msg_loading_card")}
                         </p>
                     )}
                 </div>

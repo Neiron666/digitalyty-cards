@@ -1,7 +1,9 @@
 import Card from "../models/Card.model.js";
 import Lead from "../models/Lead.model.js";
-import { hasAccess } from "../utils/planAccess.js";
+import User from "../models/User.model.js";
 import { resolveBilling } from "../utils/trial.js";
+import { resolveEffectiveTier } from "../utils/tier.js";
+import { computeEntitlements } from "../utils/cardDTO.js";
 
 export async function createLead(req, res) {
     try {
@@ -20,10 +22,37 @@ export async function createLead(req, res) {
             });
         }
 
-        const billing = resolveBilling(card);
-        const plan = billing?.plan || card.plan || "free";
+        const now = new Date();
+        const effectiveBilling = resolveBilling(card, now);
 
-        if (!hasAccess(plan, "leadForm")) {
+        const userTier = card?.user
+            ? await User.findById(String(card.user))
+                  .select("adminTier adminTierUntil")
+                  .lean()
+            : null;
+
+        const effectiveTier = resolveEffectiveTier({
+            card,
+            user: userTier,
+            effectiveBilling,
+            now,
+        });
+
+        const entitlements = computeEntitlements(
+            card,
+            effectiveBilling,
+            effectiveTier,
+            now
+        );
+
+        if (!effectiveBilling?.isEntitled) {
+            return res.status(403).json({
+                message: "Access expired",
+                code: "TRIAL_EXPIRED",
+            });
+        }
+
+        if (!entitlements?.canUseLeads) {
             return res.status(403).json({
                 message: "Lead form available only for paid plans",
                 code: "FEATURE_NOT_AVAILABLE",

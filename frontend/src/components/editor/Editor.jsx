@@ -14,6 +14,7 @@ export default function Editor({
     onUnpublish,
     previewHeader,
     previewFooter,
+    canShowAnalyticsTab,
 }) {
     const navigate = useNavigate();
     const { tab } = useParams(); // route: /edit/card/:tab
@@ -28,6 +29,7 @@ export default function Editor({
         "reviews",
         "seo",
         "settings",
+        ...(canShowAnalyticsTab ? ["analytics"] : []),
     ]);
 
     const activeTab = allowedTabs.has(tab) ? tab : "business";
@@ -42,6 +44,7 @@ export default function Editor({
             <EditorSidebar
                 activeTab={activeTab}
                 onChangeTab={handleChangeTab}
+                canShowAnalyticsTab={Boolean(canShowAnalyticsTab)}
             />
 
             <main className={styles.panel}>

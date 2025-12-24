@@ -28,10 +28,34 @@ export function adminReactivateCard(id, reason) {
     return api.post(`/admin/cards/${id}/reactivate`, { reason });
 }
 
-export function adminExtendTrial(id, { days, reason }) {
-    return api.post(`/admin/cards/${id}/trial/extend`, { days, reason });
+export function adminExtendTrial(id, { days, untilLocal, reason }) {
+    return api.post(`/admin/cards/${id}/trial/extend`, {
+        days,
+        untilLocal,
+        reason,
+    });
 }
 
 export function adminOverridePlan(id, { plan, until, reason }) {
-    return api.post(`/admin/cards/${id}/plan/override`, { plan, until, reason });
+    return api.post(`/admin/cards/${id}/plan/override`, {
+        plan,
+        until,
+        reason,
+    });
+}
+
+export function adminSetCardTier(id, { tier, until, reason }) {
+    return api.post(`/admin/cards/${id}/tier`, {
+        tier,
+        until,
+        reason,
+    });
+}
+
+export function adminSetUserTier(id, { tier, until, reason }) {
+    return api.post(`/admin/users/${id}/tier`, {
+        tier,
+        until,
+        reason,
+    });
 }

@@ -1,7 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import { getCardBySlug } from "../services/cards.service";
+import { trackView } from "../services/analytics.client";
 import CardRenderer from "../components/card/CardRenderer";
 import styles from "./PublicCardPage.module.css";
 
@@ -10,6 +11,7 @@ function PublicCard() {
     const [card, setCard] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const trackedRef = useRef(false);
 
     useEffect(() => {
         async function loadCard() {
@@ -27,6 +29,12 @@ function PublicCard() {
 
         loadCard();
     }, [slug]);
+
+    useEffect(() => {
+        if (!card?.slug || trackedRef.current) return;
+        trackedRef.current = true;
+        trackView(card.slug);
+    }, [card?.slug]);
 
     if (loading) return <p>טוען כרטיס...</p>;
     if (error) return <p>{error}</p>;

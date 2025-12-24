@@ -1,4 +1,5 @@
 import styles from "./CardFooter.module.css";
+import { trackClick } from "../../../services/analytics.client";
 
 function CardFooter({ card }) {
     const { contact } = card;
@@ -26,6 +27,7 @@ function CardFooter({ card }) {
                             href={contact.facebook}
                             target="_blank"
                             rel="noreferrer"
+                            onClick={() => trackClick(card?.slug, "facebook")}
                         >
                             Facebook
                         </a>
@@ -35,6 +37,7 @@ function CardFooter({ card }) {
                             href={contact.instagram}
                             target="_blank"
                             rel="noreferrer"
+                            onClick={() => trackClick(card?.slug, "instagram")}
                         >
                             Instagram
                         </a>
@@ -44,12 +47,18 @@ function CardFooter({ card }) {
                             href={contact.linkedin}
                             target="_blank"
                             rel="noreferrer"
+                            onClick={() => trackClick(card?.slug, "linkedin")}
                         >
                             LinkedIn
                         </a>
                     )}
                     {contact?.email && (
-                        <a href={`mailto:${contact.email}`}>Email</a>
+                        <a
+                            href={`mailto:${contact.email}`}
+                            onClick={() => trackClick(card?.slug, "email")}
+                        >
+                            Email
+                        </a>
                     )}
                 </div>
             )}

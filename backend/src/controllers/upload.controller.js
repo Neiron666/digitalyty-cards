@@ -1,5 +1,5 @@
 import Card from "../models/Card.model.js";
-import { GALLERY_LIMITS } from "../config/limits.js";
+import User from "../models/User.model.js";
 import crypto from "crypto";
 import { uploadBuffer } from "../services/supabaseStorage.js";
 import { removeObjects } from "../services/supabaseStorage.js";
@@ -8,10 +8,12 @@ import {
     ensureTrialStarted,
     assertNotLocked,
     isTrialDeleteDue,
-    isPaid,
+    isEntitled,
     resolveBilling,
 } from "../utils/trial.js";
 import { HttpError } from "../utils/httpError.js";
+import { resolveEffectiveTier } from "../utils/tier.js";
+import { computeEntitlements } from "../utils/cardDTO.js";
 
 function extFromMime(mime) {
     if (mime === "image/png") return "png";
@@ -77,8 +79,8 @@ export async function uploadGalleryImage(req, res) {
 
         const now = new Date();
 
-        // If deletion date reached and still unpaid -> delete card and block uploads.
-        if (isTrialDeleteDue(card, now)) {
+        // If deletion date reached and still not entitled -> delete card and block uploads.
+        if (isTrialDeleteDue(card, now) && !isEntitled(card, now)) {
             // Best-effort media cleanup.
             try {
                 const rawPaths = [];
@@ -113,16 +115,39 @@ export async function uploadGalleryImage(req, res) {
             throw err;
         }
 
-        // Gallery limit: paid plans allow more, otherwise treat as free.
-        const plan = isPaid(card, now)
-            ? resolveBilling(card)?.plan ||
-              card?.billing?.plan ||
-              card.plan ||
-              "monthly"
-            : "free";
-        const limit = GALLERY_LIMITS[plan];
+        // Gallery limit: driven by effective tier entitlements.
+        const effectiveBilling = resolveBilling(card, now);
+        const userTier =
+            actor?.type === "user"
+                ? await User.findById(String(actor.id))
+                      .select("adminTier adminTierUntil")
+                      .lean()
+                : null;
+        const effectiveTier = resolveEffectiveTier({
+            card,
+            user: userTier,
+            effectiveBilling,
+            now,
+        });
+        const entitlements = computeEntitlements(
+            card,
+            effectiveBilling,
+            effectiveTier,
+            now
+        );
+        const limit = Number(entitlements?.galleryLimit) || 0;
 
-        if (galleryCount(card.gallery) >= limit) {
+        const currentCount = galleryCount(card.gallery);
+
+        if (currentCount >= limit) {
+            console.debug("[gallery] limit reached", {
+                cardId: String(card._id),
+                effectiveTier: effectiveTier?.tier,
+                tierSource: effectiveTier?.source,
+                billingPlan: effectiveBilling?.plan,
+                limit,
+                galleryCount: currentCount,
+            });
             return res.status(422).json({
                 message: `Gallery limit reached (${limit})`,
                 code: "GALLERY_LIMIT_REACHED",

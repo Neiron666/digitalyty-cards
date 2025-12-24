@@ -1,6 +1,6 @@
 import { Router } from "express";
 import Card from "../models/Card.model.js";
-import { isPaid, isTrialExpired } from "../utils/trial.js";
+import { isEntitled, isTrialExpired } from "../utils/trial.js";
 
 const router = Router();
 
@@ -13,7 +13,7 @@ router.get("/sitemap.xml", async (req, res) => {
 
     const now = new Date();
     const visible = cards.filter(
-        (c) => !(isTrialExpired(c, now) && !isPaid(c, now))
+        (c) => !(isTrialExpired(c, now) && !isEntitled(c, now))
     );
 
     const urls = visible

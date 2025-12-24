@@ -10,15 +10,24 @@ const TABS = [
     { id: "reviews", label: "ביקורות" },
     { id: "seo", label: "SEO וסקריפטים" },
     { id: "settings", label: "הגדרות" },
+    { id: "analytics", label: "Analytics" },
 ];
 
-export default function EditorSidebar({ activeTab, onChangeTab }) {
+export default function EditorSidebar({
+    activeTab,
+    onChangeTab,
+    canShowAnalyticsTab,
+}) {
+    const items = canShowAnalyticsTab
+        ? TABS
+        : TABS.filter((t) => t.id !== "analytics");
+
     return (
         <aside className={styles.sidebar}>
             <div className={styles.title}>עריכת כרטיס</div>
 
             <nav className={styles.nav}>
-                {TABS.map((tab) => (
+                {items.map((tab) => (
                     <button
                         key={tab.id}
                         type="button"

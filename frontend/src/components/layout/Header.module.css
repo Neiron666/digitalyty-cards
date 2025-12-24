@@ -8,7 +8,7 @@
 }
 
 .inner {
-    max-width: 1200px;
+    max-width: 90%;
     margin: 0 auto;
     padding: 14px 20px;
     display: grid;
@@ -57,11 +57,34 @@
     height: 2px;
     background: linear-gradient(90deg, transparent, var(--gold), transparent);
 }
-
+.authButtons {
+    display: flex;
+    gap: 8px;
+    white-space: nowrap;
+}
 .actions {
     display: flex;
     justify-content: flex-end;
     gap: 10px;
+}
+
+.authBlock {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.userEmail {
+    font-size: 14px;
+    opacity: 0.85;
+    max-width: 240px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+
+    /* Email reads better as LTR even in RTL UI */
+    direction: ltr;
+    text-align: left;
 }
 
 .burger {
@@ -181,7 +204,7 @@
 }
 
 /* Responsive */
-@media (max-width: 1024px) {
+/* @media (max-width: 1024px) {
     .inner {
         grid-template-columns: 1fr auto;
         grid-template-areas:
@@ -201,9 +224,9 @@
         grid-area: nav;
         justify-content: flex-start;
     }
-}
+} */
 
-@media (max-width: 560px) {
+@media (max-width: 1300px) {
     .inner {
         grid-template-columns: 1fr auto;
         align-items: center;
@@ -217,5 +240,9 @@
     .burger {
         display: inline-flex;
         flex-direction: column;
+    }
+    .userEmail {
+        max-width: 100%;
+        text-align: center;
     }
 }

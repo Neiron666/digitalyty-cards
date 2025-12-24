@@ -8,6 +8,7 @@ import { useAuth } from "../context/AuthContext";
 import styles from "./EditCard.module.css";
 
 const AUTOSAVE_DEBOUNCE_MS = 600;
+const REFETCH_THROTTLE_MS = 15_000;
 
 function EditCard() {
     const navigate = useNavigate();
@@ -40,6 +41,7 @@ function EditCard() {
             "reviews",
             "settings",
             "seo",
+            "analytics",
         ]);
 
         if (!section || !validSections.has(section)) {
@@ -67,6 +69,24 @@ function EditCard() {
         // Keep trial fields in state shape (server may fill them; anonymous trial may expire).
         trialStartedAt: null,
         trialEndsAt: null,
+        effectiveBilling: {
+            plan: "free",
+            source: "trial",
+            until: null,
+            isEntitled: true,
+            isPaid: false,
+        },
+        entitlements: {
+            canEdit: true,
+            lockedReason: null,
+            galleryLimit: 5,
+            canUseLeads: false,
+            canUseVideo: false,
+            canUseReviews: false,
+            analyticsLevel: "none",
+            canViewAnalytics: false,
+            analyticsRetentionDays: 0,
+        },
         business: {},
         contact: {},
         content: {},
@@ -90,8 +110,9 @@ function EditCard() {
     };
 
     const [card, setCard] = useState(emptyCard);
-    const [trialLocked, setTrialLocked] = useState(false);
     const [reloadKey, setReloadKey] = useState(0);
+
+    const lastRefetchAtRef = useRef(0);
 
     // NEW: keep latest card for async autosave callbacks
     const cardRef = useRef(card);
@@ -99,23 +120,16 @@ function EditCard() {
         cardRef.current = card;
     }, [card]);
 
-    const nowMs = Date.now();
-    const trialEndsMs = card?.trialEndsAt
-        ? new Date(card.trialEndsAt).getTime()
-        : null;
-    const isTrialExpired = Boolean(trialEndsMs && trialEndsMs < nowMs);
-
-    const isPaid = Boolean(
-        card?.billing?.status === "active" &&
-            (!card?.billing?.paidUntil ||
-                new Date(card.billing.paidUntil).getTime() > nowMs)
-    );
-    const editingDisabled = trialLocked || isTrialExpired;
-
+    const isPaid = Boolean(card?.effectiveBilling?.isPaid);
+    const isEntitled = Boolean(card?.effectiveBilling?.isEntitled);
+    const editingDisabled = card?.entitlements?.canEdit === false;
+    const isTrialExpired = card?.entitlements?.lockedReason === "TRIAL_EXPIRED";
     const showTrialBanner =
-        card &&
         !isPaid &&
-        (card.trialStartedAt || card.trialEndsAt || editingDisabled);
+        !(!isEntitled && !isTrialExpired) &&
+        (card?.effectiveBilling?.source === "trial" ||
+            Boolean(card?.trialStartedAt || card?.trialEndsAt) ||
+            editingDisabled);
 
     const initCard = useCallback(async (isMounted = () => true) => {
         try {
@@ -145,6 +159,17 @@ function EditCard() {
         }
     }, []);
 
+    const refetchMineThrottled = useCallback(
+        async (isMounted = () => true) => {
+            const nowMs = Date.now();
+            if (nowMs - lastRefetchAtRef.current < REFETCH_THROTTLE_MS) return;
+            lastRefetchAtRef.current = nowMs;
+
+            await initCard(isMounted);
+        },
+        [initCard]
+    );
+
     useEffect(() => {
         let isMounted = true;
         initCard(() => isMounted);
@@ -153,6 +178,64 @@ function EditCard() {
             isMounted = false;
         };
     }, [initCard, reloadKey]);
+
+    useEffect(() => {
+        if (!editingDisabled) return;
+
+        let stopped = false;
+        const tick = async () => {
+            if (stopped) return;
+            try {
+                await refetchMineThrottled(() => !stopped);
+            } catch {
+                // silent
+            }
+        };
+
+        const interval = setInterval(tick, REFETCH_THROTTLE_MS);
+
+        // Keep legacy behavior for anonymous locked sessions: refresh on focus.
+        // Logged-in users are handled by the global focus/visibility refetch below.
+        const onFocus = () => tick();
+        if (!token) window.addEventListener("focus", onFocus);
+
+        return () => {
+            stopped = true;
+            clearInterval(interval);
+            if (!token) window.removeEventListener("focus", onFocus);
+        };
+    }, [editingDisabled, refetchMineThrottled, token]);
+
+    useEffect(() => {
+        if (!token) return;
+
+        let stopped = false;
+        const tick = async () => {
+            if (stopped) return;
+            try {
+                await refetchMineThrottled(() => !stopped);
+            } catch {
+                // silent
+            }
+        };
+
+        const onFocus = () => tick();
+        const onVisibilityChange = () => {
+            if (document.visibilityState === "visible") tick();
+        };
+
+        window.addEventListener("focus", onFocus);
+        document.addEventListener("visibilitychange", onVisibilityChange);
+
+        return () => {
+            stopped = true;
+            window.removeEventListener("focus", onFocus);
+            document.removeEventListener(
+                "visibilitychange",
+                onVisibilityChange
+            );
+        };
+    }, [token, refetchMineThrottled]);
 
     // keep saveTimerRef + isSavingRef (used by autosave)
     const saveTimerRef = useRef(null);
@@ -180,7 +263,6 @@ function EditCard() {
             const code = err?.response?.data?.code;
             if (status === 410 && code === "TRIAL_DELETED") {
                 alert("תקופת הניסיון הסתיימה והכרטיס נמחק. נוצר כרטיס חדש.");
-                setTrialLocked(false);
                 setCard(emptyCard);
                 initializedRef.current = false;
                 lastSavedRef.current = "";
@@ -197,7 +279,14 @@ function EditCard() {
                 err?.response?.status === 403 &&
                 err?.response?.data?.code === "TRIAL_EXPIRED"
             ) {
-                setTrialLocked(true);
+                setCard((prev) => ({
+                    ...(prev || emptyCard),
+                    entitlements: {
+                        ...(prev?.entitlements || {}),
+                        canEdit: false,
+                        lockedReason: "TRIAL_EXPIRED",
+                    },
+                }));
                 return;
             }
             if (err?.response?.status === 401) {
@@ -219,7 +308,6 @@ function EditCard() {
         try {
             await deleteCard(card._id);
             // Reset state and re-init. Do not redirect to login (anonymous delete).
-            setTrialLocked(false);
             setCard(emptyCard);
             initializedRef.current = false;
             lastSavedRef.current = "";
@@ -236,7 +324,6 @@ function EditCard() {
 
             if (status === 404) {
                 // Treat as already deleted.
-                setTrialLocked(false);
                 setCard(emptyCard);
                 initializedRef.current = false;
                 lastSavedRef.current = "";
@@ -295,6 +382,12 @@ function EditCard() {
         return next;
     }
 
+    function isPlainObject(value) {
+        return (
+            value !== null && typeof value === "object" && !Array.isArray(value)
+        );
+    }
+
     function mergeSection(prev, section, patch) {
         return {
             ...prev,
@@ -319,8 +412,8 @@ function EditCard() {
     }
 
     const flushPendingAutosave = useCallback(async () => {
-        // avoid saving when trial locked/expired
-        if (trialLocked) return;
+        // avoid saving when server says editing is locked
+        if (cardRef.current?.entitlements?.canEdit === false) return;
 
         const cardId = cardRef.current?._id;
         if (!cardId) {
@@ -354,7 +447,6 @@ function EditCard() {
 
             if (status === 410 && code === "TRIAL_DELETED") {
                 alert("תקופת הניסיון הסתיימה והכרטיס נמחק. נוצר כרטיס חדש.");
-                setTrialLocked(false);
                 setCard(emptyCard);
 
                 pendingPatchRef.current = {};
@@ -365,7 +457,14 @@ function EditCard() {
             }
 
             if (status === 403 && code === "TRIAL_EXPIRED") {
-                setTrialLocked(true); // disables edits + shows banner (existing logic)
+                setCard((prev) => ({
+                    ...(prev || emptyCard),
+                    entitlements: {
+                        ...(prev?.entitlements || {}),
+                        canEdit: false,
+                        lockedReason: "TRIAL_EXPIRED",
+                    },
+                }));
                 return;
             }
 
@@ -390,7 +489,7 @@ function EditCard() {
                 }, 0);
             }
         }
-    }, [emptyCard, initCard, trialLocked]);
+    }, [emptyCard, initCard]);
 
     // Optimistic UI + debounced section PATCH autosave
     const onFieldChange = useCallback(
@@ -400,45 +499,42 @@ function EditCard() {
             const key = String(sectionOrPath || "");
             if (!key) return;
 
-            // preferred: onFieldChange("business", { name: "..." })
-            const isSectionMerge =
-                !key.includes(".") &&
-                patchOrValue &&
-                typeof patchOrValue === "object" &&
-                !Array.isArray(patchOrValue);
-
-            if (isSectionMerge) {
-                setCard((prev) =>
-                    prev ? mergeSection(prev, key, patchOrValue) : prev
-                );
-
-                pendingPatchRef.current = {
-                    ...(pendingPatchRef.current || {}),
-                    [key]: {
-                        ...(pendingPatchRef.current?.[key] || {}),
-                        ...(patchOrValue || {}),
-                    },
-                };
-            } else {
-                // fallback: onFieldChange("business.name", "ACME")
+            // 1) Dot-path keys: set nested value and always record it in pendingPatch.
+            if (key.includes(".")) {
                 setCard((prev) =>
                     prev ? setIn(prev, key, patchOrValue) : prev
                 );
+                pendingPatchRef.current = setIn(
+                    pendingPatchRef.current || {},
+                    key,
+                    patchOrValue
+                );
+            } else {
+                // 2) Top-level keys
+                // (A) Plain objects are merged (business/contact/content/design/etc.)
+                if (isPlainObject(patchOrValue)) {
+                    setCard((prev) =>
+                        prev ? mergeSection(prev, key, patchOrValue) : prev
+                    );
 
-                const parts = key.split(".");
-                const top = parts[0];
-                const rest = parts.slice(1);
-                if (!top || rest.length === 0) return;
+                    pendingPatchRef.current = {
+                        ...(pendingPatchRef.current || {}),
+                        [key]: {
+                            ...(pendingPatchRef.current?.[key] || {}),
+                            ...(patchOrValue || {}),
+                        },
+                    };
+                } else {
+                    // (B) Arrays and (C) primitives/null are replaced.
+                    setCard((prev) =>
+                        prev ? { ...(prev || {}), [key]: patchOrValue } : prev
+                    );
 
-                const nested = buildNestedPatch(rest, patchOrValue);
-
-                pendingPatchRef.current = {
-                    ...(pendingPatchRef.current || {}),
-                    [top]: {
-                        ...(pendingPatchRef.current?.[top] || {}),
-                        ...(nested || {}),
-                    },
-                };
+                    pendingPatchRef.current = {
+                        ...(pendingPatchRef.current || {}),
+                        [key]: patchOrValue,
+                    };
+                }
             }
 
             if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
@@ -518,11 +614,11 @@ function EditCard() {
                             style={{ fontWeight: 700, marginBottom: 6 }}
                             dir="rtl"
                         >
-                            {token && card?.status === "published" && card?.user
+                            {token && card?.status === "published"
                                 ? "קישור ציבורי"
                                 : "קישור עתידי"}
                         </div>
-                        {token && card?.status === "published" && card?.user ? (
+                        {token && card?.status === "published" ? (
                             <a
                                 href={`/card/${card.slug}`}
                                 target="_blank"
@@ -547,6 +643,10 @@ function EditCard() {
                         onDeleteCard={handleDelete}
                         onPublish={handlePublish}
                         onUnpublish={handleUnpublish}
+                        canShowAnalyticsTab={
+                            Boolean(token) &&
+                            Boolean(card?.entitlements?.canViewAnalytics)
+                        }
                         // onUpgrade / onSelectTemplate intentionally omitted for now
                         // previewHeader / previewFooter intentionally omitted for now
                     />

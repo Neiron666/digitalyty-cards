@@ -79,3 +79,41 @@ Expected:
     -   `gallery[]` object entries
     -   `uploads[]`
     -   `design.*Path` fields
+
+## 6) Gallery removal cleanup (server-side reconciliation)
+
+This validates that removing an image from the gallery in the UI also deletes the
+underlying Supabase object, without any new endpoints.
+
+### A) Object format `{ url, path }`
+
+1. Upload 3 gallery images.
+2. Verify in Mongo the card has:
+    - `gallery[]` with 3 objects `{ url, path, createdAt }`
+    - `uploads[]` contains 3 records with `kind: 'gallery'` and matching `path`
+3. Remove 1 image in the UI and save the card (PUT/PATCH to `/api/cards/:id` including `gallery`).
+
+Expected:
+
+-   The Supabase object at the removed item’s `path` is deleted.
+-   `uploads[]` is pruned (no entry with that deleted `path`).
+-   `gallery[]` matches what’s left.
+
+### B) Legacy string format (no `path`)
+
+1. Manually set a card’s `gallery` to an array of string URLs (and do NOT add corresponding `uploads` entries).
+2. Remove the URL in the UI and save.
+
+Expected:
+
+-   No Supabase deletion attempt is made (there is no safe `path`).
+-   Mongo updates cleanly.
+
+### C) Patch without `gallery`
+
+1. Update some other field on the card (e.g., `business.name`) and save.
+
+Expected:
+
+-   Gallery reconciliation does not run.
+-   No Supabase delete call is performed.

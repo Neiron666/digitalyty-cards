@@ -1,11 +1,11 @@
 import { useState } from "react";
 import { createLead } from "../../../services/leads.service";
-import { hasAccess } from "../../../utils/planAccess";
 import Paywall from "../../common/Paywall";
 import formStyles from "../../ui/Form.module.css";
+import { trackClick } from "../../../services/analytics.client";
 
-export default function LeadForm({ cardId, cardPlan, onUpgrade }) {
-    if (!hasAccess(cardPlan, "leadForm")) {
+export default function LeadForm({ cardId, slug, entitlements, onUpgrade }) {
+    if (!entitlements?.canUseLeads) {
         return (
             <Paywall
                 text="טופס יצירת קשר זמין למנויים בלבד"
@@ -29,6 +29,8 @@ export default function LeadForm({ cardId, cardPlan, onUpgrade }) {
     async function handleSubmit(e) {
         e.preventDefault();
         setStatus("loading");
+
+        trackClick(slug, "lead");
 
         try {
             await createLead({ cardId, ...form });

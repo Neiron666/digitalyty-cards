@@ -18,6 +18,23 @@ const UserSchema = new mongoose.Schema(
             default: "free",
         },
 
+        // Admin-only feature tier override (does NOT affect billing/payment).
+        // Acts as a default for the user's card(s), but card.adminTier wins.
+        adminTier: {
+            type: String,
+            enum: ["free", "basic", "premium"],
+            default: null,
+            index: true,
+        },
+        adminTierUntil: { type: Date, default: null },
+        adminTierByAdmin: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "User",
+            default: null,
+        },
+        adminTierReason: { type: String, default: null },
+        adminTierCreatedAt: { type: Date, default: null },
+
         cardId: {
             type: mongoose.Schema.Types.ObjectId,
             ref: "Card",

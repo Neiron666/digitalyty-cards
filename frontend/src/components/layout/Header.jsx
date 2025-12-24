@@ -7,7 +7,7 @@ import styles from "./Header.module.css";
 export default function Header() {
     const [mobileOpen, setMobileOpen] = useState(false);
     const navigate = useNavigate();
-    const { token, logout } = useAuth();
+    const { token, user, logout } = useAuth();
     const isAuth = Boolean(token);
 
     const navItems = useMemo(() => {
@@ -54,7 +54,7 @@ export default function Header() {
                             ? `${styles.burger} ${styles.burgerOpen}`
                             : styles.burger
                     }
-                    aria-label={mobileOpen ? "Close menu" : "Open menu"}
+                    aria-label={mobileOpen ? "סגירת תפריט" : "פתיחת תפריט"}
                     aria-expanded={mobileOpen}
                     aria-controls="mobile-nav"
                     onClick={() => setMobileOpen((v) => !v)}
@@ -100,23 +100,35 @@ export default function Header() {
                             </Button>
                         </>
                     ) : (
-                        <>
-                            <Button
-                                as={Link}
-                                to="/edit"
-                                variant="secondary"
-                                size="small"
-                            >
-                                הכרטיס שלי
-                            </Button>
-                            <Button
-                                variant="ghost"
-                                size="small"
-                                onClick={handleLogout}
-                            >
-                                יציאה
-                            </Button>
-                        </>
+                        <div className={styles.authBlock}>
+                            <div className={styles.authButtons}>
+                                <Button
+                                    as={Link}
+                                    to="/edit"
+                                    variant="secondary"
+                                    size="small"
+                                >
+                                    הכרטיס שלי
+                                </Button>
+
+                                <Button
+                                    variant="ghost"
+                                    size="small"
+                                    onClick={handleLogout}
+                                >
+                                    יציאה
+                                </Button>
+                            </div>
+
+                            {user?.email && (
+                                <span
+                                    className={styles.userEmail}
+                                    title={user.email}
+                                >
+                                    {user.email}
+                                </span>
+                            )}
+                        </div>
                     )}
                 </div>
             </div>
@@ -140,7 +152,7 @@ export default function Header() {
                     <button
                         type="button"
                         className={styles.drawerClose}
-                        aria-label="Close menu"
+                        aria-label="סגירת תפריט"
                         onClick={closeMobile}
                     >
                         ✕
@@ -185,6 +197,14 @@ export default function Header() {
                         </>
                     ) : (
                         <>
+                            {user?.email ? (
+                                <span
+                                    className={styles.userEmail}
+                                    title={user.email}
+                                >
+                                    {user.email}
+                                </span>
+                            ) : null}
                             <Button
                                 as={Link}
                                 to="/edit"

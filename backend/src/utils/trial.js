@@ -29,45 +29,158 @@ export function computeTrialDates(now = new Date()) {
     };
 }
 
-export function resolveBilling(card) {
-    const admin = resolveAdminOverride(card);
-    if (admin) {
-        return {
-            status: "active",
-            plan: admin.plan,
-            paidUntil: admin.until,
-        };
+function normalizePlan(value) {
+    if (value === "monthly" || value === "yearly" || value === "free") {
+        return value;
     }
+    return "free";
+}
 
-    const billing =
-        card?.billing && typeof card.billing === "object" ? card.billing : null;
-    if (billing) return billing;
-
-    // Backward compatibility: older docs used `plan` field only.
-    const plan = card?.plan || "free";
-    return {
-        status: plan === "monthly" || plan === "yearly" ? "active" : "free",
-        plan,
-        paidUntil: null,
-    };
+function getBillingObject(card) {
+    return card?.billing && typeof card.billing === "object"
+        ? card.billing
+        : null;
 }
 
 export function isPaid(card, now = new Date()) {
-    const billing = resolveBilling(card);
-    if (billing?.status !== "active") return false;
+    const billing = getBillingObject(card);
+    const status = billing?.status;
 
-    // If paidUntil exists, require it to be in the future.
-    if (billing?.paidUntil) {
-        return new Date(billing.paidUntil).getTime() > new Date(now).getTime();
+    // Safe rule: paidUntil is REQUIRED.
+    if (!(status === "active" || status === "paid")) return false;
+    if (!billing?.paidUntil) return false;
+
+    const untilMs = new Date(billing.paidUntil).getTime();
+    const nowMs = new Date(now).getTime();
+    if (!Number.isFinite(untilMs) || !Number.isFinite(nowMs)) return false;
+
+    return untilMs > nowMs;
+}
+
+export function isEntitled(card, now = new Date()) {
+    const nowMs = new Date(now).getTime();
+
+    const admin = resolveAdminOverride(card, now);
+    if (admin) return true;
+
+    if (isPaid(card, now)) return true;
+
+    // Trial grants access while active.
+    const endsAtMs = card?.trialEndsAt
+        ? new Date(card.trialEndsAt).getTime()
+        : null;
+    if (endsAtMs && Number.isFinite(endsAtMs) && endsAtMs > nowMs) return true;
+
+    // If trial not started yet (no dates), allow editing; trial will be started on first write.
+    const billing = getBillingObject(card);
+    const status = billing?.status;
+    const canStartTrial = !status || status === "free" || status === "trial";
+    if (!card?.trialEndsAt && !card?.trialDeleteAt && canStartTrial)
+        return true;
+
+    // Optional legacy compatibility: if old docs have only plan field.
+    const legacyPlan = normalizePlan(card?.plan);
+    if (legacyPlan === "monthly" || legacyPlan === "yearly") return true;
+
+    return false;
+}
+
+export function resolveBilling(card, now = new Date()) {
+    const nowMs = new Date(now).getTime();
+
+    // 1) adminOverride
+    const admin = resolveAdminOverride(card, now);
+    if (admin) {
+        return {
+            source: "adminOverride",
+            plan: normalizePlan(admin.plan),
+            until: admin.until ? new Date(admin.until).toISOString() : null,
+            isEntitled: true,
+            isPaid: false,
+        };
     }
 
-    // Backward compat: active without paidUntil treated as paid.
-    return true;
+    // 2) billing (real payment)
+    const billing = getBillingObject(card);
+    const billingStatus = billing?.status;
+    const paidUntilIso = billing?.paidUntil
+        ? new Date(billing.paidUntil).toISOString()
+        : null;
+    const paidUntilMs = paidUntilIso ? new Date(paidUntilIso).getTime() : null;
+    const paid =
+        (billing?.status === "active" || billing?.status === "paid") &&
+        Boolean(paidUntilMs) &&
+        paidUntilMs > nowMs;
+
+    const billingPlan = normalizePlan(billing?.plan || card?.plan || "free");
+    if (paid) {
+        return {
+            source: "billing",
+            plan: billingPlan,
+            until: paidUntilIso,
+            isEntitled: true,
+            isPaid: true,
+        };
+    }
+
+    // 3) trial
+    const trialEndsAtIso = card?.trialEndsAt
+        ? new Date(card.trialEndsAt).toISOString()
+        : null;
+    const trialEndsAtMs = trialEndsAtIso
+        ? new Date(trialEndsAtIso).getTime()
+        : null;
+    const trialActive = Boolean(trialEndsAtMs) && trialEndsAtMs > nowMs;
+
+    const canStartTrial =
+        !billingStatus || billingStatus === "free" || billingStatus === "trial";
+
+    if (
+        trialActive ||
+        (!card?.trialEndsAt && !card?.trialDeleteAt && canStartTrial)
+    ) {
+        return {
+            source: "trial",
+            plan: billingPlan,
+            until: trialEndsAtIso,
+            isEntitled: true,
+            isPaid: false,
+        };
+    }
+
+    // 4) legacy (migration fallback)
+    const legacyPlan = normalizePlan(card?.plan);
+    if (legacyPlan === "monthly" || legacyPlan === "yearly") {
+        return {
+            source: "legacy",
+            plan: legacyPlan,
+            until: null,
+            isEntitled: true,
+            isPaid: false,
+        };
+    }
+
+    // 5) none
+    return {
+        source: "none",
+        plan: "free",
+        until: null,
+        isEntitled: false,
+        isPaid: false,
+    };
 }
 
 export function ensureTrialStarted(card, now = new Date()) {
     if (!card) return false;
-    if (isPaid(card, now)) return false;
+
+    // If already paid/adminOverride, don't start trial.
+    const resolved = resolveBilling(card, now);
+    if (
+        resolved?.source === "adminOverride" ||
+        resolved?.source === "billing"
+    ) {
+        return false;
+    }
 
     if (card.trialStartedAt && card.trialEndsAt && card.trialDeleteAt) {
         // Ensure billing status is at least trial/free.
@@ -97,19 +210,18 @@ export function ensureTrialStarted(card, now = new Date()) {
 
 export function assertNotLocked(card, now = new Date()) {
     if (!card) throw new HttpError(404, "Card not found", "NOT_FOUND");
-    if (isPaid(card, now)) return;
+    if (isEntitled(card, now)) return;
 
     const endsAt = card.trialEndsAt
         ? new Date(card.trialEndsAt).getTime()
         : null;
-    if (endsAt && new Date(now).getTime() > endsAt) {
+    if (endsAt && new Date(now).getTime() >= endsAt) {
         throw new HttpError(403, "Trial expired", "TRIAL_EXPIRED");
     }
 }
 
 export function isTrialDeleteDue(card, now = new Date()) {
     if (!card) return false;
-    if (isPaid(card, now)) return false;
 
     const deleteAt = card.trialDeleteAt
         ? new Date(card.trialDeleteAt).getTime()
@@ -121,7 +233,6 @@ export function isTrialDeleteDue(card, now = new Date()) {
 
 export function isTrialExpired(card, now = new Date()) {
     if (!card) return false;
-    if (isPaid(card, now)) return false;
 
     const endsAt = card.trialEndsAt
         ? new Date(card.trialEndsAt).getTime()

@@ -3,6 +3,19 @@
     grid-template-columns: 1fr;
     gap: 16px;
 }
+.legend {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 8px;
+}
+
+.legend p {
+    margin: 0;
+    font-size: 14px;
+    opacity: 0.85;
+    line-height: 1.5;
+}
 
 @media (min-width: 960px) {
     .grid {
@@ -11,6 +24,8 @@
 }
 
 .card {
+    display: flex;
+    flex-direction: column;
     border: 1px solid var(--border);
     border-radius: var(--radius-md);
     padding: 16px;
@@ -24,7 +39,7 @@
 
 .table th,
 .table td {
-    text-align: left;
+    text-align: start;
     padding: 10px 8px;
     border-bottom: 1px solid var(--border);
     font-size: 14px;
@@ -32,7 +47,7 @@
 
 .rowBtn {
     width: 100%;
-    text-align: left;
+    text-align: start;
     background: transparent;
     border: none;
     padding: 0;
@@ -41,14 +56,26 @@
     font: inherit;
 }
 
+.ltr {
+    direction: ltr;
+    text-align: left;
+}
+
 .muted {
     opacity: 0.75;
     font-size: 14px;
 }
 
 .actions {
-    display: grid;
+    display: flex;
+    flex-direction: column;
     gap: 12px;
+}
+
+.subTitle {
+    font-size: 14px;
+    font-weight: 800;
+    color: var(--text-main);
 }
 
 .actionRow {
@@ -60,6 +87,38 @@
     display: grid;
     gap: 8px;
     grid-template-columns: 1fr;
+}
+
+.selectField {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    font-size: 0.95rem;
+    color: var(--text-main);
+}
+
+.selectLabel {
+    font-weight: 700;
+    display: inline-flex;
+    gap: 4px;
+    align-items: center;
+}
+
+.select {
+    padding: 12px;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border);
+    background: var(--bg-card);
+    color: var(--text-main);
+    font-size: 16px;
+    font-family: inherit;
+}
+
+.select:focus,
+.select:focus-visible {
+    outline: none;
+    border-color: var(--gold);
+    box-shadow: 0 0 0 2px var(--gold-fade);
 }
 
 @media (min-width: 520px) {

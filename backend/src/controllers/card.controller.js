@@ -14,10 +14,11 @@ import {
     assertNotLocked,
     isTrialDeleteDue,
     isTrialExpired,
-    isPaid,
+    isEntitled,
 } from "../utils/trial.js";
 import { HttpError } from "../utils/httpError.js";
 import { claimAnonymousCardForUser } from "../services/claimCard.service.js";
+import { toCardDTO } from "../utils/cardDTO.js";
 
 function getBusinessName(data) {
     return (
@@ -174,6 +175,53 @@ function stripServerOnlyFields(patch) {
     delete patch.trialDeleteAt;
     delete patch.uploads;
     delete patch.slug;
+    delete patch.adminOverride;
+
+    // Admin-only feature tier override (must never be set by user endpoints).
+    delete patch.adminTier;
+    delete patch.adminTierUntil;
+    delete patch.adminTierByAdmin;
+    delete patch.adminTierReason;
+    delete patch.adminTierCreatedAt;
+
+    // Strip dot-path variants too (legacy clients should be unaffected).
+    for (const k of Object.keys(patch)) {
+        if (typeof k !== "string" || !k.includes(".")) continue;
+        if (
+            k === "billing" ||
+            k.startsWith("billing.") ||
+            k === "adminOverride" ||
+            k.startsWith("adminOverride.") ||
+            k === "trialStartedAt" ||
+            k.startsWith("trialStartedAt.") ||
+            k === "trialEndsAt" ||
+            k.startsWith("trialEndsAt.") ||
+            k === "trialDeleteAt" ||
+            k.startsWith("trialDeleteAt.") ||
+            k === "user" ||
+            k.startsWith("user.") ||
+            k === "anonymousId" ||
+            k.startsWith("anonymousId.") ||
+            k === "uploads" ||
+            k.startsWith("uploads.") ||
+            k === "slug" ||
+            k.startsWith("slug.") ||
+            k === "plan" ||
+            k.startsWith("plan.") ||
+            k === "adminTier" ||
+            k.startsWith("adminTier.") ||
+            k === "adminTierUntil" ||
+            k.startsWith("adminTierUntil.") ||
+            k === "adminTierByAdmin" ||
+            k.startsWith("adminTierByAdmin.") ||
+            k === "adminTierReason" ||
+            k.startsWith("adminTierReason.") ||
+            k === "adminTierCreatedAt" ||
+            k.startsWith("adminTierCreatedAt.")
+        ) {
+            delete patch[k];
+        }
+    }
 
     if (patch.design && typeof patch.design === "object") {
         delete patch.design.backgroundImagePath;
@@ -183,23 +231,63 @@ function stripServerOnlyFields(patch) {
     }
 }
 
+function sanitizeWritablePatch(raw) {
+    if (!raw || typeof raw !== "object") return {};
+
+    // IMPORTANT: the frontend currently sends the full card object; we pick only what is writable.
+    // Internal server logic may still add fields like `slug` later in the controller.
+    const allowedTopLevel = new Set([
+        "status",
+        "business",
+        "contact",
+        "content",
+        "gallery",
+        "reviews",
+        "design",
+        "seo",
+        "flags",
+    ]);
+
+    const patch = {};
+    for (const [key, value] of Object.entries(raw)) {
+        if (!allowedTopLevel.has(key)) continue;
+        patch[key] = value;
+    }
+
+    // Strip any server-only fields if they were included inside the payload.
+    stripServerOnlyFields(patch);
+
+    // Design upload path fields are server-controlled.
+    if (patch.design && typeof patch.design === "object") {
+        delete patch.design.backgroundImagePath;
+        delete patch.design.coverImagePath;
+        delete patch.design.avatarImagePath;
+        delete patch.design.logoPath;
+    }
+
+    return patch;
+}
+
 export async function getMyCard(req, res) {
     const owner = resolveOwnerContext(req);
     if (!owner) return res.status(401).json({ message: "Unauthorized" });
 
+    const now = new Date();
+
     if (owner.type === "user") {
-        const card = await Card.findOne({ user: owner.id });
-        return res.json(card || null);
+        const [card, userTier] = await Promise.all([
+            Card.findOne({ user: owner.id }),
+            User.findById(owner.id).select("adminTier adminTierUntil").lean(),
+        ]);
+        return res.json(card ? toCardDTO(card, now, { user: userTier }) : null);
     }
 
     // Anonymous: one card per anonymousId + delete after trialEndsAt grace window
     const card = await Card.findOne({ anonymousId: owner.id });
     if (!card) return res.json(null);
 
-    const now = new Date();
-
-    // If delete date reached and still unpaid -> delete card + media.
-    if (isTrialDeleteDue(card, now)) {
+    // If delete date reached and still not entitled -> delete card + media.
+    if (isTrialDeleteDue(card, now) && !isEntitled(card, now)) {
         try {
             const rawPaths = collectSupabasePathsFromCard(card);
             const paths = normalizeSupabasePaths(rawPaths);
@@ -224,13 +312,15 @@ export async function getMyCard(req, res) {
         });
     }
 
-    return res.json(card);
+    return res.json(toCardDTO(card, now));
 }
 
 export async function createCard(req, res) {
     const data = req.body || {};
     const owner = resolveOwnerContext(req);
     if (!owner) return res.status(401).json({ message: "Unauthorized" });
+
+    const now = new Date();
 
     // Client must not set billing or server-only flags.
     if (data && typeof data === "object") {
@@ -240,6 +330,47 @@ export async function createCard(req, res) {
         delete data.trialEndsAt;
         delete data.trialDeleteAt;
         delete data.uploads;
+        delete data.adminOverride;
+
+        // Admin-only feature tier override must never be set by user endpoints.
+        delete data.adminTier;
+        delete data.adminTierUntil;
+        delete data.adminTierByAdmin;
+        delete data.adminTierReason;
+        delete data.adminTierCreatedAt;
+
+        // Also strip dot-path variants (defense in depth).
+        for (const k of Object.keys(data)) {
+            if (typeof k !== "string" || !k.includes(".")) continue;
+            if (
+                k === "billing" ||
+                k.startsWith("billing.") ||
+                k === "adminOverride" ||
+                k.startsWith("adminOverride.") ||
+                k === "trialStartedAt" ||
+                k.startsWith("trialStartedAt.") ||
+                k === "trialEndsAt" ||
+                k.startsWith("trialEndsAt.") ||
+                k === "trialDeleteAt" ||
+                k.startsWith("trialDeleteAt.") ||
+                k === "uploads" ||
+                k.startsWith("uploads.") ||
+                k === "plan" ||
+                k.startsWith("plan.") ||
+                k === "adminTier" ||
+                k.startsWith("adminTier.") ||
+                k === "adminTierUntil" ||
+                k.startsWith("adminTierUntil.") ||
+                k === "adminTierByAdmin" ||
+                k.startsWith("adminTierByAdmin.") ||
+                k === "adminTierReason" ||
+                k.startsWith("adminTierReason.") ||
+                k === "adminTierCreatedAt" ||
+                k.startsWith("adminTierCreatedAt.")
+            ) {
+                delete data[k];
+            }
+        }
     }
 
     // Authenticated users: keep existing behavior (User.cardId linking).
@@ -252,7 +383,7 @@ export async function createCard(req, res) {
         if (user.cardId) {
             const existing = await Card.findById(user.cardId);
             if (existing) {
-                return res.status(200).json(existing);
+                return res.status(200).json(toCardDTO(existing, now, { user }));
             }
 
             user.cardId = undefined;
@@ -279,7 +410,7 @@ export async function createCard(req, res) {
         const userIsPaid =
             (user.subscription?.status === "active" &&
                 user.subscription?.expiresAt &&
-                new Date(user.subscription.expiresAt) > new Date()) ||
+                new Date(user.subscription.expiresAt) > now) ||
             user.plan === "monthly" ||
             user.plan === "yearly";
 
@@ -311,13 +442,13 @@ export async function createCard(req, res) {
         user.cardId = card._id;
         await user.save();
 
-        return res.status(201).json(card);
+        return res.status(201).json(toCardDTO(card, now, { user }));
     }
 
     // Anonymous users: enforce ONLY ONE card per browser (anonymousId).
     const existingAnon = await Card.findOne({ anonymousId: owner.id });
     if (existingAnon) {
-        return res.status(200).json(existingAnon);
+        return res.status(200).json(toCardDTO(existingAnon, now));
     }
 
     const businessName = getBusinessName(data);
@@ -354,7 +485,7 @@ export async function createCard(req, res) {
             seo,
         });
 
-        return res.status(201).json(card);
+        return res.status(201).json(toCardDTO(card, now));
     } catch (err) {
         // Handle duplicate key (E11000) gracefully (most important: anonymousId uniqueness).
         if (err && err.code === 11000) {
@@ -364,7 +495,7 @@ export async function createCard(req, res) {
 
             if (isAnonDup) {
                 const card = await Card.findOne({ anonymousId: owner.id });
-                if (card) return res.status(200).json(card);
+                if (card) return res.status(200).json(toCardDTO(card, now));
             }
         }
         throw err;
@@ -391,8 +522,8 @@ export async function updateCard(req, res) {
 
     const now = new Date();
 
-    // If delete date reached and still unpaid -> delete card + media.
-    if (isTrialDeleteDue(existingCard, now)) {
+    // If delete date reached and still not entitled -> delete card + media.
+    if (isTrialDeleteDue(existingCard, now) && !isEntitled(existingCard, now)) {
         try {
             const rawPaths = collectSupabasePathsFromCard(existingCard);
             const paths = normalizeSupabasePaths(rawPaths);
@@ -418,8 +549,7 @@ export async function updateCard(req, res) {
         throw err;
     }
 
-    const patch = { ...req.body };
-    stripServerOnlyFields(patch);
+    const patch = sanitizeWritablePatch(req.body);
 
     // Prevent publishing without at least a business name AND a chosen template
     if (patch.status === "published") {
@@ -496,13 +626,15 @@ export async function updateCard(req, res) {
         }
     }
 
-    // Trial starts on first successful write (update counts) unless already paid.
-    if (!isPaid(existingCard, now) && !existingCard.trialStartedAt) {
-        ensureTrialStarted(existingCard, now);
-        patch.trialStartedAt = existingCard.trialStartedAt;
-        patch.trialEndsAt = existingCard.trialEndsAt;
-        patch.trialDeleteAt = existingCard.trialDeleteAt;
-        patch.billing = existingCard.billing;
+    // Trial starts on first successful write (update counts) unless paid/adminOverride.
+    if (!existingCard.trialStartedAt) {
+        const started = ensureTrialStarted(existingCard, now);
+        if (started) {
+            patch.trialStartedAt = existingCard.trialStartedAt;
+            patch.trialEndsAt = existingCard.trialEndsAt;
+            patch.trialDeleteAt = existingCard.trialDeleteAt;
+            patch.billing = existingCard.billing;
+        }
     }
 
     // Ensure SEO always exists, without wiping advanced SEO fields.
@@ -536,6 +668,100 @@ export async function updateCard(req, res) {
             computedSeo.description,
     };
 
+    // Gallery delete reconciliation: if gallery was provided, delete orphaned gallery uploads
+    // from Supabase (delete-first) and prune corresponding uploads entries.
+    if (Object.prototype.hasOwnProperty.call(patch, "gallery")) {
+        const incomingGallery = patch.gallery;
+
+        if (incomingGallery !== null && !Array.isArray(incomingGallery)) {
+            return res.status(400).json({
+                code: "INVALID_GALLERY",
+                message: "gallery must be an array",
+            });
+        }
+
+        const nextGallery = Array.isArray(incomingGallery)
+            ? incomingGallery
+            : [];
+
+        const nextPaths = new Set();
+        const nextUrls = new Set();
+
+        for (const item of nextGallery) {
+            if (typeof item === "string") {
+                const url = item.trim();
+                if (url) nextUrls.add(url);
+                continue;
+            }
+
+            if (!item || typeof item !== "object") continue;
+
+            const url = typeof item.url === "string" ? item.url.trim() : "";
+            const path = typeof item.path === "string" ? item.path.trim() : "";
+
+            if (url) nextUrls.add(url);
+            if (path) nextPaths.add(path);
+        }
+
+        const existingUploads = Array.isArray(existingCard.uploads)
+            ? existingCard.uploads
+            : [];
+
+        const existingGalleryUploads = existingUploads.filter((u) => {
+            if (!u || typeof u !== "object") return false;
+            if (u.kind !== "gallery") return false;
+            return typeof u.path === "string" && Boolean(u.path.trim());
+        });
+
+        const orphanUploads = existingGalleryUploads.filter((u) => {
+            const path = u.path.trim();
+            const url = typeof u.url === "string" ? u.url.trim() : "";
+            return !nextPaths.has(path) && (!url || !nextUrls.has(url));
+        });
+
+        const orphanPaths = orphanUploads
+            .map((u) => (typeof u.path === "string" ? u.path.trim() : ""))
+            .filter(Boolean);
+
+        // Safety guard: delete only our own storage namespace.
+        const safePaths = orphanPaths.filter((p) => p.startsWith("cards/"));
+        const normalizedSafePaths = normalizeSupabasePaths(safePaths);
+
+        if (orphanUploads.length) {
+            console.debug("[gallery-reconcile]", {
+                cardId: String(existingCard._id),
+                orphan: orphanUploads.length,
+                delete: normalizedSafePaths.length,
+            });
+        }
+
+        if (normalizedSafePaths.length) {
+            try {
+                await removeObjects(normalizedSafePaths);
+            } catch (err) {
+                console.error("[gallery-reconcile] supabase delete failed", {
+                    cardId: String(existingCard._id),
+                    count: normalizedSafePaths.length,
+                    error: err?.message || err,
+                });
+                return res.status(502).json({
+                    code: "GALLERY_DELETE_FAILED",
+                    message: "Failed to delete one or more gallery files",
+                });
+            }
+
+            const deletedPathSet = new Set(normalizedSafePaths);
+            const nextUploads = existingUploads.filter((u) => {
+                if (!u || typeof u !== "object") return true;
+                if (u.kind !== "gallery") return true;
+                if (typeof u.path !== "string") return true;
+                return !deletedPathSet.has(u.path.trim());
+            });
+
+            patch.uploads = nextUploads;
+        }
+    }
+
     const $set = buildSetUpdateFromPatch(patch);
 
     const card = await Card.findByIdAndUpdate(
@@ -544,7 +770,14 @@ export async function updateCard(req, res) {
         { new: true, runValidators: true }
     );
 
-    res.json(card);
+    const userTier =
+        owner.type === "user"
+            ? await User.findById(owner.id)
+                  .select("adminTier adminTierUntil")
+                  .lean()
+            : null;
+
+    res.json(toCardDTO(card, now, { user: userTier }));
 }
 
 export async function getCardBySlug(req, res) {
@@ -567,14 +800,17 @@ export async function getCardBySlug(req, res) {
     const now = new Date();
 
     // Public access rule: expired & unpaid published cards are blocked.
-    if (isTrialExpired(card, now) && !isPaid(card, now)) {
+    if (isTrialExpired(card, now) && !isEntitled(card, now)) {
         return res.status(410).json({
             code: "TRIAL_EXPIRED_PUBLIC",
             message: "Trial expired",
         });
     }
 
-    return res.json(card);
+    const userTier = await User.findById(String(card.user))
+        .select("adminTier adminTierUntil")
+        .lean();
+    return res.json(toCardDTO(card, now, { user: userTier }));
 }
 
 function normalizeSlugInput(value) {

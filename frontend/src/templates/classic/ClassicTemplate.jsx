@@ -60,7 +60,11 @@ export default function ClassicTemplate({ card, onUpgrade, mode }) {
                         <div className={styles.avatar}>
                             <img
                                 src={avatar}
-                                alt={name ? `${name} – profile photo` : "Profile photo"}
+                                alt={
+                                    name
+                                        ? `${name} – profile photo`
+                                        : "Profile photo"
+                                }
                             />
                         </div>
                     )}
@@ -88,7 +92,8 @@ export default function ClassicTemplate({ card, onUpgrade, mode }) {
 
                 <LeadForm
                     cardId={card._id}
-                    cardPlan={card.plan}
+                    slug={card.slug}
+                    entitlements={card?.entitlements}
                     onUpgrade={onUpgrade}
                 />
             </CardBody>

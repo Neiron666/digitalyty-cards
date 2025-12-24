@@ -4,7 +4,7 @@ import {
     collectSupabasePathsFromCard,
     normalizeSupabasePaths,
 } from "../utils/supabasePaths.js";
-import { isPaid } from "../utils/trial.js";
+import { isEntitled } from "../utils/trial.js";
 
 let running = false;
 
@@ -28,7 +28,7 @@ async function cleanupOnce() {
         let removedObjectCount = 0;
 
         for (const card of candidates) {
-            if (isPaid(card, now)) {
+            if (isEntitled(card, now)) {
                 skippedPaid += 1;
                 continue;
             }
