@@ -94,3 +94,191 @@
     border-radius: 999px;
     background: currentColor;
 }
+
+.dotViews {
+    opacity: 0.85;
+}
+
+.dotClicks {
+    opacity: 0.35;
+}
+
+.mutedText {
+    opacity: 0.85;
+}
+
+.loadingText {
+    opacity: 0.8;
+}
+
+.errorText {
+    color: var(--danger, inherit);
+}
+
+.headerRow {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+.headerTitle {
+    font-weight: 800;
+}
+
+.section {
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    background: var(--bg-card);
+    padding: 10px 12px;
+}
+
+.divider {
+    height: 1px;
+    background: var(--border);
+    opacity: 0.8;
+}
+
+.sectionHeader {
+    display: grid;
+    gap: 4px;
+    margin-bottom: 10px;
+}
+
+.sectionTitleRow {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.sectionTitle {
+    font-weight: 900;
+}
+
+.sectionTitlePlain {
+    font-weight: 800;
+    margin-bottom: 8px;
+}
+
+.sectionSubtitle {
+    opacity: 0.8;
+    font-size: 0.85rem;
+}
+
+.tooltip,
+.inlineTooltip {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    font-size: 0.75rem;
+    font-weight: 800;
+    cursor: help;
+    user-select: none;
+}
+
+.tooltipText {
+    position: absolute;
+    inset: auto auto calc(100% + 8px) 0;
+    min-width: 220px;
+    max-width: 280px;
+    padding: 8px 10px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    background: var(--bg);
+    color: var(--text);
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.12);
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(2px);
+    transition: opacity 120ms ease, transform 120ms ease;
+    z-index: 10;
+}
+
+.tooltip:hover .tooltipText,
+.tooltip:focus .tooltipText,
+.tooltip:focus-visible .tooltipText,
+.inlineTooltip:hover .tooltipText,
+.inlineTooltip:focus .tooltipText,
+.inlineTooltip:focus-visible .tooltipText {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.toggleRow {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 10px;
+    font-size: 0.9rem;
+    opacity: 0.95;
+}
+
+.rowMuted {
+    opacity: 0.6;
+}
+
+.rowKey {
+    font-weight: 800;
+}
+
+.accordion {
+    display: grid;
+    gap: 8px;
+}
+
+.accordionItem {
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+}
+
+.accordionHeader {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 10px 12px;
+    background: var(--bg-card);
+    border: 0;
+    cursor: pointer;
+    text-align: left;
+}
+
+.accordionTitle {
+    font-weight: 900;
+}
+
+.badges {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.badge {
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 4px 8px;
+    font-size: 0.8rem;
+    opacity: 0.95;
+}
+
+.chevron {
+    opacity: 0.8;
+    font-size: 0.9rem;
+}
+
+.accordionContent {
+    padding: 10px 12px;
+    background: var(--bg);
+}
+
+.campaignRow td:first-child {
+    font-weight: 700;
+}

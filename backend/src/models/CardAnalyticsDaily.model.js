@@ -3,6 +3,7 @@ import mongoose from "mongoose";
 const { Schema } = mongoose;
 
 const MAX_BUCKET_KEYS = 25;
+const MAX_SOCIAL_CAMPAIGN_KEYS = 200;
 const MAX_UNIQUE_HASHES = 2500;
 
 const CardAnalyticsDailySchema = new Schema(
@@ -33,6 +34,18 @@ const CardAnalyticsDailySchema = new Schema(
         utmMediumCounts: { type: Map, of: Number, default: {} },
         referrerCounts: { type: Map, of: Number, default: {} },
 
+        // Canonical bounded buckets (safe allowlist only; no unbounded keys)
+        socialViewsBySource: { type: Map, of: Number, default: {} },
+        socialClicksBySource: { type: Map, of: Number, default: {} },
+
+        // Canonical source bucket + campaign attribution (bounded via global cap)
+        // Key format: <sourceBucket>__<campaignKey>
+        socialCampaignViews: { type: Map, of: Number, default: {} },
+        socialCampaignClicks: { type: Map, of: Number, default: {} },
+        // Global number of distinct composite keys created in this day doc.
+        // Used to prevent document explosion from spammy utm_campaign.
+        socialCampaignKeyCount: { type: Number, default: 0 },
+
         // Premium-only uniques (best-effort)
         uniqueVisitors: { type: Number, default: 0 },
         uniqueMode: { type: String, default: null },
@@ -52,6 +65,8 @@ CardAnalyticsDailySchema.index({ cardId: 1, day: 1 }, { unique: true });
 
 // Constants exported for controller caps.
 CardAnalyticsDailySchema.statics.MAX_BUCKET_KEYS = MAX_BUCKET_KEYS;
+CardAnalyticsDailySchema.statics.MAX_SOCIAL_CAMPAIGN_KEYS =
+    MAX_SOCIAL_CAMPAIGN_KEYS;
 CardAnalyticsDailySchema.statics.MAX_UNIQUE_HASHES = MAX_UNIQUE_HASHES;
 
 export default mongoose.model("CardAnalyticsDaily", CardAnalyticsDailySchema);

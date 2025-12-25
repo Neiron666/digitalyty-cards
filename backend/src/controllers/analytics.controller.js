@@ -4,6 +4,16 @@ import Card from "../models/Card.model.js";
 import User from "../models/User.model.js";
 import CardAnalyticsDaily from "../models/CardAnalyticsDaily.model.js";
 import { toCardDTO } from "../utils/cardDTO.js";
+import {
+    normalizeSocialSource,
+    SOCIAL_SOURCE_BUCKETS,
+} from "../utils/analyticsSource.util.js";
+import {
+    makeCompositeKey,
+    normalizeCampaignKey,
+    parseCompositeKey,
+    safeCompositeKey,
+} from "../utils/analyticsCampaign.util.js";
 
 const RATE_WINDOW_MS = 10 * 60 * 1000;
 const RATE_LIMIT = 120;
@@ -45,7 +55,8 @@ function safeKey(value, { maxLen = 80 } = {}) {
     const v = String(value || "").trim();
     if (!v) return "";
     // Keep conservative charset to avoid pathological keys.
-    const cleaned = v.replace(/[^a-zA-Z0-9_\-\.]/g, "_");
+    // IMPORTANT: do not allow '.' to avoid dotted-path injection via $inc updates.
+    const cleaned = v.replace(/[^a-zA-Z0-9_\-]/g, "_");
     return cleaned.slice(0, maxLen);
 }
 
@@ -223,6 +234,70 @@ function mapToObj(m) {
     return {};
 }
 
+async function bumpSocialCampaignAttribution({
+    cardId,
+    day,
+    mapField,
+    compositeKey,
+    sourceBucket,
+}) {
+    // Best-effort only; tracking must never fail.
+    try {
+        const safeKeyPath = safeCompositeKey(compositeKey);
+        if (!safeKeyPath) return;
+
+        const overflowKey = safeCompositeKey(
+            makeCompositeKey(sourceBucket, "other_campaign")
+        );
+        if (!overflowKey) return;
+
+        // Phase 1: if key exists in either map, just increment (no keyCount bump)
+        const existsFilter = {
+            cardId,
+            day,
+            $or: [
+                { [`socialCampaignViews.${safeKeyPath}`]: { $exists: true } },
+                { [`socialCampaignClicks.${safeKeyPath}`]: { $exists: true } },
+            ],
+        };
+
+        const incExisting = await CardAnalyticsDaily.updateOne(existsFilter, {
+            $inc: { [`${mapField}.${safeKeyPath}`]: 1 },
+        });
+
+        if (incExisting?.matchedCount) return;
+
+        // Phase 2: create new key only if still under the global cap.
+        const cap = CardAnalyticsDaily.MAX_SOCIAL_CAMPAIGN_KEYS;
+        const createRes = await CardAnalyticsDaily.updateOne(
+            {
+                cardId,
+                day,
+                $or: [
+                    { socialCampaignKeyCount: { $lt: cap } },
+                    { socialCampaignKeyCount: { $exists: false } },
+                ],
+            },
+            {
+                $inc: {
+                    [`${mapField}.${safeKeyPath}`]: 1,
+                    socialCampaignKeyCount: 1,
+                },
+            }
+        );
+
+        if (createRes?.matchedCount) return;
+
+        // Phase 3: overflow bucket (no keyCount bump)
+        await CardAnalyticsDaily.updateOne(
+            { cardId, day },
+            { $inc: { [`${mapField}.${overflowKey}`]: 1 } }
+        );
+    } catch {
+        // ignore
+    }
+}
+
 export async function trackAnalytics(req, res) {
     // Never help enumeration; always 204 for most failures.
     try {
@@ -254,15 +329,33 @@ export async function trackAnalytics(req, res) {
             req.body?.utm && typeof req.body.utm === "object"
                 ? req.body.utm
                 : {};
+
+        // Keep existing UTM/referrer keying behavior intact for legacy maps.
         const utmSource = safeKey(utm?.source);
         const utmCampaign = safeKey(utm?.campaign);
         const utmMedium = safeKey(utm?.medium);
         const ref = normalizeReferrer(req.body?.ref);
 
+        // Canonical inbound source bucket for bounded social metrics.
+        // Do NOT use safeKey() output here; normalize from raw inputs.
+        const sourceBucket = normalizeSocialSource({
+            utmSource: utm?.source,
+            utmMedium: utm?.medium,
+            utmCampaign: utm?.campaign,
+            referrer: req.body?.ref,
+        });
+
         const $inc = {};
+        const campaignKey = normalizeCampaignKey(utm?.campaign);
+        const compositeKey = campaignKey
+            ? makeCompositeKey(sourceBucket, campaignKey)
+            : null;
 
         if (event === "view") {
             $inc.views = 1;
+
+            // Bounded canonical bucket (fixed allowlist keys only)
+            $inc[`socialViewsBySource.${sourceBucket}`] = 1;
 
             // Caps: if map already too large, push into "other".
             if (utmSource) {
@@ -322,12 +415,16 @@ export async function trackAnalytics(req, res) {
         if (event === "click") {
             $inc.clicksTotal = 1;
             $inc[`clicksByAction.${action}`] = 1;
+
+            // Bounded canonical bucket (fixed allowlist keys only)
+            $inc[`socialClicksBySource.${sourceBucket}`] = 1;
         }
 
         const update = {
             $setOnInsert: {
                 cardId: card._id,
                 day,
+                socialCampaignKeyCount: 0,
             },
             $inc,
         };
@@ -335,6 +432,20 @@ export async function trackAnalytics(req, res) {
         await CardAnalyticsDaily.updateOne({ cardId: card._id, day }, update, {
             upsert: true,
         });
+
+        // Campaign attribution (best-effort): bounded, no reads.
+        if (compositeKey) {
+            await bumpSocialCampaignAttribution({
+                cardId: card._id,
+                day,
+                mapField:
+                    event === "click"
+                        ? "socialCampaignClicks"
+                        : "socialCampaignViews",
+                compositeKey,
+                sourceBucket,
+            });
+        }
 
         // Premium-only uniques (best effort): do NOT break tracking.
         try {
@@ -431,15 +542,39 @@ export async function trackAnalytics(req, res) {
     }
 }
 
-async function loadRangeDocs({ cardId, rangeDays }) {
+async function loadRangeDocs({
+    cardId,
+    rangeDays,
+    includeCampaignAttribution,
+}) {
     const days = dayKeysBack(rangeDays);
+    const selectFields = [
+        "cardId",
+        "day",
+        "views",
+        "clicksTotal",
+        "clicksByAction",
+        "utmSourceCounts",
+        "utmCampaignCounts",
+        "utmMediumCounts",
+        "referrerCounts",
+        "socialViewsBySource",
+        "socialClicksBySource",
+        "uniqueVisitors",
+        "uniqueCapReached",
+        "uniqueMode",
+    ];
+
+    if (includeCampaignAttribution) {
+        selectFields.push("socialCampaignViews");
+        selectFields.push("socialCampaignClicks");
+    }
+
     const docs = await CardAnalyticsDaily.find({
         cardId,
         day: { $in: days },
     })
-        .select(
-            "cardId day views clicksTotal clicksByAction utmSourceCounts utmCampaignCounts utmMediumCounts referrerCounts uniqueVisitors uniqueCapReached uniqueMode"
-        )
+        .select(selectFields.join(" "))
         .lean();
 
     const byDay = new Map();
@@ -500,6 +635,7 @@ export async function getSummary(req, res) {
     const { series: fullSeries, byDay } = await loadRangeDocs({
         cardId: card._id,
         rangeDays,
+        includeCampaignAttribution: false,
     });
 
     const views = fullSeries.reduce((s, x) => s + x.views, 0);
@@ -590,7 +726,11 @@ export async function getActions(req, res) {
     }
 
     const rangeDays = parseRange(req, { fallback: 30, allowed: [7, 30] });
-    const { docs } = await loadRangeDocs({ cardId: card._id, rangeDays });
+    const { docs } = await loadRangeDocs({
+        cardId: card._id,
+        rangeDays,
+        includeCampaignAttribution: false,
+    });
 
     const out = {};
     for (const doc of docs) {
@@ -618,26 +758,224 @@ export async function getSources(req, res) {
 
     if (level === "demo") {
         const demo = buildDemoPremiumPayload({ rangeDays: 30 });
-        return res.json({ isDemo: true, rangeDays: 30, sources: demo.sources });
+        // Provide premium-shaped socialSources for demo UI.
+        const socialSources = SOCIAL_SOURCE_BUCKETS.map((source) => {
+            const views = Number(demo?.sources?.[source]) || 0;
+            // Demo doesn't have per-source clicks; use a stable synthetic ratio.
+            const clicks = Math.round(views * 0.18);
+            return {
+                source,
+                views,
+                clicks,
+                conversion: views > 0 ? clicks / views : 0,
+            };
+        }).filter((x) => x.views > 0 || x.clicks > 0);
+
+        return res.json({
+            isDemo: true,
+            rangeDays: 30,
+            sources: demo.sources,
+            // Demo referrers are synthetic (demo-only), not inferred from campaigns.
+            referrers: {
+                direct: 220,
+                google: 180,
+                instagram: 90,
+                facebook: 60,
+                other: 40,
+            },
+            socialSources,
+            socialCampaignSources: SOCIAL_SOURCE_BUCKETS.map((source) => {
+                const views = Number(demo?.sources?.[source]) || 0;
+                const clicks = Math.round(views * 0.18);
+                const campaigns = demo?.campaigns?.top
+                    ? demo.campaigns.top.slice(0, 2).map((c, i) => {
+                          const cv = Math.round(
+                              (Number(c?.count) || 0) * (i === 0 ? 0.6 : 0.3)
+                          );
+                          const ck = Math.round(cv * 0.2);
+                          return {
+                              name: String(c?.key || "campaign").trim(),
+                              views: cv,
+                              clicks: ck,
+                              conversion: cv > 0 ? ck / cv : 0,
+                          };
+                      })
+                    : [];
+                return {
+                    source,
+                    views,
+                    clicks,
+                    conversion: views > 0 ? clicks / views : 0,
+                    campaigns,
+                };
+            }).filter((x) => x.views > 0 || x.clicks > 0),
+        });
     }
 
-    if (level !== "premium") {
+    let rangeDays = parseRange(req, { fallback: 30, allowed: [7, 30] });
+    if (level === "basic") {
+        rangeDays = 7;
+    }
+
+    if (level !== "premium" && level !== "basic") {
         return res.status(403).json({ message: "Not allowed" });
     }
 
-    const rangeDays = parseRange(req, { fallback: 30, allowed: [7, 30] });
-    const { docs } = await loadRangeDocs({ cardId: card._id, rangeDays });
+    const { docs, series } = await loadRangeDocs({
+        cardId: card._id,
+        rangeDays,
+        includeCampaignAttribution: level === "premium",
+    });
 
-    // MVP: sources derived from utm_source + referrerCounts (already bucketed in track)
-    const utmSources = sumMapField(docs, "utmSourceCounts");
+    const viewsTotal = series.reduce((s, x) => s + (Number(x?.views) || 0), 0);
+    const clicksTotal = series.reduce(
+        (s, x) => s + (Number(x?.clicksTotal) || 0),
+        0
+    );
+
+    const socialViews = sumMapField(docs, "socialViewsBySource");
+    const socialClicks = sumMapField(docs, "socialClicksBySource");
+
+    const socialSources = SOCIAL_SOURCE_BUCKETS.map((source) => {
+        const views = Number(socialViews?.[source]) || 0;
+        const clicks =
+            level === "premium" ? Number(socialClicks?.[source]) || 0 : null;
+        return {
+            source,
+            views,
+            clicks,
+            conversion:
+                level === "premium" && views > 0 && clicks !== null
+                    ? clicks / views
+                    : null,
+        };
+    })
+        .filter((x) => x.views > 0 || (x.clicks || 0) > 0)
+        .sort((a, b) => (b.views || 0) - (a.views || 0));
+
+    // Keep existing UTM/referrer breakdown premium-only (backward-compatible).
+    if (level === "premium") {
+        // MVP: sources derived from utm_source + referrerCounts (already bucketed in track)
+        const utmSources = sumMapField(docs, "utmSourceCounts");
+        const referrers = sumMapField(docs, "referrerCounts");
+
+        const campaignViews = sumMapField(docs, "socialCampaignViews");
+        const campaignClicks = sumMapField(docs, "socialCampaignClicks");
+
+        const bySource = new Map();
+        const ensure = (source) => {
+            if (!bySource.has(source)) {
+                bySource.set(source, new Map());
+            }
+            return bySource.get(source);
+        };
+
+        for (const [composite, count] of Object.entries(campaignViews)) {
+            const parsed = parseCompositeKey(composite);
+            if (!parsed) continue;
+            const campaigns = ensure(parsed.source);
+            const entry = campaigns.get(parsed.campaign) || {
+                views: 0,
+                clicks: 0,
+            };
+            entry.views += Number(count) || 0;
+            campaigns.set(parsed.campaign, entry);
+        }
+
+        for (const [composite, count] of Object.entries(campaignClicks)) {
+            const parsed = parseCompositeKey(composite);
+            if (!parsed) continue;
+            const campaigns = ensure(parsed.source);
+            const entry = campaigns.get(parsed.campaign) || {
+                views: 0,
+                clicks: 0,
+            };
+            entry.clicks += Number(count) || 0;
+            campaigns.set(parsed.campaign, entry);
+        }
+
+        const TOP_CAMPAIGNS_PER_SOURCE = 10;
+        const socialCampaignSources = SOCIAL_SOURCE_BUCKETS.map((source) => {
+            const views = Number(socialViews?.[source]) || 0;
+            const clicks = Number(socialClicks?.[source]) || 0;
+
+            const campaignsMap = bySource.get(source) || new Map();
+            const rows = Array.from(campaignsMap.entries())
+                .map(([name, v]) => ({
+                    name,
+                    views: Number(v?.views) || 0,
+                    clicks: Number(v?.clicks) || 0,
+                }))
+                .filter((x) => x.name && (x.views > 0 || x.clicks > 0));
+
+            rows.sort((a, b) => {
+                if (b.clicks !== a.clicks) return b.clicks - a.clicks;
+                return b.views - a.views;
+            });
+
+            const top = rows.slice(0, TOP_CAMPAIGNS_PER_SOURCE);
+            const rest = rows.slice(TOP_CAMPAIGNS_PER_SOURCE);
+
+            let otherViews = 0;
+            let otherClicks = 0;
+            for (const r of rest) {
+                otherViews += r.views;
+                otherClicks += r.clicks;
+            }
+
+            const campaigns = top
+                .map((r) => ({
+                    name: r.name,
+                    views: r.views,
+                    clicks: r.clicks,
+                    conversion: r.views > 0 ? r.clicks / r.views : 0,
+                }))
+                .concat(
+                    otherViews > 0 || otherClicks > 0
+                        ? [
+                              {
+                                  name: "other_campaign",
+                                  views: otherViews,
+                                  clicks: otherClicks,
+                                  conversion:
+                                      otherViews > 0
+                                          ? otherClicks / otherViews
+                                          : 0,
+                              },
+                          ]
+                        : []
+                );
+
+            return {
+                source,
+                views,
+                clicks,
+                conversion: views > 0 ? clicks / views : 0,
+                campaigns,
+            };
+        }).filter((x) => x.views > 0 || x.clicks > 0 || x.campaigns.length > 0);
+
+        return res.json({
+            rangeDays,
+            totals: { viewsTotal, clicksTotal },
+            socialSources,
+            socialCampaignSources,
+            utmSources,
+            referrers,
+            utmSourcesTop: pickTop(utmSources, 10),
+        });
+    }
+
+    // Basic: views-only, 7 days.
     const referrers = sumMapField(docs, "referrerCounts");
-
-    // Present combined (keep keys separate to avoid guessing).
     return res.json({
         rangeDays,
-        utmSources,
+        totals: { viewsTotal },
         referrers,
-        utmSourcesTop: pickTop(utmSources, 10),
+        socialSources: socialSources.map((x) => ({
+            source: x.source,
+            views: x.views,
+        })),
     });
 }
 
