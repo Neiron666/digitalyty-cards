@@ -246,11 +246,11 @@ export const TEMPLATES = [
             gallery: [
                 {
                     title: "פרויקט אורבני",
-                    url: "https://picsum.photos/seed/urban/900/1200",
+                    url: PREVIEW_PLACEHOLDER_PNG,
                 },
                 {
                     title: "סטודיו",
-                    url: "https://picsum.photos/seed/studio/900/1200",
+                    url: PREVIEW_PLACEHOLDER_PNG,
                 },
             ],
             contact: {
@@ -320,6 +320,60 @@ export const TEMPLATES = [
                 {
                     platform: "facebook",
                     url: "https://www.facebook.com/example",
+                },
+            ],
+        },
+    },
+
+    {
+        id: "customV1",
+        name: "Custom (Palette)",
+        backgroundMode: "photo",
+        previewImage: PREVIEW_PLACEHOLDER_PNG,
+        supports: {
+            backgroundImage: true,
+            avatar: true,
+            header: true,
+            about: true,
+            services: true,
+            gallery: true,
+            cta: true,
+            socials: true,
+            contact: true,
+        },
+        // Palette-only customization (renderer applies palette classes, no inline styles)
+        designDefaults: {
+            templateId: "customV1",
+            customPaletteKey: "gold",
+            backgroundOverlay: 40,
+        },
+        // Source of truth: palette keys (lowercase)
+        customPalettes: ["gold", "ocean", "forest"],
+        seededFields: [
+            "name",
+            "headline",
+            "about",
+            "cta.label",
+            "cta.value",
+            "contact.phone",
+            "contact.email",
+            "contact.website",
+            "socials",
+        ],
+        sampleData: {
+            name: "Custom Card",
+            headline: "Pick a palette",
+            about: "Class-based palettes only (safe, no inline styles).",
+            cta: { label: "Contact", value: "https://wa.me/972501112233" },
+            contact: {
+                phone: "+972-50-111-2233",
+                email: "hello@example.com",
+                website: "https://example.com",
+            },
+            socials: [
+                {
+                    platform: "instagram",
+                    url: "https://www.instagram.com/example",
                 },
             ],
         },

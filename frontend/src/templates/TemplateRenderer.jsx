@@ -1,21 +1,75 @@
 import { getTemplateById, normalizeTemplateId } from "./templates.config";
-import ClassicTemplate from "./classic/ClassicTemplate";
-import MinimalTemplate from "./minimal/MinimalTemplate";
+import CardLayout from "./layout/CardLayout";
+import SkinBase from "./skins/_base/SkinBase.module.css";
+import CustomSkin from "./skins/custom/CustomSkin.module.css";
+
+function toPascalCaseKey(key) {
+    return String(key || "")
+        .trim()
+        .toLowerCase()
+        .split(/[^a-z0-9]+/)
+        .filter(Boolean)
+        .map((p) => p[0].toUpperCase() + p.slice(1))
+        .join("");
+}
+
+function paletteKeyToCssModuleClassName(key) {
+    return `palette${toPascalCaseKey(key)}`;
+}
+
+function getCustomPaletteClassFromRegistry(template, key) {
+    const allowed = Array.isArray(template?.customPalettes)
+        ? template.customPalettes
+        : [];
+
+    const normalized = String(key || "")
+        .trim()
+        .toLowerCase();
+
+    const defaultKey =
+        allowed.includes("gold")
+            ? "gold"
+            : allowed[0] || "gold";
+
+    const finalKey = allowed.includes(normalized) ? normalized : defaultKey;
+    const className = paletteKeyToCssModuleClassName(finalKey);
+
+    return (
+        CustomSkin[className] ||
+        CustomSkin.paletteGold ||
+        undefined
+    );
+}
 
 export default function TemplateRenderer({ card, onUpgrade, mode }) {
     const templateId = normalizeTemplateId(card?.design?.templateId);
+    const template = getTemplateById(templateId);
+    const supports = template?.supports || {};
 
-    switch (templateId) {
-        case "minimal":
-            return (
-                <MinimalTemplate card={card} onUpgrade={onUpgrade} mode={mode} />
-            );
-        case "classic":
-        default:
-            return (
-                <ClassicTemplate card={card} onUpgrade={onUpgrade} mode={mode} />
-            );
-    }
+    const skin =
+        templateId === "customV1" ? CustomSkin : SkinBase;
+
+    // Note: Beauty template is intentionally not supported in this migration pass.
+    // Future fixed skins (up to 10) can be added later via templates.config.js + token-only skin modules.
+
+    const extraThemeClass =
+        templateId === "customV1"
+            ? getCustomPaletteClassFromRegistry(
+                  template,
+                  card?.design?.customPaletteKey
+              )
+            : undefined;
+
+    return (
+        <CardLayout
+            card={card}
+            supports={supports}
+            skin={skin}
+            extraThemeClass={extraThemeClass}
+            mode={mode}
+            onUpgrade={onUpgrade}
+        />
+    );
 }
 
 export function getTemplateSupports(card) {

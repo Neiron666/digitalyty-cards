@@ -1,0 +1,263 @@
+.root {
+    display: flex;
+    justify-content: center;
+    /* padding: 24px; */
+    background: var(--bg-main, #0b1220);
+}
+
+.card {
+    width: 100%;
+    /* max-width: 480px; */
+    background: var(--bg-card, #0f172a);
+    color: var(--text-main, #eaf0ff);
+    border-radius: var(--card-radius, var(--radius-lg, 24px));
+    box-shadow: var(--shadow-soft, 0 18px 52px rgba(0, 0, 0, 0.25));
+    overflow: hidden;
+    font-family: var(--font-family, "Heebo, sans-serif");
+}
+
+.hero {
+    position: relative;
+    background-color: var(--bg-surface, #fff);
+    overflow: hidden;
+}
+
+/* Gradient layer (skin sets --hero-gradient token) */
+.hero::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-image: var(--hero-gradient, none);
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    pointer-events: none;
+    z-index: 1;
+}
+
+/* Cover photo layer (URL comes from <img src=...>) */
+.cover {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    z-index: 0;
+}
+
+.overlay {
+    position: absolute;
+    inset: 0;
+    background: var(
+        --hero-overlay-bg,
+        linear-gradient(180deg, rgba(0, 0, 0, 0.45), rgba(0, 0, 0, 0.65))
+    );
+    pointer-events: none;
+    z-index: 2;
+}
+
+.overlay0 {
+    opacity: 0;
+}
+.overlay5 {
+    opacity: 0.05;
+}
+.overlay10 {
+    opacity: 0.1;
+}
+.overlay15 {
+    opacity: 0.15;
+}
+.overlay20 {
+    opacity: 0.2;
+}
+.overlay25 {
+    opacity: 0.25;
+}
+.overlay30 {
+    opacity: 0.3;
+}
+.overlay35 {
+    opacity: 0.35;
+}
+.overlay40 {
+    opacity: 0.4;
+}
+.overlay45 {
+    opacity: 0.45;
+}
+.overlay50 {
+    opacity: 0.5;
+}
+.overlay55 {
+    opacity: 0.55;
+}
+.overlay60 {
+    opacity: 0.6;
+}
+.overlay65 {
+    opacity: 0.65;
+}
+.overlay70 {
+    opacity: 0.7;
+}
+
+.heroInner {
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: flex-end;
+    min-height: var(--hero-min-height, 220px);
+    padding: 24px;
+    z-index: 3;
+}
+
+.avatarWrap {
+    width: 112px;
+    height: 112px;
+    border-radius: 50%;
+    overflow: hidden;
+    border: 4px solid var(--avatar-border, rgba(255, 255, 255, 0.9));
+    box-shadow: var(--avatar-shadow, 0 12px 32px rgba(0, 0, 0, 0.35));
+    background: var(--avatar-bg, rgba(255, 255, 255, 0.8));
+}
+
+.avatarWrap img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.body {
+    padding: 28px 22px 22px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.identity {
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.name {
+    font-size: var(--fs-h1, 28px);
+    line-height: var(--lh-tight, 1.1);
+    font-weight: 800;
+    color: var(--text-main, #ffffff);
+    letter-spacing: var(--name-letter-spacing, 0);
+    margin: 0;
+}
+
+.subtitle {
+    font-size: var(--fs-h3, 16px);
+    line-height: var(--lh-normal, 1.4);
+    color: var(--text-muted, #c8d2ea);
+    margin: 0;
+}
+
+.socialRow,
+.ctaRow,
+.sectionWrap,
+.formWrap {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.sectionWrap > * {
+    border-radius: var(--section-radius, 18px);
+    background: var(--section-bg, var(--bg-surface, #111b2e));
+    border: 1px solid var(--section-border, rgba(255, 255, 255, 0.06));
+    box-shadow: var(--shadow-soft, 0 14px 32px rgba(0, 0, 0, 0.16));
+    backdrop-filter: var(--section-backdrop-filter, none);
+    -webkit-backdrop-filter: var(--section-backdrop-filter, none);
+}
+
+.socialRow :global(button),
+.socialRow :global(a),
+.ctaRow :global(button),
+.ctaRow :global(a),
+.formWrap :global(button),
+.formWrap :global(a),
+.sectionWrap :global(button),
+.sectionWrap :global(a) {
+    width: 100%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 12px 16px;
+    border-radius: var(--action-radius, var(--radius-md, 18px));
+    background: var(--action-bg, var(--primary, #4f7cff));
+    color: var(--action-text, #ffffff);
+    border: 1px solid var(--action-border, transparent);
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1.2;
+    text-decoration: none;
+    cursor: pointer;
+    transition: transform 120ms ease, box-shadow 120ms ease, filter 120ms ease;
+}
+
+.socialRow :global(button:hover),
+.socialRow :global(a:hover),
+.ctaRow :global(button:hover),
+.ctaRow :global(a:hover),
+.formWrap :global(button:hover),
+.formWrap :global(a:hover),
+.sectionWrap :global(button:hover),
+.sectionWrap :global(a:hover) {
+    transform: translateY(-1px);
+    filter: brightness(1.04);
+}
+
+.socialRow :global(button:active),
+.socialRow :global(a:active),
+.ctaRow :global(button:active),
+.ctaRow :global(a:active),
+.formWrap :global(button:active),
+.formWrap :global(a:active),
+.sectionWrap :global(button:active),
+.sectionWrap :global(a:active) {
+    transform: translateY(0);
+}
+
+.ctaRow :global(button:focus-visible),
+.ctaRow :global(a:focus-visible),
+.formWrap :global(button:focus-visible),
+.formWrap :global(a:focus-visible),
+.socialRow :global(button:focus-visible),
+.socialRow :global(a:focus-visible),
+.sectionWrap :global(button:focus-visible),
+.sectionWrap :global(a:focus-visible) {
+    outline: none;
+    box-shadow: var(--focus-ring, 0 0 0 3px rgba(79, 124, 255, 0.35));
+}
+
+.footerWrap {
+    margin-top: 8px;
+}
+
+@media (max-width: 520px) {
+    .root {
+        padding: 16px;
+    }
+
+    .card {
+        border-radius: var(--radius-md, 20px);
+    }
+
+    .heroInner {
+        min-height: 180px;
+    }
+
+    .avatarWrap {
+        width: 96px;
+        height: 96px;
+    }
+}
