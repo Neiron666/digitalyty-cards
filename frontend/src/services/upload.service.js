@@ -1,10 +1,17 @@
 import api from "./api";
 
-function toAbsoluteUrl(url) {
+export function toAbsoluteUrl(url) {
     if (!url) return url;
     if (/^https?:\/\//i.test(url)) return url;
     if (url.startsWith("/uploads/")) {
-        const base = (api.defaults.baseURL || "").replace(/\/api\/?$/, "");
+        let base = (api.defaults.baseURL || "").replace(/\/api\/?$/, "");
+        if (
+            typeof window !== "undefined" &&
+            window.location?.protocol === "https:" &&
+            base.startsWith("http://")
+        ) {
+            base = base.replace(/^http:\/\//i, "https://");
+        }
         return `${base}${url}`;
     }
     return url;

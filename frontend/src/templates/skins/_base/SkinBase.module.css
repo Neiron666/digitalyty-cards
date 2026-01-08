@@ -1,0 +1,73 @@
+.theme {
+    --bg-main: #0b1220;
+    --bg-surface: #111b2e;
+    --bg-card: #0f172a;
+    --text-main: #eaf0ff;
+    --text-muted: #a8b3cf;
+    --border: rgba(255, 255, 255, 0.08);
+
+    --primary: #4f7cff;
+    --primary-hover: #4168d1;
+    --primary-contrast: #0b1220;
+
+    --radius-sm: 10px;
+    --radius-md: 18px;
+    --radius-lg: 24px;
+    --shadow-soft: 0 16px 48px rgba(0, 0, 0, 0.22);
+    --focus-ring: 0 0 0 3px rgba(79, 124, 255, 0.35);
+
+    --font-family: "Heebo, sans-serif";
+
+    --fs-base: 15px;
+    --fs-h1: 28px;
+    --fs-h2: 20px;
+    --fs-h3: 16px;
+    --lh-tight: 1.1;
+    --lh-normal: 1.45;
+
+    --action-bg: var(--primary);
+    --action-text: #ffffff;
+    --action-border: transparent;
+    --action-radius: var(--radius-md);
+
+    --cta-bg: var(--action-bg);
+    --cta-text: var(--action-text);
+    --cta-border: var(--action-border);
+    --cta-radius: var(--action-radius);
+
+    --social-bg: var(--action-bg);
+    --social-border: var(--action-border);
+    --social-icon: var(--action-text);
+
+    --section-bg: rgba(255, 255, 255, 0.02);
+    --section-border: rgba(255, 255, 255, 0.06);
+    --section-radius: var(--radius-md);
+
+    --hero-gradient: linear-gradient(
+        180deg,
+        rgba(255, 255, 255, 0.02),
+        rgba(255, 255, 255, 0)
+    );
+
+    --hero-overlay-bg: linear-gradient(
+        180deg,
+        rgba(0, 0, 0, 0.2),
+        rgba(0, 0, 0, 0.65)
+    );
+
+    --avatar-border: rgba(255, 255, 255, 0.9);
+    --avatar-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
+    --avatar-bg: rgba(255, 255, 255, 0.8);
+
+    --name-letter-spacing: 0;
+    --section-backdrop-filter: none;
+
+    --hero-min-height: 220px;
+    --card-radius: var(--radius-lg);
+}
+
+@media (max-width: 520px) {
+    .theme {
+        --card-radius: var(--radius-md);
+    }
+}

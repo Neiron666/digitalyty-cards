@@ -1,0 +1,36 @@
+.headerPanel {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.preview {
+    width: 100%;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border);
+    display: block;
+    margin-bottom: 8px;
+}
+
+.avatarPreview {
+    width: 96px;
+    height: 96px;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    display: block;
+    object-fit: cover;
+    margin-bottom: 8px;
+}
+
+.label {
+    font-weight: 800;
+}
+
+.label + .label {
+    margin-top: 10px;
+}
+
+.disabledText {
+    margin: 6px 0 0;
+    color: var(--text-muted);
+}

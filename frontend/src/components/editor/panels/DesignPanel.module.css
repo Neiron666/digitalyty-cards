@@ -1,0 +1,25 @@
+.field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding-block: 10px;
+}
+
+.label {
+    font-weight: 700;
+    color: var(--text-main);
+}
+
+.select {
+    width: 100%;
+    padding: 10px 12px;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    background: var(--bg-card);
+    color: var(--text-main);
+}
+
+.select:focus-visible {
+    outline: none;
+    box-shadow: var(--focus-ring);
+}

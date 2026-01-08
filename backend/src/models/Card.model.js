@@ -285,6 +285,8 @@ const CardSchema = new mongoose.Schema(
 
         design: {
             templateId: { type: String, default: null },
+            // CustomV1 palette selection (class-based; persisted in design)
+            customPaletteKey: { type: String, default: null, trim: true },
             primaryColor: String,
             accentColor: String,
             backgroundColor: String,
