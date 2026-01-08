@@ -34,3 +34,7 @@ jobs:
       - name: Guardrail: template contract
         working-directory: frontend
         run: npm run check:contract
+
+      - name: Build (frontend)
+        working-directory: frontend
+        run: npm run build
