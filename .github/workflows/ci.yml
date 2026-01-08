@@ -1,12 +1,13 @@
 name: CI
 
-on:
-  pull_request:
-  push:
+on: [pull_request, push]
 
 jobs:
   frontend-checks:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
 
     steps:
       - name: Checkout
@@ -19,22 +20,17 @@ jobs:
           cache: npm
           cache-dependency-path: frontend/package-lock.json
 
-      - name: Install (frontend)
-        working-directory: frontend
+      - name: Install
         run: npm ci
 
-      - name: Guardrail: no inline styles (limited scope)
-        working-directory: frontend
+      - name: Guardrail: no inline styles
         run: npm run check:inline-styles
 
       - name: Guardrail: skins token-only
-        working-directory: frontend
         run: npm run check:skins
 
       - name: Guardrail: template contract
-        working-directory: frontend
         run: npm run check:contract
 
-      - name: Build (frontend)
-        working-directory: frontend
+      - name: Build
         run: npm run build
