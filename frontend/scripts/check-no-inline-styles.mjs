@@ -141,5 +141,7 @@ if (violations.length) {
 }
 
 console.log(
-    `PASS: no inline styles found. Scope: ${scanPaths.join(", ")}. Base: ${path.relative(process.cwd(), BASE_DIR) || "."}`
+    `PASS: no inline styles found. Scope: ${scanPaths.join(", ")}. Base: ${
+        path.relative(process.cwd(), BASE_DIR) || "."
+    }`
 );

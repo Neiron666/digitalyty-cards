@@ -22,6 +22,22 @@ function DesignPanel({ card, design, plan, onChange, onFieldChange, cardId }) {
     const selectedTemplateId = normalizeTemplateId(design?.templateId);
     const selectedTemplate = getTemplateById(selectedTemplateId);
 
+    const paletteKeys = Array.isArray(selectedTemplate?.customPalettes)
+        ? selectedTemplate.customPalettes
+        : [];
+
+    const defaultPaletteKey =
+        typeof selectedTemplate?.defaultPaletteKey === "string" &&
+        paletteKeys.includes(selectedTemplate.defaultPaletteKey)
+            ? selectedTemplate.defaultPaletteKey
+            : paletteKeys[0] || "";
+
+    const currentPaletteKey =
+        typeof design?.customPaletteKey === "string" &&
+        paletteKeys.includes(design.customPaletteKey)
+            ? design.customPaletteKey
+            : defaultPaletteKey;
+
     function handleSelectTemplate(templateId) {
         const tpl = getTemplateById(templateId);
 
@@ -81,9 +97,7 @@ function DesignPanel({ card, design, plan, onChange, onFieldChange, cardId }) {
                 onSelect={handleSelectTemplate}
             />
 
-            {selectedTemplate?.id === "customV1" &&
-            Array.isArray(selectedTemplate?.customPalettes) &&
-            selectedTemplate.customPalettes.length ? (
+            {paletteKeys.length ? (
                 <div className={styles.field}>
                     <label className={styles.label} htmlFor="customPaletteKey">
                         Palette
@@ -91,7 +105,7 @@ function DesignPanel({ card, design, plan, onChange, onFieldChange, cardId }) {
                     <select
                         id="customPaletteKey"
                         className={styles.select}
-                        value={design?.customPaletteKey || "gold"}
+                        value={currentPaletteKey}
                         onChange={(e) => {
                             const customPaletteKey = String(e.target.value)
                                 .trim()
@@ -102,7 +116,7 @@ function DesignPanel({ card, design, plan, onChange, onFieldChange, cardId }) {
                             });
                         }}
                     >
-                        {selectedTemplate.customPalettes.map((key) => (
+                        {paletteKeys.map((key) => (
                             <option key={key} value={key}>
                                 {labelForPaletteKey(key)}
                             </option>

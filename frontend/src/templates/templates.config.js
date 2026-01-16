@@ -12,6 +12,7 @@ const PREVIEW_PLACEHOLDER_PNG =
 export const TEMPLATES = [
     {
         id: "businessClassic",
+        skinKey: "base",
         name: "Business Classic",
         backgroundMode: "photo",
         previewImage: PREVIEW_PLACEHOLDER_PNG,
@@ -81,6 +82,7 @@ export const TEMPLATES = [
 
     {
         id: "mobileCta",
+        skinKey: "base",
         name: "Mobile CTA",
         backgroundMode: "photo",
         previewImage: PREVIEW_PLACEHOLDER_PNG,
@@ -136,6 +138,7 @@ export const TEMPLATES = [
 
     {
         id: "premiumDark",
+        skinKey: "base",
         name: "Premium Dark",
         backgroundMode: "pattern",
         previewImage: PREVIEW_PLACEHOLDER_PNG,
@@ -203,6 +206,7 @@ export const TEMPLATES = [
 
     {
         id: "creativePortfolio",
+        skinKey: "base",
         name: "Creative Portfolio",
         backgroundMode: "photo",
         previewImage: PREVIEW_PLACEHOLDER_PNG,
@@ -272,6 +276,7 @@ export const TEMPLATES = [
 
     {
         id: "minimalClean",
+        skinKey: "base",
         name: "Minimal Clean",
         backgroundMode: "pattern",
         previewImage: PREVIEW_PLACEHOLDER_PNG,
@@ -327,6 +332,7 @@ export const TEMPLATES = [
 
     {
         id: "customV1",
+        skinKey: "custom",
         name: "Custom (Palette)",
         backgroundMode: "photo",
         previewImage: PREVIEW_PLACEHOLDER_PNG,
@@ -349,6 +355,7 @@ export const TEMPLATES = [
         },
         // Source of truth: palette keys (lowercase)
         customPalettes: ["gold", "ocean", "forest"],
+        defaultPaletteKey: "gold",
         seededFields: [
             "name",
             "headline",
@@ -382,6 +389,7 @@ export const TEMPLATES = [
     // Variant A: token-only skin; shared CardLayout skeleton.
     {
         id: "beauty",
+        skinKey: "beauty",
         name: "Beauty",
         backgroundMode: "photo",
         previewImage: PREVIEW_PLACEHOLDER_PNG,

@@ -28,9 +28,7 @@ export default function ContentPanel({ content = {}, onChange }) {
                 onChange={(e) => onChange({ videoUrl: e.target.value })}
                 placeholder="https://www.youtube.com/..."
             />
-            <div className={styles.hint}>
-                Paste a YouTube link
-            </div>
+            <div className={styles.hint}>Paste a YouTube link</div>
         </Panel>
     );
 }

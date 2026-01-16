@@ -46,6 +46,8 @@ function lineExcerpt(text, index) {
 /** @type {{where: string, message: string, excerpt?: string}[]} */
 const violations = [];
 
+const ALLOWED_SKIN_KEYS = new Set(["base", "custom", "beauty"]);
+
 async function loadRegistry() {
     const registryPath = path.join(
         BASE_DIR,
@@ -130,6 +132,87 @@ function validateCustomPalettes(template) {
     return [...uniq];
 }
 
+function validateSkinKeys(templates) {
+    for (const t of templates || []) {
+        if (!t || typeof t.id !== "string") continue;
+
+        const skinKey = t.skinKey;
+        if (typeof skinKey !== "string" || !skinKey.trim()) {
+            violations.push({
+                where: `registry:TEMPLATES:${t.id}`,
+                message: `Template '${t.id}' must define skinKey`,
+            });
+            continue;
+        }
+
+        const normalized = skinKey.trim().toLowerCase();
+        if (!ALLOWED_SKIN_KEYS.has(normalized)) {
+            violations.push({
+                where: `registry:TEMPLATES:${t.id}`,
+                message: `Template '${
+                    t.id
+                }' has invalid skinKey '${skinKey}'. Allowed: ${[
+                    ...ALLOWED_SKIN_KEYS,
+                ].join(", ")}`,
+            });
+        }
+
+        if (Array.isArray(t.customPalettes) && t.customPalettes.length) {
+            const defaultKey = String(t.defaultPaletteKey || "")
+                .trim()
+                .toLowerCase();
+            if (!defaultKey) {
+                violations.push({
+                    where: `registry:TEMPLATES:${t.id}`,
+                    message: `Template '${t.id}' must define defaultPaletteKey when customPalettes is present`,
+                });
+                continue;
+            }
+
+            const allowed = t.customPalettes.map((p) =>
+                String(p).trim().toLowerCase()
+            );
+            if (!allowed.includes(defaultKey)) {
+                violations.push({
+                    where: `registry:TEMPLATES:${t.id}`,
+                    message: `Template '${t.id}' defaultPaletteKey '${defaultKey}' must be included in customPalettes`,
+                });
+            }
+        }
+    }
+}
+
+function validateNoMagicComparisons() {
+    const targets = [
+        "src/templates/TemplateRenderer.jsx",
+        "src/components/editor/panels/DesignPanel.jsx",
+    ];
+
+    const forbiddenPatterns = [
+        /\btemplateId\s*===\s*['"][^'"]+['"]/g,
+        /\bselectedTemplate\?\.id\s*===\s*['"][^'"]+['"]/g,
+        /\bcustomPaletteKey\s*\|\|\s*['"]gold['"]/g,
+        /\bcustomPaletteKey\s*\?\?\s*['"]gold['"]/g,
+    ];
+
+    for (const rel of targets) {
+        const text = readText(rel);
+        if (!text) continue;
+
+        for (const re of forbiddenPatterns) {
+            let m;
+            while ((m = re.exec(text)) !== null) {
+                violations.push({
+                    where: `${rel}:${lineOfIndex(text, m.index)}`,
+                    message:
+                        "Magic-string comparison/fallback detected; must be registry-driven",
+                    excerpt: lineExcerpt(text, m.index),
+                });
+            }
+        }
+    }
+}
+
 function validateCustomSkinHasPaletteClasses(paletteKeys) {
     const cssRel = "src/templates/skins/custom/CustomSkin.module.css";
     const cssText = readText(cssRel);
@@ -184,11 +267,14 @@ function validateRendererAgainstRegistry(templateIds, paletteKeys) {
 
     // If renderer contains a hardcoded palette array literal, fail fast.
     // (This is intentionally conservative; palette keys must live in registry.)
-    const hardcodedArray = text.match(/\b\[(?:\s*['"][a-z0-9_-]+['"]\s*,?\s*)+\]/i);
+    const hardcodedArray = text.match(
+        /\b\[(?:\s*['"][a-z0-9_-]+['"]\s*,?\s*)+\]/i
+    );
     if (hardcodedArray && /gold|ocean|forest/i.test(hardcodedArray[0])) {
         violations.push({
             where: rendererRel,
-            message: "Renderer appears to contain a hardcoded palette list; use registry instead",
+            message:
+                "Renderer appears to contain a hardcoded palette list; use registry instead",
             excerpt: hardcodedArray[0],
         });
     }
@@ -201,7 +287,7 @@ function validateRendererAgainstRegistry(templateIds, paletteKeys) {
         if (!templateIds.has(id)) {
             violations.push({
                 where: `${rendererRel}:${lineOfIndex(text, m.index)}`,
-                message: `Renderer references unknown templateId '${id}' (not in registry)` ,
+                message: `Renderer references unknown templateId '${id}' (not in registry)`,
                 excerpt: lineExcerpt(text, m.index),
             });
         }
@@ -216,8 +302,7 @@ function validateRendererAgainstRegistry(templateIds, paletteKeys) {
             // Keep strict: require the convention to be implemented in renderer.
             violations.push({
                 where: rendererRel,
-                message:
-                    `Renderer must derive palette CSS module class names via rule palette${"PascalCase"}(key) (e.g. .${expectedExample})`,
+                message: `Renderer must derive palette CSS module class names via rule palette${"PascalCase"}(key) (e.g. .${expectedExample})`,
             });
         }
     }
@@ -235,6 +320,8 @@ try {
     }
 
     const templateIds = getTemplateIds(templates);
+
+    validateSkinKeys(templates);
 
     const customV1 = Array.isArray(templates)
         ? templates.find((t) => t?.id === "customV1")
@@ -255,8 +342,12 @@ try {
 
     validateRendererAgainstRegistry(templateIds, paletteKeys);
 
+    validateNoMagicComparisons();
+
     if (violations.length) {
-        console.error(`FAIL: template contract violations (${violations.length}).`);
+        console.error(
+            `FAIL: template contract violations (${violations.length}).`
+        );
         for (const v of violations) {
             console.error(`- ${v.where}: ${v.message}`);
             if (v.excerpt) console.error(`  > ${v.excerpt}`);

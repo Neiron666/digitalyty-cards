@@ -22,10 +22,7 @@ export default function ReviewsPanel({ reviews = [], onChange }) {
     return (
         <Panel title="המלצות">
             {reviews.map((review, index) => (
-                <div
-                    key={index}
-                    className={styles.reviewItem}
-                >
+                <div key={index} className={styles.reviewItem}>
                     <textarea
                         rows={2}
                         value={review}

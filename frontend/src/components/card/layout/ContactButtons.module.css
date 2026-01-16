@@ -28,7 +28,8 @@
     width: var(--contact-btn-size, 52px);
     height: var(--contact-btn-size, 52px);
     border-radius: 999px;
-    border: 1px solid var(--contact-btn-border, var(--primary-color, #0b5cff));
+    color: var(--contact-btn-color, var(--primary));
+    border: 1px solid var(--contact-btn-border, currentColor);
     background: var(--contact-btn-bg, transparent);
 
     transition: transform 120ms ease, box-shadow 120ms ease, filter 120ms ease;
@@ -37,6 +38,7 @@
 .buttons .item:hover {
     transform: translateY(-1px);
     filter: brightness(1.04);
+    color: var(--contact-btn-hover-color, var(--primary-hover));
 }
 
 .buttons .item:active {
@@ -45,14 +47,14 @@
 
 .buttons .item:focus-visible {
     outline: none;
-    box-shadow: 0 0 0 3px var(--contact-btn-ring, rgba(79, 124, 255, 0.35));
+    box-shadow: var(--contact-btn-ring, var(--focus-ring));
 }
 
 /* сама иконка через mask, цвет управляется переменной */
 .icon {
     width: var(--contact-icon-size, 22px);
     height: var(--contact-icon-size, 22px);
-    background-color: var(--contact-icon-color, var(--primary-color, #0b5cff));
+    background-color: var(--contact-icon-color, currentColor);
 
     -webkit-mask-repeat: no-repeat;
     -webkit-mask-position: center;

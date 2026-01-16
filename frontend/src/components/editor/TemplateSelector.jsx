@@ -15,6 +15,8 @@ export default function TemplateSelector({ value, onSelect }) {
             <div className={styles.grid}>
                 {TEMPLATES.map((tpl) => {
                     const selected = value === tpl.id;
+                    const previewSrc = tpl.previewImage || tpl.preview;
+                    const description = tpl.description || "";
                     return (
                         <div
                             key={tpl.id}
@@ -24,7 +26,7 @@ export default function TemplateSelector({ value, onSelect }) {
                         >
                             <div className={styles.preview}>
                                 <img
-                                    src={tpl.preview}
+                                    src={previewSrc}
                                     alt={tpl.name}
                                     loading="lazy"
                                 />
@@ -32,9 +34,7 @@ export default function TemplateSelector({ value, onSelect }) {
 
                             <div className={styles.meta}>
                                 <div className={styles.name}>{tpl.name}</div>
-                                <div className={styles.desc}>
-                                    {tpl.description}
-                                </div>
+                                <div className={styles.desc}>{description}</div>
                             </div>
 
                             <Button

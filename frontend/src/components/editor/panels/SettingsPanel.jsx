@@ -78,9 +78,7 @@ export default function SettingsPanel({
 
                 {publicUrl && isPublicLink && (
                     <div className={styles.urlBlock}>
-                        <div className={styles.urlTitle}>
-                            קישור ציבורי
-                        </div>
+                        <div className={styles.urlTitle}>קישור ציבורי</div>
                         <a href={publicUrl} target="_blank" rel="noreferrer">
                             {publicUrl}
                         </a>
@@ -89,9 +87,7 @@ export default function SettingsPanel({
 
                 {publicUrl && !isPublicLink && (
                     <div className={styles.urlBlock}>
-                        <div className={styles.urlTitle}>
-                            קישור עתידי
-                        </div>
+                        <div className={styles.urlTitle}>קישור עתידי</div>
                         <div>{publicUrl}</div>
                         <div className={styles.urlNote}>
                             יהפוך לציבורי אחרי הרשמה + פרסום.

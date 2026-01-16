@@ -16,7 +16,7 @@
     --shadow-soft: 0 18px 44px rgba(31, 26, 23, 0.12);
     --focus-ring: 0 0 0 3px rgba(210, 166, 121, 0.4);
 
-    --font-family: "Assistant, sans-serif";
+    --font-family: "Heebo", system-ui, sans-serif;
 
     --fs-base: 15px;
     --fs-h1: 30px;

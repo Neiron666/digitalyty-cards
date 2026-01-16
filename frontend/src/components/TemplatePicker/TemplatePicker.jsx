@@ -1,22 +1,13 @@
 import { TEMPLATES } from "../../templates/templates.config";
+import styles from "./TemplatePicker.module.css";
 
 function PhoneMiniPreview({ src, alt }) {
     return (
-        <div
-            style={{
-                width: 92,
-                aspectRatio: "9 / 16",
-                borderRadius: 16,
-                border: "1px solid rgba(0,0,0,0.12)",
-                overflow: "hidden",
-                background: "#0b0b0f",
-                boxShadow: "0 6px 18px rgba(0,0,0,0.18)",
-            }}
-        >
+        <div className={styles.preview}>
             <img
                 src={src}
                 alt={alt}
-                style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+                className={styles.previewImg}
                 loading="lazy"
             />
         </div>
@@ -25,16 +16,18 @@ function PhoneMiniPreview({ src, alt }) {
 
 export default function TemplatePicker({ value, onChange }) {
     return (
-        <div /* ...existing code... */>
+        <div className={styles.root}>
             {TEMPLATES.map((t) => (
                 <button
                     key={t.id}
                     type="button"
                     onClick={() => onChange?.(t.id)}
-                    // ...existing code...
+                    className={`${styles.button} ${
+                        value === t.id ? styles.buttonSelected : ""
+                    }`}
                 >
                     <PhoneMiniPreview src={t.previewImage} alt={t.name} />
-                    <div /* ...existing code... */>{t.name}</div>
+                    <div className={styles.name}>{t.name}</div>
                 </button>
             ))}
         </div>

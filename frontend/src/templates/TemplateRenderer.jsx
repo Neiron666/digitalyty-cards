@@ -27,12 +27,20 @@ function getCustomPaletteClassFromRegistry(template, key) {
         .trim()
         .toLowerCase();
 
-    const defaultKey = allowed.includes("gold") ? "gold" : allowed[0] || "gold";
+    const defaultKeyRaw = String(template?.defaultPaletteKey || "")
+        .trim()
+        .toLowerCase();
+
+    const defaultKey =
+        (defaultKeyRaw && allowed.includes(defaultKeyRaw) && defaultKeyRaw) ||
+        allowed[0] ||
+        "";
 
     const finalKey = allowed.includes(normalized) ? normalized : defaultKey;
     const className = paletteKeyToCssModuleClassName(finalKey);
+    const defaultClassName = paletteKeyToCssModuleClassName(defaultKey);
 
-    return CustomSkin[className] || CustomSkin.paletteGold || undefined;
+    return CustomSkin[className] || CustomSkin[defaultClassName] || undefined;
 }
 
 export default function TemplateRenderer({ card, onUpgrade, mode }) {
@@ -40,22 +48,23 @@ export default function TemplateRenderer({ card, onUpgrade, mode }) {
     const template = getTemplateById(templateId);
     const supports = template?.supports || {};
 
-    const skin =
-        templateId === "customV1"
-            ? CustomSkin
-            : templateId === "beauty"
-            ? BeautySkin
-            : SkinBase;
+    const skinModules = {
+        base: SkinBase,
+        custom: CustomSkin,
+        beauty: BeautySkin,
+    };
+
+    const skinKey = template?.skinKey;
+    const skin = skinModules[skinKey] || SkinBase;
 
     // Fixed skins must be token-only CSS modules; layout stays shared (CardLayout).
 
-    const extraThemeClass =
-        templateId === "customV1"
-            ? getCustomPaletteClassFromRegistry(
-                  template,
-                  card?.design?.customPaletteKey
-              )
-            : undefined;
+    const extraThemeClass = Array.isArray(template?.customPalettes)
+        ? getCustomPaletteClassFromRegistry(
+              template,
+              card?.design?.customPaletteKey
+          )
+        : undefined;
 
     return (
         <CardLayout

@@ -1,0 +1,43 @@
+.root {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.button {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    padding: 10px;
+    border-radius: 14px;
+    border: 1px solid rgba(0, 0, 0, 0.12);
+    background: #ffffff;
+    cursor: pointer;
+}
+
+.buttonSelected {
+    border-color: var(--primary, #4f7cff);
+    box-shadow: var(--focus-ring, 0 0 0 3px rgba(79, 124, 255, 0.35));
+}
+
+.preview {
+    width: 92px;
+    aspect-ratio: 9 / 16;
+    border-radius: 16px;
+    border: 1px solid rgba(0, 0, 0, 0.12);
+    overflow: hidden;
+    background: #0b0b0f;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.18);
+}
+
+.previewImg {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.name {
+    font-weight: 700;
+}
