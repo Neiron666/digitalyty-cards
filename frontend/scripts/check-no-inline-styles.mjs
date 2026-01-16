@@ -4,18 +4,18 @@ import path from "node:path";
 // Default scope is intentionally limited to the surfaces touched by this PR.
 // (There are known legacy inline styles elsewhere in the codebase.)
 const DEFAULT_PATHS = [
-    // Public render chain
+    // Public / editor entry points
     "src/pages/PublicCard.jsx",
-    "src/components/card/CardRenderer.jsx",
+    "src/pages/EditCard.jsx",
 
-    "src/templates/TemplateRenderer.jsx",
-    "src/templates/layout",
-    "src/templates/skins",
-    "src/templates/seed",
+    // Editor surface (panels, preview, media, etc.)
+    "src/components/editor",
 
-    // Editor preview chain + template selection surface
-    "src/components/editor/EditorPreview.jsx",
-    "src/components/editor/panels/DesignPanel.jsx",
+    // Public card surface (renderer + layout sections)
+    "src/components/card",
+
+    // Template system surface (renderer, layout, skins, seed)
+    "src/templates",
 ];
 
 const exts = new Set([".jsx", ".tsx"]);

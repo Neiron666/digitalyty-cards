@@ -1,11 +1,12 @@
 import { TEMPLATES } from "../../../templates/templates.config";
+import styles from "./TemplatePicker.module.css";
 
 function TemplatePicker({ value, onChange, plan }) {
     return (
         <section>
             <h3>בחירת תבנית</h3>
 
-            <div style={{ display: "flex", gap: 8 }}>
+            <div className={styles.row}>
                 {TEMPLATES.map((tpl) => {
                     const disabled = false;
                     return (
@@ -13,19 +14,9 @@ function TemplatePicker({ value, onChange, plan }) {
                             key={tpl.id}
                             disabled={disabled}
                             onClick={() => !disabled && onChange(tpl.id)}
-                            style={{
-                                border:
-                                    value === tpl.id
-                                        ? "2px solid var(--gold)"
-                                        : "1px solid var(--border)",
-                                opacity: disabled ? 0.5 : 1,
-                                cursor: disabled ? "not-allowed" : "pointer",
-                                background: "var(--bg-card)",
-                                color: "var(--text-main)",
-                                borderRadius: "999px",
-                                padding: "10px 14px",
-                                fontWeight: 800,
-                            }}
+                            className={`${styles.templateButton} ${
+                                value === tpl.id ? styles.isSelected : ""
+                            }`}
                             title={disabled ? "זמין רק למנויים" : ""}
                         >
                             {tpl.name}

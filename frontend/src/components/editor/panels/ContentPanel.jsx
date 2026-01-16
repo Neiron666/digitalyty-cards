@@ -1,6 +1,7 @@
 import Panel from "./Panel";
 import Input from "../../ui/Input";
 import formStyles from "../../ui/Form.module.css";
+import styles from "./ContentPanel.module.css";
 
 export default function ContentPanel({ content = {}, onChange }) {
     return (
@@ -12,7 +13,7 @@ export default function ContentPanel({ content = {}, onChange }) {
             />
 
             <label>
-                <span style={{ fontWeight: 700 }}>טקסט אודות</span>
+                <span className={styles.aboutLabelTitle}>טקסט אודות</span>
                 <textarea
                     rows={5}
                     value={content.aboutText || ""}
@@ -27,7 +28,7 @@ export default function ContentPanel({ content = {}, onChange }) {
                 onChange={(e) => onChange({ videoUrl: e.target.value })}
                 placeholder="https://www.youtube.com/..."
             />
-            <div style={{ marginTop: -8, color: "var(--text-muted)" }}>
+            <div className={styles.hint}>
                 Paste a YouTube link
             </div>
         </Panel>

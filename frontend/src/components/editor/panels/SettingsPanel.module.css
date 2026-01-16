@@ -1,0 +1,26 @@
+.grid {
+    display: grid;
+    gap: 10px;
+}
+
+.strong {
+    font-weight: 700;
+}
+
+.accessLine {
+    opacity: 0.85;
+}
+
+.urlBlock {
+    word-break: break-word;
+}
+
+.urlTitle {
+    font-weight: 700;
+    margin-bottom: 6px;
+}
+
+.urlNote {
+    opacity: 0.8;
+    margin-top: 6px;
+}

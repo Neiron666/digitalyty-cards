@@ -1,6 +1,7 @@
 import Panel from "./Panel";
 import Button from "../../ui/Button";
 import { useAuth } from "../../../context/AuthContext";
+import styles from "./SettingsPanel.module.css";
 
 function formatDate(value) {
     if (!value) return "";
@@ -46,13 +47,13 @@ export default function SettingsPanel({
 
     return (
         <Panel title="הגדרות">
-            <div style={{ display: "grid", gap: 10 }}>
-                <div style={{ fontWeight: 700 }}>
+            <div className={styles.grid}>
+                <div className={styles.strong}>
                     סטטוס: {isPublicLink ? "Public" : "Not public yet"}
                 </div>
 
                 {accessLine && (
-                    <div style={{ opacity: 0.85 }}>{accessLine}</div>
+                    <div className={styles.accessLine}>{accessLine}</div>
                 )}
 
                 {Boolean(token) && card?.status !== "published" && (
@@ -76,8 +77,8 @@ export default function SettingsPanel({
                 )}
 
                 {publicUrl && isPublicLink && (
-                    <div style={{ wordBreak: "break-word" }}>
-                        <div style={{ fontWeight: 700, marginBottom: 6 }}>
+                    <div className={styles.urlBlock}>
+                        <div className={styles.urlTitle}>
                             קישור ציבורי
                         </div>
                         <a href={publicUrl} target="_blank" rel="noreferrer">
@@ -87,12 +88,12 @@ export default function SettingsPanel({
                 )}
 
                 {publicUrl && !isPublicLink && (
-                    <div style={{ wordBreak: "break-word" }}>
-                        <div style={{ fontWeight: 700, marginBottom: 6 }}>
+                    <div className={styles.urlBlock}>
+                        <div className={styles.urlTitle}>
                             קישור עתידי
                         </div>
                         <div>{publicUrl}</div>
-                        <div style={{ opacity: 0.8, marginTop: 6 }}>
+                        <div className={styles.urlNote}>
                             יהפוך לציבורי אחרי הרשמה + פרסום.
                         </div>
                     </div>

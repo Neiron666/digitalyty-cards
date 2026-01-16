@@ -1,0 +1,8 @@
+.aboutLabelTitle {
+    font-weight: 700;
+}
+
+.hint {
+    margin-top: -8px;
+    color: var(--text-muted);
+}

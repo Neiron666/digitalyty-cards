@@ -7,6 +7,11 @@
 .card {
     width: 100%;
     max-width: 420px;
+
+    /* Legacy variables used by some card/layout modules (avoid runtime style props). */
+    --primary-color: var(--primary, #0b5cff);
+    --font-family: Heebo, sans-serif;
+
     background: var(
         --bg-card,
         linear-gradient(180deg, rgba(2, 6, 23, 0.92), rgba(2, 6, 23, 0.98))
@@ -17,4 +22,20 @@
     border: 1px solid var(--border);
     color: var(--text-main);
     font-family: var(--font-family, Heebo, sans-serif);
+}
+
+.cardPublic {
+    max-width: 100%;
+}
+
+.fontHeebo {
+    --font-family: Heebo, sans-serif;
+}
+
+.fontRubik {
+    --font-family: Rubik, sans-serif;
+}
+
+.fontArial {
+    --font-family: Arial, sans-serif;
 }

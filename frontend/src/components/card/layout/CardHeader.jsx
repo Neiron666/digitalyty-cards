@@ -5,12 +5,15 @@ function CardHeader({ card }) {
     const logo = card.design?.logo;
 
     return (
-        <header
-            className={styles.header}
-            style={{
-                backgroundImage: cover ? `url(${cover})` : undefined,
-            }}
-        >
+        <header className={styles.header}>
+            {cover ? (
+                <img
+                    className={styles.coverImage}
+                    src={cover}
+                    alt=""
+                    aria-hidden="true"
+                />
+            ) : null}
             <div className={styles.overlay} />
 
             <div className={styles.content}>

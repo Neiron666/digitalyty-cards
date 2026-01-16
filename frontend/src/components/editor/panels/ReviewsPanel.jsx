@@ -1,6 +1,7 @@
 import Panel from "./Panel";
 import Button from "../../ui/Button";
 import formStyles from "../../ui/Form.module.css";
+import styles from "./ReviewsPanel.module.css";
 
 export default function ReviewsPanel({ reviews = [], onChange }) {
     function addReview() {
@@ -23,8 +24,7 @@ export default function ReviewsPanel({ reviews = [], onChange }) {
             {reviews.map((review, index) => (
                 <div
                     key={index}
-                    className="review-item"
-                    style={{ display: "flex", flexDirection: "column", gap: 8 }}
+                    className={styles.reviewItem}
                 >
                     <textarea
                         rows={2}
