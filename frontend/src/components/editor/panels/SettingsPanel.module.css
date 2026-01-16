@@ -24,3 +24,24 @@
     opacity: 0.8;
     margin-top: 6px;
 }
+
+.deleteInline {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.spinner {
+    width: 14px;
+    height: 14px;
+    border-radius: 999px;
+    border: 2px solid rgba(234, 240, 255, 0.25);
+    border-top-color: rgba(255, 215, 0, 0.75);
+    animation: spin 0.9s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}

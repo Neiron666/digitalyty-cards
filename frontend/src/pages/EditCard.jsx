@@ -111,6 +111,11 @@ function EditCard() {
     const [reloadKey, setReloadKey] = useState(0);
     const [isDeleting, setIsDeleting] = useState(false);
 
+    const isDeletingRef = useRef(isDeleting);
+    useEffect(() => {
+        isDeletingRef.current = isDeleting;
+    }, [isDeleting]);
+
     const [deleteNotice, setDeleteNotice] = useState(null);
     const deleteNoticeTimerRef = useRef(null);
 
@@ -156,6 +161,7 @@ function EditCard() {
     // Step 1A: Browser refresh/close guard.
     useEffect(() => {
         const onBeforeUnload = (event) => {
+            if (isDeletingRef.current) return;
             const hasDirty =
                 dirtyPathsRef.current && dirtyPathsRef.current.size > 0;
             if (!hasDirty) return;
@@ -176,6 +182,7 @@ function EditCard() {
     // WHY: we only guard leaving the editor zone to avoid breaking internal editor UX
     // (tab switching and other /edit/* transitions).
     const blocker = useBlocker(({ currentLocation, nextLocation }) => {
+        if (isDeletingRef.current) return false;
         const hasDirty =
             dirtyPathsRef.current && dirtyPathsRef.current.size > 0;
         if (!hasDirty) return false;
@@ -240,47 +247,102 @@ function EditCard() {
             Boolean(draftCard?.trialStartedAt || draftCard?.trialEndsAt) ||
             editingDisabled);
 
-    const initCard = useCallback(async (isMounted = () => true) => {
-        try {
-            const res = await api.get("/cards/mine");
-            if (!isMounted()) return;
-
-            const mine = res?.data;
-
-            // If no card (or malformed), create a persisted draft card server-side.
-            if (!mine || !mine._id) {
-                const created = await api.post("/cards", {});
+    const initCard = useCallback(
+        async (isMounted = () => true) => {
+            try {
+                const res = await api.get("/cards/mine");
                 if (!isMounted()) return;
-                const normalized = normalizeCardForEditor(created.data);
+
+                // P0: never overwrite local draft while user has unsaved edits.
+                // (Auto refetch on focus/visibility can look like "blur cleared my input".)
+                const hasDirty =
+                    dirtyPathsRef.current && dirtyPathsRef.current.size > 0;
+                if (hasDirty && draftCardRef.current?._id) {
+                    setIsInitializing(false);
+                    return;
+                }
+
+                const mine = res?.data;
+
+                // If no card (or malformed), create a persisted draft card server-side.
+                if (!mine || !mine._id) {
+                    const created = await api.post("/cards", {});
+                    if (!isMounted()) return;
+                    const normalized = normalizeCardForEditor(created.data);
+                    setDraftCard(normalized);
+                    setDirtyPaths(new Set());
+                    setSaveState("idle");
+                    setSaveErrorText(null);
+                    setIsInitializing(false);
+                    return;
+                }
+
+                const normalized = normalizeCardForEditor(mine);
                 setDraftCard(normalized);
                 setDirtyPaths(new Set());
                 setSaveState("idle");
                 setSaveErrorText(null);
                 setIsInitializing(false);
-                return;
+            } catch (err) {
+                const status = err?.response?.status;
+                // IMPORTANT: log here (err exists), not above
+                console.error(
+                    "initCard error",
+                    status,
+                    err?.response?.data || err
+                );
+
+                // 404 can mean "no card" OR "card was deleted and editor is stale".
+                // If we previously had a card id in this session, treat 404 as deleted and exit.
+                if (status === 404) {
+                    const hadCardId = Boolean(draftCardRef.current?._id);
+                    if (hadCardId) {
+                        navigate("/dashboard", {
+                            replace: true,
+                            state: {
+                                flash: {
+                                    type: "info",
+                                    message: "הכרטיס כבר נמחק",
+                                },
+                            },
+                        });
+                        return;
+                    }
+
+                    try {
+                        const created = await api.post("/cards", {});
+                        if (!isMounted()) return;
+                        const normalized = normalizeCardForEditor(created.data);
+                        setDraftCard(normalized);
+                        setDirtyPaths(new Set());
+                        setSaveState("idle");
+                        setSaveErrorText(null);
+                        setIsInitializing(false);
+                        return;
+                    } catch (createErr) {
+                        console.error(
+                            "initCard create fallback failed",
+                            createErr?.response?.status,
+                            createErr?.response?.data || createErr
+                        );
+                    }
+                }
+
+                // Do not redirect to /login here; anonymous flow must stay on /edit
+                setIsInitializing(false);
             }
-
-            const normalized = normalizeCardForEditor(mine);
-            setDraftCard(normalized);
-            setDirtyPaths(new Set());
-            setSaveState("idle");
-            setSaveErrorText(null);
-            setIsInitializing(false);
-        } catch (err) {
-            // IMPORTANT: log here (err exists), not above
-            console.error(
-                "initCard error",
-                err?.response?.status,
-                err?.response?.data || err
-            );
-
-            // Do not redirect to /login here; anonymous flow must stay on /edit
-            setIsInitializing(false);
-        }
-    }, []);
+        },
+        [navigate]
+    );
 
     const refetchMineThrottled = useCallback(
         async (isMounted = () => true) => {
+            // P0: skip auto refetch while deleting or while user has unsaved edits.
+            if (isDeletingRef.current) return;
+            const hasDirty =
+                dirtyPathsRef.current && dirtyPathsRef.current.size > 0;
+            if (hasDirty) return;
+
             const nowMs = Date.now();
             if (nowMs - lastRefetchAtRef.current < REFETCH_THROTTLE_MS) return;
             lastRefetchAtRef.current = nowMs;
@@ -360,6 +422,7 @@ function EditCard() {
     // Phase 2: no autosave while typing.
 
     async function handleDelete() {
+        if (isDeletingRef.current) return;
         if (!draftCard?._id) return;
 
         const confirmed = window.confirm(
@@ -370,7 +433,10 @@ function EditCard() {
         try {
             setIsDeleting(true);
             const result = await deleteCard(draftCard._id);
-            const ok = Boolean(result?.ok);
+            const ok =
+                result?.status === 204 ||
+                result?.data?.success === true ||
+                result?.data?.ok === true;
             if (!ok) {
                 showDeleteNotice({
                     type: "error",
@@ -380,11 +446,17 @@ function EditCard() {
                 return;
             }
 
+            // Ensure in-app navigation guard does not block the redirect.
+            setDirtyPaths(new Set());
+
             // Success: leave EditCard (do not trigger initial-loading UI here).
             navigate("/dashboard", {
                 replace: true,
                 state: {
-                    notice: { type: "success", text: "הכרטיס נמחק בהצלחה" },
+                    flash: {
+                        type: "success",
+                        message: "הכרטיס נמחק בהצלחה",
+                    },
                 },
             });
         } catch (err) {
@@ -405,7 +477,10 @@ function EditCard() {
                 navigate("/dashboard", {
                     replace: true,
                     state: {
-                        notice: { type: "success", text: "הכרטיס כבר נמחק" },
+                        flash: {
+                            type: "info",
+                            message: "הכרטיס כבר נמחק",
+                        },
                     },
                 });
                 return;

@@ -16,6 +16,7 @@ export default function EditorPanel({
     onFieldChange,
     editingDisabled,
     onDeleteCard,
+    isDeleting,
     onUpgrade,
     onPublish,
     onUnpublish,
@@ -121,6 +122,7 @@ export default function EditorPanel({
                     onDelete={onDeleteCard}
                     onUpgrade={onUpgrade}
                     editingDisabled={editingDisabled}
+                    isDeleting={isDeleting}
                     onPublish={onPublish}
                     onUnpublish={onUnpublish}
                 />

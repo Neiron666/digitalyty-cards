@@ -1,0 +1,61 @@
+.root {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+
+    padding: 12px 14px;
+    border-radius: 14px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+
+    background: rgba(11, 18, 32, 0.9);
+    color: #eaf0ff;
+
+    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.35);
+    backdrop-filter: blur(6px);
+}
+
+.body {
+    font-size: 14px;
+    line-height: 1.35;
+}
+
+.close {
+    appearance: none;
+    border: 0;
+    background: transparent;
+    color: inherit;
+
+    width: 32px;
+    height: 32px;
+    border-radius: 10px;
+    cursor: pointer;
+
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    font-size: 18px;
+    line-height: 1;
+}
+
+.close:focus-visible {
+    outline: 2px solid rgba(255, 215, 0, 0.65);
+    outline-offset: 2px;
+}
+
+.close:hover {
+    background: rgba(255, 255, 255, 0.06);
+}
+
+.success {
+    border-color: rgba(34, 197, 94, 0.25);
+}
+
+.error {
+    border-color: rgba(239, 68, 68, 0.28);
+}
+
+.info {
+    border-color: rgba(255, 215, 0, 0.18);
+}

@@ -1,0 +1,25 @@
+.main {
+    padding-block: 60px;
+    padding-inline: 20px;
+    text-align: center;
+}
+
+.email {
+    margin-top: 8px;
+    opacity: 0.85;
+}
+
+.flashWrap {
+    position: fixed;
+    inset-block-start: 18px;
+    inset-inline: 18px;
+    display: flex;
+    justify-content: center;
+    pointer-events: none;
+    z-index: 50;
+}
+
+.flash {
+    width: min(720px, calc(100% - 36px));
+    pointer-events: auto;
+}

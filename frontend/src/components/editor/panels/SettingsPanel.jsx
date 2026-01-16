@@ -18,6 +18,7 @@ export default function SettingsPanel({
     onDelete,
     onUpgrade,
     editingDisabled,
+    isDeleting,
     onPublish,
     onUnpublish,
 }) {
@@ -107,9 +108,19 @@ export default function SettingsPanel({
                 <Button
                     variant="ghost"
                     onClick={onDelete}
-                    disabled={!card?._id}
+                    disabled={!card?._id || Boolean(isDeleting)}
                 >
-                    מחיקת כרטיס
+                    {isDeleting ? (
+                        <span className={styles.deleteInline}>
+                            <span
+                                className={styles.spinner}
+                                aria-hidden="true"
+                            />
+                            מוחק...
+                        </span>
+                    ) : (
+                        "מחיקת כרטיס"
+                    )}
                 </Button>
             </div>
         </Panel>
