@@ -17,6 +17,7 @@
         "qrcode.react": "^4.2.0",
         "react": "^19.2.0",
         "react-dom": "^19.2.0",
+        "react-easy-crop": "^5.0.8",
         "react-helmet-async": "^2.0.5",
         "react-router-dom": "^7.10.1"
     },

@@ -1,8 +1,86 @@
-.button {
-    width: 100%;
-    padding: 14px;
-    border-radius: var(--radius-md);
-    background: var(--color-primary);
-    color: white;
-    font-weight: 700;
+.buttons {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+
+/* ВАЖНО: перебиваем стили из CardLayout.module.css:
+   .socialRow :global(a) / .sectionWrap :global(a) и т.д.
+   У нас будет более высокая специфичность: .buttons .item (2 класса) */
+.buttons .item {
+    width: auto;
+    padding: 0;
+    background: transparent;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+    transform: none;
+    filter: none;
+    text-decoration: none;
+
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    /* круглая кнопка */
+    width: var(--contact-btn-size, 52px);
+    height: var(--contact-btn-size, 52px);
+    border-radius: 999px;
+    border: 1px solid var(--contact-btn-border, var(--primary-color, #0b5cff));
+    background: var(--contact-btn-bg, transparent);
+
+    transition: transform 120ms ease, box-shadow 120ms ease, filter 120ms ease;
+}
+
+.buttons .item:hover {
+    transform: translateY(-1px);
+    filter: brightness(1.04);
+}
+
+.buttons .item:active {
+    transform: translateY(0);
+}
+
+.buttons .item:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px var(--contact-btn-ring, rgba(79, 124, 255, 0.35));
+}
+
+/* сама иконка через mask, цвет управляется переменной */
+.icon {
+    width: var(--contact-icon-size, 22px);
+    height: var(--contact-icon-size, 22px);
+    background-color: var(--contact-icon-color, var(--primary-color, #0b5cff));
+
+    -webkit-mask-repeat: no-repeat;
+    -webkit-mask-position: center;
+    -webkit-mask-size: contain;
+
+    mask-repeat: no-repeat;
+    mask-position: center;
+    mask-size: contain;
+}
+
+/* пути под твои svg в frontend/public/icons */
+.iconPhone {
+    -webkit-mask-image: url("/icons/phone.svg");
+    mask-image: url("/icons/phone.svg");
+}
+.iconWhatsapp {
+    -webkit-mask-image: url("/icons/whatsapp.svg");
+    mask-image: url("/icons/whatsapp.svg");
+}
+.iconWaze {
+    -webkit-mask-image: url("/icons/waze.svg");
+    mask-image: url("/icons/waze.svg");
+}
+.iconEmail {
+    -webkit-mask-image: url("/icons/mail.svg");
+    mask-image: url("/icons/mail.svg");
+}
+.iconWebsite {
+    -webkit-mask-image: url("/icons/globe.svg");
+    mask-image: url("/icons/globe.svg");
 }

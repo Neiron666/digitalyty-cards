@@ -1,13 +1,23 @@
 import ColorPicker from "./ColorPicker";
 import FontPicker from "./FontPicker";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
     getTemplateById,
     normalizeTemplateId,
 } from "../../../templates/templates.config";
 import { uploadDesignAsset } from "../../../services/upload.service";
+import CropModal from "../media/CropModal";
+import { getCroppedBlob } from "../../../utils/imageCropper";
+import styles from "./DesignEditor.module.css";
 
 const ALLOWED_MIME = new Set(["image/jpeg", "image/png", "image/webp"]);
 const MAX_BYTES = 2 * 1024 * 1024;
+
+const COVER_ASPECT = 16 / 9;
+const AVATAR_ASPECT = 1;
+
+const COVER_OUTPUT = { width: 1600, height: 900 };
+const AVATAR_OUTPUT = { width: 600, height: 600 };
 
 function DesignEditor({ design, onChange, plan, cardId }) {
     const safeDesign = design || {};
@@ -15,20 +25,98 @@ function DesignEditor({ design, onChange, plan, cardId }) {
         normalizeTemplateId(safeDesign?.templateId)
     );
 
-    async function handleUpload(kind, file) {
-        if (!cardId || !file) return;
+    const [cropOpen, setCropOpen] = useState(false);
+    const [cropKind, setCropKind] = useState(null);
+    const [cropTitle, setCropTitle] = useState("");
+    const [cropAspect, setCropAspect] = useState(1);
+    const [cropShape, setCropShape] = useState("rect");
+    const [cropImageUrl, setCropImageUrl] = useState("");
+    const [pendingFile, setPendingFile] = useState(null);
+
+    const objectUrlRef = useRef(null);
+
+    const hasBackgroundImage = useMemo(
+        () => Boolean(safeDesign?.backgroundImage || safeDesign?.coverImage),
+        [safeDesign?.backgroundImage, safeDesign?.coverImage]
+    );
+
+    const hasAvatarImage = useMemo(
+        () => Boolean(safeDesign?.avatarImage || safeDesign?.logo),
+        [safeDesign?.avatarImage, safeDesign?.logo]
+    );
+
+    useEffect(() => {
+        return () => {
+            if (objectUrlRef.current) {
+                URL.revokeObjectURL(objectUrlRef.current);
+                objectUrlRef.current = null;
+            }
+        };
+    }, []);
+
+    function openCropFor(kind, file) {
+        if (!file) return;
 
         if (!ALLOWED_MIME.has(file.type) || file.size > MAX_BYTES) {
             alert("אנא העלה/י JPG/PNG/WebP עד 2MB");
             return;
         }
 
+        if (objectUrlRef.current) {
+            URL.revokeObjectURL(objectUrlRef.current);
+            objectUrlRef.current = null;
+        }
+
+        const url = URL.createObjectURL(file);
+        objectUrlRef.current = url;
+
+        setPendingFile(file);
+        setCropKind(kind);
+
+        if (kind === "background") {
+            setCropTitle("חיתוך תמונת רקע (16:9)");
+            setCropAspect(COVER_ASPECT);
+            setCropShape("rect");
+        } else {
+            setCropTitle("חיתוך תמונת פרופיל (1:1)");
+            setCropAspect(AVATAR_ASPECT);
+            setCropShape("round");
+        }
+
+        setCropImageUrl(url);
+        setCropOpen(true);
+    }
+
+    async function uploadCropped(kind, blob) {
+        if (!cardId || !blob) return null;
+
+        const safeKind = kind === "avatar" ? "avatar" : "background";
+        const fileName = safeKind === "avatar" ? "avatar.jpg" : "cover.jpg";
+        const croppedFile = new File([blob], fileName, { type: blob.type });
+
+        const res = await uploadDesignAsset(cardId, croppedFile, safeKind);
+        return res?.url || null;
+    }
+
+    async function handleApplyCrop(cropPixels) {
+        if (!cropKind || !pendingFile || !cropImageUrl) return;
+        if (!cardId) return;
+
+        const output = cropKind === "avatar" ? AVATAR_OUTPUT : COVER_OUTPUT;
+
         let url;
         try {
-            const res = await uploadDesignAsset(cardId, file, kind);
-            url = res?.url;
+            const blob = await getCroppedBlob({
+                imageSrc: cropImageUrl,
+                cropPixels,
+                outputWidth: output.width,
+                outputHeight: output.height,
+            });
+            url = await uploadCropped(cropKind, blob);
         } catch (err) {
-            alert(err?.response?.data?.message || "Upload error");
+            alert(
+                err?.response?.data?.message || err?.message || "Upload error"
+            );
             return;
         }
 
@@ -37,72 +125,82 @@ function DesignEditor({ design, onChange, plan, cardId }) {
             return;
         }
 
-        if (kind === "background") {
+        if (cropKind === "background") {
             onChange({
                 ...safeDesign,
                 backgroundImage: url,
-                coverImage: url,
             });
         }
 
-        if (kind === "avatar") {
+        if (cropKind === "avatar") {
             onChange({
                 ...safeDesign,
                 avatarImage: url,
-                logo: url,
             });
+        }
+
+        setCropOpen(false);
+        setPendingFile(null);
+        setCropKind(null);
+        setCropImageUrl("");
+        if (objectUrlRef.current) {
+            URL.revokeObjectURL(objectUrlRef.current);
+            objectUrlRef.current = null;
+        }
+    }
+
+    function handleCancelCrop() {
+        setCropOpen(false);
+        setPendingFile(null);
+        setCropKind(null);
+        setCropImageUrl("");
+        if (objectUrlRef.current) {
+            URL.revokeObjectURL(objectUrlRef.current);
+            objectUrlRef.current = null;
         }
     }
 
     return (
-        <aside>
+        <aside className={styles.root}>
             <h2>עיצוב הכרטיס</h2>
 
             {template?.supports?.backgroundImage && (
-                <section>
+                <section className={styles.section}>
                     <h3>תמונת רקע</h3>
-                    {safeDesign?.backgroundImage || safeDesign?.coverImage ? (
+                    {hasBackgroundImage ? (
                         <img
                             src={
                                 safeDesign?.backgroundImage ||
                                 safeDesign?.coverImage
                             }
                             alt="Background preview"
-                            style={{
-                                width: "100%",
-                                borderRadius: "var(--radius-md)",
-                                border: "1px solid var(--border)",
-                                display: "block",
-                                marginBottom: 8,
-                            }}
+                            className={styles.previewImage}
                         />
                     ) : null}
-                    <label style={{ display: "grid", gap: 6 }}>
-                        <span style={{ fontWeight: 800 }}>העלאת תמונה</span>
+                    <label className={styles.label}>
+                        <span className={styles.labelTitle}>העלאת תמונה</span>
                         <input
                             type="file"
                             accept="image/*"
                             disabled={!cardId}
                             aria-disabled={!cardId}
                             onChange={(e) =>
-                                handleUpload("background", e.target.files?.[0])
+                                openCropFor(
+                                    "background",
+                                    e.target.files?.[0] || null
+                                )
                             }
                         />
                     </label>
 
                     {!cardId ? (
-                        <p
-                            style={{
-                                margin: "6px 0 0",
-                                color: "var(--text-muted)",
-                            }}
-                        >
+                        <p className={styles.helper}>
                             שמור/י את הכרטיס כדי להעלות תמונות.
                         </p>
                     ) : null}
 
-                    <label style={{ display: "grid", gap: 6, marginTop: 10 }}>
-                        <span style={{ fontWeight: 800 }}>Overlay</span>
+                    <label className={styles.label}>
+                        <span className={styles.labelTitle}>Overlay</span>
                         <input
                             type="range"
                             min={0}
@@ -120,32 +218,27 @@ function DesignEditor({ design, onChange, plan, cardId }) {
             )}
 
             {template?.supports?.avatar && (
-                <section>
+                <section className={styles.section}>
                     <h3>תמונה עגולה (Avatar)</h3>
-                    {safeDesign?.avatarImage || safeDesign?.logo ? (
+                    {hasAvatarImage ? (
                         <img
                             src={safeDesign?.avatarImage || safeDesign?.logo}
                             alt="Avatar preview"
-                            style={{
-                                width: 96,
-                                height: 96,
-                                borderRadius: 999,
-                                border: "1px solid var(--border)",
-                                display: "block",
-                                objectFit: "cover",
-                                marginBottom: 8,
-                            }}
+                            className={styles.avatarPreview}
                         />
                     ) : null}
-                    <label style={{ display: "grid", gap: 6 }}>
-                        <span style={{ fontWeight: 800 }}>העלאת תמונה</span>
+                    <label className={styles.label}>
+                        <span className={styles.labelTitle}>העלאת תמונה</span>
                         <input
                             type="file"
                             accept="image/*"
                             disabled={!cardId}
                             aria-disabled={!cardId}
                             onChange={(e) =>
-                                handleUpload("avatar", e.target.files?.[0])
+                                openCropFor(
+                                    "avatar",
+                                    e.target.files?.[0] || null
+                                )
                             }
                         />
                     </label>
@@ -165,6 +258,16 @@ function DesignEditor({ design, onChange, plan, cardId }) {
                 value={safeDesign.font}
                 onChange={(font) => onChange({ ...safeDesign, font })}
                 disabled={plan === "free"}
+            />
+
+            <CropModal
+                open={cropOpen}
+                title={cropTitle}
+                imageUrl={cropImageUrl}
+                aspect={cropAspect}
+                cropShape={cropShape}
+                onCancel={handleCancelCrop}
+                onApply={handleApplyCrop}
             />
         </aside>
     );

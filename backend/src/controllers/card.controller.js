@@ -551,6 +551,8 @@ export async function updateCard(req, res) {
 
     const patch = sanitizeWritablePatch(req.body);
 
+    let publishError = null;
+
     // Prevent publishing without at least a business name AND a chosen template
     if (patch.status === "published") {
         // Hard rule: publishing is allowed ONLY for claimed (user-owned) cards.
@@ -560,14 +562,6 @@ export async function updateCard(req, res) {
                 code: "PUBLISH_REQUIRES_AUTH",
                 message: "Must be registered to publish",
             });
-        }
-
-        const seededCandidate =
-            patch?.flags?.isTemplateSeeded ??
-            existingCard?.flags?.isTemplateSeeded;
-
-        if (seededCandidate) {
-            patch.status = "draft";
         }
 
         const nameCandidate =
@@ -582,11 +576,18 @@ export async function updateCard(req, res) {
         const templateCandidate =
             patch?.design?.templateId ?? existingCard?.design?.templateId;
 
-        if (
-            !String(nameCandidate).trim() ||
-            !String(templateCandidate || "").trim()
-        ) {
+        const nameOk = Boolean(String(nameCandidate || "").trim());
+        const templateOk = Boolean(String(templateCandidate || "").trim());
+
+        if (!nameOk || !templateOk) {
             patch.status = "draft";
+            publishError = "MISSING_FIELDS";
+        } else {
+            // Publishing should not be blocked forever by template seeding.
+            // If required fields are present, force clear seeded gate.
+            if (!patch.flags || typeof patch.flags !== "object")
+                patch.flags = {};
+            patch.flags.isTemplateSeeded = false;
         }
     }
 
@@ -777,7 +778,11 @@ export async function updateCard(req, res) {
                   .lean()
             : null;
 
-    res.json(toCardDTO(card, now, { user: userTier }));
+    const dto = toCardDTO(card, now, { user: userTier });
+    if (publishError) {
+        return res.json({ ...dto, publishError });
+    }
+    return res.json(dto);
 }
 
 export async function getCardBySlug(req, res) {

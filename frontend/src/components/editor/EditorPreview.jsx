@@ -5,7 +5,9 @@ function PhoneFrame({ children }) {
     return (
         <div className={styles.phoneFrame}>
             <div className={styles.phoneInner}>
-                <div className={styles.phoneScroll}>{children}</div>
+                <div className={styles.phoneScroll} data-preview="phone">
+                    {children}
+                </div>
             </div>
         </div>
     );

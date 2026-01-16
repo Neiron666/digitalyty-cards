@@ -1,5 +1,7 @@
-import styles from "./ContactButtons.module.css";
+import styles from "../layout/ContactButtons.module.css";
 import { trackClick } from "../../../services/analytics.client";
+
+const cx = (...classes) => classes.filter(Boolean).join(" ");
 
 function ContactButtons({ card }) {
     const { contact, business } = card;
@@ -41,11 +43,14 @@ function ContactButtons({ card }) {
             {phone && (
                 <a
                     href={`tel:${phone}`}
-                    className={styles.link}
+                    className={styles.item}
                     aria-label={`Call ${phone}`}
                     onClick={() => trackClick(card?.slug, "call")}
                 >
-                    📞 התקשרו עכשיו
+                    <span
+                        className={cx(styles.icon, styles.iconPhone)}
+                        aria-hidden="true"
+                    />
                 </a>
             )}
 
@@ -54,11 +59,14 @@ function ContactButtons({ card }) {
                     href={`https://wa.me/${whatsapp}`}
                     target="_blank"
                     rel="noreferrer"
-                    className={styles.link}
+                    className={styles.item}
                     aria-label={`Open WhatsApp chat ${whatsapp}`}
                     onClick={() => trackClick(card?.slug, "whatsapp")}
                 >
-                    💬 WhatsApp
+                    <span
+                        className={cx(styles.icon, styles.iconWhatsapp)}
+                        aria-hidden="true"
+                    />
                 </a>
             )}
 
@@ -67,22 +75,28 @@ function ContactButtons({ card }) {
                     href={wazeUrl}
                     target="_blank"
                     rel="noreferrer"
-                    className={styles.link}
+                    className={styles.item}
                     aria-label="Navigate with Waze"
                     onClick={() => trackClick(card?.slug, "navigate")}
                 >
-                    📍 ניווט לעסק
+                    <span
+                        className={cx(styles.icon, styles.iconWaze)}
+                        aria-hidden="true"
+                    />
                 </a>
             )}
 
             {contact?.email && (
                 <a
                     href={`mailto:${contact.email}`}
-                    className={styles.link}
+                    className={styles.item}
                     aria-label={`Email ${contact.email}`}
                     onClick={() => trackClick(card?.slug, "email")}
                 >
-                    ✉️ Email
+                    <span
+                        className={cx(styles.icon, styles.iconEmail)}
+                        aria-hidden="true"
+                    />
                 </a>
             )}
 
@@ -91,11 +105,14 @@ function ContactButtons({ card }) {
                     href={contact.website}
                     target="_blank"
                     rel="noreferrer"
-                    className={styles.link}
+                    className={styles.item}
                     aria-label="Open website"
                     onClick={() => trackClick(card?.slug, "website")}
                 >
-                    🌐 אתר
+                    <span
+                        className={cx(styles.icon, styles.iconWebsite)}
+                        aria-hidden="true"
+                    />
                 </a>
             )}
         </div>

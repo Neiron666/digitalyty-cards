@@ -6,6 +6,7 @@
 
 .phoneFrame {
     width: min(420px, 92vw);
+    height: 80vh;
     aspect-ratio: 9 / 16;
     border-radius: 28px;
     padding: 10px;
@@ -26,6 +27,11 @@
     overflow-y: auto;
     overscroll-behavior: contain;
     -webkit-overflow-scrolling: touch;
+
+    /* Phone preview should behave like a real device screen (container-driven),
+       not the browser viewport (media-driven). */
+    container-type: inline-size;
+    container-name: phone;
 }
 
 .header,

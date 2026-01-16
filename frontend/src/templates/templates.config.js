@@ -378,6 +378,43 @@ export const TEMPLATES = [
             ],
         },
     },
+
+    // Variant A: token-only skin; shared CardLayout skeleton.
+    {
+        id: "beauty",
+        name: "Beauty",
+        backgroundMode: "photo",
+        previewImage: PREVIEW_PLACEHOLDER_PNG,
+        supports: {
+            backgroundImage: true,
+            avatar: true,
+            header: true,
+            about: true,
+            services: true,
+            gallery: true,
+            cta: true,
+            socials: true,
+            contact: true,
+        },
+        designDefaults: {
+            backgroundMode: "photo",
+            alignment: "center",
+            socialStyle: "icons",
+            backgroundOverlay: 40,
+        },
+        seededFields: [
+            "name",
+            "headline",
+            "company",
+            "about",
+            "cta.label",
+            "cta.value",
+            "contact.phone",
+            "contact.email",
+            "contact.website",
+            "socials",
+        ],
+    },
 ];
 
 // Keep existing exports, but ensure these work with TEMPLATES above.

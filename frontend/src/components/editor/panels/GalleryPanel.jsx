@@ -3,6 +3,7 @@ import Paywall from "../../common/Paywall";
 import Panel from "./Panel";
 import Button from "../../ui/Button";
 import { galleryItemToUrl } from "../../../utils/gallery";
+import styles from "./GalleryPanel.module.css";
 
 const ALLOWED_MIME = new Set(["image/jpeg", "image/png", "image/webp"]);
 const MAX_BYTES = 2 * 1024 * 1024;
@@ -64,30 +65,14 @@ export default function GalleryPanel({
 
     return (
         <Panel title="גלריה">
-            <ul className="gallery-list">
+            <ul className={styles.list}>
                 {gallery.map((item, index) => {
                     const url = galleryItemToUrl(item);
                     if (!url) return null;
 
                     return (
-                        <li
-                            key={index}
-                            style={{
-                                display: "flex",
-                                gap: 8,
-                                alignItems: "center",
-                            }}
-                        >
-                            <img
-                                src={url}
-                                alt=""
-                                style={{
-                                    width: 64,
-                                    height: 64,
-                                    objectFit: "cover",
-                                    borderRadius: 8,
-                                }}
-                            />
+                        <li key={index} className={styles.row}>
+                            <img src={url} alt="" className={styles.thumb} />
                             <Button
                                 variant="secondary"
                                 size="small"
@@ -107,7 +92,7 @@ export default function GalleryPanel({
                 disabled={!cardId || reachedLimit}
             />
 
-            <p className="hint">מוגבל ל־{limit} תמונות</p>
+            <p className={styles.hint}>מוגבל ל־{limit} תמונות</p>
 
             {plan === "free" && reachedLimit && (
                 <Paywall text="הגעת למגבלת תמונות" onUpgrade={onUpgrade} />

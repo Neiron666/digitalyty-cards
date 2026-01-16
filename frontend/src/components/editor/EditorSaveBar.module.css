@@ -1,0 +1,76 @@
+.bar {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+
+    padding-block: 10px;
+    padding-inline: 12px;
+    margin-block-end: 12px;
+
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    background: var(--bg-card);
+}
+
+.saveButton {
+    appearance: none;
+    border: 1px solid var(--border);
+    background: rgba(255, 255, 255, 0.03);
+    color: var(--text-main);
+    padding-block: 10px;
+    padding-inline: 14px;
+    border-radius: var(--radius-md);
+    font-weight: 800;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.saveButton:hover:not(:disabled) {
+    border-color: var(--gold-fade);
+    color: var(--gold);
+}
+
+.saveButton:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.saveButton:focus-visible {
+    outline: 2px solid var(--gold);
+    outline-offset: 2px;
+}
+
+.status {
+    flex: 1 1 auto;
+    min-inline-size: 0;
+    text-align: end;
+    font-weight: 700;
+    font-size: 0.95rem;
+    color: var(--text-muted);
+}
+
+.statusDirty {
+    color: var(--text-main);
+}
+
+.statusSaved {
+    color: var(--gold);
+}
+
+.statusError {
+    color: #ff6b6b;
+}
+
+.statusIdle {
+    color: var(--text-muted);
+}
+
+.errorText {
+    display: inline;
+    word-break: break-word;
+}

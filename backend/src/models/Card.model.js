@@ -1,11 +1,25 @@
 import mongoose from "mongoose";
 
+import { normalizeReviews } from "../utils/reviews.util.js";
+
 const UploadItemSchema = new mongoose.Schema(
     {
         kind: { type: String, default: null, trim: true },
         url: { type: String, required: true, trim: true },
         path: { type: String, required: true, trim: true },
         createdAt: { type: Date, default: Date.now },
+    },
+    { _id: false }
+);
+
+const ReviewSchema = new mongoose.Schema(
+    {
+        text: { type: String, required: true, trim: true },
+        name: { type: String, trim: true, default: "" },
+        role: { type: String, trim: true, default: "" },
+        rating: { type: Number, default: null },
+        // Stored as ISO string for simplicity/compat.
+        date: { type: String, default: null, trim: true },
     },
     { _id: false }
 );
@@ -281,7 +295,11 @@ const CardSchema = new mongoose.Schema(
 
         // Backward compatible: old cards store string URLs; new uploads store objects.
         gallery: [{ type: mongoose.Schema.Types.Mixed, default: [] }],
-        reviews: [String],
+        reviews: {
+            type: [ReviewSchema],
+            default: [],
+            set: (arr) => normalizeReviews(arr),
+        },
 
         design: {
             templateId: { type: String, default: null },
@@ -321,7 +339,7 @@ const CardSchema = new mongoose.Schema(
 
         isActive: { type: Boolean, default: true },
     },
-    { timestamps: true }
+    { timestamps: true, runSettersOnQuery: true }
 );
 
 // Model intentionally contains no product logic/middleware.

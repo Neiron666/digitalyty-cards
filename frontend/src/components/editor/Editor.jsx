@@ -3,18 +3,24 @@ import styles from "./Editor.module.css";
 import EditorSidebar from "./EditorSidebar";
 import EditorPanel from "./EditorPanel";
 import EditorPreview from "./EditorPreview";
+import EditorSaveBar from "./EditorSaveBar";
 
 export default function Editor({
     card,
     onFieldChange,
     editingDisabled,
     onDeleteCard,
+    isDeleting,
     onUpgrade,
     onPublish,
     onUnpublish,
     previewHeader,
     previewFooter,
     canShowAnalyticsTab,
+    commitDraft,
+    dirtyPaths,
+    saveState,
+    saveErrorText,
 }) {
     const navigate = useNavigate();
     const { tab } = useParams(); // route: /edit/card/:tab
@@ -32,7 +38,10 @@ export default function Editor({
         ...(canShowAnalyticsTab ? ["analytics"] : []),
     ]);
 
-    const activeTab = allowedTabs.has(tab) ? tab : "business";
+    const activeTab = allowedTabs.has(tab) ? tab : "templates";
+
+    const dirtyCount =
+        dirtyPaths && typeof dirtyPaths.size === "number" ? dirtyPaths.size : 0;
 
     function handleChangeTab(nextTab) {
         if (!nextTab || !allowedTabs.has(nextTab)) return;
@@ -48,12 +57,20 @@ export default function Editor({
             />
 
             <main className={styles.panel}>
+                <EditorSaveBar
+                    dirtyCount={dirtyCount}
+                    saveState={saveState}
+                    saveErrorText={saveErrorText}
+                    onSave={commitDraft}
+                    disabled={Boolean(editingDisabled) || !commitDraft}
+                />
                 <EditorPanel
                     tab={activeTab}
                     card={card}
                     onFieldChange={onFieldChange}
                     editingDisabled={editingDisabled}
                     onDeleteCard={onDeleteCard}
+                    isDeleting={isDeleting}
                     onUpgrade={onUpgrade}
                     onPublish={onPublish}
                     onUnpublish={onUnpublish}

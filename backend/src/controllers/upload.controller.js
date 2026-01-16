@@ -2,6 +2,7 @@ import Card from "../models/Card.model.js";
 import User from "../models/User.model.js";
 import crypto from "crypto";
 import { uploadBuffer } from "../services/supabaseStorage.js";
+import { normalizeReviews } from "../utils/reviews.util.js";
 import { removeObjects } from "../services/supabaseStorage.js";
 import { resolveActor, assertCardOwner } from "../utils/actor.js";
 import {
@@ -197,6 +198,11 @@ export async function uploadGalleryImage(req, res) {
         ensureTrialStarted(card, now);
 
         card.gallery.push(item);
+
+        // Safety net: prevent unrelated dirty reviews from failing uploads.
+        if (Array.isArray(card.reviews)) {
+            card.reviews = normalizeReviews(card.reviews);
+        }
         await card.save();
 
         res.json({
@@ -358,6 +364,11 @@ export async function uploadDesignAsset(req, res) {
             card.design = card.design || {};
             card.design.avatarImagePath = uploaded.path;
             card.design.logoPath = uploaded.path;
+        }
+
+        // Safety net: prevent unrelated dirty reviews from failing uploads.
+        if (Array.isArray(card.reviews)) {
+            card.reviews = normalizeReviews(card.reviews);
         }
 
         await card.save();

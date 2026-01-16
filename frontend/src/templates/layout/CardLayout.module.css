@@ -8,18 +8,32 @@
 .card {
     width: 100%;
     /* max-width: 480px; */
-    background: var(--bg-card, #0f172a);
+    background: var(--card-bg, var(--bg-card, #0f172a));
     color: var(--text-main, #eaf0ff);
     border-radius: var(--card-radius, var(--radius-lg, 24px));
     box-shadow: var(--shadow-soft, 0 18px 52px rgba(0, 0, 0, 0.25));
     overflow: hidden;
     font-family: var(--font-family, "Heebo, sans-serif");
+
+    /* Hero geometry token (SSoT)
+         IMPORTANT: crop aspect must match this aspect to avoid “second crop” via object-fit: cover. */
+    --hero-aspect: 16 / 9;
+
+    /* Avatar overlap tokens (skins may set --avatar-size and/or --avatar-overlap) */
+    --_avatar-size: var(--avatar-size, 150px);
+    --_avatar-overlap: var(--avatar-overlap, calc(var(--_avatar-size) / 2));
 }
 
 .hero {
     position: relative;
     background-color: var(--bg-surface, #fff);
-    overflow: hidden;
+    /* Allow avatar to overlap into body without clipping */
+    overflow: visible;
+    z-index: 1;
+
+    /* Deterministic hero box: width-driven height.
+       Do NOT use min-height here; it breaks WYSIWYG crop across containers. */
+    aspect-ratio: var(--hero-aspect, 16 / 9);
 }
 
 /* Gradient layer (skin sets --hero-gradient token) */
@@ -43,6 +57,7 @@
     height: 100%;
     object-fit: cover;
     z-index: 0;
+    object-position: var(--hero-image-position, center);
 }
 
 .overlay {
@@ -103,18 +118,19 @@
 }
 
 .heroInner {
-    position: relative;
+    position: absolute;
+    inset: 0;
     display: flex;
     justify-content: center;
     align-items: flex-end;
-    min-height: var(--hero-min-height, 220px);
-    padding: 24px;
+    padding: 24px 24px 0;
     z-index: 3;
 }
 
 .avatarWrap {
-    width: 112px;
-    height: 112px;
+    width: var(--_avatar-size);
+    height: var(--_avatar-size);
+    margin-bottom: calc(var(--_avatar-overlap) * -1);
     border-radius: 50%;
     overflow: hidden;
     border: 4px solid var(--avatar-border, rgba(255, 255, 255, 0.9));
@@ -130,10 +146,14 @@
 }
 
 .body {
-    padding: 28px 22px 22px;
+    justify-self: center;
+    position: relative;
+    z-index: 0;
+    padding: calc(28px + var(--_avatar-overlap)) 22px 22px;
     display: flex;
     flex-direction: column;
     gap: 16px;
+    width: 70%;
 }
 
 .identity {
@@ -147,7 +167,7 @@
     font-size: var(--fs-h1, 28px);
     line-height: var(--lh-tight, 1.1);
     font-weight: 800;
-    color: var(--text-main, #ffffff);
+    color: var(--name-color, var(--text-main, #ffffff));
     letter-spacing: var(--name-letter-spacing, 0);
     margin: 0;
 }
@@ -168,6 +188,14 @@
     gap: 12px;
 }
 
+.socialIconsRow {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+
 .sectionWrap > * {
     border-radius: var(--section-radius, 18px);
     background: var(--section-bg, var(--bg-surface, #111b2e));
@@ -177,8 +205,6 @@
     -webkit-backdrop-filter: var(--section-backdrop-filter, none);
 }
 
-.socialRow :global(button),
-.socialRow :global(a),
 .ctaRow :global(button),
 .ctaRow :global(a),
 .formWrap :global(button),
@@ -204,8 +230,6 @@
     transition: transform 120ms ease, box-shadow 120ms ease, filter 120ms ease;
 }
 
-.socialRow :global(button:hover),
-.socialRow :global(a:hover),
 .ctaRow :global(button:hover),
 .ctaRow :global(a:hover),
 .formWrap :global(button:hover),
@@ -216,8 +240,6 @@
     filter: brightness(1.04);
 }
 
-.socialRow :global(button:active),
-.socialRow :global(a:active),
 .ctaRow :global(button:active),
 .ctaRow :global(a:active),
 .formWrap :global(button:active),
@@ -231,8 +253,6 @@
 .ctaRow :global(a:focus-visible),
 .formWrap :global(button:focus-visible),
 .formWrap :global(a:focus-visible),
-.socialRow :global(button:focus-visible),
-.socialRow :global(a:focus-visible),
 .sectionWrap :global(button:focus-visible),
 .sectionWrap :global(a:focus-visible) {
     outline: none;
@@ -243,21 +263,76 @@
     margin-top: 8px;
 }
 
-@media (max-width: 520px) {
-    .root {
-        padding: 16px;
+/* Desktop boost: taller hero on large screens (keeps 50/50 avatar overlap) */
+@media (min-width: 1024px) {
+    .card {
+        --_avatar-size: 300px;
+        /* --hero-aspect: 3 / 1; */
     }
+    .hero {
+        margin: 0 auto;
+        width: 70%;
+        height: auto;
+    }
+}
 
+@media (max-width: 520px) {
     .card {
         border-radius: var(--radius-md, 20px);
-    }
 
-    .heroInner {
-        min-height: 180px;
-    }
+        /* Mobile keeps the same hero aspect for predictable WYSIWYG */
+        --hero-aspect: 16 / 9;
 
-    .avatarWrap {
-        width: 96px;
-        height: 96px;
+        /* Avatar sizing for mobile */
+        --_avatar-overlap: var(--avatar-overlap, calc(var(--_avatar-size) / 2));
+    }
+    .cover {
+        border-radius: none;
+    }
+    .hero {
+        width: 100%;
+    }
+    .body {
+        width: 95%;
+        padding: calc(24px + var(--_avatar-overlap)) 16px 16px;
+    }
+}
+
+/* Phone preview overrides (editor only):
+   - must be container-driven (phone screen width), not viewport-driven
+   - must NOT leak to real pages
+   - explicitly neutralizes desktop boost vars inside the preview */
+@container phone (max-width: 520px) {
+    [data-preview="phone"] .card {
+        border-radius: var(--radius-md, 20px);
+
+        /* Neutralize desktop boost (viewport @media) inside phone preview */
+        --_avatar-size: var(--avatar-size, 150px);
+        --hero-aspect: 16 / 9;
+
+        /* Keep overlap behavior consistent with mobile layout */
+        --_avatar-overlap: var(--avatar-overlap, calc(var(--_avatar-size) / 2));
+    }
+    [data-preview="phone"] .hero {
+        margin: 0 auto;
+        width: 100%;
+        height: auto;
+    }
+    [data-preview="phone"] .cover {
+        border-radius: none;
+    }
+    [data-preview="phone"] .body {
+        width: 95%;
+        padding: calc(24px + var(--_avatar-overlap)) 16px 16px;
+    }
+}
+
+/* Fallback: if named containers aren't supported for any reason, still scope to the preview marker. */
+@container (max-width: 520px) {
+    [data-preview="phone"] .card {
+        border-radius: var(--radius-md, 20px);
+        --_avatar-size: var(--avatar-size, 150px);
+        --hero-aspect: 16 / 9;
+        --_avatar-overlap: var(--avatar-overlap, calc(var(--_avatar-size) / 2));
     }
 }

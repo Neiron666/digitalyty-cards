@@ -1,13 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useBlocker, useNavigate, useParams } from "react-router-dom";
 import Editor from "../components/editor/Editor";
 import TrialBanner from "../components/editor/TrialBanner";
-import { createCard, deleteCard, updateCard } from "../services/cards.service";
+import { deleteCard } from "../services/cards.service";
 import api, { getAnonymousId } from "../services/api";
 import { useAuth } from "../context/AuthContext";
 import styles from "./EditCard.module.css";
 
-const AUTOSAVE_DEBOUNCE_MS = 600;
 const REFETCH_THROTTLE_MS = 15_000;
 
 function EditCard() {
@@ -45,13 +44,13 @@ function EditCard() {
         ]);
 
         if (!section || !validSections.has(section)) {
-            navigate("/edit/card/business", { replace: true });
+            navigate("/edit/card/templates", { replace: true });
             return;
         }
 
         if (section === "card") {
             if (!tab || !validCardTabs.has(tab)) {
-                navigate("/edit/card/business", { replace: true });
+                navigate("/edit/card/templates", { replace: true });
                 return;
             }
         } else {
@@ -62,31 +61,31 @@ function EditCard() {
         }
     }, [section, tab, navigate]);
 
+    function normalizeReviewsForEditor(input) {
+        if (!Array.isArray(input)) return [];
+        return input
+            .map((r) => {
+                if (typeof r === "string") return r;
+                if (r && typeof r === "object" && typeof r.text === "string")
+                    return r.text;
+                return "";
+            })
+            .map((s) => String(s || "").trim())
+            .filter(Boolean);
+    }
+
+    function normalizeCardForEditor(dto) {
+        if (!dto || typeof dto !== "object") return dto;
+        return {
+            ...dto,
+            // Phase 1: editor ReviewsPanel is still string[]; keep state compatible.
+            reviews: normalizeReviewsForEditor(dto.reviews),
+        };
+    }
+
     const emptyCard = {
         status: "draft",
-        plan: "free",
         slug: "",
-        // Keep trial fields in state shape (server may fill them; anonymous trial may expire).
-        trialStartedAt: null,
-        trialEndsAt: null,
-        effectiveBilling: {
-            plan: "free",
-            source: "trial",
-            until: null,
-            isEntitled: true,
-            isPaid: false,
-        },
-        entitlements: {
-            canEdit: true,
-            lockedReason: null,
-            galleryLimit: 5,
-            canUseLeads: false,
-            canUseVideo: false,
-            canUseReviews: false,
-            analyticsLevel: "none",
-            canViewAnalytics: false,
-            analyticsRetentionDays: 0,
-        },
         business: {},
         contact: {},
         content: {},
@@ -94,14 +93,6 @@ function EditCard() {
         reviews: [],
         design: {
             templateId: null,
-            backgroundImage: null,
-            backgroundOverlay: 40,
-            avatarImage: null,
-            accentColor: "#d4af37",
-            primaryColor: "#0b5cff",
-            backgroundColor: "#ffffff",
-            buttonTextColor: "#ffffff",
-            font: "Heebo, sans-serif",
         },
         flags: {
             isTemplateSeeded: false,
@@ -109,26 +100,144 @@ function EditCard() {
         },
     };
 
-    const [card, setCard] = useState(emptyCard);
+    // Phase 2: draft-first editing.
+    // `draftCard` is the SSoT for editor UI (panels + preview).
+    const [draftCard, setDraftCard] = useState(emptyCard);
+
+    const [dirtyPaths, setDirtyPaths] = useState(() => new Set());
+    const [saveState, setSaveState] = useState("idle");
+    const [saveErrorText, setSaveErrorText] = useState(null);
+    const [isInitializing, setIsInitializing] = useState(true);
     const [reloadKey, setReloadKey] = useState(0);
+    const [isDeleting, setIsDeleting] = useState(false);
+
+    const [deleteNotice, setDeleteNotice] = useState(null);
+    const deleteNoticeTimerRef = useRef(null);
+
+    const clearDeleteNoticeTimer = useCallback(() => {
+        if (deleteNoticeTimerRef.current) {
+            clearTimeout(deleteNoticeTimerRef.current);
+            deleteNoticeTimerRef.current = null;
+        }
+    }, []);
+
+    const showDeleteNotice = useCallback(
+        (notice) => {
+            clearDeleteNoticeTimer();
+            setDeleteNotice(notice);
+            deleteNoticeTimerRef.current = setTimeout(() => {
+                setDeleteNotice(null);
+                deleteNoticeTimerRef.current = null;
+            }, 3000);
+        },
+        [clearDeleteNoticeTimer]
+    );
+
+    useEffect(() => {
+        return () => {
+            clearDeleteNoticeTimer();
+        };
+    }, [clearDeleteNoticeTimer]);
 
     const lastRefetchAtRef = useRef(0);
 
-    // NEW: keep latest card for async autosave callbacks
-    const cardRef = useRef(card);
+    // Keep latest draft snapshot for sync decisions (e.g., upload ops PATCH conditions).
+    const draftCardRef = useRef(draftCard);
     useEffect(() => {
-        cardRef.current = card;
-    }, [card]);
+        draftCardRef.current = draftCard;
+    }, [draftCard]);
 
-    const isPaid = Boolean(card?.effectiveBilling?.isPaid);
-    const isEntitled = Boolean(card?.effectiveBilling?.isEntitled);
-    const editingDisabled = card?.entitlements?.canEdit === false;
-    const isTrialExpired = card?.entitlements?.lockedReason === "TRIAL_EXPIRED";
+    // Keep latest dirtyPaths snapshot for save-status timers.
+    const dirtyPathsRef = useRef(dirtyPaths);
+    useEffect(() => {
+        dirtyPathsRef.current = dirtyPaths;
+    }, [dirtyPaths]);
+
+    // Step 1A: Browser refresh/close guard.
+    useEffect(() => {
+        const onBeforeUnload = (event) => {
+            const hasDirty =
+                dirtyPathsRef.current && dirtyPathsRef.current.size > 0;
+            if (!hasDirty) return;
+
+            // Required for Chrome/Edge to show the native confirm.
+            event.preventDefault();
+            event.returnValue = "";
+            return "";
+        };
+
+        window.addEventListener("beforeunload", onBeforeUnload);
+        return () => {
+            window.removeEventListener("beforeunload", onBeforeUnload);
+        };
+    }, []);
+
+    // Step 1B: In-app navigation guard (React Router data router).
+    // WHY: we only guard leaving the editor zone to avoid breaking internal editor UX
+    // (tab switching and other /edit/* transitions).
+    const blocker = useBlocker(({ currentLocation, nextLocation }) => {
+        const hasDirty =
+            dirtyPathsRef.current && dirtyPathsRef.current.size > 0;
+        if (!hasDirty) return false;
+
+        const nextPath = nextLocation?.pathname || "";
+
+        // Scope rule: block only when the next route is outside /edit/*.
+        if (nextPath.startsWith("/edit")) return false;
+        return true;
+    });
+
+    useEffect(() => {
+        if (blocker?.state !== "blocked") return;
+
+        const ok = window.confirm("יש שינויים שלא נשמרו. לצאת בלי לשמור?");
+
+        if (ok) blocker.proceed();
+        else blocker.reset();
+    }, [blocker]);
+
+    const saveStateTimerRef = useRef(null);
+    const clearSaveStateTimer = useCallback(() => {
+        if (saveStateTimerRef.current) {
+            clearTimeout(saveStateTimerRef.current);
+            saveStateTimerRef.current = null;
+        }
+    }, []);
+
+    useEffect(() => {
+        return () => {
+            clearSaveStateTimer();
+        };
+    }, [clearSaveStateTimer]);
+
+    // Phase 3: after a successful save, show "saved" briefly then return to idle.
+    useEffect(() => {
+        if (saveState !== "saved") {
+            clearSaveStateTimer();
+            return;
+        }
+
+        clearSaveStateTimer();
+        saveStateTimerRef.current = setTimeout(() => {
+            setSaveState((prev) => {
+                if (prev !== "saved") return prev;
+                const hasDirty =
+                    dirtyPathsRef.current && dirtyPathsRef.current.size > 0;
+                return hasDirty ? "dirty" : "idle";
+            });
+        }, 2500);
+    }, [saveState, clearSaveStateTimer]);
+
+    const isPaid = Boolean(draftCard?.effectiveBilling?.isPaid);
+    const isEntitled = Boolean(draftCard?.effectiveBilling?.isEntitled);
+    const editingDisabled = draftCard?.entitlements?.canEdit === false;
+    const isTrialExpired =
+        draftCard?.entitlements?.lockedReason === "TRIAL_EXPIRED";
     const showTrialBanner =
         !isPaid &&
         !(!isEntitled && !isTrialExpired) &&
-        (card?.effectiveBilling?.source === "trial" ||
-            Boolean(card?.trialStartedAt || card?.trialEndsAt) ||
+        (draftCard?.effectiveBilling?.source === "trial" ||
+            Boolean(draftCard?.trialStartedAt || draftCard?.trialEndsAt) ||
             editingDisabled);
 
     const initCard = useCallback(async (isMounted = () => true) => {
@@ -142,11 +251,21 @@ function EditCard() {
             if (!mine || !mine._id) {
                 const created = await api.post("/cards", {});
                 if (!isMounted()) return;
-                setCard(created.data);
+                const normalized = normalizeCardForEditor(created.data);
+                setDraftCard(normalized);
+                setDirtyPaths(new Set());
+                setSaveState("idle");
+                setSaveErrorText(null);
+                setIsInitializing(false);
                 return;
             }
 
-            setCard(mine);
+            const normalized = normalizeCardForEditor(mine);
+            setDraftCard(normalized);
+            setDirtyPaths(new Set());
+            setSaveState("idle");
+            setSaveErrorText(null);
+            setIsInitializing(false);
         } catch (err) {
             // IMPORTANT: log here (err exists), not above
             console.error(
@@ -156,6 +275,7 @@ function EditCard() {
             );
 
             // Do not redirect to /login here; anonymous flow must stay on /edit
+            setIsInitializing(false);
         }
     }, []);
 
@@ -237,68 +357,10 @@ function EditCard() {
         };
     }, [token, refetchMineThrottled]);
 
-    // keep saveTimerRef + isSavingRef (used by autosave)
-    const saveTimerRef = useRef(null);
-    const isSavingRef = useRef(false);
-
-    // NEW: accumulate pending section patches to avoid double-save / stale closures
-    const pendingPatchRef = useRef({});
-
-    async function handleSave() {
-        if (editingDisabled) return;
-
-        try {
-            let saved;
-
-            if (card._id) {
-                saved = await updateCard(card._id, card);
-            } else {
-                saved = await createCard(card);
-            }
-
-            setCard(saved.data);
-            alert("כרטיס נשמר בהצלחה");
-        } catch (err) {
-            const status = err?.response?.status;
-            const code = err?.response?.data?.code;
-            if (status === 410 && code === "TRIAL_DELETED") {
-                alert("תקופת הניסיון הסתיימה והכרטיס נמחק. נוצר כרטיס חדש.");
-                setCard(emptyCard);
-                initializedRef.current = false;
-                lastSavedRef.current = "";
-
-                // cleanup (optional but correct)
-                pendingPatchRef.current = {};
-                if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
-
-                setReloadKey((k) => k + 1);
-                return;
-            }
-
-            if (
-                err?.response?.status === 403 &&
-                err?.response?.data?.code === "TRIAL_EXPIRED"
-            ) {
-                setCard((prev) => ({
-                    ...(prev || emptyCard),
-                    entitlements: {
-                        ...(prev?.entitlements || {}),
-                        canEdit: false,
-                        lockedReason: "TRIAL_EXPIRED",
-                    },
-                }));
-                return;
-            }
-            if (err?.response?.status === 401) {
-                window.location.href = "/login";
-                return;
-            }
-            alert(err.response?.data?.message || "שגיאה בשמירה");
-        }
-    }
+    // Phase 2: no autosave while typing.
 
     async function handleDelete() {
-        if (!card?._id) return;
+        if (!draftCard?._id) return;
 
         const confirmed = window.confirm(
             "האם אתה בטוח שברצונך למחוק כרטיס זה?"
@@ -306,30 +368,46 @@ function EditCard() {
         if (!confirmed) return;
 
         try {
-            await deleteCard(card._id);
-            // Reset state and re-init. Do not redirect to login (anonymous delete).
-            setCard(emptyCard);
-            initializedRef.current = false;
-            lastSavedRef.current = "";
-            pendingPatchRef.current = {};
-            if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
-            setReloadKey((k) => k + 1);
+            setIsDeleting(true);
+            const result = await deleteCard(draftCard._id);
+            const ok = Boolean(result?.ok);
+            if (!ok) {
+                showDeleteNotice({
+                    type: "error",
+                    text: "שגיאה במחיקה",
+                });
+                setIsDeleting(false);
+                return;
+            }
+
+            // Success: leave EditCard (do not trigger initial-loading UI here).
+            navigate("/dashboard", {
+                replace: true,
+                state: {
+                    notice: { type: "success", text: "הכרטיס נמחק בהצלחה" },
+                },
+            });
         } catch (err) {
             const status = err?.response?.status;
 
             if (status === 403) {
-                alert("אין הרשאה למחוק כרטיס זה");
+                showDeleteNotice({
+                    type: "error",
+                    text: "אין הרשאה למחוק כרטיס זה",
+                });
+                setIsDeleting(false);
                 return;
             }
 
             if (status === 404) {
                 // Treat as already deleted.
-                setCard(emptyCard);
-                initializedRef.current = false;
-                lastSavedRef.current = "";
-                pendingPatchRef.current = {};
-                if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
-                setReloadKey((k) => k + 1);
+                setIsDeleting(false);
+                navigate("/dashboard", {
+                    replace: true,
+                    state: {
+                        notice: { type: "success", text: "הכרטיס כבר נמחק" },
+                    },
+                });
                 return;
             }
 
@@ -347,8 +425,19 @@ function EditCard() {
                 // If we do have anon/jwt, 401 is unexpected after backend fix.
             }
 
-            alert(err.response?.data?.message || "שגיאה במחיקה");
+            const fallback = "שגיאה במחיקה";
+            const serverMessage = err?.response?.data?.message;
+            const message =
+                typeof serverMessage === "string" && serverMessage.trim()
+                    ? serverMessage
+                    : fallback;
+            showDeleteNotice({ type: "error", text: message });
+            setIsDeleting(false);
+            return;
         }
+
+        // Do NOT reset draftCard/isInitializing here. Deletion is not an "initial load".
+        // (Navigation will be handled in the next step of the delete UX rework.)
     }
 
     // Step 1: immutable nested updater (core) (kept for dot-path fallback)
@@ -411,87 +500,175 @@ function EditCard() {
         return root;
     }
 
-    const flushPendingAutosave = useCallback(async () => {
-        // avoid saving when server says editing is locked
-        if (cardRef.current?.entitlements?.canEdit === false) return;
+    const commitDraft = useCallback(async () => {
+        const cardId = draftCard?._id;
+        if (!cardId) return;
 
-        const cardId = cardRef.current?._id;
-        if (!cardId) {
-            // ensure editor has a persisted card
-            await initCard();
-            return;
+        if (!dirtyPaths || dirtyPaths.size === 0) return;
+
+        // Minimal-risk payload builder:
+        // send full dirty sections from draftCard (keeps backend shape stable).
+        const dirtySections = new Set();
+        for (const path of dirtyPaths) {
+            const section = String(path || "").split(".")[0];
+            if (section) dirtySections.add(section);
         }
 
-        const patchObj = pendingPatchRef.current;
-        if (!patchObj || Object.keys(patchObj).length === 0) return;
-
-        // clear now; if new edits come during request they'll re-populate
-        pendingPatchRef.current = {};
-
-        if (isSavingRef.current) {
-            // if a save is in-flight, re-queue and bail; completion will trigger another flush
-            pendingPatchRef.current = {
-                ...patchObj,
-                ...pendingPatchRef.current,
-            };
-            return;
-        }
-
-        isSavingRef.current = true;
-        try {
-            const saved = await api.patch(`/cards/${cardId}`, patchObj);
-            setCard(saved.data);
-        } catch (err) {
-            const status = err?.response?.status;
-            const code = err?.response?.data?.code;
-
-            if (status === 410 && code === "TRIAL_DELETED") {
-                alert("תקופת הניסיון הסתיימה והכרטיס נמחק. נוצר כרטיס חדש.");
-                setCard(emptyCard);
-
-                pendingPatchRef.current = {};
-                if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
-
-                setReloadKey((k) => k + 1);
-                return;
-            }
-
-            if (status === 403 && code === "TRIAL_EXPIRED") {
-                setCard((prev) => ({
-                    ...(prev || emptyCard),
-                    entitlements: {
-                        ...(prev?.entitlements || {}),
-                        canEdit: false,
-                        lockedReason: "TRIAL_EXPIRED",
-                    },
-                }));
-                return;
-            }
-
-            // keep silent for anonymous flow; no /login redirect here
-            console.error("autosave error", status, err?.response?.data || err);
-
-            // re-queue the patch so it can retry after next edit
-            pendingPatchRef.current = {
-                ...patchObj,
-                ...pendingPatchRef.current,
-            };
-        } finally {
-            isSavingRef.current = false;
-
-            // if edits accumulated during save, flush them quickly
+        const payload = {};
+        for (const section of dirtySections) {
             if (
-                pendingPatchRef.current &&
-                Object.keys(pendingPatchRef.current).length
+                Object.prototype.hasOwnProperty.call(draftCard || {}, section)
             ) {
-                setTimeout(() => {
-                    flushPendingAutosave();
-                }, 0);
+                payload[section] = draftCard?.[section];
             }
         }
-    }, [emptyCard, initCard]);
 
-    // Optimistic UI + debounced section PATCH autosave
+        if (Object.keys(payload).length === 0) return;
+
+        setSaveState("saving");
+        setSaveErrorText(null);
+
+        try {
+            const res = await api.patch(`/cards/${cardId}`, payload);
+            const normalized = normalizeCardForEditor(res.data);
+            setDraftCard(normalized);
+            setDirtyPaths(new Set());
+            setSaveState("saved");
+        } catch (err) {
+            const message =
+                err?.response?.data?.message || err?.message || "שגיאה בשמירה";
+            setSaveState("error");
+            setSaveErrorText(String(message));
+        }
+    }, [dirtyPaths, draftCard]);
+
+    // Ops-only persistence (uploads). This must NOT be used for typing.
+    // IMPORTANT: ops PATCH must NOT overwrite the full draftCard with the server response,
+    // because there may be unrelated dirty typing changes in draftCard.
+    // Instead, merge only the saved section/keys into the existing draft.
+    const opsPatchCard = useCallback(async (payload, clearPrefixes = []) => {
+        const cardId = draftCardRef.current?._id;
+        if (!cardId) return;
+        if (!payload || typeof payload !== "object") return;
+
+        try {
+            const res = await api.patch(`/cards/${cardId}`, payload);
+            const normalized = normalizeCardForEditor(res.data);
+
+            setDraftCard((prev) => {
+                const prevDraft = prev || {};
+                const server =
+                    normalized && typeof normalized === "object"
+                        ? normalized
+                        : null;
+                const nextDraft = { ...prevDraft };
+
+                for (const topKey of Object.keys(payload)) {
+                    const patchValue = payload[topKey];
+                    const serverValue = server ? server[topKey] : undefined;
+
+                    // Merge object patches (design/contact/content/etc.) by keys, not wholesale.
+                    if (
+                        patchValue &&
+                        typeof patchValue === "object" &&
+                        !Array.isArray(patchValue)
+                    ) {
+                        const prevObj =
+                            prevDraft[topKey] &&
+                            typeof prevDraft[topKey] === "object" &&
+                            !Array.isArray(prevDraft[topKey])
+                                ? prevDraft[topKey]
+                                : {};
+
+                        const nextObj = { ...prevObj };
+                        for (const subKey of Object.keys(patchValue)) {
+                            if (
+                                serverValue &&
+                                typeof serverValue === "object" &&
+                                Object.prototype.hasOwnProperty.call(
+                                    serverValue,
+                                    subKey
+                                )
+                            ) {
+                                nextObj[subKey] = serverValue[subKey];
+                            } else {
+                                nextObj[subKey] = patchValue[subKey];
+                            }
+                        }
+
+                        nextDraft[topKey] = nextObj;
+                        continue;
+                    }
+
+                    // Arrays/primitives: replace the whole key, preferring server value if present.
+                    if (serverValue !== undefined) {
+                        nextDraft[topKey] = serverValue;
+                    } else {
+                        nextDraft[topKey] = patchValue;
+                    }
+                }
+
+                return nextDraft;
+            });
+
+            if (Array.isArray(clearPrefixes) && clearPrefixes.length) {
+                setDirtyPaths((prev) => {
+                    const next = new Set(prev);
+
+                    const touchedSections = new Set();
+                    for (const prefix of clearPrefixes) {
+                        const pfx = String(prefix || "");
+                        if (!pfx) continue;
+                        touchedSections.add(pfx.split(".")[0]);
+
+                        for (const existing of Array.from(next)) {
+                            if (
+                                existing === pfx ||
+                                existing.startsWith(`${pfx}.`)
+                            ) {
+                                next.delete(existing);
+                            }
+                        }
+                    }
+
+                    // If a section marker (e.g. "design") exists, only drop it when there are
+                    // no remaining dirty keys inside that section.
+                    for (const section of touchedSections) {
+                        if (!section) continue;
+
+                        if (!next.has(section)) continue;
+
+                        let hasOther = false;
+                        for (const existing of next) {
+                            if (existing.startsWith(`${section}.`)) {
+                                hasOther = true;
+                                break;
+                            }
+                        }
+                        if (!hasOther) next.delete(section);
+                    }
+
+                    // Keep saveState coherent for future UI (Phase 3)
+                    if (next.size === 0) {
+                        setSaveState("saved");
+                        setSaveErrorText(null);
+                    } else {
+                        setSaveState("dirty");
+                    }
+
+                    return next;
+                });
+            }
+        } catch (err) {
+            // Ops failures should not silently reset dirty state.
+            const message =
+                err?.response?.data?.message || err?.message || "שגיאה בשמירה";
+            setSaveState("error");
+            setSaveErrorText(String(message));
+        }
+    }, []);
+
+    // Phase 2: draft-only updates. No debounce, no network.
     const onFieldChange = useCallback(
         (sectionOrPath, patchOrValue) => {
             if (editingDisabled) return;
@@ -499,63 +676,103 @@ function EditCard() {
             const key = String(sectionOrPath || "");
             if (!key) return;
 
-            // 1) Dot-path keys: set nested value and always record it in pendingPatch.
             if (key.includes(".")) {
-                setCard((prev) =>
+                setDraftCard((prev) =>
                     prev ? setIn(prev, key, patchOrValue) : prev
                 );
-                pendingPatchRef.current = setIn(
-                    pendingPatchRef.current || {},
-                    key,
-                    patchOrValue
-                );
+                setDirtyPaths((prev) => {
+                    const next = new Set(prev);
+                    next.add(key);
+                    return next;
+                });
             } else {
-                // 2) Top-level keys
-                // (A) Plain objects are merged (business/contact/content/design/etc.)
                 if (isPlainObject(patchOrValue)) {
-                    setCard((prev) =>
+                    setDraftCard((prev) =>
                         prev ? mergeSection(prev, key, patchOrValue) : prev
                     );
+                    setDirtyPaths((prev) => {
+                        const next = new Set(prev);
+                        next.add(key);
 
-                    pendingPatchRef.current = {
-                        ...(pendingPatchRef.current || {}),
-                        [key]: {
-                            ...(pendingPatchRef.current?.[key] || {}),
-                            ...(patchOrValue || {}),
-                        },
-                    };
+                        // Only mark keys that actually changed (prevents dirty explosion
+                        // when panels pass whole objects like design).
+                        const prevSection =
+                            (draftCardRef.current &&
+                                draftCardRef.current[key]) ||
+                            {};
+                        for (const fieldKey of Object.keys(
+                            patchOrValue || {}
+                        )) {
+                            if (
+                                prevSection?.[fieldKey] !==
+                                patchOrValue[fieldKey]
+                            ) {
+                                next.add(`${key}.${fieldKey}`);
+                            }
+                        }
+                        return next;
+                    });
+
+                    // Upload ops: persist immediately for specific asset fields.
+                    if (key === "design") {
+                        const prevDesign = draftCardRef.current?.design || {};
+                        const nextDesign = patchOrValue || {};
+
+                        const bg = nextDesign.backgroundImage;
+                        if (bg && bg !== prevDesign.backgroundImage) {
+                            opsPatchCard({ design: { backgroundImage: bg } }, [
+                                "design.backgroundImage",
+                            ]);
+                        }
+
+                        const av = nextDesign.avatarImage;
+                        if (av && av !== prevDesign.avatarImage) {
+                            opsPatchCard({ design: { avatarImage: av } }, [
+                                "design.avatarImage",
+                            ]);
+                        }
+                    }
                 } else {
-                    // (B) Arrays and (C) primitives/null are replaced.
-                    setCard((prev) =>
+                    setDraftCard((prev) =>
                         prev ? { ...(prev || {}), [key]: patchOrValue } : prev
                     );
+                    setDirtyPaths((prev) => {
+                        const next = new Set(prev);
+                        next.add(key);
+                        return next;
+                    });
 
-                    pendingPatchRef.current = {
-                        ...(pendingPatchRef.current || {}),
-                        [key]: patchOrValue,
-                    };
+                    // Upload ops: gallery should persist immediately.
+                    if (key === "gallery") {
+                        opsPatchCard({ gallery: patchOrValue }, ["gallery"]);
+                    }
                 }
             }
 
-            if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
-            saveTimerRef.current = setTimeout(() => {
-                flushPendingAutosave();
-            }, AUTOSAVE_DEBOUNCE_MS);
+            setSaveState("dirty");
+            setSaveErrorText(null);
         },
-        [editingDisabled, flushPendingAutosave]
+        [editingDisabled]
     );
 
     const handlePublish = useCallback(async () => {
-        if (!card?._id) return;
+        if (!draftCard?._id) return;
 
         try {
-            const res = await api.patch(`/cards/${card._id}`, {
+            const res = await api.patch(`/cards/${draftCard._id}`, {
                 status: "published",
             });
-            setCard(res.data);
+            const normalized = normalizeCardForEditor(res.data);
+            setDraftCard(normalized);
 
-            if (res?.data?.status !== "published") {
+            if (res?.data?.publishError === "MISSING_FIELDS") {
                 alert("כדי לפרסם צריך למלא שם עסק ולבחור תבנית");
+            } else if (res?.data?.status !== "published") {
+                console.warn("[card:publish] declined", {
+                    status: res?.data?.status,
+                    publishError: res?.data?.publishError,
+                });
+                alert("Publish failed");
             }
         } catch (err) {
             const status = err?.response?.status;
@@ -569,67 +786,86 @@ function EditCard() {
 
             alert(message || "שגיאה בפרסום");
         }
-    }, [card?._id]);
+    }, [draftCard?._id]);
 
     const handleUnpublish = useCallback(async () => {
-        if (!card?._id) return;
+        if (!draftCard?._id) return;
 
         try {
-            const res = await api.patch(`/cards/${card._id}`, {
+            const res = await api.patch(`/cards/${draftCard._id}`, {
                 status: "draft",
             });
-            setCard(res.data);
+            const normalized = normalizeCardForEditor(res.data);
+            setDraftCard(normalized);
         } catch (err) {
             const message = err?.response?.data?.message;
             alert(message || "שגיאה");
         }
-    }, [card?._id]);
+    }, [draftCard?._id]);
+
+    if (isInitializing || !draftCard?._id) {
+        return <div className={styles.editCard}>טוען...</div>;
+    }
 
     return (
-        <div
-            className={styles.editCard}
-            style={{ display: "flex", gap: 16, alignItems: "flex-start" }}
-        >
-            <main style={{ flex: "1 1 auto", minWidth: 0 }}>
+        <div className={styles.editCard}>
+            {deleteNotice ? (
+                <div
+                    className={`${styles.notice} ${
+                        deleteNotice.type === "success"
+                            ? styles.noticeSuccess
+                            : styles.noticeError
+                    }`}
+                    role={deleteNotice.type === "error" ? "alert" : "status"}
+                    aria-live="polite"
+                    dir="rtl"
+                >
+                    <span className={styles.noticeText}>
+                        {deleteNotice.text}
+                    </span>
+                    <button
+                        type="button"
+                        className={styles.noticeClose}
+                        onClick={() => {
+                            clearDeleteNoticeTimer();
+                            setDeleteNotice(null);
+                        }}
+                        aria-label="סגירה"
+                    >
+                        ×
+                    </button>
+                </div>
+            ) : null}
+            <main className={styles.main}>
                 {showTrialBanner && (
                     <TrialBanner
-                        trialStartedAt={card?.trialStartedAt}
-                        trialEndsAt={card?.trialEndsAt}
+                        trialStartedAt={draftCard?.trialStartedAt}
+                        trialEndsAt={draftCard?.trialEndsAt}
                         isExpired={isTrialExpired}
                         onRegister={() => {
                             window.location.href = "/pricing";
                         }}
                     />
                 )}
-                {card?.slug ? (
-                    <div
-                        style={{
-                            marginBottom: 12,
-                            padding: 12,
-                            borderRadius: 12,
-                            background: "rgba(0,0,0,0.04)",
-                        }}
-                    >
-                        <div
-                            style={{ fontWeight: 700, marginBottom: 6 }}
-                            dir="rtl"
-                        >
-                            {token && card?.status === "published"
+                {draftCard?.slug ? (
+                    <div className={styles.publicLinkBox}>
+                        <div className={styles.publicLinkTitle} dir="rtl">
+                            {token && draftCard?.status === "published"
                                 ? "קישור ציבורי"
                                 : "קישור עתידי"}
                         </div>
-                        {token && card?.status === "published" ? (
+                        {token && draftCard?.status === "published" ? (
                             <a
-                                href={`/card/${card.slug}`}
+                                href={`/card/${draftCard.slug}`}
                                 target="_blank"
                                 rel="noreferrer"
-                                style={{ wordBreak: "break-word" }}
+                                className={styles.breakWord}
                             >
-                                {window.location.origin}/card/{card.slug}
+                                {window.location.origin}/card/{draftCard.slug}
                             </a>
                         ) : (
-                            <div style={{ wordBreak: "break-word" }}>
-                                {window.location.origin}/card/{card.slug}
+                            <div className={styles.breakWord}>
+                                {window.location.origin}/card/{draftCard.slug}
                             </div>
                         )}
                     </div>
@@ -637,21 +873,27 @@ function EditCard() {
 
                 {section === "card" ? (
                     <Editor
-                        card={card}
+                        card={draftCard}
                         onFieldChange={onFieldChange}
                         editingDisabled={editingDisabled}
                         onDeleteCard={handleDelete}
+                        isDeleting={isDeleting}
                         onPublish={handlePublish}
                         onUnpublish={handleUnpublish}
+                        // Phase 2: draft-first save infrastructure (wired for Phase 3 UI)
+                        commitDraft={commitDraft}
+                        dirtyPaths={dirtyPaths}
+                        saveState={saveState}
+                        saveErrorText={saveErrorText}
                         canShowAnalyticsTab={
                             Boolean(token) &&
-                            Boolean(card?.entitlements?.canViewAnalytics)
+                            Boolean(draftCard?.entitlements?.canViewAnalytics)
                         }
                         // onUpgrade / onSelectTemplate intentionally omitted for now
                         // previewHeader / previewFooter intentionally omitted for now
                     />
                 ) : (
-                    <div style={{ padding: 16 }}>Coming soon</div>
+                    <div className={styles.comingSoon}>Coming soon</div>
                 )}
             </main>
         </div>

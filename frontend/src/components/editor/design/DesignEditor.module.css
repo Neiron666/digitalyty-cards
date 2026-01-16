@@ -1,0 +1,50 @@
+.root {
+    display: grid;
+    gap: 16px;
+}
+
+.section {
+    display: grid;
+    gap: 10px;
+    padding: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: var(--radius-lg, 18px);
+    background: rgba(255, 255, 255, 0.03);
+}
+
+.sectionTitle {
+    margin: 0;
+    font-size: 14px;
+    font-weight: 900;
+}
+
+.previewImage {
+    width: 100%;
+    display: block;
+    border-radius: var(--radius-md, 14px);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.avatarPreview {
+    width: 96px;
+    height: 96px;
+    border-radius: 999px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    display: block;
+    object-fit: cover;
+}
+
+.label {
+    display: grid;
+    gap: 6px;
+}
+
+.labelTitle {
+    font-weight: 800;
+}
+
+.helper {
+    margin: 6px 0 0;
+    color: var(--text-muted, #c8d2ea);
+    font-size: 13px;
+}

@@ -16,3 +16,15 @@ build
 
 # Uploads
 backend/uploads
+
+# --- Recovery / local history artifacts (DO NOT COMMIT) ---
+.history/
+_recovered/
+
+# Generated diagnostic inventories / scans
+disk_*.txt
+missing_tracked_*.txt
+missing_*.txt
+
+# Optional: editor noise
+.vscode/.history/

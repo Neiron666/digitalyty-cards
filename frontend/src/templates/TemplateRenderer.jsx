@@ -2,6 +2,7 @@ import { getTemplateById, normalizeTemplateId } from "./templates.config";
 import CardLayout from "./layout/CardLayout";
 import SkinBase from "./skins/_base/SkinBase.module.css";
 import CustomSkin from "./skins/custom/CustomSkin.module.css";
+import BeautySkin from "./skins/beauty/BeautySkin.module.css";
 
 function toPascalCaseKey(key) {
     return String(key || "")
@@ -26,19 +27,12 @@ function getCustomPaletteClassFromRegistry(template, key) {
         .trim()
         .toLowerCase();
 
-    const defaultKey =
-        allowed.includes("gold")
-            ? "gold"
-            : allowed[0] || "gold";
+    const defaultKey = allowed.includes("gold") ? "gold" : allowed[0] || "gold";
 
     const finalKey = allowed.includes(normalized) ? normalized : defaultKey;
     const className = paletteKeyToCssModuleClassName(finalKey);
 
-    return (
-        CustomSkin[className] ||
-        CustomSkin.paletteGold ||
-        undefined
-    );
+    return CustomSkin[className] || CustomSkin.paletteGold || undefined;
 }
 
 export default function TemplateRenderer({ card, onUpgrade, mode }) {
@@ -47,10 +41,13 @@ export default function TemplateRenderer({ card, onUpgrade, mode }) {
     const supports = template?.supports || {};
 
     const skin =
-        templateId === "customV1" ? CustomSkin : SkinBase;
+        templateId === "customV1"
+            ? CustomSkin
+            : templateId === "beauty"
+            ? BeautySkin
+            : SkinBase;
 
-    // Note: Beauty template is intentionally not supported in this migration pass.
-    // Future fixed skins (up to 10) can be added later via templates.config.js + token-only skin modules.
+    // Fixed skins must be token-only CSS modules; layout stays shared (CardLayout).
 
     const extraThemeClass =
         templateId === "customV1"
