@@ -259,6 +259,16 @@
     box-shadow: var(--focus-ring, 0 0 0 3px rgba(79, 124, 255, 0.35));
 }
 
+/* Preview-only A11y + premium polish.
+   IMPORTANT: strictly scoped to editor phone preview marker, so public card is unchanged. */
+[data-preview="phone"] .card :is(a, button, input, select, textarea):focus-visible {
+    outline: none;
+
+    /* Make the existing ring feel thicker/clearer without changing its hue.
+       Secondary halo is neutral to keep contrast on light/dark skins. */
+    box-shadow: var(--focus-ring), 0 0 0 1px rgba(255, 255, 255, 0.22);
+}
+
 .footerWrap {
     margin-top: 8px;
 }

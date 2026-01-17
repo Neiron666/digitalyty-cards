@@ -5,9 +5,9 @@ import { withDemoPreviewCard } from "./previewDemo";
 
 function PhoneFrame({ children }) {
     return (
-        <div className={styles.phoneFrame}>
+        <div className={styles.phoneFrame} data-preview="phone">
             <div className={styles.phoneInner}>
-                <div className={styles.phoneScroll} data-preview="phone">
+                <div className={styles.phoneScroll}>
                     {children}
                 </div>
             </div>

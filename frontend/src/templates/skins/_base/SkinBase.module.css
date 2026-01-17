@@ -3,7 +3,7 @@
     --bg-surface: #111b2e;
     --bg-card: #0f172a;
     --text-main: #eaf0ff;
-    --text-muted: #a8b3cf;
+    --text-muted: #b7c3de;
     --border: rgba(255, 255, 255, 0.08);
 
     --primary: #4f7cff;
@@ -39,8 +39,8 @@
     --social-border: var(--action-border);
     --social-icon: var(--action-text);
 
-    --section-bg: rgba(255, 255, 255, 0.02);
-    --section-border: rgba(255, 255, 255, 0.06);
+    --section-bg: rgba(255, 255, 255, 0.04);
+    --section-border: rgba(255, 255, 255, 0.1);
     --section-radius: var(--radius-md);
 
     --hero-gradient: linear-gradient(
