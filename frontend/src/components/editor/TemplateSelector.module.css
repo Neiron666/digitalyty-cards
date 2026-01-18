@@ -1,10 +1,12 @@
 .root {
-    display: grid;
+    display: flex;
+    flex-direction: column;
     gap: 14px;
 }
 
 .head {
-    display: grid;
+    display: flex;
+    flex-direction: column;
     gap: 6px;
 }
 
@@ -32,7 +34,8 @@
     border-radius: var(--radius-lg);
     background: var(--bg-card);
     padding: 12px;
-    display: grid;
+    display: flex;
+    flex-direction: column;
     gap: 10px;
 }
 
@@ -54,7 +57,8 @@
 }
 
 .meta {
-    display: grid;
+    display: flex;
+    flex-direction: column;
     gap: 2px;
 }
 

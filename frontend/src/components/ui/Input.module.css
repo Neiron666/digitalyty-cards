@@ -20,9 +20,9 @@
 .input {
     padding: 12px;
     border-radius: var(--radius-md);
-    border: 1px solid var(--border);
-    background: var(--bg-card);
-    color: var(--text-main);
+    border: 1px solid var(--input-border);
+    background: var(--input-bg);
+    color: var(--input-text);
     font-size: 16px;
     font-family: inherit;
     transition: border-color 0.2s ease, box-shadow 0.2s ease;
@@ -31,7 +31,7 @@
 .input:focus,
 .input:focus-visible {
     outline: none;
-    border-color: var(--gold);
+    border: 2px solid var(--gold);
     box-shadow: 0 0 0 2px var(--gold-fade);
 }
 

@@ -10,7 +10,6 @@
     /* max-width: 480px; */
     background: var(--card-bg, var(--bg-card, #0f172a));
     color: var(--text-main, #eaf0ff);
-    border-radius: var(--card-radius, var(--radius-lg, 24px));
     box-shadow: var(--shadow-soft, 0 18px 52px rgba(0, 0, 0, 0.25));
     overflow: hidden;
     font-family: var(--font-family, "Heebo", system-ui, sans-serif);
@@ -34,6 +33,7 @@
     /* Deterministic hero box: width-driven height.
        Do NOT use min-height here; it breaks WYSIWYG crop across containers. */
     aspect-ratio: var(--hero-aspect, 16 / 9);
+    
 }
 
 /* Gradient layer (skin sets --hero-gradient token) */
@@ -47,6 +47,7 @@
     background-repeat: no-repeat;
     pointer-events: none;
     z-index: 1;
+
 }
 
 /* Cover photo layer (URL comes from <img src=...>) */
@@ -125,6 +126,8 @@
     align-items: flex-end;
     padding: 24px 24px 0;
     z-index: 3;
+    
+
 }
 
 .avatarWrap {
@@ -177,6 +180,7 @@
     line-height: var(--lh-normal, 1.4);
     color: var(--text-muted, #c8d2ea);
     margin: 0;
+
 }
 
 .socialRow,

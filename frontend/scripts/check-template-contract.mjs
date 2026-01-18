@@ -46,7 +46,7 @@ function lineExcerpt(text, index) {
 /** @type {{where: string, message: string, excerpt?: string}[]} */
 const violations = [];
 
-const ALLOWED_SKIN_KEYS = new Set(["base", "custom", "beauty"]);
+const ALLOWED_SKIN_KEYS = new Set(["base", "custom", "beauty", "roismanA11y"]);
 
 async function loadRegistry() {
     const registryPath = path.join(

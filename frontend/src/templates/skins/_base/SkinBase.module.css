@@ -16,15 +16,83 @@
     --shadow-soft: 0 16px 48px rgba(0, 0, 0, 0.22);
     --focus-ring: 0 0 0 3px rgba(79, 124, 255, 0.35);
 
-    --font-family: "Heebo", system-ui, sans-serif;
+    /* Font families */
+    --font-family: "Heebo", system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+    --font-family-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
 
-    --fs-base: 15px;
-    --fs-h1: 28px;
-    --fs-h2: 20px;
-    --fs-h3: 16px;
-    --lh-tight: 1.1;
-    --lh-normal: 1.45;
+    /* Font weights (enterprise tokens) */
+    --fw-regular: 400;
+    --fw-medium: 500;
+    --fw-semibold: 600;
+    --fw-bold: 700;
+    --fw-extrabold: 800;
 
+    /* Letter spacing (tracking) */
+    --ls-tight: -0.01em;
+    --ls-normal: 0em;
+    --ls-wide: 0.02em;
+
+    /* Line heights (scale) */
+    --lh-tight: 1.2;
+    --lh-normal: 1.5;
+    --lh-relaxed: 1.65;
+
+    /*
+      Fluid typography (rem-based, adaptive)
+      clamp(min, preferred, max)
+      Диапазон подобран под карточку: от мобильных до десктопа без “прыжков”.
+    */
+
+    /* Primitive font-size scale (крепкая база + расширение) */
+    --fs-10: clamp(0.625rem, 0.60rem + 0.10vw, 0.6875rem);  /* 10–11px */
+    --fs-11: clamp(0.6875rem, 0.66rem + 0.10vw, 0.75rem);  /* 11–12px */
+    --fs-12: clamp(0.75rem, 0.72rem + 0.10vw, 0.8125rem);  /* 12–13px */
+    --fs-13: clamp(0.8125rem, 0.78rem + 0.10vw, 0.875rem); /* 13–14px */
+    --fs-14: clamp(0.875rem, 0.84rem + 0.12vw, 0.9375rem); /* 14–15px */
+    --fs-15: clamp(0.9375rem, 0.90rem + 0.14vw, 1rem);     /* 15–16px */
+    --fs-16: clamp(1rem, 0.96rem + 0.16vw, 1.0625rem);      /* 16–17px */
+    --fs-18: clamp(1.125rem, 1.05rem + 0.22vw, 1.25rem);    /* 18–20px */
+    --fs-20: clamp(1.25rem, 1.16rem + 0.28vw, 1.375rem);    /* 20–22px */
+    --fs-24: clamp(1.5rem, 1.32rem + 0.45vw, 1.75rem);      /* 24–28px */
+    --fs-28: clamp(1.75rem, 1.50rem + 0.60vw, 2rem);        /* 28–32px */
+    --fs-32: clamp(2rem, 1.70rem + 0.75vw, 2.25rem);        /* 32–36px */
+
+    /* Semantic typography tokens (как используют в enterprise design systems) */
+    --text-body: var(--fs-15);
+    --text-body-lg: var(--fs-16);
+    --text-caption: var(--fs-12);
+    --text-overline: var(--fs-11);
+    --text-label: var(--fs-13);
+
+    --text-h1: var(--fs-28);
+    --text-h2: var(--fs-24);
+    --text-h3: var(--fs-18);
+    --text-h4: var(--fs-16);
+
+    /* Semantic line-heights */
+    --lh-body: var(--lh-normal);
+    --lh-caption: var(--lh-normal);
+    --lh-heading: var(--lh-tight);
+
+    /* Semantic font-weights */
+    --fw-body: var(--fw-regular);
+    --fw-heading: var(--fw-extrabold);
+    --fw-title: var(--fw-bold);
+    --fw-label: var(--fw-semibold);
+
+    /* Optional: semantic letter spacing */
+    --ls-body: var(--ls-normal);
+    --ls-heading: var(--ls-tight);
+    --ls-label: var(--ls-normal);
+    --ls-overline: var(--ls-wide);
+
+    /* Backward compatible mappings (если где-то уже используется fs-base/h1/h2/h3) */
+    --fs-base: var(--text-body);
+    --fs-h1: var(--text-h1);
+    --fs-h2: var(--text-h2);
+    --fs-h3: var(--text-h3);
+
+    /* Actions / sections (без изменений) */
     --action-bg: var(--primary);
     --action-text: #ffffff;
     --action-border: transparent;
@@ -69,5 +137,13 @@
 @media (max-width: 520px) {
     .theme {
         --card-radius: var(--radius-md);
+
+        /*
+          На мобилке можно слегка “поджать” заголовки,
+          если увидишь, что h1 слишком крупный.
+          (clamp уже решает, но это безопасный энтерпрайс-хук)
+        */
+        --text-h1: var(--fs-24);
+        --text-h2: var(--fs-20);
     }
 }

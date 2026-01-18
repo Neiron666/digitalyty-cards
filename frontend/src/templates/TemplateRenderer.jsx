@@ -3,6 +3,8 @@ import CardLayout from "./layout/CardLayout";
 import SkinBase from "./skins/_base/SkinBase.module.css";
 import CustomSkin from "./skins/custom/CustomSkin.module.css";
 import BeautySkin from "./skins/beauty/BeautySkin.module.css";
+import RoismanA11ySkin from "./skins/roismanA11y/RoismanA11ySkin.module.css";
+
 
 function toPascalCaseKey(key) {
     return String(key || "")
@@ -52,6 +54,7 @@ export default function TemplateRenderer({ card, onUpgrade, mode }) {
         base: SkinBase,
         custom: CustomSkin,
         beauty: BeautySkin,
+        roismanA11y: RoismanA11ySkin,
     };
 
     const skinKey = template?.skinKey;

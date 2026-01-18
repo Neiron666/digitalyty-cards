@@ -176,7 +176,8 @@
 }
 
 .drawerNav {
-    display: grid;
+    display: flex;
+    flex-direction: column;
     gap: 6px;
     padding: 14px 0;
 }
@@ -197,7 +198,8 @@
 
 .drawerActions {
     margin-top: auto;
-    display: grid;
+    display: flex;
+    flex-direction: column;
     gap: 10px;
     padding-top: 12px;
     border-top: 1px solid var(--gold-fade);
