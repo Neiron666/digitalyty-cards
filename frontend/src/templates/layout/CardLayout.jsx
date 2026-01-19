@@ -46,7 +46,7 @@ export default function CardLayout({
     const overlayOpacity = Math.min(0.7, Math.max(0, overlayValue / 100));
     const overlayStep = Math.min(
         70,
-        Math.max(0, Math.round((overlayOpacity * 100) / 5) * 5)
+        Math.max(0, Math.round((overlayOpacity * 100) / 5) * 5),
     );
 
     const rootClass = cx(styles.root, skin?.theme, extraThemeClass);
@@ -71,7 +71,7 @@ export default function CardLayout({
                         className={cx(
                             styles.overlay,
                             styles[`overlay${overlayStep}`],
-                            skin?.overlay
+                            skin?.overlay,
                         )}
                     />
 
@@ -111,9 +111,6 @@ export default function CardLayout({
 
                     <div className={cx(styles.ctaRow, skin?.ctaRow)}>
                         <SaveContactButton card={card} />
-                        {card?.status === "published" && (
-                            <QRCodeBlock slug={card.slug} />
-                        )}
                     </div>
 
                     <section
@@ -128,6 +125,9 @@ export default function CardLayout({
                         )}
                         {supports?.reviews !== false && (
                             <ReviewsSection card={card} />
+                        )}
+                        {card?.status === "published" && (
+                            <QRCodeBlock slug={card.slug} />
                         )}
                     </section>
 

@@ -6,3 +6,27 @@
 .button {
     width: 100%;
 }
+
+.icon {
+    width: 20px;
+    height: 20px;
+    background-color: currentColor;
+    flex: 0 0 auto;
+
+    -webkit-mask-repeat: no-repeat;
+    -webkit-mask-position: center;
+    -webkit-mask-size: contain;
+    mask-repeat: no-repeat;
+    mask-position: center;
+    mask-size: contain;
+}
+
+.iconShare {
+    -webkit-mask-image: url("/icons/link.svg");
+    mask-image: url("/icons/link.svg");
+}
+
+.iconSave {
+    -webkit-mask-image: url("/icons/contact.svg");
+    mask-image: url("/icons/contact.svg");
+}

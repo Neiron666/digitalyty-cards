@@ -3,32 +3,103 @@
     justify-content: center;
     /* padding: 24px; */
     background: var(--bg-main, #0b1220);
+
+    /* Font families */
+    --font-family:
+        "Heebo", system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+    --font-family-mono:
+        ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+        "Liberation Mono", monospace;
+
+    /* Font weights (enterprise tokens) */
+    --fw-regular: 400;
+    --fw-medium: 500;
+    --fw-semibold: 600;
+    --fw-bold: 700;
+    --fw-extrabold: 800;
+
+    /* Letter spacing (tracking) */
+    --ls-tight: -0.01em;
+    --ls-normal: 0em;
+    --ls-wide: 0.02em;
+
+    /* Line heights (scale) */
+    --lh-tight: 1.2;
+    --lh-normal: 1.5;
+    --lh-relaxed: 1.65;
+
+    /*
+      Fluid typography (rem-based, adaptive)
+      clamp(min, preferred, max)
+      Диапазон подобран под карточку: от мобильных до десктопа без “прыжков”.
+    */
+
+    /* Primitive font-size scale (крепкая база + расширение) */
+    --fs-scale: 1;
+    --fs-10: calc(clamp(0.625rem, 0.6rem + 0.1vw, 0.6875rem) * var(--fs-scale));
+    --fs-11: calc(clamp(0.6875rem, 0.66rem + 0.1vw, 0.75rem) * var(--fs-scale));
+    --fs-12: calc(clamp(0.75rem, 0.72rem + 0.1vw, 0.8125rem) * var(--fs-scale));
+    --fs-13: calc(
+        clamp(0.8125rem, 0.78rem + 0.1vw, 0.875rem) * var(--fs-scale)
+    );
+    --fs-14: calc(
+        clamp(0.875rem, 0.84rem + 0.12vw, 0.9375rem) * var(--fs-scale)
+    );
+    --fs-15: calc(clamp(0.9375rem, 0.9rem + 0.14vw, 1rem) * var(--fs-scale));
+    --fs-16: calc(clamp(1rem, 0.96rem + 0.16vw, 1.0625rem) * var(--fs-scale));
+    --fs-18: calc(clamp(1.125rem, 1.05rem + 0.22vw, 1.25rem) * var(--fs-scale));
+    --fs-20: calc(clamp(1.25rem, 1.16rem + 0.28vw, 1.375rem) * var(--fs-scale));
+    --fs-24: calc(clamp(1.5rem, 1.32rem + 0.45vw, 1.75rem) * var(--fs-scale));
+    --fs-28: calc(clamp(1.75rem, 1.5rem + 0.6vw, 2rem) * var(--fs-scale));
+    --fs-32: calc(clamp(2rem, 1.7rem + 0.75vw, 2.25rem) * var(--fs-scale));
+
+    /* Semantic typography tokens (как используют в enterprise design systems) */
+    --text-body: var(--fs-15);
+    --text-body-lg: var(--fs-16);
+    --text-caption: var(--fs-12);
+    --text-overline: var(--fs-11);
+    --text-label: var(--fs-13);
+
+    /* Contract typography tokens (preferred by components/layout) */
+    --fs-base: var(--text-body);
+    --fs-h1: var(--fs-28);
+    --fs-h2: var(--fs-24);
+    --fs-h3: var(--fs-18);
+
+    /* Legacy aliases (back-compat only) */
+    --text-h1: var(--fs-h1);
+    --text-h2: var(--fs-h2);
+    --text-h3: var(--fs-h3);
+    --text-h4: var(--fs-16);
+
+    /* Semantic line-heights */
+    --lh-body: var(--lh-normal);
+    --lh-caption: var(--lh-normal);
+    --lh-heading: var(--lh-tight);
+
+    /* Semantic font-weights */
+    --fw-body: var(--fw-regular);
+    --fw-heading: var(--fw-extrabold);
+    --fw-title: var(--fw-bold);
+    --fw-label: var(--fw-semibold);
+
+    /* Optional: semantic letter spacing */
+    --ls-body: var(--ls-normal);
+    --ls-heading: var(--ls-tight);
+    --ls-label: var(--ls-normal);
+    --ls-overline: var(--ls-wide);
 }
 
 .card {
     width: 100%;
-
+    --hero-divider-height: 28px; /* глубина улыбки */
+    --hero-inner-shadow: 0 -8px 16px rgba(0, 0, 0, 0.9);
     /* max-width: 480px; */
     background: var(--card-bg, var(--bg-card, #0f172a));
     color: var(--text-main, #eaf0ff);
     box-shadow: var(--shadow-soft, 0 18px 52px rgba(0, 0, 0, 0.25));
     overflow: hidden;
     font-family: var(--font-family, "Heebo", system-ui, sans-serif);
-
-    /* Typography contract defaults (rem-based).
-       Skins may override these via token-only CSS variables. */
-    --fs-12: 0.75rem;
-    --fs-14: 0.875rem;
-    --fs-16: 1rem;
-    --fs-18: 1.125rem;
-
-    --fs-h1: 1.75rem;
-    --fs-h2: 1.25rem;
-    --fs-h3: 1rem;
-
-    --lh-tight: 1.1;
-    --lh-normal: 1.5;
-    --lh-relaxed: 1.65;
 
     /* Hero geometry token (SSoT)
          IMPORTANT: crop aspect must match this aspect to avoid “second crop” via object-fit: cover. */
@@ -140,6 +211,7 @@
     align-items: flex-end;
     padding: 24px 24px 0;
     z-index: 3;
+    box-shadow: var(--hero-inner-shadow, none);
 }
 
 .avatarWrap {
@@ -149,7 +221,7 @@
     border-radius: 50%;
     overflow: hidden;
     border: 4px solid var(--avatar-border, rgba(255, 255, 255, 0.9));
-    box-shadow: var(--avatar-shadow, 0 12px 32px rgba(0, 0, 0, 0.35));
+    box-shadow: var(--avatar-shadow, 0 2px 10px rgba(0, 0, 0, 0.9));
     background: var(--avatar-bg, rgba(255, 255, 255, 0.8));
 }
 
@@ -310,8 +382,6 @@
 
 @media (max-width: 520px) {
     .card {
-        border-radius: var(--radius-md, 20px);
-
         /* Mobile keeps the same hero aspect for predictable WYSIWYG */
         --hero-aspect: 16 / 9;
 
@@ -327,6 +397,44 @@
     .body {
         width: 95%;
         padding: calc(24px + var(--_avatar-overlap)) 16px 16px;
+    }
+    .heroInner {
+        box-shadow: none;
+    }
+    /* Curved divider between hero and body */
+    .hero::after {
+        content: "";
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: -1px; /* чтобы не было 1px щели из-за антиалиасинга */
+        height: var(--hero-divider-height, 28px);
+
+        /* цвет "тела" карточки (фон main/body совпадает с .card) */
+        background: var(--card-bg, var(--bg-card, #0f172a));
+
+        /* важно: не перекрывать аватар */
+        z-index: 2;
+        pointer-events: none;
+
+        /* маска-улыбка (концы выше, центр ниже) */
+        -webkit-mask-image: var(
+            --hero-divider-mask,
+            url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 20' preserveAspectRatio='none'%3E%3Cpath d='M0 0 Q50 20 100 0 V20 H0 Z' fill='%23000'/%3E%3C/svg%3E")
+        );
+        mask-image: var(
+            --hero-divider-mask,
+            url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 20' preserveAspectRatio='none'%3E%3Cpath d='M0 0 Q50 20 100 0 V20 H0 Z' fill='%23000'/%3E%3C/svg%3E")
+        );
+
+        -webkit-mask-repeat: no-repeat;
+        mask-repeat: no-repeat;
+
+        -webkit-mask-size: 100% 100%;
+        mask-size: 100% 100%;
+
+        -webkit-mask-position: bottom;
+        mask-position: bottom;
     }
 }
 
@@ -358,6 +466,45 @@
     [data-preview="phone"] .body {
         width: 95%;
         padding: calc(24px + var(--_avatar-overlap)) 16px 16px;
+    }
+
+    [data-preview="phone"] .heroInner {
+        box-shadow: none;
+    }
+
+    [data-preview="phone"] .hero::after {
+        content: "";
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: -1px; /* чтобы не было 1px щели из-за антиалиасинга */
+        height: var(--hero-divider-height, 28px);
+
+        /* цвет "тела" карточки (фон main/body совпадает с .card) */
+        background: var(--card-bg, var(--bg-card, #0f172a));
+
+        /* важно: не перекрывать аватар */
+        z-index: 2;
+        pointer-events: none;
+
+        /* маска-улыбка (концы выше, центр ниже) */
+        -webkit-mask-image: var(
+            --hero-divider-mask,
+            url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 20' preserveAspectRatio='none'%3E%3Cpath d='M0 0 Q50 20 100 0 V20 H0 Z' fill='%23000'/%3E%3C/svg%3E")
+        );
+        mask-image: var(
+            --hero-divider-mask,
+            url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 20' preserveAspectRatio='none'%3E%3Cpath d='M0 0 Q50 20 100 0 V20 H0 Z' fill='%23000'/%3E%3C/svg%3E")
+        );
+
+        -webkit-mask-repeat: no-repeat;
+        mask-repeat: no-repeat;
+
+        -webkit-mask-size: 100% 100%;
+        mask-size: 100% 100%;
+
+        -webkit-mask-position: bottom;
+        mask-position: bottom;
     }
 }
 

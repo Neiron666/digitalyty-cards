@@ -21,10 +21,18 @@
     text-decoration: none;
 
     display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    gap: var(--contact-btn-gap, 6px);
+}
+
+/* круглая кнопка */
+.bubble {
+    display: inline-flex;
     align-items: center;
     justify-content: center;
 
-    /* круглая кнопка */
     width: var(--contact-btn-size, 52px);
     height: var(--contact-btn-size, 52px);
     border-radius: 999px;
@@ -32,24 +40,38 @@
     border: 1px solid var(--contact-btn-border, currentColor);
     background: var(--contact-btn-bg, transparent);
 
-    transition: transform 120ms ease, box-shadow 120ms ease, filter 120ms ease;
+    transition:
+        transform 120ms ease,
+        box-shadow 120ms ease,
+        filter 120ms ease;
 }
 
-.buttons .item:hover {
+.buttons .item:hover .bubble {
     transform: translateY(-1px);
     filter: brightness(1.04);
     color: var(--contact-btn-hover-color, var(--primary-hover));
 }
 
-.buttons .item:active {
+.buttons .item:active .bubble {
     transform: translateY(0);
 }
 
 .buttons .item:focus-visible {
     outline: none;
+}
+
+.buttons .item:focus-visible .bubble {
     box-shadow: var(--contact-btn-ring, var(--focus-ring));
 }
 
+.label {
+    font-size: var(--contact-label-fs, var(--fs-2, 12px));
+    line-height: 1.1;
+    text-align: center;
+    color: var(--main-token-color, var(--text, currentColor));
+    white-space: nowrap;
+    font-weight: var(--fw-bold);
+}
 /* сама иконка через mask, цвет управляется переменной */
 .icon {
     width: var(--contact-icon-size, 22px);
@@ -85,4 +107,31 @@
 .iconWebsite {
     -webkit-mask-image: url("/icons/globe.svg");
     mask-image: url("/icons/globe.svg");
+}
+
+.iconFacebook {
+    -webkit-mask-image: url("/icons/facebook.svg");
+    mask-image: url("/icons/facebook.svg");
+}
+
+.iconInstagram {
+    -webkit-mask-image: url("/icons/instagram.svg");
+    mask-image: url("/icons/instagram.svg");
+}
+
+.iconTiktok {
+    -webkit-mask-image: url("/icons/tiktok.svg");
+    mask-image: url("/icons/tiktok.svg");
+}
+
+.iconTwitter {
+    -webkit-mask-image: url("/icons/twitter.svg");
+    mask-image: url("/icons/twitter.svg");
+}
+
+@media (min-width: 1024px) {
+    .bubble {
+        width: var(--contact-btn-size-lg, 60px);
+        height: var(--contact-btn-size-lg, 60px);
+    }
 }

@@ -9,7 +9,7 @@ const UploadItemSchema = new mongoose.Schema(
         path: { type: String, required: true, trim: true },
         createdAt: { type: Date, default: Date.now },
     },
-    { _id: false }
+    { _id: false },
 );
 
 const ReviewSchema = new mongoose.Schema(
@@ -21,7 +21,7 @@ const ReviewSchema = new mongoose.Schema(
         // Stored as ISO string for simplicity/compat.
         date: { type: String, default: null, trim: true },
     },
-    { _id: false }
+    { _id: false },
 );
 
 const CardSchema = new mongoose.Schema(
@@ -148,6 +148,11 @@ const CardSchema = new mongoose.Schema(
             whatsapp: String,
             email: String,
             website: String,
+
+            // extended social/contact links (additive; backward compatible)
+            twitter: String,
+            tiktok: String,
+            waze: String,
 
             // legacy fields (kept for backward compatibility)
             mobile: String,
@@ -288,7 +293,7 @@ const CardSchema = new mongoose.Schema(
                             },
                         },
                     },
-                    { _id: false }
+                    { _id: false },
                 ),
             ],
         },
@@ -339,7 +344,7 @@ const CardSchema = new mongoose.Schema(
 
         isActive: { type: Boolean, default: true },
     },
-    { timestamps: true, runSettersOnQuery: true }
+    { timestamps: true, runSettersOnQuery: true },
 );
 
 // Model intentionally contains no product logic/middleware.

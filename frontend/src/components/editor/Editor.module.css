@@ -1,27 +1,33 @@
 .editor {
-    display: grid;
-    grid-template-columns: 220px 420px 1fr;
+    display: flex;
+    justify-content: space-evenly;
     min-height: calc(100vh - 64px); /* header */
 }
 
 /* Nav */
 .sidebar {
+    flex: 0 0 220px; /* фикс 220 */
     padding: 20px;
     border-left: 1px solid var(--border);
     background: var(--bg-surface);
     overflow-y: auto;
+    min-width: 0; /* важно, чтобы контент не ломал ширину */
 }
 
 /* Panel */
 .panel {
+    flex: 0 0 420px; /* фикс 420 */
     padding: 20px;
-    border-left: 1px solid var(--border);
+
     background: var(--bg-card);
     overflow-y: auto;
+    min-width: 0;
 }
 
 /* Preview */
 .preview {
+    flex: 1 1 auto; /* занимает всё оставшееся */
     padding: 40px 20px;
     overflow-y: auto;
+    min-width: 0; /* критично для 1fr-аналогов */
 }

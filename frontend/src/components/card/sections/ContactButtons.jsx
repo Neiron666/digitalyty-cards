@@ -25,15 +25,21 @@ function ContactButtons({ card }) {
     const wazeUrl = hasCoords
         ? `https://waze.com/ul?ll=${business.lat},${business.lng}&navigate=yes`
         : addressQuery
-        ? `https://waze.com/ul?q=${encodeURIComponent(addressQuery)}`
-        : "";
+          ? `https://waze.com/ul?q=${encodeURIComponent(addressQuery)}`
+          : "";
+
+    const wazeHref = (contact?.waze && String(contact.waze).trim()) || wazeUrl;
 
     if (
         !phone &&
         !whatsapp &&
+        !contact?.facebook &&
+        !contact?.instagram &&
+        !contact?.twitter &&
+        !contact?.tiktok &&
         !contact?.email &&
         !contact?.website &&
-        !wazeUrl
+        !wazeHref
     ) {
         return null;
     }
@@ -47,10 +53,13 @@ function ContactButtons({ card }) {
                     aria-label={`Call ${phone}`}
                     onClick={() => trackClick(card?.slug, "call")}
                 >
-                    <span
-                        className={cx(styles.icon, styles.iconPhone)}
-                        aria-hidden="true"
-                    />
+                    <span className={styles.bubble} aria-hidden="true">
+                        <span
+                            className={cx(styles.icon, styles.iconPhone)}
+                            aria-hidden="true"
+                        />
+                    </span>
+                    <span className={styles.label}>טלפון</span>
                 </a>
             )}
 
@@ -63,26 +72,108 @@ function ContactButtons({ card }) {
                     aria-label={`Open WhatsApp chat ${whatsapp}`}
                     onClick={() => trackClick(card?.slug, "whatsapp")}
                 >
-                    <span
-                        className={cx(styles.icon, styles.iconWhatsapp)}
-                        aria-hidden="true"
-                    />
+                    <span className={styles.bubble} aria-hidden="true">
+                        <span
+                            className={cx(styles.icon, styles.iconWhatsapp)}
+                            aria-hidden="true"
+                        />
+                    </span>
+                    <span className={styles.label}>וואטסאפ</span>
                 </a>
             )}
 
-            {wazeUrl && (
+            {wazeHref && (
                 <a
-                    href={wazeUrl}
+                    href={wazeHref}
                     target="_blank"
                     rel="noreferrer"
                     className={styles.item}
                     aria-label="Navigate with Waze"
                     onClick={() => trackClick(card?.slug, "navigate")}
                 >
-                    <span
-                        className={cx(styles.icon, styles.iconWaze)}
-                        aria-hidden="true"
-                    />
+                    <span className={styles.bubble} aria-hidden="true">
+                        <span
+                            className={cx(styles.icon, styles.iconWaze)}
+                            aria-hidden="true"
+                        />
+                    </span>
+                    <span className={styles.label}>ווייז</span>
+                </a>
+            )}
+
+            {contact?.facebook && (
+                <a
+                    href={contact.facebook}
+                    target="_blank"
+                    rel="noreferrer"
+                    className={styles.item}
+                    aria-label="Open Facebook"
+                    onClick={() => trackClick(card?.slug, "facebook")}
+                >
+                    <span className={styles.bubble} aria-hidden="true">
+                        <span
+                            className={cx(styles.icon, styles.iconFacebook)}
+                            aria-hidden="true"
+                        />
+                    </span>
+                    <span className={styles.label}>פייסבוק</span>
+                </a>
+            )}
+
+            {contact?.instagram && (
+                <a
+                    href={contact.instagram}
+                    target="_blank"
+                    rel="noreferrer"
+                    className={styles.item}
+                    aria-label="Open Instagram"
+                    onClick={() => trackClick(card?.slug, "instagram")}
+                >
+                    <span className={styles.bubble} aria-hidden="true">
+                        <span
+                            className={cx(styles.icon, styles.iconInstagram)}
+                            aria-hidden="true"
+                        />
+                    </span>
+                    <span className={styles.label}>אינסטגרם</span>
+                </a>
+            )}
+
+            {contact?.twitter && (
+                <a
+                    href={contact.twitter}
+                    target="_blank"
+                    rel="noreferrer"
+                    className={styles.item}
+                    aria-label="Open X/Twitter"
+                    onClick={() => trackClick(card?.slug, "twitter")}
+                >
+                    <span className={styles.bubble} aria-hidden="true">
+                        <span
+                            className={cx(styles.icon, styles.iconTwitter)}
+                            aria-hidden="true"
+                        />
+                    </span>
+                    <span className={styles.label}>טוויטר</span>
+                </a>
+            )}
+
+            {contact?.tiktok && (
+                <a
+                    href={contact.tiktok}
+                    target="_blank"
+                    rel="noreferrer"
+                    className={styles.item}
+                    aria-label="Open TikTok"
+                    onClick={() => trackClick(card?.slug, "tiktok")}
+                >
+                    <span className={styles.bubble} aria-hidden="true">
+                        <span
+                            className={cx(styles.icon, styles.iconTiktok)}
+                            aria-hidden="true"
+                        />
+                    </span>
+                    <span className={styles.label}>טיקטוק</span>
                 </a>
             )}
 
@@ -93,10 +184,13 @@ function ContactButtons({ card }) {
                     aria-label={`Email ${contact.email}`}
                     onClick={() => trackClick(card?.slug, "email")}
                 >
-                    <span
-                        className={cx(styles.icon, styles.iconEmail)}
-                        aria-hidden="true"
-                    />
+                    <span className={styles.bubble} aria-hidden="true">
+                        <span
+                            className={cx(styles.icon, styles.iconEmail)}
+                            aria-hidden="true"
+                        />
+                    </span>
+                    <span className={styles.label}>אימייל</span>
                 </a>
             )}
 
@@ -109,10 +203,13 @@ function ContactButtons({ card }) {
                     aria-label="Open website"
                     onClick={() => trackClick(card?.slug, "website")}
                 >
-                    <span
-                        className={cx(styles.icon, styles.iconWebsite)}
-                        aria-hidden="true"
-                    />
+                    <span className={styles.bubble} aria-hidden="true">
+                        <span
+                            className={cx(styles.icon, styles.iconWebsite)}
+                            aria-hidden="true"
+                        />
+                    </span>
+                    <span className={styles.label}>אתר</span>
                 </a>
             )}
         </div>

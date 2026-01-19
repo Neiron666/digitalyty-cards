@@ -93,7 +93,11 @@ function SaveContactButton({ card }) {
                     onClick={handleShare}
                     className={styles.button}
                 >
-                    🔗 שתף
+                    <span
+                        className={`${styles.icon} ${styles.iconShare}`}
+                        aria-hidden="true"
+                    />
+                    שתף
                 </button>
             )}
 
@@ -102,7 +106,11 @@ function SaveContactButton({ card }) {
                 onClick={downloadVCard}
                 className={styles.button}
             >
-                💾 שמור אותי באנשי קשר
+                <span
+                    className={`${styles.icon} ${styles.iconSave}`}
+                    aria-hidden="true"
+                />
+                שמור אותי באנשי קשר
             </button>
         </div>
     );

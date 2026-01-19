@@ -34,6 +34,48 @@ export default function ContactPanel({
                 disabled={editingDisabled}
                 onChange={(e) => emit({ email: e.target.value })}
             />
+
+            <Input
+                label="Website"
+                value={contact.website || ""}
+                disabled={editingDisabled}
+                onChange={(e) => emit({ website: e.target.value })}
+            />
+
+            <Input
+                label="Facebook"
+                value={contact.facebook || ""}
+                disabled={editingDisabled}
+                onChange={(e) => emit({ facebook: e.target.value })}
+            />
+
+            <Input
+                label="Instagram"
+                value={contact.instagram || ""}
+                disabled={editingDisabled}
+                onChange={(e) => emit({ instagram: e.target.value })}
+            />
+
+            <Input
+                label="X/Twitter"
+                value={contact.twitter || ""}
+                disabled={editingDisabled}
+                onChange={(e) => emit({ twitter: e.target.value })}
+            />
+
+            <Input
+                label="TikTok"
+                value={contact.tiktok || ""}
+                disabled={editingDisabled}
+                onChange={(e) => emit({ tiktok: e.target.value })}
+            />
+
+            <Input
+                label="Waze (link)"
+                value={contact.waze || ""}
+                disabled={editingDisabled}
+                onChange={(e) => emit({ waze: e.target.value })}
+            />
         </Panel>
     );
 }

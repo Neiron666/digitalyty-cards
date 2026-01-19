@@ -1,6 +1,7 @@
 .input,
 .textarea {
     width: 100%;
+    max-width: 100%;
     padding: 12px;
     border-radius: var(--radius-md);
     border: 1px solid var(--border);
@@ -8,7 +9,16 @@
     color: var(--card-text);
     font-size: 16px;
     font-family: inherit;
-    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    transition:
+        border-color 0.2s ease,
+        box-shadow 0.2s ease;
+}
+
+.textarea {
+    overflow-wrap: anywhere;
+    word-break: break-word;
+    white-space: pre-wrap;
+    overflow-x: hidden;
 }
 
 .input:focus,

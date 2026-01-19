@@ -2,18 +2,27 @@
     display: flex;
     flex-direction: column;
     gap: 8px;
+    min-width: 0;
 }
 
 .title {
     margin: 0;
-    font-size: var(--fs-h3, var(--fs-18, 1.125rem));
+    font-size: var(--fs-18, 1.125rem);
     font-weight: 600;
     color: var(--text-main);
     text-align: center;
 }
 
 .content {
-    font-size: var(--fs-14, 0.875rem);
+    /* font-size: var(--fs-14, 0.875rem); */
     line-height: var(--lh-normal, 1.5);
     color: var(--text-main);
+    min-width: 0;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+    hyphens: auto;
+}
+
+.content p {
+    margin: 1rem 0;
 }

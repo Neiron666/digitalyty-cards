@@ -8,9 +8,10 @@
     --contact-btn-color: var(--main-token-color);
 
     --primary: var(--main-token-color);
+    --primary-hover: var(--main-token-color);
 
     --avatar-border: var(--main-token-color);
-    --avatar-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
+    /* --avatar-shadow: 0 12px 32px rgba(0, 0, 0, 0.35); */
     --avatar-bg: #ffffff;
 
     --text-main: #0b1b2b;
