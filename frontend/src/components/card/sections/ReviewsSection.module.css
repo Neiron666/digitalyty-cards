@@ -13,15 +13,15 @@
 
 .text {
     margin: 0;
-    font-size: 14px;
-    line-height: 1.5;
+    font-size: var(--fs-14, 0.875rem);
+    line-height: var(--lh-normal, 1.5);
     color: var(--text-main);
     font-style: italic;
 }
 
 .author {
     margin: 8px 0 0;
-    font-size: 13px;
+    font-size: var(--fs-14, 0.875rem);
     color: var(--text-muted);
     font-style: normal;
     font-weight: 500;

@@ -46,14 +46,14 @@ function lineExcerpt(text, index) {
 /** @type {{where: string, message: string, excerpt?: string}[]} */
 const violations = [];
 
-const ALLOWED_SKIN_KEYS = new Set(["base", "custom", "beauty", "roismanA11y"]);
+const ALLOWED_SKIN_KEYS = new Set(["base", "custom", "beauty", "roismana11y"]);
 
 async function loadRegistry() {
     const registryPath = path.join(
         BASE_DIR,
         "src",
         "templates",
-        "templates.config.js"
+        "templates.config.js",
     );
 
     if (!fs.existsSync(registryPath)) {
@@ -170,7 +170,7 @@ function validateSkinKeys(templates) {
             }
 
             const allowed = t.customPalettes.map((p) =>
-                String(p).trim().toLowerCase()
+                String(p).trim().toLowerCase(),
             );
             if (!allowed.includes(defaultKey)) {
                 violations.push({
@@ -268,7 +268,7 @@ function validateRendererAgainstRegistry(templateIds, paletteKeys) {
     // If renderer contains a hardcoded palette array literal, fail fast.
     // (This is intentionally conservative; palette keys must live in registry.)
     const hardcodedArray = text.match(
-        /\b\[(?:\s*['"][a-z0-9_-]+['"]\s*,?\s*)+\]/i
+        /\b\[(?:\s*['"][a-z0-9_-]+['"]\s*,?\s*)+\]/i,
     );
     if (hardcodedArray && /gold|ocean|forest/i.test(hardcodedArray[0])) {
         violations.push({
@@ -346,7 +346,7 @@ try {
 
     if (violations.length) {
         console.error(
-            `FAIL: template contract violations (${violations.length}).`
+            `FAIL: template contract violations (${violations.length}).`,
         );
         for (const v of violations) {
             console.error(`- ${v.where}: ${v.message}`);

@@ -59,14 +59,14 @@
 
 .title {
     margin: 0;
-    font-size: 20px;
+    font-size: var(--fs-h2, 1.25rem);
     font-weight: 600;
-    line-height: 1.2;
+    line-height: var(--lh-tight, 1.2);
     color: var(--text-main);
 }
 
 .subtitle {
     margin: 4px 0 0;
-    font-size: 14px;
+    font-size: var(--fs-14, 0.875rem);
     color: rgba(248, 250, 252, 0.8);
 }

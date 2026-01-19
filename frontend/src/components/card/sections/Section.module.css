@@ -1,22 +1,19 @@
-
-
 .section {
     display: flex;
     flex-direction: column;
     gap: 8px;
-
 }
 
 .title {
     margin: 0;
-    font-size: var(--fs-h3);
+    font-size: var(--fs-h3, var(--fs-18, 1.125rem));
     font-weight: 600;
     color: var(--text-main);
     text-align: center;
 }
 
 .content {
-    font-size: 14px;
-    line-height: 1.5;
+    font-size: var(--fs-14, 0.875rem);
+    line-height: var(--lh-normal, 1.5);
     color: var(--text-main);
 }

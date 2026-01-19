@@ -1,7 +1,7 @@
 .footer {
     padding: 12px 16px;
     border-top: 1px solid var(--border);
-    font-size: 12px;
+    font-size: var(--fs-12, 0.75rem);
     text-align: center;
     color: var(--text-muted);
     display: flex;
@@ -10,7 +10,7 @@
 }
 
 .platform {
-    font-size: 11px;
+    font-size: var(--fs-12, 0.75rem);
     opacity: 0.8;
 }
 
@@ -34,7 +34,7 @@
 
 .socials a {
     color: var(--text-muted);
-    font-size: 11px;
+    font-size: var(--fs-12, 0.75rem);
     text-decoration: none;
     transition: color 0.2s;
 }

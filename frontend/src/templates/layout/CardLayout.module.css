@@ -7,12 +7,28 @@
 
 .card {
     width: 100%;
+
     /* max-width: 480px; */
     background: var(--card-bg, var(--bg-card, #0f172a));
     color: var(--text-main, #eaf0ff);
     box-shadow: var(--shadow-soft, 0 18px 52px rgba(0, 0, 0, 0.25));
     overflow: hidden;
     font-family: var(--font-family, "Heebo", system-ui, sans-serif);
+
+    /* Typography contract defaults (rem-based).
+       Skins may override these via token-only CSS variables. */
+    --fs-12: 0.75rem;
+    --fs-14: 0.875rem;
+    --fs-16: 1rem;
+    --fs-18: 1.125rem;
+
+    --fs-h1: 1.75rem;
+    --fs-h2: 1.25rem;
+    --fs-h3: 1rem;
+
+    --lh-tight: 1.1;
+    --lh-normal: 1.5;
+    --lh-relaxed: 1.65;
 
     /* Hero geometry token (SSoT)
          IMPORTANT: crop aspect must match this aspect to avoid “second crop” via object-fit: cover. */
@@ -33,7 +49,6 @@
     /* Deterministic hero box: width-driven height.
        Do NOT use min-height here; it breaks WYSIWYG crop across containers. */
     aspect-ratio: var(--hero-aspect, 16 / 9);
-    
 }
 
 /* Gradient layer (skin sets --hero-gradient token) */
@@ -47,7 +62,6 @@
     background-repeat: no-repeat;
     pointer-events: none;
     z-index: 1;
-
 }
 
 /* Cover photo layer (URL comes from <img src=...>) */
@@ -126,8 +140,6 @@
     align-items: flex-end;
     padding: 24px 24px 0;
     z-index: 3;
-    
-
 }
 
 .avatarWrap {
@@ -167,7 +179,7 @@
 }
 
 .name {
-    font-size: var(--fs-h1, 28px);
+    font-size: var(--fs-h1, 1.75rem);
     line-height: var(--lh-tight, 1.1);
     font-weight: 800;
     color: var(--name-color, var(--text-main, #ffffff));
@@ -176,11 +188,10 @@
 }
 
 .subtitle {
-    font-size: var(--fs-h3, 16px);
-    line-height: var(--lh-normal, 1.4);
+    font-size: var(--fs-h3, 1rem);
+    line-height: var(--lh-normal, 1.5);
     color: var(--text-muted, #c8d2ea);
     margin: 0;
-
 }
 
 .socialRow,
@@ -226,12 +237,15 @@
     color: var(--action-text, #ffffff);
     border: 1px solid var(--action-border, transparent);
     font-family: inherit;
-    font-size: 14px;
+    font-size: var(--fs-14, 0.875rem);
     font-weight: 600;
-    line-height: 1.2;
+    line-height: var(--lh-tight, 1.2);
     text-decoration: none;
     cursor: pointer;
-    transition: transform 120ms ease, box-shadow 120ms ease, filter 120ms ease;
+    transition:
+        transform 120ms ease,
+        box-shadow 120ms ease,
+        filter 120ms ease;
 }
 
 .ctaRow :global(button:hover),
@@ -265,12 +279,16 @@
 
 /* Preview-only A11y + premium polish.
    IMPORTANT: strictly scoped to editor phone preview marker, so public card is unchanged. */
-[data-preview="phone"] .card :is(a, button, input, select, textarea):focus-visible {
+[data-preview="phone"]
+    .card
+    :is(a, button, input, select, textarea):focus-visible {
     outline: none;
 
     /* Make the existing ring feel thicker/clearer without changing its hue.
        Secondary halo is neutral to keep contrast on light/dark skins. */
-    box-shadow: var(--focus-ring), 0 0 0 1px rgba(255, 255, 255, 0.22);
+    box-shadow:
+        var(--focus-ring),
+        0 0 0 1px rgba(255, 255, 255, 0.22);
 }
 
 .footerWrap {
@@ -319,6 +337,7 @@
 @container phone (max-width: 520px) {
     [data-preview="phone"] .card {
         border-radius: var(--radius-md, 20px);
+        width: 100%;
 
         /* Neutralize desktop boost (viewport @media) inside phone preview */
         --_avatar-size: var(--avatar-size, 150px);
@@ -327,6 +346,7 @@
         /* Keep overlap behavior consistent with mobile layout */
         --_avatar-overlap: var(--avatar-overlap, calc(var(--_avatar-size) / 2));
     }
+
     [data-preview="phone"] .hero {
         margin: 0 auto;
         width: 100%;
