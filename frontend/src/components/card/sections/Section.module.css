@@ -9,7 +9,7 @@
     margin: 0;
     font-size: var(--fs-18, 1.125rem);
     font-weight: 600;
-    color: var(--text-main);
+    color: var(--color-title);
     text-align: center;
 }
 

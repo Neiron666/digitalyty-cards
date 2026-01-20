@@ -182,7 +182,7 @@ export function isCardNearlyEmpty(card) {
 
 export function buildDemoCard(templateId) {
     const normalizedTemplateId =
-        normalizeTemplateId(templateId) || "businessClassic";
+        normalizeTemplateId(templateId) || "roismanA11yLight";
     const template = getTemplateById(normalizedTemplateId);
     const placeholder = template?.previewImage;
 

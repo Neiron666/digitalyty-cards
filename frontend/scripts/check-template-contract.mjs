@@ -89,30 +89,53 @@ function getTemplateIds(templates) {
     return ids;
 }
 
-function validateCustomPalettes(template) {
+function assertNoDuplicateTemplateIds(templates) {
+    /** @type {Map<string, number>} */
+    const counts = new Map();
+
+    for (const t of templates || []) {
+        if (!t || typeof t.id !== "string") continue;
+        const id = t.id;
+        counts.set(id, (counts.get(id) || 0) + 1);
+    }
+
+    const duplicates = [...counts.entries()]
+        .filter(([, count]) => count > 1)
+        .sort((a, b) => a[0].localeCompare(b[0]));
+
+    if (!duplicates.length) return;
+
+    const summary = duplicates
+        .map(([id, count]) => `${id} (${count}x)`)
+        .join(", ");
+
+    throw new Error(
+        `Duplicate template ids detected in registry (TEMPLATES[].id must be unique): ${summary}`,
+    );
+}
+
+function validateTemplatePalettes(template) {
     const palettes = template?.customPalettes;
     if (!Array.isArray(palettes) || palettes.length === 0) {
-        violations.push({
-            where: "registry:customV1.customPalettes",
-            message: "customV1.customPalettes must be a non-empty array",
-        });
         return [];
     }
+
+    const whereBase = `registry:TEMPLATES:${template?.id || "(unknown)"}`;
 
     /** @type {string[]} */
     const keys = [];
     for (const p of palettes) {
         if (typeof p !== "string") {
             violations.push({
-                where: "registry:customV1.customPalettes",
-                message: "customV1.customPalettes must contain only strings",
+                where: `${whereBase}.customPalettes`,
+                message: "customPalettes must contain only strings",
             });
             continue;
         }
         const normalized = p.trim().toLowerCase();
         if (!normalized) {
             violations.push({
-                where: "registry:customV1.customPalettes",
+                where: `${whereBase}.customPalettes`,
                 message: "Palette keys must be non-empty strings",
             });
             continue;
@@ -120,16 +143,26 @@ function validateCustomPalettes(template) {
         keys.push(normalized);
     }
 
-    // Ensure uniqueness
+    // Ensure uniqueness within template.
     const uniq = new Set(keys);
     if (uniq.size !== keys.length) {
         violations.push({
-            where: "registry:customV1.customPalettes",
-            message: "Palette keys must be unique",
+            where: `${whereBase}.customPalettes`,
+            message: "Palette keys must be unique within a template",
         });
     }
 
     return [...uniq];
+}
+
+function collectPaletteKeysFromTemplates(templates) {
+    const all = new Set();
+    for (const t of templates || []) {
+        if (!t || typeof t.id !== "string") continue;
+        const keys = validateTemplatePalettes(t);
+        for (const k of keys) all.add(k);
+    }
+    return [...all].sort((a, b) => a.localeCompare(b));
 }
 
 function validateSkinKeys(templates) {
@@ -213,13 +246,13 @@ function validateNoMagicComparisons() {
     }
 }
 
-function validateCustomSkinHasPaletteClasses(paletteKeys) {
-    const cssRel = "src/templates/skins/custom/CustomSkin.module.css";
+function validateSharedPalettesHasPaletteClasses(paletteKeys) {
+    const cssRel = "src/templates/skins/_palettes/Palettes.module.css";
     const cssText = readText(cssRel);
     if (!cssText) {
         violations.push({
             where: cssRel,
-            message: "Custom skin CSS module not found",
+            message: "Shared palettes CSS module not found",
         });
         return;
     }
@@ -319,6 +352,8 @@ try {
         });
     }
 
+    assertNoDuplicateTemplateIds(templates);
+
     const templateIds = getTemplateIds(templates);
 
     validateSkinKeys(templates);
@@ -334,10 +369,10 @@ try {
         });
     }
 
-    const paletteKeys = validateCustomPalettes(customV1);
+    const paletteKeys = collectPaletteKeysFromTemplates(templates);
 
     if (paletteKeys.length) {
-        validateCustomSkinHasPaletteClasses(paletteKeys);
+        validateSharedPalettesHasPaletteClasses(paletteKeys);
     }
 
     validateRendererAgainstRegistry(templateIds, paletteKeys);

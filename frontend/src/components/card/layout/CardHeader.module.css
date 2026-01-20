@@ -62,7 +62,7 @@
     font-size: var(--fs-h2, 1.25rem);
     font-weight: 600;
     line-height: var(--lh-tight, 1.2);
-    color: var(--text-main);
+    color: var(--color-title);
 }
 
 .subtitle {

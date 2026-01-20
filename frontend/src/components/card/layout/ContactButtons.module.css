@@ -37,9 +37,14 @@
     width: var(--contact-btn-size, 52px);
     height: var(--contact-btn-size, 52px);
     border-radius: 999px;
-    color: var(--contact-btn-color, var(--primary));
-    border: 1px solid var(--contact-btn-border, currentColor);
-    background: var(--contact-btn-bg, transparent);
+    /* круг */
+    background: var(--contact-btn-bg, var(--contact-btn-color, var(--primary)));
+
+    /* цвет иконки (mask -> currentColor) */
+    color: var(--contact-btn-fg, #fff);
+
+    box-shadow: inset 0 0 0 3px
+        var(--contact-btn-border, rgba(255, 255, 255, 0.25));
 
     transition:
         transform 120ms ease,
@@ -50,7 +55,8 @@
 .buttons .item:hover .bubble {
     transform: translateY(-1px);
     filter: brightness(1.04);
-    color: var(--contact-btn-hover-color, var(--primary-hover));
+    background: var(--contact-btn-hover-bg, var(--primary-hover));
+    color: var(--contact-btn-hover-fg, var(--contact-btn-fg, #fff));
 }
 
 .buttons .item:active .bubble {
@@ -132,7 +138,7 @@
 
 @media (min-width: 1024px) {
     .bubble {
-        width: var(--contact-btn-size-lg, 60px);
-        height: var(--contact-btn-size-lg, 60px);
+        width: var(--contact-btn-size-lg, 70px);
+        height: var(--contact-btn-size-lg, 70px);
     }
 }

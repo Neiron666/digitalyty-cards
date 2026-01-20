@@ -18,7 +18,6 @@
 .panel {
     flex: 0 0 420px; /* фикс 420 */
     padding: 20px;
-
     background: var(--bg-card);
     overflow-y: auto;
     min-width: 0;

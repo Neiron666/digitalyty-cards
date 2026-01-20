@@ -7,6 +7,10 @@
 
     --contact-btn-color: var(--main-token-color);
 
+    --contact-btn-bg: var(--main-token-color);
+    --contact-btn-fg: #ffffff;
+    /* --contact-btn-border: rgba(12, 106, 122, 0.25); */
+
     --primary: var(--main-token-color);
     --primary-hover: var(--main-token-color);
 
@@ -16,6 +20,9 @@
 
     --text-main: #0b1b2b;
     --text-muted: #35506a;
+    --color-title: var(--main-token-color);
+
+    --name-color: var(--text-color);
 
     --border: rgba(11, 27, 43, 0.14);
     --shadow-soft: 0 18px 48px rgba(11, 27, 43, 0.16);
@@ -35,4 +42,6 @@
         rgba(255, 255, 255, 0.55)
     );
     --hero-image-position: center;
+
+    --hero-divider-border: var(--main-token-color);
 }

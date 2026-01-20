@@ -41,9 +41,35 @@ function DesignPanel({ card, design, plan, onChange, onFieldChange, cardId }) {
     function handleSelectTemplate(templateId) {
         const tpl = getTemplateById(templateId);
 
-        const nextDesign = tpl?.designDefaults
+        const nextDesignBase = tpl?.designDefaults
             ? { ...design, ...tpl.designDefaults, templateId }
             : { ...design, templateId };
+
+        const allowedPalettes = Array.isArray(tpl?.customPalettes)
+            ? tpl.customPalettes.map((k) => String(k).trim().toLowerCase())
+            : [];
+
+        const defaultKeyRaw = String(tpl?.defaultPaletteKey || "")
+            .trim()
+            .toLowerCase();
+
+        const defaultKey =
+            (defaultKeyRaw && allowedPalettes.includes(defaultKeyRaw)
+                ? defaultKeyRaw
+                : allowedPalettes[0]) || "";
+
+        const existingKey = String(nextDesignBase?.customPaletteKey || "")
+            .trim()
+            .toLowerCase();
+
+        const nextDesign = allowedPalettes.length
+            ? {
+                  ...nextDesignBase,
+                  customPaletteKey: allowedPalettes.includes(existingKey)
+                      ? existingKey
+                      : defaultKey,
+              }
+            : nextDesignBase;
 
         onChange?.(nextDesign);
 
@@ -54,7 +80,7 @@ function DesignPanel({ card, design, plan, onChange, onFieldChange, cardId }) {
 
         const seededCard = seedTemplateContent(
             { ...card, design: nextDesign },
-            tpl
+            tpl,
         );
 
         if (seededCard.business !== card.business) {

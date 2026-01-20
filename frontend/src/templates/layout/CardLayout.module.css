@@ -62,8 +62,8 @@
 
     /* Contract typography tokens (preferred by components/layout) */
     --fs-base: var(--text-body);
-    --fs-h1: var(--fs-28);
-    --fs-h2: var(--fs-24);
+    --fs-h1: var(--fs-24);
+    --fs-h2: var(--fs-20);
     --fs-h3: var(--fs-18);
 
     /* Legacy aliases (back-compat only) */
@@ -88,6 +88,9 @@
     --ls-heading: var(--ls-tight);
     --ls-label: var(--ls-normal);
     --ls-overline: var(--ls-wide);
+
+    --hero-divider-border: rgba(255, 0, 0, 0.9);
+    --color-title: #000000;
 }
 
 .card {
@@ -120,6 +123,7 @@
     /* Deterministic hero box: width-driven height.
        Do NOT use min-height here; it breaks WYSIWYG crop across containers. */
     aspect-ratio: var(--hero-aspect, 16 / 9);
+    /* ... */
 }
 
 /* Gradient layer (skin sets --hero-gradient token) */
@@ -260,7 +264,7 @@
 }
 
 .subtitle {
-    font-size: var(--fs-h3, 1rem);
+    font-size: var(--fs-14, 1rem);
     line-height: var(--lh-normal, 1.5);
     color: var(--text-muted, #c8d2ea);
     margin: 0;
@@ -407,34 +411,45 @@
         position: absolute;
         left: 0;
         right: 0;
-        bottom: -1px; /* чтобы не было 1px щели из-за антиалиасинга */
+        bottom: -1px;
         height: var(--hero-divider-height, 28px);
-
-        /* цвет "тела" карточки (фон main/body совпадает с .card) */
-        background: var(--card-bg, var(--bg-card, #0f172a));
-
-        /* важно: не перекрывать аватар */
-        z-index: 2;
+        background: var(--card-bg, #0f172a);
         pointer-events: none;
+        z-index: 2;
 
-        /* маска-улыбка (концы выше, центр ниже) */
-        -webkit-mask-image: var(
-            --hero-divider-mask,
-            url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 20' preserveAspectRatio='none'%3E%3Cpath d='M0 0 Q50 20 100 0 V20 H0 Z' fill='%23000'/%3E%3C/svg%3E")
-        );
-        mask-image: var(
-            --hero-divider-mask,
-            url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 20' preserveAspectRatio='none'%3E%3Cpath d='M0 0 Q50 20 100 0 V20 H0 Z' fill='%23000'/%3E%3C/svg%3E")
-        );
-
+        /* только форма (маска) */
+        -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 20' preserveAspectRatio='none'%3E%3Cpath d='M0 0 Q50 20 100 0 V20 H0 Z' fill='%23000'/%3E%3C/svg%3E");
+        mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 20' preserveAspectRatio='none'%3E%3Cpath d='M0 0 Q50 20 100 0 V20 H0 Z' fill='%23000'/%3E%3C/svg%3E");
         -webkit-mask-repeat: no-repeat;
         mask-repeat: no-repeat;
-
         -webkit-mask-size: 100% 100%;
         mask-size: 100% 100%;
-
         -webkit-mask-position: bottom;
         mask-position: bottom;
+    }
+    .heroDivider {
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: -1px;
+        height: var(--hero-divider-height, 28px);
+        width: 100%;
+        display: block;
+        pointer-events: none;
+        z-index: 2; /* выше overlay (2) и выше заливки, но ниже аватара */
+    }
+
+    /* заливка "тела" карточки */
+    .heroDividerFill {
+        fill: var(--card-bg, #0f172a);
+    }
+
+    /* линия 2px по дуге */
+    .heroDividerStroke {
+        fill: none;
+        stroke: var(--hero-divider-border);
+        stroke-width: 5px;
+        vector-effect: non-scaling-stroke;
     }
 }
 
@@ -442,6 +457,7 @@
    - must be container-driven (phone screen width), not viewport-driven
    - must NOT leak to real pages
    - explicitly neutralizes desktop boost vars inside the preview */
+
 @container phone (max-width: 520px) {
     [data-preview="phone"] .card {
         border-radius: var(--radius-md, 20px);
@@ -472,10 +488,6 @@
         box-shadow: none;
     }
 
-    [data-preview="phone"] .bubble {
-        width: var(--contact-btn-size-lg, 52px);
-        height: var(--contact-btn-size-lg, 52px);
-    }
     [data-preview="phone"] .hero::after {
         content: "";
         position: absolute;
@@ -510,6 +522,30 @@
         -webkit-mask-position: bottom;
         mask-position: bottom;
     }
+    [data-preview="phone"] .heroDivider {
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: -1px;
+        height: var(--hero-divider-height, 28px);
+        width: 100%;
+        display: block;
+        pointer-events: none;
+        z-index: 2; /* выше overlay (2) и выше заливки, но ниже аватара */
+    }
+
+    /* заливка "тела" карточки */
+    [data-preview="phone"] .heroDividerFill {
+        fill: var(--card-bg, #0f172a);
+    }
+
+    /* линия 2px по дуге */
+    [data-preview="phone"] .heroDividerStroke {
+        fill: none;
+        stroke: var(--hero-divider-border);
+        stroke-width: 5px;
+        vector-effect: non-scaling-stroke;
+    }
 }
 
 /* Fallback: if named containers aren't supported for any reason, still scope to the preview marker. */
@@ -519,5 +555,7 @@
         --_avatar-size: var(--avatar-size, 150px);
         --hero-aspect: 16 / 9;
         --_avatar-overlap: var(--avatar-overlap, calc(var(--_avatar-size) / 2));
+        --contact-btn-size: 52px;
+        --contact-btn-size-lg: 52px;
     }
 }

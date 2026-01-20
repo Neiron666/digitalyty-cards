@@ -91,6 +91,24 @@ export default function CardLayout({
                             </div>
                         )}
                     </div>
+
+                    {/* Curved divider (fill + 2px stroke) */}
+                    <svg
+                        className={styles.heroDivider}
+                        viewBox="0 0 100 20"
+                        preserveAspectRatio="none"
+                        aria-hidden="true"
+                        focusable="false"
+                    >
+                        <path
+                            d="M0 0 Q50 20 100 0 V20 H0 Z"
+                            className={styles.heroDividerFill}
+                        />
+                        <path
+                            d="M0 0 Q50 20 100 0"
+                            className={styles.heroDividerStroke}
+                        />
+                    </svg>
                 </header>
 
                 <main className={cx(styles.body, skin?.body)}>

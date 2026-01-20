@@ -193,12 +193,13 @@
     border: 1px solid var(--border);
     border-radius: var(--radius-md);
     background: var(--bg);
-    color: var(--text);
     box-shadow: 0 6px 18px rgba(0, 0, 0, 0.12);
     opacity: 0;
     pointer-events: none;
     transform: translateY(2px);
-    transition: opacity 120ms ease, transform 120ms ease;
+    transition:
+        opacity 120ms ease,
+        transform 120ms ease;
     z-index: 10;
 }
 
@@ -252,6 +253,7 @@
     border: 0;
     cursor: pointer;
     text-align: left;
+    color: var(--text-main);
 }
 
 .accordionTitle {

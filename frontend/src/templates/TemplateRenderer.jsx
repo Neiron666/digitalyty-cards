@@ -1,10 +1,10 @@
 import { getTemplateById, normalizeTemplateId } from "./templates.config";
 import CardLayout from "./layout/CardLayout";
 import SkinBase from "./skins/_base/SkinBase.module.css";
+import SharedPalettes from "./skins/_palettes/Palettes.module.css";
 import CustomSkin from "./skins/custom/CustomSkin.module.css";
 import BeautySkin from "./skins/beauty/BeautySkin.module.css";
 import RoismanA11ySkin from "./skins/roismanA11y/RoismanA11ySkin.module.css";
-
 
 function toPascalCaseKey(key) {
     return String(key || "")
@@ -20,7 +20,7 @@ function paletteKeyToCssModuleClassName(key) {
     return `palette${toPascalCaseKey(key)}`;
 }
 
-function getCustomPaletteClassFromRegistry(template, key) {
+function getCustomPaletteClassFromRegistry(template, key, skinModule) {
     const allowed = Array.isArray(template?.customPalettes)
         ? template.customPalettes
         : [];
@@ -42,7 +42,13 @@ function getCustomPaletteClassFromRegistry(template, key) {
     const className = paletteKeyToCssModuleClassName(finalKey);
     const defaultClassName = paletteKeyToCssModuleClassName(defaultKey);
 
-    return CustomSkin[className] || CustomSkin[defaultClassName] || undefined;
+    return (
+        skinModule?.[className] ||
+        SharedPalettes?.[className] ||
+        skinModule?.[defaultClassName] ||
+        SharedPalettes?.[defaultClassName] ||
+        undefined
+    );
 }
 
 export default function TemplateRenderer({ card, onUpgrade, mode }) {
@@ -65,7 +71,8 @@ export default function TemplateRenderer({ card, onUpgrade, mode }) {
     const extraThemeClass = Array.isArray(template?.customPalettes)
         ? getCustomPaletteClassFromRegistry(
               template,
-              card?.design?.customPaletteKey
+              card?.design?.customPaletteKey,
+              skin,
           )
         : undefined;
 

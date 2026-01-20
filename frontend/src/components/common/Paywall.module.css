@@ -1,0 +1,6 @@
+.paywall button {
+    color: var(--contact-btn-fg, #fff);
+
+    box-shadow: inset 0 0 0 1px
+        var(--contact-btn-border, rgba(255, 255, 255, 0.25));
+}
