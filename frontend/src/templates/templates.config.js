@@ -11,12 +11,12 @@ const PREVIEW_PLACEHOLDER_PNG =
 
 export const TEMPLATES = [
     {
-  id: "roismanA11yLight",
-  label: "Roisman A11y Light",
-  name: "Roisman A11y Light",
-  skinKey: "roismanA11y",
-  previewImage: PREVIEW_PLACEHOLDER_PNG,
-  supports: {
+        id: "roismanA11yLight",
+        label: "Roisman A11y Light",
+        name: "Roisman A11y Light",
+        skinKey: "roismanA11y",
+        previewImage: PREVIEW_PLACEHOLDER_PNG,
+        supports: {
             backgroundImage: true,
             avatar: true,
             header: true,
@@ -30,14 +30,6 @@ export const TEMPLATES = [
             backgroundMode: "photo",
             alignment: "left",
             socialStyle: "pills",
-            colors: {
-                background: "#F6F8FB",
-                surface: "#FFFFFF",
-                text: "#0B1B2B",
-                muted: "#35506A",
-                primary: "#4F7CFF",
-                accent: "#22C55E",
-            },
             fonts: { heading: "Heebo", body: "Assistant" },
             overlay: { enabled: true, color: "#000000", opacity: 0.35 },
         },
@@ -134,7 +126,7 @@ export const TEMPLATES = [
                 },
             ],
         },
-},
+    },
     {
         id: "businessClassic",
         skinKey: "base",

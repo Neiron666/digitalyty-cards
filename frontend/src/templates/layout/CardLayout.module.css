@@ -35,7 +35,7 @@
     */
 
     /* Primitive font-size scale (крепкая база + расширение) */
-    --fs-scale: 1;
+    --fs-scale: 1.5;
     --fs-10: calc(clamp(0.625rem, 0.6rem + 0.1vw, 0.6875rem) * var(--fs-scale));
     --fs-11: calc(clamp(0.6875rem, 0.66rem + 0.1vw, 0.75rem) * var(--fs-scale));
     --fs-12: calc(clamp(0.75rem, 0.72rem + 0.1vw, 0.8125rem) * var(--fs-scale));
@@ -472,6 +472,10 @@
         box-shadow: none;
     }
 
+    [data-preview="phone"] .bubble {
+        width: var(--contact-btn-size-lg, 52px);
+        height: var(--contact-btn-size-lg, 52px);
+    }
     [data-preview="phone"] .hero::after {
         content: "";
         position: absolute;

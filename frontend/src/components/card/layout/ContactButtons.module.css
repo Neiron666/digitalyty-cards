@@ -4,6 +4,7 @@
     justify-content: center;
     gap: 16px;
     flex-wrap: wrap;
+    margin: 16px 0;
 }
 
 /* ВАЖНО: перебиваем стили из CardLayout.module.css:
