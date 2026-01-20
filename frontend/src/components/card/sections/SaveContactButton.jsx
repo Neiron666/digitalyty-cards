@@ -86,12 +86,12 @@ function SaveContactButton({ card }) {
     }
 
     return (
-        <div className={styles.actions}>
+        <div className={`${styles.actions}`}>
             {card?.status === "published" && (
                 <button
                     type="button"
                     onClick={handleShare}
-                    className={styles.button}
+                    className={`${styles.button} ${styles.actionShare}`}
                 >
                     <span
                         className={`${styles.icon} ${styles.iconShare}`}

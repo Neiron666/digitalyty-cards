@@ -7,9 +7,10 @@
 
     --contact-btn-color: var(--main-token-color);
 
-    --contact-btn-bg: var(--main-token-color);
+    /* --contact-btn-bg: var(--main-token-color); */
     --contact-btn-fg: #ffffff;
     /* --contact-btn-border: rgba(12, 106, 122, 0.25); */
+    --contact-btn-hover-fg: #ffffff;
 
     --primary: var(--main-token-color);
     --primary-hover: var(--main-token-color);

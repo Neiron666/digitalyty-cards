@@ -1,5 +1,6 @@
 .actions {
-    display: grid;
+    display: flex;
+    flex-direction: column;
     gap: 10px;
 }
 
@@ -12,12 +13,23 @@
         var(--contact-btn-border, rgba(255, 255, 255, 0.25));
 }
 
+.actions .actionShare {
+    background: none;
+    /* box-shadow: none; */
+    color: var(--contact-btn-border, var(--primary));
+    border: 2px solid var(--contact-btn-border, var(--primary));
+}
+
+.actions .actionShare:hover {
+    background: var(--contact-btn-border, var(--primary));
+    color: #fff;
+}
+
 .icon {
     width: 20px;
     height: 20px;
     background-color: currentColor;
     flex: 0 0 auto;
-
     -webkit-mask-repeat: no-repeat;
     -webkit-mask-position: center;
     -webkit-mask-size: contain;
