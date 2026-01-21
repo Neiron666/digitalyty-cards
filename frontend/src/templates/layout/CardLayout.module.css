@@ -313,7 +313,7 @@
     color: var(--action-text, #ffffff);
     border: 1px solid var(--action-border, transparent);
     font-family: inherit;
-    font-size: var(--fs-14, 0.875rem);
+    font-size: var(--fs-12, 0.75rem);
     font-weight: 600;
     line-height: var(--lh-tight, 1.2);
     text-decoration: none;
@@ -407,6 +407,7 @@
     .body {
         width: 95%;
         padding: calc(24px + var(--_avatar-overlap)) 16px 16px;
+        gap: 1.5rem;
     }
     .heroInner {
         box-shadow: none;
@@ -553,6 +554,9 @@
     }
 
     /* линия 2px по дуге */
+    [data-preview="phone"] .body {
+        gap: 1.5rem;
+    }
     [data-preview="phone"] .heroDividerStroke {
         fill: none;
         stroke: var(--hero-divider-border);

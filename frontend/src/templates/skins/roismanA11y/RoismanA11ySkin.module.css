@@ -21,9 +21,9 @@
 
     --text-main: #0b1b2b;
     --text-muted: #35506a;
-    --color-title: var(--main-token-color);
+    --color-title: var(--text-main);
 
-    --name-color: var(--text-color);
+    --name-color: var(--text-main);
 
     --border: rgba(11, 27, 43, 0.14);
     --shadow-soft: 0 18px 48px rgba(11, 27, 43, 0.16);
