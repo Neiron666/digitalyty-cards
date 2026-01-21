@@ -1,3 +1,9 @@
+.paywall {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
 .paywall button {
     color: var(--contact-btn-fg, #fff);
 

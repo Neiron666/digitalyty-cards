@@ -9,6 +9,7 @@
     border-radius: 8px;
     background: var(--bg-surface);
     border-left: 3px solid var(--primary);
+    margin: 0;
 }
 
 .text {

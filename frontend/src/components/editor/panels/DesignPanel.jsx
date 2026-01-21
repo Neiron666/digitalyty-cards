@@ -117,12 +117,6 @@ function DesignPanel({ card, design, plan, onChange, onFieldChange, cardId }) {
 
     return (
         <Panel title="עיצוב">
-            {/* Templates sub-section (default) */}
-            <TemplateSelector
-                value={selectedTemplateId}
-                onSelect={handleSelectTemplate}
-            />
-
             {paletteKeys.length ? (
                 <div className={styles.field}>
                     <label className={styles.label} htmlFor="customPaletteKey">

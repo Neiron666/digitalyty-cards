@@ -112,24 +112,36 @@ export default function CardLayout({
                 </header>
 
                 <main className={cx(styles.body, skin?.body)}>
-                    <div className={cx(styles.identity, skin?.identity)}>
-                        <h1 className={cx(styles.name, skin?.name)}>
-                            {name || ""}
-                        </h1>
-                        {subtitle ? (
-                            <p className={cx(styles.subtitle, skin?.subtitle)}>
-                                {subtitle}
-                            </p>
-                        ) : null}
-                    </div>
+                    <section
+                        className={cx(
+                            styles.headerCluster,
+                            skin?.headerCluster,
+                        )}
+                    >
+                        <div className={cx(styles.identity, skin?.identity)}>
+                            <h1 className={cx(styles.name, skin?.name)}>
+                                {name || ""}
+                            </h1>
+                            {subtitle ? (
+                                <p
+                                    className={cx(
+                                        styles.subtitle,
+                                        skin?.subtitle,
+                                    )}
+                                >
+                                    {subtitle}
+                                </p>
+                            ) : null}
+                        </div>
 
-                    <div className={cx(styles.socialRow, skin?.socialRow)}>
-                        <ContactButtons card={card} />
-                    </div>
+                        <div className={cx(styles.socialRow, skin?.socialRow)}>
+                            <ContactButtons card={card} />
+                        </div>
 
-                    <div className={cx(styles.ctaRow, skin?.ctaRow)}>
-                        <SaveContactButton card={card} />
-                    </div>
+                        <div className={cx(styles.ctaRow, skin?.ctaRow)}>
+                            <SaveContactButton card={card} />
+                        </div>
+                    </section>
 
                     <section
                         className={cx(styles.sectionWrap, skin?.sectionWrap)}

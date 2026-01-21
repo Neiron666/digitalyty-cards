@@ -71,7 +71,7 @@ function VideoSection({ card }) {
         <Section title="וידאו">
             <iframe
                 width="100%"
-                height="315"
+                height="auto"
                 src={embedUrl}
                 title="Business video"
                 frameBorder="0"

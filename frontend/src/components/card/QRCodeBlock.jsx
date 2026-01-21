@@ -1,5 +1,6 @@
 import { useMemo, useRef } from "react";
 import { QRCodeCanvas } from "qrcode.react";
+import Section from "./sections/Section";
 import styles from "./QRCodeBlock.module.css";
 
 export default function QRCodeBlock({ slug }) {
@@ -25,18 +26,20 @@ export default function QRCodeBlock({ slug }) {
     if (!slug) return null;
 
     return (
-        <div className={styles.wrap} ref={wrapRef}>
-            <div className={styles.code}>
-                <QRCodeCanvas value={url} size={160} includeMargin />
-            </div>
+        <Section>
+            <div className={styles.wrap} ref={wrapRef}>
+                <div className={styles.code}>
+                    <QRCodeCanvas value={url} size={160} includeMargin />
+                </div>
 
-            <button
-                type="button"
-                className={styles.download}
-                onClick={handleDownload}
-            >
-                הורד QR
-            </button>
-        </div>
+                <button
+                    type="button"
+                    className={styles.download}
+                    onClick={handleDownload}
+                >
+                    הורד QR
+                </button>
+            </div>
+        </Section>
     );
 }

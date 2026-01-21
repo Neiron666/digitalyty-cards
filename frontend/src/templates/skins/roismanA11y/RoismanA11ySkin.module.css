@@ -4,6 +4,8 @@
     --bg-card: #ffffff;
 
     --main-token-color: #0c6a7a;
+    --main-token-color: #094a56;
+    --main-token-color-rgb: 12, 106, 122;
 
     --contact-btn-color: var(--main-token-color);
 
@@ -19,8 +21,8 @@
     /* --avatar-shadow: 0 12px 32px rgba(0, 0, 0, 0.35); */
     --avatar-bg: #ffffff;
 
-    --text-main: #0b1b2b;
-    --text-muted: #35506a;
+    --text-main: #063037;
+    --text-subtitle: #375a5f;
     --color-title: var(--text-main);
 
     --name-color: var(--text-main);
@@ -30,6 +32,17 @@
 
     --section-bg: rgba(11, 27, 43, 0.035);
     --section-border: rgba(11, 27, 43, 0.12);
+
+    /* Zebra (odd/even surfaces; gradients allowed) */
+    --section-surface-odd: var(--background-color);
+    --section-surface-even:
+        linear-gradient(
+            rgba(var(--main-token-color-rgb), 0.3),
+            rgba(0, 0, 0, 0.04)
+        ),
+        var(--section-bg);
+    --section-border-odd: none;
+    --section-border-even: none;
 
     --action-bg: #0c6a7a;
     --action-text: #ffffff;
