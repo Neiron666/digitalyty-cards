@@ -30,13 +30,20 @@
 }
 
 .card {
+    display: flex;
     border: 1px solid var(--border);
     border-radius: var(--radius-lg);
     background: var(--bg-card);
     padding: 12px;
     display: flex;
     flex-direction: column;
+    justify-content: space-between;
+    text-align: center;
     gap: 10px;
+}
+
+.card .btn {
+    margin-top: auto;
 }
 
 .selected {
