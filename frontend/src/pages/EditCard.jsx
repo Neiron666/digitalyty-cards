@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useBlocker, useNavigate, useParams } from "react-router-dom";
 import Editor from "../components/editor/Editor";
 import TrialBanner from "../components/editor/TrialBanner";
+import { EDITOR_CARD_TABS } from "../components/editor/editorTabs";
 import { deleteCard } from "../services/cards.service";
 import api, { getAnonymousId } from "../services/api";
 import { useAuth } from "../context/AuthContext";
@@ -30,18 +31,7 @@ function EditCard() {
         }
 
         const validSections = new Set(["card"]);
-        const validCardTabs = new Set([
-            "templates",
-            "business",
-            "contact",
-            "content",
-            "design",
-            "gallery",
-            "reviews",
-            "settings",
-            "seo",
-            "analytics",
-        ]);
+        const validCardTabs = new Set(EDITOR_CARD_TABS);
 
         if (!section || !validSections.has(section)) {
             navigate("/edit/card/templates", { replace: true });

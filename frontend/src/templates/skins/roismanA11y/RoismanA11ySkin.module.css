@@ -34,7 +34,7 @@
     --section-border: rgba(11, 27, 43, 0.12);
 
     /* Zebra (odd/even surfaces; gradients allowed) */
-    --section-surface-odd: var(--background-color);
+    --section-surface-odd: var(--bg-surface);
     --section-surface-even:
         linear-gradient(
             rgba(var(--main-token-color-rgb), 0.3),

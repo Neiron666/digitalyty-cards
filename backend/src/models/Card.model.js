@@ -24,6 +24,34 @@ const ReviewSchema = new mongoose.Schema(
     { _id: false },
 );
 
+const FaqItemSchema = new mongoose.Schema(
+    {
+        q: { type: String, trim: true, default: "", maxlength: 200 },
+        a: { type: String, trim: true, default: "", maxlength: 4000 },
+    },
+    { _id: false },
+);
+
+const FaqSchema = new mongoose.Schema(
+    {
+        title: { type: String, trim: true, default: null, maxlength: 120 },
+        lead: { type: String, trim: true, default: null, maxlength: 400 },
+        items: {
+            type: [FaqItemSchema],
+            default: undefined,
+            validate: {
+                validator: (arr) => {
+                    if (arr === undefined || arr === null) return true;
+                    if (!Array.isArray(arr)) return false;
+                    return arr.length <= 10;
+                },
+                message: "faq.items must contain at most 10 items",
+            },
+        },
+    },
+    { _id: false },
+);
+
 const CardSchema = new mongoose.Schema(
     {
         user: {
@@ -174,6 +202,8 @@ const CardSchema = new mongoose.Schema(
             aboutText: String,
             videoUrl: String,
         },
+
+        faq: { type: FaqSchema, default: null },
 
         seo: {
             title: String,

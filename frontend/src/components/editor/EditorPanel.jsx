@@ -3,6 +3,7 @@ import ContactPanel from "./panels/ContactPanel";
 import ContentPanel from "./panels/ContentPanel";
 import GalleryPanel from "./panels/GalleryPanel";
 import ReviewsPanel from "./panels/ReviewsPanel";
+import FaqPanel from "./panels/FaqPanel";
 import DesignPanel from "./panels/DesignPanel";
 import SettingsPanel from "./panels/SettingsPanel";
 import SeoPanel from "./panels/SeoPanel";
@@ -102,6 +103,15 @@ export default function EditorPanel({
                 <ReviewsPanel
                     reviews={card.reviews}
                     onChange={(reviews) => onFieldChange?.("reviews", reviews)}
+                />
+            );
+
+        case "faq":
+            return (
+                <FaqPanel
+                    faq={card.faq}
+                    disabled={editingDisabled}
+                    onChange={(faq) => onFieldChange?.("faq", faq)}
                 />
             );
 

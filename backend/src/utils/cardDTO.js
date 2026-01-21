@@ -92,6 +92,7 @@ function pickSafeCardFields(cardObj) {
         business: cardObj.business,
         contact: cardObj.contact,
         content: cardObj.content,
+        faq: cardObj.faq,
         design: cardObj.design,
         gallery: cardObj.gallery,
         reviews: cardObj.reviews,

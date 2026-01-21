@@ -5,6 +5,12 @@ import EditorPanel from "./EditorPanel";
 import EditorPreview from "./EditorPreview";
 import EditorSaveBar from "./EditorSaveBar";
 
+import {
+    EDITOR_CARD_TABS,
+    PANEL_TEMPLATES,
+    PANEL_ANALYTICS,
+} from "./editorTabs";
+
 export default function Editor({
     card,
     onFieldChange,
@@ -25,20 +31,13 @@ export default function Editor({
     const navigate = useNavigate();
     const { tab } = useParams(); // route: /edit/card/:tab
 
-    const allowedTabs = new Set([
-        "templates",
-        "business",
-        "contact",
-        "content",
-        "design",
-        "gallery",
-        "reviews",
-        "seo",
-        "settings",
-        ...(canShowAnalyticsTab ? ["analytics"] : []),
-    ]);
+    const allowedTabs = new Set(
+        EDITOR_CARD_TABS.filter(
+            (t) => canShowAnalyticsTab || t !== PANEL_ANALYTICS,
+        ),
+    );
 
-    const activeTab = allowedTabs.has(tab) ? tab : "templates";
+    const activeTab = allowedTabs.has(tab) ? tab : PANEL_TEMPLATES;
 
     const dirtyCount =
         dirtyPaths && typeof dirtyPaths.size === "number" ? dirtyPaths.size : 0;

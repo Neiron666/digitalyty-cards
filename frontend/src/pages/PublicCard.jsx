@@ -1,10 +1,58 @@
 import { useEffect, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
-import { Helmet } from "react-helmet-async";
 import { getCardBySlug } from "../services/cards.service";
 import { trackView } from "../services/analytics.client";
 import CardRenderer from "../components/card/CardRenderer";
+import SeoHelmet from "../components/seo/SeoHelmet";
 import styles from "./PublicCardPage.module.css";
+
+function toPlainText(value) {
+    if (value === null || value === undefined) return "";
+    return String(value)
+        .replace(/<[^>]*>/g, " ")
+        .replace(/\s+/g, " ")
+        .trim();
+}
+
+function buildFaqJsonLd(card, canonicalUrl) {
+    const faq = card?.faq && typeof card.faq === "object" ? card.faq : null;
+    const rawItems = Array.isArray(faq?.items) ? faq.items : [];
+
+    const items = rawItems
+        .map((item) => {
+            if (!item || typeof item !== "object") return null;
+            const q = toPlainText(item.q);
+            const a = toPlainText(item.a);
+            if (!q || !a) return null;
+            return { q, a };
+        })
+        .filter(Boolean);
+
+    if (!items.length) return null;
+
+    const idBase = typeof canonicalUrl === "string" ? canonicalUrl.trim() : "";
+    const faqId = idBase ? `${idBase}#faq` : undefined;
+
+    return {
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        ...(faqId ? { "@id": faqId } : {}),
+        mainEntity: items.map((it) => ({
+            "@type": "Question",
+            name: it.q,
+            acceptedAnswer: {
+                "@type": "Answer",
+                text: it.a,
+            },
+        })),
+    };
+}
+
+function getPublicOrigin() {
+    const raw = import.meta?.env?.VITE_PUBLIC_ORIGIN;
+    if (typeof raw !== "string") return "";
+    return raw.trim().replace(/\/$/, "");
+}
 
 function PublicCard() {
     const { slug } = useParams();
@@ -61,30 +109,24 @@ function PublicCard() {
         card.design?.logo ||
         "https://digitalyty.co.il/og-default.jpg";
 
-    const origin = typeof window !== "undefined" ? window.location.origin : "";
-    const url = `${origin}/card/${card.slug}`;
+    const publicOrigin = getPublicOrigin();
+    const urlPath = `/card/${card.slug}`;
+    const url = publicOrigin ? `${publicOrigin}${urlPath}` : urlPath;
+
+    const canonicalUrl = card.seo?.canonicalUrl || url;
+    const faqJsonLd = buildFaqJsonLd(card, canonicalUrl);
 
     return (
         <div className={styles.publicPage}>
-            <Helmet>
-                <title>{title}</title>
-                <meta name="description" content={description} />
-
-                <link rel="canonical" href={url} />
-
-                {/* OpenGraph */}
-                <meta property="og:type" content="website" />
-                <meta property="og:title" content={title} />
-                <meta property="og:description" content={description} />
-                <meta property="og:image" content={image} />
-                <meta property="og:url" content={url} />
-
-                {/* Twitter */}
-                <meta name="twitter:card" content="summary_large_image" />
-                <meta name="twitter:title" content={title} />
-                <meta name="twitter:description" content={description} />
-                <meta name="twitter:image" content={image} />
-            </Helmet>
+            <SeoHelmet
+                title={title}
+                description={description}
+                canonicalUrl={canonicalUrl}
+                url={url}
+                image={image}
+                jsonLd={card.seo?.jsonLd}
+                jsonLdItems={faqJsonLd ? [faqJsonLd] : []}
+            />
 
             <div className={styles.publicContainer}>
                 <CardRenderer

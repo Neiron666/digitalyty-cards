@@ -1,0 +1,188 @@
+.section {
+    /* Token surface/border fallbacks to existing system tokens */
+    --faq-surface: var(--section-bg, var(--bg-surface, #111b2e));
+    --faq-border: var(--section-border, rgba(255, 255, 255, 0.08));
+    --faq-accent: var(--action-bg, var(--primary, #4f7cff));
+    --faq-text: var(--text-main, #eaf0ff);
+    --faq-muted: var(--text-subtitle, rgba(234, 240, 255, 0.78));
+    --faq-focus-ring: var(
+        --focus-ring,
+        0 0 0 3px color-mix(in srgb, var(--faq-accent) 40%, transparent)
+    );
+
+    /* Animation ceiling (skins may override via --faq-answer-max). */
+    --_faq-answer-max: var(--faq-answer-max, 56rem);
+}
+
+.title {
+    /* Keep Section title layout, but allow skins to tune via tokens */
+    color: var(--faq-text);
+    text-decoration-color: var(--faq-accent);
+}
+
+.content {
+    /* Override shared Section content constraints for FAQ */
+    width: 100%;
+    padding-block: 1.25rem;
+    padding-inline: 0;
+    text-align: start;
+}
+
+.lead {
+    margin: 0;
+    margin-block-end: 1rem;
+    color: var(--faq-muted);
+    font-size: var(--fs-14, 0.875rem);
+    line-height: var(--lh-normal, 1.5);
+}
+
+.list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.item {
+    background: var(--faq-surface);
+    border: 1px solid var(--faq-border);
+    border-radius: var(--radius-md, 18px);
+    overflow: hidden;
+}
+
+.question {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+
+    text-align: start;
+    padding-block: 1rem;
+    padding-inline: 1rem;
+
+    font: inherit;
+    font-size: var(--fs-16, 1rem);
+    line-height: var(--lh-normal, 1.5);
+    color: var(--faq-text);
+
+    background: linear-gradient(
+        180deg,
+        color-mix(in srgb, var(--faq-accent) 12%, transparent) 0%,
+        transparent 100%
+    );
+    border: 0;
+    cursor: pointer;
+
+    transition: background 220ms ease, box-shadow 220ms ease;
+}
+
+.question:hover {
+    background: linear-gradient(
+        180deg,
+        color-mix(in srgb, var(--faq-accent) 18%, transparent) 0%,
+        transparent 100%
+    );
+}
+
+.question:focus-visible {
+    outline: none;
+    box-shadow: var(--faq-focus-ring);
+}
+
+.questionText {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+}
+
+.icon {
+    position: relative;
+    flex: 0 0 auto;
+    width: 1.25rem;
+    height: 1.25rem;
+}
+
+.icon::before,
+.icon::after {
+    content: "";
+    position: absolute;
+    inset-inline-start: 50%;
+    inset-block-start: 50%;
+    width: 18px;
+    height: 2px;
+    background: var(--faq-accent);
+    border-radius: 2px;
+    transform-origin: center;
+    transition: transform 220ms ease, opacity 220ms ease;
+}
+
+.icon::before {
+    transform: translate(-50%, -50%) scaleX(1);
+}
+
+.icon::after {
+    transform: translate(-50%, -50%) rotate(90deg) scaleX(1);
+}
+
+.item[data-open="true"] .icon::after {
+    transform: translate(-50%, -50%) rotate(90deg) scaleX(0);
+    opacity: 0;
+}
+
+.answerWrap {
+    max-height: 0;
+    overflow: hidden;
+    opacity: 0;
+    transform: translateY(-3px);
+    transition:
+        max-height 280ms ease,
+        opacity 180ms ease,
+        transform 220ms ease;
+    border-top: 1px solid transparent;
+}
+
+.item[data-open="true"] .answerWrap {
+    max-height: var(--_faq-answer-max);
+    opacity: 1;
+    transform: translateY(0);
+    border-top-color: color-mix(in srgb, var(--faq-border) 70%, transparent);
+}
+
+.answer {
+    padding-block: 0.75rem 1rem;
+    padding-inline: 1rem;
+    color: var(--faq-text);
+    font-size: var(--fs-14, 0.875rem);
+    line-height: var(--lh-normal, 1.6);
+
+    /* Long answers: scroll inside if we hit the max-height ceiling */
+    max-block-size: calc(var(--_faq-answer-max) - 2rem);
+    overflow: auto;
+    overscroll-behavior: contain;
+}
+
+@media (max-width: 600px) {
+    .question {
+        padding-inline: 0.9rem;
+    }
+    .answer {
+        padding-inline: 0.9rem;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .question,
+    .answerWrap,
+    .icon::before,
+    .icon::after {
+        transition: none;
+    }
+
+    .answerWrap {
+        transform: none;
+    }
+}

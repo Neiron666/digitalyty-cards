@@ -6,6 +6,7 @@ import AboutSection from "../../components/card/sections/AboutSection";
 import GallerySection from "../../components/card/sections/GallerySection";
 import VideoSection from "../../components/card/sections/VideoSection";
 import ReviewsSection from "../../components/card/sections/ReviewsSection";
+import FaqSection from "../../components/card/sections/FaqSection";
 import LeadForm from "../../components/card/sections/LeadForm";
 import { toAbsoluteUrl } from "../../services/upload.service";
 import styles from "./CardLayout.module.css";
@@ -156,6 +157,7 @@ export default function CardLayout({
                         {supports?.reviews !== false && (
                             <ReviewsSection card={card} />
                         )}
+                        <FaqSection card={card} />
                         {card?.status === "published" && (
                             <QRCodeBlock slug={card.slug} />
                         )}

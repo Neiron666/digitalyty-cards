@@ -1,10 +1,16 @@
 import styles from "./Section.module.css";
 
-function Section({ title, children }) {
+const cx = (...classes) => classes.filter(Boolean).join(" ");
+
+function Section({ title, children, className, titleClassName, contentClassName }) {
     return (
-        <section className={styles.section}>
-            {title && <h2 className={styles.title}>{title}</h2>}
-            <div className={styles.content}>{children}</div>
+        <section className={cx(styles.section, className)}>
+            {title && (
+                <h2 className={cx(styles.title, titleClassName)}>{title}</h2>
+            )}
+            <div className={cx(styles.content, contentClassName)}>
+                {children}
+            </div>
         </section>
     );
 }
