@@ -28,11 +28,23 @@
     font-weight: 800;
     cursor: pointer;
     white-space: nowrap;
+    outline: 1px solid #f59f0b81;
+    outline-offset: -5px;
+    box-shadow: 0 0 0 1px var(--gold-soft);
+    transition:
+        border-color 0.2s,
+        color 0.2s;
 }
 
 .saveButton:hover:not(:disabled) {
     border-color: var(--gold-fade);
     color: var(--gold);
+    background: linear-gradient(
+        90deg,
+        transparent,
+        var(--gold-soft),
+        transparent
+    );
 }
 
 .saveButton:disabled {
