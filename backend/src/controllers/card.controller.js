@@ -764,7 +764,9 @@ export async function updateCard(req, res) {
             const nextUploads = existingUploads.filter((u) => {
                 if (!u || typeof u !== "object") return true;
                 const kind =
-                    typeof u.kind === "string" ? u.kind.trim().toLowerCase() : "";
+                    typeof u.kind === "string"
+                        ? u.kind.trim().toLowerCase()
+                        : "";
                 if (kind !== "gallery" && kind !== "gallerythumb") return true;
                 if (typeof u.path !== "string") return true;
                 return !deletedPathSet.has(u.path.trim());

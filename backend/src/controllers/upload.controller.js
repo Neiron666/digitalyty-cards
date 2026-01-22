@@ -92,7 +92,7 @@ export async function uploadGalleryImage(req, res) {
                 }
                 const paths = rawPaths.filter(
                     (p) =>
-                        typeof p === "string" && p.trim().startsWith("cards/")
+                        typeof p === "string" && p.trim().startsWith("cards/"),
                 );
                 if (paths.length) await removeObjects(paths);
             } catch {}
@@ -134,7 +134,7 @@ export async function uploadGalleryImage(req, res) {
             card,
             effectiveBilling,
             effectiveTier,
-            now
+            now,
         );
         const limit = Number(entitlements?.galleryLimit) || 0;
 
@@ -260,7 +260,7 @@ export async function uploadDesignAsset(req, res) {
                 }
                 const paths = rawPaths.filter(
                     (p) =>
-                        typeof p === "string" && p.trim().startsWith("cards/")
+                        typeof p === "string" && p.trim().startsWith("cards/"),
                 );
                 if (paths.length) await removeObjects(paths);
             } catch {}
