@@ -769,7 +769,7 @@ export async function updateCard(req, res) {
     const card = await Card.findByIdAndUpdate(
         req.params.id,
         { $set },
-        { new: true, runValidators: true }
+        { new: true, runValidators: true },
     );
 
     const userTier =
@@ -854,7 +854,7 @@ const RESERVED_SLUGS = new Set(
         "og",
         "health",
         "admin",
-    ].map((s) => String(s).toLowerCase())
+    ].map((s) => String(s).toLowerCase()),
 );
 
 export async function updateSlug(req, res) {
@@ -953,7 +953,7 @@ export async function deleteCard(req, res) {
         // Best-effort unlink from user (keeps old behavior consistent)
         await User.updateOne(
             { _id: actor.id, cardId: card._id },
-            { $unset: { cardId: 1 } }
+            { $unset: { cardId: 1 } },
         );
     }
 
@@ -982,8 +982,8 @@ export async function claimCard(req, res) {
             result.code === "CARD_ALREADY_CLAIMED"
                 ? 409
                 : result.code === "NO_ANON_CARD"
-                ? 404
-                : 400;
+                  ? 404
+                  : 400;
 
         return res
             .status(status)

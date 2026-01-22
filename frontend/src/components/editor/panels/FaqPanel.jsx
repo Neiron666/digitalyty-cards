@@ -44,7 +44,9 @@ export default function FaqPanel({ faq, disabled, onChange }) {
     }
 
     function updateItem(index, patch) {
-        const nextItems = items.map((it, i) => (i === index ? { ...it, ...patch } : it));
+        const nextItems = items.map((it, i) =>
+            i === index ? { ...it, ...patch } : it,
+        );
         commit({
             ...(value || {}),
             title,
@@ -96,7 +98,9 @@ export default function FaqPanel({ faq, disabled, onChange }) {
                 {items.map((item, index) => (
                     <div key={index} className={styles.item}>
                         <div className={styles.itemHeader}>
-                            <div className={styles.itemTitle}>שאלה #{index + 1}</div>
+                            <div className={styles.itemTitle}>
+                                שאלה #{index + 1}
+                            </div>
                             <Button
                                 variant="secondary"
                                 size="small"
@@ -113,7 +117,9 @@ export default function FaqPanel({ faq, disabled, onChange }) {
                                 className={formStyles.textarea}
                                 rows={2}
                                 value={item.q}
-                                onChange={(e) => updateItem(index, { q: e.target.value })}
+                                onChange={(e) =>
+                                    updateItem(index, { q: e.target.value })
+                                }
                                 disabled={disabled}
                             />
                         </label>
@@ -124,7 +130,9 @@ export default function FaqPanel({ faq, disabled, onChange }) {
                                 className={formStyles.textarea}
                                 rows={3}
                                 value={item.a}
-                                onChange={(e) => updateItem(index, { a: e.target.value })}
+                                onChange={(e) =>
+                                    updateItem(index, { a: e.target.value })
+                                }
                                 disabled={disabled}
                             />
                         </label>

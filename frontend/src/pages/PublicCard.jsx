@@ -32,11 +32,15 @@ function buildFaqJsonLd(card, canonicalUrl) {
 
     const idBase = typeof canonicalUrl === "string" ? canonicalUrl.trim() : "";
     const faqId = idBase ? `${idBase}#faq` : undefined;
+    const isPartOf = idBase ? { "@id": idBase } : undefined;
 
     return {
         "@context": "https://schema.org",
         "@type": "FAQPage",
         ...(faqId ? { "@id": faqId } : {}),
+        ...(idBase ? { url: idBase } : {}),
+        inLanguage: "he",
+        ...(isPartOf ? { isPartOf } : {}),
         mainEntity: items.map((it) => ({
             "@type": "Question",
             name: it.q,
@@ -52,6 +56,38 @@ function getPublicOrigin() {
     const raw = import.meta?.env?.VITE_PUBLIC_ORIGIN;
     if (typeof raw !== "string") return "";
     return raw.trim().replace(/\/$/, "");
+}
+
+function isAbsoluteUrl(value) {
+    return /^https?:\/\//i.test(String(value || "").trim());
+}
+
+function joinOriginWithPath(origin, path) {
+    const safeOrigin = String(origin || "")
+        .trim()
+        .replace(/\/$/, "");
+    const safePath = String(path || "").trim();
+    if (!safeOrigin) return safePath;
+    if (!safePath) return safeOrigin;
+    if (safePath.startsWith("/")) return `${safeOrigin}${safePath}`;
+    return `${safeOrigin}/${safePath}`;
+}
+
+function resolveAbsoluteCanonical({ slug, seoCanonicalUrl, publicOrigin }) {
+    const candidate =
+        typeof seoCanonicalUrl === "string" ? seoCanonicalUrl.trim() : "";
+    if (candidate) {
+        if (isAbsoluteUrl(candidate)) return candidate;
+        if (candidate.startsWith("/") && publicOrigin) {
+            return joinOriginWithPath(publicOrigin, candidate);
+        }
+        // Back-compat fallback: keep whatever the user stored.
+        return candidate;
+    }
+
+    const basePath = `/card/${String(slug || "").trim()}`;
+    if (publicOrigin) return joinOriginWithPath(publicOrigin, basePath);
+    return basePath;
 }
 
 function PublicCard() {
@@ -110,11 +146,16 @@ function PublicCard() {
         "https://digitalyty.co.il/og-default.jpg";
 
     const publicOrigin = getPublicOrigin();
-    const urlPath = `/card/${card.slug}`;
-    const url = publicOrigin ? `${publicOrigin}${urlPath}` : urlPath;
+    const canonicalResolved = resolveAbsoluteCanonical({
+        slug: card.slug,
+        seoCanonicalUrl: card.seo?.canonicalUrl,
+        publicOrigin,
+    });
 
-    const canonicalUrl = card.seo?.canonicalUrl || url;
-    const faqJsonLd = buildFaqJsonLd(card, canonicalUrl);
+    const canonicalUrl = canonicalResolved;
+    const url = canonicalResolved;
+
+    const faqJsonLd = buildFaqJsonLd(card, canonicalResolved);
 
     return (
         <div className={styles.publicPage}>

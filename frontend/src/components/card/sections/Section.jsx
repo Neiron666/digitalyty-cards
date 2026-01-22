@@ -2,9 +2,16 @@ import styles from "./Section.module.css";
 
 const cx = (...classes) => classes.filter(Boolean).join(" ");
 
-function Section({ title, children, className, titleClassName, contentClassName }) {
+function Section({
+    id,
+    title,
+    children,
+    className,
+    titleClassName,
+    contentClassName,
+}) {
     return (
-        <section className={cx(styles.section, className)}>
+        <section id={id} className={cx(styles.section, className)}>
             {title && (
                 <h2 className={cx(styles.title, titleClassName)}>{title}</h2>
             )}

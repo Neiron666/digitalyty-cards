@@ -76,7 +76,9 @@
     border: 0;
     cursor: pointer;
 
-    transition: background 220ms ease, box-shadow 220ms ease;
+    transition:
+        background 220ms ease,
+        box-shadow 220ms ease;
 }
 
 .question:hover {
@@ -117,7 +119,9 @@
     background: var(--faq-accent);
     border-radius: 2px;
     transform-origin: center;
-    transition: transform 220ms ease, opacity 220ms ease;
+    transition:
+        transform 220ms ease,
+        opacity 220ms ease;
 }
 
 .icon::before {

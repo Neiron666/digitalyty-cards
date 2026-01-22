@@ -125,7 +125,7 @@ function EditCard() {
                 deleteNoticeTimerRef.current = null;
             }, 3000);
         },
-        [clearDeleteNoticeTimer]
+        [clearDeleteNoticeTimer],
     );
 
     useEffect(() => {
@@ -279,7 +279,7 @@ function EditCard() {
                 console.error(
                     "initCard error",
                     status,
-                    err?.response?.data || err
+                    err?.response?.data || err,
                 );
 
                 // 404 can mean "no card" OR "card was deleted and editor is stale".
@@ -313,7 +313,7 @@ function EditCard() {
                         console.error(
                             "initCard create fallback failed",
                             createErr?.response?.status,
-                            createErr?.response?.data || createErr
+                            createErr?.response?.data || createErr,
                         );
                     }
                 }
@@ -322,7 +322,7 @@ function EditCard() {
                 setIsInitializing(false);
             }
         },
-        [navigate]
+        [navigate],
     );
 
     const refetchMineThrottled = useCallback(
@@ -339,7 +339,7 @@ function EditCard() {
 
             await initCard(isMounted);
         },
-        [initCard]
+        [initCard],
     );
 
     useEffect(() => {
@@ -404,7 +404,7 @@ function EditCard() {
             window.removeEventListener("focus", onFocus);
             document.removeEventListener(
                 "visibilitychange",
-                onVisibilityChange
+                onVisibilityChange,
             );
         };
     }, [token, refetchMineThrottled]);
@@ -416,7 +416,7 @@ function EditCard() {
         if (!draftCard?._id) return;
 
         const confirmed = window.confirm(
-            "האם אתה בטוח שברצונך למחוק כרטיס זה?"
+            "האם אתה בטוח שברצונך למחוק כרטיס זה?",
         );
         if (!confirmed) return;
 
@@ -523,8 +523,8 @@ function EditCard() {
             const child = Array.isArray(prevChild)
                 ? prevChild.slice()
                 : prevChild && typeof prevChild === "object"
-                ? { ...prevChild }
-                : {};
+                  ? { ...prevChild }
+                  : {};
 
             currNext[k] = child;
 
@@ -652,7 +652,7 @@ function EditCard() {
                                 typeof serverValue === "object" &&
                                 Object.prototype.hasOwnProperty.call(
                                     serverValue,
-                                    subKey
+                                    subKey,
                                 )
                             ) {
                                 nextObj[subKey] = serverValue[subKey];
@@ -743,7 +743,7 @@ function EditCard() {
 
             if (key.includes(".")) {
                 setDraftCard((prev) =>
-                    prev ? setIn(prev, key, patchOrValue) : prev
+                    prev ? setIn(prev, key, patchOrValue) : prev,
                 );
                 setDirtyPaths((prev) => {
                     const next = new Set(prev);
@@ -753,7 +753,7 @@ function EditCard() {
             } else {
                 if (isPlainObject(patchOrValue)) {
                     setDraftCard((prev) =>
-                        prev ? mergeSection(prev, key, patchOrValue) : prev
+                        prev ? mergeSection(prev, key, patchOrValue) : prev,
                     );
                     setDirtyPaths((prev) => {
                         const next = new Set(prev);
@@ -766,7 +766,7 @@ function EditCard() {
                                 draftCardRef.current[key]) ||
                             {};
                         for (const fieldKey of Object.keys(
-                            patchOrValue || {}
+                            patchOrValue || {},
                         )) {
                             if (
                                 prevSection?.[fieldKey] !==
@@ -799,7 +799,7 @@ function EditCard() {
                     }
                 } else {
                     setDraftCard((prev) =>
-                        prev ? { ...(prev || {}), [key]: patchOrValue } : prev
+                        prev ? { ...(prev || {}), [key]: patchOrValue } : prev,
                     );
                     setDirtyPaths((prev) => {
                         const next = new Set(prev);
@@ -817,7 +817,7 @@ function EditCard() {
             setSaveState("dirty");
             setSaveErrorText(null);
         },
-        [editingDisabled]
+        [editingDisabled],
     );
 
     const handlePublish = useCallback(async () => {

@@ -26,7 +26,7 @@ export function computeEntitlements(
     card,
     effectiveBilling,
     effectiveTier,
-    now = new Date()
+    now = new Date(),
 ) {
     const tier = effectiveTier?.tier || "free";
     const featurePlan = planFromTier(tier);
@@ -57,8 +57,8 @@ export function computeEntitlements(
         analyticsLevel === "basic"
             ? 7
             : analyticsLevel === "premium" || analyticsLevel === "demo"
-            ? 30
-            : 0;
+              ? 30
+              : 0;
 
     const canViewAnalytics = analyticsLevel !== "none";
 
@@ -109,7 +109,7 @@ function pickSafeCardFields(cardObj) {
 export function toCardDTO(
     card,
     now = new Date(),
-    { includePrivate = false, minimal = false, user = null } = {}
+    { includePrivate = false, minimal = false, user = null } = {},
 ) {
     if (!card) return null;
 
@@ -133,7 +133,7 @@ export function toCardDTO(
         cardObj,
         effectiveBilling,
         effectiveTier,
-        now
+        now,
     );
 
     const base = minimal

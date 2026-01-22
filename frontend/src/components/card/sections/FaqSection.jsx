@@ -58,6 +58,7 @@ export default function FaqSection({ card }) {
 
     return (
         <Section
+            id="faq"
             title={faq.title}
             className={styles.section}
             contentClassName={styles.content}
@@ -88,7 +89,10 @@ export default function FaqSection({ card }) {
                                 <span className={styles.questionText}>
                                     {item.q}
                                 </span>
-                                <span className={styles.icon} aria-hidden="true" />
+                                <span
+                                    className={styles.icon}
+                                    aria-hidden="true"
+                                />
                             </button>
 
                             <div

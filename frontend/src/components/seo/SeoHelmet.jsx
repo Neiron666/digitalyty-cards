@@ -43,7 +43,9 @@ export default function SeoHelmet({
     return (
         <Helmet>
             {title ? <title>{title}</title> : null}
-            {description ? <meta name="description" content={description} /> : null}
+            {description ? (
+                <meta name="description" content={description} />
+            ) : null}
 
             {canonicalUrl ? <link rel="canonical" href={canonicalUrl} /> : null}
 
@@ -69,8 +71,9 @@ export default function SeoHelmet({
                     // eslint-disable-next-line react/no-array-index-key
                     key={`jsonld-${index}`}
                     type="application/ld+json"
-                    dangerouslySetInnerHTML={{ __html: JSON.stringify(obj) }}
-                />
+                >
+                    {JSON.stringify(obj)}
+                </script>
             ))}
         </Helmet>
     );
