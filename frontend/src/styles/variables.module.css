@@ -27,7 +27,9 @@
     --shadow-soft: 0 10px 30px rgba(0, 0, 0, 0.35);
 
     /* Forms inputs */
-    --input-bg: rgb(232,240,254);
-    --input-border: rgb(232,240,254);
-    --input-text: var(--card-text)
+    --input-bg: rgb(232, 240, 254);
+    --input-border: rgb(232, 240, 254);
+    --input-text: var(--card-text);
+
+    --contact-btn-fg: #ffffff;
 }

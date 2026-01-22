@@ -3,15 +3,22 @@
     --faq-surface: var(--section-bg, var(--bg-surface, #111b2e));
     --faq-border: var(--section-border, rgba(255, 255, 255, 0.08));
     --faq-accent: var(--action-bg, var(--primary, #4f7cff));
+    --faq-answer: var(--contact-btn-secondary, var(--primary, #4f7cff));
+
     --faq-text: var(--text-main, #eaf0ff);
     --faq-muted: var(--text-subtitle, rgba(234, 240, 255, 0.78));
     --faq-focus-ring: var(
         --focus-ring,
         0 0 0 3px color-mix(in srgb, var(--faq-accent) 40%, transparent)
     );
+    --icon-color: var(--bg-surface, #eaf0ff);
 
     /* Animation ceiling (skins may override via --faq-answer-max). */
     --_faq-answer-max: var(--faq-answer-max, 56rem);
+
+    /* Option B: override shared Section content width only for FAQ */
+    --section-content-width: 70%;
+    --section-content-width-sm: 95%;
 }
 
 .title {
@@ -22,7 +29,13 @@
 
 .content {
     /* Override shared Section content constraints for FAQ */
-    width: 100%;
+    justify-self: center;
+    align-self: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    /* width: 100%; */
     padding-block: 1.25rem;
     padding-inline: 0;
     text-align: start;
@@ -37,25 +50,29 @@
 }
 
 .list {
+    width: 100%;
+    align-items: center;
     display: flex;
     flex-direction: column;
-    gap: 0.75rem;
+    gap: 0.2rem;
     list-style: none;
     margin: 0;
     padding: 0;
 }
 
 .item {
+    width: 100%;
+    /* align-items: center; */
     background: var(--faq-surface);
     border: 1px solid var(--faq-border);
     border-radius: var(--radius-md, 18px);
     overflow: hidden;
 }
 
-.question {
+.item .question {
     width: 100%;
     display: flex;
-    align-items: center;
+    /* align-items: center; */
     justify-content: space-between;
     gap: 12px;
 
@@ -66,14 +83,14 @@
     font: inherit;
     font-size: var(--fs-16, 1rem);
     line-height: var(--lh-normal, 1.5);
-    color: var(--faq-text);
+    color: var(--icon-color);
 
     background: linear-gradient(
         180deg,
-        color-mix(in srgb, var(--faq-accent) 12%, transparent) 0%,
+        color-mix(in srgb, var(--faq-accent) 80%, transparent) 70%,
         transparent 100%
     );
-    border: 0;
+    border: 1px solid var(--action-bg);
     cursor: pointer;
 
     transition:
@@ -81,15 +98,15 @@
         box-shadow 220ms ease;
 }
 
-.question:hover {
+.item .question:hover {
     background: linear-gradient(
         180deg,
-        color-mix(in srgb, var(--faq-accent) 18%, transparent) 0%,
+        color-mix(in srgb, var(--faq-accent) 90%, transparent) 80%,
         transparent 100%
     );
 }
 
-.question:focus-visible {
+.item .question:focus-visible {
     outline: none;
     box-shadow: var(--faq-focus-ring);
 }
@@ -106,6 +123,7 @@
     flex: 0 0 auto;
     width: 1.25rem;
     height: 1.25rem;
+    margin-left: 10px;
 }
 
 .icon::before,
@@ -116,7 +134,7 @@
     inset-block-start: 50%;
     width: 18px;
     height: 2px;
-    background: var(--faq-accent);
+    background: var(--icon-color);
     border-radius: 2px;
     transform-origin: center;
     transition:
@@ -146,7 +164,6 @@
         max-height 280ms ease,
         opacity 180ms ease,
         transform 220ms ease;
-    border-top: 1px solid transparent;
 }
 
 .item[data-open="true"] .answerWrap {
@@ -162,7 +179,11 @@
     color: var(--faq-text);
     font-size: var(--fs-14, 0.875rem);
     line-height: var(--lh-normal, 1.6);
-
+    background: linear-gradient(
+        180deg,
+        color-mix(in srgb, var(--faq-answer) 30%, transparent) 10%,
+        transparent 100%
+    );
     /* Long answers: scroll inside if we hit the max-height ceiling */
     max-block-size: calc(var(--_faq-answer-max) - 2rem);
     overflow: auto;
@@ -188,5 +209,11 @@
 
     .answerWrap {
         transform: none;
+    }
+}
+
+@media (max-width: 520px) {
+    .item .question {
+        font-size: var(--fs-12, 0.75rem);
     }
 }

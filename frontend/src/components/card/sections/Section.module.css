@@ -8,7 +8,7 @@
 .title {
     width: fit-content;
     align-self: center;
-    margin: 2rem 1rem;
+    margin: 1rem 1rem 0rem 1rem;
     font-size: var(--fs-24, 1.5rem);
     font-weight: 600;
     /* border: 1px solid var(--action-bg); */
@@ -21,6 +21,7 @@
 
 .content {
     align-self: center;
+    margin-inline: auto;
     font-size: var(--fs-14, 0.875rem);
     line-height: var(--lh-normal, 1.5);
     color: var(--text-main);
@@ -29,7 +30,7 @@
     word-break: break-word;
     hyphens: auto;
     text-align: center;
-    width: 70%;
+    width: var(--section-content-width, 70%);
     padding: 2rem 0;
 }
 
@@ -39,7 +40,7 @@
 
 @media (max-width: 600px) {
     .content {
-        width: 95%;
+        width: var(--section-content-width-sm, 95%);
     }
     .title {
         font-size: var(--fs-20, 1.25rem);
@@ -47,7 +48,7 @@
 }
 @container phone (max-width: 520px) {
     [data-preview="phone"] .content {
-        width: 95%;
+        width: var(--section-content-width-sm, 95%);
     }
     .title {
         font-size: var(--fs-20, 1.25rem);
@@ -57,6 +58,6 @@
 /* Fallback if named containers aren’t supported */
 @container (max-width: 520px) {
     [data-preview="phone"] .content {
-        width: 95%;
+        width: var(--section-content-width-sm, 95%);
     }
 }

@@ -90,6 +90,86 @@ export const TEMPLATES = [
             ],
         },
     },
+    {
+        id: "lakmi",
+        label: "Lakmi",
+        name: "Lakmi",
+        skinKey: "lakmi",
+        previewImage: PREVIEW_PLACEHOLDER_PNG,
+        supports: {
+            backgroundImage: true,
+            avatar: true,
+            header: true,
+            about: true,
+            services: true,
+            cta: true,
+            socials: true,
+            contact: true,
+        },
+        designDefaults: {
+            backgroundMode: "photo",
+            alignment: "left",
+            socialStyle: "pills",
+            fonts: { heading: "Heebo", body: "Assistant" },
+            overlay: { enabled: true, color: "#000000", opacity: 0.35 },
+        },
+        seededFields: [
+            "name",
+            "headline",
+            "company",
+            "about",
+            "faq",
+            "cta.label",
+            "cta.value",
+            "contact.phone",
+            "contact.email",
+            "contact.website",
+            "socials",
+        ],
+        sampleData: {
+            name: "דניאל כהן",
+            headline: "יועץ עסקי • אסטרטגיה וצמיחה",
+            company: "כהן קונסלטינג",
+            about: "עוזר לעסקים לבנות תהליך מכירה ברור, לשפר רווחיות ולהוציא רעיונות לפועל — בפשטות ובדיוק.",
+            faq: {
+                title: "שאלות ותשובות נפוצות",
+                lead: "כמה תשובות קצרות שיעזרו להבין איך מתחילים ומה קורה בתהליך.",
+                items: [
+                    {
+                        q: "איך מתחילים?",
+                        a: "מתחילים בשיחה קצרה כדי להבין את הצורך, ואז קובעים פגישה ראשונה ומגדירים מטרות ברורות.",
+                    },
+                    {
+                        q: "למי זה מתאים?",
+                        a: "למי שרוצה סדר ובהירות בתהליך, לשפר תוצאות ולקבל החלטות בצורה מדויקת ומבוססת.",
+                    },
+                    {
+                        q: "כמה זמן לוקח לראות תוצאות?",
+                        a: "זה משתנה לפי מצב נקודת הפתיחה, אבל בדרך כלל כבר אחרי הצעדים הראשונים רואים שיפור במדדים ובתחושת שליטה.",
+                    },
+                ],
+            },
+            cta: {
+                label: "שיחה מהירה בוואטסאפ",
+                value: "https://wa.me/972501234567",
+            },
+            contact: {
+                phone: "+972-50-123-4567",
+                email: "daniel@example.com",
+                website: "https://example.com",
+            },
+            socials: [
+                {
+                    platform: "linkedin",
+                    url: "https://www.linkedin.com/in/example",
+                },
+                {
+                    platform: "instagram",
+                    url: "https://www.instagram.com/example",
+                },
+            ],
+        },
+    },
 
     {
         id: "customV1",

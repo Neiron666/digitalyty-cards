@@ -1,0 +1,57 @@
+.theme {
+    --bg-main: #faf7f4;
+    --bg-surface: #ffffff;
+    --bg-card: #ffffff;
+
+    /* Accent: rose */
+    --main-token-color: #a9863e;
+    --secondary-token-color: #c18aa8;
+    --contact-btn-color: var(--main-token-color);
+    --contact-btn-bg: var(--main-token-color);
+    --contact-btn-fg: #ffffff;
+    --contact-btn-border: var(--main-token-color);
+    --contact-btn-outline: var(--secondary-token-color);
+    --contact-btn-secondary: var(--secondary-token-color);
+    --contact-btn-hover-fg: #ffffff;
+
+    --primary: var(--main-token-color);
+    --primary-hover: #a9863e;
+
+    /* Accent: gold for key borders/dividers */
+    --avatar-border: #c8a75c;
+    --avatar-bg: #ffffff;
+
+    --text-main: #1a1a1a;
+    --text-subtitle: var(--action-text);
+    --color-title: var(--text-main);
+    --name-color: var(--main-token-color);
+
+    --border: rgba(26, 26, 26, 0.14);
+    --shadow-soft: 0 18px 48px rgba(26, 26, 26, 0.14);
+
+    --section-bg: rgba(200, 167, 92, 0.06);
+    --section-border: rgba(26, 26, 26, 0.1);
+
+    /* Zebra surfaces (tokens only) */
+    --section-surface-odd: var(--bg-surface);
+    --section-surface-even:
+        linear-gradient(rgba(193, 138, 168, 0.22), rgba(200, 167, 92, 0.1)),
+        var(--section-bg);
+    --section-border-odd: none;
+    --section-border-even: none;
+
+    --action-bg: #c8a75c;
+    --action-text: #1a1a1a;
+    --action-border: rgba(200, 167, 92, 0.38);
+
+    --focus-ring: 0 0 0 3px rgba(193, 138, 168, 0.32);
+
+    --hero-overlay-bg: linear-gradient(
+        180deg,
+        rgba(255, 255, 255, 0.12),
+        rgba(230, 183, 210, 0.52)
+    );
+    --hero-image-position: center;
+
+    --hero-divider-border: #a9863e;
+}
