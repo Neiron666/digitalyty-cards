@@ -283,10 +283,16 @@ export async function uploadDesignAsset(req, res) {
             throw err;
         }
 
+        // Supported `kind` values for this endpoint are intentionally flexible.
+        // We normalize to keep storage paths and tracked upload kinds stable.
+        // This now explicitly supports `kind=galleryThumb` for gallery thumbnails.
+        const normalizedKind = kind ? String(kind).trim().toLowerCase() : "";
+        const kindForStorage = normalizedKind || "design";
+
         const storagePath = buildStoragePath({
             actor,
             cardId,
-            kind: kind || "design",
+            kind: kindForStorage,
             mime: req.file.mimetype,
         });
 
@@ -303,7 +309,7 @@ export async function uploadDesignAsset(req, res) {
         // Record for later deletion/cleanup even if client only persists URL fields.
         card.uploads = Array.isArray(card.uploads) ? card.uploads : [];
         card.uploads.push({
-            kind: kind ? String(kind) : null,
+            kind: normalizedKind || null,
             url: uploaded.url,
             path: uploaded.path,
             createdAt: new Date(),
@@ -314,12 +320,11 @@ export async function uploadDesignAsset(req, res) {
 
         console.debug("[supabase] upload", {
             cardId,
-            kind: kind ? String(kind) : "design",
+            kind: kindForStorage,
             path: uploaded.path,
         });
 
         // Optional: if client provides kind, store path hints on design for easier cleanup.
-        const normalizedKind = kind ? String(kind).trim().toLowerCase() : "";
 
         // Best-effort cleanup: when replacing avatar/background, delete the previous object.
         // This only works when the previous upload stored a path hint on the card.

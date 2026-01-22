@@ -13,6 +13,16 @@ export function collectSupabasePathsFromCard(card) {
                 const p = item.path.trim();
                 if (p) paths.add(p);
             }
+
+            // Variant 1: gallery thumbnails
+            if (
+                item &&
+                typeof item === "object" &&
+                typeof item.thumbPath === "string"
+            ) {
+                const p = item.thumbPath.trim();
+                if (p) paths.add(p);
+            }
         }
     }
 

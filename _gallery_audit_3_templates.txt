@@ -1,0 +1,2 @@
+﻿C:\Users\User\Desktop\Visit-me\Projects\Digitalyty-card-app\digitalyty-cards\frontend\src\templates\layout\CardLayout.jsx:6: import GallerySection from "../../components/card/sections/GallerySection";
+C:\Users\User\Desktop\Visit-me\Projects\Digitalyty-card-app\digitalyty-cards\frontend\src\templates\layout\CardLayout.jsx:152: <GallerySection card={card} />

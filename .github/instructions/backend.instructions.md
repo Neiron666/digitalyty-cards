@@ -1,72 +1,79 @@
-# Backend Instructions (Node/Express/Mongo)
+# backend.instructions.md
 
-You are working on the backend of Digitalyty Cards / The-Card.
+# Backend Instructions (Node/Express/Mongo) — Digitalyty Cards
 
-## Core Principles
+You are working on the backend of Digitalyty Cards (monorepo: backend/ + frontend/).
 
--   Preserve API contracts; changes must be backward compatible unless explicitly approved.
--   Security first: validate inputs, prevent injection, avoid leaking existence.
--   Keep DB writes bounded and predictable; no unbounded map growth.
+## Core Principles (Non-Negotiable)
 
-## Architecture & Code Organization
+- Preserve API contracts. Changes must be backward compatible unless explicitly approved.
+- Security first: validate inputs, prevent injection, avoid leaking existence (anti-enumeration).
+- Keep DB writes bounded and predictable. No unbounded user-controlled growth in documents.
+- Prefer additive schema evolution and additive responses.
 
--   Prefer small utilities in `backend/src/utils/*` for normalization and safe-key logic.
--   Use DTO shaping when returning card objects; do not leak internal fields to non-admin clients.
--   Avoid controller bloat: extract helpers for business rules (billing/entitlements/analytics).
+## Architecture & Ownership
 
-## Data Safety / Injection Prevention
+- Keep controllers thin; move business rules/normalization into:
+    - `backend/src/utils/*` (normalization, URL shaping, safe key logic)
+    - helpers/services for larger domains (billing/entitlements/analytics).
+- Always shape outbound objects via DTOs; never leak internal/admin-only fields on non-admin routes.
 
--   Any key used in Mongo `$inc` or map paths MUST be safe:
-    -   Disallow `.`, `$`, and any path traversal tokens.
-    -   Use a centralized `safeKey()`/`safeCompositeKey()` with strict rules.
--   For source buckets, only allow canonical allowlisted values (e.g., normalizeSocialSource + allowlist).
+## Data Safety / Injection Prevention (Critical)
+
+- Any user-controlled key used in Mongo path updates (`$inc`, `$set`, map paths) MUST be sanitized:
+    - Disallow `.`, `$`, null bytes, path traversal tokens, and any unsafe separators.
+    - Use centralized `safeKey()` / `safeCompositeKey()` with strict allowlist behavior.
+- For “source buckets” and similar dimensions: normalize + allowlist. Unknown → `other` or `null`.
 
 ## Bounded Aggregates (Critical)
 
--   Any user-controlled high-cardinality dimension (utm_campaign, utm_content, referrers, etc.) MUST be bounded:
-    -   Prefer write-time caps without heavy reads.
-    -   Use overflow bucket keys (e.g., `other_campaign`).
-    -   Use global counters (e.g., keyCount) if you need write-time gating without reads.
+- Any user-controlled high-cardinality dimensions MUST be bounded:
+    - Use write-time caps without heavy reads whenever possible.
+    - Use overflow bucket keys (e.g., `other_campaign`, `other_referrer`).
+    - Avoid read-before-write in hot paths.
 
 ## Analytics Invariants
 
--   `POST /api/analytics/track`:
-    -   ALWAYS return `204`.
-    -   Must remain best-effort and write-only.
-    -   Must not reveal card existence (anti-enumeration).
--   Aggregations (`/analytics/sources` etc.):
-    -   New fields must be additive.
-    -   Tier shaping: premium gets richer fields; basic gets limited fields; demo may return synthetic premium-shaped data without "guessing" correlations.
+- `POST /api/analytics/track`:
+    - ALWAYS return `204`.
+    - Best-effort, write-only.
+    - Must NOT reveal card existence.
+- Aggregations (`/analytics/sources`, etc.):
+    - New fields must be additive.
+    - Tier shaping rules: premium can get richer data; basic limited; demo may return synthetic premium-shaped data without “guessing” correlations.
 
-## Performance / DB Practices
+## Card Contract Discipline (FAQ included)
 
--   Avoid read-before-write in hot paths (like tracking) unless absolutely required and approved.
--   Use indexed queries; avoid large aggregation pipelines unless necessary.
--   Keep documents bounded to prevent growth impacting reads and storage.
-
-## Error Handling & Logging
-
--   Centralized error handling middleware.
--   Avoid leaking stack traces in production responses.
--   Log server errors with enough context for debugging but no sensitive data.
+- Card schema changes must be:
+    - Backward compatible.
+    - Reflected in DTO shaping.
+    - Reflected in PATCH allowlist (explicit allowlist; no “patch everything”).
+- FAQ storage:
+    - Treat FAQ as structured content (e.g., items with q/a), validate length/types, normalize whitespace.
+    - Never allow HTML injection fields to go out “raw”; if you store rich text, define a safe sanitization strategy and clearly document where HTML is allowed.
 
 ## Validation
 
--   Validate request payloads (body/query/params).
--   Normalize UTM fields and referrers consistently.
--   Treat unknown values as `null` or fold into `other`.
+- Validate request payloads (body/query/params) consistently.
+- Normalize UTM fields/referrers consistently.
+- Treat unknown values as `null` or fold into allowlisted “other”.
 
-## Security Basics
+## Performance / DB Practices
 
--   Ensure CORS, auth, and rate limits align with environment.
--   All auth-protected endpoints must verify token and handle missing/expired tokens gracefully.
--   Avoid returning raw billing/trial/adminOverride for non-admin routes.
+- Avoid read-before-write in hot paths unless explicitly approved.
+- Use indexed queries; avoid heavy aggregation pipelines unless necessary.
+- Keep documents bounded to prevent growth impacting reads/storage.
 
-## Output / QA
+## Error Handling & Logging
 
-When you implement backend changes:
+- Centralized error middleware.
+- No stack traces in production responses.
+- Log enough context for debugging, but never sensitive data (tokens, secrets, PII beyond necessity).
 
--   Summarize files changed and why.
--   Provide manual QA steps:
-    -   Example curl/HTTP calls with expected status codes and key response fields.
-    -   Confirm invariants (e.g., tracking remains 204).
+## Output / QA Expectations (When you implement backend changes)
+
+- Summarize files changed and why (file list + rationale).
+- Provide manual QA steps:
+    - Example curl/HTTP calls with expected status codes and key fields.
+    - Confirm invariants (e.g., analytics track remains 204, anti-enumeration preserved).
+- Git-команды запрещены: не выполнять и не предлагать git restore/checkout/add/commit/push и т.п. Любые Git-действия делает пользователь вручную.

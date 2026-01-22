@@ -1,0 +1,34 @@
+﻿C:\Users\User\Desktop\Visit-me\Projects\Digitalyty-card-app\digitalyty-cards\frontend\src\components\card\sections\GallerySection.jsx:5: galleryItemToOriginalUrl,
+C:\Users\User\Desktop\Visit-me\Projects\Digitalyty-card-app\digitalyty-cards\frontend\src\components\card\sections\GallerySection.jsx:6: galleryItemToThumbUrl,
+C:\Users\User\Desktop\Visit-me\Projects\Digitalyty-card-app\digitalyty-cards\frontend\src\components\card\sections\GallerySection.jsx:9: const BODY_SCROLL_LOCK_CLASS = "digi-lb-open";
+C:\Users\User\Desktop\Visit-me\Projects\Digitalyty-card-app\digitalyty-cards\frontend\src\components\card\sections\GallerySection.jsx:25: const fullUrl = galleryItemToOriginalUrl(item);
+C:\Users\User\Desktop\Visit-me\Projects\Digitalyty-card-app\digitalyty-cards\frontend\src\components\card\sections\GallerySection.jsx:28: const thumbUrl = galleryItemToThumbUrl(item) || fullUrl;
+C:\Users\User\Desktop\Visit-me\Projects\Digitalyty-card-app\digitalyty-cards\frontend\src\components\card\sections\GallerySection.jsx:52: thumbUrl,
+C:\Users\User\Desktop\Visit-me\Projects\Digitalyty-card-app\digitalyty-cards\frontend\src\components\card\sections\GallerySection.jsx:216: src={it.thumbUrl}
+C:\Users\User\Desktop\Visit-me\Projects\Digitalyty-card-app\digitalyty-cards\frontend\src\components\card\sections\GallerySection.module.css:50: :global(body.digi-lb-open) {
+C:\Users\User\Desktop\Visit-me\Projects\Digitalyty-card-app\digitalyty-cards\frontend\src\components\editor\panels\GalleryPanel.jsx:9: import { galleryItemToUrl } from "../../../utils/gallery";
+C:\Users\User\Desktop\Visit-me\Projects\Digitalyty-card-app\digitalyty-cards\frontend\src\components\editor\panels\GalleryPanel.jsx:236: thumbUrl: uploaded.url,
+C:\Users\User\Desktop\Visit-me\Projects\Digitalyty-card-app\digitalyty-cards\frontend\src\components\editor\panels\GalleryPanel.jsx:237: thumbPath: uploaded.path,
+C:\Users\User\Desktop\Visit-me\Projects\Digitalyty-card-app\digitalyty-cards\frontend\src\components\editor\panels\GalleryPanel.jsx:242: thumbUrl: uploaded.url,
+C:\Users\User\Desktop\Visit-me\Projects\Digitalyty-card-app\digitalyty-cards\frontend\src\components\editor\panels\GalleryPanel.jsx:243: thumbPath: uploaded.path,
+C:\Users\User\Desktop\Visit-me\Projects\Digitalyty-card-app\digitalyty-cards\frontend\src\components\editor\panels\GalleryPanel.jsx:289: const url = galleryItemToUrl(item);
+C:\Users\User\Desktop\Visit-me\Projects\Digitalyty-card-app\digitalyty-cards\frontend\src\components\editor\panels\GalleryPanel.jsx:313: const thumbUrlRaw =
+C:\Users\User\Desktop\Visit-me\Projects\Digitalyty-card-app\digitalyty-cards\frontend\src\components\editor\panels\GalleryPanel.jsx:315: ? typeof item.thumbUrl === "string"
+C:\Users\User\Desktop\Visit-me\Projects\Digitalyty-card-app\digitalyty-cards\frontend\src\components\editor\panels\GalleryPanel.jsx:316: ? item.thumbUrl
+C:\Users\User\Desktop\Visit-me\Projects\Digitalyty-card-app\digitalyty-cards\frontend\src\components\editor\panels\GalleryPanel.jsx:317: : typeof item.thumbPath === "string"
+C:\Users\User\Desktop\Visit-me\Projects\Digitalyty-card-app\digitalyty-cards\frontend\src\components\editor\panels\GalleryPanel.jsx:318: ? item.thumbPath
+C:\Users\User\Desktop\Visit-me\Projects\Digitalyty-card-app\digitalyty-cards\frontend\src\components\editor\panels\GalleryPanel.jsx:323: typeof thumbUrlRaw === "string"
+C:\Users\User\Desktop\Visit-me\Projects\Digitalyty-card-app\digitalyty-cards\frontend\src\components\editor\panels\GalleryPanel.jsx:324: ? thumbUrlRaw.trim()
+C:\Users\User\Desktop\Visit-me\Projects\Digitalyty-card-app\digitalyty-cards\frontend\src\components\editor\panels\GalleryPanel.jsx:326: const previewSrc = isSafeEditorPreviewUrl(thumbUrlRaw)
+C:\Users\User\Desktop\Visit-me\Projects\Digitalyty-card-app\digitalyty-cards\frontend\src\utils\gallery.js:3: export function galleryItemToOriginalUrl(item) {
+C:\Users\User\Desktop\Visit-me\Projects\Digitalyty-card-app\digitalyty-cards\frontend\src\utils\gallery.js:40: export function galleryItemToThumbUrl(item) {
+C:\Users\User\Desktop\Visit-me\Projects\Digitalyty-card-app\digitalyty-cards\frontend\src\utils\gallery.js:42: return galleryItemToOriginalUrl(item);
+C:\Users\User\Desktop\Visit-me\Projects\Digitalyty-card-app\digitalyty-cards\frontend\src\utils\gallery.js:44: if (typeof item.thumbUrl === "string") {
+C:\Users\User\Desktop\Visit-me\Projects\Digitalyty-card-app\digitalyty-cards\frontend\src\utils\gallery.js:45: const url = item.thumbUrl.trim();
+C:\Users\User\Desktop\Visit-me\Projects\Digitalyty-card-app\digitalyty-cards\frontend\src\utils\gallery.js:46: return url ? toAbsoluteUrl(url) : galleryItemToOriginalUrl(item);
+C:\Users\User\Desktop\Visit-me\Projects\Digitalyty-card-app\digitalyty-cards\frontend\src\utils\gallery.js:49: if (typeof item.thumbPath === "string") {
+C:\Users\User\Desktop\Visit-me\Projects\Digitalyty-card-app\digitalyty-cards\frontend\src\utils\gallery.js:50: const raw = item.thumbPath.trim();
+C:\Users\User\Desktop\Visit-me\Projects\Digitalyty-card-app\digitalyty-cards\frontend\src\utils\gallery.js:51: if (!raw) return galleryItemToOriginalUrl(item);
+C:\Users\User\Desktop\Visit-me\Projects\Digitalyty-card-app\digitalyty-cards\frontend\src\utils\gallery.js:64: return galleryItemToOriginalUrl(item);
+C:\Users\User\Desktop\Visit-me\Projects\Digitalyty-card-app\digitalyty-cards\frontend\src\utils\gallery.js:67: export function galleryItemToUrl(item) {
+C:\Users\User\Desktop\Visit-me\Projects\Digitalyty-card-app\digitalyty-cards\frontend\src\utils\gallery.js:68: return galleryItemToOriginalUrl(item);

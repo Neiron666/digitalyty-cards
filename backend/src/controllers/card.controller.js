@@ -700,9 +700,15 @@ export async function updateCard(req, res) {
 
             const url = typeof item.url === "string" ? item.url.trim() : "";
             const path = typeof item.path === "string" ? item.path.trim() : "";
+            const thumbUrl =
+                typeof item.thumbUrl === "string" ? item.thumbUrl.trim() : "";
+            const thumbPath =
+                typeof item.thumbPath === "string" ? item.thumbPath.trim() : "";
 
             if (url) nextUrls.add(url);
             if (path) nextPaths.add(path);
+            if (thumbUrl) nextUrls.add(thumbUrl);
+            if (thumbPath) nextPaths.add(thumbPath);
         }
 
         const existingUploads = Array.isArray(existingCard.uploads)
@@ -711,7 +717,9 @@ export async function updateCard(req, res) {
 
         const existingGalleryUploads = existingUploads.filter((u) => {
             if (!u || typeof u !== "object") return false;
-            if (u.kind !== "gallery") return false;
+            const kind =
+                typeof u.kind === "string" ? u.kind.trim().toLowerCase() : "";
+            if (kind !== "gallery" && kind !== "gallerythumb") return false;
             return typeof u.path === "string" && Boolean(u.path.trim());
         });
 
@@ -755,7 +763,9 @@ export async function updateCard(req, res) {
             const deletedPathSet = new Set(normalizedSafePaths);
             const nextUploads = existingUploads.filter((u) => {
                 if (!u || typeof u !== "object") return true;
-                if (u.kind !== "gallery") return true;
+                const kind =
+                    typeof u.kind === "string" ? u.kind.trim().toLowerCase() : "";
+                if (kind !== "gallery" && kind !== "gallerythumb") return true;
                 if (typeof u.path !== "string") return true;
                 return !deletedPathSet.has(u.path.trim());
             });

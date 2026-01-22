@@ -1,14 +1,30 @@
 .gallery {
+    --_gallery-gap: var(--gallery-gap, 8px);
+    --_gallery-radius: var(--gallery-radius, 8px);
+
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
-    gap: 8px;
+    gap: var(--_gallery-gap);
+    grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
 .imageWrapper {
-    aspect-ratio: 1;
+    appearance: none;
+    border: 0;
+    padding: 0;
+    text-align: inherit;
+
+    aspect-ratio: 1 / 1;
     overflow: hidden;
-    border-radius: 8px;
+    border-radius: var(--_gallery-radius);
     background: var(--bg-surface);
+    cursor: pointer;
+    display: block;
+    width: 100%;
+    outline: none;
+}
+
+.imageWrapper:focus-visible {
+    box-shadow: var(--focus-ring, 0 0 0 3px rgba(0, 0, 0, 0.25));
 }
 
 .image {
@@ -16,4 +32,158 @@
     height: 100%;
     object-fit: cover;
     display: block;
+}
+
+@media (max-width: 900px) {
+    .gallery {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 600px) {
+    .gallery {
+        grid-template-columns: repeat(1, minmax(0, 1fr));
+    }
+}
+
+/* Scroll lock for lightbox (idempotent; controlled by JS) */
+:global(body.digi-lb-open) {
+    overflow: hidden;
+}
+
+.overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.78);
+    z-index: 999;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+}
+
+.dialog {
+    width: min(960px, 100%);
+    max-height: min(80vh, 760px);
+    background: var(--bg-surface, #ffffff);
+    border-radius: var(--radius-md, 16px);
+    overflow: hidden;
+    box-shadow: 0 24px 72px rgba(0, 0, 0, 0.3);
+}
+
+.topBar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--border, rgba(0, 0, 0, 0.12));
+    background: var(--bg-surface, #ffffff);
+}
+
+.counter {
+    font-size: var(--fs-14, 0.875rem);
+    color: var(--text-main, #111);
+}
+
+.close {
+    appearance: none;
+    border: 0;
+    background: transparent;
+    color: var(--text-main, #111);
+    font-size: 22px;
+    line-height: 1;
+    cursor: pointer;
+    border-radius: 10px;
+    padding: 0;
+    inline-size: 40px;
+    block-size: 40px;
+    min-inline-size: 40px;
+    min-block-size: 40px;
+    max-inline-size: 40px;
+    max-block-size: 40px;
+}
+
+.close:hover {
+    background: rgba(0, 0, 0, 0.06);
+}
+
+.close:focus-visible {
+    box-shadow: var(--focus-ring, 0 0 0 3px rgba(0, 0, 0, 0.25));
+}
+
+.media {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.06);
+}
+
+.lightboxImage {
+    display: block;
+    max-width: 100%;
+    max-height: 70vh;
+    width: auto;
+    height: auto;
+    object-fit: contain;
+}
+
+.navPrev,
+.navNext {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+
+    appearance: none;
+    border: 0;
+    padding: 0;
+    inline-size: 44px;
+    block-size: 44px;
+    min-inline-size: 44px;
+    min-block-size: 44px;
+    max-inline-size: 44px;
+    max-block-size: 44px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.92);
+    color: #111;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 26px;
+    line-height: 1;
+}
+
+.navPrev:hover,
+.navNext:hover {
+    background: rgba(255, 255, 255, 1);
+}
+
+.navPrev {
+    inset-inline-start: 10px;
+}
+
+.navNext {
+    inset-inline-end: 10px;
+}
+
+.navPrev:focus-visible,
+.navNext:focus-visible {
+    box-shadow: var(--focus-ring, 0 0 0 3px rgba(0, 0, 0, 0.25));
+}
+
+/* Preview-only tweaks must be scoped to the editor phone marker. */
+@container phone (max-width: 520px) {
+    [data-preview="phone"] .dialog {
+        max-height: 70vh;
+    }
+}
+
+@container (max-width: 520px) {
+    [data-preview="phone"] .dialog {
+        max-height: 70vh;
+    }
 }
