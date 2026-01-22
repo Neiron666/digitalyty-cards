@@ -33,7 +33,9 @@ function buildFaqJsonLd(card, canonicalUrl) {
     const canonicalResolved =
         typeof canonicalUrl === "string" ? canonicalUrl.trim() : "";
     const faqId = canonicalResolved ? `${canonicalResolved}#faq` : undefined;
-    const isPartOf = canonicalResolved ? { "@id": canonicalResolved } : undefined;
+    const isPartOf = canonicalResolved
+        ? { "@id": canonicalResolved }
+        : undefined;
 
     return {
         "@context": "https://schema.org",

@@ -11,8 +11,10 @@ export default defineConfig(({ mode }) => {
 
     // Force env loading from the frontend project root (where .env.local lives).
     const envFromFiles = loadEnv(mode, __dirname, "VITE_");
-    const publicOrigin = process.env.VITE_PUBLIC_ORIGIN ?? envFromFiles.VITE_PUBLIC_ORIGIN ?? "";
-    const seoDebug = process.env.VITE_SEO_DEBUG ?? envFromFiles.VITE_SEO_DEBUG ?? "";
+    const publicOrigin =
+        process.env.VITE_PUBLIC_ORIGIN ?? envFromFiles.VITE_PUBLIC_ORIGIN ?? "";
+    const seoDebug =
+        process.env.VITE_SEO_DEBUG ?? envFromFiles.VITE_SEO_DEBUG ?? "";
 
     // Print a one-line proof only when explicitly enabled.
     if (seoDebug === "1") {
@@ -30,9 +32,7 @@ export default defineConfig(({ mode }) => {
             "import.meta.env.VITE_PUBLIC_ORIGIN": JSON.stringify(
                 publicOrigin || "",
             ),
-            "import.meta.env.VITE_SEO_DEBUG": JSON.stringify(
-                seoDebug || "",
-            ),
+            "import.meta.env.VITE_SEO_DEBUG": JSON.stringify(seoDebug || ""),
         },
 
         server: {
