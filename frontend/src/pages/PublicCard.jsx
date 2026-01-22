@@ -30,15 +30,17 @@ function buildFaqJsonLd(card, canonicalUrl) {
 
     if (!items.length) return null;
 
-    const idBase = typeof canonicalUrl === "string" ? canonicalUrl.trim() : "";
-    const faqId = idBase ? `${idBase}#faq` : undefined;
-    const isPartOf = idBase ? { "@id": idBase } : undefined;
+    const canonicalResolved =
+        typeof canonicalUrl === "string" ? canonicalUrl.trim() : "";
+    const faqId = canonicalResolved ? `${canonicalResolved}#faq` : undefined;
+    const isPartOf = canonicalResolved ? { "@id": canonicalResolved } : undefined;
 
     return {
         "@context": "https://schema.org",
         "@type": "FAQPage",
         ...(faqId ? { "@id": faqId } : {}),
-        ...(idBase ? { url: idBase } : {}),
+        ...(canonicalResolved ? { url: canonicalResolved } : {}),
+        // TODO: bind to card.locale/lang when contract is introduced.
         inLanguage: "he",
         ...(isPartOf ? { isPartOf } : {}),
         mainEntity: items.map((it) => ({
@@ -53,7 +55,7 @@ function buildFaqJsonLd(card, canonicalUrl) {
 }
 
 function getPublicOrigin() {
-    const raw = import.meta?.env?.VITE_PUBLIC_ORIGIN;
+    const raw = import.meta.env.VITE_PUBLIC_ORIGIN;
     if (typeof raw !== "string") return "";
     return raw.trim().replace(/\/$/, "");
 }
@@ -62,32 +64,28 @@ function isAbsoluteUrl(value) {
     return /^https?:\/\//i.test(String(value || "").trim());
 }
 
-function joinOriginWithPath(origin, path) {
-    const safeOrigin = String(origin || "")
-        .trim()
-        .replace(/\/$/, "");
-    const safePath = String(path || "").trim();
-    if (!safeOrigin) return safePath;
-    if (!safePath) return safeOrigin;
-    if (safePath.startsWith("/")) return `${safeOrigin}${safePath}`;
-    return `${safeOrigin}/${safePath}`;
+function normalizeAbsoluteUrl(origin, value) {
+    const rawValue = typeof value === "string" ? value.trim() : "";
+    if (!rawValue) return "";
+    if (isAbsoluteUrl(rawValue)) return rawValue;
+
+    const safeOrigin = typeof origin === "string" ? origin.trim() : "";
+    const originTrimmed = safeOrigin.replace(/\/$/, "");
+    if (!originTrimmed) return rawValue;
+
+    if (rawValue.startsWith("/")) return `${originTrimmed}${rawValue}`;
+    return `${originTrimmed}/${rawValue}`;
 }
 
 function resolveAbsoluteCanonical({ slug, seoCanonicalUrl, publicOrigin }) {
     const candidate =
         typeof seoCanonicalUrl === "string" ? seoCanonicalUrl.trim() : "";
     if (candidate) {
-        if (isAbsoluteUrl(candidate)) return candidate;
-        if (candidate.startsWith("/") && publicOrigin) {
-            return joinOriginWithPath(publicOrigin, candidate);
-        }
-        // Back-compat fallback: keep whatever the user stored.
-        return candidate;
+        return normalizeAbsoluteUrl(publicOrigin, candidate);
     }
 
     const basePath = `/card/${String(slug || "").trim()}`;
-    if (publicOrigin) return joinOriginWithPath(publicOrigin, basePath);
-    return basePath;
+    return normalizeAbsoluteUrl(publicOrigin, basePath);
 }
 
 function PublicCard() {

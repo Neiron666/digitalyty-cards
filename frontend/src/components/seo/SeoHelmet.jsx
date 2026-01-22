@@ -78,3 +78,20 @@ export default function SeoHelmet({
         </Helmet>
     );
 }
+
+export function SeoHelmetDebugMeta({ canonicalUrl }) {
+    if (import.meta.env.VITE_SEO_DEBUG !== "1") return null;
+
+    return (
+        <>
+            <meta
+                name="x-debug-publicOrigin"
+                content={import.meta.env.VITE_PUBLIC_ORIGIN || ""}
+            />
+            <meta
+                name="x-debug-canonicalResolved"
+                content={canonicalUrl || ""}
+            />
+        </>
+    );
+}

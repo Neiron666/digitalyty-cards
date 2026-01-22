@@ -58,6 +58,8 @@ export default function FaqSection({ card }) {
 
     return (
         <Section
+            // Project assumption: a card renders FAQ at most once.
+            // Keep the anchor stable (no random/dynamic ids) for deep links + JSON-LD @id.
             id="faq"
             title={faq.title}
             className={styles.section}
