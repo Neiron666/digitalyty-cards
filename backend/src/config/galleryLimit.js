@@ -1,1 +1,1 @@
-export const GALLERY_LIMIT = 9;
+export const GALLERY_LIMIT = 12;

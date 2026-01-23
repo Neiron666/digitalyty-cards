@@ -22,7 +22,7 @@ export default function GalleryPanel({
     const limit =
         typeof galleryLimit === "number" && Number.isFinite(galleryLimit)
             ? galleryLimit
-            : 9;
+            : 12;
     const reachedLimit = gallery.length >= limit;
 
     const latestGalleryRef = useRef(gallery);
@@ -170,9 +170,7 @@ export default function GalleryPanel({
         } catch (err) {
             cleanupObjectUrl();
             if (err.response?.data?.code === "GALLERY_LIMIT_REACHED") {
-                alert(
-                    err?.response?.data?.message || "Gallery limit reached",
-                );
+                alert(err?.response?.data?.message || "Gallery limit reached");
             } else {
                 alert(err?.response?.data?.message || "Upload error");
             }
