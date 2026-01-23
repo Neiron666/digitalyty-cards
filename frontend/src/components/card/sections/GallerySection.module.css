@@ -233,12 +233,20 @@
 /* Preview-only tweaks must be scoped to the editor phone marker. */
 @container phone (max-width: 520px) {
     [data-preview="phone"] .dialog {
-        max-height: 70vh;
+        width: 100%;
+        max-height: calc(100% - 32px);
     }
-}
 
-@container (max-width: 520px) {
-    [data-preview="phone"] .dialog {
-        max-height: 70vh;
+    /* Preview-only: allow overlay (rendered under <main>) to cover hero/avatar (in <header>). */
+    :global(body.digi-lb-open) [data-preview="phone"] main {
+        position: relative;
+        z-index: 2;
+    }
+    :global(body.digi-lb-open) [data-preview="phone"] header {
+        position: relative;
+        z-index: 0;
+    }
+    [data-preview="phone"] .imageWrapper {
+        flex-basis: calc((100% - var(--_gallery-gap)) / 2);
     }
 }

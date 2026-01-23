@@ -32,6 +32,10 @@
     overscroll-behavior: contain;
     -webkit-overflow-scrolling: touch;
 
+    /* Preview-only: anchor position: fixed overlays (gallery lightbox) to the
+       phone viewport instead of the browser viewport. */
+    transform: translateZ(0);
+
     /* Phone preview should behave like a real device screen (container-driven),
        not the browser viewport (media-driven). */
     container-type: inline-size;
