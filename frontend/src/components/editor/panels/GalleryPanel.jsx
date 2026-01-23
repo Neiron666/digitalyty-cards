@@ -3,7 +3,6 @@ import {
     uploadDesignAsset,
     uploadGalleryImage,
 } from "../../../services/upload.service";
-import Paywall from "../../common/Paywall";
 import Panel from "./Panel";
 import Button from "../../ui/Button";
 import { galleryItemToUrl } from "../../../utils/gallery";
@@ -17,15 +16,13 @@ const MAX_BYTES = 2 * 1024 * 1024;
 export default function GalleryPanel({
     gallery = [],
     cardId,
-    plan,
     galleryLimit,
     onChange,
-    onUpgrade,
 }) {
     const limit =
         typeof galleryLimit === "number" && Number.isFinite(galleryLimit)
             ? galleryLimit
-            : 5;
+            : 9;
     const reachedLimit = gallery.length >= limit;
 
     const latestGalleryRef = useRef(gallery);
@@ -173,13 +170,9 @@ export default function GalleryPanel({
         } catch (err) {
             cleanupObjectUrl();
             if (err.response?.data?.code === "GALLERY_LIMIT_REACHED") {
-                if (plan === "free") {
-                    onUpgrade?.();
-                } else {
-                    alert(
-                        err?.response?.data?.message || "Gallery limit reached",
-                    );
-                }
+                alert(
+                    err?.response?.data?.message || "Gallery limit reached",
+                );
             } else {
                 alert(err?.response?.data?.message || "Upload error");
             }
@@ -358,10 +351,6 @@ export default function GalleryPanel({
             />
 
             <p className={styles.hint}>מוגבל ל־{limit} תמונות</p>
-
-            {plan === "free" && reachedLimit && (
-                <Paywall text="הגעת למגבלת תמונות" onUpgrade={onUpgrade} />
-            )}
         </Panel>
     );
 }

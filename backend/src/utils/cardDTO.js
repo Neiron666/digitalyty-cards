@@ -1,7 +1,8 @@
-import { hasAccess, getGalleryLimit } from "./planAccess.js";
+import { hasAccess } from "./planAccess.js";
 import { resolveBilling } from "./trial.js";
 import { resolveEffectiveTier } from "./tier.js";
 import { formatIsrael } from "./time.util.js";
+import { GALLERY_LIMIT } from "../config/galleryLimit.js";
 
 function planFromTier(tier) {
     if (tier === "premium") return "yearly";
@@ -62,7 +63,7 @@ export function computeEntitlements(
 
     const canViewAnalytics = analyticsLevel !== "none";
 
-    const galleryLimit = getGalleryLimit(featurePlan);
+    const galleryLimit = GALLERY_LIMIT;
     const canUploadGallery = canEdit && galleryLimit > 0;
 
     return {

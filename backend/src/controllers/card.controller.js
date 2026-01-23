@@ -8,6 +8,7 @@ import {
     collectSupabasePathsFromCard,
     normalizeSupabasePaths,
 } from "../utils/supabasePaths.js";
+import { GALLERY_LIMIT } from "../config/galleryLimit.js";
 import { resolveActor, assertCardOwner } from "../utils/actor.js";
 import {
     ensureTrialStarted,
@@ -685,6 +686,14 @@ export async function updateCard(req, res) {
         const nextGallery = Array.isArray(incomingGallery)
             ? incomingGallery
             : [];
+
+        if (nextGallery.length > GALLERY_LIMIT) {
+            return res.status(422).json({
+                message: `Gallery limit reached (${GALLERY_LIMIT})`,
+                code: "GALLERY_LIMIT_REACHED",
+                limit: GALLERY_LIMIT,
+            });
+        }
 
         const nextPaths = new Set();
         const nextUrls = new Set();

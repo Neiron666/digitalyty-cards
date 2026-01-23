@@ -78,18 +78,6 @@
     box-shadow: none;
 }
 
-@media (max-width: 900px) {
-    .imageWrapper {
-        flex-basis: calc((100% - var(--_gallery-gap)) / 2);
-    }
-}
-
-@media (max-width: 600px) {
-    .imageWrapper {
-        flex-basis: calc((100% - var(--_gallery-gap)) / 2);
-    }
-}
-
 /* Scroll lock for lightbox (idempotent; controlled by JS) */
 :global(body.digi-lb-open) {
     overflow: hidden;
@@ -152,7 +140,7 @@
 
 /* .topBar .close:hover {
     background: rgba(0, 0, 0, 0.06);
-} */
+    } */
 
 .topBar .close:focus-visible {
     box-shadow: var(--focus-ring, 0 0 0 3px rgba(0, 0, 0, 0.25));
@@ -230,6 +218,26 @@
     box-shadow: var(--focus-ring, 0 0 0 3px rgba(0, 0, 0, 0.25));
 }
 
+@media (max-width: 900px) {
+    .imageWrapper {
+        flex-basis: calc((100% - var(--_gallery-gap)) / 2);
+    }
+}
+
+@media (max-width: 600px) {
+    .imageWrapper {
+        flex-basis: calc((100% - var(--_gallery-gap)) / 2);
+    }
+    .navPrev,
+    .navNext {
+        inline-size: 20px;
+        block-size: 20px;
+        min-inline-size: 20px;
+        min-block-size: 20px;
+        max-inline-size: 20px;
+        max-block-size: 20px;
+    }
+}
 /* Preview-only tweaks must be scoped to the editor phone marker. */
 @container phone (max-width: 520px) {
     [data-preview="phone"] .dialog {
@@ -248,5 +256,18 @@
     }
     [data-preview="phone"] .imageWrapper {
         flex-basis: calc((100% - var(--_gallery-gap)) / 2);
+    }
+    [data-preview="phone"] .topBar .close {
+        background: var(--contact-btn-bg);
+        color: var(--bg-surface, #111);
+    }
+    [data-preview="phone"] .navPrev,
+    .navNext {
+        inline-size: 20px;
+        block-size: 20px;
+        min-inline-size: 20px;
+        min-block-size: 20px;
+        max-inline-size: 20px;
+        max-block-size: 20px;
     }
 }
