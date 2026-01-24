@@ -552,6 +552,80 @@ function EditCard() {
         };
     }
 
+    function buildMinimalSectionPayload(draft, dirty, sectionName) {
+        if (!draft || typeof draft !== "object") return null;
+        if (!(dirty instanceof Set) || dirty.size === 0) return null;
+        if (typeof sectionName !== "string" || !sectionName) return null;
+
+        const section =
+            draft[sectionName] && typeof draft[sectionName] === "object"
+                ? draft[sectionName]
+                : null;
+        if (!section) return null;
+
+        const prefix = `${sectionName}.`;
+        const nestedPatch = {};
+
+        function getValueByKeys(obj, keys) {
+            let curr = obj;
+            for (const k of keys) {
+                if (!curr || typeof curr !== "object") return undefined;
+                curr = curr[k];
+            }
+            return curr;
+        }
+
+        function setValueByKeys(target, keys, value) {
+            if (!keys.length) return;
+            let curr = target;
+            for (let i = 0; i < keys.length - 1; i += 1) {
+                const k = keys[i];
+                if (
+                    !curr[k] ||
+                    typeof curr[k] !== "object" ||
+                    Array.isArray(curr[k])
+                ) {
+                    curr[k] = {};
+                }
+                curr = curr[k];
+            }
+            curr[keys[keys.length - 1]] = value;
+        }
+
+        for (const path of dirty) {
+            const p = String(path || "");
+            if (!p.startsWith(prefix)) continue;
+
+            const leaf = p.slice(prefix.length);
+            if (!leaf) continue;
+
+            const keys = leaf.split(".").filter(Boolean);
+            if (!keys.length) continue;
+
+            const value = getValueByKeys(section, keys);
+            if (value === undefined) continue;
+
+            setValueByKeys(nestedPatch, keys, value);
+        }
+
+        // Bridge-invariant for tolerant writer/reader:
+        // if either about field is dirty, always send both.
+        const aboutParagraphsPath = `${sectionName}.aboutParagraphs`;
+        const aboutTextPath = `${sectionName}.aboutText`;
+        if (dirty.has(aboutParagraphsPath) || dirty.has(aboutTextPath)) {
+            const aboutParagraphs = Array.isArray(section.aboutParagraphs)
+                ? section.aboutParagraphs
+                : [];
+            const aboutText =
+                typeof section.aboutText === "string" ? section.aboutText : "";
+
+            nestedPatch.aboutParagraphs = aboutParagraphs;
+            nestedPatch.aboutText = aboutText;
+        }
+
+        return Object.keys(nestedPatch).length ? nestedPatch : null;
+    }
+
     function buildNestedPatch(keys, value) {
         // keys excludes the top section, e.g. ["name"] or ["social", "instagram"]
         if (!keys.length) return value;
@@ -584,6 +658,16 @@ function EditCard() {
             if (
                 Object.prototype.hasOwnProperty.call(draftCard || {}, section)
             ) {
+                if (section === "content") {
+                    const minimal = buildMinimalSectionPayload(
+                        draftCard,
+                        dirtyPaths,
+                        "content",
+                    );
+                    if (minimal) payload.content = minimal;
+                    continue;
+                }
+
                 payload[section] = draftCard?.[section];
             }
         }

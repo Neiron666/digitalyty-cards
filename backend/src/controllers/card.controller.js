@@ -159,6 +159,30 @@ function isPlainObject(value) {
     );
 }
 
+function safeShallowMergeContent(base, incoming) {
+    const result =
+        base && typeof base === "object" && !Array.isArray(base)
+            ? { ...base }
+            : {};
+
+    if (!incoming || typeof incoming !== "object" || Array.isArray(incoming)) {
+        return result;
+    }
+
+    for (const key of Object.keys(incoming)) {
+        if (
+            key === "__proto__" ||
+            key === "constructor" ||
+            key === "prototype"
+        ) {
+            continue;
+        }
+        result[key] = incoming[key];
+    }
+
+    return result;
+}
+
 function buildSetUpdateFromPatch(patch) {
     const $set = {};
 
@@ -585,8 +609,54 @@ export async function updateCard(req, res) {
 
     const patch = sanitizeWritablePatch(req.body);
 
-    // About: tolerant writer (accept aboutText or aboutParagraphs).
-    normalizeAboutFieldsInContent(patch);
+    // Enterprise hardening: server-side merge ONLY for `content` to prevent
+    // lost-updates when clients send partial/stale `content` objects.
+    // - Shallow merge by keys (no deep merge)
+    // - Defends against prototype pollution keys
+    // - About intent-guard: ignore empty aboutText unless aboutParagraphs is present
+    let aboutTouched = false;
+    if (patch.content && isPlainObject(patch.content)) {
+        const incoming = patch.content;
+
+        const hasAboutParagraphs = Object.prototype.hasOwnProperty.call(
+            incoming,
+            "aboutParagraphs",
+        );
+        const hasAboutText = Object.prototype.hasOwnProperty.call(
+            incoming,
+            "aboutText",
+        );
+
+        if (
+            hasAboutText &&
+            !hasAboutParagraphs &&
+            (incoming.aboutText == null ||
+                String(incoming.aboutText).trim() === "")
+        ) {
+            delete incoming.aboutText;
+        }
+
+        aboutTouched =
+            hasAboutParagraphs ||
+            Object.prototype.hasOwnProperty.call(incoming, "aboutText");
+
+        const existingContentRaw =
+            existingCard?.content && typeof existingCard.content === "object"
+                ? existingCard.content
+                : {};
+        const existingContent =
+            typeof existingContentRaw?.toObject === "function"
+                ? existingContentRaw.toObject()
+                : existingContentRaw;
+
+        patch.content = safeShallowMergeContent(existingContent, incoming);
+    }
+
+    // About: tolerant writer (accept aboutText or aboutParagraphs),
+    // but only when the incoming PATCH shows intent to modify About.
+    if (aboutTouched) {
+        normalizeAboutFieldsInContent(patch);
+    }
 
     let publishError = null;
 
