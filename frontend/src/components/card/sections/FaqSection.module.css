@@ -191,11 +191,11 @@
 }
 
 @media (max-width: 600px) {
-    .question {
-        padding-inline: 0.9rem;
+    .item .answer {
+        font-size: var(--fs-12, 0.75rem);
     }
-    .answer {
-        padding-inline: 0.9rem;
+    .item .question {
+        font-size: var(--fs-12, 0.75rem);
     }
 }
 
@@ -211,9 +211,11 @@
         transform: none;
     }
 }
-
-@media (max-width: 520px) {
-    .item .question {
+@container phone (max-width: 520px) {
+    [data-preview="phone"] .item .answer {
+        font-size: var(--fs-12, 0.75rem);
+    }
+    [data-preview="phone"] .item .question {
         font-size: var(--fs-12, 0.75rem);
     }
 }
