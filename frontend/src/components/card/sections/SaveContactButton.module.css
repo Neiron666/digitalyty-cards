@@ -26,10 +26,15 @@
 }
 
 .icon {
+    display: inline-block;
+    inline-size: 20px;
+    block-size: 20px;
     width: 20px;
     height: 20px;
+    margin-inline-end: 8px; /* NEW: spacing between icon and text (RTL/LTR safe) */
     background-color: currentColor;
     flex: 0 0 auto;
+    flex-shrink: 0;
     -webkit-mask-repeat: no-repeat;
     -webkit-mask-position: center;
     -webkit-mask-size: contain;
