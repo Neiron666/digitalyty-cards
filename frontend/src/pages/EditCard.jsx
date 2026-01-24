@@ -64,6 +64,46 @@ function EditCard() {
             .filter(Boolean);
     }
 
+    function normalizeFaqForSave(input) {
+        if (input === null) return null;
+        if (!input || typeof input !== "object" || Array.isArray(input)) {
+            return null;
+        }
+
+        const title =
+            typeof input.title === "string" && input.title.trim()
+                ? input.title.trim()
+                : null;
+        const lead =
+            typeof input.lead === "string" && input.lead.trim()
+                ? input.lead.trim()
+                : null;
+
+        const rawItems = Array.isArray(input.items) ? input.items : [];
+        const items = rawItems
+            .map((it) => {
+                if (!it || typeof it !== "object" || Array.isArray(it)) {
+                    return null;
+                }
+                const q =
+                    typeof it.q === "string" ? String(it.q).trim() : "";
+                const a =
+                    typeof it.a === "string" ? String(it.a).trim() : "";
+                if (!q || !a) return null;
+                return { q, a };
+            })
+            .filter(Boolean)
+            .slice(0, 10);
+
+        if (!title && !lead && items.length === 0) return null;
+
+        return {
+            title,
+            lead,
+            ...(items.length ? { items } : {}),
+        };
+    }
+
     function normalizeCardForEditor(dto) {
         if (!dto || typeof dto !== "object") return dto;
         return {
@@ -665,6 +705,11 @@ function EditCard() {
                         "content",
                     );
                     if (minimal) payload.content = minimal;
+                    continue;
+                }
+
+                if (section === "faq") {
+                    payload.faq = normalizeFaqForSave(draftCard?.faq);
                     continue;
                 }
 

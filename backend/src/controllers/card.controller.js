@@ -21,6 +21,7 @@ import { HttpError } from "../utils/httpError.js";
 import { claimAnonymousCardForUser } from "../services/claimCard.service.js";
 import { toCardDTO } from "../utils/cardDTO.js";
 import { normalizeAboutParagraphs } from "../utils/about.js";
+import { normalizeFaqForWrite } from "../utils/faq.util.js";
 
 function normalizeAboutFieldsInContent(container) {
     if (!container || typeof container !== "object") return;
@@ -380,6 +381,11 @@ export async function createCard(req, res) {
     // About: tolerant writer (accept aboutText or aboutParagraphs).
     normalizeAboutFieldsInContent(data);
 
+    // FAQ: tolerant writer (keep only complete Q/A pairs).
+    if (data && typeof data === "object") {
+        data.faq = normalizeFaqForWrite(data.faq);
+    }
+
     // Client must not set billing or server-only flags.
     if (data && typeof data === "object") {
         delete data.billing;
@@ -608,6 +614,11 @@ export async function updateCard(req, res) {
     }
 
     const patch = sanitizeWritablePatch(req.body);
+
+    // FAQ: tolerant writer (keep only complete Q/A pairs).
+    if (Object.prototype.hasOwnProperty.call(patch, "faq")) {
+        patch.faq = normalizeFaqForWrite(patch.faq);
+    }
 
     // Enterprise hardening: server-side merge ONLY for `content` to prevent
     // lost-updates when clients send partial/stale `content` objects.

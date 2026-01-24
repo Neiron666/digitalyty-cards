@@ -8,7 +8,9 @@
     padding: 12px 14px;
     border-bottom: 1px solid var(--border);
     font-weight: 700;
-    font-size: 0.95rem;
+    font-size: 1.2rem;
+    text-align: center;
+    text-decoration: underline var(--gold) 1px;
 }
 
 .body {

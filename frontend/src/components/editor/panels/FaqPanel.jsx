@@ -31,6 +31,12 @@ export default function FaqPanel({ faq, disabled, onChange }) {
 
     const items = ensureMin(normalizeItems(value.items));
 
+    const incompleteCount = items.filter((it) => {
+        const q = typeof it?.q === "string" ? it.q.trim() : "";
+        const a = typeof it?.a === "string" ? it.a.trim() : "";
+        return (q && !a) || (!q && a);
+    }).length;
+
     function commit(next) {
         onChange?.(next);
     }
@@ -101,14 +107,6 @@ export default function FaqPanel({ faq, disabled, onChange }) {
                             <div className={styles.itemTitle}>
                                 שאלה #{index + 1}
                             </div>
-                            <Button
-                                variant="secondary"
-                                size="small"
-                                onClick={() => removeItem(index)}
-                                disabled={disabled || items.length <= MIN_ITEMS}
-                            >
-                                מחק
-                            </Button>
                         </div>
 
                         <label className={styles.label}>
@@ -136,10 +134,23 @@ export default function FaqPanel({ faq, disabled, onChange }) {
                                 disabled={disabled}
                             />
                         </label>
+                        <Button
+                            variant="secondary"
+                            size="small"
+                            onClick={() => removeItem(index)}
+                            disabled={disabled || items.length <= MIN_ITEMS}
+                        >
+                            מחק
+                        </Button>
                     </div>
                 ))}
 
                 <div className={styles.actions}>
+                    {incompleteCount ? (
+                        <div className={styles.incompleteHint}>
+                            יש למלא גם שאלה וגם תשובה כדי לשמור פריט FAQ.
+                        </div>
+                    ) : null}
                     <Button
                         size="small"
                         onClick={addItem}

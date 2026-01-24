@@ -56,13 +56,6 @@ export default function Editor({
             />
 
             <main className={styles.panel}>
-                <EditorSaveBar
-                    dirtyCount={dirtyCount}
-                    saveState={saveState}
-                    saveErrorText={saveErrorText}
-                    onSave={commitDraft}
-                    disabled={Boolean(editingDisabled) || !commitDraft}
-                />
                 <EditorPanel
                     tab={activeTab}
                     card={card}
@@ -73,6 +66,13 @@ export default function Editor({
                     onUpgrade={onUpgrade}
                     onPublish={onPublish}
                     onUnpublish={onUnpublish}
+                />
+                <EditorSaveBar
+                    dirtyCount={dirtyCount}
+                    saveState={saveState}
+                    saveErrorText={saveErrorText}
+                    onSave={commitDraft}
+                    disabled={Boolean(editingDisabled) || !commitDraft}
                 />
             </main>
 

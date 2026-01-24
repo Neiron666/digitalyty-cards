@@ -19,6 +19,7 @@
 
 .saveButton {
     appearance: none;
+    width: 100%;
     border: 1px solid var(--border);
     background: rgba(255, 255, 255, 0.03);
     color: var(--text-main);

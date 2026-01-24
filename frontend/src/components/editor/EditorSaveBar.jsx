@@ -30,10 +30,10 @@ export default function EditorSaveBar({
                     isDirty
                         ? styles.statusDirty
                         : isError
-                        ? styles.statusError
-                        : isSaved
-                        ? styles.statusSaved
-                        : styles.statusIdle
+                          ? styles.statusError
+                          : isSaved
+                            ? styles.statusSaved
+                            : styles.statusIdle
                 }`}
                 role={isError ? "alert" : "status"}
                 aria-live="polite"
