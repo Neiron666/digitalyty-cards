@@ -5,6 +5,7 @@
 
 .paragraph {
     margin: 1rem 0;
+    text-align: right;
 }
 
 .paragraph::before {
