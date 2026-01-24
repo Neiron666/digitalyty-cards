@@ -1,7 +1,13 @@
 import { ABOUT_PARAGRAPHS_MAX } from "../config/about.js";
 
-export function normalizeAboutParagraphs(input, { max = ABOUT_PARAGRAPHS_MAX } = {}) {
-    const limit = Number.isFinite(max) && max > 0 ? Math.floor(max) : ABOUT_PARAGRAPHS_MAX;
+export function normalizeAboutParagraphs(
+    input,
+    { max = ABOUT_PARAGRAPHS_MAX } = {},
+) {
+    const limit =
+        Number.isFinite(max) && max > 0
+            ? Math.floor(max)
+            : ABOUT_PARAGRAPHS_MAX;
 
     let raw = [];
 
