@@ -85,10 +85,8 @@ function EditCard() {
                 if (!it || typeof it !== "object" || Array.isArray(it)) {
                     return null;
                 }
-                const q =
-                    typeof it.q === "string" ? String(it.q).trim() : "";
-                const a =
-                    typeof it.a === "string" ? String(it.a).trim() : "";
+                const q = typeof it.q === "string" ? String(it.q).trim() : "";
+                const a = typeof it.a === "string" ? String(it.a).trim() : "";
                 if (!q || !a) return null;
                 return { q, a };
             })

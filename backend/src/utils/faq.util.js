@@ -24,7 +24,8 @@ function toTrimmedText(value) {
  */
 export function normalizeFaqForWrite(input) {
     if (input === null) return null;
-    if (!input || typeof input !== "object" || Array.isArray(input)) return null;
+    if (!input || typeof input !== "object" || Array.isArray(input))
+        return null;
 
     const title = toTrimmedString(input.title, { allowNull: true });
     const lead = toTrimmedString(input.lead, { allowNull: true });
