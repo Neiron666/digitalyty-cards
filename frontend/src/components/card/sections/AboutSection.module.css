@@ -1,0 +1,14 @@
+.paragraphs {
+    display: flex;
+    flex-direction: column;
+}
+
+.paragraph {
+    margin: 1rem 0;
+}
+
+.paragraph::before {
+    content: "•";
+    color: var(--secondary-token-color, var(--primary, currentColor));
+    margin-inline-end: 8px;
+}

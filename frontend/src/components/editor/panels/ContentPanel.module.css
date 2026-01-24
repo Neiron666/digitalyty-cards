@@ -2,6 +2,37 @@
     font-weight: 700;
 }
 
+.aboutBlock {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.aboutParagraph {
+    display: block;
+}
+
+.addParagraphButton {
+    align-self: flex-start;
+    width: fit-content;
+    border: 1px solid var(--border);
+    background: var(--bg-surface);
+    color: var(--text-main);
+    padding: 8px 12px;
+    border-radius: var(--radius-sm, 10px);
+    cursor: pointer;
+}
+
+.addParagraphButton:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.addParagraphButton:focus-visible {
+    outline: none;
+    box-shadow: var(--focus-ring);
+}
+
 .hint {
     margin-top: -8px;
     color: var(--text-muted);

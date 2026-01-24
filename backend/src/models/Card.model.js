@@ -1,6 +1,7 @@
 import mongoose from "mongoose";
 
 import { normalizeReviews } from "../utils/reviews.util.js";
+import { ABOUT_PARAGRAPHS_MAX } from "../config/about.js";
 
 const UploadItemSchema = new mongoose.Schema(
     {
@@ -199,6 +200,18 @@ const CardSchema = new mongoose.Schema(
 
             // legacy fields (kept for backward compatibility)
             aboutTitle: String,
+            aboutParagraphs: {
+                type: [String],
+                default: undefined,
+                validate: {
+                    validator: (arr) => {
+                        if (arr === undefined || arr === null) return true;
+                        if (!Array.isArray(arr)) return false;
+                        return arr.length <= ABOUT_PARAGRAPHS_MAX;
+                    },
+                    message: `content.aboutParagraphs must contain at most ${ABOUT_PARAGRAPHS_MAX} items`,
+                },
+            },
             aboutText: String,
             videoUrl: String,
         },

@@ -3,6 +3,7 @@ import { resolveBilling } from "./trial.js";
 import { resolveEffectiveTier } from "./tier.js";
 import { formatIsrael } from "./time.util.js";
 import { GALLERY_LIMIT } from "../config/galleryLimit.js";
+import { normalizeAboutParagraphs } from "./about.js";
 
 function planFromTier(tier) {
     if (tier === "premium") return "yearly";
@@ -178,6 +179,22 @@ export function toCardDTO(
         dto.ownerAdminTierUntil = user?.adminTierUntil || null;
         dto.trialDeleteAt = cardObj.trialDeleteAt || null;
         dto.uploads = cardObj.uploads;
+    }
+
+    // Tolerant reader/writer for About:
+    // - Always expose content.aboutParagraphs as an array
+    // - Keep content.aboutText as a legacy string (joined paragraphs)
+    if (dto.content && typeof dto.content === "object") {
+        const content = dto.content || {};
+        const paragraphs = normalizeAboutParagraphs(
+            content.aboutParagraphs ?? content.aboutText,
+        );
+
+        dto.content = {
+            ...content,
+            aboutParagraphs: paragraphs,
+            aboutText: paragraphs.join("\n\n"),
+        };
     }
 
     return dto;

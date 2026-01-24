@@ -20,6 +20,35 @@ import {
 import { HttpError } from "../utils/httpError.js";
 import { claimAnonymousCardForUser } from "../services/claimCard.service.js";
 import { toCardDTO } from "../utils/cardDTO.js";
+import { normalizeAboutParagraphs } from "../utils/about.js";
+
+function normalizeAboutFieldsInContent(container) {
+    if (!container || typeof container !== "object") return;
+
+    const content =
+        container.content && typeof container.content === "object"
+            ? container.content
+            : null;
+    if (!content) return;
+
+    const hasAboutText = Object.prototype.hasOwnProperty.call(
+        content,
+        "aboutText",
+    );
+    const hasAboutParagraphs = Object.prototype.hasOwnProperty.call(
+        content,
+        "aboutParagraphs",
+    );
+
+    if (!hasAboutText && !hasAboutParagraphs) return;
+
+    const paragraphs = normalizeAboutParagraphs(
+        hasAboutParagraphs ? content.aboutParagraphs : content.aboutText,
+    );
+
+    content.aboutParagraphs = paragraphs;
+    content.aboutText = paragraphs.join("\n\n");
+}
 
 function getBusinessName(data) {
     return (
@@ -324,6 +353,9 @@ export async function createCard(req, res) {
 
     const now = new Date();
 
+    // About: tolerant writer (accept aboutText or aboutParagraphs).
+    normalizeAboutFieldsInContent(data);
+
     // Client must not set billing or server-only flags.
     if (data && typeof data === "object") {
         delete data.billing;
@@ -552,6 +584,9 @@ export async function updateCard(req, res) {
     }
 
     const patch = sanitizeWritablePatch(req.body);
+
+    // About: tolerant writer (accept aboutText or aboutParagraphs).
+    normalizeAboutFieldsInContent(patch);
 
     let publishError = null;
 
