@@ -4,7 +4,10 @@ import formStyles from "../../ui/Form.module.css";
 import styles from "./ReviewsPanel.module.css";
 
 export default function ReviewsPanel({ reviews = [], onChange }) {
+    const REVIEWS_MAX = 5;
+
     function addReview() {
+        if (reviews.length >= REVIEWS_MAX) return;
         onChange([...reviews, ""]);
     }
 
@@ -40,9 +43,20 @@ export default function ReviewsPanel({ reviews = [], onChange }) {
                 </div>
             ))}
 
-            <Button size="small" onClick={addReview}>
-                הוסף המלצה
-            </Button>
+            <div className={styles.addRow}>
+                <Button
+                    size="small"
+                    onClick={addReview}
+                    disabled={reviews.length >= REVIEWS_MAX}
+                    className={styles.addButton}
+                >
+                    הוסף המלצה
+                </Button>
+
+                {reviews.length >= REVIEWS_MAX ? (
+                    <div className={styles.hint}>הגעת למקסימום של 5 המלצות</div>
+                ) : null}
+            </div>
         </Panel>
     );
 }

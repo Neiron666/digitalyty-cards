@@ -1,3 +1,5 @@
+import { REVIEWS_MAX } from "../config/reviews.js";
+
 export function normalizeReviews(input) {
     const arr = Array.isArray(input) ? input : [];
 
@@ -15,8 +17,8 @@ export function normalizeReviews(input) {
             typeof item.text === "string"
                 ? item.text
                 : typeof item.value === "string"
-                ? item.value
-                : "";
+                  ? item.value
+                  : "";
 
         const text = String(rawText || "").trim();
         if (!text) continue;
@@ -25,8 +27,8 @@ export function normalizeReviews(input) {
             typeof item.name === "string"
                 ? item.name.trim()
                 : typeof item.author === "string"
-                ? item.author.trim()
-                : "";
+                  ? item.author.trim()
+                  : "";
 
         const role = typeof item.role === "string" ? item.role.trim() : "";
 
@@ -54,5 +56,5 @@ export function normalizeReviews(input) {
         out.push(normalized);
     }
 
-    return out;
+    return out.slice(0, REVIEWS_MAX);
 }

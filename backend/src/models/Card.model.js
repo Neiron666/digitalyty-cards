@@ -2,6 +2,7 @@ import mongoose from "mongoose";
 
 import { normalizeReviews } from "../utils/reviews.util.js";
 import { ABOUT_PARAGRAPHS_MAX } from "../config/about.js";
+import { REVIEWS_MAX } from "../config/reviews.js";
 
 const UploadItemSchema = new mongoose.Schema(
     {
@@ -347,6 +348,14 @@ const CardSchema = new mongoose.Schema(
             type: [ReviewSchema],
             default: [],
             set: (arr) => normalizeReviews(arr),
+            validate: {
+                validator: (arr) => {
+                    if (arr === undefined || arr === null) return true;
+                    if (!Array.isArray(arr)) return false;
+                    return arr.length <= REVIEWS_MAX;
+                },
+                message: `reviews must contain at most ${REVIEWS_MAX} items`,
+            },
         },
 
         design: {

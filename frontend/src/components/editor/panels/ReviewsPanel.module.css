@@ -3,3 +3,21 @@
     flex-direction: column;
     gap: 8px;
 }
+
+.addRow {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+}
+
+.addButton:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+
+.hint {
+    font-size: 12px;
+    line-height: 1.3;
+    color: var(--text-muted);
+}
