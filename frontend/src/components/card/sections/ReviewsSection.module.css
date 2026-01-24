@@ -1,29 +1,313 @@
-.reviews {
+.slider {
+    --_reviews-shift: 18%;
+    --_reviews-min-h: var(--reviews-frame-min-h, clamp(180px, 24vh, 260px));
+    --_reviews-h: var(--reviews-frame-h, var(--_reviews-min-h));
+    --_reviews-border: var(
+        --reviews-frame-border,
+        1px solid rgba(var(--main-token-color-rgb, 0, 0, 0), 0.18)
+    );
+    --_reviews-surface: var(
+        --reviews-frame-surface,
+        var(--bg-surface, rgba(255, 255, 255, 0.72))
+    );
+    --_reviews-shadow: var(
+        --reviews-frame-shadow,
+        0 16px 48px rgba(0, 0, 0, 0.1)
+    );
+    --_reviews-accent: var(--reviews-accent, var(--primary, currentColor));
+    --_reviews-text: var(--reviews-text, var(--text-main, currentColor));
+    --_reviews-muted: var(
+        --reviews-muted,
+        var(--text-muted, rgba(0, 0, 0, 0.62))
+    );
+
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    align-items: center;
+    justify-content: center;
+    gap: var(--sp-12, 12px);
+    outline: none;
 }
 
-.review {
-    padding: 12px;
-    border-radius: 8px;
-    background: var(--bg-surface);
-    border-left: 3px solid var(--primary);
+.slider:focus-visible {
+    box-shadow: var(--focus-ring, 0 0 0 3px rgba(0, 0, 0, 0.25));
+    border-radius: var(--radius-md, 16px);
+}
+
+.frame {
+    /* inline-size: min(920px, 100%); */
+    inline-size: 100%;
+    margin-inline: auto;
+    position: relative;
+    overflow: hidden;
+    border-radius: var(--radius-lg, 22px);
+    border: var(--_reviews-border);
+    background: var(--_reviews-surface);
+    box-shadow: var(--_reviews-shadow);
+    block-size: var(--_reviews-h);
+}
+
+.viewport {
+    position: relative;
+    block-size: 100%;
+    touch-action: pan-y;
+    user-select: none;
+}
+
+.navLayer {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 2;
+}
+
+.navLayer .btn {
+    pointer-events: auto;
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+
+    appearance: none;
+    border: 1px solid
+        color-mix(in srgb, var(--_reviews-accent) 35%, transparent);
+    background: color-mix(in srgb, var(--_reviews-surface) 70%, transparent);
+    color: var(--_reviews-accent);
+    border-radius: 999px;
+
+    inline-size: 42px;
+    block-size: 42px;
+    min-inline-size: 42px;
+    min-block-size: 42px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    line-height: 1;
+    cursor: pointer;
+
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
+}
+
+.navLayer .btn:focus-visible {
+    box-shadow: var(--focus-ring, 0 0 0 3px rgba(0, 0, 0, 0.25));
+}
+.navLayer .btn:hover {
+    background: var(--_reviews-surface);
+    box-shadow: 0 12px 36px rgba(0, 0, 0, 0.16);
+    transform: translateY(-50%) scale(1.05);
+}
+
+.navLayer .btn:disabled {
+    opacity: 0.45;
+    cursor: default;
+}
+
+.navLayer .btnPrev {
+    inset-inline-start: 10px;
+}
+
+.navLayer .btnNext {
+    inset-inline-end: 10px;
+}
+
+.stack,
+.slideSingle {
+    position: absolute;
+    inset: 0;
+}
+
+.stack {
+    /* Variables are set per action and direction below */
+    --_enter-x: var(--_reviews-shift);
+    --_leave-x: calc(var(--_reviews-shift) * -1);
+}
+
+.action_next {
+    --_enter-x: var(--_reviews-shift);
+    --_leave-x: calc(var(--_reviews-shift) * -1);
+}
+
+.action_prev {
+    --_enter-x: calc(var(--_reviews-shift) * -1);
+    --_leave-x: var(--_reviews-shift);
+}
+
+/* RTL: invert the visual direction for the same semantic action */
+[data-dir="rtl"] .action_next {
+    --_enter-x: calc(var(--_reviews-shift) * -1);
+    --_leave-x: var(--_reviews-shift);
+}
+
+[data-dir="rtl"] .action_prev {
+    --_enter-x: var(--_reviews-shift);
+    --_leave-x: calc(var(--_reviews-shift) * -1);
+}
+
+.slide {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    transform: translateX(var(--_enter-x));
+    transition: none;
+    pointer-events: none;
+}
+
+.outgoing {
+    opacity: 1;
+    transform: translateX(0);
+}
+
+.incoming {
+    opacity: 0;
+    transform: translateX(var(--_enter-x));
+}
+
+.animating .slide {
+    transition:
+        transform 320ms ease,
+        opacity 320ms ease;
+}
+
+.animating .outgoing {
+    opacity: 0;
+    transform: translateX(var(--_leave-x));
+}
+
+.animating .incoming {
+    opacity: 1;
+    transform: translateX(0);
+}
+
+.slideSingle {
+    opacity: 1;
+    transform: translateX(0);
+    pointer-events: auto;
+}
+
+.card {
+    inline-size: 100%;
+    block-size: 100%;
     margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.cardInner {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: var(--sp-10, 10px);
+
+    padding: var(--sp-16, 16px);
+    block-size: 100%;
+    text-align: center;
+    color: var(--_reviews-text);
+}
+
+.stars {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    font-size: 18px;
+    letter-spacing: 0.04em;
+}
+
+.starFilled {
+    color: var(--_reviews-accent);
+}
+
+.starEmpty {
+    color: color-mix(in srgb, var(--_reviews-accent) 25%, transparent);
+}
+
+.quote {
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
 }
 
 .text {
     margin: 0;
-    font-size: var(--fs-14, 0.875rem);
-    line-height: var(--lh-normal, 1.5);
-    color: var(--text-main);
+    font-size: var(--fs-16, 1rem);
+    line-height: var(--lh-normal, 1.55);
+    color: var(--_reviews-text);
     font-style: italic;
+
+    max-inline-size: 56ch;
+    overflow: hidden;
+    text-overflow: ellipsis;
+
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 4;
+}
+
+@supports not (-webkit-line-clamp: 4) {
+    .text {
+        max-block-size: calc(1.55em * 4);
+        overflow: hidden;
+    }
 }
 
 .author {
-    margin: 8px 0 0;
+    margin: 0;
     font-size: var(--fs-14, 0.875rem);
-    color: var(--text-muted);
-    font-style: normal;
-    font-weight: 500;
+    color: var(--_reviews-muted);
+    font-weight: 600;
+}
+
+@media (max-width: 600px) {
+    .btn {
+        inline-size: 34px;
+        block-size: 34px;
+        min-inline-size: 34px;
+        min-block-size: 34px;
+        font-size: 20px;
+    }
+
+    .btnPrev {
+        inset-inline-start: 8px;
+    }
+
+    .btnNext {
+        inset-inline-end: 8px;
+    }
+
+    .text {
+        font-size: var(--fs-14, 0.875rem);
+        -webkit-line-clamp: 5;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .animating .slide {
+        transition: none;
+    }
+}
+
+@container (max-width: 520px) {
+    [data-preview="phone"] .navLayer .btn {
+        inline-size: 34px;
+        block-size: 34px;
+        min-inline-size: 34px;
+        min-block-size: 34px;
+        font-size: 20px;
+    }
+
+    [data-preview="phone"] .text {
+        font-size: var(--fs-8, 0.875rem);
+        -webkit-line-clamp: 5;
+    }
+
+    [data-preview="phone"].text {
+        font-size: var(--fs-8, 1rem);
+    }
 }
