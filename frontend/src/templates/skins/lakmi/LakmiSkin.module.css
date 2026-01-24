@@ -5,7 +5,8 @@
 
     /* Accent: rose */
     --main-token-color: #a9863e;
-    --secondary-token-color: #c18aa8;
+    --secondary-token-color: rgba(193, 138, 168, 1);
+    --secondary-token-color-rgb: 193, 138, 168;
     --contact-btn-color: var(--main-token-color);
     --contact-btn-bg: var(--main-token-color);
     --contact-btn-fg: #ffffff;
