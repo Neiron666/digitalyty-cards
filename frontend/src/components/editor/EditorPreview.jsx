@@ -7,9 +7,7 @@ function PhoneFrame({ children }) {
     return (
         <div className={styles.phoneFrame} data-preview="phone">
             <div className={styles.phoneInner}>
-                <div className={styles.phoneScroll}>
-                    {children}
-                </div>
+                <div className={styles.phoneScroll}>{children}</div>
             </div>
         </div>
     );
@@ -22,7 +20,7 @@ export default function EditorPreview({ card, header, footer }) {
         <PhoneFrame>
             <div className={styles.preview}>
                 {header ? <div className={styles.header}>{header}</div> : null}
-                <CardRenderer card={previewCard} />
+                <CardRenderer card={previewCard} mode="editor" />
                 {footer ? <div className={styles.footer}>{footer}</div> : null}
             </div>
         </PhoneFrame>

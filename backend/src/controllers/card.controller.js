@@ -615,9 +615,42 @@ export async function updateCard(req, res) {
 
     const patch = sanitizeWritablePatch(req.body);
 
-    // FAQ: tolerant writer (keep only complete Q/A pairs).
-    if (Object.prototype.hasOwnProperty.call(patch, "faq")) {
-        patch.faq = normalizeFaqForWrite(patch.faq);
+    const faqTouched = Object.prototype.hasOwnProperty.call(patch, "faq");
+    let normalizedFaqForSet;
+    if (faqTouched) {
+        // FAQ: tolerant writer (keep only complete Q/A pairs), and make writes atomic.
+        // This prevents dot-path $set like "faq.items" from crashing when existing faq is null.
+        if (isPlainObject(patch.faq)) {
+            const existingFaqRaw =
+                existingCard?.faq && typeof existingCard.faq === "object"
+                    ? typeof existingCard.faq.toObject === "function"
+                        ? existingCard.faq.toObject()
+                        : existingCard.faq
+                    : null;
+
+            const baseFaq = isPlainObject(existingFaqRaw)
+                ? existingFaqRaw
+                : { title: "", lead: "", items: [] };
+
+            const incomingFaq = patch.faq;
+            const mergedFaq = {
+                ...baseFaq,
+                ...(Object.prototype.hasOwnProperty.call(incomingFaq, "title")
+                    ? { title: incomingFaq.title }
+                    : null),
+                ...(Object.prototype.hasOwnProperty.call(incomingFaq, "lead")
+                    ? { lead: incomingFaq.lead }
+                    : null),
+                ...(Object.prototype.hasOwnProperty.call(incomingFaq, "items")
+                    ? { items: incomingFaq.items }
+                    : null),
+            };
+
+            normalizedFaqForSet = normalizeFaqForWrite(mergedFaq);
+        } else {
+            // Keep existing behavior for non-object (null/invalid): normalize determines resulting value.
+            normalizedFaqForSet = normalizeFaqForWrite(patch.faq);
+        }
     }
 
     // Enterprise hardening: server-side merge ONLY for `content` to prevent
@@ -902,6 +935,16 @@ export async function updateCard(req, res) {
     }
 
     const $set = buildSetUpdateFromPatch(patch);
+
+    if (faqTouched) {
+        // Remove any dot-path updates for faq.* and write faq as a whole.
+        for (const key of Object.keys($set)) {
+            if (key === "faq" || key.startsWith("faq.")) {
+                delete $set[key];
+            }
+        }
+        $set.faq = normalizedFaqForSet;
+    }
 
     const card = await Card.findByIdAndUpdate(
         req.params.id,

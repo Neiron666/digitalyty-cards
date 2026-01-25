@@ -45,9 +45,9 @@ const FaqSchema = new mongoose.Schema(
                 validator: (arr) => {
                     if (arr === undefined || arr === null) return true;
                     if (!Array.isArray(arr)) return false;
-                    return arr.length <= 10;
+                    return arr.length <= 5;
                 },
-                message: "faq.items must contain at most 10 items",
+                message: "faq.items must contain at most 5 items",
             },
         },
     },

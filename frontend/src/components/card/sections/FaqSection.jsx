@@ -44,9 +44,10 @@ function normalizeFaq(card) {
     };
 }
 
-export default function FaqSection({ card }) {
+export default function FaqSection({ card, mode }) {
     const faq = useMemo(() => normalizeFaq(card), [card]);
-    const [openIndex, setOpenIndex] = useState(0);
+    const initialOpenIndex = mode === "editor" || mode === "preview" ? -1 : 0;
+    const [openIndex, setOpenIndex] = useState(initialOpenIndex);
 
     if (!faq) return null;
 

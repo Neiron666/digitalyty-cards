@@ -1,4 +1,4 @@
-const FAQ_ITEMS_MAX = 10;
+const FAQ_ITEMS_MAX = 5;
 
 function toTrimmedString(value, { allowNull = true } = {}) {
     if (value === null || value === undefined) return allowNull ? null : "";

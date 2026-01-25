@@ -3,8 +3,7 @@ import Button from "../../ui/Button";
 import formStyles from "../../ui/Form.module.css";
 import styles from "./FaqPanel.module.css";
 
-const MIN_ITEMS = 3;
-const MAX_ITEMS = 10;
+const MAX_ITEMS = 5;
 
 function normalizeItems(items) {
     return Array.isArray(items)
@@ -17,19 +16,13 @@ function normalizeItems(items) {
         : [];
 }
 
-function ensureMin(items) {
-    const next = [...items];
-    while (next.length < MIN_ITEMS) next.push({ q: "", a: "" });
-    return next;
-}
-
 export default function FaqPanel({ faq, disabled, onChange }) {
     const value = faq && typeof faq === "object" ? faq : {};
 
     const title = typeof value.title === "string" ? value.title : "";
     const lead = typeof value.lead === "string" ? value.lead : "";
 
-    const items = ensureMin(normalizeItems(value.items));
+    const items = normalizeItems(value.items);
 
     const incompleteCount = items.filter((it) => {
         const q = typeof it?.q === "string" ? it.q.trim() : "";
@@ -68,7 +61,6 @@ export default function FaqPanel({ faq, disabled, onChange }) {
     }
 
     function removeItem(index) {
-        if (items.length <= MIN_ITEMS) return;
         const nextItems = items.filter((_, i) => i !== index);
         commit({ ...(value || {}), title, lead, items: nextItems });
     }
@@ -138,7 +130,7 @@ export default function FaqPanel({ faq, disabled, onChange }) {
                             variant="secondary"
                             size="small"
                             onClick={() => removeItem(index)}
-                            disabled={disabled || items.length <= MIN_ITEMS}
+                            disabled={disabled}
                         >
                             מחק
                         </Button>
@@ -158,9 +150,12 @@ export default function FaqPanel({ faq, disabled, onChange }) {
                     >
                         הוסף שאלה
                     </Button>
-                    <div className={styles.hint}>
-                        מינימום {MIN_ITEMS}, מקסימום {MAX_ITEMS}
-                    </div>
+                    {items.length >= MAX_ITEMS ? (
+                        <div className={styles.hint}>
+                            הגעת למקסימום של {MAX_ITEMS} שאלות
+                        </div>
+                    ) : null}
+                    <div className={styles.hint}>מקסימום {MAX_ITEMS}</div>
                 </div>
             </div>
         </Panel>

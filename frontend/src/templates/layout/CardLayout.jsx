@@ -157,7 +157,7 @@ export default function CardLayout({
                         {supports?.reviews !== false && (
                             <ReviewsSection card={card} />
                         )}
-                        <FaqSection card={card} />
+                        <FaqSection card={card} mode={mode} />
                         {card?.status === "published" && (
                             <QRCodeBlock slug={card.slug} />
                         )}
