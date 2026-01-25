@@ -1,100 +1,168 @@
 # frontend.instructions.md
 
-# Frontend Instructions (React/Vite/CSS Modules) — Digitalyty Cards
+# Frontend Instructions (React/Vite/CSS Modules) — Digitalyty Cards (Enterprise, RTL-first)
 
 You are working on the frontend of Digitalyty Cards (Vite + React + CSS Modules), RTL-first.
+This product has strict guardrails: SSoT render chain, token-only skins, and zero inline CSS.
 
-## Non-Negotiable Guardrails (Project Law)
+---
+
+## 0) Copilot Execution Protocol (Project Law)
+
+### Mandatory prompt header (EVERY Copilot run)
+
+First line MUST be:
+"Ты — Copilot Agent, acting as senior frontend engineer with пониманием backend контракта."
+
+### Two-phase workflow (mandatory)
+
+**Phase 1 — READ-ONLY AUDIT**
+
+- No code changes.
+- Map the flow end-to-end:
+    - editor input → state → dirty tracking → payload
+    - backend contract expectations (shape)
+    - renderer chain (public + preview)
+    - CSS Modules / existing overflow rules
+    - JSON-LD & Helmet constraints (if relevant)
+- Provide **PROOF** via **file:line ranges** for every key statement.
+- Identify the minimal change set.
+
+**Phase 2 — MINIMAL FIX**
+
+- Pinpoint changes only; prevent churn/spread.
+- No refactors, no unrelated formatting, no new architecture.
+- Keep behavior backward compatible.
+- After changes: PROOF (file:line) + gates.
+
+### Absolute prohibitions
+
+- **NO git commands** (do not suggest, do not run): no checkout/restore/add/commit/push/tag/stash.
+- **NO inline styles**:
+    - no `style=...`, no `style` props
+    - no “dynamic layout via inline”
+- Skins must remain token-only (no structure CSS inside skins).
+- Do not fork public vs preview rendering with separate DOM.
+- Do not change CardLayout DOM skeleton unless explicitly approved migration phase with PROOF.
+
+---
+
+## 1) Non-Negotiable Guardrails
 
 ### Styling
 
 - CSS Modules ONLY.
 - NO inline styles.
-- No “style” props, no dynamic inline layout.
 - Skins are token-only:
-    - Allowed: CSS variables `--*` inside `.theme` / `.palette*`.
-    - Forbidden: structural CSS (layout, backgrounds with `url()`, `background:` shorthand, images, positioning hacks).
+    - allowed: CSS variables `--*` inside `.theme` / `.palette*`
+    - forbidden: structural CSS, positioning hacks, `background:` shorthand, `url()`, images, layout rules
 - Preview-only differences MUST be ancestor-scoped:
-    - Only under `[data-preview="phone"] ...`.
-    - Do not alter public typography/tokens globally for preview.
+    - only under `[data-preview="phone"] ...`
+    - never change public typography/tokens globally for preview
 
 ### Layout / DOM Stability
 
 - Single canonical render chain (SSoT) for public + preview:
-    - `TemplateRenderer → CardLayout → Sections`.
-- DO NOT fork public vs preview rendering with separate DOM.
-- DO NOT change CardLayout DOM skeleton unless an explicit migration phase with PROOF (file:line) and rationale.
+    - `TemplateRenderer → CardLayout → Sections`
+- DO NOT create alternative render trees for preview/public.
+- DO NOT change CardLayout skeleton unless explicit migration phase with rationale + PROOF.
 
 ### Template Registry
 
-- Templates are registered only in `frontend/src/templates/templates.config.js`.
-- No “magic comparisons” of templateId scattered across the app.
+- Templates registered only in `frontend/src/templates/templates.config.js`.
+- No scattered templateId “magic comparisons”.
 
-### Required Gates (Run after meaningful changes)
+---
 
-- `npm.cmd run check:inline-styles`
-- `npm.cmd run check:skins`
-- `npm.cmd run check:contract`
-- `npm.cmd run build --if-present`
+## 2) Required Gates (Run after meaningful changes)
 
-## RTL & Layout Discipline
+Run (Windows):
 
-- RTL-first (Hebrew) must remain correct.
+- `cmd /v:on /c "cd /d <repo>\frontend && npm.cmd run check:inline-styles"`
+- `cmd /v:on /c "cd /d <repo>\frontend && npm.cmd run check:skins"`
+- `cmd /v:on /c "cd /d <repo>\frontend && npm.cmd run check:contract"`
+- `cmd /v:on /c "cd /d <repo>\frontend && npm.cmd run build --if-present"`
+
+If PowerShell execution policy blocks npm.ps1, use `npm.cmd` via `cmd`.
+
+---
+
+## 3) RTL & Layout Discipline
+
+- RTL-first must remain correct.
 - Prefer CSS logical properties:
     - `margin-inline`, `padding-inline`, `inset-inline`, `border-inline`, etc.
-- Avoid hard left/right unless unavoidable; document exceptions.
+- Avoid left/right unless unavoidable; document exceptions.
 
-## SEO / Head Management (Helmet + canonical + JSON-LD)
+---
 
-- Head tags are controlled through `react-helmet-async`.
-- JSON-LD scripts MUST be rendered in Helmet using string children:
+## 4) SEO / Head Management (Helmet + canonical + JSON-LD)
+
+- Use `react-helmet-async`.
+- JSON-LD scripts MUST be inserted as string children:
     - ✅ `<script type="application/ld+json">{JSON.stringify(obj)}</script>`
-    - ❌ do not rely on `dangerouslySetInnerHTML` for Helmet JSON-LD insertion.
-- Canonical must be absolute when `VITE_PUBLIC_ORIGIN` is available:
-    - Use a single resolver/normalizer helper (SSoT) for canonical.
-    - Canonical link is rendered 1:1 from the canonicalUrl prop; do not post-process in SeoHelmet.
-- DevTools verification rule:
-    - Check `link.getAttribute("href")` (attribute), not `link.href` (browser-normalized property).
+    - ❌ do not use `dangerouslySetInnerHTML` for Helmet JSON-LD insertion
+- Canonical must be absolute when `VITE_PUBLIC_ORIGIN` exists.
+- DevTools verification:
+    - check `link.getAttribute("href")`, not `link.href`.
 
-## Data & URL Handling
+Enterprise caution:
 
-- Use shared helpers for converting relative asset paths to absolute URLs.
-- Avoid duplicating URL resolution logic per template/section.
-- Keep card rendering tolerant to old data shapes (backward compatibility).
+- Any work near FAQ/FAQPage JSON-LD must include explicit non-regression checks.
 
-## Accessibility (Baseline)
+---
 
-- Provide `:focus-visible` styles for interactive elements.
-- Ensure contrast is acceptable for buttons/text (skins adjust tokens, not structure).
-- Modal/dialog behavior:
-    - Use correct ARIA (`role="dialog"`, `aria-modal="true"` where relevant).
-    - Keyboard support (Esc/Arrows) only when open.
-    - Clean up listeners on close/unmount.
-    - Restore focus to the opener when closing.
+## 5) Data & Backward Compatibility
 
-## Performance
+- Keep rendering tolerant to old data shapes.
+- Do not break existing saved cards.
+- Avoid duplicating URL resolution logic per template/section; use shared helpers.
 
-- Avoid heavy CSS (no `background-attachment: fixed`, minimize global blur, avoid huge shadows).
-- Lazy-load non-critical images; keep rendering lightweight.
-- Prevent unnecessary renders:
-    - Memoize derived lists
-    - Keep handlers stable where meaningful
-- Do not add extra API calls unless explicitly approved.
+---
 
-## Editor / State Safety
+## 6) Accessibility (Baseline)
 
-- Preserve existing form behavior and validation unless explicitly requested.
-- When refactoring UI (tabs/panels), do not reset card state on tab changes.
+- `:focus-visible` for interactive elements.
+- Keyboard support where appropriate (Esc/Arrows only when relevant).
+- Modal/dialog: correct ARIA + cleanup listeners + restore focus.
+
+---
+
+## 7) Performance
+
+- Avoid heavy CSS effects.
+- Lazy-load non-critical images.
+- Prevent unnecessary renders: memoize derived lists, keep handlers stable when meaningful.
+- No extra API calls unless approved.
+
+---
+
+## 8) Editor / State Safety
+
+- Preserve existing form behavior unless explicitly requested.
+- Do not reset card state on tab changes.
 - Keep field paths consistent across editor and renderer.
+- If limiting lengths:
+    - enforce in UI (maxLength + counter)
+    - enforce safe wrap in public card (no horizontal overflow)
+    - optionally mirror in backend normalization for true SSoT.
 
-## Output / QA Expectations (When you implement frontend changes)
+---
 
-- Summarize files changed and why (file list + rationale).
-- Provide a manual QA checklist:
-    - Desktop + mobile breakpoints
+## 9) Output Requirements (When implementing frontend changes)
+
+- List changed files + rationale.
+- Provide PROOF (file:line ranges) for:
+    - where value is edited
+    - how payload is formed
+    - where it renders (SSoT chain)
+    - CSS rules preventing overflow
+    - preview-only scoping when used
+- Provide manual QA checklist:
+    - desktop + mobile
     - RTL correctness
-    - Empty states (no gallery/faq/etc.)
-    - No horizontal scroll
-    - No console errors
-    - Gates PASS + build PASS
-- Git-команды запрещены: не выполнять и не предлагать git restore/checkout/add/commit/push и т.п. Любые Git-действия делает пользователь вручную.
+    - empty states (no faq/gallery/reviews)
+    - no horizontal scroll
+    - no console errors
+    - gates PASS + build PASS
+- **No git commands.**

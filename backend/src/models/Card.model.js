@@ -3,6 +3,11 @@ import mongoose from "mongoose";
 import { normalizeReviews } from "../utils/reviews.util.js";
 import { ABOUT_PARAGRAPHS_MAX } from "../config/about.js";
 import { REVIEWS_MAX } from "../config/reviews.js";
+import {
+    BUSINESS_NAME_MAX,
+    BUSINESS_SLOGAN_MAX,
+    BUSINESS_SUBTITLE_MAX,
+} from "../utils/business.util.js";
 
 const UploadItemSchema = new mongoose.Schema(
     {
@@ -158,8 +163,18 @@ const CardSchema = new mongoose.Schema(
 
         business: {
             // required minimal fields
-            name: String,
-            category: String,
+            name: {
+                type: String,
+                trim: true,
+                default: "",
+                maxlength: BUSINESS_NAME_MAX,
+            },
+            category: {
+                type: String,
+                trim: true,
+                default: "",
+                maxlength: BUSINESS_SUBTITLE_MAX,
+            },
             address: String,
             city: String,
             lat: Number,
@@ -168,8 +183,18 @@ const CardSchema = new mongoose.Schema(
             // legacy fields (kept for backward compatibility)
             businessName: String,
             ownerName: String,
-            occupation: String,
-            slogan: String,
+            occupation: {
+                type: String,
+                trim: true,
+                default: "",
+                maxlength: BUSINESS_SUBTITLE_MAX,
+            },
+            slogan: {
+                type: String,
+                trim: true,
+                default: "",
+                maxlength: BUSINESS_SLOGAN_MAX,
+            },
         },
 
         contact: {

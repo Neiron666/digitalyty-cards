@@ -17,6 +17,8 @@
 
     --primary: var(--main-token-color);
     --primary-hover: #a9863e;
+    --secondary: var(--secondary-token-color);
+    --secondary-hover: rgba(193, 138, 168, 0.9);
 
     /* Accent: gold for key borders/dividers */
     --avatar-border: #c8a75c;

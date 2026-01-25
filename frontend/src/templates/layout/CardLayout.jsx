@@ -23,7 +23,7 @@ function getDisplayName(card) {
 }
 
 function getSubtitle(card) {
-    return card?.business?.category || card?.business?.occupation || "";
+    return card?.business?.category || "";
 }
 
 export default function CardLayout({
@@ -42,6 +42,10 @@ export default function CardLayout({
 
     const name = getDisplayName(card);
     const subtitle = getSubtitle(card);
+    const slogan =
+        typeof card?.business?.slogan === "string"
+            ? card.business.slogan.trim()
+            : "";
 
     const hasCover = Boolean(coverUrl);
     const overlayOpacity = Math.min(0.7, Math.max(0, overlayValue / 100));
@@ -132,6 +136,9 @@ export default function CardLayout({
                                 >
                                     {subtitle}
                                 </p>
+                            ) : null}
+                            {slogan ? (
+                                <p className={styles.slogan}>"{slogan}"</p>
                             ) : null}
                         </div>
 

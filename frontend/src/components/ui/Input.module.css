@@ -25,7 +25,9 @@
     color: var(--input-text);
     font-size: 16px;
     font-family: inherit;
-    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    transition:
+        border-color 0.2s ease,
+        box-shadow 0.2s ease;
 }
 
 .input:focus,
@@ -43,4 +45,11 @@
     margin-top: 2px;
     color: #ef4444;
     font-size: 0.85rem;
+}
+
+.meta {
+    margin-top: 2px;
+    font-size: 0.85rem;
+    color: var(--text-subtitle, rgba(234, 240, 255, 0.78));
+    text-align: end;
 }

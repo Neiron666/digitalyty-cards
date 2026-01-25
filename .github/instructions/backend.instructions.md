@@ -1,79 +1,157 @@
 # backend.instructions.md
 
-# Backend Instructions (Node/Express/Mongo) — Digitalyty Cards
+# Backend Instructions (Node/Express/Mongo) — Digitalyty Cards (Enterprise)
 
 You are working on the backend of Digitalyty Cards (monorepo: backend/ + frontend/).
+This is an enterprise-grade product: stability, backward compatibility, security, and bounded writes are non-negotiable.
 
-## Core Principles (Non-Negotiable)
+---
 
-- Preserve API contracts. Changes must be backward compatible unless explicitly approved.
+## 0) Copilot Execution Protocol (Project Law)
+
+### Mandatory prompt header (EVERY Copilot run)
+
+First line MUST be:
+"Ты — Copilot Agent, acting as senior frontend engineer with пониманием backend контракта."
+
+(Yes, even for backend tasks — it enforces the same discipline and contract awareness.)
+
+### Two-phase workflow (mandatory)
+
+**Phase 1 — READ-ONLY AUDIT**
+
+- Do not change any code.
+- Enumerate relevant call sites, schemas, DTO shaping, normalization, allowlists, update logic.
+- Provide **PROOF** for every key claim using **file:line ranges** (exact).
+- Identify the smallest safe fix with the least blast radius.
+
+**Phase 2 — MINIMAL FIX**
+
+- Implement only pinpoint changes required to satisfy acceptance criteria.
+- Prevent “spread”: no refactors, no formatting churn, no unrelated cleanup.
+- Keep API contract backward compatible unless explicitly approved.
+- After changes: provide PROOF (file:line), then run sanity checks.
+
+### Absolute prohibitions
+
+- **NO git commands** (do not suggest, do not run): no checkout/restore/add/commit/push/tag/stash etc.
+- No “background work” promises. Act only on current scope.
+- No breaking changes without explicit approval.
+
+### Verification discipline
+
+- Always keep and mention invariants: status codes, anti-enumeration, runValidators, allowlists, DTO output, bounded storage.
+- Prefer **cmd-based** commands on Windows (e.g., `npm.cmd`, `node --input-type=module ...`).
+
+---
+
+## 1) Core Principles (Non-Negotiable)
+
+- Preserve API contracts. Backward compatible changes only, unless explicitly approved.
 - Security first: validate inputs, prevent injection, avoid leaking existence (anti-enumeration).
-- Keep DB writes bounded and predictable. No unbounded user-controlled growth in documents.
+- Keep DB writes bounded and predictable (no unbounded user-controlled growth).
 - Prefer additive schema evolution and additive responses.
+- Defense-in-depth: validate on input, normalize on write, shape on output.
 
-## Architecture & Ownership
+---
 
-- Keep controllers thin; move business rules/normalization into:
-    - `backend/src/utils/*` (normalization, URL shaping, safe key logic)
-    - helpers/services for larger domains (billing/entitlements/analytics).
+## 2) Architecture & Ownership
+
+- Controllers stay thin; move rules into:
+    - `backend/src/utils/*` (normalization, safe keys, URL shaping, caps)
+    - domain helpers/services (billing/entitlements/analytics) when logic grows.
 - Always shape outbound objects via DTOs; never leak internal/admin-only fields on non-admin routes.
+- Centralize constraints as SSoT constants in utils and mirror them in schema validators.
 
-## Data Safety / Injection Prevention (Critical)
+---
+
+## 3) PATCH Discipline & Mongo Update Safety (Critical)
+
+### Explicit allowlist only
+
+- PATCH must accept only allowlisted top-level keys.
+- No “patch everything”.
+
+### Dot-path risk (null parent objects)
+
+- The project uses dot-walk style `$set` building (nested objects become paths like `faq.items`).
+- **MongoDB cannot `$set` `foo.bar` if `foo` is `null`.**
+- Enterprise fix pattern:
+    - For nested objects that may be `null` (e.g., `faq`, `business`, `content` segments):
+        - Normalize/merge on server.
+        - Then **atomically set the whole object**: `$set: { foo: normalizedFoo }`
+        - And remove `foo.*` dot-path entries to avoid conflicts.
+
+### runValidators / setters
+
+- Preserve `runValidators: true` on updates.
+- If relying on schema setters/normalizers, ensure update path uses `runSettersOnQuery` as intended.
+- Prefer normalization in controller before `$set` for critical invariants.
+
+---
+
+## 4) Data Safety / Injection Prevention (Critical)
 
 - Any user-controlled key used in Mongo path updates (`$inc`, `$set`, map paths) MUST be sanitized:
-    - Disallow `.`, `$`, null bytes, path traversal tokens, and any unsafe separators.
+    - Disallow `.`, `$`, null bytes, path traversal tokens, and unsafe separators.
     - Use centralized `safeKey()` / `safeCompositeKey()` with strict allowlist behavior.
-- For “source buckets” and similar dimensions: normalize + allowlist. Unknown → `other` or `null`.
+- For high-cardinality “dimensions” (sources/UTM/etc.): normalize + allowlist; unknown → `other`/`null`.
 
-## Bounded Aggregates (Critical)
+---
+
+## 5) Bounded Aggregates (Critical)
 
 - Any user-controlled high-cardinality dimensions MUST be bounded:
-    - Use write-time caps without heavy reads whenever possible.
-    - Use overflow bucket keys (e.g., `other_campaign`, `other_referrer`).
-    - Avoid read-before-write in hot paths.
+    - Prefer write-time caps without heavy reads.
+    - Use overflow buckets (`other_*`).
+    - Avoid read-before-write in hot paths unless explicitly approved.
 
-## Analytics Invariants
+---
+
+## 6) Normalization Rules (Enterprise SSoT)
+
+- All “user copy” fields must be normalized on write:
+    - trim whitespace
+    - collapse obviously-invalid values to `""` or `null` consistently
+    - enforce max lengths with truncation (tolerant) or 422 (strict) — choose intentionally.
+- Collections must be bounded:
+    - enforce max length in util (SSoT) + schema validator (defense-in-depth).
+- For structured sections (FAQ, Reviews, etc.):
+    - accept legacy shapes if necessary
+    - normalize to canonical shape
+    - store only valid items (e.g., FAQ requires both q and a non-empty)
+    - never persist empty placeholders
+
+---
+
+## 7) Analytics Invariants
 
 - `POST /api/analytics/track`:
-    - ALWAYS return `204`.
-    - Best-effort, write-only.
-    - Must NOT reveal card existence.
-- Aggregations (`/analytics/sources`, etc.):
-    - New fields must be additive.
-    - Tier shaping rules: premium can get richer data; basic limited; demo may return synthetic premium-shaped data without “guessing” correlations.
+    - ALWAYS `204`
+    - best-effort write-only
+    - must NOT reveal card existence
+- Aggregations must be additive; tier shaping rules must be preserved.
 
-## Card Contract Discipline (FAQ included)
+---
 
-- Card schema changes must be:
-    - Backward compatible.
-    - Reflected in DTO shaping.
-    - Reflected in PATCH allowlist (explicit allowlist; no “patch everything”).
-- FAQ storage:
-    - Treat FAQ as structured content (e.g., items with q/a), validate length/types, normalize whitespace.
-    - Never allow HTML injection fields to go out “raw”; if you store rich text, define a safe sanitization strategy and clearly document where HTML is allowed.
-
-## Validation
+## 8) Validation, Error Handling & Logging
 
 - Validate request payloads (body/query/params) consistently.
-- Normalize UTM fields/referrers consistently.
-- Treat unknown values as `null` or fold into allowlisted “other”.
-
-## Performance / DB Practices
-
-- Avoid read-before-write in hot paths unless explicitly approved.
-- Use indexed queries; avoid heavy aggregation pipelines unless necessary.
-- Keep documents bounded to prevent growth impacting reads/storage.
-
-## Error Handling & Logging
-
-- Centralized error middleware.
 - No stack traces in production responses.
-- Log enough context for debugging, but never sensitive data (tokens, secrets, PII beyond necessity).
+- Log enough for debugging, never sensitive data (tokens/secrets/PII beyond necessity).
 
-## Output / QA Expectations (When you implement backend changes)
+---
 
-- Summarize files changed and why (file list + rationale).
-- Provide manual QA steps:
-    - Example curl/HTTP calls with expected status codes and key fields.
-    - Confirm invariants (e.g., analytics track remains 204, anti-enumeration preserved).
-- Git-команды запрещены: не выполнять и не предлагать git restore/checkout/add/commit/push и т.п. Любые Git-действия делает пользователь вручную.
+## 9) Output Requirements (When implementing backend changes)
+
+- List changed files + rationale.
+- Provide PROOF (file:line ranges) for:
+    - contract preservation
+    - allowlist behavior
+    - normalization/caps/validators
+    - atomic `$set` rules (if applied)
+- Provide manual QA steps (curl / DevTools expectations).
+- Provide sanity commands using Windows-friendly invocations:
+    - `node --input-type=module -e "await import('...'); console.log('OK')"`
+    - `npm.cmd run dev` / project-specific tasks
+- **No git commands.**

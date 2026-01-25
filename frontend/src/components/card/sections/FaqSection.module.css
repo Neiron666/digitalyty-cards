@@ -177,7 +177,7 @@
     padding-block: 0.75rem 1rem;
     padding-inline: 1rem;
     color: var(--faq-text);
-    font-size: var(--fs-14, 0.875rem);
+    font-size: var(--fs-10, 0.875rem);
     line-height: var(--lh-normal, 1.6);
     background: linear-gradient(
         180deg,
@@ -192,10 +192,10 @@
 
 @media (max-width: 600px) {
     .item .answer {
-        font-size: var(--fs-12, 0.75rem);
+        font-size: var(--fs-10, 0.75rem);
     }
     .item .question {
-        font-size: var(--fs-12, 0.75rem);
+        font-size: var(--fs-10, 0.75rem);
     }
 }
 
@@ -213,9 +213,9 @@
 }
 @container phone (max-width: 520px) {
     [data-preview="phone"] .item .answer {
-        font-size: var(--fs-12, 0.75rem);
+        font-size: var(--fs-10, 0.75rem);
     }
     [data-preview="phone"] .item .question {
-        font-size: var(--fs-12, 0.75rem);
+        font-size: var(--fs-10, 0.75rem);
     }
 }

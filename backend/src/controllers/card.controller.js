@@ -22,6 +22,7 @@ import { claimAnonymousCardForUser } from "../services/claimCard.service.js";
 import { toCardDTO } from "../utils/cardDTO.js";
 import { normalizeAboutParagraphs } from "../utils/about.js";
 import { normalizeFaqForWrite } from "../utils/faq.util.js";
+import { normalizeBusinessForWrite } from "../utils/business.util.js";
 
 function normalizeAboutFieldsInContent(container) {
     if (!container || typeof container !== "object") return;
@@ -386,6 +387,12 @@ export async function createCard(req, res) {
         data.faq = normalizeFaqForWrite(data.faq);
     }
 
+    // Business: enterprise-tolerant writer (trim + truncate bounded strings).
+    // Keep server as the source of truth for invariants.
+    if (data && typeof data === "object") {
+        data.business = normalizeBusinessForWrite(data.business);
+    }
+
     // Client must not set billing or server-only flags.
     if (data && typeof data === "object") {
         delete data.billing;
@@ -614,6 +621,37 @@ export async function updateCard(req, res) {
     }
 
     const patch = sanitizeWritablePatch(req.body);
+
+    const businessTouched = Object.prototype.hasOwnProperty.call(
+        patch,
+        "business",
+    );
+
+    let normalizedBusinessForSet;
+    if (businessTouched) {
+        // Business: tolerant writer + atomic write.
+        // WHY: prevent dot-path $set like "business.name" from crashing when existing business is null.
+        // Also prevents lost-updates for legacy clients sending partial business objects.
+        const existingBusinessRaw =
+            existingCard?.business && typeof existingCard.business === "object"
+                ? typeof existingCard.business.toObject === "function"
+                    ? existingCard.business.toObject()
+                    : existingCard.business
+                : null;
+
+        const baseBusiness =
+            existingBusinessRaw && typeof existingBusinessRaw === "object"
+                ? existingBusinessRaw
+                : {};
+
+        const incomingBusiness = isPlainObject(patch.business)
+            ? patch.business
+            : {};
+
+        const mergedBusiness = { ...baseBusiness, ...incomingBusiness };
+        normalizedBusinessForSet = normalizeBusinessForWrite(mergedBusiness);
+        patch.business = normalizedBusinessForSet;
+    }
 
     const faqTouched = Object.prototype.hasOwnProperty.call(patch, "faq");
     let normalizedFaqForSet;
@@ -944,6 +982,16 @@ export async function updateCard(req, res) {
             }
         }
         $set.faq = normalizedFaqForSet;
+    }
+
+    if (businessTouched) {
+        // Remove any dot-path updates for business.* and write business as a whole.
+        for (const key of Object.keys($set)) {
+            if (key === "business" || key.startsWith("business.")) {
+                delete $set[key];
+            }
+        }
+        $set.business = normalizedBusinessForSet;
     }
 
     const card = await Card.findByIdAndUpdate(

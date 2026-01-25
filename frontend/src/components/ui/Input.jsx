@@ -6,6 +6,7 @@ export default function Input({
     value,
     onChange,
     placeholder,
+    meta,
     error,
     required = false,
     className = "",
@@ -32,6 +33,7 @@ export default function Input({
                 required={required}
                 {...props}
             />
+            {meta ? <span className={styles.meta}>{meta}</span> : null}
             {error && <span className={styles.errorText}>{error}</span>}
         </label>
     );
