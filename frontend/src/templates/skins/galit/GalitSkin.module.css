@@ -1,0 +1,60 @@
+.theme {
+    --bg-main: #f0f1f2;
+    --bg-surface: #ffffff;
+    --bg-card: #ffffff;
+
+    --main-token-color: #b8a796;
+    --main-token-color-rgb: 184, 167, 150;
+
+    --secondary-token-color: #3c5888;
+    --secondary-token-color-rgb: 60, 88, 136;
+
+    --primary: var(--main-token-color);
+    --primary-hover: #c4ac8b;
+
+    --secondary: var(--secondary-token-color);
+    --secondary-hover: #354f78;
+
+    --text-main: #1a1a1a;
+    --text-subtitle: #6f6256;
+    --color-title: var(--secondary-token-color);
+    --name-color: var(--main-token-color);
+
+    --border: rgba(130, 113, 95, 0.22);
+    --shadow-soft: 0 18px 48px rgba(130, 113, 95, 0.7);
+
+    --avatar-border: #c4ac8b;
+    --avatar-bg: #ffffff;
+
+    --contact-btn-color: var(--main-token-color);
+    --contact-btn-bg: rgba(255, 255, 255, 0.7);
+    --contact-btn-fg: #6f6256;
+    --contact-btn-border: rgba(130, 113, 95, 0.7);
+    --contact-btn-outline: rgba(60, 88, 136, 0.7);
+    --contact-btn-hover-fg: #354f78;
+
+    --section-bg: rgba(184, 167, 150, 0.08);
+    --section-border: rgba(130, 113, 95, 0.7);
+
+    --section-surface-odd: var(--bg-surface);
+    --section-surface-even:
+        linear-gradient(rgba(184, 167, 150, 0.14), rgba(240, 241, 242, 0.22)),
+        var(--section-bg);
+    --section-border-odd: none;
+    --section-border-even: none;
+
+    --action-bg: #c4ac8b;
+    --action-text: #354f78;
+    --action-border: rgba(130, 113, 95, 0.7);
+
+    --focus-ring: 0 0 0 3px rgba(60, 88, 136, 0.22);
+
+    --hero-overlay-bg: linear-gradient(
+        180deg,
+        rgba(255, 255, 255, 0.08),
+        rgba(184, 167, 150, 0.62)
+    );
+    --hero-image-position: center;
+
+    --hero-divider-border: var(--section-border);
+}

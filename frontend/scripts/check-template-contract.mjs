@@ -52,6 +52,7 @@ const ALLOWED_SKIN_KEYS = new Set([
     "beauty",
     "roismana11y",
     "lakmi",
+    "galit",
 ]);
 
 async function loadRegistry() {

@@ -6,6 +6,7 @@ import CustomSkin from "./skins/custom/CustomSkin.module.css";
 import BeautySkin from "./skins/beauty/BeautySkin.module.css";
 import RoismanA11ySkin from "./skins/roismanA11y/RoismanA11ySkin.module.css";
 import LakmiSkin from "./skins/lakmi/LakmiSkin.module.css";
+import galitSkin from "./skins/galit/GalitSkin.module.css";
 
 function toPascalCaseKey(key) {
     return String(key || "")
@@ -63,6 +64,7 @@ export default function TemplateRenderer({ card, onUpgrade, mode }) {
         beauty: BeautySkin,
         roismanA11y: RoismanA11ySkin,
         lakmi: LakmiSkin,
+        galit: galitSkin,
     };
 
     const skinKey = template?.skinKey;

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useBlocker, useNavigate, useParams } from "react-router-dom";
 import Editor from "../components/editor/Editor";
+import ConfirmUnsavedChangesModal from "../components/editor/ConfirmUnsavedChangesModal";
 import TrialBanner from "../components/editor/TrialBanner";
 import { EDITOR_CARD_TABS } from "../components/editor/editorTabs";
 import { deleteCard } from "../services/cards.service";
@@ -139,6 +140,11 @@ function EditCard() {
     const [reloadKey, setReloadKey] = useState(0);
     const [isDeleting, setIsDeleting] = useState(false);
 
+    const [isUnsavedModalOpen, setIsUnsavedModalOpen] = useState(false);
+    const [pendingAction, setPendingAction] = useState(null);
+    const pendingBlockerRef = useRef(null);
+    const [unsavedActionBusy, setUnsavedActionBusy] = useState(false);
+
     const isDeletingRef = useRef(isDeleting);
     useEffect(() => {
         isDeletingRef.current = isDeleting;
@@ -186,6 +192,32 @@ function EditCard() {
         dirtyPathsRef.current = dirtyPaths;
     }, [dirtyPaths]);
 
+    const closeUnsavedModal = useCallback(() => {
+        setIsUnsavedModalOpen(false);
+        setPendingAction(null);
+        pendingBlockerRef.current = null;
+        setUnsavedActionBusy(false);
+    }, []);
+
+    const requestNavigate = useCallback(
+        (to) => {
+            const nextTo = String(to || "");
+            if (!nextTo) return;
+
+            const hasDirty =
+                dirtyPathsRef.current && dirtyPathsRef.current.size > 0;
+            if (!hasDirty) {
+                navigate(nextTo);
+                return;
+            }
+
+            pendingBlockerRef.current = null;
+            setPendingAction({ kind: "tab", to: nextTo });
+            setIsUnsavedModalOpen(true);
+        },
+        [navigate],
+    );
+
     // Step 1A: Browser refresh/close guard.
     useEffect(() => {
         const onBeforeUnload = (event) => {
@@ -225,10 +257,11 @@ function EditCard() {
     useEffect(() => {
         if (blocker?.state !== "blocked") return;
 
-        const ok = window.confirm("יש שינויים שלא נשמרו. לצאת בלי לשמור?");
-
-        if (ok) blocker.proceed();
-        else blocker.reset();
+        // Replace native confirm with the editor's unsaved-changes modal.
+        // IMPORTANT: store blocker in a ref (do not put blocker in state).
+        pendingBlockerRef.current = blocker;
+        setPendingAction({ kind: "leave" });
+        setIsUnsavedModalOpen(true);
     }, [blocker]);
 
     const saveStateTimerRef = useRef(null);
@@ -362,6 +395,26 @@ function EditCard() {
         },
         [navigate],
     );
+
+    const discardUnsavedAndRehydrate = useCallback(async () => {
+        // 1) Clear dirty first (initCard refuses to overwrite when dirty).
+        const cleared = new Set();
+        setDirtyPaths(cleared);
+        dirtyPathsRef.current = cleared;
+        setSaveState("idle");
+        setSaveErrorText(null);
+
+        // 2) Rehydrate from server using the existing init path.
+        setReloadKey((k) => k + 1);
+
+        // Also trigger an immediate init attempt to satisfy "rehydrate then continue".
+        // (The reloadKey effect will still run; this is kept minimal and safe.)
+        try {
+            await initCard(() => true);
+        } catch {
+            // If rehydrate fails, still allow user to leave/switch; we already discarded local dirty.
+        }
+    }, [initCard]);
 
     const refetchMineThrottled = useCallback(
         async (isMounted = () => true) => {
@@ -679,9 +732,9 @@ function EditCard() {
 
     const commitDraft = useCallback(async () => {
         const cardId = draftCard?._id;
-        if (!cardId) return;
+        if (!cardId) return false;
 
-        if (!dirtyPaths || dirtyPaths.size === 0) return;
+        if (!dirtyPaths || dirtyPaths.size === 0) return false;
 
         // Minimal-risk payload builder:
         // send full dirty sections from draftCard (keeps backend shape stable).
@@ -715,7 +768,7 @@ function EditCard() {
             }
         }
 
-        if (Object.keys(payload).length === 0) return;
+        if (Object.keys(payload).length === 0) return false;
 
         setSaveState("saving");
         setSaveErrorText(null);
@@ -726,13 +779,62 @@ function EditCard() {
             setDraftCard(normalized);
             setDirtyPaths(new Set());
             setSaveState("saved");
+            return true;
         } catch (err) {
             const message =
                 err?.response?.data?.message || err?.message || "שגיאה בשמירה";
             setSaveState("error");
             setSaveErrorText(String(message));
+            return false;
         }
     }, [dirtyPaths, draftCard]);
+
+    const proceedPendingNavigation = useCallback(() => {
+        if (pendingAction?.kind === "tab" && pendingAction.to) {
+            navigate(pendingAction.to);
+            return;
+        }
+        if (pendingAction?.kind === "leave") {
+            pendingBlockerRef.current?.proceed?.();
+            return;
+        }
+    }, [navigate, pendingAction]);
+
+    const handleUnsavedStay = useCallback(() => {
+        // If we are in a blocked leave state, we must reset the blocker.
+        pendingBlockerRef.current?.reset?.();
+        closeUnsavedModal();
+    }, [closeUnsavedModal]);
+
+    const handleUnsavedDiscard = useCallback(async () => {
+        if (unsavedActionBusy) return;
+        setUnsavedActionBusy(true);
+        try {
+            await discardUnsavedAndRehydrate();
+            closeUnsavedModal();
+            proceedPendingNavigation();
+        } finally {
+            setUnsavedActionBusy(false);
+        }
+    }, [closeUnsavedModal, discardUnsavedAndRehydrate, proceedPendingNavigation, unsavedActionBusy]);
+
+    const handleUnsavedSave = useCallback(async () => {
+        if (unsavedActionBusy) return;
+        setUnsavedActionBusy(true);
+        try {
+            const ok = await commitDraft();
+            if (!ok) {
+                // Keep user in editor; rely on existing save error UI.
+                closeUnsavedModal();
+                return;
+            }
+
+            closeUnsavedModal();
+            proceedPendingNavigation();
+        } finally {
+            setUnsavedActionBusy(false);
+        }
+    }, [closeUnsavedModal, commitDraft, proceedPendingNavigation, unsavedActionBusy]);
 
     // Ops-only persistence (uploads). This must NOT be used for typing.
     // IMPORTANT: ops PATCH must NOT overwrite the full draftCard with the server response,
@@ -1001,6 +1103,18 @@ function EditCard() {
 
     return (
         <div className={styles.editCard}>
+            <ConfirmUnsavedChangesModal
+                open={isUnsavedModalOpen}
+                title="השינויים לא נשמרו"
+                body="ביצעת שינויים שלא נשמרו בכרטיס. מה תרצה לעשות?"
+                primaryLabel="שמור והמשך"
+                secondaryLabel="המשך בלי לשמור"
+                tertiaryLabel="חזור לעריכה"
+                onPrimary={handleUnsavedSave}
+                onSecondary={handleUnsavedDiscard}
+                onTertiary={handleUnsavedStay}
+                busy={unsavedActionBusy}
+            />
             {deleteNotice ? (
                 <div
                     className={`${styles.notice} ${
@@ -1070,6 +1184,7 @@ function EditCard() {
                         editingDisabled={editingDisabled}
                         onDeleteCard={handleDelete}
                         isDeleting={isDeleting}
+                        onRequestNavigate={requestNavigate}
                         onPublish={handlePublish}
                         onUnpublish={handleUnpublish}
                         // Phase 2: draft-first save infrastructure (wired for Phase 3 UI)

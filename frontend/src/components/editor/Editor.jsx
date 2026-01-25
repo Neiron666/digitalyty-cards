@@ -17,6 +17,7 @@ export default function Editor({
     editingDisabled,
     onDeleteCard,
     isDeleting,
+    onRequestNavigate,
     onUpgrade,
     onPublish,
     onUnpublish,
@@ -44,7 +45,12 @@ export default function Editor({
 
     function handleChangeTab(nextTab) {
         if (!nextTab || !allowedTabs.has(nextTab)) return;
-        navigate(`/edit/card/${nextTab}`);
+        const to = `/edit/card/${nextTab}`;
+        if (typeof onRequestNavigate === "function") {
+            onRequestNavigate(to);
+            return;
+        }
+        navigate(to);
     }
 
     return (

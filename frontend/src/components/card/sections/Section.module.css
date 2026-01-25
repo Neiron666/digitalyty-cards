@@ -17,6 +17,7 @@
     text-align: center;
     padding: 0 8px;
     border-radius: var(--radius-sm, 4px);
+    color: var(--color-title);
 }
 
 .content {
