@@ -195,7 +195,6 @@ function EditCard() {
     const closeUnsavedModal = useCallback(() => {
         setIsUnsavedModalOpen(false);
         setPendingAction(null);
-        pendingBlockerRef.current = null;
         setUnsavedActionBusy(false);
     }, []);
 
@@ -406,15 +405,7 @@ function EditCard() {
 
         // 2) Rehydrate from server using the existing init path.
         setReloadKey((k) => k + 1);
-
-        // Also trigger an immediate init attempt to satisfy "rehydrate then continue".
-        // (The reloadKey effect will still run; this is kept minimal and safe.)
-        try {
-            await initCard(() => true);
-        } catch {
-            // If rehydrate fails, still allow user to leave/switch; we already discarded local dirty.
-        }
-    }, [initCard]);
+    }, []);
 
     const refetchMineThrottled = useCallback(
         async (isMounted = () => true) => {
@@ -795,14 +786,18 @@ function EditCard() {
             return;
         }
         if (pendingAction?.kind === "leave") {
-            pendingBlockerRef.current?.proceed?.();
+            const b = pendingBlockerRef.current;
+            pendingBlockerRef.current = null;
+            b?.proceed?.();
             return;
         }
     }, [navigate, pendingAction]);
 
     const handleUnsavedStay = useCallback(() => {
         // If we are in a blocked leave state, we must reset the blocker.
-        pendingBlockerRef.current?.reset?.();
+        const b = pendingBlockerRef.current;
+        pendingBlockerRef.current = null;
+        b?.reset?.();
         closeUnsavedModal();
     }, [closeUnsavedModal]);
 
