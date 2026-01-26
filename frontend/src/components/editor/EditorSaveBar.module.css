@@ -4,6 +4,7 @@
     z-index: 10;
 
     display: flex;
+    flex-direction: column-reverse;
     align-items: center;
     justify-content: space-between;
     gap: 12px;
@@ -64,7 +65,7 @@
     min-inline-size: 0;
     text-align: end;
     font-weight: 700;
-    font-size: 0.95rem;
+    font-size: 0.8rem;
     color: var(--text-muted);
 }
 

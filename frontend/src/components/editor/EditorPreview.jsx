@@ -7,10 +7,7 @@ const cx = (...classes) => classes.filter(Boolean).join(" ");
 
 function PhoneFrame({ children, className }) {
     return (
-        <div
-            className={cx(styles.phoneFrame, className)}
-            data-preview="phone"
-        >
+        <div className={cx(styles.phoneFrame, className)} data-preview="phone">
             <div className={styles.phoneInner}>
                 <div className={styles.phoneScroll}>{children}</div>
             </div>

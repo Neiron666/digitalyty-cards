@@ -17,7 +17,7 @@
 .sidebar {
     flex: 0 0 220px; /* фикс 220 */
     padding: 20px;
-    border-left: 1px solid var(--border);
+    /* border-left: 1px solid var(--border); */
     background: var(--bg-surface);
     overflow-y: auto;
     min-width: 0; /* важно, чтобы контент не ломал ширину */

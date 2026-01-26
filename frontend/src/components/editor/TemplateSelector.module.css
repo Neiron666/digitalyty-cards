@@ -57,8 +57,26 @@
 }
 
 .selected {
+    outline: 1px solid #f59f0b81;
+    outline-offset: -5px;
+    padding: 12px 12px;
+    border-radius: var(--radius-md);
+    background: rgba(255, 255, 255, 0.03);
+    color: var(--text-main);
+    font-weight: 800;
+    cursor: pointer;
+    transition:
+        border-color 0.2s,
+        color 0.2s;
     border-color: var(--gold);
     box-shadow: 0 0 0 1px var(--gold-soft);
+    color: var(--gold);
+    background: linear-gradient(
+        90deg,
+        transparent,
+        var(--gold-soft),
+        transparent
+    );
 }
 
 .preview {
