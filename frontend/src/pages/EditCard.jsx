@@ -816,7 +816,12 @@ function EditCard() {
         } finally {
             setUnsavedActionBusy(false);
         }
-    }, [closeUnsavedModal, discardUnsavedAndRehydrate, proceedPendingNavigation, unsavedActionBusy]);
+    }, [
+        closeUnsavedModal,
+        discardUnsavedAndRehydrate,
+        proceedPendingNavigation,
+        unsavedActionBusy,
+    ]);
 
     const handleUnsavedSave = useCallback(async () => {
         if (unsavedActionBusy) return;
@@ -834,7 +839,12 @@ function EditCard() {
         } finally {
             setUnsavedActionBusy(false);
         }
-    }, [closeUnsavedModal, commitDraft, proceedPendingNavigation, unsavedActionBusy]);
+    }, [
+        closeUnsavedModal,
+        commitDraft,
+        proceedPendingNavigation,
+        unsavedActionBusy,
+    ]);
 
     // Ops-only persistence (uploads). This must NOT be used for typing.
     // IMPORTANT: ops PATCH must NOT overwrite the full draftCard with the server response,
