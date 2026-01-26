@@ -1,4 +1,4 @@
-import { REVIEWS_MAX } from "../config/reviews.js";
+import { REVIEWS_MAX, REVIEWS_TEXT_MAX } from "../config/reviews.js";
 
 export function normalizeReviews(input) {
     const arr = Array.isArray(input) ? input : [];
@@ -6,7 +6,7 @@ export function normalizeReviews(input) {
     const out = [];
     for (const item of arr) {
         if (typeof item === "string") {
-            const text = item.trim();
+            const text = item.trim().slice(0, REVIEWS_TEXT_MAX);
             if (text) out.push({ text });
             continue;
         }
@@ -20,7 +20,9 @@ export function normalizeReviews(input) {
                   ? item.value
                   : "";
 
-        const text = String(rawText || "").trim();
+        const text = String(rawText || "")
+            .trim()
+            .slice(0, REVIEWS_TEXT_MAX);
         if (!text) continue;
 
         const name =

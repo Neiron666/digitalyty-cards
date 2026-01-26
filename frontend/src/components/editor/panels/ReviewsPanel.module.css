@@ -4,6 +4,13 @@
     gap: 8px;
 }
 
+.meta {
+    margin-top: -4px;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    text-align: end;
+}
+
 .addRow {
     display: flex;
     flex-direction: column;

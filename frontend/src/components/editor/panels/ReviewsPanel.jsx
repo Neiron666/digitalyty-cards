@@ -5,6 +5,12 @@ import styles from "./ReviewsPanel.module.css";
 
 export default function ReviewsPanel({ reviews = [], onChange }) {
     const REVIEWS_MAX = 5;
+    const REVIEWS_TEXT_MAX = 100;
+
+    function remaining(max, value) {
+        const s = typeof value === "string" ? value : String(value || "");
+        return Math.max(0, max - s.length);
+    }
 
     function addReview() {
         if (reviews.length >= REVIEWS_MAX) return;
@@ -15,6 +21,15 @@ export default function ReviewsPanel({ reviews = [], onChange }) {
         const updated = [...reviews];
         updated[index] = value;
         onChange(updated);
+    }
+
+    function commitReviewOnBlur(index) {
+        const raw = reviews[index];
+        const trimmed =
+            typeof raw === "string" ? raw.trim() : String(raw || "").trim();
+        const clipped = trimmed.slice(0, REVIEWS_TEXT_MAX);
+        if (clipped === raw) return;
+        updateReview(index, clipped);
     }
 
     function removeReview(index) {
@@ -30,8 +45,14 @@ export default function ReviewsPanel({ reviews = [], onChange }) {
                         rows={2}
                         value={review}
                         onChange={(e) => updateReview(index, e.target.value)}
+                        onBlur={() => commitReviewOnBlur(index)}
+                        maxLength={REVIEWS_TEXT_MAX}
                         className={formStyles.textarea}
                     />
+
+                    <div className={styles.meta}>
+                        נשארו {remaining(REVIEWS_TEXT_MAX, review)} תווים
+                    </div>
 
                     <Button
                         variant="secondary"
