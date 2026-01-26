@@ -1,7 +1,16 @@
 .editor {
     display: flex;
-    justify-content: space-evenly;
-    min-height: calc(100vh - 64px); /* header */
+    justify-content: flex-start;
+    align-items: stretch;
+    gap: 24px;
+    padding-inline: 16px;
+
+    /* Desktop viewport contract: keep the editor app-like.
+       64px is the existing project-wide header height contract. */
+
+    height: calc(90dvh - 64px);
+    overflow: hidden;
+    min-height: 0;
 }
 
 /* Nav */
@@ -16,19 +25,29 @@
 
 /* Panel */
 .panel {
-    flex: 0 0 420px; /* фикс 420 */
+    /* Working area: grow on wide screens, stay usable on mid screens. */
+    flex: 1 1 560px;
+    min-width: 480px;
     padding: 20px;
     background: var(--bg-card);
     overflow-y: auto;
     min-width: 0;
+    min-height: 0;
 }
 
 /* Preview */
 .preview {
-    flex: 1 1 auto; /* занимает всё оставшееся */
-    padding: 40px 20px;
+    /* Preview should feel stable and not steal panel width. */
+    flex: 0 0 420px;
+    min-width: 420px;
+    max-width: 420px;
     overflow-y: auto;
     min-width: 0; /* критично для 1fr-аналогов */
+    min-height: 0;
+
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
 }
 
 .topbar {
@@ -78,7 +97,32 @@
 }
 
 .sidebarSlot {
-    flex: 0 0 auto;
+    /* Tabs rail (right column) */
+    flex: 0 0 280px;
+    min-width: 0;
+    min-height: 0;
+    overflow-y: auto;
+}
+
+@media (max-width: 1200px) {
+    .editor {
+        gap: 12px;
+        padding-inline: 10px;
+    }
+
+    .sidebarSlot {
+        flex-basis: 220px;
+    }
+
+    .panel {
+        min-width: 360px;
+    }
+
+    .preview {
+        flex-basis: 360px;
+        min-width: 360px;
+        max-width: 360px;
+    }
 }
 
 .drawerOpen {

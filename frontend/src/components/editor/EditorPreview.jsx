@@ -3,9 +3,14 @@ import styles from "./EditorPreview.module.css";
 import CardRenderer from "../card/CardRenderer";
 import { withDemoPreviewCard } from "./previewDemo";
 
-function PhoneFrame({ children }) {
+const cx = (...classes) => classes.filter(Boolean).join(" ");
+
+function PhoneFrame({ children, className }) {
     return (
-        <div className={styles.phoneFrame} data-preview="phone">
+        <div
+            className={cx(styles.phoneFrame, className)}
+            data-preview="phone"
+        >
             <div className={styles.phoneInner}>
                 <div className={styles.phoneScroll}>{children}</div>
             </div>
@@ -13,11 +18,11 @@ function PhoneFrame({ children }) {
     );
 }
 
-export default function EditorPreview({ card, header, footer }) {
+export default function EditorPreview({ className, card, header, footer }) {
     const previewCard = useMemo(() => withDemoPreviewCard(card), [card]);
 
     return (
-        <PhoneFrame>
+        <PhoneFrame className={className}>
             <div className={styles.preview}>
                 {header ? <div className={styles.header}>{header}</div> : null}
                 <CardRenderer card={previewCard} mode="editor" />
