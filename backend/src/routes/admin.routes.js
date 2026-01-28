@@ -13,6 +13,14 @@ import {
     setCardTier,
     setUserTier,
 } from "../controllers/admin.controller.js";
+import {
+    getAdminAnalyticsSources,
+    getAdminAnalyticsSummary,
+} from "../controllers/adminAnalytics.controller.js";
+import {
+    getAdminSiteAnalyticsSources,
+    getAdminSiteAnalyticsSummary,
+} from "../controllers/adminSiteAnalytics.controller.js";
 
 const router = Router();
 
@@ -22,6 +30,10 @@ router.get("/users", listUsers);
 router.get("/cards", listCards);
 router.get("/users/:id", getUserById);
 router.get("/cards/:id", getCardById);
+router.get("/analytics/summary", getAdminAnalyticsSummary);
+router.get("/analytics/sources", getAdminAnalyticsSources);
+router.get("/site-analytics/summary", getAdminSiteAnalyticsSummary);
+router.get("/site-analytics/sources", getAdminSiteAnalyticsSources);
 
 // safe write actions (no generic patch)
 router.post("/cards/:id/deactivate", deactivateCard);

@@ -59,3 +59,20 @@ export function adminSetUserTier(id, { tier, until, reason }) {
         reason,
     });
 }
+
+export function getAdminAnalyticsSummary(params = {}) {
+    return api.get("/admin/analytics/summary", { params });
+}
+
+export function getAdminAnalyticsSources(params = {}) {
+    return api.get("/admin/analytics/sources", { params });
+}
+
+// Site analytics (public marketing pages; excludes /card/* and internal routes server-side)
+export function getAdminSiteAnalyticsSummary(params = {}) {
+    return api.get("/admin/site-analytics/summary", { params });
+}
+
+export function getAdminSiteAnalyticsSources(params = {}) {
+    return api.get("/admin/site-analytics/sources", { params });
+}

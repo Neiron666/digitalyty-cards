@@ -1,9 +1,15 @@
+import { useEffect } from "react";
 import Page from "../components/page/Page";
 import PricingPlans from "../components/pricing/PricingPlans";
 import styles from "./Pricing.module.css";
 import PricingFAQ from "../components/pricing/PricingFAQ";
+import { trackSitePageView } from "../services/siteAnalytics.client";
 
 export default function Pricing() {
+    useEffect(() => {
+        trackSitePageView();
+    }, []);
+
     return (
         <Page
             title="מחירים"

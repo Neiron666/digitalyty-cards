@@ -10,6 +10,7 @@ import leadRoutes from "./routes/lead.routes.js";
 import sitemapRoutes from "./routes/sitemap.routes.js";
 import ogRoutes from "./routes/og.routes.js";
 import analyticsRoutes from "./routes/analytics.routes.js";
+import siteAnalyticsRoutes from "./routes/siteAnalytics.routes.js";
 import { anonymousMiddleware } from "./middlewares/anonymous.middleware.js";
 import { requireAdmin } from "./middlewares/admin.middleware.js";
 import adminRoutes from "./routes/admin.routes.js";
@@ -41,6 +42,7 @@ app.get("/api/health", (req, res) => {
     res.json({ status: "OK" });
 });
 app.use("/api/analytics", analyticsRoutes);
+app.use("/api/site-analytics", siteAnalyticsRoutes);
 app.use("/api/leads", leadRoutes);
 app.use(multerErrorHandler);
 // Cards API

@@ -1,0 +1,250 @@
+.root {
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    background: var(--bg-card);
+    padding: 12px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.header {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.controls {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+}
+
+.titleWrap {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+
+.title {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 900;
+    color: var(--text-main);
+}
+
+.subtitle {
+    margin: 0;
+    opacity: 0.75;
+    font-size: 13px;
+}
+
+.rangeTabs {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+.optOutBtn {
+    appearance: none;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text-main);
+    border-radius: 999px;
+    padding: 8px 12px;
+    font: inherit;
+    cursor: pointer;
+}
+
+.optOutBtn:focus-visible {
+    outline: none;
+    border-color: var(--gold);
+    box-shadow: 0 0 0 2px var(--gold-fade);
+}
+
+.optOutBtnActive {
+    border-color: var(--gold);
+    box-shadow: 0 0 0 2px var(--gold-fade);
+}
+
+.optOutHint {
+    margin: 0;
+    opacity: 0.75;
+    font-size: 12px;
+}
+
+.tab {
+    appearance: none;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text-main);
+    border-radius: 999px;
+    padding: 8px 12px;
+    font: inherit;
+    cursor: pointer;
+}
+
+.tab:focus-visible {
+    outline: none;
+    border-color: var(--gold);
+    box-shadow: 0 0 0 2px var(--gold-fade);
+}
+
+.tabActive {
+    border-color: var(--gold);
+    box-shadow: 0 0 0 2px var(--gold-fade);
+}
+
+.blocks {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.block {
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 12px;
+    background: transparent;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.blockTitle {
+    font-weight: 900;
+    color: var(--text-main);
+}
+
+.kpis {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.kpiCard {
+    flex: 1 1 160px;
+    min-width: 160px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 10px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.kpiLabel {
+    opacity: 0.75;
+    font-size: 12px;
+}
+
+.kpiValue {
+    font-size: 18px;
+    font-weight: 900;
+}
+
+.sourcesGrid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.sourceCard {
+    flex: 1 1 260px;
+    min-width: 240px;
+    border: 1px dashed var(--border);
+    border-radius: var(--radius-md);
+    padding: 10px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.sourceTitle {
+    font-weight: 900;
+    color: var(--text-main);
+}
+
+.rows {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.row {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.rowKey {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    opacity: 0.9;
+}
+
+.rowVal {
+    flex: 0 0 auto;
+    font-weight: 900;
+    opacity: 0.9;
+}
+
+.campaignsGrid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.campaignCard {
+    flex: 1 1 260px;
+    min-width: 240px;
+    border: 1px dashed var(--border);
+    border-radius: var(--radius-md);
+    padding: 10px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.campaignTitle {
+    font-weight: 900;
+    opacity: 0.9;
+}
+
+.muted {
+    margin: 0;
+    opacity: 0.75;
+}
+
+.errorText {
+    margin: 0;
+    color: var(--danger, #d33);
+    font-weight: 800;
+}
+
+@media (max-width: 720px) {
+    .header {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .controls {
+        justify-content: flex-start;
+    }
+
+    .rangeTabs {
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: thin;
+        padding-bottom: 2px;
+    }
+}

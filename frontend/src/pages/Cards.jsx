@@ -1,11 +1,17 @@
+import { useEffect } from "react";
 import Page from "../components/page/Page";
 import CardsEmpty from "../components/cards/CardsEmpty";
 import CardsGrid from "../components/cards/CardsGrid";
+import { trackSitePageView } from "../services/siteAnalytics.client";
 import styles from "./Cards.module.css";
 
 export default function Cards() {
     // позже здесь будет загрузка реальных карточек
     const cards = []; // MVP: пусто
+
+    useEffect(() => {
+        trackSitePageView();
+    }, []);
 
     return (
         <Page

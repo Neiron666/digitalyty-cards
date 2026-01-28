@@ -1,5 +1,7 @@
+import { useEffect } from "react";
 import { Link } from "react-router-dom";
 import Button from "../components/ui/Button";
+import { trackSitePageView } from "../services/siteAnalytics.client";
 import styles from "./Home.module.css";
 
 const FEATURES = [
@@ -51,6 +53,10 @@ const FEATURES = [
 ];
 
 export default function Home() {
+    useEffect(() => {
+        trackSitePageView();
+    }, []);
+
     return (
         <main className={styles.page}>
             {/* HERO */}
