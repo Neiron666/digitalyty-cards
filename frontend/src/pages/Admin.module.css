@@ -52,12 +52,18 @@
 
 .commandBarButtons {
     display: flex;
-    flex-direction: row;
-    align-items: stretch;
-    flex: 1;
-    /* flex-wrap: wrap; */
-    gap: 8px;
-    /* align-items: center; */
+    gap: var(--gap-2, 12px);
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.commandBtn {
+    flex: 0 0 auto;
+    white-space: nowrap;
+}
+
+.commandBarButtons .commandBtn {
+    width: auto;
 }
 
 .commandBarHint {
@@ -87,9 +93,25 @@
     gap: 12px;
 }
 
-@media (max-width: 959px) {
+@media (max-width: 960px) {
     .body {
         flex-direction: column;
+    }
+
+    .leftRail {
+        display: contents;
+    }
+
+    .directoryCard {
+        order: 1;
+    }
+
+    .rightPanel {
+        order: 2;
+    }
+
+    .statsCard {
+        order: 3;
     }
 }
 
@@ -122,6 +144,10 @@
     border-radius: var(--radius-md);
     background: var(--bg-card);
     min-height: 0;
+}
+
+.mobileOnly {
+    display: none;
 }
 
 .cardHeader {
@@ -253,6 +279,76 @@
     gap: 8px;
 }
 
+.kvDl {
+    margin: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+}
+
+.kvDt {
+    margin: 0;
+    flex: 0 0 140px;
+    font-weight: 800;
+    opacity: 0.8;
+}
+
+.kvDd {
+    margin: 0;
+    flex: 1 1 calc(100% - 140px);
+    min-width: 220px;
+}
+
+.selectedHeaderStrip {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 10px 12px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    background: transparent;
+}
+
+.selectedPrimary {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    align-items: center;
+    min-width: 0;
+}
+
+.selectedLabel {
+    font-weight: 800;
+    opacity: 0.85;
+}
+
+.selectedValue {
+    font-weight: 900;
+}
+
+.selectedMeta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+}
+
+.metaPill {
+    display: inline-flex;
+    gap: 6px;
+    align-items: baseline;
+    padding: 6px 10px;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    background: transparent;
+    font-size: 12px;
+}
+
+.metaKey {
+    font-weight: 800;
+    opacity: 0.8;
+}
+
 .actionGroup {
     display: flex;
     flex-direction: column;
@@ -313,6 +409,129 @@
     display: flex;
     flex-wrap: wrap;
     gap: 8px;
+}
+
+@media (max-width: 720px) {
+    .adminRoot {
+        height: auto;
+        overflow: visible;
+    }
+
+    .body {
+        min-height: auto;
+        flex: 0 0 auto;
+    }
+
+    .cardShell {
+        min-height: auto;
+        max-height: none;
+    }
+
+    .cardBody {
+        overflow: visible;
+        min-height: auto;
+        height: auto;
+        max-height: none;
+    }
+
+    .leftRail {
+        display: contents;
+    }
+
+    .rightPanel {
+        display: flex;
+    }
+
+    .mobileOnly {
+        display: none;
+    }
+
+    .commandBar {
+        display: none;
+    }
+
+    .directoryCard {
+        order: 1;
+    }
+
+    .selectedCard {
+        order: 2;
+    }
+
+    .statsCard {
+        order: 3;
+    }
+
+    .tabs {
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: thin;
+        padding-bottom: 2px;
+    }
+
+    .commandBarButtons {
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: thin;
+        padding-bottom: 2px;
+    }
+
+    .directoryCard .table thead {
+        display: none;
+    }
+
+    .directoryCard .table {
+        display: block;
+    }
+
+    .directoryCard .table tbody {
+        display: block;
+    }
+
+    .directoryCard .table tr {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        padding: 12px;
+        border: 1px solid var(--border);
+        border-radius: var(--radius-md);
+        background: transparent;
+        margin-bottom: 10px;
+    }
+
+    .directoryCard .table td {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 0;
+        border-bottom: none;
+        overflow-wrap: anywhere;
+    }
+
+    .directoryCard .table td::before {
+        content: attr(data-label);
+        font-weight: 800;
+        opacity: 0.75;
+        white-space: nowrap;
+    }
+
+    .directoryCard .rowBtn {
+        width: auto;
+    }
+
+    .directoryCard .truncate {
+        max-width: none;
+        white-space: normal;
+        overflow-wrap: anywhere;
+        text-overflow: clip;
+    }
+
+    .legend {
+        max-height: 260px;
+        overflow: auto;
+    }
 }
 
 .tab {

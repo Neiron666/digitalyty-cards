@@ -281,6 +281,7 @@ export default function Admin() {
     const [cardsQuery, setCardsQuery] = useState("");
     const directoryTabListRef = useRef(null);
     const selectedTabListRef = useRef(null);
+    const selectedTabListRefMobile = useRef(null);
 
     const [loading, setLoading] = useState(false);
     const [accessDenied, setAccessDenied] = useState(false);
@@ -671,18 +672,7 @@ export default function Admin() {
 
             <div className={styles.body}>
                 <section className={styles.leftRail} aria-label="Directory">
-                    {error ? (
-                        <div className={styles.bannerRow}>
-                            <FlashBanner
-                                type="error"
-                                message={error}
-                                autoHideMs={0}
-                                onDismiss={() => setError("")}
-                            />
-                        </div>
-                    ) : null}
-
-                    <div className={styles.cardShell}>
+                    <div className={`${styles.cardShell} ${styles.statsCard}`}>
                         <div className={styles.cardHeader}>
                             <div className={styles.headerRow}>
                                 <h2 className={styles.h2}>
@@ -856,8 +846,18 @@ export default function Admin() {
                         </div>
                     </div>
 
-                    <div className={styles.cardShell}>
+                    <div
+                        className={`${styles.cardShell} ${styles.directoryCard}`}
+                    >
                         <div className={styles.cardHeader}>
+                            {error ? (
+                                <FlashBanner
+                                    type="error"
+                                    message={error}
+                                    autoHideMs={0}
+                                    onDismiss={() => setError("")}
+                                />
+                            ) : null}
                             <div
                                 className={styles.tabs}
                                 role="tablist"
@@ -956,7 +956,7 @@ export default function Admin() {
                                     <tbody>
                                         {users.map((u) => (
                                             <tr key={u._id}>
-                                                <td>
+                                                <td data-label="אימייל">
                                                     <span
                                                         className={styles.ltr}
                                                         dir="ltr"
@@ -964,7 +964,7 @@ export default function Admin() {
                                                         {u.email}
                                                     </span>
                                                 </td>
-                                                <td>
+                                                <td data-label="כרטיס">
                                                     {u?.cardSummary?.slug ? (
                                                         <button
                                                             className={
@@ -1024,8 +1024,10 @@ export default function Admin() {
                                                         "—"
                                                     )}
                                                 </td>
-                                                <td>{roleHe(u.role)}</td>
-                                                <td>
+                                                <td data-label="תפקיד">
+                                                    {roleHe(u.role)}
+                                                </td>
+                                                <td data-label="נוצר">
                                                     {formatDate(u.createdAt)}
                                                 </td>
                                             </tr>
@@ -1047,7 +1049,7 @@ export default function Admin() {
                                         <tbody>
                                             {filteredCards.map((c) => (
                                                 <tr key={c._id}>
-                                                    <td>
+                                                    <td data-label="סלאג">
                                                         <button
                                                             className={
                                                                 styles.rowBtn
@@ -1072,7 +1074,7 @@ export default function Admin() {
                                                             </span>
                                                         </button>
                                                     </td>
-                                                    <td>
+                                                    <td data-label="בעלות">
                                                         {c?.ownerSummary
                                                             ?.type ===
                                                         "user" ? (
@@ -1116,13 +1118,13 @@ export default function Admin() {
                                                             "—"
                                                         )}
                                                     </td>
-                                                    <td>
+                                                    <td data-label="סטטוס">
                                                         {cardStatusHe(c.status)}
                                                     </td>
-                                                    <td>
+                                                    <td data-label="פעיל">
                                                         {boolHe(!!c.isActive)}
                                                     </td>
-                                                    <td>
+                                                    <td data-label="עודכן">
                                                         {formatDate(
                                                             c.updatedAt,
                                                         )}
@@ -1141,19 +1143,78 @@ export default function Admin() {
                             )}
                         </div>
                     </div>
-                </section>
 
-                <section
-                    className={styles.rightPanel}
-                    aria-label={t("section_selected_card")}
-                >
-                    <div className={styles.cardShell}>
+                    <div
+                        className={`${styles.cardShell} ${styles.selectedCard} ${styles.mobileOnly}`}
+                    >
                         <div className={styles.cardHeader}>
                             <div className={styles.headerRow}>
                                 <h2 className={styles.h2}>
                                     {t("section_selected_card")}
                                 </h2>
                             </div>
+
+                            {selectedCard ? (
+                                <div className={styles.selectedHeaderStrip}>
+                                    <div className={styles.selectedPrimary}>
+                                        <span className={styles.selectedLabel}>
+                                            {t("label_slug")}:
+                                        </span>{" "}
+                                        <span
+                                            className={`${styles.ltr} ${styles.selectedValue}`}
+                                            dir="ltr"
+                                            title={selectedCard.slug || ""}
+                                        >
+                                            {selectedCard.slug || ""}
+                                        </span>
+                                    </div>
+                                    <div className={styles.selectedMeta}>
+                                        <span className={styles.metaPill}>
+                                            <span className={styles.metaKey}>
+                                                {t("label_id")}:
+                                            </span>{" "}
+                                            <span
+                                                className={styles.ltr}
+                                                dir="ltr"
+                                                title={selectedCard._id}
+                                            >
+                                                {selectedCard._id}
+                                            </span>
+                                        </span>
+                                        <span className={styles.metaPill}>
+                                            <span className={styles.metaKey}>
+                                                {t("label_status")}:
+                                            </span>{" "}
+                                            <span
+                                                className={styles.ltr}
+                                                dir="ltr"
+                                            >
+                                                {cardStatusHe(
+                                                    selectedCard.status,
+                                                )}
+                                            </span>
+                                        </span>
+                                        <span className={styles.metaPill}>
+                                            <span className={styles.metaKey}>
+                                                {t("label_active")}:
+                                            </span>{" "}
+                                            <span>
+                                                {boolHe(
+                                                    !!selectedCard.isActive,
+                                                )}
+                                            </span>
+                                        </span>
+                                        <span className={styles.metaPill}>
+                                            <span className={styles.metaKey}>
+                                                {t("label_owner")}:
+                                            </span>{" "}
+                                            <span>
+                                                {selectedCardOwnerLabel}
+                                            </span>
+                                        </span>
+                                    </div>
+                                </div>
+                            ) : null}
 
                             {selectedCard ? (
                                 <div
@@ -1164,6 +1225,7 @@ export default function Admin() {
                                         <Button
                                             variant="secondary"
                                             size="small"
+                                            className={styles.commandBtn}
                                             onClick={() =>
                                                 setSelectedTab("billing")
                                             }
@@ -1173,6 +1235,7 @@ export default function Admin() {
                                         <Button
                                             variant="secondary"
                                             size="small"
+                                            className={styles.commandBtn}
                                             onClick={() =>
                                                 setSelectedTab("actions")
                                             }
@@ -1182,6 +1245,711 @@ export default function Admin() {
                                         <Button
                                             variant="secondary"
                                             size="small"
+                                            className={styles.commandBtn}
+                                            onClick={() =>
+                                                setSelectedTab("danger")
+                                            }
+                                        >
+                                            סכנה
+                                        </Button>
+                                    </div>
+                                    <div className={styles.commandBarHint}>
+                                        קיצורי דרך לכרטיס הנבחר
+                                    </div>
+                                </div>
+                            ) : null}
+
+                            <div
+                                className={styles.tabs}
+                                role="tablist"
+                                aria-label="Selected card tabs"
+                                ref={selectedTabListRefMobile}
+                                onKeyDown={(e) =>
+                                    handleTabListKeyDown(e, {
+                                        current: selectedTab,
+                                        setCurrent: setSelectedTab,
+                                        order: [
+                                            "general",
+                                            "billing",
+                                            "actions",
+                                            "danger",
+                                        ],
+                                        tabListRef: selectedTabListRefMobile,
+                                    })
+                                }
+                            >
+                                <button
+                                    type="button"
+                                    className={`${styles.tab} ${
+                                        selectedTab === "general"
+                                            ? styles.tabActive
+                                            : ""
+                                    }`}
+                                    role="tab"
+                                    data-tab="general"
+                                    aria-selected={selectedTab === "general"}
+                                    aria-controls="admin-selected-panel-mobile"
+                                    onClick={() => setSelectedTab("general")}
+                                >
+                                    כללי
+                                </button>
+                                <button
+                                    type="button"
+                                    className={`${styles.tab} ${
+                                        selectedTab === "billing"
+                                            ? styles.tabActive
+                                            : ""
+                                    }`}
+                                    role="tab"
+                                    data-tab="billing"
+                                    aria-selected={selectedTab === "billing"}
+                                    aria-controls="admin-selected-panel-mobile"
+                                    onClick={() => setSelectedTab("billing")}
+                                >
+                                    חיוב
+                                </button>
+                                <button
+                                    type="button"
+                                    className={`${styles.tab} ${
+                                        selectedTab === "actions"
+                                            ? styles.tabActive
+                                            : ""
+                                    }`}
+                                    role="tab"
+                                    data-tab="actions"
+                                    aria-selected={selectedTab === "actions"}
+                                    aria-controls="admin-selected-panel-mobile"
+                                    onClick={() => setSelectedTab("actions")}
+                                >
+                                    פעולות
+                                </button>
+                                <button
+                                    type="button"
+                                    className={`${styles.tab} ${
+                                        selectedTab === "danger"
+                                            ? styles.tabActive
+                                            : ""
+                                    }`}
+                                    role="tab"
+                                    data-tab="danger"
+                                    aria-selected={selectedTab === "danger"}
+                                    aria-controls="admin-selected-panel-mobile"
+                                    onClick={() => setSelectedTab("danger")}
+                                >
+                                    סכנה
+                                </button>
+                            </div>
+                        </div>
+
+                        <div
+                            id="admin-selected-panel-mobile"
+                            className={styles.cardBody}
+                            role="tabpanel"
+                            aria-label="Selected card panel"
+                        >
+                            {!selectedCard ? (
+                                <p className={styles.muted}>
+                                    {t("msg_select_card")}
+                                </p>
+                            ) : null}
+
+                            {selectedCard ? (
+                                <>
+                                    {selectedTab === "general" ? (
+                                        <div className={styles.sectionBlock}>
+                                            <div
+                                                className={styles.sectionTitle}
+                                            >
+                                                {t("section_card_details")}
+                                            </div>
+                                            <dl className={styles.kvDl}>
+                                                <dt className={styles.kvDt}>
+                                                    {t("label_id")}
+                                                </dt>
+                                                <dd className={styles.kvDd}>
+                                                    <span
+                                                        className={styles.ltr}
+                                                        dir="ltr"
+                                                        title={selectedCard._id}
+                                                    >
+                                                        {selectedCard._id}
+                                                    </span>
+                                                </dd>
+
+                                                <dt className={styles.kvDt}>
+                                                    {t("label_slug")}
+                                                </dt>
+                                                <dd className={styles.kvDd}>
+                                                    <span
+                                                        className={styles.ltr}
+                                                        dir="ltr"
+                                                        title={
+                                                            selectedCard.slug ||
+                                                            ""
+                                                        }
+                                                    >
+                                                        {selectedCard.slug ||
+                                                            ""}
+                                                    </span>
+                                                </dd>
+
+                                                <dt className={styles.kvDt}>
+                                                    {t("label_status")}
+                                                </dt>
+                                                <dd className={styles.kvDd}>
+                                                    <span
+                                                        className={styles.ltr}
+                                                        dir="ltr"
+                                                    >
+                                                        {cardStatusHe(
+                                                            selectedCard.status,
+                                                        )}
+                                                    </span>
+                                                </dd>
+
+                                                <dt className={styles.kvDt}>
+                                                    {t("label_active")}
+                                                </dt>
+                                                <dd className={styles.kvDd}>
+                                                    <span>
+                                                        {boolHe(
+                                                            !!selectedCard.isActive,
+                                                        )}
+                                                    </span>
+                                                </dd>
+
+                                                <dt className={styles.kvDt}>
+                                                    {t("label_owner")}
+                                                </dt>
+                                                <dd className={styles.kvDd}>
+                                                    <span>
+                                                        {selectedCardOwnerLabel}
+                                                    </span>
+                                                </dd>
+                                            </dl>
+                                        </div>
+                                    ) : null}
+
+                                    {selectedTab === "billing" ? (
+                                        <div className={styles.sectionBlock}>
+                                            <div
+                                                className={styles.sectionTitle}
+                                            >
+                                                Billing
+                                            </div>
+                                            <dl className={styles.kvDl}>
+                                                <dt className={styles.kvDt}>
+                                                    {t("label_effective_plan")}
+                                                </dt>
+                                                <dd className={styles.kvDd}>
+                                                    <span>
+                                                        {planHe(
+                                                            selectedEffectivePlan,
+                                                        )}
+                                                    </span>
+                                                    {" · "}
+                                                    {t("label_entitled")}:{" "}
+                                                    <span>
+                                                        {boolHe(
+                                                            selectedIsEntitled,
+                                                        )}
+                                                    </span>
+                                                    {" · "}
+                                                    {t("label_paid")}:{" "}
+                                                    <span>
+                                                        {boolHe(selectedIsPaid)}
+                                                    </span>
+                                                </dd>
+
+                                                <dt className={styles.kvDt}>
+                                                    {t("label_effective_tier")}
+                                                </dt>
+                                                <dd className={styles.kvDd}>
+                                                    <span>
+                                                        {tierHe(
+                                                            selectedEffectiveTier,
+                                                        )}
+                                                    </span>
+                                                    {" · "}
+                                                    {t(
+                                                        "label_tier_source",
+                                                    )}:{" "}
+                                                    <span
+                                                        className={styles.ltr}
+                                                        dir="ltr"
+                                                    >
+                                                        {selectedTierSource}
+                                                    </span>
+                                                    {selectedTierUntil
+                                                        ? ` · ${t(
+                                                              "label_until",
+                                                          )} ${formatDate(
+                                                              selectedTierUntil,
+                                                          )}`
+                                                        : ""}
+                                                </dd>
+
+                                                <dt className={styles.kvDt}>
+                                                    {t("label_trial_ends")}
+                                                </dt>
+                                                <dd className={styles.kvDd}>
+                                                    <span
+                                                        className={styles.ltr}
+                                                        dir="ltr"
+                                                    >
+                                                        {selectedCard?.trialEndsAtIsrael ||
+                                                            formatDate(
+                                                                selectedCard.trialEndsAt,
+                                                            )}
+                                                    </span>
+                                                </dd>
+
+                                                <dt className={styles.kvDt}>
+                                                    {t(
+                                                        "label_effective_billing",
+                                                    )}
+                                                </dt>
+                                                <dd className={styles.kvDd}>
+                                                    <span
+                                                        className={styles.ltr}
+                                                        dir="ltr"
+                                                    >
+                                                        {selectedBilling?.source ||
+                                                            ""}{" "}
+                                                        /{" "}
+                                                        {selectedBilling?.plan
+                                                            ? planHe(
+                                                                  selectedBilling.plan,
+                                                              )
+                                                            : ""}
+                                                    </span>{" "}
+                                                    {selectedBilling?.untilIsrael
+                                                        ? `${t(
+                                                              "label_until",
+                                                          )} ${selectedBilling.untilIsrael}`
+                                                        : selectedBilling?.until
+                                                          ? `${t(
+                                                                "label_until",
+                                                            )} ${formatDate(
+                                                                selectedBilling.until,
+                                                            )}`
+                                                          : ""}
+                                                </dd>
+                                            </dl>
+                                        </div>
+                                    ) : null}
+
+                                    {selectedTab === "actions" ? (
+                                        <div className={styles.sectionBlock}>
+                                            <div
+                                                className={styles.sectionTitle}
+                                            >
+                                                {t("section_admin_actions")}
+                                            </div>
+
+                                            <Input
+                                                label={t("label_reason")}
+                                                value={reason}
+                                                onChange={(e) =>
+                                                    setReason(e.target.value)
+                                                }
+                                                placeholder={t(
+                                                    "placeholder_reason",
+                                                )}
+                                                required
+                                            />
+
+                                            <div className={styles.actionGroup}>
+                                                <div className={styles.formRow}>
+                                                    <label
+                                                        className={
+                                                            styles.selectField
+                                                        }
+                                                    >
+                                                        <span
+                                                            className={
+                                                                styles.selectLabel
+                                                            }
+                                                        >
+                                                            {t(
+                                                                "label_trial_mode",
+                                                            )}
+                                                        </span>
+                                                        <select
+                                                            className={
+                                                                styles.select
+                                                            }
+                                                            value={trialMode}
+                                                            onChange={(e) =>
+                                                                setTrialMode(
+                                                                    e.target
+                                                                        .value,
+                                                                )
+                                                            }
+                                                        >
+                                                            <option value="days">
+                                                                {t(
+                                                                    "opt_trial_mode_days",
+                                                                )}
+                                                            </option>
+                                                            <option value="exact">
+                                                                {t(
+                                                                    "opt_trial_mode_exact",
+                                                                )}
+                                                            </option>
+                                                        </select>
+                                                    </label>
+
+                                                    <label
+                                                        className={
+                                                            styles.selectField
+                                                        }
+                                                    >
+                                                        <span
+                                                            className={
+                                                                styles.selectLabel
+                                                            }
+                                                        >
+                                                            {t(
+                                                                "label_trial_days",
+                                                            )}
+                                                        </span>
+                                                        <select
+                                                            className={
+                                                                styles.select
+                                                            }
+                                                            value={trialDays}
+                                                            onChange={(e) =>
+                                                                setTrialDays(
+                                                                    Number(
+                                                                        e.target
+                                                                            .value,
+                                                                    ),
+                                                                )
+                                                            }
+                                                            disabled={
+                                                                trialMode !==
+                                                                "days"
+                                                            }
+                                                        >
+                                                            {Array.from(
+                                                                { length: 15 },
+                                                                (_, i) => i,
+                                                            ).map((n) => (
+                                                                <option
+                                                                    key={n}
+                                                                    value={n}
+                                                                >
+                                                                    {n}
+                                                                </option>
+                                                            ))}
+                                                        </select>
+                                                    </label>
+
+                                                    <Input
+                                                        label={t(
+                                                            "label_trial_date_il",
+                                                        )}
+                                                        type="date"
+                                                        value={trialUntilDate}
+                                                        onChange={(e) =>
+                                                            setTrialUntilDate(
+                                                                e.target.value,
+                                                            )
+                                                        }
+                                                        disabled={
+                                                            trialMode !==
+                                                            "exact"
+                                                        }
+                                                    />
+
+                                                    <label
+                                                        className={
+                                                            styles.selectField
+                                                        }
+                                                    >
+                                                        <span
+                                                            className={
+                                                                styles.selectLabel
+                                                            }
+                                                        >
+                                                            {t(
+                                                                "label_trial_hour",
+                                                            )}
+                                                        </span>
+                                                        <select
+                                                            className={
+                                                                styles.select
+                                                            }
+                                                            value={
+                                                                trialUntilHour
+                                                            }
+                                                            onChange={(e) =>
+                                                                setTrialUntilHour(
+                                                                    e.target
+                                                                        .value,
+                                                                )
+                                                            }
+                                                            disabled={
+                                                                trialMode !==
+                                                                "exact"
+                                                            }
+                                                        >
+                                                            {Array.from(
+                                                                { length: 24 },
+                                                                (_, i) => i,
+                                                            ).map((h) => {
+                                                                const hh =
+                                                                    String(
+                                                                        h,
+                                                                    ).padStart(
+                                                                        2,
+                                                                        "0",
+                                                                    );
+                                                                return (
+                                                                    <option
+                                                                        key={hh}
+                                                                        value={
+                                                                            hh
+                                                                        }
+                                                                    >
+                                                                        {hh}
+                                                                    </option>
+                                                                );
+                                                            })}
+                                                        </select>
+                                                    </label>
+
+                                                    <label
+                                                        className={
+                                                            styles.selectField
+                                                        }
+                                                    >
+                                                        <span
+                                                            className={
+                                                                styles.selectLabel
+                                                            }
+                                                        >
+                                                            {t(
+                                                                "label_trial_minute",
+                                                            )}
+                                                        </span>
+                                                        <select
+                                                            className={
+                                                                styles.select
+                                                            }
+                                                            value={
+                                                                trialUntilMinute
+                                                            }
+                                                            onChange={(e) =>
+                                                                setTrialUntilMinute(
+                                                                    e.target
+                                                                        .value,
+                                                                )
+                                                            }
+                                                            disabled={
+                                                                trialMode !==
+                                                                "exact"
+                                                            }
+                                                        >
+                                                            {Array.from(
+                                                                { length: 12 },
+                                                                (_, i) => i * 5,
+                                                            ).map((m) => {
+                                                                const mm =
+                                                                    String(
+                                                                        m,
+                                                                    ).padStart(
+                                                                        2,
+                                                                        "0",
+                                                                    );
+                                                                return (
+                                                                    <option
+                                                                        key={mm}
+                                                                        value={
+                                                                            mm
+                                                                        }
+                                                                    >
+                                                                        {mm}
+                                                                    </option>
+                                                                );
+                                                            })}
+                                                        </select>
+                                                    </label>
+
+                                                    <Button
+                                                        variant="secondary"
+                                                        disabled={
+                                                            loading ||
+                                                            actionLoading.extend
+                                                        }
+                                                        loading={
+                                                            actionLoading.extend
+                                                        }
+                                                        onClick={() =>
+                                                            runAction(
+                                                                "extend",
+                                                                async (r) => {
+                                                                    const payload =
+                                                                        trialMode ===
+                                                                        "exact"
+                                                                            ? {
+                                                                                  untilLocal:
+                                                                                      {
+                                                                                          date: trialUntilDate,
+                                                                                          hour: Number(
+                                                                                              trialUntilHour,
+                                                                                          ),
+                                                                                          minute: Number(
+                                                                                              trialUntilMinute,
+                                                                                          ),
+                                                                                      },
+                                                                                  reason: r,
+                                                                              }
+                                                                            : {
+                                                                                  days: Number(
+                                                                                      trialDays,
+                                                                                  ),
+                                                                                  reason: r,
+                                                                              };
+
+                                                                    const res =
+                                                                        await adminExtendTrial(
+                                                                            selectedCard._id,
+                                                                            payload,
+                                                                        );
+                                                                    return res.data;
+                                                                },
+                                                            )
+                                                        }
+                                                    >
+                                                        {t("btn_set")}
+                                                    </Button>
+                                                </div>
+                                                {actionError.extend ? (
+                                                    <p
+                                                        className={
+                                                            styles.errorText
+                                                        }
+                                                    >
+                                                        {actionError.extend}
+                                                    </p>
+                                                ) : null}
+                                            </div>
+                                        </div>
+                                    ) : null}
+                                </>
+                            ) : null}
+                        </div>
+                    </div>
+                </section>
+
+                <section
+                    className={styles.rightPanel}
+                    aria-label={t("section_selected_card")}
+                >
+                    <div
+                        className={`${styles.cardShell} ${styles.selectedCard}`}
+                    >
+                        <div className={styles.cardHeader}>
+                            <div className={styles.headerRow}>
+                                <h2 className={styles.h2}>
+                                    {t("section_selected_card")}
+                                </h2>
+                            </div>
+
+                            {selectedCard ? (
+                                <div className={styles.selectedHeaderStrip}>
+                                    <div className={styles.selectedPrimary}>
+                                        <span className={styles.selectedLabel}>
+                                            {t("label_slug")}:
+                                        </span>{" "}
+                                        <span
+                                            className={`${styles.ltr} ${styles.selectedValue}`}
+                                            dir="ltr"
+                                            title={selectedCard.slug || ""}
+                                        >
+                                            {selectedCard.slug || ""}
+                                        </span>
+                                    </div>
+                                    <div className={styles.selectedMeta}>
+                                        <span className={styles.metaPill}>
+                                            <span className={styles.metaKey}>
+                                                {t("label_id")}:
+                                            </span>{" "}
+                                            <span
+                                                className={styles.ltr}
+                                                dir="ltr"
+                                                title={selectedCard._id}
+                                            >
+                                                {selectedCard._id}
+                                            </span>
+                                        </span>
+                                        <span className={styles.metaPill}>
+                                            <span className={styles.metaKey}>
+                                                {t("label_status")}:
+                                            </span>{" "}
+                                            <span
+                                                className={styles.ltr}
+                                                dir="ltr"
+                                            >
+                                                {cardStatusHe(
+                                                    selectedCard.status,
+                                                )}
+                                            </span>
+                                        </span>
+                                        <span className={styles.metaPill}>
+                                            <span className={styles.metaKey}>
+                                                {t("label_active")}:
+                                            </span>{" "}
+                                            <span>
+                                                {boolHe(
+                                                    !!selectedCard.isActive,
+                                                )}
+                                            </span>
+                                        </span>
+                                        <span className={styles.metaPill}>
+                                            <span className={styles.metaKey}>
+                                                {t("label_owner")}:
+                                            </span>{" "}
+                                            <span>
+                                                {selectedCardOwnerLabel}
+                                            </span>
+                                        </span>
+                                    </div>
+                                </div>
+                            ) : null}
+
+                            {selectedCard ? (
+                                <div
+                                    className={styles.commandBar}
+                                    aria-label="Command bar"
+                                >
+                                    <div className={styles.commandBarButtons}>
+                                        <Button
+                                            variant="secondary"
+                                            size="small"
+                                            className={styles.commandBtn}
+                                            onClick={() =>
+                                                setSelectedTab("billing")
+                                            }
+                                        >
+                                            חיוב
+                                        </Button>
+                                        <Button
+                                            variant="secondary"
+                                            size="small"
+                                            className={styles.commandBtn}
+                                            onClick={() =>
+                                                setSelectedTab("actions")
+                                            }
+                                        >
+                                            פעולות
+                                        </Button>
+                                        <Button
+                                            variant="secondary"
+                                            size="small"
+                                            className={styles.commandBtn}
                                             onClick={() =>
                                                 setSelectedTab("danger")
                                             }
@@ -1227,7 +1995,7 @@ export default function Admin() {
                                     aria-controls="admin-selected-panel"
                                     onClick={() => setSelectedTab("general")}
                                 >
-                                    General
+                                    כללי
                                 </button>
                                 <button
                                     type="button"
@@ -1242,7 +2010,7 @@ export default function Admin() {
                                     aria-controls="admin-selected-panel"
                                     onClick={() => setSelectedTab("billing")}
                                 >
-                                    Billing
+                                    חיוב
                                 </button>
                                 <button
                                     type="button"
@@ -1257,7 +2025,7 @@ export default function Admin() {
                                     aria-controls="admin-selected-panel"
                                     onClick={() => setSelectedTab("actions")}
                                 >
-                                    Actions
+                                    פעולות
                                 </button>
                                 <button
                                     type="button"
@@ -1272,7 +2040,7 @@ export default function Admin() {
                                     aria-controls="admin-selected-panel"
                                     onClick={() => setSelectedTab("danger")}
                                 >
-                                    Danger
+                                    סכנה
                                 </button>
                             </div>
                         </div>
@@ -1298,9 +2066,11 @@ export default function Admin() {
                                             >
                                                 {t("section_card_details")}
                                             </div>
-                                            <div className={styles.kv}>
-                                                <div>
-                                                    {t("label_id")}:{" "}
+                                            <dl className={styles.kvDl}>
+                                                <dt className={styles.kvDt}>
+                                                    {t("label_id")}
+                                                </dt>
+                                                <dd className={styles.kvDd}>
                                                     <span
                                                         className={styles.ltr}
                                                         dir="ltr"
@@ -1308,9 +2078,12 @@ export default function Admin() {
                                                     >
                                                         {selectedCard._id}
                                                     </span>
-                                                </div>
-                                                <div>
-                                                    {t("label_slug")}:{" "}
+                                                </dd>
+
+                                                <dt className={styles.kvDt}>
+                                                    {t("label_slug")}
+                                                </dt>
+                                                <dd className={styles.kvDd}>
                                                     <span
                                                         className={styles.ltr}
                                                         dir="ltr"
@@ -1322,9 +2095,12 @@ export default function Admin() {
                                                         {selectedCard.slug ||
                                                             ""}
                                                     </span>
-                                                </div>
-                                                <div>
-                                                    {t("label_status")}:{" "}
+                                                </dd>
+
+                                                <dt className={styles.kvDt}>
+                                                    {t("label_status")}
+                                                </dt>
+                                                <dd className={styles.kvDd}>
                                                     <span
                                                         className={styles.ltr}
                                                         dir="ltr"
@@ -1333,20 +2109,28 @@ export default function Admin() {
                                                             selectedCard.status,
                                                         )}
                                                     </span>
-                                                </div>
-                                                <div>
-                                                    {t("label_active")}:{" "}
+                                                </dd>
+
+                                                <dt className={styles.kvDt}>
+                                                    {t("label_active")}
+                                                </dt>
+                                                <dd className={styles.kvDd}>
                                                     <span>
                                                         {boolHe(
                                                             !!selectedCard.isActive,
                                                         )}
                                                     </span>
-                                                </div>
-                                                <div>
-                                                    {t("label_owner")}:{" "}
-                                                    {selectedCardOwnerLabel}
-                                                </div>
-                                            </div>
+                                                </dd>
+
+                                                <dt className={styles.kvDt}>
+                                                    {t("label_owner")}
+                                                </dt>
+                                                <dd className={styles.kvDd}>
+                                                    <span>
+                                                        {selectedCardOwnerLabel}
+                                                    </span>
+                                                </dd>
+                                            </dl>
                                         </div>
                                     ) : null}
 
@@ -1357,9 +2141,11 @@ export default function Admin() {
                                             >
                                                 Billing
                                             </div>
-                                            <div className={styles.kv}>
-                                                <div>
-                                                    {t("label_effective_plan")}:{" "}
+                                            <dl className={styles.kvDl}>
+                                                <dt className={styles.kvDt}>
+                                                    {t("label_effective_plan")}
+                                                </dt>
+                                                <dd className={styles.kvDd}>
                                                     <span>
                                                         {planHe(
                                                             selectedEffectivePlan,
@@ -1377,9 +2163,12 @@ export default function Admin() {
                                                     <span>
                                                         {boolHe(selectedIsPaid)}
                                                     </span>
-                                                </div>
-                                                <div>
-                                                    {t("label_effective_tier")}:{" "}
+                                                </dd>
+
+                                                <dt className={styles.kvDt}>
+                                                    {t("label_effective_tier")}
+                                                </dt>
+                                                <dd className={styles.kvDd}>
                                                     <span>
                                                         {tierHe(
                                                             selectedEffectiveTier,
@@ -1396,15 +2185,14 @@ export default function Admin() {
                                                         {selectedTierSource}
                                                     </span>
                                                     {selectedTierUntil
-                                                        ? ` · ${t(
-                                                              "label_until",
-                                                          )} ${formatDate(
-                                                              selectedTierUntil,
-                                                          )}`
+                                                        ? ` · ${t("label_until")} ${formatDate(selectedTierUntil)}`
                                                         : ""}
-                                                </div>
-                                                <div>
-                                                    {t("label_trial_ends")}:{" "}
+                                                </dd>
+
+                                                <dt className={styles.kvDt}>
+                                                    {t("label_trial_ends")}
+                                                </dt>
+                                                <dd className={styles.kvDd}>
                                                     <span
                                                         className={styles.ltr}
                                                         dir="ltr"
@@ -1414,12 +2202,14 @@ export default function Admin() {
                                                                 selectedCard.trialEndsAt,
                                                             )}
                                                     </span>
-                                                </div>
-                                                <div>
+                                                </dd>
+
+                                                <dt className={styles.kvDt}>
                                                     {t(
                                                         "label_effective_billing",
                                                     )}
-                                                    :{" "}
+                                                </dt>
+                                                <dd className={styles.kvDd}>
                                                     <span
                                                         className={styles.ltr}
                                                         dir="ltr"
@@ -1434,101 +2224,115 @@ export default function Admin() {
                                                             : ""}
                                                     </span>{" "}
                                                     {selectedBilling?.untilIsrael
-                                                        ? `${t(
-                                                              "label_until",
-                                                          )} ${
-                                                              selectedBilling.untilIsrael
-                                                          }`
+                                                        ? `${t("label_until")} ${selectedBilling.untilIsrael}`
                                                         : selectedBilling?.until
-                                                          ? `${t(
-                                                                "label_until",
-                                                            )} ${formatDate(
-                                                                selectedBilling.until,
-                                                            )}`
+                                                          ? `${t("label_until")} ${formatDate(selectedBilling.until)}`
                                                           : ""}
-                                                </div>
+                                                </dd>
+
                                                 {selectedCard?.adminOverride ? (
-                                                    <div>
-                                                        {t(
-                                                            "label_admin_override",
-                                                        )}
-                                                        :{" "}
-                                                        <span
+                                                    <>
+                                                        <dt
                                                             className={
-                                                                styles.ltr
+                                                                styles.kvDt
                                                             }
-                                                            dir="ltr"
                                                         >
+                                                            {t(
+                                                                "label_admin_override",
+                                                            )}
+                                                        </dt>
+                                                        <dd
+                                                            className={
+                                                                styles.kvDd
+                                                            }
+                                                        >
+                                                            <span
+                                                                className={
+                                                                    styles.ltr
+                                                                }
+                                                                dir="ltr"
+                                                            >
+                                                                {selectedCard
+                                                                    .adminOverride
+                                                                    ?.plan
+                                                                    ? planHe(
+                                                                          selectedCard
+                                                                              .adminOverride
+                                                                              .plan,
+                                                                      )
+                                                                    : ""}
+                                                            </span>{" "}
                                                             {selectedCard
                                                                 .adminOverride
-                                                                ?.plan
-                                                                ? planHe(
-                                                                      selectedCard
-                                                                          .adminOverride
-                                                                          .plan,
-                                                                  )
+                                                                ?.until
+                                                                ? `${t("label_until")} ${formatDate(selectedCard.adminOverride.until)}`
                                                                 : ""}
-                                                        </span>{" "}
-                                                        {selectedCard
-                                                            .adminOverride
-                                                            ?.until
-                                                            ? `${t(
-                                                                  "label_until",
-                                                              )} ${formatDate(
-                                                                  selectedCard
-                                                                      .adminOverride
-                                                                      .until,
-                                                              )}`
-                                                            : ""}
-                                                    </div>
+                                                        </dd>
+                                                    </>
                                                 ) : null}
+
                                                 {selectedCard?.adminTier ||
                                                 selectedCard?.adminTierUntil ? (
-                                                    <div>
-                                                        {t(
-                                                            "label_card_tier_override",
-                                                        )}
-                                                        :{" "}
-                                                        <span>
-                                                            {selectedCard.adminTier
-                                                                ? tierHe(
-                                                                      selectedCard.adminTier,
-                                                                  )
+                                                    <>
+                                                        <dt
+                                                            className={
+                                                                styles.kvDt
+                                                            }
+                                                        >
+                                                            {t(
+                                                                "label_card_tier_override",
+                                                            )}
+                                                        </dt>
+                                                        <dd
+                                                            className={
+                                                                styles.kvDd
+                                                            }
+                                                        >
+                                                            <span>
+                                                                {selectedCard.adminTier
+                                                                    ? tierHe(
+                                                                          selectedCard.adminTier,
+                                                                      )
+                                                                    : ""}
+                                                            </span>{" "}
+                                                            {selectedCard.adminTierUntil
+                                                                ? `${t("label_until")} ${formatDate(selectedCard.adminTierUntil)}`
                                                                 : ""}
-                                                        </span>{" "}
-                                                        {selectedCard.adminTierUntil
-                                                            ? `${t(
-                                                                  "label_until",
-                                                              )} ${formatDate(
-                                                                  selectedCard.adminTierUntil,
-                                                              )}`
-                                                            : ""}
-                                                    </div>
+                                                        </dd>
+                                                    </>
                                                 ) : null}
+
                                                 {selectedCard?.ownerAdminTier ||
                                                 selectedCard?.ownerAdminTierUntil ? (
-                                                    <div>
-                                                        {t(
-                                                            "label_user_tier_override",
-                                                        )}
-                                                        :{" "}
-                                                        <span>
-                                                            {selectedCard.ownerAdminTier
-                                                                ? tierHe(
-                                                                      selectedCard.ownerAdminTier,
-                                                                  )
+                                                    <>
+                                                        <dt
+                                                            className={
+                                                                styles.kvDt
+                                                            }
+                                                        >
+                                                            {t(
+                                                                "label_user_tier_override",
+                                                            )}
+                                                        </dt>
+                                                        <dd
+                                                            className={
+                                                                styles.kvDd
+                                                            }
+                                                        >
+                                                            <span>
+                                                                {selectedCard.ownerAdminTier
+                                                                    ? tierHe(
+                                                                          selectedCard.ownerAdminTier,
+                                                                      )
+                                                                    : ""}
+                                                            </span>{" "}
+                                                            {selectedCard.ownerAdminTierUntil
+                                                                ? `${t("label_until")} ${formatDate(selectedCard.ownerAdminTierUntil)}`
                                                                 : ""}
-                                                        </span>{" "}
-                                                        {selectedCard.ownerAdminTierUntil
-                                                            ? `${t(
-                                                                  "label_until",
-                                                              )} ${formatDate(
-                                                                  selectedCard.ownerAdminTierUntil,
-                                                              )}`
-                                                            : ""}
-                                                    </div>
+                                                        </dd>
+                                                    </>
                                                 ) : null}
-                                            </div>
+                                            </dl>
                                         </div>
                                     ) : null}
 
