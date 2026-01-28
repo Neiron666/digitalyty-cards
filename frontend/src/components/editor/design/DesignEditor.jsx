@@ -22,7 +22,7 @@ const AVATAR_OUTPUT = { width: 600, height: 600 };
 function DesignEditor({ design, onChange, plan, cardId }) {
     const safeDesign = design || {};
     const template = getTemplateById(
-        normalizeTemplateId(safeDesign?.templateId)
+        normalizeTemplateId(safeDesign?.templateId),
     );
 
     const [cropOpen, setCropOpen] = useState(false);
@@ -37,12 +37,12 @@ function DesignEditor({ design, onChange, plan, cardId }) {
 
     const hasBackgroundImage = useMemo(
         () => Boolean(safeDesign?.backgroundImage || safeDesign?.coverImage),
-        [safeDesign?.backgroundImage, safeDesign?.coverImage]
+        [safeDesign?.backgroundImage, safeDesign?.coverImage],
     );
 
     const hasAvatarImage = useMemo(
         () => Boolean(safeDesign?.avatarImage || safeDesign?.logo),
-        [safeDesign?.avatarImage, safeDesign?.logo]
+        [safeDesign?.avatarImage, safeDesign?.logo],
     );
 
     useEffect(() => {
@@ -115,7 +115,7 @@ function DesignEditor({ design, onChange, plan, cardId }) {
             url = await uploadCropped(cropKind, blob);
         } catch (err) {
             alert(
-                err?.response?.data?.message || err?.message || "Upload error"
+                err?.response?.data?.message || err?.message || "Upload error",
             );
             return;
         }
@@ -180,6 +180,7 @@ function DesignEditor({ design, onChange, plan, cardId }) {
                     <label className={styles.label}>
                         <span className={styles.labelTitle}>העלאת תמונה</span>
                         <input
+                            className={styles.fileInput}
                             type="file"
                             accept="image/*"
                             disabled={!cardId}
@@ -187,7 +188,7 @@ function DesignEditor({ design, onChange, plan, cardId }) {
                             onChange={(e) =>
                                 openCropFor(
                                     "background",
-                                    e.target.files?.[0] || null
+                                    e.target.files?.[0] || null,
                                 )
                             }
                         />
@@ -228,7 +229,7 @@ function DesignEditor({ design, onChange, plan, cardId }) {
                         />
                     ) : null}
                     <label className={styles.label}>
-                        <span className={styles.labelTitle}>העלאת תמונה</span>
+                        <span>העלאת תמונה</span>
                         <input
                             type="file"
                             accept="image/*"
@@ -237,7 +238,7 @@ function DesignEditor({ design, onChange, plan, cardId }) {
                             onChange={(e) =>
                                 openCropFor(
                                     "avatar",
-                                    e.target.files?.[0] || null
+                                    e.target.files?.[0] || null,
                                 )
                             }
                         />
