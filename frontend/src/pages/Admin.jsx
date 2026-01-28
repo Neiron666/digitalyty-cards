@@ -278,6 +278,7 @@ export default function Admin() {
 
     const [directoryTab, setDirectoryTab] = useState("cards");
     const [selectedTab, setSelectedTab] = useState("general");
+    const [cardsQuery, setCardsQuery] = useState("");
     const directoryTabListRef = useRef(null);
     const selectedTabListRef = useRef(null);
 
@@ -372,6 +373,19 @@ export default function Admin() {
         if (!selectedCard) return "";
         return selectedCard?.tierUntil || "";
     }, [selectedCard]);
+
+    const filteredCards = useMemo(() => {
+        const q = String(cardsQuery || "")
+            .trim()
+            .toLowerCase();
+        if (!q) return cards;
+
+        return (Array.isArray(cards) ? cards : []).filter((c) => {
+            const slug = String(c?.slug || "").toLowerCase();
+            const email = String(c?.ownerSummary?.email || "").toLowerCase();
+            return slug.includes(q) || email.includes(q);
+        });
+    }, [cards, cardsQuery]);
 
     function toDateInputUtc(value) {
         if (!value) return "";
@@ -889,6 +903,38 @@ export default function Admin() {
                                     {t("section_users")}
                                 </button>
                             </div>
+
+                            {directoryTab === "cards" ? (
+                                <div className={styles.directoryTools}>
+                                    <div className={styles.searchRow}>
+                                        <Input
+                                            label="חיפוש כרטיסים"
+                                            value={cardsQuery}
+                                            onChange={(e) =>
+                                                setCardsQuery(e.target.value)
+                                            }
+                                            placeholder="סלאג או אימייל בעלים"
+                                            className={styles.searchInput}
+                                        />
+
+                                        {String(cardsQuery || "").trim() ? (
+                                            <Button
+                                                variant="secondary"
+                                                size="small"
+                                                onClick={() =>
+                                                    setCardsQuery("")
+                                                }
+                                            >
+                                                נקה
+                                            </Button>
+                                        ) : null}
+                                    </div>
+                                    <p className={styles.muted}>
+                                        מציג {filteredCards.length} מתוך{" "}
+                                        {cards.length}
+                                    </p>
+                                </div>
+                            ) : null}
                         </div>
 
                         <div
@@ -999,7 +1045,7 @@ export default function Admin() {
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            {cards.map((c) => (
+                                            {filteredCards.map((c) => (
                                                 <tr key={c._id}>
                                                     <td>
                                                         <button
@@ -1108,6 +1154,46 @@ export default function Admin() {
                                     {t("section_selected_card")}
                                 </h2>
                             </div>
+
+                            {selectedCard ? (
+                                <div
+                                    className={styles.commandBar}
+                                    aria-label="Command bar"
+                                >
+                                    <div className={styles.commandBarButtons}>
+                                        <Button
+                                            variant="secondary"
+                                            size="small"
+                                            onClick={() =>
+                                                setSelectedTab("billing")
+                                            }
+                                        >
+                                            חיוב
+                                        </Button>
+                                        <Button
+                                            variant="secondary"
+                                            size="small"
+                                            onClick={() =>
+                                                setSelectedTab("actions")
+                                            }
+                                        >
+                                            פעולות
+                                        </Button>
+                                        <Button
+                                            variant="secondary"
+                                            size="small"
+                                            onClick={() =>
+                                                setSelectedTab("danger")
+                                            }
+                                        >
+                                            סכנה
+                                        </Button>
+                                    </div>
+                                    <div className={styles.commandBarHint}>
+                                        קיצורי דרך לכרטיס הנבחר
+                                    </div>
+                                </div>
+                            ) : null}
 
                             <div
                                 className={styles.tabs}

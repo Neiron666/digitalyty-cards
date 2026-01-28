@@ -39,6 +39,32 @@
     display: flex;
     align-items: center;
     gap: 10px;
+    flex-wrap: wrap;
+}
+
+.commandBar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 10px;
+    align-items: center;
+    justify-content: center;
+}
+
+.commandBarButtons {
+    display: flex;
+    flex-direction: row;
+    align-items: stretch;
+    flex: 1;
+    /* flex-wrap: wrap; */
+    gap: 8px;
+    /* align-items: center; */
+}
+
+.commandBarHint {
+    flex: 1 0 100%;
+    text-align: end;
+    opacity: 0.75;
+    font-size: 12px;
 }
 
 .title {
@@ -106,6 +132,23 @@
     border-bottom: 1px solid var(--border);
 }
 
+.directoryTools {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.searchRow {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: flex-end;
+}
+
+.searchInput {
+    min-width: 240px;
+}
+
 .cardBody {
     padding: 12px 14px 14px;
     overflow: auto;
@@ -129,6 +172,16 @@
 .table {
     width: 100%;
     border-collapse: collapse;
+}
+
+.table thead th {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    background: var(--bg-card);
+    background-clip: padding-box;
+    box-shadow: inset 0 -1px 0 var(--border);
+    border-bottom: none;
 }
 
 .table th,
