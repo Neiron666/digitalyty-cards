@@ -1,7 +1,7 @@
-import { useEffect, useMemo, useState } from "react";
-import Page from "../components/page/Page";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Button from "../components/ui/Button";
 import Input from "../components/ui/Input";
+import FlashBanner from "../components/ui/FlashBanner/FlashBanner";
 import { useAuth } from "../context/AuthContext";
 import {
     adminDeactivateCard,
@@ -276,6 +276,11 @@ function getIsraelNowParts() {
 export default function Admin() {
     const { token } = useAuth();
 
+    const [directoryTab, setDirectoryTab] = useState("cards");
+    const [selectedTab, setSelectedTab] = useState("general");
+    const directoryTabListRef = useRef(null);
+    const selectedTabListRef = useRef(null);
+
     const [loading, setLoading] = useState(false);
     const [accessDenied, setAccessDenied] = useState(false);
     const [error, setError] = useState("");
@@ -400,9 +405,9 @@ export default function Admin() {
                                 updatedAt: updated.updatedAt,
                                 trialEndsAt: updated.trialEndsAt,
                             }
-                          : c
+                          : c,
                   )
-                : prev
+                : prev,
         );
     }
 
@@ -536,7 +541,7 @@ export default function Admin() {
             // Keep tier inputs in sync after apply
             setUserTier(refreshed.data?.ownerAdminTier || "");
             setUserTierUntil(
-                toDateInputUtc(refreshed.data?.ownerAdminTierUntil)
+                toDateInputUtc(refreshed.data?.ownerAdminTierUntil),
             );
         } catch (err) {
             if (isAccessDenied(err)) {
@@ -574,947 +579,1576 @@ export default function Admin() {
 
     if (!token) {
         return (
-            <Page
-                title={t("title_admin")}
-                subtitle={t("subtitle_login_required")}
-            >
-                <div dir="rtl" className={styles.card}>
+            <main className={styles.adminRoot} dir="rtl">
+                <div className={styles.centerCard}>
+                    <h1 className={styles.title}>{t("title_admin")}</h1>
+                    <p className={styles.subtitle}>
+                        {t("subtitle_login_required")}
+                    </p>
                     <p className={styles.muted}>{t("msg_login_as_admin")}</p>
                 </div>
-            </Page>
+            </main>
         );
     }
 
     if (accessDenied) {
         return (
-            <Page
-                title={t("title_admin")}
-                subtitle={t("subtitle_access_denied")}
-            >
-                <div dir="rtl" className={styles.card}>
+            <main className={styles.adminRoot} dir="rtl">
+                <div className={styles.centerCard}>
+                    <h1 className={styles.title}>{t("title_admin")}</h1>
+                    <p className={styles.subtitle}>
+                        {t("subtitle_access_denied")}
+                    </p>
                     <p className={styles.muted}>
                         {t("msg_no_admin_permissions")}
                     </p>
                 </div>
-            </Page>
+            </main>
         );
     }
 
+    function focusTabInList(tabListEl, nextId) {
+        if (!tabListEl) return;
+        const next = tabListEl.querySelector(
+            `[role="tab"][data-tab="${nextId}"]`,
+        );
+        next?.focus?.();
+    }
+
+    function handleTabListKeyDown(e, options) {
+        const { current, setCurrent, order, tabListRef } = options;
+        const idx = order.indexOf(current);
+        if (idx < 0) return;
+
+        const isArrowLeft = e.key === "ArrowLeft";
+        const isArrowRight = e.key === "ArrowRight";
+        const isHome = e.key === "Home";
+        const isEnd = e.key === "End";
+
+        if (!isArrowLeft && !isArrowRight && !isHome && !isEnd) return;
+        e.preventDefault();
+
+        let nextIndex = idx;
+        if (isHome) nextIndex = 0;
+        else if (isEnd) nextIndex = order.length - 1;
+        else if (isArrowLeft) nextIndex = Math.max(0, idx - 1);
+        else if (isArrowRight) nextIndex = Math.min(order.length - 1, idx + 1);
+
+        const nextId = order[nextIndex];
+        setCurrent(nextId);
+        focusTabInList(tabListRef.current, nextId);
+    }
+
     return (
-        <Page title={t("title_admin")} subtitle={t("subtitle_admin_secure")}>
-            <div dir="rtl" className={styles.grid}>
-                <div className={styles.card}>
-                    <h2>{t("section_stats")}</h2>
-                    <p className={styles.muted}>
-                        {stats
-                            ? `${t("section_users")}: ${stats.users} · ${t(
-                                  "section_cards"
-                              )}: ${stats.cardsTotal} · ${t(
-                                  "stats_anonymous_cards"
-                              )}: ${stats.cardsAnonymous} · ${t(
-                                  "stats_user_cards"
-                              )}: ${stats.cardsUserOwned} · ${t(
-                                  "stats_published"
-                              )}: ${stats.publishedCards} · ${t(
-                                  "label_active"
-                              )}: ${stats.activeCards}`
-                            : t("stats_none")}
+        <main className={styles.adminRoot} dir="rtl">
+            <header className={styles.topbar}>
+                <div className={styles.topbarTitleWrap}>
+                    <h1 className={styles.title}>{t("title_admin")}</h1>
+                    <p className={styles.subtitle}>
+                        {t("subtitle_admin_secure")}
                     </p>
-                    <div className={styles.card}>
-                        <h2>{t("section_legend")}</h2>
+                </div>
+                <div className={styles.topbarActions}>
+                    <Button onClick={loadAll} loading={loading}>
+                        {t("btn_refresh")}
+                    </Button>
+                </div>
+            </header>
 
-                        <div className={styles.legend}>
-                            <p>
-                                הלוח הזה מיועד למנהלים בלבד. כל פעולה אדמינית
-                                דורשת מילוי “סיבה” ונרשמת ביומן הפעולות לצורכי
-                                מעקב ובקרה.
-                            </p>
+            <div className={styles.body}>
+                <section className={styles.leftRail} aria-label="Directory">
+                    {error ? (
+                        <div className={styles.bannerRow}>
+                            <FlashBanner
+                                type="error"
+                                message={error}
+                                autoHideMs={0}
+                                onDismiss={() => setError("")}
+                            />
+                        </div>
+                    ) : null}
 
-                            <p>
-                                סטטיסטיקות: סיכום מהיר של כמות משתמשים, כרטיסים,
-                                כרטיסים אנונימיים, כרטיסים בבעלות משתמשים,
-                                כרטיסים מפורסמים וכרטיסים פעילים.
-                            </p>
-
-                            <p>
-                                טבלאות “משתמשים” ו“כרטיסים”: לחיצה על שורה טוענת
-                                את הכרטיס הנבחר ומציגה את כל הפרטים והפעולות
-                                האפשריות.
-                            </p>
-
-                            <p>
-                                מזהה כרטיס (ID פנימי): המזהה הפנימי של הכרטיס
-                                במסד הנתונים (MongoDB). זה לא הסלאג ולא כתובת
-                                האתר.
-                            </p>
-
-                            <p>
-                                סלאג: הכתובת הקצרה של הכרטיס — החלק שמופיע ב־URL
-                                אחרי ‎/card/‎. הסלאג מוצג משמאל לימין (LTR) כדי
-                                שיהיה קריא.
-                            </p>
-
-                            <p>
-                                סטטוס: “טיוטה” או “מפורסם”. רק כרטיס “מפורסם”
-                                יכול להיות נגיש לציבור, וגם זה רק אם הוא פעיל
-                                ובבעלות משתמש (לא אנונימי).
-                            </p>
-
-                            <p>
-                                פעיל: אם “לא” — הכרטיס מושבת (isActive=false).
-                                במצב זה הכרטיס לא נגיש לציבור לפי סלאג, לא
-                                נאספים לידים, ולא נאספת אנליטיקה.
-                            </p>
-
-                            <p>
-                                בעלות: “משתמש” או “אנונימי”. כרטיס אנונימי לא
-                                משויך למשתמש, ולכן אין אפשרות להחיל עליו “רמת
-                                פיצ’רים למשתמש (ידני)”.
-                            </p>
-
-                            <p>
-                                מסלול תשלום בפועל: המסלול שהמערכת מחשיבה כבתוקף
-                                לצורכי גישה (free / monthly / yearly), לפי
-                                תשלום/ניסיון/הטבות ידניות.
-                            </p>
-
-                            <p>
-                                גישה פעילה: האם יש זכאות לגישה עכשיו (למשל
-                                ניסיון בתוקף או תשלום בתוקף). ייתכן “כן” גם אם
-                                “שולם” הוא “לא” (לדוגמה בתקופת ניסיון או בהטבה
-                                ידנית).
-                            </p>
-
-                            <p>
-                                שולם: האם יש תשלום פעיל בפועל. זה מדד תשלום
-                                בלבד, לא בהכרח מדד גישה.
-                            </p>
-
-                            <p>
-                                רמת פיצ’רים בפועל: free / basic / premium. זה
-                                משפיע על פיצ’רים שהכרטיס מקבל (למשל יכולות), ולא
-                                משנה את החיוב או התשלום של הלקוח.
-                            </p>
-
-                            <p>
-                                מקור: מאיפה נקבעה “רמת הפיצ’רים בפועל” (לדוגמה:
-                                לפי כרטיס, לפי משתמש, או לפי חיוב).
-                            </p>
-
-                            <p>
-                                עד: תאריך/זמן תפוגה של הטבה/override. אם מוגדר
-                                “עד”, אחרי הזמן הזה ההטבה תסתיים והמערכת תחזור
-                                להתנהגות הרגילה.
-                            </p>
-
-                            <p>
-                                סיום תקופת ניסיון: מוצג בשעון ישראל. אחרי הזמן
-                                הזה, אם אין זכאות אחרת, הגישה תיחסם.
-                            </p>
-
-                            <p>
-                                סטטוס תשלום בפועל: מציג מקור + מסלול + תאריך
-                                “עד” (אם קיים), כדי להבין מה בדיוק המערכת מחשיבה
-                                כמצב החיוב/גישה הנוכחי.
-                            </p>
-
-                            <p>
-                                הטבת מסלול (ידני): מאפשרת לקבוע מסלול לצורכי
-                                זכאות בלבד (ללא שינוי תשלום בפועל). השדה “עד
-                                תאריך” מוחל עד סוף היום של התאריך שנבחר (UTC).
-                            </p>
-
-                            <p>
-                                רמת פיצ’רים לכרטיס (ידני): קובעת רמת פיצ’רים
-                                לכרטיס ספציפי. אם מוגדר — זה גובר על רמת
-                                הפיצ’רים של המשתמש ועל מה שנגזר מהחיוב.
-                            </p>
-
-                            <p>
-                                רמת פיצ’רים למשתמש (ידני): קובעת רמת פיצ’רים לכל
-                                הכרטיסים של המשתמש (אלא אם לכרטיס יש override
-                                משלו). מופיע רק אם הכרטיס בבעלות משתמש.
-                            </p>
-
-                            <p>
-                                השבת כרטיס: משבית את הכרטיס (isActive=false) בלי
-                                למחוק אותו. הפעל כרטיס: מחזיר את הכרטיס לפעיל
-                                (isActive=true).
-                            </p>
-
-                            <p>
-                                הארכת ניסיון: “ימים מעכשיו” קובע סיום לסוף היום
-                                בישראל לאחר N ימים. “יום ושעה מדויקים” קובע
-                                תאריך/שעה בישראל בדיוק. ימים=0 מסיים ניסיון
-                                מיידית.
-                            </p>
-
-                            <p>
-                                שים לב: ערכים טכניים כמו ID, אימייל וסלאג מוצגים
-                                כ־LTR כדי למנוע בלבול בתוך ממשק RTL.
+                    <div className={styles.cardShell}>
+                        <div className={styles.cardHeader}>
+                            <div className={styles.headerRow}>
+                                <h2 className={styles.h2}>
+                                    {t("section_stats")}
+                                </h2>
+                            </div>
+                            <p className={styles.muted}>
+                                {stats
+                                    ? `${t("section_users")}: ${stats.users} · ${t(
+                                          "section_cards",
+                                      )}: ${stats.cardsTotal} · ${t(
+                                          "stats_anonymous_cards",
+                                      )}: ${stats.cardsAnonymous} · ${t(
+                                          "stats_user_cards",
+                                      )}: ${stats.cardsUserOwned} · ${t(
+                                          "stats_published",
+                                      )}: ${stats.publishedCards} · ${t(
+                                          "label_active",
+                                      )}: ${stats.activeCards}`
+                                    : t("stats_none")}
                             </p>
                         </div>
+                        <div className={styles.cardBody}>
+                            <details className={styles.legendDetails}>
+                                <summary className={styles.legendSummary}>
+                                    {t("section_legend")}
+                                </summary>
+                                <div className={styles.legend}>
+                                    <p>
+                                        הלוח הזה מיועד למנהלים בלבד. כל פעולה
+                                        אדמינית דורשת מילוי “סיבה” ונרשמת ביומן
+                                        הפעולות לצורכי מעקב ובקרה.
+                                    </p>
+
+                                    <p>
+                                        סטטיסטיקות: סיכום מהיר של כמות משתמשים,
+                                        כרטיסים, כרטיסים אנונימיים, כרטיסים
+                                        בבעלות משתמשים, כרטיסים מפורסמים
+                                        וכרטיסים פעילים.
+                                    </p>
+
+                                    <p>
+                                        טבלאות “משתמשים” ו“כרטיסים”: לחיצה על
+                                        שורה טוענת את הכרטיס הנבחר ומציגה את כל
+                                        הפרטים והפעולות האפשריות.
+                                    </p>
+
+                                    <p>
+                                        מזהה כרטיס (ID פנימי): המזהה הפנימי של
+                                        הכרטיס במסד הנתונים (MongoDB). זה לא
+                                        הסלאג ולא כתובת האתר.
+                                    </p>
+
+                                    <p>
+                                        סלאג: הכתובת הקצרה של הכרטיס — החלק
+                                        שמופיע ב־URL אחרי ‎/card/‎. הסלאג מוצג
+                                        משמאל לימין (LTR) כדי שיהיה קריא.
+                                    </p>
+
+                                    <p>
+                                        סטטוס: “טיוטה” או “מפורסם”. רק כרטיס
+                                        “מפורסם” יכול להיות נגיש לציבור, וגם זה
+                                        רק אם הוא פעיל ובבעלות משתמש (לא
+                                        אנונימי).
+                                    </p>
+
+                                    <p>
+                                        פעיל: אם “לא” — הכרטיס מושבת
+                                        (isActive=false). במצב זה הכרטיס לא נגיש
+                                        לציבור לפי סלאג, לא נאספים לידים, ולא
+                                        נאספת אנליטיקה.
+                                    </p>
+
+                                    <p>
+                                        בעלות: “משתמש” או “אנונימי”. כרטיס
+                                        אנונימי לא משויך למשתמש, ולכן אין אפשרות
+                                        להחיל עליו “רמת פיצ’רים למשתמש (ידני)”.
+                                    </p>
+
+                                    <p>
+                                        מסלול תשלום בפועל: המסלול שהמערכת מחשיבה
+                                        כבתוקף לצורכי גישה (free / monthly /
+                                        yearly), לפי תשלום/ניסיון/הטבות ידניות.
+                                    </p>
+
+                                    <p>
+                                        גישה פעילה: האם יש זכאות לגישה עכשיו
+                                        (למשל ניסיון בתוקף או תשלום בתוקף).
+                                        ייתכן “כן” גם אם “שולם” הוא “לא” (לדוגמה
+                                        בתקופת ניסיון או בהטבה ידנית).
+                                    </p>
+
+                                    <p>
+                                        שולם: האם יש תשלום פעיל בפועל. זה מדד
+                                        תשלום בלבד, לא בהכרח מדד גישה.
+                                    </p>
+
+                                    <p>
+                                        רמת פיצ’רים בפועל: free / basic /
+                                        premium. זה משפיע על פיצ’רים שהכרטיס
+                                        מקבל (למשל יכולות), ולא משנה את החיוב או
+                                        התשלום של הלקוח.
+                                    </p>
+
+                                    <p>
+                                        מקור: מאיפה נקבעה “רמת הפיצ’רים בפועל”
+                                        (לדוגמה: לפי כרטיס, לפי משתמש, או לפי
+                                        חיוב).
+                                    </p>
+
+                                    <p>
+                                        עד: תאריך/זמן תפוגה של הטבה/override. אם
+                                        מוגדר “עד”, אחרי הזמן הזה ההטבה תסתיים
+                                        והמערכת תחזור להתנהגות הרגילה.
+                                    </p>
+
+                                    <p>
+                                        סיום תקופת ניסיון: מוצג בשעון ישראל.
+                                        אחרי הזמן הזה, אם אין זכאות אחרת, הגישה
+                                        תיחסם.
+                                    </p>
+
+                                    <p>
+                                        סטטוס תשלום בפועל: מציג מקור + מסלול +
+                                        תאריך “עד” (אם קיים), כדי להבין מה בדיוק
+                                        המערכת מחשיבה כמצב החיוב/גישה הנוכחי.
+                                    </p>
+
+                                    <p>
+                                        הטבת מסלול (ידני): מאפשרת לקבוע מסלול
+                                        לצורכי זכאות בלבד (ללא שינוי תשלום
+                                        בפועל). השדה “עד תאריך” מוחל עד סוף היום
+                                        של התאריך שנבחר (UTC).
+                                    </p>
+
+                                    <p>
+                                        רמת פיצ’רים לכרטיס (ידני): קובעת רמת
+                                        פיצ’רים לכרטיס ספציפי. אם מוגדר — זה
+                                        גובר על רמת הפיצ’רים של המשתמש ועל מה
+                                        שנגזר מהחיוב.
+                                    </p>
+
+                                    <p>
+                                        רמת פיצ’רים למשתמש (ידני): קובעת רמת
+                                        פיצ’רים לכל הכרטיסים של המשתמש (אלא אם
+                                        לכרטיס יש override משלו). מופיע רק אם
+                                        הכרטיס בבעלות משתמש.
+                                    </p>
+
+                                    <p>
+                                        השבת כרטיס: משבית את הכרטיס
+                                        (isActive=false) בלי למחוק אותו. הפעל
+                                        כרטיס: מחזיר את הכרטיס לפעיל
+                                        (isActive=true).
+                                    </p>
+
+                                    <p>
+                                        הארכת ניסיון: “ימים מעכשיו” קובע סיום
+                                        לסוף היום בישראל לאחר N ימים. “יום ושעה
+                                        מדויקים” קובע תאריך/שעה בישראל בדיוק.
+                                        ימים=0 מסיים ניסיון מיידית.
+                                    </p>
+
+                                    <p>
+                                        שים לב: ערכים טכניים כמו ID, אימייל
+                                        וסלאג מוצגים כ־LTR כדי למנוע בלבול בתוך
+                                        ממשק RTL.
+                                    </p>
+                                </div>
+                            </details>
+                        </div>
                     </div>
-                    <div style={{ marginTop: 12 }}>
-                        <Button onClick={loadAll} loading={loading}>
-                            {t("btn_refresh")}
-                        </Button>
-                    </div>
-                    {error && (
-                        <p style={{ marginTop: 12, color: "var(--gold)" }}>
-                            {error}
-                        </p>
-                    )}
-                </div>
 
-                <div className={styles.card}>
-                    <h2>{t("section_selected_card")}</h2>
-                    {!selectedCard && (
-                        <p className={styles.muted}>{t("msg_select_card")}</p>
-                    )}
-                    {selectedCard && (
-                        <div className={styles.actions}>
-                            <div className={styles.subTitle}>
-                                {t("section_card_details")}
+                    <div className={styles.cardShell}>
+                        <div className={styles.cardHeader}>
+                            <div
+                                className={styles.tabs}
+                                role="tablist"
+                                aria-label="Directory tabs"
+                                ref={directoryTabListRef}
+                                onKeyDown={(e) =>
+                                    handleTabListKeyDown(e, {
+                                        current: directoryTab,
+                                        setCurrent: setDirectoryTab,
+                                        order: ["cards", "users"],
+                                        tabListRef: directoryTabListRef,
+                                    })
+                                }
+                            >
+                                <button
+                                    type="button"
+                                    className={`${styles.tab} ${
+                                        directoryTab === "cards"
+                                            ? styles.tabActive
+                                            : ""
+                                    }`}
+                                    role="tab"
+                                    data-tab="cards"
+                                    aria-selected={directoryTab === "cards"}
+                                    aria-controls="admin-directory-panel"
+                                    onClick={() => setDirectoryTab("cards")}
+                                >
+                                    {t("section_cards")}
+                                </button>
+                                <button
+                                    type="button"
+                                    className={`${styles.tab} ${
+                                        directoryTab === "users"
+                                            ? styles.tabActive
+                                            : ""
+                                    }`}
+                                    role="tab"
+                                    data-tab="users"
+                                    aria-selected={directoryTab === "users"}
+                                    aria-controls="admin-directory-panel"
+                                    onClick={() => setDirectoryTab("users")}
+                                >
+                                    {t("section_users")}
+                                </button>
                             </div>
-                            <div className={styles.muted}>
-                                <div>
-                                    {t("label_id")}:{" "}
-                                    <span
-                                        className={styles.ltr}
-                                        dir="ltr"
-                                        title={selectedCard._id}
-                                    >
-                                        {selectedCard._id}
-                                    </span>
-                                </div>
-                                <div>
-                                    {t("label_slug")}:{" "}
-                                    <span
-                                        className={styles.ltr}
-                                        dir="ltr"
-                                        title={selectedCard.slug || ""}
-                                    >
-                                        {selectedCard.slug || ""}
-                                    </span>
-                                </div>
-                                <div>
-                                    {t("label_status")}:{" "}
-                                    <span className={styles.ltr} dir="ltr">
-                                        {cardStatusHe(selectedCard.status)}
-                                    </span>
-                                </div>
-                                <div>
-                                    {t("label_active")}:{" "}
-                                    <span>
-                                        {boolHe(!!selectedCard.isActive)}
-                                    </span>
-                                </div>
-                                <div>
-                                    {t("label_owner")}: {selectedCardOwnerLabel}
-                                </div>
-                                <div>
-                                    {t("label_effective_plan")}:{" "}
-                                    <span>{planHe(selectedEffectivePlan)}</span>
-                                    {" · "}
-                                    {t("label_entitled")}:{" "}
-                                    <span>{boolHe(selectedIsEntitled)}</span>
-                                    {" · "}
-                                    {t("label_paid")}:{" "}
-                                    <span>{boolHe(selectedIsPaid)}</span>
-                                </div>
-                                <div>
-                                    {t("label_effective_tier")}:{" "}
-                                    <span>{tierHe(selectedEffectiveTier)}</span>
-                                    {" · "}
-                                    {t("label_tier_source")}:{" "}
-                                    <span className={styles.ltr} dir="ltr">
-                                        {selectedTierSource}
-                                    </span>
-                                    {selectedTierUntil
-                                        ? ` · ${t("label_until")} ${formatDate(
-                                              selectedTierUntil
-                                          )}`
-                                        : ""}
-                                </div>
-                                <div>
-                                    {t("label_trial_ends")}:{" "}
-                                    <span className={styles.ltr} dir="ltr">
-                                        {selectedCard?.trialEndsAtIsrael ||
-                                            formatDate(
-                                                selectedCard.trialEndsAt
-                                            )}
-                                    </span>
-                                </div>
-                                <div>
-                                    {t("label_effective_billing")}:{" "}
-                                    <span className={styles.ltr} dir="ltr">
-                                        {selectedBilling?.source || ""} /{" "}
-                                        {selectedBilling?.plan
-                                            ? planHe(selectedBilling.plan)
-                                            : ""}
-                                    </span>{" "}
-                                    {selectedBilling?.untilIsrael
-                                        ? `${t("label_until")} ${
-                                              selectedBilling.untilIsrael
-                                          }`
-                                        : selectedBilling?.until
-                                        ? `${t("label_until")} ${formatDate(
-                                              selectedBilling.until
-                                          )}`
-                                        : ""}
-                                </div>
-                                {selectedCard?.adminOverride && (
-                                    <div>
-                                        {t("label_admin_override")}:{" "}
-                                        <span className={styles.ltr} dir="ltr">
-                                            {selectedCard.adminOverride?.plan
-                                                ? planHe(
-                                                      selectedCard.adminOverride
-                                                          .plan
-                                                  )
-                                                : ""}
-                                        </span>{" "}
-                                        {selectedCard.adminOverride?.until
-                                            ? `${t("label_until")} ${formatDate(
-                                                  selectedCard.adminOverride
-                                                      .until
-                                              )}`
-                                            : ""}
-                                    </div>
-                                )}
-                                {(selectedCard?.adminTier ||
-                                    selectedCard?.adminTierUntil) && (
-                                    <div>
-                                        {t("label_card_tier_override")}:{" "}
-                                        <span>
-                                            {selectedCard.adminTier
-                                                ? tierHe(selectedCard.adminTier)
-                                                : ""}
-                                        </span>{" "}
-                                        {selectedCard.adminTierUntil
-                                            ? `${t("label_until")} ${formatDate(
-                                                  selectedCard.adminTierUntil
-                                              )}`
-                                            : ""}
-                                    </div>
-                                )}
-                                {(selectedCard?.ownerAdminTier ||
-                                    selectedCard?.ownerAdminTierUntil) && (
-                                    <div>
-                                        {t("label_user_tier_override")}:{" "}
-                                        <span>
-                                            {selectedCard.ownerAdminTier
-                                                ? tierHe(
-                                                      selectedCard.ownerAdminTier
-                                                  )
-                                                : ""}
-                                        </span>{" "}
-                                        {selectedCard.ownerAdminTierUntil
-                                            ? `${t("label_until")} ${formatDate(
-                                                  selectedCard.ownerAdminTierUntil
-                                              )}`
-                                            : ""}
-                                    </div>
-                                )}
-                            </div>
+                        </div>
 
-                            <div className={styles.subTitle}>
-                                {t("section_admin_actions")}
-                            </div>
-                            <Input
-                                label={t("label_reason")}
-                                value={reason}
-                                onChange={(e) => setReason(e.target.value)}
-                                placeholder={t("placeholder_reason")}
-                                required
-                            />
-
-                            <div className={styles.actionRow}>
-                                {selectedCard.isActive ? (
-                                    <Button
-                                        variant="secondary"
-                                        disabled={
-                                            loading || actionLoading.deactivate
-                                        }
-                                        loading={actionLoading.deactivate}
-                                        onClick={() =>
-                                            runAction(
-                                                "deactivate",
-                                                async (r) => {
-                                                    const res =
-                                                        await adminDeactivateCard(
-                                                            selectedCard._id,
-                                                            r
-                                                        );
-                                                    return res.data;
-                                                }
-                                            )
-                                        }
-                                    >
-                                        {t("btn_deactivate")}
-                                    </Button>
-                                ) : (
-                                    <Button
-                                        variant="secondary"
-                                        disabled={
-                                            loading || actionLoading.reactivate
-                                        }
-                                        loading={actionLoading.reactivate}
-                                        onClick={() =>
-                                            runAction(
-                                                "reactivate",
-                                                async (r) => {
-                                                    const res =
-                                                        await adminReactivateCard(
-                                                            selectedCard._id,
-                                                            r
-                                                        );
-                                                    return res.data;
-                                                }
-                                            )
-                                        }
-                                    >
-                                        {t("btn_reactivate")}
-                                    </Button>
-                                )}
-
-                                {selectedCard.isActive &&
-                                    actionError.deactivate && (
-                                        <p
-                                            className={styles.muted}
-                                            style={{ color: "var(--gold)" }}
-                                        >
-                                            {actionError.deactivate}
-                                        </p>
-                                    )}
-                                {!selectedCard.isActive &&
-                                    actionError.reactivate && (
-                                        <p
-                                            className={styles.muted}
-                                            style={{ color: "var(--gold)" }}
-                                        >
-                                            {actionError.reactivate}
-                                        </p>
-                                    )}
-                            </div>
-
-                            <div className={styles.actionRow}>
-                                <div className={styles.inline}>
-                                    <label className={styles.selectField}>
-                                        <span className={styles.selectLabel}>
-                                            {t("label_trial_mode")}
-                                        </span>
-                                        <select
-                                            className={styles.select}
-                                            value={trialMode}
-                                            onChange={(e) =>
-                                                setTrialMode(e.target.value)
-                                            }
-                                        >
-                                            <option value="days">
-                                                {t("opt_trial_mode_days")}
-                                            </option>
-                                            <option value="exact">
-                                                {t("opt_trial_mode_exact")}
-                                            </option>
-                                        </select>
-                                    </label>
-
-                                    <label className={styles.selectField}>
-                                        <span className={styles.selectLabel}>
-                                            {t("label_trial_days")}
-                                        </span>
-                                        <select
-                                            className={styles.select}
-                                            value={trialDays}
-                                            onChange={(e) =>
-                                                setTrialDays(
-                                                    Number(e.target.value)
-                                                )
-                                            }
-                                            disabled={trialMode !== "days"}
-                                        >
-                                            {Array.from(
-                                                { length: 15 },
-                                                (_, i) => i
-                                            ).map((n) => (
-                                                <option key={n} value={n}>
-                                                    {n}
-                                                </option>
+                        <div
+                            id="admin-directory-panel"
+                            className={styles.cardBody}
+                            role="tabpanel"
+                            aria-label="Directory panel"
+                        >
+                            {directoryTab === "users" ? (
+                                <table className={styles.table}>
+                                    <thead>
+                                        <tr>
+                                            <th>{t("th_email")}</th>
+                                            <th>{t("th_card")}</th>
+                                            <th>{t("th_role")}</th>
+                                            <th>{t("th_created")}</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {users.map((u) => (
+                                            <tr key={u._id}>
+                                                <td>
+                                                    <span
+                                                        className={styles.ltr}
+                                                        dir="ltr"
+                                                    >
+                                                        {u.email}
+                                                    </span>
+                                                </td>
+                                                <td>
+                                                    {u?.cardSummary?.slug ? (
+                                                        <button
+                                                            className={
+                                                                styles.rowBtn
+                                                            }
+                                                            type="button"
+                                                            onClick={() =>
+                                                                loadCard(
+                                                                    u
+                                                                        .cardSummary
+                                                                        .cardId,
+                                                                )
+                                                            }
+                                                            disabled={loading}
+                                                            title={
+                                                                u.cardSummary
+                                                                    .cardId
+                                                            }
+                                                        >
+                                                            <span
+                                                                className={
+                                                                    styles.ltr
+                                                                }
+                                                                dir="ltr"
+                                                            >
+                                                                {
+                                                                    u
+                                                                        .cardSummary
+                                                                        .slug
+                                                                }
+                                                            </span>{" "}
+                                                            (
+                                                            <span
+                                                                className={
+                                                                    styles.ltr
+                                                                }
+                                                                dir="ltr"
+                                                            >
+                                                                {cardStatusHe(
+                                                                    u
+                                                                        .cardSummary
+                                                                        .status,
+                                                                )}
+                                                            </span>
+                                                            )
+                                                        </button>
+                                                    ) : u?.cardSummary
+                                                          ?.missing ? (
+                                                        <span
+                                                            className={
+                                                                styles.muted
+                                                            }
+                                                        >
+                                                            {t("label_missing")}
+                                                        </span>
+                                                    ) : (
+                                                        "—"
+                                                    )}
+                                                </td>
+                                                <td>{roleHe(u.role)}</td>
+                                                <td>
+                                                    {formatDate(u.createdAt)}
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            ) : (
+                                <>
+                                    <table className={styles.table}>
+                                        <thead>
+                                            <tr>
+                                                <th>{t("th_slug")}</th>
+                                                <th>{t("th_owner")}</th>
+                                                <th>{t("label_status")}</th>
+                                                <th>{t("label_active")}</th>
+                                                <th>{t("th_updated")}</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {cards.map((c) => (
+                                                <tr key={c._id}>
+                                                    <td>
+                                                        <button
+                                                            className={
+                                                                styles.rowBtn
+                                                            }
+                                                            onClick={() =>
+                                                                loadCard(c._id)
+                                                            }
+                                                            type="button"
+                                                            disabled={loading}
+                                                            title={c._id}
+                                                        >
+                                                            <span
+                                                                className={
+                                                                    styles.ltr
+                                                                }
+                                                                dir="ltr"
+                                                            >
+                                                                {c.slug ||
+                                                                    t(
+                                                                        "label_no_slug",
+                                                                    )}
+                                                            </span>
+                                                        </button>
+                                                    </td>
+                                                    <td>
+                                                        {c?.ownerSummary
+                                                            ?.type ===
+                                                        "user" ? (
+                                                            <span
+                                                                title={
+                                                                    c
+                                                                        .ownerSummary
+                                                                        .email ||
+                                                                    ""
+                                                                }
+                                                                className={
+                                                                    styles.truncate
+                                                                }
+                                                                dir="ltr"
+                                                            >
+                                                                <span
+                                                                    className={
+                                                                        styles.ltr
+                                                                    }
+                                                                    dir="ltr"
+                                                                >
+                                                                    {c
+                                                                        .ownerSummary
+                                                                        .email ||
+                                                                        "—"}
+                                                                </span>
+                                                            </span>
+                                                        ) : c?.ownerSummary
+                                                              ?.type ===
+                                                          "anonymous" ? (
+                                                            <span
+                                                                className={
+                                                                    styles.muted
+                                                                }
+                                                            >
+                                                                {t(
+                                                                    "owner_anonymous",
+                                                                )}
+                                                            </span>
+                                                        ) : (
+                                                            "—"
+                                                        )}
+                                                    </td>
+                                                    <td>
+                                                        {cardStatusHe(c.status)}
+                                                    </td>
+                                                    <td>
+                                                        {boolHe(!!c.isActive)}
+                                                    </td>
+                                                    <td>
+                                                        {formatDate(
+                                                            c.updatedAt,
+                                                        )}
+                                                    </td>
+                                                </tr>
                                             ))}
-                                        </select>
-                                    </label>
+                                        </tbody>
+                                    </table>
 
-                                    <Input
-                                        label={t("label_trial_date_il")}
-                                        type="date"
-                                        value={trialUntilDate}
-                                        onChange={(e) =>
-                                            setTrialUntilDate(e.target.value)
-                                        }
-                                        disabled={trialMode !== "exact"}
-                                    />
-
-                                    <label className={styles.selectField}>
-                                        <span className={styles.selectLabel}>
-                                            {t("label_trial_hour")}
-                                        </span>
-                                        <select
-                                            className={styles.select}
-                                            value={trialUntilHour}
-                                            onChange={(e) =>
-                                                setTrialUntilHour(
-                                                    e.target.value
-                                                )
-                                            }
-                                            disabled={trialMode !== "exact"}
-                                        >
-                                            {Array.from(
-                                                { length: 24 },
-                                                (_, i) => i
-                                            ).map((h) => {
-                                                const hh = String(h).padStart(
-                                                    2,
-                                                    "0"
-                                                );
-                                                return (
-                                                    <option key={hh} value={hh}>
-                                                        {hh}
-                                                    </option>
-                                                );
-                                            })}
-                                        </select>
-                                    </label>
-
-                                    <label className={styles.selectField}>
-                                        <span className={styles.selectLabel}>
-                                            {t("label_trial_minute")}
-                                        </span>
-                                        <select
-                                            className={styles.select}
-                                            value={trialUntilMinute}
-                                            onChange={(e) =>
-                                                setTrialUntilMinute(
-                                                    e.target.value
-                                                )
-                                            }
-                                            disabled={trialMode !== "exact"}
-                                        >
-                                            {Array.from(
-                                                { length: 12 },
-                                                (_, i) => i * 5
-                                            ).map((m) => {
-                                                const mm = String(m).padStart(
-                                                    2,
-                                                    "0"
-                                                );
-                                                return (
-                                                    <option key={mm} value={mm}>
-                                                        {mm}
-                                                    </option>
-                                                );
-                                            })}
-                                        </select>
-                                    </label>
-
-                                    <Button
-                                        variant="secondary"
-                                        disabled={
-                                            loading || actionLoading.extend
-                                        }
-                                        loading={actionLoading.extend}
-                                        onClick={() =>
-                                            runAction("extend", async (r) => {
-                                                const payload =
-                                                    trialMode === "exact"
-                                                        ? {
-                                                              untilLocal: {
-                                                                  date: trialUntilDate,
-                                                                  hour: Number(
-                                                                      trialUntilHour
-                                                                  ),
-                                                                  minute: Number(
-                                                                      trialUntilMinute
-                                                                  ),
-                                                              },
-                                                              reason: r,
-                                                          }
-                                                        : {
-                                                              days: Number(
-                                                                  trialDays
-                                                              ),
-                                                              reason: r,
-                                                          };
-
-                                                const res =
-                                                    await adminExtendTrial(
-                                                        selectedCard._id,
-                                                        payload
-                                                    );
-                                                return res.data;
-                                            })
-                                        }
-                                    >
-                                        {t("btn_set")}
-                                    </Button>
-                                </div>
-
-                                {actionError.extend && (
-                                    <p
-                                        className={styles.muted}
-                                        style={{ color: "var(--gold)" }}
-                                    >
-                                        {actionError.extend}
-                                    </p>
-                                )}
-                            </div>
-
-                            <div className={styles.actionRow}>
-                                <div className={styles.inline}>
-                                    <Input
-                                        label={t("label_override_plan")}
-                                        value={overridePlan}
-                                        onChange={(e) =>
-                                            setOverridePlan(e.target.value)
-                                        }
-                                        placeholder={t(
-                                            "placeholder_override_plan"
-                                        )}
-                                    />
-                                    <Input
-                                        label={t("label_override_until")}
-                                        type="date"
-                                        value={overrideUntil}
-                                        onChange={(e) =>
-                                            setOverrideUntil(e.target.value)
-                                        }
-                                        placeholder={t("placeholder_date_ymd")}
-                                    />
-                                </div>
-                                <Button
-                                    variant="secondary"
-                                    disabled={loading || actionLoading.override}
-                                    loading={actionLoading.override}
-                                    onClick={() =>
-                                        runAction("override", async (r) => {
-                                            const until = overrideUntil
-                                                ? new Date(
-                                                      `${overrideUntil}T23:59:59.999Z`
-                                                  ).toISOString()
-                                                : "";
-                                            const res = await adminOverridePlan(
-                                                selectedCard._id,
-                                                {
-                                                    plan: String(
-                                                        overridePlan || ""
-                                                    ).trim(),
-                                                    until,
-                                                    reason: r,
-                                                }
-                                            );
-                                            return res.data;
-                                        })
-                                    }
-                                >
-                                    {t("btn_override")}
-                                </Button>
-
-                                {actionError.override && (
-                                    <p
-                                        className={styles.muted}
-                                        style={{ color: "var(--gold)" }}
-                                    >
-                                        {actionError.override}
-                                    </p>
-                                )}
-                            </div>
-
-                            <div className={styles.actionRow}>
-                                <div className={styles.inline}>
-                                    <label className={styles.selectField}>
-                                        <span className={styles.selectLabel}>
-                                            {t("label_card_tier")}
-                                        </span>
-                                        <select
-                                            className={styles.select}
-                                            value={cardTier}
-                                            onChange={(e) =>
-                                                setCardTier(e.target.value)
-                                            }
-                                        >
-                                            <option value="">
-                                                {t("opt_clear")}
-                                            </option>
-                                            <option value="free">
-                                                {t("opt_tier_free")}
-                                            </option>
-                                            <option value="basic">
-                                                {t("opt_tier_basic")}
-                                            </option>
-                                            <option value="premium">
-                                                {t("opt_tier_premium")}
-                                            </option>
-                                        </select>
-                                    </label>
-                                    <Input
-                                        label={t("label_card_tier_until")}
-                                        type="date"
-                                        value={cardTierUntil}
-                                        onChange={(e) =>
-                                            setCardTierUntil(e.target.value)
-                                        }
-                                        placeholder={t("placeholder_date_ymd")}
-                                    />
-                                </div>
-                                <Button
-                                    variant="secondary"
-                                    disabled={loading || actionLoading.cardTier}
-                                    loading={actionLoading.cardTier}
-                                    onClick={() =>
-                                        runAction("cardTier", async (r) => {
-                                            const until = cardTierUntil
-                                                ? new Date(
-                                                      `${cardTierUntil}T23:59:59.999Z`
-                                                  ).toISOString()
-                                                : "";
-                                            const res = await adminSetCardTier(
-                                                selectedCard._id,
-                                                {
-                                                    tier: cardTier || null,
-                                                    until,
-                                                    reason: r,
-                                                }
-                                            );
-                                            return res.data;
-                                        })
-                                    }
-                                >
-                                    {t("btn_apply")}
-                                </Button>
-
-                                {actionError.cardTier && (
-                                    <p
-                                        className={styles.muted}
-                                        style={{ color: "var(--gold)" }}
-                                    >
-                                        {actionError.cardTier}
-                                    </p>
-                                )}
-                            </div>
-
-                            {selectedCardOwner === "user" && (
-                                <div className={styles.actionRow}>
-                                    <div className={styles.inline}>
-                                        <label className={styles.selectField}>
-                                            <span
-                                                className={styles.selectLabel}
-                                            >
-                                                {t("label_user_tier")}
-                                            </span>
-                                            <select
-                                                className={styles.select}
-                                                value={userTier}
-                                                onChange={(e) =>
-                                                    setUserTier(e.target.value)
-                                                }
-                                            >
-                                                <option value="">
-                                                    {t("opt_clear")}
-                                                </option>
-                                                <option value="free">
-                                                    {t("opt_tier_free")}
-                                                </option>
-                                                <option value="basic">
-                                                    {t("opt_tier_basic")}
-                                                </option>
-                                                <option value="premium">
-                                                    {t("opt_tier_premium")}
-                                                </option>
-                                            </select>
-                                        </label>
-                                        <Input
-                                            label={t("label_user_tier_until")}
-                                            type="date"
-                                            value={userTierUntil}
-                                            onChange={(e) =>
-                                                setUserTierUntil(e.target.value)
-                                            }
-                                            placeholder={t(
-                                                "placeholder_date_ymd"
-                                            )}
-                                        />
-                                    </div>
-                                    <Button
-                                        variant="secondary"
-                                        disabled={
-                                            loading || actionLoading.userTier
-                                        }
-                                        loading={actionLoading.userTier}
-                                        onClick={runUserTierAction}
-                                    >
-                                        {t("btn_apply")}
-                                    </Button>
-
-                                    {actionError.userTier && (
-                                        <p
-                                            className={styles.muted}
-                                            style={{ color: "var(--gold)" }}
-                                        >
-                                            {actionError.userTier}
+                                    {selectedCardId && !selectedCard ? (
+                                        <p className={styles.muted}>
+                                            {t("msg_loading_card")}
                                         </p>
-                                    )}
-                                </div>
+                                    ) : null}
+                                </>
                             )}
                         </div>
-                    )}
-                </div>
+                    </div>
+                </section>
 
-                <div className={styles.card}>
-                    <h2>{t("section_users")}</h2>
-                    <table className={styles.table}>
-                        <thead>
-                            <tr>
-                                <th>{t("th_email")}</th>
-                                <th>{t("th_card")}</th>
-                                <th>{t("th_role")}</th>
-                                <th>{t("th_created")}</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {users.map((u) => (
-                                <tr key={u._id}>
-                                    <td>
-                                        <span className={styles.ltr} dir="ltr">
-                                            {u.email}
-                                        </span>
-                                    </td>
-                                    <td>
-                                        {u?.cardSummary?.slug ? (
-                                            <button
-                                                className={styles.rowBtn}
-                                                type="button"
-                                                onClick={() =>
-                                                    loadCard(
-                                                        u.cardSummary.cardId
-                                                    )
-                                                }
-                                                disabled={loading}
-                                                title={u.cardSummary.cardId}
-                                                style={{ width: "auto" }}
+                <section
+                    className={styles.rightPanel}
+                    aria-label={t("section_selected_card")}
+                >
+                    <div className={styles.cardShell}>
+                        <div className={styles.cardHeader}>
+                            <div className={styles.headerRow}>
+                                <h2 className={styles.h2}>
+                                    {t("section_selected_card")}
+                                </h2>
+                            </div>
+
+                            <div
+                                className={styles.tabs}
+                                role="tablist"
+                                aria-label="Selected card tabs"
+                                ref={selectedTabListRef}
+                                onKeyDown={(e) =>
+                                    handleTabListKeyDown(e, {
+                                        current: selectedTab,
+                                        setCurrent: setSelectedTab,
+                                        order: [
+                                            "general",
+                                            "billing",
+                                            "actions",
+                                            "danger",
+                                        ],
+                                        tabListRef: selectedTabListRef,
+                                    })
+                                }
+                            >
+                                <button
+                                    type="button"
+                                    className={`${styles.tab} ${
+                                        selectedTab === "general"
+                                            ? styles.tabActive
+                                            : ""
+                                    }`}
+                                    role="tab"
+                                    data-tab="general"
+                                    aria-selected={selectedTab === "general"}
+                                    aria-controls="admin-selected-panel"
+                                    onClick={() => setSelectedTab("general")}
+                                >
+                                    General
+                                </button>
+                                <button
+                                    type="button"
+                                    className={`${styles.tab} ${
+                                        selectedTab === "billing"
+                                            ? styles.tabActive
+                                            : ""
+                                    }`}
+                                    role="tab"
+                                    data-tab="billing"
+                                    aria-selected={selectedTab === "billing"}
+                                    aria-controls="admin-selected-panel"
+                                    onClick={() => setSelectedTab("billing")}
+                                >
+                                    Billing
+                                </button>
+                                <button
+                                    type="button"
+                                    className={`${styles.tab} ${
+                                        selectedTab === "actions"
+                                            ? styles.tabActive
+                                            : ""
+                                    }`}
+                                    role="tab"
+                                    data-tab="actions"
+                                    aria-selected={selectedTab === "actions"}
+                                    aria-controls="admin-selected-panel"
+                                    onClick={() => setSelectedTab("actions")}
+                                >
+                                    Actions
+                                </button>
+                                <button
+                                    type="button"
+                                    className={`${styles.tab} ${
+                                        selectedTab === "danger"
+                                            ? styles.tabActive
+                                            : ""
+                                    }`}
+                                    role="tab"
+                                    data-tab="danger"
+                                    aria-selected={selectedTab === "danger"}
+                                    aria-controls="admin-selected-panel"
+                                    onClick={() => setSelectedTab("danger")}
+                                >
+                                    Danger
+                                </button>
+                            </div>
+                        </div>
+
+                        <div
+                            id="admin-selected-panel"
+                            className={styles.cardBody}
+                            role="tabpanel"
+                            aria-label="Selected card panel"
+                        >
+                            {!selectedCard ? (
+                                <p className={styles.muted}>
+                                    {t("msg_select_card")}
+                                </p>
+                            ) : null}
+
+                            {selectedCard ? (
+                                <>
+                                    {selectedTab === "general" ? (
+                                        <div className={styles.sectionBlock}>
+                                            <div
+                                                className={styles.sectionTitle}
                                             >
-                                                <span
-                                                    className={styles.ltr}
-                                                    dir="ltr"
-                                                >
-                                                    {u.cardSummary.slug}
-                                                </span>{" "}
-                                                (
-                                                <span
-                                                    className={styles.ltr}
-                                                    dir="ltr"
-                                                >
-                                                    {cardStatusHe(
-                                                        u.cardSummary.status
+                                                {t("section_card_details")}
+                                            </div>
+                                            <div className={styles.kv}>
+                                                <div>
+                                                    {t("label_id")}:{" "}
+                                                    <span
+                                                        className={styles.ltr}
+                                                        dir="ltr"
+                                                        title={selectedCard._id}
+                                                    >
+                                                        {selectedCard._id}
+                                                    </span>
+                                                </div>
+                                                <div>
+                                                    {t("label_slug")}:{" "}
+                                                    <span
+                                                        className={styles.ltr}
+                                                        dir="ltr"
+                                                        title={
+                                                            selectedCard.slug ||
+                                                            ""
+                                                        }
+                                                    >
+                                                        {selectedCard.slug ||
+                                                            ""}
+                                                    </span>
+                                                </div>
+                                                <div>
+                                                    {t("label_status")}:{" "}
+                                                    <span
+                                                        className={styles.ltr}
+                                                        dir="ltr"
+                                                    >
+                                                        {cardStatusHe(
+                                                            selectedCard.status,
+                                                        )}
+                                                    </span>
+                                                </div>
+                                                <div>
+                                                    {t("label_active")}:{" "}
+                                                    <span>
+                                                        {boolHe(
+                                                            !!selectedCard.isActive,
+                                                        )}
+                                                    </span>
+                                                </div>
+                                                <div>
+                                                    {t("label_owner")}:{" "}
+                                                    {selectedCardOwnerLabel}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ) : null}
+
+                                    {selectedTab === "billing" ? (
+                                        <div className={styles.sectionBlock}>
+                                            <div
+                                                className={styles.sectionTitle}
+                                            >
+                                                Billing
+                                            </div>
+                                            <div className={styles.kv}>
+                                                <div>
+                                                    {t("label_effective_plan")}:{" "}
+                                                    <span>
+                                                        {planHe(
+                                                            selectedEffectivePlan,
+                                                        )}
+                                                    </span>
+                                                    {" · "}
+                                                    {t("label_entitled")}:{" "}
+                                                    <span>
+                                                        {boolHe(
+                                                            selectedIsEntitled,
+                                                        )}
+                                                    </span>
+                                                    {" · "}
+                                                    {t("label_paid")}:{" "}
+                                                    <span>
+                                                        {boolHe(selectedIsPaid)}
+                                                    </span>
+                                                </div>
+                                                <div>
+                                                    {t("label_effective_tier")}:{" "}
+                                                    <span>
+                                                        {tierHe(
+                                                            selectedEffectiveTier,
+                                                        )}
+                                                    </span>
+                                                    {" · "}
+                                                    {t(
+                                                        "label_tier_source",
+                                                    )}:{" "}
+                                                    <span
+                                                        className={styles.ltr}
+                                                        dir="ltr"
+                                                    >
+                                                        {selectedTierSource}
+                                                    </span>
+                                                    {selectedTierUntil
+                                                        ? ` · ${t(
+                                                              "label_until",
+                                                          )} ${formatDate(
+                                                              selectedTierUntil,
+                                                          )}`
+                                                        : ""}
+                                                </div>
+                                                <div>
+                                                    {t("label_trial_ends")}:{" "}
+                                                    <span
+                                                        className={styles.ltr}
+                                                        dir="ltr"
+                                                    >
+                                                        {selectedCard?.trialEndsAtIsrael ||
+                                                            formatDate(
+                                                                selectedCard.trialEndsAt,
+                                                            )}
+                                                    </span>
+                                                </div>
+                                                <div>
+                                                    {t(
+                                                        "label_effective_billing",
                                                     )}
-                                                </span>
-                                                )
-                                            </button>
-                                        ) : u?.cardSummary?.missing ? (
-                                            <span className={styles.muted}>
-                                                {t("label_missing")}
-                                            </span>
-                                        ) : (
-                                            "—"
-                                        )}
-                                    </td>
-                                    <td>{roleHe(u.role)}</td>
-                                    <td>{formatDate(u.createdAt)}</td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
+                                                    :{" "}
+                                                    <span
+                                                        className={styles.ltr}
+                                                        dir="ltr"
+                                                    >
+                                                        {selectedBilling?.source ||
+                                                            ""}{" "}
+                                                        /{" "}
+                                                        {selectedBilling?.plan
+                                                            ? planHe(
+                                                                  selectedBilling.plan,
+                                                              )
+                                                            : ""}
+                                                    </span>{" "}
+                                                    {selectedBilling?.untilIsrael
+                                                        ? `${t(
+                                                              "label_until",
+                                                          )} ${
+                                                              selectedBilling.untilIsrael
+                                                          }`
+                                                        : selectedBilling?.until
+                                                          ? `${t(
+                                                                "label_until",
+                                                            )} ${formatDate(
+                                                                selectedBilling.until,
+                                                            )}`
+                                                          : ""}
+                                                </div>
+                                                {selectedCard?.adminOverride ? (
+                                                    <div>
+                                                        {t(
+                                                            "label_admin_override",
+                                                        )}
+                                                        :{" "}
+                                                        <span
+                                                            className={
+                                                                styles.ltr
+                                                            }
+                                                            dir="ltr"
+                                                        >
+                                                            {selectedCard
+                                                                .adminOverride
+                                                                ?.plan
+                                                                ? planHe(
+                                                                      selectedCard
+                                                                          .adminOverride
+                                                                          .plan,
+                                                                  )
+                                                                : ""}
+                                                        </span>{" "}
+                                                        {selectedCard
+                                                            .adminOverride
+                                                            ?.until
+                                                            ? `${t(
+                                                                  "label_until",
+                                                              )} ${formatDate(
+                                                                  selectedCard
+                                                                      .adminOverride
+                                                                      .until,
+                                                              )}`
+                                                            : ""}
+                                                    </div>
+                                                ) : null}
+                                                {selectedCard?.adminTier ||
+                                                selectedCard?.adminTierUntil ? (
+                                                    <div>
+                                                        {t(
+                                                            "label_card_tier_override",
+                                                        )}
+                                                        :{" "}
+                                                        <span>
+                                                            {selectedCard.adminTier
+                                                                ? tierHe(
+                                                                      selectedCard.adminTier,
+                                                                  )
+                                                                : ""}
+                                                        </span>{" "}
+                                                        {selectedCard.adminTierUntil
+                                                            ? `${t(
+                                                                  "label_until",
+                                                              )} ${formatDate(
+                                                                  selectedCard.adminTierUntil,
+                                                              )}`
+                                                            : ""}
+                                                    </div>
+                                                ) : null}
+                                                {selectedCard?.ownerAdminTier ||
+                                                selectedCard?.ownerAdminTierUntil ? (
+                                                    <div>
+                                                        {t(
+                                                            "label_user_tier_override",
+                                                        )}
+                                                        :{" "}
+                                                        <span>
+                                                            {selectedCard.ownerAdminTier
+                                                                ? tierHe(
+                                                                      selectedCard.ownerAdminTier,
+                                                                  )
+                                                                : ""}
+                                                        </span>{" "}
+                                                        {selectedCard.ownerAdminTierUntil
+                                                            ? `${t(
+                                                                  "label_until",
+                                                              )} ${formatDate(
+                                                                  selectedCard.ownerAdminTierUntil,
+                                                              )}`
+                                                            : ""}
+                                                    </div>
+                                                ) : null}
+                                            </div>
+                                        </div>
+                                    ) : null}
 
-                <div className={styles.card}>
-                    <h2>{t("section_cards")}</h2>
-                    <table className={styles.table}>
-                        <thead>
-                            <tr>
-                                <th>{t("th_slug")}</th>
-                                <th>{t("th_owner")}</th>
-                                <th>{t("label_status")}</th>
-                                <th>{t("label_active")}</th>
-                                <th>{t("th_updated")}</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {cards.map((c) => (
-                                <tr key={c._id}>
-                                    <td>
-                                        <button
-                                            className={styles.rowBtn}
-                                            onClick={() => loadCard(c._id)}
-                                            type="button"
-                                            disabled={loading}
-                                            title={c._id}
-                                        >
-                                            <span
-                                                className={styles.ltr}
-                                                dir="ltr"
+                                    {selectedTab === "actions" ? (
+                                        <div className={styles.sectionBlock}>
+                                            <div
+                                                className={styles.sectionTitle}
                                             >
-                                                {c.slug || t("label_no_slug")}
-                                            </span>
-                                        </button>
-                                    </td>
-                                    <td>
-                                        {c?.ownerSummary?.type === "user" ? (
-                                            <span
-                                                title={
-                                                    c.ownerSummary.email || ""
+                                                {t("section_admin_actions")}
+                                            </div>
+
+                                            <Input
+                                                label={t("label_reason")}
+                                                value={reason}
+                                                onChange={(e) =>
+                                                    setReason(e.target.value)
                                                 }
-                                                style={{
-                                                    display: "inline-block",
-                                                    maxWidth: 240,
-                                                    overflow: "hidden",
-                                                    textOverflow: "ellipsis",
-                                                    whiteSpace: "nowrap",
-                                                    direction: "ltr",
-                                                    textAlign: "left",
-                                                }}
-                                            >
-                                                <span
-                                                    className={styles.ltr}
-                                                    dir="ltr"
-                                                >
-                                                    {c.ownerSummary.email ||
-                                                        "—"}
-                                                </span>
-                                            </span>
-                                        ) : c?.ownerSummary?.type ===
-                                          "anonymous" ? (
-                                            <span className={styles.muted}>
-                                                {t("owner_anonymous")}
-                                            </span>
-                                        ) : (
-                                            "—"
-                                        )}
-                                    </td>
-                                    <td>{cardStatusHe(c.status)}</td>
-                                    <td>{boolHe(!!c.isActive)}</td>
-                                    <td>{formatDate(c.updatedAt)}</td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
+                                                placeholder={t(
+                                                    "placeholder_reason",
+                                                )}
+                                                required
+                                            />
 
-                    {selectedCardId && !selectedCard && (
-                        <p className={styles.muted} style={{ marginTop: 10 }}>
-                            {t("msg_loading_card")}
-                        </p>
-                    )}
-                </div>
+                                            <div className={styles.actionGroup}>
+                                                <div className={styles.formRow}>
+                                                    <label
+                                                        className={
+                                                            styles.selectField
+                                                        }
+                                                    >
+                                                        <span
+                                                            className={
+                                                                styles.selectLabel
+                                                            }
+                                                        >
+                                                            {t(
+                                                                "label_trial_mode",
+                                                            )}
+                                                        </span>
+                                                        <select
+                                                            className={
+                                                                styles.select
+                                                            }
+                                                            value={trialMode}
+                                                            onChange={(e) =>
+                                                                setTrialMode(
+                                                                    e.target
+                                                                        .value,
+                                                                )
+                                                            }
+                                                        >
+                                                            <option value="days">
+                                                                {t(
+                                                                    "opt_trial_mode_days",
+                                                                )}
+                                                            </option>
+                                                            <option value="exact">
+                                                                {t(
+                                                                    "opt_trial_mode_exact",
+                                                                )}
+                                                            </option>
+                                                        </select>
+                                                    </label>
+
+                                                    <label
+                                                        className={
+                                                            styles.selectField
+                                                        }
+                                                    >
+                                                        <span
+                                                            className={
+                                                                styles.selectLabel
+                                                            }
+                                                        >
+                                                            {t(
+                                                                "label_trial_days",
+                                                            )}
+                                                        </span>
+                                                        <select
+                                                            className={
+                                                                styles.select
+                                                            }
+                                                            value={trialDays}
+                                                            onChange={(e) =>
+                                                                setTrialDays(
+                                                                    Number(
+                                                                        e.target
+                                                                            .value,
+                                                                    ),
+                                                                )
+                                                            }
+                                                            disabled={
+                                                                trialMode !==
+                                                                "days"
+                                                            }
+                                                        >
+                                                            {Array.from(
+                                                                { length: 15 },
+                                                                (_, i) => i,
+                                                            ).map((n) => (
+                                                                <option
+                                                                    key={n}
+                                                                    value={n}
+                                                                >
+                                                                    {n}
+                                                                </option>
+                                                            ))}
+                                                        </select>
+                                                    </label>
+
+                                                    <Input
+                                                        label={t(
+                                                            "label_trial_date_il",
+                                                        )}
+                                                        type="date"
+                                                        value={trialUntilDate}
+                                                        onChange={(e) =>
+                                                            setTrialUntilDate(
+                                                                e.target.value,
+                                                            )
+                                                        }
+                                                        disabled={
+                                                            trialMode !==
+                                                            "exact"
+                                                        }
+                                                    />
+
+                                                    <label
+                                                        className={
+                                                            styles.selectField
+                                                        }
+                                                    >
+                                                        <span
+                                                            className={
+                                                                styles.selectLabel
+                                                            }
+                                                        >
+                                                            {t(
+                                                                "label_trial_hour",
+                                                            )}
+                                                        </span>
+                                                        <select
+                                                            className={
+                                                                styles.select
+                                                            }
+                                                            value={
+                                                                trialUntilHour
+                                                            }
+                                                            onChange={(e) =>
+                                                                setTrialUntilHour(
+                                                                    e.target
+                                                                        .value,
+                                                                )
+                                                            }
+                                                            disabled={
+                                                                trialMode !==
+                                                                "exact"
+                                                            }
+                                                        >
+                                                            {Array.from(
+                                                                { length: 24 },
+                                                                (_, i) => i,
+                                                            ).map((h) => {
+                                                                const hh =
+                                                                    String(
+                                                                        h,
+                                                                    ).padStart(
+                                                                        2,
+                                                                        "0",
+                                                                    );
+                                                                return (
+                                                                    <option
+                                                                        key={hh}
+                                                                        value={
+                                                                            hh
+                                                                        }
+                                                                    >
+                                                                        {hh}
+                                                                    </option>
+                                                                );
+                                                            })}
+                                                        </select>
+                                                    </label>
+
+                                                    <label
+                                                        className={
+                                                            styles.selectField
+                                                        }
+                                                    >
+                                                        <span
+                                                            className={
+                                                                styles.selectLabel
+                                                            }
+                                                        >
+                                                            {t(
+                                                                "label_trial_minute",
+                                                            )}
+                                                        </span>
+                                                        <select
+                                                            className={
+                                                                styles.select
+                                                            }
+                                                            value={
+                                                                trialUntilMinute
+                                                            }
+                                                            onChange={(e) =>
+                                                                setTrialUntilMinute(
+                                                                    e.target
+                                                                        .value,
+                                                                )
+                                                            }
+                                                            disabled={
+                                                                trialMode !==
+                                                                "exact"
+                                                            }
+                                                        >
+                                                            {Array.from(
+                                                                { length: 12 },
+                                                                (_, i) => i * 5,
+                                                            ).map((m) => {
+                                                                const mm =
+                                                                    String(
+                                                                        m,
+                                                                    ).padStart(
+                                                                        2,
+                                                                        "0",
+                                                                    );
+                                                                return (
+                                                                    <option
+                                                                        key={mm}
+                                                                        value={
+                                                                            mm
+                                                                        }
+                                                                    >
+                                                                        {mm}
+                                                                    </option>
+                                                                );
+                                                            })}
+                                                        </select>
+                                                    </label>
+
+                                                    <Button
+                                                        variant="secondary"
+                                                        disabled={
+                                                            loading ||
+                                                            actionLoading.extend
+                                                        }
+                                                        loading={
+                                                            actionLoading.extend
+                                                        }
+                                                        onClick={() =>
+                                                            runAction(
+                                                                "extend",
+                                                                async (r) => {
+                                                                    const payload =
+                                                                        trialMode ===
+                                                                        "exact"
+                                                                            ? {
+                                                                                  untilLocal:
+                                                                                      {
+                                                                                          date: trialUntilDate,
+                                                                                          hour: Number(
+                                                                                              trialUntilHour,
+                                                                                          ),
+                                                                                          minute: Number(
+                                                                                              trialUntilMinute,
+                                                                                          ),
+                                                                                      },
+                                                                                  reason: r,
+                                                                              }
+                                                                            : {
+                                                                                  days: Number(
+                                                                                      trialDays,
+                                                                                  ),
+                                                                                  reason: r,
+                                                                              };
+
+                                                                    const res =
+                                                                        await adminExtendTrial(
+                                                                            selectedCard._id,
+                                                                            payload,
+                                                                        );
+                                                                    return res.data;
+                                                                },
+                                                            )
+                                                        }
+                                                    >
+                                                        {t("btn_set")}
+                                                    </Button>
+                                                </div>
+                                                {actionError.extend ? (
+                                                    <p
+                                                        className={
+                                                            styles.errorText
+                                                        }
+                                                    >
+                                                        {actionError.extend}
+                                                    </p>
+                                                ) : null}
+                                            </div>
+
+                                            <div className={styles.actionGroup}>
+                                                <div className={styles.formRow}>
+                                                    <Input
+                                                        label={t(
+                                                            "label_override_plan",
+                                                        )}
+                                                        value={overridePlan}
+                                                        onChange={(e) =>
+                                                            setOverridePlan(
+                                                                e.target.value,
+                                                            )
+                                                        }
+                                                        placeholder={t(
+                                                            "placeholder_override_plan",
+                                                        )}
+                                                    />
+                                                    <Input
+                                                        label={t(
+                                                            "label_override_until",
+                                                        )}
+                                                        type="date"
+                                                        value={overrideUntil}
+                                                        onChange={(e) =>
+                                                            setOverrideUntil(
+                                                                e.target.value,
+                                                            )
+                                                        }
+                                                        placeholder={t(
+                                                            "placeholder_date_ymd",
+                                                        )}
+                                                    />
+                                                    <Button
+                                                        variant="secondary"
+                                                        disabled={
+                                                            loading ||
+                                                            actionLoading.override
+                                                        }
+                                                        loading={
+                                                            actionLoading.override
+                                                        }
+                                                        onClick={() =>
+                                                            runAction(
+                                                                "override",
+                                                                async (r) => {
+                                                                    const until =
+                                                                        overrideUntil
+                                                                            ? new Date(
+                                                                                  `${overrideUntil}T23:59:59.999Z`,
+                                                                              ).toISOString()
+                                                                            : "";
+                                                                    const res =
+                                                                        await adminOverridePlan(
+                                                                            selectedCard._id,
+                                                                            {
+                                                                                plan: String(
+                                                                                    overridePlan ||
+                                                                                        "",
+                                                                                ).trim(),
+                                                                                until,
+                                                                                reason: r,
+                                                                            },
+                                                                        );
+                                                                    return res.data;
+                                                                },
+                                                            )
+                                                        }
+                                                    >
+                                                        {t("btn_override")}
+                                                    </Button>
+                                                </div>
+                                                {actionError.override ? (
+                                                    <p
+                                                        className={
+                                                            styles.errorText
+                                                        }
+                                                    >
+                                                        {actionError.override}
+                                                    </p>
+                                                ) : null}
+                                            </div>
+
+                                            <div className={styles.actionGroup}>
+                                                <div className={styles.formRow}>
+                                                    <label
+                                                        className={
+                                                            styles.selectField
+                                                        }
+                                                    >
+                                                        <span
+                                                            className={
+                                                                styles.selectLabel
+                                                            }
+                                                        >
+                                                            {t(
+                                                                "label_card_tier",
+                                                            )}
+                                                        </span>
+                                                        <select
+                                                            className={
+                                                                styles.select
+                                                            }
+                                                            value={cardTier}
+                                                            onChange={(e) =>
+                                                                setCardTier(
+                                                                    e.target
+                                                                        .value,
+                                                                )
+                                                            }
+                                                        >
+                                                            <option value="">
+                                                                {t("opt_clear")}
+                                                            </option>
+                                                            <option value="free">
+                                                                {t(
+                                                                    "opt_tier_free",
+                                                                )}
+                                                            </option>
+                                                            <option value="basic">
+                                                                {t(
+                                                                    "opt_tier_basic",
+                                                                )}
+                                                            </option>
+                                                            <option value="premium">
+                                                                {t(
+                                                                    "opt_tier_premium",
+                                                                )}
+                                                            </option>
+                                                        </select>
+                                                    </label>
+                                                    <Input
+                                                        label={t(
+                                                            "label_card_tier_until",
+                                                        )}
+                                                        type="date"
+                                                        value={cardTierUntil}
+                                                        onChange={(e) =>
+                                                            setCardTierUntil(
+                                                                e.target.value,
+                                                            )
+                                                        }
+                                                        placeholder={t(
+                                                            "placeholder_date_ymd",
+                                                        )}
+                                                    />
+                                                    <Button
+                                                        variant="secondary"
+                                                        disabled={
+                                                            loading ||
+                                                            actionLoading.cardTier
+                                                        }
+                                                        loading={
+                                                            actionLoading.cardTier
+                                                        }
+                                                        onClick={() =>
+                                                            runAction(
+                                                                "cardTier",
+                                                                async (r) => {
+                                                                    const until =
+                                                                        cardTierUntil
+                                                                            ? new Date(
+                                                                                  `${cardTierUntil}T23:59:59.999Z`,
+                                                                              ).toISOString()
+                                                                            : "";
+                                                                    const res =
+                                                                        await adminSetCardTier(
+                                                                            selectedCard._id,
+                                                                            {
+                                                                                tier:
+                                                                                    cardTier ||
+                                                                                    null,
+                                                                                until,
+                                                                                reason: r,
+                                                                            },
+                                                                        );
+                                                                    return res.data;
+                                                                },
+                                                            )
+                                                        }
+                                                    >
+                                                        {t("btn_apply")}
+                                                    </Button>
+                                                </div>
+                                                {actionError.cardTier ? (
+                                                    <p
+                                                        className={
+                                                            styles.errorText
+                                                        }
+                                                    >
+                                                        {actionError.cardTier}
+                                                    </p>
+                                                ) : null}
+                                            </div>
+
+                                            {selectedCardOwner === "user" ? (
+                                                <div
+                                                    className={
+                                                        styles.actionGroup
+                                                    }
+                                                >
+                                                    <div
+                                                        className={
+                                                            styles.formRow
+                                                        }
+                                                    >
+                                                        <label
+                                                            className={
+                                                                styles.selectField
+                                                            }
+                                                        >
+                                                            <span
+                                                                className={
+                                                                    styles.selectLabel
+                                                                }
+                                                            >
+                                                                {t(
+                                                                    "label_user_tier",
+                                                                )}
+                                                            </span>
+                                                            <select
+                                                                className={
+                                                                    styles.select
+                                                                }
+                                                                value={userTier}
+                                                                onChange={(e) =>
+                                                                    setUserTier(
+                                                                        e.target
+                                                                            .value,
+                                                                    )
+                                                                }
+                                                            >
+                                                                <option value="">
+                                                                    {t(
+                                                                        "opt_clear",
+                                                                    )}
+                                                                </option>
+                                                                <option value="free">
+                                                                    {t(
+                                                                        "opt_tier_free",
+                                                                    )}
+                                                                </option>
+                                                                <option value="basic">
+                                                                    {t(
+                                                                        "opt_tier_basic",
+                                                                    )}
+                                                                </option>
+                                                                <option value="premium">
+                                                                    {t(
+                                                                        "opt_tier_premium",
+                                                                    )}
+                                                                </option>
+                                                            </select>
+                                                        </label>
+                                                        <Input
+                                                            label={t(
+                                                                "label_user_tier_until",
+                                                            )}
+                                                            type="date"
+                                                            value={
+                                                                userTierUntil
+                                                            }
+                                                            onChange={(e) =>
+                                                                setUserTierUntil(
+                                                                    e.target
+                                                                        .value,
+                                                                )
+                                                            }
+                                                            placeholder={t(
+                                                                "placeholder_date_ymd",
+                                                            )}
+                                                        />
+                                                        <Button
+                                                            variant="secondary"
+                                                            disabled={
+                                                                loading ||
+                                                                actionLoading.userTier
+                                                            }
+                                                            loading={
+                                                                actionLoading.userTier
+                                                            }
+                                                            onClick={
+                                                                runUserTierAction
+                                                            }
+                                                        >
+                                                            {t("btn_apply")}
+                                                        </Button>
+                                                    </div>
+                                                    {actionError.userTier ? (
+                                                        <p
+                                                            className={
+                                                                styles.errorText
+                                                            }
+                                                        >
+                                                            {
+                                                                actionError.userTier
+                                                            }
+                                                        </p>
+                                                    ) : null}
+                                                </div>
+                                            ) : null}
+                                        </div>
+                                    ) : null}
+
+                                    {selectedTab === "danger" ? (
+                                        <div className={styles.sectionBlock}>
+                                            <div
+                                                className={styles.sectionTitle}
+                                            >
+                                                Danger
+                                            </div>
+                                            <Input
+                                                label={t("label_reason")}
+                                                value={reason}
+                                                onChange={(e) =>
+                                                    setReason(e.target.value)
+                                                }
+                                                placeholder={t(
+                                                    "placeholder_reason",
+                                                )}
+                                                required
+                                            />
+
+                                            <div className={styles.actionGroup}>
+                                                {selectedCard.isActive ? (
+                                                    <Button
+                                                        variant="secondary"
+                                                        disabled={
+                                                            loading ||
+                                                            actionLoading.deactivate
+                                                        }
+                                                        loading={
+                                                            actionLoading.deactivate
+                                                        }
+                                                        onClick={() =>
+                                                            runAction(
+                                                                "deactivate",
+                                                                async (r) => {
+                                                                    const res =
+                                                                        await adminDeactivateCard(
+                                                                            selectedCard._id,
+                                                                            r,
+                                                                        );
+                                                                    return res.data;
+                                                                },
+                                                            )
+                                                        }
+                                                    >
+                                                        {t("btn_deactivate")}
+                                                    </Button>
+                                                ) : (
+                                                    <Button
+                                                        variant="secondary"
+                                                        disabled={
+                                                            loading ||
+                                                            actionLoading.reactivate
+                                                        }
+                                                        loading={
+                                                            actionLoading.reactivate
+                                                        }
+                                                        onClick={() =>
+                                                            runAction(
+                                                                "reactivate",
+                                                                async (r) => {
+                                                                    const res =
+                                                                        await adminReactivateCard(
+                                                                            selectedCard._id,
+                                                                            r,
+                                                                        );
+                                                                    return res.data;
+                                                                },
+                                                            )
+                                                        }
+                                                    >
+                                                        {t("btn_reactivate")}
+                                                    </Button>
+                                                )}
+
+                                                {selectedCard.isActive &&
+                                                actionError.deactivate ? (
+                                                    <p
+                                                        className={
+                                                            styles.errorText
+                                                        }
+                                                    >
+                                                        {actionError.deactivate}
+                                                    </p>
+                                                ) : null}
+                                                {!selectedCard.isActive &&
+                                                actionError.reactivate ? (
+                                                    <p
+                                                        className={
+                                                            styles.errorText
+                                                        }
+                                                    >
+                                                        {actionError.reactivate}
+                                                    </p>
+                                                ) : null}
+                                            </div>
+                                        </div>
+                                    ) : null}
+                                </>
+                            ) : null}
+                        </div>
+                    </div>
+                </section>
             </div>
-        </Page>
+        </main>
     );
 }
