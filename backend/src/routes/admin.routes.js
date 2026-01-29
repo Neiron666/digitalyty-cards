@@ -5,6 +5,7 @@ import {
     listCards,
     getUserById,
     getCardById,
+    deleteCardPermanently,
     deactivateCard,
     reactivateCard,
     extendTrial,
@@ -38,6 +39,7 @@ router.get("/site-analytics/sources", getAdminSiteAnalyticsSources);
 router.get("/site-analytics/diagnostics", getAdminSiteAnalyticsDiagnostics);
 
 // safe write actions (no generic patch)
+router.post("/cards/:id/delete", deleteCardPermanently);
 router.post("/cards/:id/deactivate", deactivateCard);
 router.post("/cards/:id/reactivate", reactivateCard);
 router.post("/cards/:id/trial/extend", extendTrial);

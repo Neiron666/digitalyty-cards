@@ -28,6 +28,10 @@ export function adminReactivateCard(id, reason) {
     return api.post(`/admin/cards/${id}/reactivate`, { reason });
 }
 
+export function adminDeleteCard(id, reason) {
+    return api.post(`/admin/cards/${id}/delete`, { reason });
+}
+
 export function adminExtendTrial(id, { days, untilLocal, reason }) {
     return api.post(`/admin/cards/${id}/trial/extend`, {
         days,

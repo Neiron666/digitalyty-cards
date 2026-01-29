@@ -1,6 +1,7 @@
 import Card from "../models/Card.model.js";
 import slugify from "slugify";
 import User from "../models/User.model.js";
+import mongoose from "mongoose";
 import { hasAccess } from "../utils/planAccess.js";
 import crypto from "crypto";
 import { removeObjects } from "../services/supabaseStorage.js";
@@ -8,6 +9,7 @@ import {
     collectSupabasePathsFromCard,
     normalizeSupabasePaths,
 } from "../utils/supabasePaths.js";
+import { deleteCardCascade } from "../utils/cardDeleteCascade.js";
 import { GALLERY_LIMIT } from "../config/galleryLimit.js";
 import { resolveActor, assertCardOwner } from "../utils/actor.js";
 import {
@@ -1134,7 +1136,14 @@ export async function deleteCard(req, res) {
     const actor = resolveActor(req) || resolveOwnerContext(req);
     if (!actor) return res.status(401).json({ message: "Unauthorized" });
 
-    const card = await Card.findById(req.params.id);
+    const id = String(req.params.id || "");
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+        return res
+            .status(400)
+            .json({ code: "INVALID_ID", message: "Invalid id" });
+    }
+
+    const card = await Card.findById(id);
     if (!card) return res.status(404).json({ message: "Not found" });
 
     try {
@@ -1173,6 +1182,19 @@ export async function deleteCard(req, res) {
             error: err?.message || err,
         });
         return res.status(502).json({ message: "Failed to delete media" });
+    }
+
+    try {
+        await deleteCardCascade({ cardId: card._id });
+    } catch (err) {
+        console.error("[cards] cascade delete failed", {
+            cardId: String(card._id),
+            actorType: actor.type,
+            error: err?.message || err,
+        });
+        return res
+            .status(500)
+            .json({ message: "Failed to delete related data" });
     }
 
     await Card.deleteOne({ _id: card._id });

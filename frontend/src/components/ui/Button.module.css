@@ -83,6 +83,19 @@
     box-shadow: 0 0 0 1px var(--gold);
 }
 
+/* ===== DANGER ===== */
+.danger {
+    background: #b91c1c;
+    color: white;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+}
+
+.danger:hover {
+    background: #991b1b;
+    transform: translateY(-1px);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.35);
+}
+
 /* ===== GHOST ===== */
 .ghost {
     background: transparent;

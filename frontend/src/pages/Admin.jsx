@@ -5,6 +5,7 @@ import FlashBanner from "../components/ui/FlashBanner/FlashBanner";
 import { useAuth } from "../context/AuthContext";
 import {
     adminDeactivateCard,
+    adminDeleteCard,
     adminExtendTrial,
     adminOverridePlan,
     adminReactivateCard,
@@ -294,6 +295,7 @@ export default function Admin() {
     const [actionLoading, setActionLoading] = useState({
         deactivate: false,
         reactivate: false,
+        delete: false,
         extend: false,
         override: false,
         cardTier: false,
@@ -303,6 +305,7 @@ export default function Admin() {
     const [actionError, setActionError] = useState({
         deactivate: "",
         reactivate: "",
+        delete: "",
         extend: "",
         override: "",
         cardTier: "",
@@ -469,6 +472,7 @@ export default function Admin() {
         setActionError({
             deactivate: "",
             reactivate: "",
+            delete: "",
             extend: "",
             override: "",
             cardTier: "",
@@ -531,6 +535,62 @@ export default function Admin() {
         } finally {
             setLoading(false);
             setActionLoading((prev) => ({ ...prev, [actionKey]: false }));
+        }
+    }
+
+    function removeCardFromLists(cardId) {
+        if (!cardId) return;
+
+        setCards((prev) =>
+            Array.isArray(prev) ? prev.filter((c) => c?._id !== cardId) : prev,
+        );
+
+        setUsers((prev) =>
+            Array.isArray(prev)
+                ? prev.map((u) => {
+                      if (u?.cardSummary?.cardId !== cardId) return u;
+                      return {
+                          ...u,
+                          cardId: null,
+                          cardSummary: null,
+                      };
+                  })
+                : prev,
+        );
+    }
+
+    async function runDeleteAction() {
+        if (!selectedCard?._id) return;
+        const r = requireReason();
+        if (!r) return;
+
+        const confirmed = window.confirm(
+            "Delete this card permanently? This cannot be undone.",
+        );
+        if (!confirmed) return;
+
+        setActionError((prev) => ({ ...prev, delete: "" }));
+
+        setLoading(true);
+        setError("");
+        setActionLoading((prev) => ({ ...prev, delete: true }));
+        try {
+            await adminDeleteCard(selectedCard._id, r);
+
+            removeCardFromLists(selectedCard._id);
+            setSelectedCardId("");
+            setSelectedCard(null);
+            setReason("");
+        } catch (err) {
+            if (isAccessDenied(err)) {
+                setAccessDenied(true);
+            } else {
+                const msg = normalizeActionError(err);
+                setActionError((prev) => ({ ...prev, delete: msg }));
+            }
+        } finally {
+            setLoading(false);
+            setActionLoading((prev) => ({ ...prev, delete: false }));
         }
     }
 
@@ -3348,6 +3408,32 @@ export default function Admin() {
                                                             {
                                                                 actionError.reactivate
                                                             }
+                                                        </p>
+                                                    ) : null}
+
+                                                    <Button
+                                                        variant="danger"
+                                                        disabled={
+                                                            loading ||
+                                                            actionLoading.delete
+                                                        }
+                                                        loading={
+                                                            actionLoading.delete
+                                                        }
+                                                        onClick={
+                                                            runDeleteAction
+                                                        }
+                                                    >
+                                                        Delete permanently
+                                                    </Button>
+
+                                                    {actionError.delete ? (
+                                                        <p
+                                                            className={
+                                                                styles.errorText
+                                                            }
+                                                        >
+                                                            {actionError.delete}
                                                         </p>
                                                     ) : null}
                                                 </div>

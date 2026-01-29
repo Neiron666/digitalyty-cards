@@ -4,6 +4,7 @@ import {
     collectSupabasePathsFromCard,
     normalizeSupabasePaths,
 } from "../utils/supabasePaths.js";
+import { deleteCardCascade } from "../utils/cardDeleteCascade.js";
 import { isEntitled } from "../utils/trial.js";
 
 let running = false;
@@ -20,7 +21,7 @@ async function cleanupOnce() {
             isActive: true,
             trialDeleteAt: { $ne: null, $lte: now },
         }).select(
-            "trialDeleteAt trialEndsAt billing plan uploads gallery design anonymousId user"
+            "trialDeleteAt trialEndsAt billing plan uploads gallery design anonymousId user",
         );
 
         let deletedCount = 0;
@@ -48,6 +49,17 @@ async function cleanupOnce() {
                     // Do not delete the card if media removal failed.
                     continue;
                 }
+            }
+
+            try {
+                await deleteCardCascade({ cardId: card._id });
+            } catch (err) {
+                console.error("[trial-cleanup] cascade delete failed", {
+                    cardId: String(card._id),
+                    error: err?.message || err,
+                });
+                // Do not delete the card if related data removal failed.
+                continue;
             }
 
             await Card.deleteOne({ _id: card._id });

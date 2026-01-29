@@ -1,7 +1,14 @@
+import mongoose from "mongoose";
 import User from "../models/User.model.js";
 import Card from "../models/Card.model.js";
 import { logAdminAction } from "../services/adminAudit.service.js";
+import { removeObjects } from "../services/supabaseStorage.js";
 import { toCardDTO } from "../utils/cardDTO.js";
+import {
+    collectSupabasePathsFromCard,
+    normalizeSupabasePaths,
+} from "../utils/supabasePaths.js";
+import { deleteCardCascade } from "../utils/cardDeleteCascade.js";
 import { isValidTier } from "../utils/tier.js";
 import {
     addIsraelDaysFromNow,
@@ -167,8 +174,8 @@ export async function listUsers(req, res) {
             items
                 .map((u) => u?.cardId)
                 .filter(Boolean)
-                .map((id) => String(id))
-        )
+                .map((id) => String(id)),
+        ),
     );
 
     const cardsById = new Map();
@@ -234,7 +241,7 @@ export async function listCards(req, res) {
             .skip(skip)
             .limit(limit)
             .select(
-                "slug status isActive plan user anonymousId trialEndsAt trialStartedAt billing adminOverride adminTier adminTierUntil adminTierByAdmin adminTierReason adminTierCreatedAt createdAt updatedAt"
+                "slug status isActive plan user anonymousId trialEndsAt trialStartedAt billing adminOverride adminTier adminTierUntil adminTierByAdmin adminTierReason adminTierCreatedAt createdAt updatedAt",
             ),
         Card.countDocuments(filter),
     ]);
@@ -244,8 +251,8 @@ export async function listCards(req, res) {
             items
                 .map((c) => c?.user)
                 .filter(Boolean)
-                .map((id) => String(id))
-        )
+                .map((id) => String(id)),
+        ),
     );
 
     const userById = new Map();
@@ -296,8 +303,86 @@ export async function getCardById(req, res) {
     const now = new Date();
     const userTier = card?.user ? await loadUserTierById(card.user) : null;
     return res.json(
-        toCardDTO(card, now, { includePrivate: true, user: userTier })
+        toCardDTO(card, now, { includePrivate: true, user: userTier }),
     );
+}
+
+export async function deleteCardPermanently(req, res) {
+    const reason = requireReason(req, res);
+    if (!reason) return;
+
+    const id = String(req.params.id || "");
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+        return res
+            .status(400)
+            .json({ code: "INVALID_ID", message: "Invalid id" });
+    }
+
+    const card = await Card.findById(id);
+    if (!card) return res.status(404).json({ message: "Not found" });
+
+    const rawPaths = collectSupabasePathsFromCard(card);
+    const paths = normalizeSupabasePaths(rawPaths);
+
+    try {
+        console.debug("[supabase] admin delete", {
+            cardId: String(card._id),
+            pathCount: paths.length,
+        });
+
+        // CRITICAL: delete Supabase objects first. If this fails, keep Mongo doc
+        // so we don't lose references and can retry cleanup later.
+        if (paths.length) await removeObjects(paths);
+    } catch (err) {
+        console.error("[supabase] admin delete failed", {
+            cardId: String(card._id),
+            error: err?.message || err,
+        });
+        return res.status(502).json({ message: "Failed to delete media" });
+    }
+
+    let cascade;
+    try {
+        cascade = await deleteCardCascade({ cardId: card._id });
+    } catch (err) {
+        console.error("[cards] admin cascade delete failed", {
+            cardId: String(card._id),
+            error: err?.message || err,
+        });
+        return res
+            .status(500)
+            .json({ message: "Failed to delete related data" });
+    }
+
+    await Card.deleteOne({ _id: card._id });
+
+    if (card?.user) {
+        // Best-effort unlink from user (keeps owner-delete behavior consistent)
+        await User.updateOne(
+            { _id: card.user, cardId: card._id },
+            { $unset: { cardId: 1 } },
+        );
+    }
+
+    await logAdminAction({
+        adminUserId: req.userId,
+        action: "CARD_DELETE_PERMANENT",
+        targetType: "card",
+        targetId: card._id,
+        reason,
+        meta: {
+            slug: card.slug || "",
+            owner: card?.user
+                ? { type: "user", userId: String(card.user) }
+                : card?.anonymousId
+                  ? { type: "anonymous", anonymousId: String(card.anonymousId) }
+                  : { type: "none" },
+            media: { pathCount: paths.length },
+            cascade,
+        },
+    });
+
+    return res.json({ ok: true });
 }
 
 export async function deactivateCard(req, res) {
@@ -312,7 +397,7 @@ export async function deactivateCard(req, res) {
     const card = await Card.findByIdAndUpdate(
         req.params.id,
         { $set: { isActive: false } },
-        { new: true, runValidators: true }
+        { new: true, runValidators: true },
     );
     if (!card) return res.status(404).json({ message: "Not found" });
 
@@ -328,7 +413,7 @@ export async function deactivateCard(req, res) {
     const now = new Date();
     const userTier = card?.user ? await loadUserTierById(card.user) : null;
     return res.json(
-        toCardDTO(card, now, { includePrivate: true, user: userTier })
+        toCardDTO(card, now, { includePrivate: true, user: userTier }),
     );
 }
 
@@ -344,7 +429,7 @@ export async function reactivateCard(req, res) {
     const card = await Card.findByIdAndUpdate(
         req.params.id,
         { $set: { isActive: true } },
-        { new: true, runValidators: true }
+        { new: true, runValidators: true },
     );
     if (!card) return res.status(404).json({ message: "Not found" });
 
@@ -360,7 +445,7 @@ export async function reactivateCard(req, res) {
     const now = new Date();
     const userTier = card?.user ? await loadUserTierById(card.user) : null;
     return res.json(
-        toCardDTO(card, now, { includePrivate: true, user: userTier })
+        toCardDTO(card, now, { includePrivate: true, user: userTier }),
     );
 }
 
@@ -449,7 +534,7 @@ export async function extendTrial(req, res) {
     const card = await Card.findByIdAndUpdate(
         req.params.id,
         { $set: update },
-        { new: true, runValidators: true }
+        { new: true, runValidators: true },
     );
     if (!card) return res.status(404).json({ message: "Not found" });
 
@@ -476,7 +561,7 @@ export async function extendTrial(req, res) {
     const dtoNow = now;
     const userTier = card?.user ? await loadUserTierById(card.user) : null;
     return res.json(
-        toCardDTO(card, dtoNow, { includePrivate: true, user: userTier })
+        toCardDTO(card, dtoNow, { includePrivate: true, user: userTier }),
     );
 }
 
@@ -531,7 +616,7 @@ export async function overridePlan(req, res) {
     const card = await Card.findByIdAndUpdate(
         req.params.id,
         { $set: { adminOverride: nextOverride } },
-        { new: true, runValidators: true }
+        { new: true, runValidators: true },
     );
     if (!card) return res.status(404).json({ message: "Not found" });
 
@@ -550,7 +635,7 @@ export async function overridePlan(req, res) {
     const dtoNow = new Date();
     const userTier = card?.user ? await loadUserTierById(card.user) : null;
     return res.json(
-        toCardDTO(card, dtoNow, { includePrivate: true, user: userTier })
+        toCardDTO(card, dtoNow, { includePrivate: true, user: userTier }),
     );
 }
 
@@ -572,7 +657,7 @@ export async function setAnalyticsPremium(req, res) {
                 "billing.features.analyticsPremium": enabled,
             },
         },
-        { new: true, runValidators: true }
+        { new: true, runValidators: true },
     );
     if (!card) return res.status(404).json({ message: "Not found" });
 
@@ -591,7 +676,7 @@ export async function setAnalyticsPremium(req, res) {
     const dtoNow = new Date();
     const userTier = card?.user ? await loadUserTierById(card.user) : null;
     return res.json(
-        toCardDTO(card, dtoNow, { includePrivate: true, user: userTier })
+        toCardDTO(card, dtoNow, { includePrivate: true, user: userTier }),
     );
 }
 
@@ -637,7 +722,7 @@ export async function setCardTier(req, res) {
     const card = await Card.findByIdAndUpdate(
         req.params.id,
         { $set: update },
-        { new: true, runValidators: true }
+        { new: true, runValidators: true },
     );
     if (!card) return res.status(404).json({ message: "Not found" });
 
@@ -662,7 +747,7 @@ export async function setCardTier(req, res) {
     const userTier = card?.user ? await loadUserTierById(card.user) : null;
     const dtoNow = new Date();
     return res.json(
-        toCardDTO(card, dtoNow, { includePrivate: true, user: userTier })
+        toCardDTO(card, dtoNow, { includePrivate: true, user: userTier }),
     );
 }
 
@@ -707,9 +792,9 @@ export async function setUserTier(req, res) {
     const user = await User.findByIdAndUpdate(
         req.params.id,
         { $set: update },
-        { new: true, runValidators: true }
+        { new: true, runValidators: true },
     ).select(
-        "email role cardId adminTier adminTierUntil adminTierByAdmin adminTierReason adminTierCreatedAt createdAt"
+        "email role cardId adminTier adminTierUntil adminTierByAdmin adminTierReason adminTierCreatedAt createdAt",
     );
     if (!user) return res.status(404).json({ message: "Not found" });
 
