@@ -1,7 +1,10 @@
 import { useEffect } from "react";
 import { Link } from "react-router-dom";
 import Button from "../components/ui/Button";
-import { trackSitePageView } from "../services/siteAnalytics.client";
+import {
+    trackSiteClick,
+    trackSitePageView,
+} from "../services/siteAnalytics.client";
 import styles from "./Home.module.css";
 
 const FEATURES = [
@@ -76,13 +79,29 @@ export default function Home() {
                         </p>
 
                         <div className={styles.heroActions}>
-                            <Button as={Link} to="/register" variant="primary">
+                            <Button
+                                as={Link}
+                                to="/register"
+                                variant="primary"
+                                onClick={() =>
+                                    trackSiteClick({
+                                        action: "home_hero_primary_register",
+                                        pagePath: "/",
+                                    })
+                                }
+                            >
                                 צור כרטיס חינם
                             </Button>
                             <Button
                                 as="a"
                                 href="#templates"
                                 variant="secondary"
+                                onClick={() =>
+                                    trackSiteClick({
+                                        action: "home_hero_secondary_examples",
+                                        pagePath: "/",
+                                    })
+                                }
                             >
                                 לצפייה בדוגמאות
                             </Button>

@@ -278,6 +278,7 @@ export default function Admin() {
     const { token } = useAuth();
 
     const [adminMode, setAdminMode] = useState("manage");
+    const [analyticsRefreshKey, setAnalyticsRefreshKey] = useState(0);
 
     const [directoryTab, setDirectoryTab] = useState("cards");
     const [selectedTab, setSelectedTab] = useState("general");
@@ -451,6 +452,14 @@ export default function Admin() {
         } finally {
             setLoading(false);
         }
+    }
+
+    function handleRefreshClick() {
+        if (adminMode === "analytics") {
+            setAnalyticsRefreshKey((k) => k + 1);
+            return;
+        }
+        loadAll();
     }
 
     async function loadCard(id) {
@@ -667,7 +676,7 @@ export default function Admin() {
                     </p>
                 </div>
                 <div className={styles.topbarActions}>
-                    <Button onClick={loadAll} loading={loading}>
+                    <Button onClick={handleRefreshClick} loading={loading}>
                         {t("btn_refresh")}
                     </Button>
 
@@ -3351,7 +3360,7 @@ export default function Admin() {
                     </section>
                 </div>
             ) : (
-                <AdminAnalyticsView />
+                <AdminAnalyticsView refreshKey={analyticsRefreshKey} />
             )}
         </main>
     );

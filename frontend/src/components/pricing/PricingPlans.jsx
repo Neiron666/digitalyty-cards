@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import Button from "../ui/Button";
 import BillingToggle from "./BillingToggle";
 import styles from "./PricingPlans.module.css";
+import { trackSiteClick } from "../../services/siteAnalytics.client";
 
 export default function PricingPlans() {
     const [billing, setBilling] = useState("yearly");
@@ -40,6 +41,12 @@ export default function PricingPlans() {
                         to="/register"
                         variant="secondary"
                         fullWidth
+                        onClick={() =>
+                            trackSiteClick({
+                                action: "pricing_trial_start",
+                                pagePath: "/pricing",
+                            })
+                        }
                     >
                         התחלת ניסיון
                     </Button>
@@ -67,6 +74,12 @@ export default function PricingPlans() {
                         to="/register"
                         variant="primary"
                         fullWidth
+                        onClick={() =>
+                            trackSiteClick({
+                                action: "pricing_premium_upgrade",
+                                pagePath: "/pricing",
+                            })
+                        }
                     >
                         שדרג עכשיו
                     </Button>

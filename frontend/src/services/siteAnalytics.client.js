@@ -2,6 +2,9 @@ import { getUtm } from "./analytics.client";
 
 const OPT_OUT_KEY = "siteAnalyticsOptOut";
 
+const DEDUPE_WINDOW_MS = 2500;
+let lastSent = { key: "", ts: 0 };
+
 const EXCLUDED_PREFIXES = Object.freeze([
     "/admin",
     "/api",
@@ -49,18 +52,31 @@ export function shouldTrackSitePagePath(pagePath) {
     return true;
 }
 
-function send(payload) {
+function isOptedOut() {
+    try {
+        return (
+            typeof window !== "undefined" &&
+            window.localStorage?.getItem(OPT_OUT_KEY) === "1"
+        );
+    } catch {
+        return false;
+    }
+}
+
+function send(payload, { preferFetch = false } = {}) {
     try {
         const body = JSON.stringify(payload);
         const url = "/api/site-analytics/track";
 
-        if (
-            typeof navigator !== "undefined" &&
-            typeof navigator.sendBeacon === "function"
-        ) {
-            const blob = new Blob([body], { type: "application/json" });
-            const ok = navigator.sendBeacon(url, blob);
-            if (ok) return;
+        if (!preferFetch) {
+            if (
+                typeof navigator !== "undefined" &&
+                typeof navigator.sendBeacon === "function"
+            ) {
+                const blob = new Blob([body], { type: "application/json" });
+                const ok = navigator.sendBeacon(url, blob);
+                if (ok) return;
+            }
         }
 
         fetch(url, {
@@ -78,19 +94,16 @@ function send(payload) {
 
 export function trackSitePageView({ siteKey = "main" } = {}) {
     try {
-        try {
-            if (
-                typeof window !== "undefined" &&
-                window.localStorage?.getItem(OPT_OUT_KEY) === "1"
-            ) {
-                return;
-            }
-        } catch {
-            // ignore
-        }
+        if (isOptedOut()) return;
 
         const pagePath = window.location?.pathname || "";
         if (!shouldTrackSitePagePath(pagePath)) return;
+
+        const now = Date.now();
+        const key = `view::${pagePath}`;
+        if (lastSent.key === key && now - lastSent.ts < DEDUPE_WINDOW_MS)
+            return;
+        lastSent = { key, ts: now };
 
         send({
             event: "view",
@@ -99,6 +112,45 @@ export function trackSitePageView({ siteKey = "main" } = {}) {
             utm: getUtm(),
             ref: document.referrer || "",
         });
+    } catch {
+        // ignore
+    }
+}
+
+export function trackSiteClick({
+    action,
+    siteKey = "main",
+    pagePath: providedPagePath,
+} = {}) {
+    try {
+        if (isOptedOut()) return;
+
+        const pagePath =
+            typeof providedPagePath === "string" && providedPagePath
+                ? providedPagePath
+                : window.location?.pathname || "";
+        if (!shouldTrackSitePagePath(pagePath)) return;
+
+        const a = String(action || "").trim();
+        if (!a) return;
+
+        const now = Date.now();
+        const key = `click::${pagePath}::${a}`;
+        if (lastSent.key === key && now - lastSent.ts < DEDUPE_WINDOW_MS)
+            return;
+        lastSent = { key, ts: now };
+
+        send(
+            {
+                event: "click",
+                action: a,
+                siteKey,
+                pagePath,
+                utm: getUtm(),
+                ref: document.referrer || "",
+            },
+            { preferFetch: true },
+        );
     } catch {
         // ignore
     }

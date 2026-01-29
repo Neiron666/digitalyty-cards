@@ -26,7 +26,7 @@ function writeOptOut(nextValue) {
     }
 }
 
-export default function AdminAnalyticsView() {
+export default function AdminAnalyticsView({ refreshKey = 0 } = {}) {
     const [rangeDays, setRangeDays] = useState(7);
     const [optOut, setOptOut] = useState(() => readOptOut());
 
@@ -73,13 +73,15 @@ export default function AdminAnalyticsView() {
         return () => {
             alive = false;
         };
-    }, [rangeDays]);
+    }, [rangeDays, refreshKey]);
 
     const kpi = summary?.kpi || null;
     const today = summary?.today || null;
 
     const channelsObj =
-        sources?.channels && typeof sources.channels === "object" ? sources.channels : {};
+        sources?.channels && typeof sources.channels === "object"
+            ? sources.channels
+            : {};
     const channelsRows = useMemo(() => {
         return Object.entries(channelsObj)
             .map(([key, value]) => ({ key, count: Number(value) || 0 }))
@@ -91,11 +93,19 @@ export default function AdminAnalyticsView() {
     const referrersTop = Array.isArray(sources?.referrersTop)
         ? sources.referrersTop
         : [];
-    const utmTop = Array.isArray(sources?.utmSourcesTop) ? sources.utmSourcesTop : [];
-    const campaignsTop = Array.isArray(sources?.campaignsTop) ? sources.campaignsTop : [];
-    const aiSourcesTop = Array.isArray(sources?.aiSourcesTop) ? sources.aiSourcesTop : [];
+    const utmTop = Array.isArray(sources?.utmSourcesTop)
+        ? sources.utmSourcesTop
+        : [];
+    const campaignsTop = Array.isArray(sources?.campaignsTop)
+        ? sources.campaignsTop
+        : [];
+    const aiSourcesTop = Array.isArray(sources?.aiSourcesTop)
+        ? sources.aiSourcesTop
+        : [];
     const topPages = Array.isArray(sources?.topPages) ? sources.topPages : [];
-    const topActions = Array.isArray(sources?.topActions) ? sources.topActions : [];
+    const topActions = Array.isArray(sources?.topActions)
+        ? sources.topActions
+        : [];
 
     const formatPct = (value) => {
         const n = Number(value);
@@ -112,13 +122,17 @@ export default function AdminAnalyticsView() {
     };
 
     return (
-        <section className={styles.root} dir="rtl" aria-label="אנליטיקת אתר (שיווק)">
+        <section
+            className={styles.root}
+            dir="rtl"
+            aria-label="אנליטיקת אתר (שיווק)"
+        >
             <header className={styles.header}>
                 <div className={styles.titleWrap}>
                     <h2 className={styles.title}>אנליטיקת אתר (שיווק)</h2>
                     <p className={styles.subtitle}>
-                        כולל את כל הדפים הציבוריים (Marketing) · לא כולל /card/:slug · לא כולל
-                        admin/auth/internal
+                        כולל את כל הדפים הציבוריים (Marketing) · לא כולל
+                        /card/:slug · לא כולל admin/auth/internal
                     </p>
                 </div>
 
@@ -202,7 +216,8 @@ export default function AdminAnalyticsView() {
                     </div>
                     {today ? (
                         <p className={styles.muted}>
-                            היום: צפיות {Number(today.views) || 0} · קליקים {Number(today.clicksTotal) || 0}
+                            היום: צפיות {Number(today.views) || 0} · קליקים{" "}
+                            {Number(today.clicksTotal) || 0}
                         </p>
                     ) : null}
                 </div>
@@ -216,8 +231,12 @@ export default function AdminAnalyticsView() {
                                 <div className={styles.rows}>
                                     {channelsRows.map((r) => (
                                         <div key={r.key} className={styles.row}>
-                                            <span className={styles.rowKey}>{r.key}</span>
-                                            <span className={styles.rowVal}>{r.count}</span>
+                                            <span className={styles.rowKey}>
+                                                {r.key}
+                                            </span>
+                                            <span className={styles.rowVal}>
+                                                {r.count}
+                                            </span>
                                         </div>
                                     ))}
                                 </div>
@@ -231,7 +250,10 @@ export default function AdminAnalyticsView() {
                             {referrersTop.length ? (
                                 <div className={styles.rows}>
                                     {referrersTop.map((r) => (
-                                        <div key={r.referrer} className={styles.row}>
+                                        <div
+                                            key={r.referrer}
+                                            className={styles.row}
+                                        >
                                             <span className={styles.rowKey}>
                                                 {r.referrer}
                                             </span>
@@ -251,7 +273,10 @@ export default function AdminAnalyticsView() {
                             {utmTop.length ? (
                                 <div className={styles.rows}>
                                     {utmTop.map((r) => (
-                                        <div key={r.source} className={styles.row}>
+                                        <div
+                                            key={r.source}
+                                            className={styles.row}
+                                        >
                                             <span className={styles.rowKey}>
                                                 {r.source}
                                             </span>
@@ -271,8 +296,13 @@ export default function AdminAnalyticsView() {
                             {aiSourcesTop.length ? (
                                 <div className={styles.rows}>
                                     {aiSourcesTop.map((r) => (
-                                        <div key={r.source} className={styles.row}>
-                                            <span className={styles.rowKey}>{r.source}</span>
+                                        <div
+                                            key={r.source}
+                                            className={styles.row}
+                                        >
+                                            <span className={styles.rowKey}>
+                                                {r.source}
+                                            </span>
                                             <span className={styles.rowVal}>
                                                 {Number(r.count) || 0}
                                             </span>
@@ -290,12 +320,19 @@ export default function AdminAnalyticsView() {
                     <div className={styles.blockTitle}>פופולרי</div>
                     <div className={styles.campaignsGrid}>
                         <div className={styles.campaignCard}>
-                            <div className={styles.campaignTitle}>Top Pages</div>
+                            <div className={styles.campaignTitle}>
+                                Top Pages
+                            </div>
                             {topPages.length ? (
                                 <div className={styles.rows}>
                                     {topPages.slice(0, 10).map((p) => (
-                                        <div key={p.pagePath} className={styles.row}>
-                                            <span className={styles.rowKey}>{p.pagePath}</span>
+                                        <div
+                                            key={p.pagePath}
+                                            className={styles.row}
+                                        >
+                                            <span className={styles.rowKey}>
+                                                {p.pagePath}
+                                            </span>
                                             <span className={styles.rowVal}>
                                                 {Number(p.count) || 0}
                                             </span>
@@ -308,12 +345,19 @@ export default function AdminAnalyticsView() {
                         </div>
 
                         <div className={styles.campaignCard}>
-                            <div className={styles.campaignTitle}>Top Actions</div>
+                            <div className={styles.campaignTitle}>
+                                Top Actions
+                            </div>
                             {topActions.length ? (
                                 <div className={styles.rows}>
                                     {topActions.slice(0, 10).map((a) => (
-                                        <div key={a.action} className={styles.row}>
-                                            <span className={styles.rowKey}>{a.action}</span>
+                                        <div
+                                            key={a.action}
+                                            className={styles.row}
+                                        >
+                                            <span className={styles.rowKey}>
+                                                {a.action}
+                                            </span>
                                             <span className={styles.rowVal}>
                                                 {Number(a.count) || 0}
                                             </span>
@@ -326,12 +370,19 @@ export default function AdminAnalyticsView() {
                         </div>
 
                         <div className={styles.campaignCard}>
-                            <div className={styles.campaignTitle}>Campaigns (UTM)</div>
+                            <div className={styles.campaignTitle}>
+                                Campaigns (UTM)
+                            </div>
                             {campaignsTop.length ? (
                                 <div className={styles.rows}>
                                     {campaignsTop.slice(0, 10).map((c) => (
-                                        <div key={c.campaign} className={styles.row}>
-                                            <span className={styles.rowKey}>{c.campaign}</span>
+                                        <div
+                                            key={c.campaign}
+                                            className={styles.row}
+                                        >
+                                            <span className={styles.rowKey}>
+                                                {c.campaign}
+                                            </span>
                                             <span className={styles.rowVal}>
                                                 {Number(c.count) || 0}
                                             </span>
