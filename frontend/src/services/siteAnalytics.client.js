@@ -1,4 +1,5 @@
-import { getUtm } from "./analytics.client";
+import { isKnownSiteAction } from "./siteAnalytics.actions";
+import { getUtm } from "./utm.util";
 
 const OPT_OUT_KEY = "siteAnalyticsOptOut";
 
@@ -133,6 +134,14 @@ export function trackSiteClick({
 
         const a = String(action || "").trim();
         if (!a) return;
+
+        try {
+            if (import.meta?.env?.DEV && !isKnownSiteAction(a)) {
+                console.warn("[site-analytics] unknown action", a);
+            }
+        } catch {
+            // ignore
+        }
 
         const now = Date.now();
         const key = `click::${pagePath}::${a}`;

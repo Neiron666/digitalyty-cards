@@ -4,6 +4,7 @@ import Button from "../ui/Button";
 import BillingToggle from "./BillingToggle";
 import styles from "./PricingPlans.module.css";
 import { trackSiteClick } from "../../services/siteAnalytics.client";
+import { SITE_ACTIONS } from "../../services/siteAnalytics.actions";
 
 export default function PricingPlans() {
     const [billing, setBilling] = useState("yearly");
@@ -43,7 +44,7 @@ export default function PricingPlans() {
                         fullWidth
                         onClick={() =>
                             trackSiteClick({
-                                action: "pricing_trial_start",
+                                action: SITE_ACTIONS.pricing_trial_start,
                                 pagePath: "/pricing",
                             })
                         }
@@ -76,7 +77,7 @@ export default function PricingPlans() {
                         fullWidth
                         onClick={() =>
                             trackSiteClick({
-                                action: "pricing_premium_upgrade",
+                                action: SITE_ACTIONS.pricing_premium_upgrade,
                                 pagePath: "/pricing",
                             })
                         }

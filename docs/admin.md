@@ -2,13 +2,13 @@
 
 ## Security model
 
--   Admin UI is a normal browser page at `/admin`.
--   Access is controlled server-side by RBAC:
-    -   JWT must be present (`Authorization: Bearer <token>`).
-    -   The server loads the user from MongoDB and requires `user.role === 'admin'`.
--   There is no “secret admin link” security; the backend check is the source of truth.
--   Admin write actions are whitelisted (no generic admin patch).
--   Every admin write requires a `reason` and is recorded in the admin audit log.
+- Admin UI is a normal browser page at `/admin`.
+- Access is controlled server-side by RBAC:
+    - JWT must be present (`Authorization: Bearer <token>`).
+    - The server loads the user from MongoDB and requires `user.role === 'admin'`.
+- There is no “secret admin link” security; the backend check is the source of truth.
+- Admin write actions are whitelisted (no generic admin patch).
+- Every admin write requires a `reason` and is recorded in the admin audit log.
 
 ## Promote a user to admin
 
@@ -30,46 +30,54 @@ Then login in the UI again to get a fresh token (role is always checked from DB 
 
 All routes are under `/api/admin` and require admin RBAC.
 
+## Site analytics retention
+
+Marketing Site Analytics daily aggregates (`SiteAnalyticsDaily`) are stored with a TTL index.
+
+- Env: `SITE_ANALYTICS_RETENTION_DAYS`
+- Default: 365
+- Minimum enforced: 120 (to keep the 90-day admin range safe)
+
 ### Read
 
--   `GET /api/admin/stats`
--   `GET /api/admin/users?page=1&limit=25&q=email-fragment`
--   `GET /api/admin/cards?page=1&limit=25&q=slug-fragment&owner=user|anonymous&status=draft|published`
--   `GET /api/admin/users/:id`
--   `GET /api/admin/cards/:id`
+- `GET /api/admin/stats`
+- `GET /api/admin/users?page=1&limit=25&q=email-fragment`
+- `GET /api/admin/cards?page=1&limit=25&q=slug-fragment&owner=user|anonymous&status=draft|published`
+- `GET /api/admin/users/:id`
+- `GET /api/admin/cards/:id`
 
 ### Safe writes (audited)
 
 All of these require JSON body with `reason`.
 
--   Deactivate card:
-    -   `POST /api/admin/cards/:id/deactivate`
-    -   Body: `{ "reason": "..." }`
--   Reactivate card:
-    -   `POST /api/admin/cards/:id/reactivate`
-    -   Body: `{ "reason": "..." }`
--   Set trial (Israel calendar rules):
-    -   `POST /api/admin/cards/:id/trial/extend`
-    -   Body (days mode, 0..14): `{ "days": 7, "reason": "..." }`
-        -   `days=0` expires immediately.
-        -   `days>0` ends at **Israel end-of-day (23:59)** of the target Israel date.
-    -   Body (exact mode):
-        `{ "untilLocal": { "date": "YYYY-MM-DD", "hour": 13, "minute": 5 }, "reason": "..." }`
-        -   `date/hour/minute` are interpreted in `Asia/Jerusalem`.
-        -   `minute` must be in 5-minute steps: `0,5,10,...,55`.
--   Override plan until a future date (max +365 days):
-    -   `POST /api/admin/cards/:id/plan/override`
-    -   Body: `{ "plan": "monthly", "until": "2026-01-01T00:00:00.000Z", "reason": "..." }`
+- Deactivate card:
+    - `POST /api/admin/cards/:id/deactivate`
+    - Body: `{ "reason": "..." }`
+- Reactivate card:
+    - `POST /api/admin/cards/:id/reactivate`
+    - Body: `{ "reason": "..." }`
+- Set trial (Israel calendar rules):
+    - `POST /api/admin/cards/:id/trial/extend`
+    - Body (days mode, 0..14): `{ "days": 7, "reason": "..." }`
+        - `days=0` expires immediately.
+        - `days>0` ends at **Israel end-of-day (23:59)** of the target Israel date.
+    - Body (exact mode):
+      `{ "untilLocal": { "date": "YYYY-MM-DD", "hour": 13, "minute": 5 }, "reason": "..." }`
+        - `date/hour/minute` are interpreted in `Asia/Jerusalem`.
+        - `minute` must be in 5-minute steps: `0,5,10,...,55`.
+- Override plan until a future date (max +365 days):
+    - `POST /api/admin/cards/:id/plan/override`
+    - Body: `{ "plan": "monthly", "until": "2026-01-01T00:00:00.000Z", "reason": "..." }`
 
 ## Feature tier overrides (admin-only)
 
 This project has two separate “truths”:
 
--   **Billing truth** (`effectiveBilling`): drives edit/write access and payment state.
-    -   Controlled by real billing, trial, and `adminOverride`.
-    -   **Do not** treat tiers as paid.
--   **Feature tier truth** (`effectiveTier`): drives feature entitlements (analytics level/retention, lead form, gallery limit, etc).
-    -   Controlled by admin-only tier overrides and a billing-derived fallback.
+- **Billing truth** (`effectiveBilling`): drives edit/write access and payment state.
+    - Controlled by real billing, trial, and `adminOverride`.
+    - **Do not** treat tiers as paid.
+- **Feature tier truth** (`effectiveTier`): drives feature entitlements (analytics level/retention, lead form, gallery limit, etc).
+    - Controlled by admin-only tier overrides and a billing-derived fallback.
 
 ### Precedence
 
@@ -84,29 +92,28 @@ Feature tier resolution order:
 
 All of these require JSON body with `reason`.
 
--   Set/clear card tier:
+- Set/clear card tier:
+    - `POST /api/admin/cards/:id/tier`
+    - Body (set): `{ "tier": "premium", "until": "2026-01-01T00:00:00.000Z", "reason": "..." }`
+    - Body (clear): `{ "tier": null, "reason": "..." }`
+    - Notes:
+        - `until` is normalized to **end-of-day UTC**.
+        - `until` is optional; omit or pass empty string for “no expiry”.
 
-    -   `POST /api/admin/cards/:id/tier`
-    -   Body (set): `{ "tier": "premium", "until": "2026-01-01T00:00:00.000Z", "reason": "..." }`
-    -   Body (clear): `{ "tier": null, "reason": "..." }`
-    -   Notes:
-        -   `until` is normalized to **end-of-day UTC**.
-        -   `until` is optional; omit or pass empty string for “no expiry”.
-
--   Set/clear user tier:
-    -   `POST /api/admin/users/:id/tier`
-    -   Body (set): `{ "tier": "basic", "until": "2026-01-01T00:00:00.000Z", "reason": "..." }`
-    -   Body (clear): `{ "tier": null, "reason": "..." }`
-    -   Notes:
-        -   `until` is normalized to **end-of-day UTC**.
-        -   User tier acts as a default for their card(s), but card tier wins.
+- Set/clear user tier:
+    - `POST /api/admin/users/:id/tier`
+    - Body (set): `{ "tier": "basic", "until": "2026-01-01T00:00:00.000Z", "reason": "..." }`
+    - Body (clear): `{ "tier": null, "reason": "..." }`
+    - Notes:
+        - `until` is normalized to **end-of-day UTC**.
+        - User tier acts as a default for their card(s), but card tier wins.
 
 ## Admin audit log
 
 Admin write actions are stored in the `AdminAudit` collection.
 
--   Each record includes: admin user id, action, target type/id, reason, and before/after meta.
--   This is intended for accountability and incident review.
+- Each record includes: admin user id, action, target type/id, reason, and before/after meta.
+- This is intended for accountability and incident review.
 
 ## Manual test checklist
 

@@ -1,7 +1,11 @@
 import { useEffect } from "react";
 import Page from "../components/page/Page";
 import Button from "../components/ui/Button";
-import { trackSitePageView } from "../services/siteAnalytics.client";
+import {
+    trackSitePageView,
+    trackSiteClick,
+} from "../services/siteAnalytics.client";
+import { SITE_ACTIONS } from "../services/siteAnalytics.actions";
 import styles from "./Contact.module.css";
 
 export default function Contact() {
@@ -18,7 +22,17 @@ export default function Contact() {
                 <strong>{email}</strong>
 
                 <div className={styles.actions}>
-                    <Button as="a" href={`mailto:${email}`} variant="secondary">
+                    <Button
+                        as="a"
+                        href={`mailto:${email}`}
+                        variant="secondary"
+                        onClick={() =>
+                            trackSiteClick({
+                                action: SITE_ACTIONS.contact_email_click,
+                                pagePath: "/contact",
+                            })
+                        }
+                    >
                         שלחו מייל
                     </Button>
                 </div>

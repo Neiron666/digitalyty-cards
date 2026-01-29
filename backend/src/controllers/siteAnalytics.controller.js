@@ -9,6 +9,45 @@ const RATE_WINDOW_MS = 10 * 60 * 1000;
 const RATE_LIMIT = 240;
 const inMemoryRate = new Map();
 
+const DIAGNOSTIC_REASONS = Object.freeze([
+    "disabled",
+    "rate_limited",
+    "invalid_event",
+    "invalid_pagePath",
+    "excluded_pagePath",
+    "card_denied",
+    "missing_action",
+    "db_error",
+]);
+
+const DIAGNOSTICS_START_AT = new Date();
+let diagnosticsLastResetAt = DIAGNOSTICS_START_AT;
+const diagnosticsCounters = Object.fromEntries(
+    DIAGNOSTIC_REASONS.map((k) => [k, 0]),
+);
+
+function incDiagnostics(reason) {
+    if (!reason || typeof reason !== "string") return;
+    if (!Object.prototype.hasOwnProperty.call(diagnosticsCounters, reason))
+        return;
+    diagnosticsCounters[reason] += 1;
+}
+
+export function getSiteAnalyticsDiagnosticsSnapshot() {
+    return {
+        since: DIAGNOSTICS_START_AT.toISOString(),
+        lastResetAt: diagnosticsLastResetAt.toISOString(),
+        counters: { ...diagnosticsCounters },
+    };
+}
+
+const RATE_MAX_KEYS = Number.parseInt(
+    process.env.SITE_ANALYTICS_RATE_MAX_KEYS || "5000",
+    10,
+);
+const RATE_SWEEP_EVERY = 200;
+let rateSweepTick = 0;
+
 const EXCLUDED_PREFIXES = Object.freeze([
     "/admin",
     "/api",
@@ -48,11 +87,41 @@ function isExcludedPagePath(pagePath) {
 }
 
 function getClientIp(req) {
-    const xf = req.headers["x-forwarded-for"];
-    if (typeof xf === "string" && xf.trim()) {
-        return xf.split(",")[0].trim();
-    }
+    // Trust-proxy gate: we rely on Express's req.ip.
+    // When trust proxy is disabled, req.ip is the direct peer IP.
+    // When trust proxy is enabled, Express already resolves XFF into req.ip.
     return req.ip || req.connection?.remoteAddress || "";
+}
+
+function sweepRateMap(now) {
+    // Remove expired windows first
+    for (const [key, entry] of inMemoryRate.entries()) {
+        if (!entry || entry.resetAt <= now) inMemoryRate.delete(key);
+    }
+
+    // Hard cap to prevent unbounded growth
+    const maxKeys =
+        Number.isFinite(RATE_MAX_KEYS) && RATE_MAX_KEYS > 0
+            ? RATE_MAX_KEYS
+            : 5000;
+    if (inMemoryRate.size <= maxKeys) return;
+
+    const overflow = inMemoryRate.size - maxKeys;
+    let removed = 0;
+    for (const key of inMemoryRate.keys()) {
+        inMemoryRate.delete(key);
+        removed += 1;
+        if (removed >= overflow) break;
+    }
+}
+
+function isSiteAnalyticsEnabled() {
+    const raw = String(process.env.SITE_ANALYTICS_ENABLED ?? "").trim();
+    if (!raw) return true;
+    const v = raw.toLowerCase();
+    if (["0", "false", "off", "no"].includes(v)) return false;
+    if (["1", "true", "on", "yes"].includes(v)) return true;
+    return true;
 }
 
 function rateLimit(req) {
@@ -60,6 +129,12 @@ function rateLimit(req) {
     if (!ip) return true;
 
     const now = Date.now();
+
+    rateSweepTick += 1;
+    if (rateSweepTick % RATE_SWEEP_EVERY === 0) {
+        sweepRateMap(now);
+    }
+
     const key = ip;
     const entry = inMemoryRate.get(key);
     if (!entry || entry.resetAt <= now) {
@@ -207,28 +282,48 @@ async function bumpPageChannelCount({ siteKey, day, pagePath, channel }) {
 export async function trackSiteAnalytics(req, res) {
     // Never help enumeration; always 204 for most failures.
     try {
-        if (!rateLimit(req)) return res.sendStatus(204);
+        if (!isSiteAnalyticsEnabled()) {
+            incDiagnostics("disabled");
+            return res.sendStatus(204);
+        }
+        if (!rateLimit(req)) {
+            incDiagnostics("rate_limited");
+            return res.sendStatus(204);
+        }
 
         const event = normalizeEvent(req.body?.event);
-        if (!event) return res.sendStatus(204);
+        if (!event) {
+            incDiagnostics("invalid_event");
+            return res.sendStatus(204);
+        }
 
         const siteKey = normalizeSiteKey(req.body?.siteKey);
 
         const pagePath = normalizePagePath(req.body?.pagePath);
-        if (!pagePath) return res.sendStatus(204);
+        if (!pagePath) {
+            incDiagnostics("invalid_pagePath");
+            return res.sendStatus(204);
+        }
 
         // Strict server-side exclude: never mix /card/* traffic into site analytics.
         if (pagePath === "/card" || pagePath.startsWith("/card/")) {
+            incDiagnostics("card_denied");
             return res.sendStatus(204);
         }
 
         // Strict server-side enforcement: exclude internal/auth/admin/app pages.
         // Everything else is treated as public site traffic.
-        if (isExcludedPagePath(pagePath)) return res.sendStatus(204);
+        if (isExcludedPagePath(pagePath)) {
+            incDiagnostics("excluded_pagePath");
+            return res.sendStatus(204);
+        }
 
         const action =
             event === "click" ? normalizeAction(req.body?.action) : "";
-        if (event === "click" && !action) return res.sendStatus(204);
+        if (event === "click" && !action) {
+            incDiagnostics("missing_action");
+            return res.sendStatus(204);
+        }
 
         const now = new Date();
         const day = utcDayKey(now);
@@ -350,6 +445,7 @@ export async function trackSiteAnalytics(req, res) {
 
         return res.sendStatus(204);
     } catch {
+        incDiagnostics("db_error");
         return res.sendStatus(204);
     }
 }

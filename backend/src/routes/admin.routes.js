@@ -20,6 +20,7 @@ import {
 import {
     getAdminSiteAnalyticsSources,
     getAdminSiteAnalyticsSummary,
+    getAdminSiteAnalyticsDiagnostics,
 } from "../controllers/adminSiteAnalytics.controller.js";
 
 const router = Router();
@@ -34,6 +35,7 @@ router.get("/analytics/summary", getAdminAnalyticsSummary);
 router.get("/analytics/sources", getAdminAnalyticsSources);
 router.get("/site-analytics/summary", getAdminSiteAnalyticsSummary);
 router.get("/site-analytics/sources", getAdminSiteAnalyticsSources);
+router.get("/site-analytics/diagnostics", getAdminSiteAnalyticsDiagnostics);
 
 // safe write actions (no generic patch)
 router.post("/cards/:id/deactivate", deactivateCard);

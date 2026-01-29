@@ -5,6 +5,16 @@ const { Schema } = mongoose;
 const MAX_BUCKET_KEYS = 25;
 const MAX_PAGE_CHANNEL_KEYS = 200;
 
+const MIN_RETENTION_DAYS = 120;
+const DEFAULT_RETENTION_DAYS = 365;
+
+function parseRetentionDays() {
+    const raw = process.env.SITE_ANALYTICS_RETENTION_DAYS;
+    const n = Number.parseInt(String(raw ?? ""), 10);
+    const days = Number.isFinite(n) && n > 0 ? n : DEFAULT_RETENTION_DAYS;
+    return Math.max(days, MIN_RETENTION_DAYS);
+}
+
 const SiteAnalyticsDailySchema = new Schema(
     {
         siteKey: {
@@ -43,6 +53,13 @@ const SiteAnalyticsDailySchema = new Schema(
 );
 
 SiteAnalyticsDailySchema.index({ siteKey: 1, day: 1 }, { unique: true });
+
+// TTL retention for daily aggregates (timestamps must be enabled).
+// NOTE: TTL is best-effort and depends on MongoDB TTL monitor.
+SiteAnalyticsDailySchema.index(
+    { createdAt: 1 },
+    { expireAfterSeconds: parseRetentionDays() * 24 * 60 * 60 },
+);
 
 // Constants exported for controller caps.
 SiteAnalyticsDailySchema.statics.MAX_BUCKET_KEYS = MAX_BUCKET_KEYS;

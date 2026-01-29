@@ -5,6 +5,7 @@ import {
     trackSiteClick,
     trackSitePageView,
 } from "../services/siteAnalytics.client";
+import { SITE_ACTIONS } from "../services/siteAnalytics.actions";
 import styles from "./Home.module.css";
 
 const FEATURES = [
@@ -85,7 +86,7 @@ export default function Home() {
                                 variant="primary"
                                 onClick={() =>
                                     trackSiteClick({
-                                        action: "home_hero_primary_register",
+                                        action: SITE_ACTIONS.home_hero_primary_register,
                                         pagePath: "/",
                                     })
                                 }
@@ -98,7 +99,7 @@ export default function Home() {
                                 variant="secondary"
                                 onClick={() =>
                                     trackSiteClick({
-                                        action: "home_hero_secondary_examples",
+                                        action: SITE_ACTIONS.home_hero_secondary_examples,
                                         pagePath: "/",
                                     })
                                 }

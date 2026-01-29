@@ -25,6 +25,23 @@ app.set("etag", false);
 app.use(cors());
 app.use(express.json());
 
+// Site analytics write endpoint must be "always 204".
+// If a client sends malformed JSON, Express would normally return 400 before hitting the handler.
+// We intentionally swallow JSON parse errors for this specific endpoint to preserve anti-enumeration.
+// NOTE: Must be an error-handling middleware (4 args) and registered after express.json().
+app.use((err, req, res, next) => {
+    const url = String(req?.originalUrl || req?.url || "");
+    const isSiteAnalyticsTrack =
+        req?.method === "POST" && url.startsWith("/api/site-analytics/track");
+
+    // body-parser uses `type: 'entity.parse.failed'` and `status: 400` for invalid JSON.
+    if (isSiteAnalyticsTrack && err?.type === "entity.parse.failed") {
+        return res.sendStatus(204);
+    }
+
+    return next(err);
+});
+
 // Local uploads (dev fallback when Cloudinary isn't configured)
 app.use("/uploads", express.static(path.resolve(process.cwd(), "uploads")));
 

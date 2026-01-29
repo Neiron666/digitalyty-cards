@@ -1,5 +1,6 @@
+import { getUtm } from "./utm.util";
+
 const STORAGE_KEY_DEVICE = "digitalyty_deviceId";
-const STORAGE_KEY_UTM = "digitalyty_utm";
 
 function uuidFallback() {
     // RFC4122 v4-ish fallback (good enough for local visitor ID)
@@ -16,7 +17,7 @@ function uuidFallback() {
 
     return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(
         12,
-        16
+        16,
     )}-${hex.slice(16, 20)}-${hex.slice(20)}`;
 }
 
@@ -36,42 +37,6 @@ export function getOrCreateDeviceId() {
     } catch {
         // If storage is blocked, return a best-effort ephemeral id.
         return uuidFallback();
-    }
-}
-
-export function getUtm() {
-    try {
-        const params = new URLSearchParams(window.location.search || "");
-
-        const source = params.get("utm_source") || "";
-        const campaign = params.get("utm_campaign") || "";
-        const medium = params.get("utm_medium") || "";
-
-        const utm = {
-            source: source || undefined,
-            campaign: campaign || undefined,
-            medium: medium || undefined,
-        };
-
-        const hasAny = Boolean(utm.source || utm.campaign || utm.medium);
-        if (hasAny) {
-            sessionStorage.setItem(STORAGE_KEY_UTM, JSON.stringify(utm));
-            return utm;
-        }
-
-        const cached = sessionStorage.getItem(STORAGE_KEY_UTM);
-        if (cached) {
-            try {
-                const parsed = JSON.parse(cached);
-                if (parsed && typeof parsed === "object") return parsed;
-            } catch {
-                // ignore
-            }
-        }
-
-        return {};
-    } catch {
-        return {};
     }
 }
 
@@ -103,7 +68,7 @@ function send(payload) {
                             "[analytics] track failed",
                             res?.status,
                             url,
-                            payload
+                            payload,
                         );
                     }
                 } catch {
@@ -116,7 +81,7 @@ function send(payload) {
                         console.warn(
                             "[analytics] track request error",
                             url,
-                            err
+                            err,
                         );
                     }
                 } catch {
@@ -164,7 +129,7 @@ export function trackClick(
     slug,
     action,
     utm = getUtm(),
-    ref = document.referrer || ""
+    ref = document.referrer || "",
 ) {
     if (!slug) return;
     send({

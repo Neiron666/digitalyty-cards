@@ -1,5 +1,6 @@
 import SiteAnalyticsDaily from "../models/SiteAnalyticsDaily.model.js";
 import { SITE_CHANNELS } from "../utils/siteAnalyticsSource.util.js";
+import { getSiteAnalyticsDiagnosticsSnapshot } from "./siteAnalytics.controller.js";
 
 const RANGE_ALLOWLIST = new Set([7, 30, 90]);
 
@@ -248,4 +249,8 @@ export async function getAdminSiteAnalyticsSources(req, res) {
         topActions,
         channelsByTopPages,
     });
+}
+
+export async function getAdminSiteAnalyticsDiagnostics(req, res) {
+    return res.status(200).json(getSiteAnalyticsDiagnosticsSnapshot());
 }
