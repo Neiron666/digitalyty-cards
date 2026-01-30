@@ -239,6 +239,100 @@ async function main() {
         "card still references cards/anon/* paths after claim",
     );
 
+    // Confirm migrated objects exist in PUBLIC bucket and are readable.
+    for (const p of afterPaths) {
+        assert(
+            p.startsWith(`cards/user/${String(user._id)}/${cardId}/`),
+            `unexpected path after claim: ${p}`,
+        );
+        const buf = await downloadToBuffer({ bucket: publicBucket, path: p });
+        assert(buf && buf.length > 0, `public object missing/empty: ${p}`);
+    }
+
+    // Idempotency: repeat claim should return "already has card".
+    const repeat = await claimAnonymousCardForUser({
+        userId: String(user._id),
+        anonymousId: anonId,
+        strict: true,
+    });
+    assert(
+        repeat &&
+            repeat.ok === false &&
+            repeat.code === "USER_ALREADY_HAS_CARD",
+        `repeat claim did not return USER_ALREADY_HAS_CARD: ${JSON.stringify(
+            repeat,
+        )}`,
+    );
+
+    // Simulate Mongo E11000 (duplicate Card.user) safety:
+    // remove user.cardId to bypass early return, create a second anon card, then claim it.
+    await User.updateOne({ _id: user._id }, { $unset: { cardId: 1 } });
+
+    const anonId2 = crypto.randomUUID();
+    const anonHash2 = sha256_16(anonId2);
+    const card2 = await Card.create({
+        slug: `sanity-claim-dup-${Date.now()}-${randomHex()}`,
+        anonymousId: anonId2,
+        status: "draft",
+        business: { name: "Sanity Claim Duplicate" },
+        design: {},
+        gallery: [],
+        uploads: [],
+    });
+
+    const card2Id = String(card2._id);
+    const bg2Old = `cards/anon/${anonHash2}/${card2Id}/background/${crypto.randomUUID()}.png`;
+    const uploaded2 = await uploadBuffer({
+        buffer: png,
+        mime: "image/png",
+        path: bg2Old,
+        bucket: anonBucket,
+        signedUrlExpiresIn: 60,
+    });
+
+    card2.design = {
+        ...(card2.design || {}),
+        backgroundImagePath: bg2Old,
+        coverImagePath: bg2Old,
+        backgroundImage: uploaded2.url,
+        coverImage: uploaded2.url,
+    };
+    await card2.save();
+
+    const dupAttempt = await claimAnonymousCardForUser({
+        userId: String(user._id),
+        anonymousId: anonId2,
+        strict: true,
+    });
+
+    assert(
+        dupAttempt &&
+            dupAttempt.ok === false &&
+            dupAttempt.code === "USER_ALREADY_HAS_CARD",
+        `duplicate claim did not return USER_ALREADY_HAS_CARD: ${JSON.stringify(
+            dupAttempt,
+        )}`,
+    );
+
+    const fresh2 = await Card.findById(card2._id).lean();
+    assert(!fresh2.user, "duplicate claim unexpectedly set card2.user");
+    assert(
+        String(fresh2.anonymousId || "") === anonId2,
+        "duplicate claim unexpectedly cleared card2.anonymousId",
+    );
+
+    // Ensure any copied public objects for card2 were cleaned up best-effort.
+    const bg2File = bg2Old.split("/").pop();
+    const expectedBg2New = `cards/user/${String(user._id)}/${card2Id}/background/${bg2File}`;
+    try {
+        await downloadToBuffer({ bucket: publicBucket, path: expectedBg2New });
+        throw new Error(
+            "expected cleanup of copied public object for duplicate claim, but object still exists",
+        );
+    } catch {
+        // ok
+    }
+
     // Best-effort: confirm old objects are gone (may be skipped if cleanup fails)
     let oldDeleted = 0;
     for (const p of beforePaths) {
@@ -280,6 +374,7 @@ async function main() {
     }
 
     await Card.deleteOne({ _id: card._id });
+    await Card.deleteOne({ _id: card2._id });
     await User.deleteOne({ _id: user._id });
 }
 

@@ -37,6 +37,24 @@ function computeUserPathFromAnonPath({ userId, cardId, path }) {
     return `cards/user/${userId}/${cardId}/${kind}/${file}`;
 }
 
+function isMongoDuplicateKeyError(err) {
+    return Boolean(err && (err.code === 11000 || err.code === 11001));
+}
+
+function isDuplicateForKey(err, keyName) {
+    if (!isMongoDuplicateKeyError(err)) return false;
+    const kp =
+        err?.keyPattern && typeof err.keyPattern === "object"
+            ? err.keyPattern
+            : null;
+    const kv =
+        err?.keyValue && typeof err.keyValue === "object" ? err.keyValue : null;
+    if (kp && Object.prototype.hasOwnProperty.call(kp, keyName)) return true;
+    if (kv && Object.prototype.hasOwnProperty.call(kv, keyName)) return true;
+    const msg = String(err?.message || "");
+    return msg.includes(`${keyName}_1`) || msg.includes(`index: ${keyName}_1`);
+}
+
 async function migrateAnonMediaToUser({ card, userId }) {
     const publicBucket = getPublicBucketName();
     const anonBucket = getAnonPrivateBucketName({ allowFallback: true });
@@ -177,6 +195,12 @@ export async function claimAnonymousCardForUser({
     });
     if (!media.ok) return media;
 
+    const publicBucket = media?.publicBucket || getPublicBucketName();
+    const newPaths =
+        media.migrated && media.mapping && media.mapping.size
+            ? Array.from(media.mapping.values())
+            : [];
+
     // If we migrated media, rewrite paths + rewrite URLs to permanent public URLs.
     if (media.migrated && media.mapping && media.mapping.size) {
         const mapping = media.mapping;
@@ -286,12 +310,90 @@ export async function claimAnonymousCardForUser({
         }
     }
 
-    card.user = user._id;
-    card.anonymousId = undefined;
-    await card.save();
+    try {
+        card.user = user._id;
+        card.anonymousId = undefined;
+        await card.save();
+    } catch (err) {
+        // If we already copied to public bucket but cannot claim in Mongo,
+        // best-effort cleanup to avoid orphaned objects.
+        if (newPaths.length) {
+            try {
+                await removeObjects({
+                    paths: newPaths,
+                    buckets: [publicBucket],
+                });
+            } catch {
+                // ignore
+            }
+        }
 
-    user.cardId = card._id;
-    await user.save();
+        if (isDuplicateForKey(err, "user")) {
+            return {
+                ok: false,
+                code: "USER_ALREADY_HAS_CARD",
+                message: "User already has a card",
+            };
+        }
+
+        console.error("[claim] card save failed", {
+            cardId: String(card?._id || ""),
+            userId: String(user?._id || ""),
+            error: err?.message || err,
+        });
+
+        return {
+            ok: false,
+            code: "CLAIM_FAILED",
+            message: "Failed to claim card",
+        };
+    }
+
+    try {
+        user.cardId = card._id;
+        await user.save();
+    } catch (err) {
+        // Roll back ownership best-effort (avoid leaving a user-owned card without user.cardId).
+        try {
+            await Card.updateOne(
+                { _id: card._id, user: user._id },
+                { $set: { anonymousId: aid }, $unset: { user: 1 } },
+            );
+        } catch {
+            // ignore
+        }
+
+        if (newPaths.length) {
+            try {
+                await removeObjects({
+                    paths: newPaths,
+                    buckets: [publicBucket],
+                });
+            } catch {
+                // ignore
+            }
+        }
+
+        if (isDuplicateForKey(err, "cardId")) {
+            return {
+                ok: false,
+                code: "USER_ALREADY_HAS_CARD",
+                message: "User already has a card",
+            };
+        }
+
+        console.error("[claim] user link failed", {
+            cardId: String(card?._id || ""),
+            userId: String(user?._id || ""),
+            error: err?.message || err,
+        });
+
+        return {
+            ok: false,
+            code: "CLAIM_FAILED",
+            message: "Failed to claim card",
+        };
+    }
 
     // Best-effort cleanup of old anon objects AFTER Mongo commit.
     if (media.migrated && media.mapping && media.mapping.size) {

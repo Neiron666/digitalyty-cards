@@ -38,6 +38,8 @@ Failure modes:
 
 - If media migration fails for one or more objects, the API responds with `502` and `{ code: "MEDIA_MIGRATION_FAILED" }`.
 - In this failure case, ownership is NOT switched in MongoDB (to avoid creating a user-owned card that still needs signed URLs).
+- If MongoDB claim/linking fails for other reasons, the API may respond with `500 { code: "CLAIM_FAILED" }` (no partial ownership should remain).
+- If a duplicate-key race is detected (e.g., user already owns a card due to inconsistent state), the API responds with `409 { code: "USER_ALREADY_HAS_CARD" }` and performs best-effort cleanup of any newly copied public objects.
 
 ## Storage path format
 

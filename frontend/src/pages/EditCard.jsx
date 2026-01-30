@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useBlocker, useNavigate, useParams } from "react-router-dom";
+import { Link, useBlocker, useNavigate, useParams } from "react-router-dom";
 import Editor from "../components/editor/Editor";
 import ConfirmUnsavedChangesModal from "../components/editor/ConfirmUnsavedChangesModal";
 import TrialBanner from "../components/editor/TrialBanner";
@@ -1205,6 +1205,9 @@ function EditCard() {
         return <div className={styles.editCard}>טוען...</div>;
     }
 
+    const anonId = getAnonymousId();
+    const shouldShowAnonCta = !token && Boolean(anonId);
+
     return (
         <div className={styles.editCard}>
             <ConfirmUnsavedChangesModal
@@ -1247,6 +1250,28 @@ function EditCard() {
                 </div>
             ) : null}
             <main className={styles.main}>
+                {shouldShowAnonCta ? (
+                    <section className={styles.anonCta} dir="rtl" role="note">
+                        <div className={styles.anonCtaText}>
+                            כדי לשמור את הכרטיס ולגבות את התמונות, מומלץ להירשם
+                            או להתחבר.
+                        </div>
+                        <div className={styles.anonCtaActions}>
+                            <Link
+                                to="/register"
+                                className={styles.anonCtaPrimary}
+                            >
+                                יצירת חשבון
+                            </Link>
+                            <Link
+                                to="/login"
+                                className={styles.anonCtaSecondary}
+                            >
+                                התחברות
+                            </Link>
+                        </div>
+                    </section>
+                ) : null}
                 {showTrialBanner && (
                     <TrialBanner
                         trialStartedAt={draftCard?.trialStartedAt}

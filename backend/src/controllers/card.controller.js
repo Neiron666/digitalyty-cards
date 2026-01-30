@@ -1515,9 +1515,11 @@ export async function claimCard(req, res) {
                 ? 409
                 : result.code === "MEDIA_MIGRATION_FAILED"
                   ? 502
-                  : result.code === "NO_ANON_CARD"
-                    ? 404
-                    : 400;
+                  : result.code === "CLAIM_FAILED"
+                    ? 500
+                    : result.code === "NO_ANON_CARD"
+                      ? 404
+                      : 400;
 
         return res
             .status(status)

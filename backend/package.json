@@ -7,7 +7,8 @@
         "start": "node src/server.js",
         "dev": "nodemon src/server.js",
         "sanity:cascade-delete": "node scripts/sanity-cascade-delete.mjs",
-        "sanity:claim-migrate-media": "node scripts/sanity-claim-migrate-media.mjs"
+        "sanity:claim-migrate-media": "node scripts/sanity-claim-migrate-media.mjs",
+        "sanity:claim-api-contract": "node scripts/sanity-claim-api-contract.mjs"
     },
     "keywords": [],
     "author": "",
