@@ -1,7 +1,12 @@
 import Card from "../models/Card.model.js";
 import User from "../models/User.model.js";
 import crypto from "crypto";
-import { uploadBuffer } from "../services/supabaseStorage.js";
+import {
+    uploadBuffer,
+    getAnonPrivateBucketName,
+    getPublicBucketName,
+    getSignedUrlTtlSeconds,
+} from "../services/supabaseStorage.js";
 import { normalizeReviews } from "../utils/reviews.util.js";
 import { removeObjects } from "../services/supabaseStorage.js";
 import { resolveActor, assertCardOwner } from "../utils/actor.js";
@@ -49,6 +54,21 @@ function galleryCount(gallery) {
     return Array.isArray(gallery) ? gallery.length : 0;
 }
 
+function resolveUploadBucketForActor(actor) {
+    if (actor?.type === "anonymous") {
+        // Anonymous media must be private + accessed via signed URLs.
+        return getAnonPrivateBucketName({ allowFallback: false });
+    }
+    return getPublicBucketName();
+}
+
+function resolveCleanupBucketsForActor(actor) {
+    if (actor?.type !== "anonymous") return [getPublicBucketName()];
+    const anon = getAnonPrivateBucketName({ allowFallback: true });
+    const pub = getPublicBucketName();
+    return Array.from(new Set([anon, pub].filter(Boolean)));
+}
+
 export async function uploadGalleryImage(req, res) {
     try {
         const { cardId } = req.body;
@@ -94,7 +114,10 @@ export async function uploadGalleryImage(req, res) {
                     (p) =>
                         typeof p === "string" && p.trim().startsWith("cards/"),
                 );
-                if (paths.length) await removeObjects(paths);
+                if (paths.length) {
+                    const buckets = resolveCleanupBucketsForActor(actor);
+                    await removeObjects({ paths, buckets });
+                }
             } catch {}
 
             await Card.deleteOne({ _id: card._id });
@@ -163,10 +186,22 @@ export async function uploadGalleryImage(req, res) {
             mime: req.file.mimetype,
         });
 
+        const bucket = resolveUploadBucketForActor(actor);
+        if (actor?.type === "anonymous" && !bucket) {
+            return res.status(500).json({
+                code: "ANON_PRIVATE_BUCKET_NOT_CONFIGURED",
+                message: "Anonymous private media bucket is not configured",
+            });
+        }
+        const signedUrlExpiresIn =
+            actor?.type === "anonymous" ? getSignedUrlTtlSeconds() : null;
+
         const uploaded = await uploadBuffer({
             buffer: req.file.buffer,
             mime: req.file.mimetype,
             path: storagePath,
+            bucket,
+            signedUrlExpiresIn,
         });
 
         if (!uploaded?.url || !uploaded?.path) {
@@ -262,7 +297,10 @@ export async function uploadDesignAsset(req, res) {
                     (p) =>
                         typeof p === "string" && p.trim().startsWith("cards/"),
                 );
-                if (paths.length) await removeObjects(paths);
+                if (paths.length) {
+                    const buckets = resolveCleanupBucketsForActor(actor);
+                    await removeObjects({ paths, buckets });
+                }
             } catch {}
 
             await Card.deleteOne({ _id: card._id });
@@ -296,10 +334,22 @@ export async function uploadDesignAsset(req, res) {
             mime: req.file.mimetype,
         });
 
+        const bucket = resolveUploadBucketForActor(actor);
+        if (actor?.type === "anonymous" && !bucket) {
+            return res.status(500).json({
+                code: "ANON_PRIVATE_BUCKET_NOT_CONFIGURED",
+                message: "Anonymous private media bucket is not configured",
+            });
+        }
+        const signedUrlExpiresIn =
+            actor?.type === "anonymous" ? getSignedUrlTtlSeconds() : null;
+
         const uploaded = await uploadBuffer({
             buffer: req.file.buffer,
             mime: req.file.mimetype,
             path: storagePath,
+            bucket,
+            signedUrlExpiresIn,
         });
 
         if (!uploaded?.url || !uploaded?.path) {
@@ -343,7 +393,8 @@ export async function uploadDesignAsset(req, res) {
                 safePrev.startsWith("cards/")
             ) {
                 try {
-                    await removeObjects([safePrev]);
+                    const buckets = resolveCleanupBucketsForActor(actor);
+                    await removeObjects({ paths: [safePrev], buckets });
                     console.debug("[supabase] replaced", {
                         cardId,
                         kind: normalizedKind,
@@ -427,7 +478,8 @@ export async function uploadDesignAsset(req, res) {
 
                 if (dropPaths.length) {
                     try {
-                        await removeObjects(dropPaths);
+                        const buckets = resolveCleanupBucketsForActor(actor);
+                        await removeObjects({ paths: dropPaths, buckets });
                         console.debug("[supabase] prune", {
                             cardId,
                             kind: kindKey,

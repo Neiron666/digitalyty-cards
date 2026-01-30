@@ -4,7 +4,13 @@ import User from "../models/User.model.js";
 import mongoose from "mongoose";
 import { hasAccess } from "../utils/planAccess.js";
 import crypto from "crypto";
-import { removeObjects } from "../services/supabaseStorage.js";
+import {
+    removeObjects,
+    createSignedUrls,
+    getAnonPrivateBucketName,
+    getPublicBucketName,
+    getSignedUrlTtlSeconds,
+} from "../services/supabaseStorage.js";
 import {
     collectSupabasePathsFromCard,
     normalizeSupabasePaths,
@@ -25,6 +31,119 @@ import { toCardDTO } from "../utils/cardDTO.js";
 import { normalizeAboutParagraphs } from "../utils/about.js";
 import { normalizeFaqForWrite } from "../utils/faq.util.js";
 import { normalizeBusinessForWrite } from "../utils/business.util.js";
+
+function resolveCleanupBucketsForCard(card) {
+    const isAnonymousOwned = !card?.user && Boolean(card?.anonymousId);
+    if (!isAnonymousOwned) return [getPublicBucketName()];
+    const anon = getAnonPrivateBucketName({ allowFallback: true });
+    const pub = getPublicBucketName();
+    return Array.from(new Set([anon, pub].filter(Boolean)));
+}
+
+async function hydrateAnonymousMediaUrls({ card, dto } = {}) {
+    const isAnonymousOwned = !card?.user && Boolean(card?.anonymousId);
+    if (!isAnonymousOwned || !dto || typeof dto !== "object") return dto;
+
+    const ttl = getSignedUrlTtlSeconds();
+    const anonBucket = getAnonPrivateBucketName({ allowFallback: true });
+    const publicBucket = getPublicBucketName();
+
+    const design =
+        card?.design && typeof card.design === "object" ? card.design : {};
+
+    const backgroundPath =
+        typeof design.backgroundImagePath === "string" &&
+        design.backgroundImagePath.trim()
+            ? design.backgroundImagePath.trim()
+            : typeof design.coverImagePath === "string" &&
+                design.coverImagePath.trim()
+              ? design.coverImagePath.trim()
+              : "";
+
+    const avatarPath =
+        typeof design.avatarImagePath === "string" &&
+        design.avatarImagePath.trim()
+            ? design.avatarImagePath.trim()
+            : typeof design.logoPath === "string" && design.logoPath.trim()
+              ? design.logoPath.trim()
+              : "";
+
+    const gallery = Array.isArray(card?.gallery) ? card.gallery : [];
+    const allPaths = new Set();
+    if (backgroundPath) allPaths.add(backgroundPath);
+    if (avatarPath) allPaths.add(avatarPath);
+
+    for (const item of gallery) {
+        if (!item || typeof item !== "object") continue;
+        const p = typeof item.path === "string" ? item.path.trim() : "";
+        const t =
+            typeof item.thumbPath === "string" ? item.thumbPath.trim() : "";
+        if (p) allPaths.add(p);
+        if (t) allPaths.add(t);
+    }
+
+    let signedByPath = new Map();
+    try {
+        signedByPath = await createSignedUrls({
+            bucket: anonBucket,
+            paths: Array.from(allPaths),
+            expiresIn: ttl,
+        });
+    } catch (err) {
+        // Backward compatibility: older anonymous media may still exist in the public bucket.
+        if (anonBucket && publicBucket && anonBucket !== publicBucket) {
+            try {
+                signedByPath = await createSignedUrls({
+                    bucket: publicBucket,
+                    paths: Array.from(allPaths),
+                    expiresIn: ttl,
+                });
+            } catch {
+                // Keep dto as-is if signing fails.
+                return dto;
+            }
+        } else {
+            return dto;
+        }
+    }
+
+    if (dto.design && typeof dto.design === "object") {
+        const nextDesign = { ...dto.design };
+        if (backgroundPath && signedByPath.get(backgroundPath)) {
+            const u = signedByPath.get(backgroundPath);
+            nextDesign.backgroundImage = u;
+            nextDesign.coverImage = u;
+        }
+        if (avatarPath && signedByPath.get(avatarPath)) {
+            const u = signedByPath.get(avatarPath);
+            nextDesign.avatarImage = u;
+            nextDesign.logo = u;
+        }
+        dto.design = nextDesign;
+    }
+
+    if (Array.isArray(dto.gallery)) {
+        dto.gallery = dto.gallery.map((raw, idx) => {
+            const src = gallery[idx];
+            if (!src || typeof src !== "object") return raw;
+
+            const next =
+                raw && typeof raw === "object" && !Array.isArray(raw)
+                    ? { ...raw }
+                    : {};
+            const p = typeof src.path === "string" ? src.path.trim() : "";
+            const t =
+                typeof src.thumbPath === "string" ? src.thumbPath.trim() : "";
+            const full = p ? signedByPath.get(p) : null;
+            const thumb = t ? signedByPath.get(t) : null;
+            if (full) next.url = full;
+            if (thumb) next.thumbUrl = thumb;
+            return next;
+        });
+    }
+
+    return dto;
+}
 
 function sleep(ms) {
     return new Promise((resolve) => setTimeout(resolve, ms));
@@ -390,7 +509,10 @@ export async function getMyCard(req, res) {
                 pathCount: paths.length,
             });
 
-            if (paths.length) await removeObjects(paths);
+            if (paths.length) {
+                const buckets = resolveCleanupBucketsForCard(card);
+                await removeObjects({ paths, buckets });
+            }
         } catch (err) {
             console.error("[supabase] cleanup failed", {
                 cardId: String(card._id),
@@ -405,7 +527,8 @@ export async function getMyCard(req, res) {
         });
     }
 
-    return res.json(toCardDTO(card, now));
+    const dto = toCardDTO(card, now);
+    return res.json(await hydrateAnonymousMediaUrls({ card, dto }));
 }
 
 export async function createCard(req, res) {
@@ -744,7 +867,10 @@ export async function updateCard(req, res) {
         try {
             const rawPaths = collectSupabasePathsFromCard(existingCard);
             const paths = normalizeSupabasePaths(rawPaths);
-            if (paths.length) await removeObjects(paths);
+            if (paths.length) {
+                const buckets = resolveCleanupBucketsForCard(existingCard);
+                await removeObjects({ paths, buckets });
+            }
         } catch {}
 
         await Card.deleteOne({ _id: existingCard._id });
@@ -1089,7 +1215,8 @@ export async function updateCard(req, res) {
 
         if (normalizedSafePaths.length) {
             try {
-                await removeObjects(normalizedSafePaths);
+                const buckets = resolveCleanupBucketsForCard(existingCard);
+                await removeObjects({ paths: normalizedSafePaths, buckets });
             } catch (err) {
                 console.error("[gallery-reconcile] supabase delete failed", {
                     cardId: String(existingCard._id),
@@ -1157,6 +1284,9 @@ export async function updateCard(req, res) {
     if (publishError) {
         return res.json({ ...dto, publishError });
     }
+    if (owner.type === "anonymous") {
+        return res.json(await hydrateAnonymousMediaUrls({ card, dto }));
+    }
     return res.json(dto);
 }
 
@@ -1170,6 +1300,11 @@ export async function getCardBySlug(req, res) {
     // IMPORTANT: slug-based access is public ONLY when published + user-owned.
     // No owner-preview by slug (especially not for anonymous cards).
     if (card.status !== "published") {
+        return res.status(404).json({ message: "Not found" });
+    }
+
+    // Defense in depth: anon-owned cards must never be reachable by slug.
+    if (card.anonymousId && !card.user) {
         return res.status(404).json({ message: "Not found" });
     }
 
@@ -1319,7 +1454,10 @@ export async function deleteCard(req, res) {
 
         // CRITICAL: delete Supabase objects first. If this fails, keep Mongo doc
         // so we don't lose references and can retry cleanup later.
-        if (paths.length) await removeObjects(paths);
+        if (paths.length) {
+            const buckets = resolveCleanupBucketsForCard(card);
+            await removeObjects({ paths, buckets });
+        }
     } catch (err) {
         console.error("[supabase] delete failed", {
             cardId: String(card._id),
@@ -1375,9 +1513,11 @@ export async function claimCard(req, res) {
             result.code === "USER_ALREADY_HAS_CARD" ||
             result.code === "CARD_ALREADY_CLAIMED"
                 ? 409
-                : result.code === "NO_ANON_CARD"
-                  ? 404
-                  : 400;
+                : result.code === "MEDIA_MIGRATION_FAILED"
+                  ? 502
+                  : result.code === "NO_ANON_CARD"
+                    ? 404
+                    : 400;
 
         return res
             .status(status)

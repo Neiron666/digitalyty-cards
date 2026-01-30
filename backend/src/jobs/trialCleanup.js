@@ -1,5 +1,9 @@
 import Card from "../models/Card.model.js";
-import { removeObjects } from "../services/supabaseStorage.js";
+import {
+    removeObjects,
+    getAnonPrivateBucketName,
+    getPublicBucketName,
+} from "../services/supabaseStorage.js";
 import {
     collectSupabasePathsFromCard,
     normalizeSupabasePaths,
@@ -39,7 +43,22 @@ async function cleanupOnce() {
 
             if (paths.length) {
                 try {
-                    await removeObjects(paths);
+                    const isAnonymousOwned =
+                        !card?.user && Boolean(card?.anonymousId);
+                    const buckets = isAnonymousOwned
+                        ? Array.from(
+                              new Set(
+                                  [
+                                      getAnonPrivateBucketName({
+                                          allowFallback: true,
+                                      }),
+                                      getPublicBucketName(),
+                                  ].filter(Boolean),
+                              ),
+                          )
+                        : [getPublicBucketName()];
+
+                    await removeObjects({ paths, buckets });
                     removedObjectCount += paths.length;
                 } catch (err) {
                     console.error("[trial-cleanup] supabase remove failed", {

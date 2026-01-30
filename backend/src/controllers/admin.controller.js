@@ -2,7 +2,11 @@ import mongoose from "mongoose";
 import User from "../models/User.model.js";
 import Card from "../models/Card.model.js";
 import { logAdminAction } from "../services/adminAudit.service.js";
-import { removeObjects } from "../services/supabaseStorage.js";
+import {
+    removeObjects,
+    getAnonPrivateBucketName,
+    getPublicBucketName,
+} from "../services/supabaseStorage.js";
 import { toCardDTO } from "../utils/cardDTO.js";
 import {
     collectSupabasePathsFromCard,
@@ -332,7 +336,21 @@ export async function deleteCardPermanently(req, res) {
 
         // CRITICAL: delete Supabase objects first. If this fails, keep Mongo doc
         // so we don't lose references and can retry cleanup later.
-        if (paths.length) await removeObjects(paths);
+        if (paths.length) {
+            const isAnonymousOwned = !card?.user && Boolean(card?.anonymousId);
+            const buckets = isAnonymousOwned
+                ? Array.from(
+                      new Set(
+                          [
+                              getAnonPrivateBucketName({ allowFallback: true }),
+                              getPublicBucketName(),
+                          ].filter(Boolean),
+                      ),
+                  )
+                : [getPublicBucketName()];
+
+            await removeObjects({ paths, buckets });
+        }
     } catch (err) {
         console.error("[supabase] admin delete failed", {
             cardId: String(card._id),

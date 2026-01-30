@@ -164,6 +164,33 @@ export function toCardDTO(
         entitlements,
     };
 
+    // Anonymous cards: never leak internal storage paths in the default DTO.
+    // Paths remain available only via includePrivate=true (admin/debug).
+    const isAnonymousOwned = !cardObj.user && Boolean(cardObj.anonymousId);
+    if (!includePrivate && isAnonymousOwned) {
+        if (dto.design && typeof dto.design === "object") {
+            const nextDesign = { ...dto.design };
+            delete nextDesign.backgroundImagePath;
+            delete nextDesign.coverImagePath;
+            delete nextDesign.avatarImagePath;
+            delete nextDesign.logoPath;
+            dto.design = nextDesign;
+        }
+
+        if (Array.isArray(dto.gallery)) {
+            dto.gallery = dto.gallery.map((item) => {
+                if (!item || typeof item !== "object" || Array.isArray(item)) {
+                    return item;
+                }
+
+                const next = { ...item };
+                delete next.path;
+                delete next.thumbPath;
+                return next;
+            });
+        }
+    }
+
     if (includePrivate) {
         dto.user = cardObj.user || null;
         dto.anonymousId = cardObj.anonymousId || null;
