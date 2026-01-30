@@ -4,7 +4,8 @@ import { useAuth } from "../context/AuthContext";
 import AuthLayout from "../components/auth/AuthLayout";
 import Input from "../components/ui/Input";
 import Button from "../components/ui/Button";
-import api, { clearAnonymousId } from "../services/api";
+import api, { clearAnonymousId, getAnonymousId } from "../services/api";
+import styles from "./Login.module.css";
 
 function Login() {
     const navigate = useNavigate();
@@ -24,18 +25,66 @@ function Login() {
         try {
             await login(form.email, form.password);
 
-            // Try to claim an anonymous card if exists; never block navigation.
-            void (async () => {
+            // Serialize: ensure claim completes before editor init can create a new user-card.
+            const anonId = getAnonymousId();
+            if (anonId) {
                 try {
                     await api.post("/cards/claim");
                     clearAnonymousId();
+                    navigate("/edit", { replace: true });
+                    return;
                 } catch (err) {
                     const status = err?.response?.status;
-                    if (status === 404 || status === 409) return;
-                    // ignore any other claim errors as well
-                }
-            })();
+                    const code = err?.response?.data?.code;
 
+                    // Allow editor access when claim is a benign no-op/conflict.
+                    if (status === 409 && code === "USER_ALREADY_HAS_CARD") {
+                        navigate("/edit", { replace: true });
+                        return;
+                    }
+
+                    // If there's no anon card to claim, allow editor access.
+                    // NOTE: we keep anonymousId by default to avoid losing context.
+                    if (status === 404 && code === "NO_ANON_CARD") {
+                        console.warn("[auth] claim: no anon card", {
+                            status,
+                            code,
+                        });
+                        navigate("/edit", { replace: true });
+                        return;
+                    }
+
+                    // If anonId is missing/invalid, do not block the user.
+                    if (status === 400) {
+                        console.warn("[auth] claim: bad request", {
+                            status,
+                            code,
+                        });
+                        navigate("/edit", { replace: true });
+                        return;
+                    }
+
+                    // Hard failures: do NOT auto-navigate to /edit.
+                    if (status === 502 || status === 500) {
+                        setError(
+                            "We couldn't migrate your card right now. Please try again.",
+                        );
+                        return;
+                    }
+
+                    console.error("[auth] claim failed", {
+                        status,
+                        code,
+                        message: err?.message,
+                    });
+                    setError(
+                        "We couldn't finish migrating your card. Please try again.",
+                    );
+                    return;
+                }
+            }
+
+            // No anonymous context -> safe to continue.
             navigate("/edit", { replace: true });
         } catch (err) {
             setError(err?.response?.data?.message || "שגיאה בהתחברות");
@@ -72,7 +121,7 @@ function Login() {
                     required
                 />
 
-                {error && <p style={{ color: "#ef4444" }}>{error}</p>}
+                {error && <p className={styles.error}>{error}</p>}
 
                 <Button type="submit" fullWidth loading={loading}>
                     התחבר

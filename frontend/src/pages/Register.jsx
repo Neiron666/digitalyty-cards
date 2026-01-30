@@ -5,7 +5,8 @@ import { useAuth } from "../context/AuthContext";
 import AuthLayout from "../components/auth/AuthLayout";
 import Input from "../components/ui/Input";
 import Button from "../components/ui/Button";
-import api, { clearAnonymousId } from "../services/api";
+import api, { clearAnonymousId, getAnonymousId } from "../services/api";
+import styles from "./Register.module.css";
 
 function Register() {
     const navigate = useNavigate();
@@ -36,17 +37,59 @@ function Register() {
             await registerUser(form.email, form.password);
             await login(form.email, form.password);
 
-            // Try to claim an anonymous card if exists; never block navigation.
-            void (async () => {
+            // Serialize: ensure claim completes before editor init can create a new user-card.
+            const anonId = getAnonymousId();
+            if (anonId) {
                 try {
                     await api.post("/cards/claim");
                     clearAnonymousId();
+                    navigate("/edit", { replace: true });
+                    return;
                 } catch (err) {
                     const status = err?.response?.status;
-                    if (status === 404 || status === 409) return;
-                    // ignore any other claim errors as well
+                    const code = err?.response?.data?.code;
+
+                    if (status === 409 && code === "USER_ALREADY_HAS_CARD") {
+                        navigate("/edit", { replace: true });
+                        return;
+                    }
+
+                    if (status === 404 && code === "NO_ANON_CARD") {
+                        console.warn("[auth] claim: no anon card", {
+                            status,
+                            code,
+                        });
+                        navigate("/edit", { replace: true });
+                        return;
+                    }
+
+                    if (status === 400) {
+                        console.warn("[auth] claim: bad request", {
+                            status,
+                            code,
+                        });
+                        navigate("/edit", { replace: true });
+                        return;
+                    }
+
+                    if (status === 502 || status === 500) {
+                        setError(
+                            "We couldn't migrate your card right now. Please try again.",
+                        );
+                        return;
+                    }
+
+                    console.error("[auth] claim failed", {
+                        status,
+                        code,
+                        message: err?.message,
+                    });
+                    setError(
+                        "We couldn't finish migrating your card. Please try again.",
+                    );
+                    return;
                 }
-            })();
+            }
 
             navigate("/edit", { replace: true });
         } catch (err) {
@@ -93,7 +136,7 @@ function Register() {
                     required
                 />
 
-                {error && <p style={{ color: "#ef4444" }}>{error}</p>}
+                {error && <p className={styles.error}>{error}</p>}
 
                 <Button type="submit" fullWidth loading={loading}>
                     צור כרטיס ראשון
