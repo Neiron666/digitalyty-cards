@@ -371,6 +371,89 @@ export async function uploadDesignAsset(req, res) {
             card.design.logoPath = uploaded.path;
         }
 
+        // Prune upload ledger for background/avatar to keep storage bounded.
+        // Note: storage paths are UUID-based (new object per upload). We keep the latest N
+        // and best-effort delete older Supabase objects.
+        if (normalizedKind === "background" || normalizedKind === "avatar") {
+            const MAX_KIND_UPLOADS = 5;
+            const kindKey = normalizedKind;
+            const uploads = Array.isArray(card.uploads) ? card.uploads : [];
+
+            const kindUploads = uploads.filter(
+                (u) =>
+                    u &&
+                    typeof u === "object" &&
+                    u.kind === kindKey &&
+                    typeof u.path === "string" &&
+                    u.path.trim(),
+            );
+
+            if (kindUploads.length > MAX_KIND_UPLOADS) {
+                const createdAtMs = (u) => {
+                    try {
+                        return u?.createdAt
+                            ? new Date(u.createdAt).getTime()
+                            : 0;
+                    } catch {
+                        return 0;
+                    }
+                };
+
+                const sorted = [...kindUploads].sort(
+                    (a, b) => createdAtMs(a) - createdAtMs(b),
+                );
+                const toDrop = sorted.slice(
+                    0,
+                    kindUploads.length - MAX_KIND_UPLOADS,
+                );
+
+                const dropKeys = new Set(
+                    toDrop.map((u) => {
+                        const p =
+                            typeof u.path === "string" ? u.path.trim() : "";
+                        const t = createdAtMs(u);
+                        return `${p}|${t}`;
+                    }),
+                );
+
+                const dropPaths = toDrop
+                    .map((u) =>
+                        typeof u.path === "string" ? u.path.trim() : "",
+                    )
+                    .filter(
+                        (p) =>
+                            p && p !== uploaded.path && p.startsWith("cards/"),
+                    );
+
+                if (dropPaths.length) {
+                    try {
+                        await removeObjects(dropPaths);
+                        console.debug("[supabase] prune", {
+                            cardId,
+                            kind: kindKey,
+                            removedCount: dropPaths.length,
+                        });
+                    } catch (err) {
+                        console.error("[supabase] prune failed", {
+                            cardId,
+                            kind: kindKey,
+                            error: err?.message || err,
+                        });
+                    }
+                }
+
+                // Remove pruned entries from the ledger (best-effort, bounded).
+                card.uploads = uploads.filter((u) => {
+                    if (!u || typeof u !== "object") return true;
+                    if (u.kind !== kindKey) return true;
+                    const p = typeof u.path === "string" ? u.path.trim() : "";
+                    if (!p) return true;
+                    const t = createdAtMs(u);
+                    return !dropKeys.has(`${p}|${t}`);
+                });
+            }
+        }
+
         // Safety net: prevent unrelated dirty reviews from failing uploads.
         if (Array.isArray(card.reviews)) {
             card.reviews = normalizeReviews(card.reviews);

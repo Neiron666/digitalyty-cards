@@ -26,6 +26,10 @@ import { normalizeAboutParagraphs } from "../utils/about.js";
 import { normalizeFaqForWrite } from "../utils/faq.util.js";
 import { normalizeBusinessForWrite } from "../utils/business.util.js";
 
+function sleep(ms) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 function normalizeAboutFieldsInContent(container) {
     if (!container || typeof container !== "object") return;
 
@@ -334,11 +338,41 @@ export async function getMyCard(req, res) {
     const now = new Date();
 
     if (owner.type === "user") {
-        const [card, userTier] = await Promise.all([
-            Card.findOne({ user: owner.id }),
-            User.findById(owner.id).select("adminTier adminTierUntil").lean(),
-        ]);
-        return res.json(card ? toCardDTO(card, now, { user: userTier }) : null);
+        const user = await User.findById(owner.id)
+            .select("cardId adminTier adminTierUntil")
+            .lean();
+
+        // Canonical card selection:
+        // 1) Prefer user.cardId (single source of truth when present)
+        // 2) Fallback to deterministic pick (newest by createdAt)
+        // WHY: if duplicates exist, Card.findOne({user}) without sort is nondeterministic.
+        let card = null;
+        const preferredId = user?.cardId ? String(user.cardId) : "";
+        if (preferredId) {
+            card = await Card.findById(preferredId);
+        }
+
+        if (!card) {
+            card = await Card.findOne({ user: owner.id }).sort({
+                createdAt: -1,
+            });
+
+            // Best-effort repair: keep user.cardId pointing at the chosen canonical card.
+            if (card && (!preferredId || preferredId !== String(card._id))) {
+                try {
+                    await User.updateOne(
+                        { _id: owner.id },
+                        { $set: { cardId: card._id } },
+                    );
+                } catch {
+                    // ignore (best-effort)
+                }
+            }
+        }
+
+        return res.json(
+            card ? toCardDTO(card, now, { user: user || null }) : null,
+        );
     }
 
     // Anonymous: one card per anonymousId + delete after trialEndsAt grace window
@@ -463,6 +497,67 @@ export async function createCard(req, res) {
             await user.save();
         }
 
+        // Extra safety: if duplicates already exist (or cardId wasn't set yet),
+        // return a deterministic existing card rather than creating another.
+        const existingByUser = await Card.findOne({ user: user._id }).sort({
+            createdAt: -1,
+        });
+        if (existingByUser) {
+            user.cardId = existingByUser._id;
+            await user.save();
+            return res
+                .status(200)
+                .json(toCardDTO(existingByUser, now, { user }));
+        }
+
+        // Race-safe reservation: atomically claim a new cardId on the user.
+        // This prevents two concurrent POST /cards from creating two cards.
+        const reservedId = new mongoose.Types.ObjectId();
+        const reserved = await User.findOneAndUpdate(
+            {
+                _id: user._id,
+                $or: [{ cardId: { $exists: false } }, { cardId: null }],
+            },
+            { $set: { cardId: reservedId } },
+            { new: true },
+        );
+
+        if (!reserved) {
+            // Another request won the reservation. Wait briefly for the card to appear.
+            const fresh = await User.findById(user._id);
+            const freshId = fresh?.cardId ? String(fresh.cardId) : "";
+
+            if (freshId) {
+                for (let i = 0; i < 40; i += 1) {
+                    const maybe = await Card.findById(freshId);
+                    if (maybe)
+                        return res
+                            .status(200)
+                            .json(toCardDTO(maybe, now, { user: fresh }));
+                    await sleep(50);
+                }
+            }
+
+            // Fallback: deterministic lookup.
+            const fallback = await Card.findOne({ user: user._id }).sort({
+                createdAt: -1,
+            });
+            if (fallback)
+                return res
+                    .status(200)
+                    .json(toCardDTO(fallback, now, { user: fresh || user }));
+
+            // Do NOT create a new card here; card creation is in-flight or user state is inconsistent.
+            console.warn("[cards] create in-flight", {
+                userId: String(user._id),
+                hasCardId: Boolean(freshId),
+            });
+            return res.status(503).json({
+                code: "CARD_CREATE_IN_FLIGHT",
+                message: "Card creation in progress. Please retry.",
+            });
+        }
+
         const businessName = getBusinessName(data);
         const baseSlug = businessName
             ? slugify(businessName, {
@@ -496,26 +591,75 @@ export async function createCard(req, res) {
               }
             : { status: "free", plan: "free", paidUntil: null };
 
-        const card = await Card.create({
-            plan: serverPlan,
-            status: "draft",
-            business: data.business || {},
-            contact: data.contact || {},
-            content: data.content || {},
-            design: data.design || {},
-            gallery: data.gallery || [],
-            reviews: data.reviews || [],
-            ...data,
-            slug,
-            user: user._id,
-            billing: serverBilling,
-            seo,
-        });
+        try {
+            const card = await Card.create({
+                _id: reservedId,
+                plan: serverPlan,
+                status: "draft",
+                business: data.business || {},
+                contact: data.contact || {},
+                content: data.content || {},
+                design: data.design || {},
+                gallery: data.gallery || [],
+                reviews: data.reviews || [],
+                ...data,
+                slug,
+                user: user._id,
+                billing: serverBilling,
+                seo,
+            });
 
-        user.cardId = card._id;
-        await user.save();
+            // Ensure canonical link is correct (best-effort).
+            if (!user.cardId || String(user.cardId) !== String(card._id)) {
+                user.cardId = card._id;
+                await user.save();
+            }
 
-        return res.status(201).json(toCardDTO(card, now, { user }));
+            return res.status(201).json(toCardDTO(card, now, { user }));
+        } catch (err) {
+            // After enforcing uniqueness (unique+sparse on Card.user), concurrent creates may
+            // race into E11000. In that case, return the existing user card.
+            if (err && err.code === 11000) {
+                const isUserDup =
+                    (err.keyPattern && err.keyPattern.user) ||
+                    (err.keyValue && err.keyValue.user);
+
+                if (isUserDup) {
+                    const existing = await Card.findOne({
+                        user: user._id,
+                        isActive: true,
+                    }).sort({ createdAt: -1 });
+
+                    if (existing) {
+                        // Replace reservation with the real canonical card id (best-effort).
+                        try {
+                            await User.updateOne(
+                                { _id: user._id, cardId: reservedId },
+                                { $set: { cardId: existing._id } },
+                            );
+                        } catch {
+                            // ignore
+                        }
+
+                        const fresh = await User.findById(user._id);
+                        return res
+                            .status(200)
+                            .json(toCardDTO(existing, now, { user: fresh }));
+                    }
+                }
+            }
+
+            // If we reserved cardId but failed to create, clear the reservation.
+            try {
+                await User.updateOne(
+                    { _id: user._id, cardId: reservedId },
+                    { $unset: { cardId: 1 } },
+                );
+            } catch {
+                // ignore
+            }
+            throw err;
+        }
     }
 
     // Anonymous users: enforce ONLY ONE card per browser (anonymousId).

@@ -71,7 +71,10 @@ async function main() {
 }
 
 const argv1 = process?.argv?.[1];
-if (typeof argv1 === "string" && import.meta.url === pathToFileURL(argv1).href) {
+if (
+    typeof argv1 === "string" &&
+    import.meta.url === pathToFileURL(argv1).href
+) {
     main().catch((err) => {
         console.error("FAILED", err?.message || err);
         process.exitCode = 1;

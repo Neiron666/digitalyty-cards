@@ -307,6 +307,85 @@ function EditCard() {
             Boolean(draftCard?.trialStartedAt || draftCard?.trialEndsAt) ||
             editingDisabled);
 
+    const createCardInFlightRef = useRef(null);
+
+    function isCreateInFlightError(err) {
+        const status = err?.response?.status;
+        const code = err?.response?.data?.code;
+        return status === 503 && code === "CARD_CREATE_IN_FLIGHT";
+    }
+
+    function jitterDelayMs(baseMs) {
+        const b = Number(baseMs) || 0;
+        if (b <= 0) return 0;
+        // +/- 30% jitter
+        const jitter = 0.7 + Math.random() * 0.6;
+        return Math.max(0, Math.round(b * jitter));
+    }
+
+    async function sleepMs(ms) {
+        const t = Number(ms) || 0;
+        if (t <= 0) return;
+        return new Promise((resolve) => setTimeout(resolve, t));
+    }
+
+    async function fetchMineOnce() {
+        const res = await api.get("/cards/mine");
+        return res?.data || null;
+    }
+
+    async function createCardWithRetry() {
+        // Single-flight: ensure we never run parallel POST /cards in this session.
+        if (createCardInFlightRef.current) return createCardInFlightRef.current;
+
+        const promise = (async () => {
+            // 1) If card already exists, do nothing.
+            const mine0 = await fetchMineOnce();
+            if (mine0 && mine0._id) return mine0;
+
+            // 2) Try creating.
+            try {
+                const created = await api.post("/cards", {});
+                const createdData = created?.data || null;
+                if (createdData && createdData._id) return createdData;
+
+                // Safety fallback: if response is malformed, re-fetch mine.
+                const mineAfter = await fetchMineOnce();
+                if (mineAfter && mineAfter._id) return mineAfter;
+                throw new Error("Create card returned invalid response");
+            } catch (err) {
+                if (!isCreateInFlightError(err)) throw err;
+
+                // 3) Backend says "in flight". Retry via GET /cards/mine with backoff + jitter.
+                const delays = [100, 200, 400, 800];
+                for (const d of delays) {
+                    await sleepMs(jitterDelayMs(d));
+                    const mine = await fetchMineOnce();
+                    if (mine && mine._id) return mine;
+                }
+
+                // Last attempt (no extra delay)
+                const mineLast = await fetchMineOnce();
+                if (mineLast && mineLast._id) return mineLast;
+
+                const retryErr = new Error(
+                    "Card creation in progress. Please retry.",
+                );
+                retryErr.code = "CARD_CREATE_IN_FLIGHT";
+                throw retryErr;
+            }
+        })();
+
+        createCardInFlightRef.current = promise;
+        promise.finally(() => {
+            if (createCardInFlightRef.current === promise) {
+                createCardInFlightRef.current = null;
+            }
+        });
+
+        return promise;
+    }
+
     const initCard = useCallback(
         async (isMounted = () => true) => {
             try {
@@ -326,9 +405,9 @@ function EditCard() {
 
                 // If no card (or malformed), create a persisted draft card server-side.
                 if (!mine || !mine._id) {
-                    const created = await api.post("/cards", {});
+                    const createdData = await createCardWithRetry();
                     if (!isMounted()) return;
-                    const normalized = normalizeCardForEditor(created.data);
+                    const normalized = normalizeCardForEditor(createdData);
                     setDraftCard(normalized);
                     setDirtyPaths(new Set());
                     setSaveState("idle");
@@ -352,6 +431,26 @@ function EditCard() {
                     err?.response?.data || err,
                 );
 
+                // If card creation is in-flight (race), retry via the shared retry helper.
+                if (isCreateInFlightError(err)) {
+                    try {
+                        const createdData = await createCardWithRetry();
+                        if (!isMounted()) return;
+                        const normalized = normalizeCardForEditor(createdData);
+                        setDraftCard(normalized);
+                        setDirtyPaths(new Set());
+                        setSaveState("idle");
+                        setSaveErrorText(null);
+                        setIsInitializing(false);
+                        return;
+                    } catch (retryErr) {
+                        console.error(
+                            "initCard retry after in-flight failed",
+                            retryErr?.message || retryErr,
+                        );
+                    }
+                }
+
                 // 404 can mean "no card" OR "card was deleted and editor is stale".
                 // If we previously had a card id in this session, treat 404 as deleted and exit.
                 if (status === 404) {
@@ -370,9 +469,9 @@ function EditCard() {
                     }
 
                     try {
-                        const created = await api.post("/cards", {});
+                        const createdData = await createCardWithRetry();
                         if (!isMounted()) return;
-                        const normalized = normalizeCardForEditor(created.data);
+                        const normalized = normalizeCardForEditor(createdData);
                         setDraftCard(normalized);
                         setDirtyPaths(new Set());
                         setSaveState("idle");

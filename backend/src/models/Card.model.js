@@ -67,6 +67,8 @@ const CardSchema = new mongoose.Schema(
             // Optional to support anonymous cards; keeps existing user-owned docs valid.
             required: false,
             index: true,
+            unique: true,
+            sparse: true,
         },
 
         // One anonymous card per browser. Sparse+unique allows many docs without anonymousId.
