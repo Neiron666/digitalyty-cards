@@ -14,6 +14,10 @@ import {
     parseCompositeKey,
     safeCompositeKey,
 } from "../utils/analyticsCampaign.util.js";
+import {
+    DEFAULT_TENANT_KEY,
+    resolveTenantKeyFromRequest,
+} from "../utils/tenant.util.js";
 
 const RATE_WINDOW_MS = 10 * 60 * 1000;
 const RATE_LIMIT = 120;
@@ -247,7 +251,7 @@ async function bumpSocialCampaignAttribution({
         if (!safeKeyPath) return;
 
         const overflowKey = safeCompositeKey(
-            makeCompositeKey(sourceBucket, "other_campaign")
+            makeCompositeKey(sourceBucket, "other_campaign"),
         );
         if (!overflowKey) return;
 
@@ -283,7 +287,7 @@ async function bumpSocialCampaignAttribution({
                     [`${mapField}.${safeKeyPath}`]: 1,
                     socialCampaignKeyCount: 1,
                 },
-            }
+            },
         );
 
         if (createRes?.matchedCount) return;
@@ -291,7 +295,7 @@ async function bumpSocialCampaignAttribution({
         // Phase 3: overflow bucket (no keyCount bump)
         await CardAnalyticsDaily.updateOne(
             { cardId, day },
-            { $inc: { [`${mapField}.${overflowKey}`]: 1 } }
+            { $inc: { [`${mapField}.${overflowKey}`]: 1 } },
         );
     } catch {
         // ignore
@@ -313,7 +317,18 @@ export async function trackAnalytics(req, res) {
         if (!slug || !event) return res.sendStatus(204);
         if (event === "click" && !action) return res.sendStatus(204);
 
-        const card = await Card.findOne({ slug }).lean();
+        const tenant = resolveTenantKeyFromRequest(req);
+        if (tenant?.ok === false) return res.sendStatus(204);
+        const tenantKey = tenant?.tenantKey || DEFAULT_TENANT_KEY;
+
+        const card = await Card.findOne({
+            slug,
+            $or: [
+                { tenantKey },
+                { tenantKey: { $exists: false } },
+                { tenantKey: null },
+            ],
+        }).lean();
         if (!card) return res.sendStatus(204);
 
         const isActive = Boolean(card?.flags?.isActive ?? card?.isActive);
@@ -368,7 +383,7 @@ export async function trackAnalytics(req, res) {
                 const key = ok ? utmSource : "other";
                 Object.assign(
                     $inc,
-                    bumpMapUpdate("utmSourceCounts", key) || {}
+                    bumpMapUpdate("utmSourceCounts", key) || {},
                 );
             }
 
@@ -382,7 +397,7 @@ export async function trackAnalytics(req, res) {
                 const key = ok ? utmCampaign : "other";
                 Object.assign(
                     $inc,
-                    bumpMapUpdate("utmCampaignCounts", key) || {}
+                    bumpMapUpdate("utmCampaignCounts", key) || {},
                 );
             }
 
@@ -396,7 +411,7 @@ export async function trackAnalytics(req, res) {
                 const key = ok ? utmMedium : "other";
                 Object.assign(
                     $inc,
-                    bumpMapUpdate("utmMediumCounts", key) || {}
+                    bumpMapUpdate("utmMediumCounts", key) || {},
                 );
             }
 
@@ -496,7 +511,7 @@ export async function trackAnalytics(req, res) {
                                     uniqueVisitors: null,
                                     uniqueMode: null,
                                 },
-                            }
+                            },
                         );
                     } else if (
                         hashes.length >= CardAnalyticsDaily.MAX_UNIQUE_HASHES
@@ -509,14 +524,14 @@ export async function trackAnalytics(req, res) {
                                     uniqueVisitors: null,
                                     uniqueMode: null,
                                 },
-                            }
+                            },
                         );
                     } else {
                         const addRes = await CardAnalyticsDaily.updateOne(
                             { cardId: card._id, day },
                             {
                                 $addToSet: { uniqueHashes: hash },
-                            }
+                            },
                         );
 
                         // If modified, hash was new -> increment uniques.
@@ -526,7 +541,7 @@ export async function trackAnalytics(req, res) {
                                 {
                                     $set: { uniqueMode: "approx_device" },
                                     $inc: { uniqueVisitors: 1 },
-                                }
+                                },
                             );
                         }
                     }
@@ -660,7 +675,7 @@ export async function getSummary(req, res) {
         level === "premium"
             ? Boolean(
                   todayDoc?.uniqueMode === "approx_device" &&
-                      uniqueVisitors !== null
+                  uniqueVisitors !== null,
               )
             : false;
 
@@ -790,7 +805,7 @@ export async function getSources(req, res) {
                 const campaigns = demo?.campaigns?.top
                     ? demo.campaigns.top.slice(0, 2).map((c, i) => {
                           const cv = Math.round(
-                              (Number(c?.count) || 0) * (i === 0 ? 0.6 : 0.3)
+                              (Number(c?.count) || 0) * (i === 0 ? 0.6 : 0.3),
                           );
                           const ck = Math.round(cv * 0.2);
                           return {
@@ -830,7 +845,7 @@ export async function getSources(req, res) {
     const viewsTotal = series.reduce((s, x) => s + (Number(x?.views) || 0), 0);
     const clicksTotal = series.reduce(
         (s, x) => s + (Number(x?.clicksTotal) || 0),
-        0
+        0,
     );
 
     const socialViews = sumMapField(docs, "socialViewsBySource");
@@ -943,7 +958,7 @@ export async function getSources(req, res) {
                                           : 0,
                               },
                           ]
-                        : []
+                        : [],
                 );
 
             return {

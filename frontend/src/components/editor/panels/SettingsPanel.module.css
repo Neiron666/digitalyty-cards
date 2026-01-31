@@ -26,6 +26,39 @@
     margin-top: 6px;
 }
 
+.slugBlock {
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    padding-top: 10px;
+}
+
+.slugInput {
+    direction: ltr;
+}
+
+.slugHelp {
+    margin-top: 6px;
+    opacity: 0.8;
+    font-size: 0.92rem;
+}
+
+.slugPreview {
+    margin-top: 8px;
+    word-break: break-word;
+    opacity: 0.9;
+}
+
+.slugActions {
+    margin-top: 10px;
+    display: flex;
+    gap: 10px;
+}
+
+.slugOk {
+    margin-top: 8px;
+    color: rgba(125, 247, 171, 0.95);
+    font-size: 0.95rem;
+}
+
 .deleteInline {
     display: inline-flex;
     align-items: center;

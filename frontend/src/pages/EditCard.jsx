@@ -4,7 +4,7 @@ import Editor from "../components/editor/Editor";
 import ConfirmUnsavedChangesModal from "../components/editor/ConfirmUnsavedChangesModal";
 import TrialBanner from "../components/editor/TrialBanner";
 import { EDITOR_CARD_TABS } from "../components/editor/editorTabs";
-import { deleteCard } from "../services/cards.service";
+import { deleteCard, updateCardSlug } from "../services/cards.service";
 import api, { getAnonymousId } from "../services/api";
 import { useAuth } from "../context/AuthContext";
 import styles from "./EditCard.module.css";
@@ -182,6 +182,20 @@ function EditCard() {
     }, [clearDeleteNoticeTimer]);
 
     const lastRefetchAtRef = useRef(0);
+
+    const handleUpdateSlug = useCallback(
+        async (nextSlug) => {
+            const payload = await updateCardSlug(nextSlug);
+            const updatedSlug = String(payload?.slug || "").trim();
+            if (!updatedSlug) return "";
+            setDraftCard((prev) => ({
+                ...(prev || {}),
+                slug: updatedSlug,
+            }));
+            return updatedSlug;
+        },
+        [setDraftCard],
+    );
 
     // Keep latest draft snapshot for sync decisions (e.g., upload ops PATCH conditions).
     const draftCardRef = useRef(draftCard);
@@ -1404,6 +1418,7 @@ function EditCard() {
                         onRequestNavigate={requestNavigate}
                         onPublish={handlePublish}
                         onUnpublish={handleUnpublish}
+                        onUpdateSlug={handleUpdateSlug}
                         // Phase 2: draft-first save infrastructure (wired for Phase 3 UI)
                         commitDraft={commitDraft}
                         dirtyPaths={dirtyPaths}

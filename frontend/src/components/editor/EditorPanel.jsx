@@ -21,6 +21,7 @@ export default function EditorPanel({
     onUpgrade,
     onPublish,
     onUnpublish,
+    onUpdateSlug,
 }) {
     const effectivePlan = card?.effectiveBilling?.plan || "free";
     const galleryLimit = card?.entitlements?.galleryLimit;
@@ -135,6 +136,7 @@ export default function EditorPanel({
                     isDeleting={isDeleting}
                     onPublish={onPublish}
                     onUnpublish={onUnpublish}
+                    onUpdateSlug={onUpdateSlug}
                 />
             );
 

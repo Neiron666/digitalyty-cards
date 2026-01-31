@@ -26,9 +26,9 @@ function requireAuthOrAnonymous(req, res, next) {
 router.get("/mine", requireAuthOrAnonymous, getMyCard);
 router.post("/", requireAuthOrAnonymous, createCard);
 router.put("/:id", requireAuthOrAnonymous, updateCard);
-router.patch("/:id", requireAuthOrAnonymous, updateCard);
-
 router.patch("/slug", requireAuthOrAnonymous, updateSlug);
+
+router.patch("/:id", requireAuthOrAnonymous, updateCard);
 
 router.post("/claim", requireAuth, claimCard);
 

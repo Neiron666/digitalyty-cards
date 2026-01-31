@@ -15,3 +15,7 @@ export function getCardBySlug(slug) {
 export function deleteCard(id) {
     return api.delete(`/cards/${id}`);
 }
+
+export function updateCardSlug(slug) {
+    return api.patch("/cards/slug", { slug }).then((r) => r.data);
+}

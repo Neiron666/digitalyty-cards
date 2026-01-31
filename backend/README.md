@@ -13,6 +13,7 @@ Windows commands (must-pass before release):
 `npm.cmd run sanity:claim-api-contract`
 `npm.cmd run sanity:ownership-consistency`
 `npm.cmd run sanity:claim-vs-create-race`
+`npm.cmd run sanity:slug-policy`
 
 Exit code semantics:
 
@@ -23,3 +24,10 @@ Notes:
 
 - `sanity:cascade-delete` is NOT read-only (creates/deletes fixtures).
 - The other gates are read-only as currently implemented.
+- WARNING: `sanity:slug-policy` does not currently gate on `remaining/limit` fields in the 429 payload (it records it as `checks.limitPayload` only).
+
+TENANT_HOST_ALLOWLIST:
+
+- Wildcard `*` is forbidden (misconfig; ignored).
+- Example local: `TENANT_HOST_ALLOWLIST=localhost,127.0.0.1,127.0.0.2` (no ports; ports are stripped from Host).
+- If host is not allowlisted: public/SEO routes return `404`, analytics returns `204` (no DB lookup).

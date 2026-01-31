@@ -31,6 +31,11 @@ import { toCardDTO } from "../utils/cardDTO.js";
 import { normalizeAboutParagraphs } from "../utils/about.js";
 import { normalizeFaqForWrite } from "../utils/faq.util.js";
 import { normalizeBusinessForWrite } from "../utils/business.util.js";
+import { toIsrael } from "../utils/time.util.js";
+import {
+    DEFAULT_TENANT_KEY,
+    resolveTenantKeyFromRequest,
+} from "../utils/tenant.util.js";
 
 function resolveCleanupBucketsForCard(card) {
     const isAnonymousOwned = !card?.user && Boolean(card?.anonymousId);
@@ -208,11 +213,16 @@ function buildSeo(data) {
     };
 }
 
-async function generateUniqueSlug(baseSlug) {
+async function generateUniqueSlug(baseSlug, { tenantKey } = {}) {
     let candidate = baseSlug;
     let counter = 2;
 
-    while (await Card.exists({ slug: candidate })) {
+    const queryFor = (slug) => {
+        const tk = typeof tenantKey === "string" && tenantKey.trim();
+        return tk ? { tenantKey: tk, slug } : { slug };
+    };
+
+    while (await Card.exists(queryFor(candidate))) {
         candidate = `${baseSlug}-${counter}`;
         counter += 1;
     }
@@ -237,9 +247,27 @@ async function generateUniqueRandomSlug(length = 12) {
     return `${randomUrlSafeSlug(length)}-${Date.now().toString(36)}`;
 }
 
-async function resolveCreateSlug(data, fallbackBaseSlug) {
-    const requested = typeof data?.slug === "string" ? data.slug.trim() : "";
+async function resolveCreateSlug(
+    data,
+    fallbackBaseSlug,
+    { tenantKey, allowRequestedSlug = true } = {},
+) {
+    const requested =
+        allowRequestedSlug && typeof data?.slug === "string"
+            ? data.slug.trim()
+            : "";
+
     if (!requested) {
+        // Preserve existing behavior: when clients don't request a slug, we generate a random one.
+        // Exception (enterprise): when allowRequestedSlug=false (anonymous), force a server-controlled
+        // slug derived from fallbackBaseSlug (e.g. draft-xxxx) to keep behavior predictable.
+        if (!allowRequestedSlug) {
+            const fallback =
+                typeof fallbackBaseSlug === "string"
+                    ? fallbackBaseSlug.trim()
+                    : "";
+            if (fallback) return generateUniqueSlug(fallback, { tenantKey });
+        }
         return generateUniqueRandomSlug(12);
     }
 
@@ -253,7 +281,7 @@ async function resolveCreateSlug(data, fallbackBaseSlug) {
     if (!baseSlug) return generateUniqueRandomSlug(12);
 
     // ensure uniqueness (create-time collisions)
-    return generateUniqueSlug(baseSlug || fallbackBaseSlug);
+    return generateUniqueSlug(baseSlug || fallbackBaseSlug, { tenantKey });
 }
 
 function resolveUserId(req) {
@@ -356,6 +384,8 @@ function stripServerOnlyFields(patch) {
     delete patch.trialDeleteAt;
     delete patch.uploads;
     delete patch.slug;
+    delete patch.tenantKey;
+    delete patch.slugChange;
     delete patch.adminOverride;
 
     // Admin-only feature tier override (must never be set by user endpoints).
@@ -387,6 +417,10 @@ function stripServerOnlyFields(patch) {
             k.startsWith("uploads.") ||
             k === "slug" ||
             k.startsWith("slug.") ||
+            k === "tenantKey" ||
+            k.startsWith("tenantKey.") ||
+            k === "slugChange" ||
+            k.startsWith("slugChange.") ||
             k === "plan" ||
             k.startsWith("plan.") ||
             k === "adminTier" ||
@@ -536,6 +570,9 @@ export async function createCard(req, res) {
     const owner = resolveOwnerContext(req);
     if (!owner) return res.status(401).json({ message: "Unauthorized" });
 
+    const tenant = resolveTenantKeyFromRequest(req);
+    const tenantKey = tenant?.tenantKey || DEFAULT_TENANT_KEY;
+
     const now = new Date();
 
     // About: tolerant writer (accept aboutText or aboutParagraphs).
@@ -561,6 +598,8 @@ export async function createCard(req, res) {
         delete data.trialDeleteAt;
         delete data.uploads;
         delete data.adminOverride;
+        delete data.tenantKey;
+        delete data.slugChange;
 
         // Admin-only feature tier override must never be set by user endpoints.
         delete data.adminTier;
@@ -690,7 +729,10 @@ export async function createCard(req, res) {
               })
             : `draft-${user._id.toString().slice(-6)}`;
 
-        const slug = await resolveCreateSlug(data, baseSlug);
+        const slug = await resolveCreateSlug(data, baseSlug, {
+            tenantKey,
+            allowRequestedSlug: true,
+        });
 
         const computedSeo = buildSeo(data);
         const seo = {
@@ -727,6 +769,7 @@ export async function createCard(req, res) {
                 reviews: data.reviews || [],
                 ...data,
                 slug,
+                tenantKey,
                 user: user._id,
                 billing: serverBilling,
                 seo,
@@ -791,6 +834,11 @@ export async function createCard(req, res) {
         return res.status(200).json(toCardDTO(existingAnon, now));
     }
 
+    // Enterprise policy: anonymous users must never set a custom slug.
+    if (data && typeof data === "object") {
+        delete data.slug;
+    }
+
     const businessName = getBusinessName(data);
     const baseSlug = businessName
         ? slugify(businessName, {
@@ -800,7 +848,10 @@ export async function createCard(req, res) {
           })
         : `draft-${String(owner.id).slice(-6)}`;
 
-    const slug = await resolveCreateSlug(data, baseSlug);
+    const slug = await resolveCreateSlug(data, baseSlug, {
+        tenantKey,
+        allowRequestedSlug: false,
+    });
 
     const computedSeo = buildSeo(data);
     const seo = {
@@ -820,6 +871,7 @@ export async function createCard(req, res) {
             reviews: data.reviews || [],
             ...data,
             slug,
+            tenantKey,
             anonymousId: owner.id,
             billing: { status: "free", plan: "free", paidUntil: null },
             seo,
@@ -1064,25 +1116,37 @@ export async function updateCard(req, res) {
 
     // If it's a draft slug and business name is now provided, auto-generate a nicer slug
     if (!patch.slug && isDraftSlug && nextBusinessName) {
+        const tenantKey =
+            typeof existingCard.tenantKey === "string" &&
+            existingCard.tenantKey.trim()
+                ? existingCard.tenantKey
+                : DEFAULT_TENANT_KEY;
         const baseSlug = slugify(nextBusinessName, {
             lower: true,
             strict: true,
             trim: true,
         });
-        patch.slug = await generateUniqueSlug(baseSlug || existingCard.slug);
+        patch.slug = await generateUniqueSlug(baseSlug || existingCard.slug, {
+            tenantKey,
+        });
     }
 
     // Optional slug edit: keep it unique and slugified
     if (typeof patch.slug === "string" && patch.slug.trim()) {
+        const tenantKey =
+            typeof existingCard.tenantKey === "string" &&
+            existingCard.tenantKey.trim()
+                ? existingCard.tenantKey
+                : DEFAULT_TENANT_KEY;
         const baseSlug = slugify(patch.slug, {
             lower: true,
             strict: true,
             trim: true,
         });
 
-        const existing = await Card.findOne({ slug: baseSlug });
+        const existing = await Card.findOne({ tenantKey, slug: baseSlug });
         if (existing && existing._id.toString() !== req.params.id) {
-            patch.slug = await generateUniqueSlug(baseSlug);
+            patch.slug = await generateUniqueSlug(baseSlug, { tenantKey });
         } else {
             patch.slug = baseSlug;
         }
@@ -1291,7 +1355,31 @@ export async function updateCard(req, res) {
 }
 
 export async function getCardBySlug(req, res) {
-    const card = await Card.findOne({ slug: req.params.slug, isActive: true });
+    const tenant = resolveTenantKeyFromRequest(req);
+    if (tenant?.ok === false) {
+        return res.status(404).json({ message: "Not found" });
+    }
+
+    const tenantKey = tenant?.tenantKey || DEFAULT_TENANT_KEY;
+
+    const legacyFallbackOk = tenantKey === DEFAULT_TENANT_KEY;
+    const card = await Card.findOne(
+        legacyFallbackOk
+            ? {
+                  slug: req.params.slug,
+                  isActive: true,
+                  $or: [
+                      { tenantKey },
+                      { tenantKey: { $exists: false } },
+                      { tenantKey: null },
+                  ],
+              }
+            : {
+                  slug: req.params.slug,
+                  isActive: true,
+                  tenantKey,
+              },
+    );
 
     if (!card) {
         return res.status(404).json({ message: "Not found" });
@@ -1370,6 +1458,13 @@ export async function updateSlug(req, res) {
     const actor = resolveOwnerContext(req);
     if (!actor) return res.status(401).json({ message: "Unauthorized" });
 
+    if (actor.type !== "user") {
+        return res.status(403).json({
+            code: "SLUG_REQUIRES_AUTH",
+            message: "Must be registered to set a custom slug",
+        });
+    }
+
     const nextSlug = normalizeSlugInput(req.body?.slug);
     if (!isValidSlug(nextSlug) || RESERVED_SLUGS.has(nextSlug)) {
         return res
@@ -1377,21 +1472,89 @@ export async function updateSlug(req, res) {
             .json({ code: "INVALID_SLUG", message: "Invalid slug" });
     }
 
-    const card =
-        actor.type === "user"
-            ? await Card.findOne({ user: actor.id, isActive: true })
-            : await Card.findOne({ anonymousId: actor.id, isActive: true });
+    const card = await Card.findOne({ user: actor.id, isActive: true });
 
     if (!card) return res.status(404).json({ message: "Not found" });
+
+    if (card.status !== "draft") {
+        return res.status(403).json({
+            code: "SLUG_ONLY_DRAFT",
+            message: "Slug can be changed only while in draft",
+        });
+    }
+
+    const tenant = resolveTenantKeyFromRequest(req);
+    const tenantKey =
+        typeof card.tenantKey === "string" && card.tenantKey.trim()
+            ? card.tenantKey
+            : tenant?.tenantKey || DEFAULT_TENANT_KEY;
 
     if (String(card.slug || "") === nextSlug) {
         return res.json({ slug: nextSlug });
     }
 
     try {
-        card.slug = nextSlug;
-        await card.save();
-        return res.json({ slug: card.slug });
+        const now = new Date();
+        const monthKey = toIsrael(now).toFormat("yyyy-LL");
+
+        // Attempt 1: same-month increment when under limit
+        const updatedSameMonth = await Card.findOneAndUpdate(
+            {
+                _id: card._id,
+                isActive: true,
+                status: "draft",
+                slug: { $ne: nextSlug },
+                "slugChange.monthKey": monthKey,
+                "slugChange.count": { $lt: 2 },
+            },
+            {
+                $set: {
+                    slug: nextSlug,
+                    tenantKey,
+                    "slugChange.updatedAt": now,
+                },
+                $inc: { "slugChange.count": 1 },
+            },
+            { new: true, runValidators: true },
+        );
+
+        if (updatedSameMonth) {
+            return res.json({ slug: updatedSameMonth.slug });
+        }
+
+        // Attempt 2: new month (or uninitialized) => reset count to 1
+        const updatedNewMonth = await Card.findOneAndUpdate(
+            {
+                _id: card._id,
+                isActive: true,
+                status: "draft",
+                slug: { $ne: nextSlug },
+                $or: [
+                    { "slugChange.monthKey": { $exists: false } },
+                    { "slugChange.monthKey": null },
+                    { "slugChange.monthKey": { $ne: monthKey } },
+                ],
+            },
+            {
+                $set: {
+                    slug: nextSlug,
+                    tenantKey,
+                    "slugChange.monthKey": monthKey,
+                    "slugChange.count": 1,
+                    "slugChange.updatedAt": now,
+                },
+            },
+            { new: true, runValidators: true },
+        );
+
+        if (updatedNewMonth) {
+            return res.json({ slug: updatedNewMonth.slug });
+        }
+
+        return res.status(429).json({
+            code: "SLUG_CHANGE_LIMIT",
+            message: "Slug can be changed at most 2 times per month",
+        });
     } catch (err) {
         if (
             err?.code === 11000 ||

@@ -24,6 +24,7 @@ export default function Editor({
     onUpgrade,
     onPublish,
     onUnpublish,
+    onUpdateSlug,
     previewHeader,
     previewFooter,
     canShowAnalyticsTab,
@@ -175,9 +176,7 @@ export default function Editor({
                     type="button"
                     className={styles.sectionsTrigger}
                     aria-label={
-                        drawerOpen
-                            ? "סגירת תפריט עריכה"
-                            : "פתיחת תפריט עריכה"
+                        drawerOpen ? "סגירת תפריט עריכה" : "פתיחת תפריט עריכה"
                     }
                     aria-expanded={drawerOpen}
                     aria-controls="editor-sections-drawer"
@@ -274,6 +273,7 @@ export default function Editor({
                         onUpgrade={onUpgrade}
                         onPublish={onPublish}
                         onUnpublish={onUnpublish}
+                        onUpdateSlug={onUpdateSlug}
                     />
                     <EditorSaveBar
                         dirtyCount={dirtyCount}

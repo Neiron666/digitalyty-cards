@@ -1,6 +1,11 @@
 import { Router } from "express";
 import Card from "../models/Card.model.js";
 import { isEntitled, isTrialExpired } from "../utils/trial.js";
+import {
+    DEFAULT_TENANT_KEY,
+    resolvePublicOriginFromRequest,
+    resolveTenantKeyFromRequest,
+} from "../utils/tenant.util.js";
 
 const router = Router();
 
@@ -14,11 +19,24 @@ function escapeHtml(value = "") {
 }
 
 router.get("/og/card/:slug", async (req, res) => {
+    const tenant = resolveTenantKeyFromRequest(req);
+    if (tenant?.ok === false) {
+        return res.status(404).send("Not found");
+    }
+
+    const tenantKey = tenant?.tenantKey || DEFAULT_TENANT_KEY;
+    const publicOrigin = resolvePublicOriginFromRequest(req);
+
     const card = await Card.findOne({
         slug: req.params.slug,
         isActive: true,
         status: "published",
         user: { $exists: true, $ne: null },
+        $or: [
+            { tenantKey },
+            { tenantKey: { $exists: false } },
+            { tenantKey: null },
+        ],
     });
 
     if (!card) {
@@ -30,7 +48,7 @@ router.get("/og/card/:slug", async (req, res) => {
         return res.status(410).send("TRIAL_EXPIRED_PUBLIC");
     }
 
-    const siteUrl = process.env.SITE_URL || "https://digitalyty.co.il";
+    const siteUrl = publicOrigin.origin;
     const publicUrl = `${siteUrl}/card/${card.slug}`;
 
     const title = card.seo?.title || "כרטיס ביקור דיגיטלי";

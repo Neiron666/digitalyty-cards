@@ -80,12 +80,29 @@ const CardSchema = new mongoose.Schema(
             sparse: true,
         },
 
+        // Enterprise: tenant-scoped slugs.
+        // NOTE: existing docs may have tenantKey missing/null until backfill.
+        tenantKey: {
+            type: String,
+            trim: true,
+            lowercase: true,
+            default: null,
+            index: true,
+        },
+
         slug: {
             type: String,
             required: true,
-            unique: true,
             lowercase: true,
             trim: true,
+        },
+
+        // Enterprise slug-change policy (2 per Israel calendar month).
+        // Server-controlled only.
+        slugChange: {
+            monthKey: { type: String, default: null, trim: true },
+            count: { type: Number, default: 0 },
+            updatedAt: { type: Date, default: null },
         },
 
         plan: {
@@ -424,6 +441,22 @@ const CardSchema = new mongoose.Schema(
         isActive: { type: Boolean, default: true },
     },
     { timestamps: true, runSettersOnQuery: true },
+);
+
+// Indexes (enterprise migration):
+// - Keep a non-unique slug index for existing query patterns.
+// - Enforce uniqueness on (tenantKey, slug) once tenantKey is backfilled.
+CardSchema.index({ slug: 1 }, { name: "slug_1" });
+CardSchema.index(
+    { tenantKey: 1, slug: 1 },
+    {
+        unique: true,
+        name: "tenantKey_1_slug_1",
+        partialFilterExpression: {
+            tenantKey: { $type: "string" },
+            slug: { $type: "string" },
+        },
+    },
 );
 
 // Model intentionally contains no product logic/middleware.
