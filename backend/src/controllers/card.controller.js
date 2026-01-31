@@ -1502,6 +1502,32 @@ export async function claimCard(req, res) {
         return res.status(400).json({ message: "Missing anonymousId" });
     }
 
+    // Enterprise contract: allow anon->user claim ONLY right after registration.
+    // This blocks manual or post-login claims for existing users.
+    const claimWindowSecondsRaw = process.env.CLAIM_WINDOW_SECONDS;
+    const claimWindowSeconds = Number(claimWindowSecondsRaw);
+    const windowSec = Number.isFinite(claimWindowSeconds)
+        ? claimWindowSeconds
+        : 600;
+    const windowMs = Math.max(0, windowSec) * 1000;
+
+    const user = await User.findById(String(userId)).select("createdAt");
+    if (!user?.createdAt) {
+        return res.status(403).json({
+            code: "CLAIM_NOT_ALLOWED",
+            message: "Claim is only allowed right after registration.",
+        });
+    }
+
+    const createdAtMs = new Date(user.createdAt).getTime();
+    const ageMs = Date.now() - createdAtMs;
+    if (!Number.isFinite(createdAtMs) || ageMs > windowMs) {
+        return res.status(403).json({
+            code: "CLAIM_NOT_ALLOWED",
+            message: "Claim is only allowed right after registration.",
+        });
+    }
+
     const result = await claimAnonymousCardForUser({
         userId: String(userId),
         anonymousId,

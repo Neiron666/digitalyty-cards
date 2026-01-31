@@ -1132,6 +1132,17 @@ export default function Admin() {
                                                                     )}
                                                                 </span>
                                                                 )
+                                                                {u?.cardSummary
+                                                                    ?.ownershipMismatch ? (
+                                                                    <span
+                                                                        className={
+                                                                            styles.mismatchBadge
+                                                                        }
+                                                                    >
+                                                                        ⚠
+                                                                        mismatch
+                                                                    </span>
+                                                                ) : null}
                                                             </button>
                                                         ) : u?.cardSummary
                                                               ?.missing ? (

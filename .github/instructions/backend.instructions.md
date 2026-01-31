@@ -31,6 +31,7 @@ First line MUST be:
 - Prevent “spread”: no refactors, no formatting churn, no unrelated cleanup.
 - Keep API contract backward compatible unless explicitly approved.
 - After changes: provide PROOF (file:line), then run sanity checks.
+- Release sanity gates are documented in `backend/README.md` (SSoT).
 
 ### Absolute prohibitions
 

@@ -137,6 +137,9 @@ function EditCard() {
     const [saveState, setSaveState] = useState("idle");
     const [saveErrorText, setSaveErrorText] = useState(null);
     const [isInitializing, setIsInitializing] = useState(true);
+    const [needsCreateUserCard, setNeedsCreateUserCard] = useState(false);
+    const [createUserCardBusy, setCreateUserCardBusy] = useState(false);
+    const [createUserCardError, setCreateUserCardError] = useState(null);
     const [reloadKey, setReloadKey] = useState(0);
     const [isDeleting, setIsDeleting] = useState(false);
 
@@ -405,6 +408,14 @@ function EditCard() {
 
                 // If no card (or malformed), create a persisted draft card server-side.
                 if (!mine || !mine._id) {
+                    // Enterprise contract: authenticated users must explicitly create a card.
+                    if (token) {
+                        setNeedsCreateUserCard(true);
+                        setCreateUserCardError(null);
+                        setIsInitializing(false);
+                        return;
+                    }
+
                     const createdData = await createCardWithRetry();
                     if (!isMounted()) return;
                     const normalized = normalizeCardForEditor(createdData);
@@ -418,6 +429,8 @@ function EditCard() {
 
                 const normalized = normalizeCardForEditor(mine);
                 setDraftCard(normalized);
+                setNeedsCreateUserCard(false);
+                setCreateUserCardError(null);
                 setDirtyPaths(new Set());
                 setSaveState("idle");
                 setSaveErrorText(null);
@@ -434,6 +447,14 @@ function EditCard() {
                 // If card creation is in-flight (race), retry via the shared retry helper.
                 if (isCreateInFlightError(err)) {
                     try {
+                        // Enterprise contract: authenticated users must explicitly create a card.
+                        if (token) {
+                            setNeedsCreateUserCard(true);
+                            setCreateUserCardError(null);
+                            setIsInitializing(false);
+                            return;
+                        }
+
                         const createdData = await createCardWithRetry();
                         if (!isMounted()) return;
                         const normalized = normalizeCardForEditor(createdData);
@@ -1186,6 +1207,27 @@ function EditCard() {
         }
     }, [draftCard?._id]);
 
+    const handleCreateUserCard = useCallback(async () => {
+        try {
+            setCreateUserCardError(null);
+            setCreateUserCardBusy(true);
+
+            const createdData = await createCardWithRetry();
+            const normalized = normalizeCardForEditor(createdData);
+
+            setDraftCard(normalized);
+            setNeedsCreateUserCard(false);
+            setDirtyPaths(new Set());
+            setSaveState("idle");
+            setSaveErrorText(null);
+        } catch (err) {
+            const message = err?.response?.data?.message;
+            setCreateUserCardError(message || "שגיאה ביצירת כרטיס");
+        } finally {
+            setCreateUserCardBusy(false);
+        }
+    }, [createCardWithRetry]);
+
     const handleUnpublish = useCallback(async () => {
         if (!draftCard?._id) return;
 
@@ -1201,7 +1243,53 @@ function EditCard() {
         }
     }, [draftCard?._id]);
 
-    if (isInitializing || !draftCard?._id) {
+    if (isInitializing) {
+        return <div className={styles.editCard}>טוען...</div>;
+    }
+
+    if (!draftCard?._id) {
+        if (token && needsCreateUserCard) {
+            return (
+                <div className={styles.editCard}>
+                    <main className={styles.main}>
+                        <section
+                            className={styles.createCta}
+                            dir="rtl"
+                            role="region"
+                            aria-label="Create card"
+                        >
+                            <div className={styles.createCtaTitle}>
+                                אין לך עדיין כרטיס
+                            </div>
+                            <div className={styles.createCtaText}>
+                                כדי להתחיל לערוך, צריך ליצור כרטיס.
+                            </div>
+                            {createUserCardError ? (
+                                <div
+                                    className={styles.createCtaError}
+                                    role="alert"
+                                >
+                                    {createUserCardError}
+                                </div>
+                            ) : null}
+                            <div className={styles.createCtaActions}>
+                                <button
+                                    type="button"
+                                    className={styles.createCtaButton}
+                                    onClick={handleCreateUserCard}
+                                    disabled={createUserCardBusy}
+                                >
+                                    {createUserCardBusy
+                                        ? "יוצר כרטיס..."
+                                        : "צור כרטיס"}
+                                </button>
+                            </div>
+                        </section>
+                    </main>
+                </div>
+            );
+        }
+
         return <div className={styles.editCard}>טוען...</div>;
     }
 

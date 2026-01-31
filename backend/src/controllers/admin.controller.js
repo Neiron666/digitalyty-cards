@@ -185,7 +185,7 @@ export async function listUsers(req, res) {
     const cardsById = new Map();
     if (cardIds.length) {
         const cards = await Card.find({ _id: { $in: cardIds } })
-            .select("slug status isActive")
+            .select("slug status isActive user")
             .lean();
         for (const c of cards) {
             cardsById.set(String(c._id), c);
@@ -199,14 +199,29 @@ export async function listUsers(req, res) {
         let cardSummary = null;
         if (cardId) {
             const c = cardsById.get(cardId);
-            cardSummary = c
-                ? {
-                      cardId,
-                      slug: c.slug || "",
-                      status: c.status || "",
-                      isActive: Boolean(c.isActive),
-                  }
-                : { cardId, missing: true };
+            if (c) {
+                const hasUserOwner = Boolean(c.user);
+                const cardUserMatches =
+                    hasUserOwner && String(c.user) === String(obj?._id || "");
+
+                const ownershipMismatch = !hasUserOwner || !cardUserMatches;
+                const ownershipMismatchReason = !hasUserOwner
+                    ? "missing_card_user"
+                    : !cardUserMatches
+                      ? "card_user_mismatch"
+                      : null;
+
+                cardSummary = {
+                    cardId,
+                    slug: c.slug || "",
+                    status: c.status || "",
+                    isActive: Boolean(c.isActive),
+                    ownershipMismatch,
+                    ownershipMismatchReason,
+                };
+            } else {
+                cardSummary = { cardId, missing: true };
+            }
         }
 
         return {

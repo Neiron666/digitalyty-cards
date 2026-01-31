@@ -10,7 +10,7 @@ const router = Router();
 function noStore(req, res, next) {
     res.set(
         "Cache-Control",
-        "no-store, no-cache, must-revalidate, proxy-revalidate"
+        "no-store, no-cache, must-revalidate, proxy-revalidate",
     );
     res.set("Pragma", "no-cache");
     res.set("Expires", "0");
@@ -37,7 +37,7 @@ router.post("/register", async (req, res) => {
     } catch (err) {
         console.error(
             "[auth] claim after register failed",
-            err?.message || err
+            err?.message || err,
         );
     }
 
@@ -52,18 +52,6 @@ router.post("/login", async (req, res) => {
 
     const ok = await bcrypt.compare(password, user.passwordHash);
     if (!ok) return res.status(401).json({ message: "Invalid credentials" });
-
-    // Best-effort: claim anonymous card right after login.
-    const anonymousId = req?.anonymousId ? String(req.anonymousId) : "";
-    try {
-        await claimAnonymousCardForUser({
-            userId: String(user._id),
-            anonymousId,
-            strict: false,
-        });
-    } catch (err) {
-        console.error("[auth] claim after login failed", err?.message || err);
-    }
 
     res.json({ token: signToken(user._id) });
 });

@@ -54,6 +54,13 @@ function Register() {
                         return;
                     }
 
+                    if (status === 403 && code === "CLAIM_NOT_ALLOWED") {
+                        setError(
+                            "Claim is only allowed right after registration.",
+                        );
+                        return;
+                    }
+
                     if (status === 404 && code === "NO_ANON_CARD") {
                         console.warn("[auth] claim: no anon card", {
                             status,

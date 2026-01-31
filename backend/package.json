@@ -8,7 +8,9 @@
         "dev": "nodemon src/server.js",
         "sanity:cascade-delete": "node scripts/sanity-cascade-delete.mjs",
         "sanity:claim-migrate-media": "node scripts/sanity-claim-migrate-media.mjs",
-        "sanity:claim-api-contract": "node scripts/sanity-claim-api-contract.mjs"
+        "sanity:claim-api-contract": "node scripts/sanity-claim-api-contract.mjs",
+        "sanity:claim-vs-create-race": "node scripts/sanity-claim-vs-create-race.mjs",
+        "sanity:ownership-consistency": "node scripts/sanity-ownership-consistency.mjs"
     },
     "keywords": [],
     "author": "",

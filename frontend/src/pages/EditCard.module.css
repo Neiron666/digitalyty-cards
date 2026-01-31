@@ -119,6 +119,57 @@
     border-color: rgba(212, 175, 55, 0.55);
 }
 
+.createCta {
+    width: 100%;
+    max-width: 720px;
+    margin-inline: auto;
+    padding: 18px;
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border);
+    background: var(--bg-card);
+    color: var(--text-main);
+}
+
+.createCtaTitle {
+    font-weight: 900;
+    font-size: 1.05rem;
+    margin-bottom: 6px;
+}
+
+.createCtaText {
+    font-weight: 700;
+    opacity: 0.9;
+    line-height: 1.35;
+}
+
+.createCtaError {
+    margin-top: 10px;
+    color: #ef4444;
+    font-weight: 800;
+}
+
+.createCtaActions {
+    margin-top: 14px;
+    display: flex;
+    justify-content: flex-start;
+}
+
+.createCtaButton {
+    padding: 10px 14px;
+    border-radius: var(--radius-md);
+    border: 1px solid rgba(212, 175, 55, 0.55);
+    background: var(--gold);
+    color: #111;
+    font-weight: 900;
+    cursor: pointer;
+    font-family: inherit;
+}
+
+.createCtaButton:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
 .anonCtaPrimary:hover {
     filter: brightness(0.98);
 }

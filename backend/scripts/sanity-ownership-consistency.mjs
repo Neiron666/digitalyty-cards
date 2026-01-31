@@ -1,0 +1,238 @@
+import "dotenv/config";
+
+import mongoose from "mongoose";
+
+import { connectDB } from "../src/config/db.js";
+import User from "../src/models/User.model.js";
+import Card from "../src/models/Card.model.js";
+
+const SAMPLE_LIMIT = 10;
+const DUP_CARD_IDS_LIMIT = 5;
+
+function safeString(value) {
+    if (value === null || value === undefined) return null;
+    return String(value);
+}
+
+function summarizeCounts(counts) {
+    const totalIssues = Object.values(counts).reduce(
+        (acc, v) => acc + (Number(v) || 0),
+        0,
+    );
+    return { totalIssues };
+}
+
+async function runAggregates({ usersColl, cardsColl }) {
+    // A) users.cardId -> missing card doc
+    const A_pipeline = [
+        { $match: { cardId: { $exists: true, $ne: null } } },
+        {
+            $lookup: {
+                from: cardsColl,
+                localField: "cardId",
+                foreignField: "_id",
+                as: "card",
+            },
+        },
+        { $match: { $expr: { $eq: [{ $size: "$card" }, 0] } } },
+        {
+            $project: {
+                _id: 0,
+                email: 1,
+                userId: "$_id",
+                cardId: 1,
+            },
+        },
+    ];
+
+    // B) users.cardId -> card exists but card.user missing OR != user._id
+    const B_pipeline = [
+        { $match: { cardId: { $exists: true, $ne: null } } },
+        {
+            $lookup: {
+                from: cardsColl,
+                localField: "cardId",
+                foreignField: "_id",
+                as: "card",
+            },
+        },
+        { $unwind: "$card" },
+        {
+            $match: {
+                $or: [
+                    { "card.user": { $exists: false } },
+                    { "card.user": null },
+                    { $expr: { $ne: ["$card.user", "$_id"] } },
+                ],
+            },
+        },
+        {
+            $project: {
+                _id: 0,
+                email: 1,
+                userId: "$_id",
+                cardId: 1,
+                cardUser: "$card.user",
+                cardAnonymousId: "$card.anonymousId",
+                cardSlug: "$card.slug",
+                cardStatus: "$card.status",
+            },
+        },
+    ];
+
+    // C) cards.user set -> missing user doc
+    const C_pipeline = [
+        { $match: { user: { $exists: true, $ne: null } } },
+        {
+            $lookup: {
+                from: usersColl,
+                localField: "user",
+                foreignField: "_id",
+                as: "u",
+            },
+        },
+        { $match: { $expr: { $eq: [{ $size: "$u" }, 0] } } },
+        {
+            $project: {
+                _id: 0,
+                cardId: "$_id",
+                cardUser: "$user",
+                slug: "$slug",
+                status: "$status",
+            },
+        },
+    ];
+
+    // E) duplicate cards per user (count > 1)
+    const E_pipeline = [
+        { $match: { user: { $exists: true, $ne: null } } },
+        {
+            $group: {
+                _id: "$user",
+                count: { $sum: 1 },
+                cardIds: { $push: "$_id" },
+            },
+        },
+        { $match: { count: { $gt: 1 } } },
+        {
+            $project: {
+                _id: 0,
+                userId: "$_id",
+                count: 1,
+                cardIds: { $slice: ["$cardIds", DUP_CARD_IDS_LIMIT] },
+            },
+        },
+        { $sort: { count: -1 } },
+    ];
+
+    const [
+        A_samples,
+        B_samples,
+        C_samples,
+        E_samples,
+        A_count,
+        B_count,
+        C_count,
+        E_count,
+    ] = await Promise.all([
+        User.aggregate(A_pipeline).allowDiskUse(true).limit(SAMPLE_LIMIT),
+        User.aggregate(B_pipeline).allowDiskUse(true).limit(SAMPLE_LIMIT),
+        Card.aggregate(C_pipeline).allowDiskUse(true).limit(SAMPLE_LIMIT),
+        Card.aggregate(E_pipeline).allowDiskUse(true).limit(SAMPLE_LIMIT),
+        User.aggregate([...A_pipeline, { $count: "count" }])
+            .allowDiskUse(true)
+            .then((r) => (r && r[0] ? r[0].count : 0)),
+        User.aggregate([...B_pipeline, { $count: "count" }])
+            .allowDiskUse(true)
+            .then((r) => (r && r[0] ? r[0].count : 0)),
+        Card.aggregate([...C_pipeline, { $count: "count" }])
+            .allowDiskUse(true)
+            .then((r) => (r && r[0] ? r[0].count : 0)),
+        Card.aggregate([...E_pipeline, { $count: "count" }])
+            .allowDiskUse(true)
+            .then((r) => (r && r[0] ? r[0].count : 0)),
+    ]);
+
+    // D) cards where both user != null AND anonymousId != null
+    const D_count = await Card.countDocuments({
+        user: { $exists: true, $ne: null },
+        anonymousId: { $exists: true, $ne: null },
+    });
+
+    const D_samples_raw = await Card.find(
+        {
+            user: { $exists: true, $ne: null },
+            anonymousId: { $exists: true, $ne: null },
+        },
+        { slug: 1, status: 1, user: 1, anonymousId: 1 },
+    )
+        .limit(SAMPLE_LIMIT)
+        .lean();
+
+    const D_samples = D_samples_raw.map((c) => ({
+        cardId: c?._id,
+        cardUser: c?.user,
+        cardAnonymousId: c?.anonymousId || null,
+        slug: c?.slug || "",
+        status: c?.status || "",
+    }));
+
+    return {
+        counts: {
+            A_users_cardId_missing_card: A_count,
+            B_users_cardId_ownership_mismatch: B_count,
+            C_cards_user_missing_user_doc: C_count,
+            D_cards_both_user_and_anonymousId: D_count,
+            E_duplicate_cards_per_user: E_count,
+        },
+        samples: {
+            A: A_samples,
+            B: B_samples,
+            C: C_samples,
+            D: D_samples,
+            E: E_samples,
+        },
+    };
+}
+
+async function main() {
+    await connectDB(process.env.MONGO_URI);
+
+    const usersColl = User.collection.name;
+    const cardsColl = Card.collection.name;
+
+    const { counts, samples } = await runAggregates({ usersColl, cardsColl });
+
+    const { totalIssues } = summarizeCounts(counts);
+
+    const ok = totalIssues === 0;
+
+    console.log(
+        JSON.stringify(
+            {
+                ok,
+                collections: { users: usersColl, cards: cardsColl },
+                counts,
+                samples,
+            },
+            null,
+            2,
+        ),
+    );
+
+    process.exitCode = ok ? 0 : 2;
+}
+
+main()
+    .catch((err) => {
+        const msg = safeString(err?.message || err) || "Unknown error";
+        console.error("FAILED", msg);
+        process.exitCode = 1;
+    })
+    .finally(async () => {
+        try {
+            await mongoose.disconnect();
+        } catch {
+            // ignore
+        }
+    });

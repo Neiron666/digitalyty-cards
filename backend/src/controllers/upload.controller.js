@@ -286,7 +286,7 @@ export async function uploadDesignAsset(req, res) {
 
         const now = new Date();
 
-        if (isTrialDeleteDue(card, now)) {
+        if (isTrialDeleteDue(card, now) && !isEntitled(card, now)) {
             try {
                 const rawPaths = [];
                 if (Array.isArray(card.uploads)) {

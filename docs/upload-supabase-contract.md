@@ -25,7 +25,12 @@ Notes:
 
 ## Claim (anon → user) media migration
 
-When an anonymous user registers/logs in, the client calls `POST /api/cards/claim` (JWT required).
+When an anonymous user registers, the client calls `POST /api/cards/claim` (JWT required).
+
+Enterprise policy:
+
+- Claim/migration is allowed **only right after registration**.
+- `POST /api/cards/claim` returns `403 { code: "CLAIM_NOT_ALLOWED" }` if called outside the post-registration time window (see `CLAIM_WINDOW_SECONDS`, default 600 seconds).
 
 Enterprise behavior:
 
