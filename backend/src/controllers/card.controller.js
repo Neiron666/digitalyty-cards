@@ -524,7 +524,12 @@ export async function getMyCard(req, res) {
         }
 
         return res.json(
-            card ? toCardDTO(card, now, { user: user || null }) : null,
+            card
+                ? toCardDTO(card, now, {
+                      user: user || null,
+                      exposeSlugPolicy: true,
+                  })
+                : null,
         );
     }
 

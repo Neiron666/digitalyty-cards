@@ -41,6 +41,17 @@
     font-size: 0.92rem;
 }
 
+.slugRemaining {
+    margin-block-start: 4px;
+    opacity: 0.85;
+    font-size: 0.92rem;
+}
+
+.slugRemainingValue {
+    direction: ltr;
+    unicode-bidi: isolate;
+}
+
 .slugPreview {
     margin-top: 8px;
     word-break: break-word;

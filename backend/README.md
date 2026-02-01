@@ -24,6 +24,7 @@ Notes:
 
 - `sanity:cascade-delete` is NOT read-only (creates/deletes fixtures).
 - The other gates are read-only as currently implemented.
+- `slugPolicy` is returned only from `GET /api/cards/mine` (user branch) when `exposeSlugPolicy:true`; `sanity:slug-policy` guards against leaking it via public/other endpoints.
 - WARNING: `sanity:slug-policy` does not currently gate on `remaining/limit` fields in the 429 payload (it records it as `checks.limitPayload` only).
 
 TENANT_HOST_ALLOWLIST:

@@ -1,7 +1,7 @@
 import { hasAccess } from "./planAccess.js";
 import { resolveBilling } from "./trial.js";
 import { resolveEffectiveTier } from "./tier.js";
-import { formatIsrael } from "./time.util.js";
+import { formatIsrael, toIsrael } from "./time.util.js";
 import { GALLERY_LIMIT } from "../config/galleryLimit.js";
 import { normalizeAboutParagraphs } from "./about.js";
 
@@ -111,7 +111,12 @@ function pickSafeCardFields(cardObj) {
 export function toCardDTO(
     card,
     now = new Date(),
-    { includePrivate = false, minimal = false, user = null } = {},
+    {
+        includePrivate = false,
+        minimal = false,
+        user = null,
+        exposeSlugPolicy = false,
+    } = {},
 ) {
     if (!card) return null;
 
@@ -163,6 +168,33 @@ export function toCardDTO(
             : null,
         entitlements,
     };
+
+    // Enterprise (additive): expose slug policy state for UI.
+    // Keep slugChange server-controlled; UI only needs derived counters.
+    // Limit to authenticated user-context DTOs (e.g., /cards/mine) to avoid widening
+    // the public payload surface area.
+    if (user && exposeSlugPolicy === true) {
+        const limit = 2;
+        const monthKey = toIsrael(now).toFormat("yyyy-LL");
+        const storedMonth =
+            typeof cardObj?.slugChange?.monthKey === "string"
+                ? cardObj.slugChange.monthKey
+                : null;
+        const storedCountRaw = cardObj?.slugChange?.count;
+        const storedCount = Number.isFinite(Number(storedCountRaw))
+            ? Number(storedCountRaw)
+            : 0;
+
+        const used = storedMonth === monthKey ? Math.max(0, storedCount) : 0;
+        const remaining = Math.max(0, limit - used);
+
+        dto.slugPolicy = {
+            limit,
+            used,
+            remaining,
+            monthKey,
+        };
+    }
 
     // Anonymous cards: never leak internal storage paths in the default DTO.
     // Paths remain available only via includePrivate=true (admin/debug).

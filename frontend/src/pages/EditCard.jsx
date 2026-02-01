@@ -192,6 +192,25 @@ function EditCard() {
                 ...(prev || {}),
                 slug: updatedSlug,
             }));
+
+            // SSoT: refresh slugPolicy counters from backend without overwriting draft.
+            try {
+                const mine = await fetchMineOnce();
+                if (mine && typeof mine === "object") {
+                    setDraftCard((prev) => ({
+                        ...(prev || {}),
+                        slugPolicy: mine.slugPolicy || prev?.slugPolicy,
+                        // Keep slug consistent with server if it differs.
+                        slug:
+                            typeof mine.slug === "string"
+                                ? mine.slug
+                                : prev?.slug,
+                    }));
+                }
+            } catch {
+                // Best-effort only.
+            }
+
             return updatedSlug;
         },
         [setDraftCard],

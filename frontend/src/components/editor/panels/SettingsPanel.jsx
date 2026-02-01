@@ -36,6 +36,12 @@ export default function SettingsPanel({
     const [slugError, setSlugError] = useState("");
     const [slugOk, setSlugOk] = useState("");
 
+    const slugLimit = 2;
+    const slugRemainingRaw = card?.slugPolicy?.remaining;
+    const slugRemaining = Number.isFinite(Number(slugRemainingRaw))
+        ? Math.max(0, Math.min(slugLimit, Number(slugRemainingRaw)))
+        : null;
+
     useEffect(() => {
         setSlugDraft(String(slug || ""));
         setSlugError("");
@@ -186,6 +192,16 @@ export default function SettingsPanel({
 
                         <div className={styles.slugHelp}>
                             אפשר לשנות סלאג רק בטיוטה ועד פעמיים בחודש.
+                        </div>
+
+                        <div className={styles.slugRemaining}>
+                            נותרו{" "}
+                            <span className={styles.slugRemainingValue}>
+                                {slugRemaining === null
+                                    ? `—/${slugLimit}`
+                                    : `${slugRemaining}/${slugLimit}`}
+                            </span>{" "}
+                            שינויים החודש.
                         </div>
 
                         {previewUrl ? (

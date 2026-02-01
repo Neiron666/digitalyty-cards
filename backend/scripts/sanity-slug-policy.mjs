@@ -1,7 +1,9 @@
 import "dotenv/config";
 
 import crypto from "node:crypto";
+import fs from "node:fs";
 import mongoose from "mongoose";
+import path from "node:path";
 
 import app from "../src/app.js";
 import { connectDB } from "../src/config/db.js";
@@ -15,6 +17,82 @@ function assert(condition, message) {
 
 function randomHex(bytes = 6) {
     return crypto.randomBytes(bytes).toString("hex");
+}
+
+function deepHasOwnKey(value, key, seen = new Set()) {
+    if (!value || typeof value !== "object") return false;
+    if (seen.has(value)) return false;
+    seen.add(value);
+
+    if (Object.prototype.hasOwnProperty.call(value, key)) return true;
+
+    if (Array.isArray(value)) {
+        for (const item of value) {
+            if (deepHasOwnKey(item, key, seen)) return true;
+        }
+        return false;
+    }
+
+    for (const v of Object.values(value)) {
+        if (deepHasOwnKey(v, key, seen)) return true;
+    }
+    return false;
+}
+
+function stripJsComments(text) {
+    // Best-effort comment stripping to avoid counting matches in comments.
+    // This is sufficient for our invariant check; it doesn't need to be a full parser.
+    return String(text || "")
+        .replace(/\/\*[\s\S]*?\*\//g, "")
+        .replace(/\/\/.*$/gm, "");
+}
+
+function countRegexMatchesInDir({
+    dirPath,
+    filePattern = /\.(?:js|mjs|ts|tsx)$/,
+    re,
+    skipDirNames = new Set([
+        "node_modules",
+        "dist",
+        "build",
+        "coverage",
+        ".git",
+    ]),
+}) {
+    let count = 0;
+    const stack = [dirPath];
+    while (stack.length) {
+        const current = stack.pop();
+        let entries;
+        try {
+            entries = fs.readdirSync(current, { withFileTypes: true });
+        } catch {
+            continue;
+        }
+
+        for (const ent of entries) {
+            const full = path.join(current, ent.name);
+            if (ent.isDirectory()) {
+                if (skipDirNames.has(ent.name)) continue;
+                stack.push(full);
+                continue;
+            }
+
+            if (!ent.isFile() || !filePattern.test(ent.name)) continue;
+
+            let text;
+            try {
+                text = fs.readFileSync(full, "utf8");
+            } catch {
+                continue;
+            }
+
+            const matches = stripJsComments(text).match(re);
+            if (matches) count += matches.length;
+        }
+    }
+
+    return count;
 }
 
 async function listen(serverApp) {
@@ -99,6 +177,8 @@ async function main() {
         userOnly: false,
         draftOnly: false,
         limit2PerMonth: false,
+        publicNoSlugPolicy: false,
+        exposeSlugPolicySingleMatch: false,
         tenantResolveOk: false,
         tenantMismatch404: false,
         tenantMismatchOg404: false,
@@ -110,6 +190,21 @@ async function main() {
     const statuses = {};
 
     try {
+        // Enterprise invariant: exposeSlugPolicy:true must have exactly one call-site.
+        // Avoid git commands; do a lightweight file-walk scan.
+        try {
+            const srcDir = path.join(process.cwd(), "src");
+            const count = countRegexMatchesInDir({
+                dirPath: srcDir,
+                re: /exposeSlugPolicy\s*:\s*true/g,
+            });
+            statuses.exposeSlugPolicyMatches = count;
+            checks.exposeSlugPolicySingleMatch = count === 1;
+        } catch {
+            statuses.exposeSlugPolicyMatches = null;
+            checks.exposeSlugPolicySingleMatch = false;
+        }
+
         // A) User-only: anonymous (no JWT) should be forbidden for custom slug.
         {
             const anonymousId = crypto.randomUUID();
@@ -218,14 +313,21 @@ async function main() {
                 headers: { Accept: "application/json" },
             });
 
+            const hasSlugPolicyDeep = deepHasOwnKey(pub.body, "slugPolicy");
+
             statuses.tenantResolve = {
                 status: pub.status,
                 slug: pub.body?.slug || null,
                 code: pub.body?.code || null,
+                hasSlugPolicy: hasSlugPolicyDeep,
             };
 
             checks.tenantResolveOk =
                 pub.status === 200 && pub.body && pub.body.slug === slug1;
+
+            // Contract: slugPolicy must be user-context only (/cards/mine), never public.
+            checks.publicNoSlugPolicy =
+                pub.status === 200 && !hasSlugPolicyDeep;
         }
 
         // Tenant mismatch should not resolve.
@@ -426,9 +528,11 @@ async function main() {
         }
 
         const ok =
+            checks.exposeSlugPolicySingleMatch &&
             checks.userOnly &&
             checks.draftOnly &&
             checks.limit2PerMonth &&
+            checks.publicNoSlugPolicy &&
             checks.tenantResolveOk &&
             checks.tenantMismatch404 &&
             checks.tenantMismatchOg404 &&
