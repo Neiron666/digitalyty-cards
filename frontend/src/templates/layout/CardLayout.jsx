@@ -166,7 +166,10 @@ export default function CardLayout({
                         )}
                         <FaqSection card={card} mode={mode} />
                         {card?.status === "published" && (
-                            <QRCodeBlock slug={card.slug} />
+                            <QRCodeBlock
+                                slug={card.slug}
+                                publicPath={card?.publicPath}
+                            />
                         )}
                     </section>
 

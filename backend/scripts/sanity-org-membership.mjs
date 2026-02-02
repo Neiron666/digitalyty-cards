@@ -2,12 +2,7 @@ import "dotenv/config";
 
 import crypto from "node:crypto";
 
-import app from "../src/app.js";
-import { connectDB } from "../src/config/db.js";
-import Organization from "../src/models/Organization.model.js";
-import OrganizationMember from "../src/models/OrganizationMember.model.js";
-import User from "../src/models/User.model.js";
-import { signToken } from "../src/utils/jwt.js";
+import mongoose from "mongoose";
 
 function assert(condition, message) {
     if (!condition) throw new Error(message);
@@ -53,7 +48,34 @@ function isOk(status) {
     return status >= 200 && status < 300;
 }
 
-async function cleanup({ adminUserId, userId, orgId }) {
+async function getOrgMembershipIndexDebt(OrganizationMember) {
+    try {
+        const indexes = await OrganizationMember.collection.indexes();
+        const hasOrgUser = (indexes || []).some(
+            (i) =>
+                i?.name === "orgId_1_userId_1" &&
+                i?.unique === true &&
+                i?.key?.orgId === 1 &&
+                i?.key?.userId === 1,
+        );
+
+        if (hasOrgUser) return null;
+
+        return {
+            missing: ["orgId_1_userId_1"],
+            message:
+                "INDEX_DEBT: Missing required OrganizationMember index orgId_1_userId_1 (unique on {orgId:1,userId:1}). Sanity is read-only and will not create indexes.",
+        };
+    } catch (e) {
+        return {
+            missing: ["orgId_1_userId_1"],
+            message: `INDEX_DEBT: Failed to list OrganizationMember indexes: ${String(e?.message || e)}`,
+        };
+    }
+}
+
+async function cleanup(models, { adminUserId, userId, orgId }) {
+    const { Organization, OrganizationMember, User } = models;
     try {
         if (orgId) {
             await OrganizationMember.deleteMany({ orgId });
@@ -77,7 +99,38 @@ async function cleanup({ adminUserId, userId, orgId }) {
 }
 
 async function main() {
-    await connectDB(process.env.MONGO_URI);
+    // Avoid background autoIndex races/conflicts in sanity scripts.
+    // Must be set BEFORE importing app/models.
+    mongoose.set("autoIndex", false);
+    mongoose.set("autoCreate", false);
+
+    // IMPORTANT: app/models must be imported only after disabling autoIndex.
+    // Static ESM imports run before this function body and can schedule index builds.
+    const [
+        { default: app },
+        { default: Organization },
+        { default: OrganizationMember },
+        { default: User },
+        { signToken },
+    ] = await Promise.all([
+        import("../src/app.js"),
+        import("../src/models/Organization.model.js"),
+        import("../src/models/OrganizationMember.model.js"),
+        import("../src/models/User.model.js"),
+        import("../src/utils/jwt.js"),
+    ]);
+
+    const models = { Organization, OrganizationMember, User };
+
+    // Defense-in-depth: ensure Mongoose doesn't try to auto-create indexes.
+    Organization.schema.set("autoIndex", false);
+    OrganizationMember.schema.set("autoIndex", false);
+
+    await mongoose.connect(process.env.MONGO_URI, {
+        autoIndex: false,
+        autoCreate: false,
+    });
+    console.log("MongoDB connected");
 
     assert(
         typeof process.env.JWT_SECRET === "string" &&
@@ -85,8 +138,24 @@ async function main() {
         "Missing JWT_SECRET in env",
     );
 
-    // Ensure indexes exist for duplicate checks.
-    await Promise.all([Organization.init(), OrganizationMember.init()]);
+    const statuses = {};
+    statuses.indexDebt = await getOrgMembershipIndexDebt(OrganizationMember);
+    if (statuses.indexDebt) {
+        console.log(
+            JSON.stringify(
+                {
+                    ok: false,
+                    baseUrl: null,
+                    checks: null,
+                    statuses,
+                },
+                null,
+                2,
+            ),
+        );
+        process.exitCode = 1;
+        return;
+    }
 
     const server = await listen(app);
     const { port } = server.address();
@@ -109,7 +178,7 @@ async function main() {
         listMembersAfterDeleteOk: false,
     };
 
-    const statuses = {};
+    // statuses already initialized above (includes indexDebt)
 
     try {
         // Create admin user and JWT
@@ -270,12 +339,22 @@ async function main() {
         if (!ok) process.exitCode = 1;
     } finally {
         try {
-            await cleanup(created);
+            await cleanup(models, created);
         } catch {
             // ignore
         }
 
-        await new Promise((resolve) => server.close(() => resolve()));
+        try {
+            await new Promise((resolve) => server.close(() => resolve()));
+        } catch {
+            // ignore
+        }
+
+        try {
+            await mongoose.disconnect();
+        } catch {
+            // ignore
+        }
     }
 }
 

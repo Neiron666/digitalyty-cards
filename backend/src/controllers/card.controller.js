@@ -1613,7 +1613,13 @@ export async function getCardBySlug(req, res) {
     const userTier = await User.findById(String(card.user))
         .select("adminTier adminTierUntil")
         .lean();
-    return res.json(toCardDTO(card, now, { user: userTier }));
+
+    const dto = toCardDTO(card, now, { user: userTier });
+    if (dto?.slug) {
+        dto.publicPath = `/card/${dto.slug}`;
+        dto.ogPath = `/og/card/${dto.slug}`;
+    }
+    return res.json(dto);
 }
 
 export async function getCompanyCardByOrgSlugAndSlug(req, res) {
@@ -1677,7 +1683,13 @@ export async function getCompanyCardByOrgSlugAndSlug(req, res) {
     const userTier = await User.findById(String(card.user))
         .select("adminTier adminTierUntil")
         .lean();
-    return res.json(toCardDTO(card, now, { user: userTier }));
+
+    const dto = toCardDTO(card, now, { user: userTier });
+    if (dto?.slug) {
+        dto.publicPath = `/c/${orgSlug}/${dto.slug}`;
+        dto.ogPath = `/og/c/${orgSlug}/${dto.slug}`;
+    }
+    return res.json(dto);
 }
 
 function normalizeSlugInput(value) {

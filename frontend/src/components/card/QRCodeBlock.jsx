@@ -3,28 +3,27 @@ import { QRCodeCanvas } from "qrcode.react";
 import Section from "./sections/Section";
 import styles from "./QRCodeBlock.module.css";
 
-function detectOrgSlugFromPathname() {
-    try {
-        if (typeof window === "undefined") return "";
-        const path = String(window.location?.pathname || "");
-        const m = path.match(/^\/c\/([^/]+)\//i);
-        return m && m[1] ? decodeURIComponent(m[1]).trim().toLowerCase() : "";
-    } catch {
-        return "";
-    }
+function isAbsoluteUrl(value) {
+    return /^https?:\/\//i.test(String(value || "").trim());
 }
 
-export default function QRCodeBlock({ slug }) {
+export default function QRCodeBlock({ slug, publicPath }) {
     const wrapRef = useRef(null);
 
     const url = useMemo(() => {
-        if (!slug) return "";
         if (typeof window === "undefined") return "";
-        const orgSlug = detectOrgSlugFromPathname();
-        return orgSlug
-            ? `${window.location.origin}/c/${orgSlug}/${slug}`
-            : `${window.location.origin}/card/${slug}`;
-    }, [slug]);
+        const origin = window.location.origin;
+
+        const raw = typeof publicPath === "string" ? publicPath.trim() : "";
+        if (raw) {
+            if (isAbsoluteUrl(raw)) return raw;
+            const normalized = raw.startsWith("/") ? raw : `/${raw}`;
+            return `${origin}${normalized}`;
+        }
+
+        if (!slug) return "";
+        return `${origin}/card/${slug}`;
+    }, [slug, publicPath]);
 
     function handleDownload() {
         const canvas = wrapRef.current?.querySelector("canvas");
