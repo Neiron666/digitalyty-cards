@@ -34,3 +34,5 @@ _tmp_*.txt
 *_tmp_*.txt
 
 _tmp_*.json
+/_tmp/
+/_tmp/**
