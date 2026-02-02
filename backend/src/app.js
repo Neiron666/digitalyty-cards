@@ -7,6 +7,7 @@ import authRoutes from "./routes/auth.routes.js";
 import paymentRoutes from "./routes/payment.routes.js";
 import { multerErrorHandler } from "./middlewares/multerError.middleware.js";
 import leadRoutes from "./routes/lead.routes.js";
+import companyPublicRoutes from "./routes/companyPublic.routes.js";
 import sitemapRoutes from "./routes/sitemap.routes.js";
 import ogRoutes from "./routes/og.routes.js";
 import analyticsRoutes from "./routes/analytics.routes.js";
@@ -14,6 +15,7 @@ import siteAnalyticsRoutes from "./routes/siteAnalytics.routes.js";
 import { anonymousMiddleware } from "./middlewares/anonymous.middleware.js";
 import { requireAdmin } from "./middlewares/admin.middleware.js";
 import adminRoutes from "./routes/admin.routes.js";
+import orgRoutes from "./routes/org.routes.js";
 import path from "path";
 
 const app = express();
@@ -64,6 +66,12 @@ app.use("/api/leads", leadRoutes);
 app.use(multerErrorHandler);
 // Cards API
 app.use("/api/cards", cardRoutes);
+
+// User org API
+app.use("/api/orgs", orgRoutes);
+
+// Company public resolve API
+app.use("/api/c", companyPublicRoutes);
 
 // API fallback: never return HTML for /api/*
 app.use("/api", (req, res) => {

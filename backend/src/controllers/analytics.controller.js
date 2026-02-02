@@ -1,6 +1,7 @@
 import crypto from "crypto";
 
 import Card from "../models/Card.model.js";
+import Organization from "../models/Organization.model.js";
 import User from "../models/User.model.js";
 import CardAnalyticsDaily from "../models/CardAnalyticsDaily.model.js";
 import { toCardDTO } from "../utils/cardDTO.js";
@@ -14,10 +15,7 @@ import {
     parseCompositeKey,
     safeCompositeKey,
 } from "../utils/analyticsCampaign.util.js";
-import {
-    DEFAULT_TENANT_KEY,
-    resolveTenantKeyFromRequest,
-} from "../utils/tenant.util.js";
+import { getPersonalOrgId } from "../utils/personalOrg.util.js";
 
 const RATE_WINDOW_MS = 10 * 60 * 1000;
 const RATE_LIMIT = 120;
@@ -311,24 +309,42 @@ export async function trackAnalytics(req, res) {
             typeof req.body?.slug === "string"
                 ? req.body.slug.trim().toLowerCase()
                 : "";
+
+        const orgSlug =
+            typeof req.body?.orgSlug === "string"
+                ? req.body.orgSlug.trim().toLowerCase()
+                : "";
+
         const event = normalizeEvent(req.body?.event);
         const action = normalizeAction(req.body?.action);
 
         if (!slug || !event) return res.sendStatus(204);
         if (event === "click" && !action) return res.sendStatus(204);
 
-        const tenant = resolveTenantKeyFromRequest(req);
-        if (tenant?.ok === false) return res.sendStatus(204);
-        const tenantKey = tenant?.tenantKey || DEFAULT_TENANT_KEY;
+        let card = null;
 
-        const card = await Card.findOne({
-            slug,
-            $or: [
-                { tenantKey },
-                { tenantKey: { $exists: false } },
-                { tenantKey: null },
-            ],
-        }).lean();
+        if (orgSlug) {
+            const org = await Organization.findOne({
+                slug: orgSlug,
+                isActive: true,
+            })
+                .select("_id")
+                .lean();
+            if (!org?._id) return res.sendStatus(204);
+
+            card = await Card.findOne({ slug, orgId: org._id }).lean();
+        } else {
+            const personalOrgId = await getPersonalOrgId();
+            card = await Card.findOne({
+                slug,
+                $or: [
+                    { orgId: personalOrgId },
+                    { orgId: { $exists: false } },
+                    { orgId: null },
+                ],
+            }).lean();
+        }
+
         if (!card) return res.sendStatus(204);
 
         const isActive = Boolean(card?.flags?.isActive ?? card?.isActive);

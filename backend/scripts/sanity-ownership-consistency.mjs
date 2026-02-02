@@ -5,6 +5,7 @@ import mongoose from "mongoose";
 import { connectDB } from "../src/config/db.js";
 import User from "../src/models/User.model.js";
 import Card from "../src/models/Card.model.js";
+import { getPersonalOrgId } from "../src/utils/personalOrg.util.js";
 
 const SAMPLE_LIMIT = 10;
 const DUP_CARD_IDS_LIMIT = 5;
@@ -23,6 +24,13 @@ function summarizeCounts(counts) {
 }
 
 async function runAggregates({ usersColl, cardsColl }) {
+    const personalOrgId = await getPersonalOrgId();
+    const personalOrgObjectId = mongoose.Types.ObjectId.isValid(
+        String(personalOrgId || ""),
+    )
+        ? new mongoose.Types.ObjectId(String(personalOrgId))
+        : null;
+
     // A) users.cardId -> missing card doc
     const A_pipeline = [
         { $match: { cardId: { $exists: true, $ne: null } } },
@@ -103,9 +111,21 @@ async function runAggregates({ usersColl, cardsColl }) {
         },
     ];
 
-    // E) duplicate cards per user (count > 1)
+    // E) duplicate PERSONAL cards per user (count > 1)
+    // Allowed: multiple org-scoped cards per user.
     const E_pipeline = [
-        { $match: { user: { $exists: true, $ne: null } } },
+        {
+            $match: {
+                user: { $exists: true, $ne: null },
+                $or: [
+                    ...(personalOrgObjectId
+                        ? [{ orgId: personalOrgObjectId }]
+                        : []),
+                    { orgId: { $exists: false } },
+                    { orgId: null },
+                ],
+            },
+        },
         {
             $group: {
                 _id: "$user",
@@ -125,20 +145,52 @@ async function runAggregates({ usersColl, cardsColl }) {
         { $sort: { count: -1 } },
     ];
 
+    // F) duplicate org cards per (orgId, user) (count > 1)
+    // This should be prevented by the (orgId,user) unique index, but we guard anyway.
+    const F_pipeline = [
+        {
+            $match: {
+                user: { $exists: true, $ne: null },
+                orgId: { $type: "objectId" },
+            },
+        },
+        {
+            $group: {
+                _id: { orgId: "$orgId", userId: "$user" },
+                count: { $sum: 1 },
+                cardIds: { $push: "$_id" },
+            },
+        },
+        { $match: { count: { $gt: 1 } } },
+        {
+            $project: {
+                _id: 0,
+                orgId: "$_id.orgId",
+                userId: "$_id.userId",
+                count: 1,
+                cardIds: { $slice: ["$cardIds", DUP_CARD_IDS_LIMIT] },
+            },
+        },
+        { $sort: { count: -1 } },
+    ];
+
     const [
         A_samples,
         B_samples,
         C_samples,
         E_samples,
+        F_samples,
         A_count,
         B_count,
         C_count,
         E_count,
+        F_count,
     ] = await Promise.all([
         User.aggregate(A_pipeline).allowDiskUse(true).limit(SAMPLE_LIMIT),
         User.aggregate(B_pipeline).allowDiskUse(true).limit(SAMPLE_LIMIT),
         Card.aggregate(C_pipeline).allowDiskUse(true).limit(SAMPLE_LIMIT),
         Card.aggregate(E_pipeline).allowDiskUse(true).limit(SAMPLE_LIMIT),
+        Card.aggregate(F_pipeline).allowDiskUse(true).limit(SAMPLE_LIMIT),
         User.aggregate([...A_pipeline, { $count: "count" }])
             .allowDiskUse(true)
             .then((r) => (r && r[0] ? r[0].count : 0)),
@@ -149,6 +201,9 @@ async function runAggregates({ usersColl, cardsColl }) {
             .allowDiskUse(true)
             .then((r) => (r && r[0] ? r[0].count : 0)),
         Card.aggregate([...E_pipeline, { $count: "count" }])
+            .allowDiskUse(true)
+            .then((r) => (r && r[0] ? r[0].count : 0)),
+        Card.aggregate([...F_pipeline, { $count: "count" }])
             .allowDiskUse(true)
             .then((r) => (r && r[0] ? r[0].count : 0)),
     ]);
@@ -184,6 +239,7 @@ async function runAggregates({ usersColl, cardsColl }) {
             C_cards_user_missing_user_doc: C_count,
             D_cards_both_user_and_anonymousId: D_count,
             E_duplicate_cards_per_user: E_count,
+            F_duplicate_cards_per_org_user: F_count,
         },
         samples: {
             A: A_samples,
@@ -191,6 +247,7 @@ async function runAggregates({ usersColl, cardsColl }) {
             C: C_samples,
             D: D_samples,
             E: E_samples,
+            F: F_samples,
         },
     };
 }

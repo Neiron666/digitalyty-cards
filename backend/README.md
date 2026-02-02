@@ -32,3 +32,23 @@ TENANT_HOST_ALLOWLIST:
 - Wildcard `*` is forbidden (misconfig; ignored).
 - Example local: `TENANT_HOST_ALLOWLIST=localhost,127.0.0.1,127.0.0.2` (no ports; ports are stripped from Host).
 - If host is not allowlisted: public/SEO routes return `404`, analytics returns `204` (no DB lookup).
+
+Allowed Hosts (MongoDB allowlist + ENV bootstrap):
+
+- The effective allowlist is a UNION of:
+    - `TENANT_HOST_ALLOWLIST` (ENV bootstrap; always applied)
+    - `AllowedHost` collection in MongoDB where `isActive=true`
+- Cache: backend keeps an in-memory cache (TTL default 60s).
+- Failure mode: if MongoDB allowlist query fails, backend falls back to ENV allowlist only (fail-closed for DB-managed hosts).
+
+Admin management:
+
+- List: `GET /api/admin/allowed-hosts`
+- Add: `POST /api/admin/allowed-hosts` with `{ host, note? }`
+- Update: `PATCH /api/admin/allowed-hosts/:id` with `{ isActive?, note? }`
+- Deactivate (soft-delete): `DELETE /api/admin/allowed-hosts/:id`
+
+Bootstrap guidance:
+
+- Keep the core production domains in `TENANT_HOST_ALLOWLIST` so the admin panel remains reachable even if Mongo is temporarily unavailable.
+- Add new customer domains via the admin API/UI so changes persist without redeploy.

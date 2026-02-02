@@ -28,3 +28,7 @@ missing_*.txt
 
 # Optional: editor noise
 .vscode/.history/
+
+# Temporary files
+_tmp_*.txt
+*_tmp_*.txt

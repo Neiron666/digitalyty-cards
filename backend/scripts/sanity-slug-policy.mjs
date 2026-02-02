@@ -163,10 +163,12 @@ async function main() {
 
     const server = await listen(app);
     const { port } = server.address();
-    const baseUrlPrimary = `http://127.0.0.1:${port}/api`;
-    const baseUrlAlt = `http://127.0.0.2:${port}/api`;
-    const tenantHost = new URL(baseUrlPrimary).hostname;
-    const tenantHostAlt = new URL(baseUrlAlt).hostname;
+    const originPrimary = `http://127.0.0.1:${port}`;
+    const originAlt = `http://127.0.0.2:${port}`;
+    const baseUrlPrimary = `${originPrimary}/api`;
+    const baseUrlAlt = `${originAlt}/api`;
+    const hostPrimary = new URL(baseUrlPrimary).hostname;
+    const hostAlt = new URL(baseUrlAlt).hostname;
 
     const created = {
         userId: null,
@@ -180,10 +182,10 @@ async function main() {
         publicNoSlugPolicy: false,
         exposeSlugPolicySingleMatch: false,
         tenantResolveOk: false,
-        tenantMismatch404: false,
-        tenantMismatchOg404: false,
-        tenantMismatchSitemap404: false,
-        tenantMismatchAnalytics204: false,
+        altHostResolveOk: false,
+        altHostOgOk: false,
+        altHostSitemapOk: false,
+        altHostAnalytics204: false,
         limitPayload: null,
     };
 
@@ -330,7 +332,7 @@ async function main() {
                 pub.status === 200 && !hasSlugPolicyDeep;
         }
 
-        // Tenant mismatch should not resolve.
+        // Host-independence: public resolve must not depend on Host allowlists.
         {
             const pubWrongHost = await requestJson({
                 baseUrl: baseUrlAlt,
@@ -339,44 +341,46 @@ async function main() {
                 headers: { Accept: "application/json" },
             });
 
-            statuses.tenantMismatch = {
+            statuses.altHostResolve = {
                 status: pubWrongHost.status,
                 code: pubWrongHost.body?.code || null,
             };
 
-            checks.tenantMismatch404 = pubWrongHost.status === 404;
+            checks.altHostResolveOk =
+                pubWrongHost.status === 200 &&
+                pubWrongHost.body?.slug === slug1;
         }
 
-        // Tenant mismatch should block SEO/public surfaces.
+        // Host-independence: SEO/public surfaces must not depend on Host allowlists.
         {
             const ogWrongHost = await requestJson({
-                baseUrl: baseUrlAlt,
+                baseUrl: originAlt,
                 path: `/og/card/${slug1}`,
                 method: "GET",
                 headers: { Accept: "text/html" },
             });
 
-            statuses.tenantMismatchOg = {
+            statuses.altHostOg = {
                 status: ogWrongHost.status,
                 body: ogWrongHost.body,
             };
 
-            checks.tenantMismatchOg404 = ogWrongHost.status === 404;
+            checks.altHostOgOk = ogWrongHost.status === 200;
         }
 
         {
             const sitemapWrongHost = await requestJson({
-                baseUrl: baseUrlAlt,
+                baseUrl: originAlt,
                 path: "/sitemap.xml",
                 method: "GET",
                 headers: { Accept: "application/xml" },
             });
 
-            statuses.tenantMismatchSitemap = {
+            statuses.altHostSitemap = {
                 status: sitemapWrongHost.status,
             };
 
-            checks.tenantMismatchSitemap404 = sitemapWrongHost.status === 404;
+            checks.altHostSitemapOk = sitemapWrongHost.status === 200;
         }
 
         {
@@ -388,12 +392,11 @@ async function main() {
                 body: { slug: slug1, event: "view" },
             });
 
-            statuses.tenantMismatchAnalytics = {
+            statuses.altHostAnalytics = {
                 status: analyticsWrongHost.status,
             };
 
-            checks.tenantMismatchAnalytics204 =
-                analyticsWrongHost.status === 204;
+            checks.altHostAnalytics204 = analyticsWrongHost.status === 204;
         }
 
         const slug2 = `sanity-slug-b-${randomHex(4)}`;
@@ -534,10 +537,10 @@ async function main() {
             checks.limit2PerMonth &&
             checks.publicNoSlugPolicy &&
             checks.tenantResolveOk &&
-            checks.tenantMismatch404 &&
-            checks.tenantMismatchOg404 &&
-            checks.tenantMismatchSitemap404 &&
-            checks.tenantMismatchAnalytics204;
+            checks.altHostResolveOk &&
+            checks.altHostOgOk &&
+            checks.altHostSitemapOk &&
+            checks.altHostAnalytics204;
 
         console.log(
             JSON.stringify(
@@ -545,8 +548,8 @@ async function main() {
                     ok,
                     baseUrlPrimary,
                     baseUrlAlt,
-                    tenantHost,
-                    tenantHostAlt,
+                    hostPrimary,
+                    hostAlt,
                     checks,
                     statuses,
                 },

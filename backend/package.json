@@ -11,7 +11,9 @@
         "sanity:claim-api-contract": "node scripts/sanity-claim-api-contract.mjs",
         "sanity:claim-vs-create-race": "node scripts/sanity-claim-vs-create-race.mjs",
         "sanity:ownership-consistency": "node scripts/sanity-ownership-consistency.mjs",
-        "sanity:slug-policy": "node scripts/sanity-slug-policy.mjs"
+        "sanity:slug-policy": "node scripts/sanity-slug-policy.mjs",
+        "sanity:org-membership": "node scripts/sanity-org-membership.mjs",
+        "sanity:org-access": "node scripts/sanity-org-access.mjs"
     },
     "keywords": [],
     "author": "",

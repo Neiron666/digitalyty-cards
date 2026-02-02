@@ -10,6 +10,7 @@ function parseArgs(argv) {
     const args = {
         dryRun: true,
         createIndex: false,
+        recreateIndex: false,
         dropOldSlugUnique: false,
         tenantKey: DEFAULT_TENANT_KEY,
         verbose: false,
@@ -19,6 +20,7 @@ function parseArgs(argv) {
         if (token === "--apply") args.dryRun = false;
         else if (token === "--dry-run") args.dryRun = true;
         else if (token === "--create-index") args.createIndex = true;
+        else if (token === "--recreate-index") args.recreateIndex = true;
         else if (token === "--drop-old-slug-unique")
             args.dropOldSlugUnique = true;
         else if (token === "--verbose") args.verbose = true;
@@ -36,15 +38,100 @@ function parseArgs(argv) {
     return args;
 }
 
-async function ensureIndexes({ dryRun, dropOldSlugUnique, verbose }) {
+function hasOrgIdMissingClause(partialFilterExpression) {
+    if (!partialFilterExpression || typeof partialFilterExpression !== "object")
+        return false;
+
+    // `orgId: null` matches BOTH null and missing fields in Mongo queries.
+    // We prefer this form because `$exists: false` can be rejected in partial indexes
+    // depending on MongoDB server version/config.
+    return partialFilterExpression.orgId === null;
+}
+
+function isTenantKeySlugIndexDesired(index) {
+    if (!index || typeof index !== "object") return false;
+
+    const pfe = index.partialFilterExpression;
+    if (!pfe || typeof pfe !== "object") return false;
+
+    const hasTenantKey = pfe.tenantKey?.$type === "string";
+    const hasSlug = pfe.slug?.$type === "string";
+    const hasOrgIdMissing = hasOrgIdMissingClause(pfe);
+
+    return Boolean(hasTenantKey && hasSlug && hasOrgIdMissing);
+}
+
+async function ensureIndexes({
+    dryRun,
+    recreateIndex,
+    dropOldSlugUnique,
+    verbose,
+}) {
     const idx = await Card.collection.indexes();
 
     const byName = new Map(idx.map((i) => [i.name, i]));
 
     const wantCompoundName = "tenantKey_1_slug_1";
     const wantSlugName = "slug_1";
+    const wantOrgSlugName = "orgId_1_slug_1";
 
-    if (!byName.has(wantCompoundName)) {
+    // Ensure org-scoped uniqueness exists (path-tenancy: /c/:orgSlug/:slug and /card/:slug).
+    if (!byName.has(wantOrgSlugName)) {
+        if (dryRun || verbose) {
+            console.log(
+                dryRun
+                    ? "[dry-run] would create unique index orgId_1_slug_1"
+                    : "creating unique index orgId_1_slug_1",
+            );
+        }
+
+        if (!dryRun) {
+            await Card.collection.createIndex(
+                { orgId: 1, slug: 1 },
+                {
+                    unique: true,
+                    name: wantOrgSlugName,
+                    partialFilterExpression: {
+                        orgId: { $type: "objectId" },
+                        slug: { $type: "string" },
+                    },
+                },
+            );
+        }
+    }
+
+    const desiredTenantKeySlugOptions = {
+        unique: true,
+        name: wantCompoundName,
+        partialFilterExpression: {
+            // Legacy-only: keep uniqueness in the pre-orgId namespace.
+            orgId: null,
+            tenantKey: { $type: "string" },
+            slug: { $type: "string" },
+        },
+    };
+
+    const existingCompound = byName.get(wantCompoundName);
+    const compoundExists = Boolean(existingCompound);
+    const compoundIsDesired = isTenantKeySlugIndexDesired(existingCompound);
+
+    if (compoundExists && !compoundIsDesired && recreateIndex) {
+        if (dryRun || verbose) {
+            console.log(
+                dryRun
+                    ? "[dry-run] would drop+recreate unique index tenantKey_1_slug_1 (legacy-only PFE)"
+                    : "dropping+recreating unique index tenantKey_1_slug_1 (legacy-only PFE)",
+            );
+        }
+
+        if (!dryRun) {
+            await Card.collection.dropIndex(wantCompoundName);
+            await Card.collection.createIndex(
+                { tenantKey: 1, slug: 1 },
+                desiredTenantKeySlugOptions,
+            );
+        }
+    } else if (!compoundExists) {
         if (dryRun || verbose) {
             console.log(
                 dryRun
@@ -56,16 +143,13 @@ async function ensureIndexes({ dryRun, dropOldSlugUnique, verbose }) {
         if (!dryRun) {
             await Card.collection.createIndex(
                 { tenantKey: 1, slug: 1 },
-                {
-                    unique: true,
-                    name: wantCompoundName,
-                    partialFilterExpression: {
-                        tenantKey: { $type: "string" },
-                        slug: { $type: "string" },
-                    },
-                },
+                desiredTenantKeySlugOptions,
             );
         }
+    } else if (!compoundIsDesired && (dryRun || verbose)) {
+        console.log(
+            "note: tenantKey_1_slug_1 exists but is not legacy-only; rerun with --recreate-index to fix",
+        );
     }
 
     const slugIdx = byName.get(wantSlugName);
@@ -80,6 +164,8 @@ async function ensureIndexes({ dryRun, dropOldSlugUnique, verbose }) {
 
         if (!dryRun) {
             await Card.collection.dropIndex(wantSlugName);
+            // Keep our index snapshot consistent so we can recreate slug_1 below.
+            byName.delete(wantSlugName);
         }
     }
 
@@ -146,6 +232,7 @@ async function main() {
     if (args.createIndex) {
         await ensureIndexes({
             dryRun: args.dryRun,
+            recreateIndex: args.recreateIndex,
             dropOldSlugUnique: args.dropOldSlugUnique,
             verbose: args.verbose,
         });
@@ -158,6 +245,7 @@ async function main() {
         missingCount,
         modifiedCount,
         createIndex: args.createIndex,
+        recreateIndex: args.recreateIndex,
         dropOldSlugUnique: args.dropOldSlugUnique,
         elapsedMs,
     });

@@ -1,6 +1,8 @@
 import Card from "../models/Card.model.js";
 import slugify from "slugify";
 import User from "../models/User.model.js";
+import Organization from "../models/Organization.model.js";
+import OrganizationMember from "../models/OrganizationMember.model.js";
 import mongoose from "mongoose";
 import { hasAccess } from "../utils/planAccess.js";
 import crypto from "crypto";
@@ -32,10 +34,9 @@ import { normalizeAboutParagraphs } from "../utils/about.js";
 import { normalizeFaqForWrite } from "../utils/faq.util.js";
 import { normalizeBusinessForWrite } from "../utils/business.util.js";
 import { toIsrael } from "../utils/time.util.js";
-import {
-    DEFAULT_TENANT_KEY,
-    resolveTenantKeyFromRequest,
-} from "../utils/tenant.util.js";
+import { DEFAULT_TENANT_KEY } from "../utils/tenant.util.js";
+import { getPersonalOrgId } from "../utils/personalOrg.util.js";
+import { assertActiveOrgAndMembershipOrNotFound } from "../utils/orgMembership.util.js";
 
 function resolveCleanupBucketsForCard(card) {
     const isAnonymousOwned = !card?.user && Boolean(card?.anonymousId);
@@ -213,11 +214,26 @@ function buildSeo(data) {
     };
 }
 
-async function generateUniqueSlug(baseSlug, { tenantKey } = {}) {
+async function generateUniqueSlug(
+    baseSlug,
+    { tenantKey, orgId, includeNullOrgFallback = false } = {},
+) {
     let candidate = baseSlug;
     let counter = 2;
 
     const queryFor = (slug) => {
+        if (orgId) {
+            return includeNullOrgFallback
+                ? {
+                      slug,
+                      $or: [
+                          { orgId },
+                          { orgId: { $exists: false } },
+                          { orgId: null },
+                      ],
+                  }
+                : { orgId, slug };
+        }
         const tk = typeof tenantKey === "string" && tenantKey.trim();
         return tk ? { tenantKey: tk, slug } : { slug };
     };
@@ -250,7 +266,12 @@ async function generateUniqueRandomSlug(length = 12) {
 async function resolveCreateSlug(
     data,
     fallbackBaseSlug,
-    { tenantKey, allowRequestedSlug = true } = {},
+    {
+        tenantKey,
+        orgId,
+        includeNullOrgFallback = false,
+        allowRequestedSlug = true,
+    } = {},
 ) {
     const requested =
         allowRequestedSlug && typeof data?.slug === "string"
@@ -266,7 +287,12 @@ async function resolveCreateSlug(
                 typeof fallbackBaseSlug === "string"
                     ? fallbackBaseSlug.trim()
                     : "";
-            if (fallback) return generateUniqueSlug(fallback, { tenantKey });
+            if (fallback)
+                return generateUniqueSlug(fallback, {
+                    tenantKey,
+                    orgId,
+                    includeNullOrgFallback,
+                });
         }
         return generateUniqueRandomSlug(12);
     }
@@ -281,7 +307,11 @@ async function resolveCreateSlug(
     if (!baseSlug) return generateUniqueRandomSlug(12);
 
     // ensure uniqueness (create-time collisions)
-    return generateUniqueSlug(baseSlug || fallbackBaseSlug, { tenantKey });
+    return generateUniqueSlug(baseSlug || fallbackBaseSlug, {
+        tenantKey,
+        orgId,
+        includeNullOrgFallback,
+    });
 }
 
 function resolveUserId(req) {
@@ -491,46 +521,77 @@ export async function getMyCard(req, res) {
     const now = new Date();
 
     if (owner.type === "user") {
+        const personalOrgId = await getPersonalOrgId();
         const user = await User.findById(owner.id)
             .select("cardId adminTier adminTierUntil")
             .lean();
 
-        // Canonical card selection:
-        // 1) Prefer user.cardId (single source of truth when present)
-        // 2) Fallback to deterministic pick (newest by createdAt)
-        // WHY: if duplicates exist, Card.findOne({user}) without sort is nondeterministic.
+        // SSoT: /cards/mine must return PERSONAL card only.
+        // Legacy tolerant fallback keeps old data readable until orgId backfill runs.
+        const personalScopeOr = [
+            { orgId: new mongoose.Types.ObjectId(personalOrgId) },
+            { orgId: { $exists: false } },
+            { orgId: null },
+        ];
+
+        // Canonical personal-card selection:
+        // 1) Prefer user.cardId only if it points to a personal-scoped card
+        // 2) Else deterministic fallback (newest personal-scoped by createdAt)
         let card = null;
         const preferredId = user?.cardId ? String(user.cardId) : "";
         if (preferredId) {
-            card = await Card.findById(preferredId);
-        }
+            const candidate = await Card.findById(preferredId);
+            const candidateUserOk =
+                candidate && String(candidate.user || "") === String(owner.id);
 
-        if (!card) {
-            card = await Card.findOne({ user: owner.id }).sort({
-                createdAt: -1,
-            });
+            const candidateOrgId = candidate?.orgId
+                ? String(candidate.orgId)
+                : "";
+            const candidateIsPersonal =
+                !candidateOrgId || candidateOrgId === String(personalOrgId);
 
-            // Best-effort repair: keep user.cardId pointing at the chosen canonical card.
-            if (card && (!preferredId || preferredId !== String(card._id))) {
-                try {
-                    await User.updateOne(
-                        { _id: owner.id },
-                        { $set: { cardId: card._id } },
-                    );
-                } catch {
-                    // ignore (best-effort)
-                }
+            if (candidateUserOk && candidateIsPersonal) {
+                card = candidate;
             }
         }
 
-        return res.json(
-            card
-                ? toCardDTO(card, now, {
-                      user: user || null,
-                      exposeSlugPolicy: true,
-                  })
-                : null,
-        );
+        if (!card) {
+            card = await Card.findOne({
+                user: owner.id,
+                isActive: true,
+                $or: personalScopeOr,
+            }).sort({ createdAt: -1 });
+        }
+
+        // Best-effort repair:
+        // - If user.cardId is missing
+        // - OR points to a non-personal card
+        // - OR points to a deleted/missing card
+        // then repoint it to the chosen personal card.
+        if (card && String(card._id) && preferredId !== String(card._id)) {
+            try {
+                await User.updateOne(
+                    { _id: owner.id },
+                    { $set: { cardId: card._id } },
+                );
+            } catch {
+                // ignore (best-effort)
+            }
+        }
+
+        if (!card) return res.json(null);
+
+        const dto = toCardDTO(card, now, {
+            user: user || null,
+            exposeSlugPolicy: true,
+        });
+
+        if (dto?.slug) {
+            dto.publicPath = `/card/${dto.slug}`;
+            dto.ogPath = `/og/card/${dto.slug}`;
+        }
+
+        return res.json(dto);
     }
 
     // Anonymous: one card per anonymousId + delete after trialEndsAt grace window
@@ -567,7 +628,164 @@ export async function getMyCard(req, res) {
     }
 
     const dto = toCardDTO(card, now);
+    if (dto?.slug) {
+        dto.publicPath = `/card/${dto.slug}`;
+        dto.ogPath = `/og/card/${dto.slug}`;
+    }
     return res.json(await hydrateAnonymousMediaUrls({ card, dto }));
+}
+
+export async function getMyOrganizations(req, res) {
+    const userId = req?.userId ? String(req.userId) : "";
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+        return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    const memberships = await OrganizationMember.find({
+        userId,
+        status: "active",
+    })
+        .select("orgId role status")
+        .lean();
+
+    const orgIds = Array.from(
+        new Set(
+            (memberships || [])
+                .map((m) => (m?.orgId ? String(m.orgId) : ""))
+                .filter(Boolean),
+        ),
+    ).filter((id) => mongoose.Types.ObjectId.isValid(id));
+
+    if (!orgIds.length) return res.json([]);
+
+    const orgs = await Organization.find({
+        _id: { $in: orgIds },
+        isActive: true,
+    })
+        .select("_id slug name")
+        .lean();
+
+    const orgById = new Map((orgs || []).map((o) => [String(o._id), o]));
+
+    const out = [];
+    for (const m of memberships || []) {
+        const orgId = m?.orgId ? String(m.orgId) : "";
+        const org = orgById.get(orgId);
+        if (!org?._id) continue;
+        out.push({
+            id: String(org._id),
+            slug: String(org.slug || "").trim(),
+            name: String(org.name || "").trim(),
+            myRole: String(m.role || "member"),
+            myStatus: String(m.status || "active"),
+        });
+    }
+
+    return res.json(out);
+}
+
+export async function getOrCreateMyOrgCard(req, res) {
+    const userId = req?.userId ? String(req.userId) : "";
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+        return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    const orgSlug = String(req.params.orgSlug || "")
+        .trim()
+        .toLowerCase();
+    if (!orgSlug) return res.status(404).json({ message: "Not found" });
+
+    const org = await Organization.findOne({ slug: orgSlug, isActive: true })
+        .select("_id slug")
+        .lean();
+
+    if (!org?._id) return res.status(404).json({ message: "Not found" });
+
+    // Anti-enumeration: membership missing/inactive must look like org missing.
+    const member = await OrganizationMember.findOne({
+        orgId: org._id,
+        userId,
+        status: "active",
+    })
+        .select("_id")
+        .lean();
+    if (!member?._id) return res.status(404).json({ message: "Not found" });
+
+    const now = new Date();
+
+    let card = await Card.findOne({
+        orgId: org._id,
+        user: userId,
+        isActive: true,
+    });
+
+    if (!card) {
+        const slugBase = `draft-${String(userId).slice(-6)}`;
+
+        for (let attempt = 0; attempt < 4; attempt += 1) {
+            const suffix = crypto.randomBytes(3).toString("hex");
+            const slug = `${slugBase}-${suffix}`;
+
+            try {
+                card = await Card.create({
+                    slug,
+                    plan: "free",
+                    status: "draft",
+                    business: {},
+                    contact: {},
+                    content: {},
+                    design: {},
+                    gallery: [],
+                    reviews: [],
+                    faq: null,
+                    user: userId,
+                    orgId: org._id,
+                    tenantKey: DEFAULT_TENANT_KEY,
+                    billing: { status: "free", plan: "free", paidUntil: null },
+                    seo: {},
+                });
+                break;
+            } catch (err) {
+                // Race/idempotency: if another request created the card, re-read it.
+                if (
+                    err?.code === 11000 ||
+                    (err?.name === "MongoServerError" &&
+                        String(err?.message || "").includes("E11000"))
+                ) {
+                    const existing = await Card.findOne({
+                        orgId: org._id,
+                        user: userId,
+                        isActive: true,
+                    });
+                    if (existing) {
+                        card = existing;
+                        break;
+                    }
+                    // Else: slug collision; retry.
+                    continue;
+                }
+
+                throw err;
+            }
+        }
+    }
+
+    if (!card) return res.status(500).json({ message: "Failed to create" });
+
+    const userTier = await User.findById(userId)
+        .select("adminTier adminTierUntil")
+        .lean();
+
+    const dto = toCardDTO(card, now, {
+        user: userTier || null,
+    });
+
+    if (dto?.slug) {
+        dto.publicPath = `/c/${orgSlug}/${dto.slug}`;
+        dto.ogPath = `/og/c/${orgSlug}/${dto.slug}`;
+    }
+
+    return res.json(dto);
 }
 
 export async function createCard(req, res) {
@@ -575,8 +793,10 @@ export async function createCard(req, res) {
     const owner = resolveOwnerContext(req);
     if (!owner) return res.status(401).json({ message: "Unauthorized" });
 
-    const tenant = resolveTenantKeyFromRequest(req);
-    const tenantKey = tenant?.tenantKey || DEFAULT_TENANT_KEY;
+    // Host-tenancy is deprecated; keep legacy tenantKey stable.
+    const tenantKey = DEFAULT_TENANT_KEY;
+
+    const personalOrgId = await getPersonalOrgId();
 
     const now = new Date();
 
@@ -604,6 +824,9 @@ export async function createCard(req, res) {
         delete data.uploads;
         delete data.adminOverride;
         delete data.tenantKey;
+        // Slug must be changed via PATCH /cards/slug (policy + rate limit).
+        delete data.slug;
+        delete data.orgId;
         delete data.slugChange;
 
         // Admin-only feature tier override must never be set by user endpoints.
@@ -645,6 +868,11 @@ export async function createCard(req, res) {
                 delete data[k];
             }
         }
+    }
+
+    // Personal cards always belong to PERSONAL_ORG (server-controlled).
+    if (data && typeof data === "object") {
+        data.orgId = personalOrgId;
     }
 
     // Authenticated users: keep existing behavior (User.cardId linking).
@@ -736,6 +964,8 @@ export async function createCard(req, res) {
 
         const slug = await resolveCreateSlug(data, baseSlug, {
             tenantKey,
+            orgId: personalOrgId,
+            includeNullOrgFallback: true,
             allowRequestedSlug: true,
         });
 
@@ -855,6 +1085,8 @@ export async function createCard(req, res) {
 
     const slug = await resolveCreateSlug(data, baseSlug, {
         tenantKey,
+        orgId: personalOrgId,
+        includeNullOrgFallback: true,
         allowRequestedSlug: false,
     });
 
@@ -915,6 +1147,29 @@ export async function updateCard(req, res) {
 
     if (!ownsCard) {
         return res.status(403).json({ message: "Not your card" });
+    }
+
+    // Enterprise: revocation must block writes to org cards.
+    // For non-personal org cards, require active membership (anti-enumeration => 404).
+    if (owner.type === "user" && existingCard?.orgId) {
+        const personalOrgId = await getPersonalOrgId();
+        const cardOrgId = String(existingCard.orgId || "");
+        const isNonPersonalOrg =
+            Boolean(cardOrgId) && cardOrgId !== String(personalOrgId);
+
+        if (isNonPersonalOrg) {
+            try {
+                await assertActiveOrgAndMembershipOrNotFound({
+                    orgId: existingCard.orgId,
+                    userId: owner.id,
+                });
+            } catch (err) {
+                if (err instanceof HttpError || err?.statusCode === 404) {
+                    return res.status(404).json({ message: "Not found" });
+                }
+                throw err;
+            }
+        }
     }
 
     const now = new Date();
@@ -1106,54 +1361,6 @@ export async function updateCard(req, res) {
             if (!patch.flags || typeof patch.flags !== "object")
                 patch.flags = {};
             patch.flags.isTemplateSeeded = false;
-        }
-    }
-
-    const nextBusinessName =
-        patch?.business?.name ||
-        patch?.business?.businessName ||
-        patch?.business?.ownerName ||
-        "";
-
-    const isDraftSlug =
-        typeof existingCard.slug === "string" &&
-        existingCard.slug.startsWith("draft-");
-
-    // If it's a draft slug and business name is now provided, auto-generate a nicer slug
-    if (!patch.slug && isDraftSlug && nextBusinessName) {
-        const tenantKey =
-            typeof existingCard.tenantKey === "string" &&
-            existingCard.tenantKey.trim()
-                ? existingCard.tenantKey
-                : DEFAULT_TENANT_KEY;
-        const baseSlug = slugify(nextBusinessName, {
-            lower: true,
-            strict: true,
-            trim: true,
-        });
-        patch.slug = await generateUniqueSlug(baseSlug || existingCard.slug, {
-            tenantKey,
-        });
-    }
-
-    // Optional slug edit: keep it unique and slugified
-    if (typeof patch.slug === "string" && patch.slug.trim()) {
-        const tenantKey =
-            typeof existingCard.tenantKey === "string" &&
-            existingCard.tenantKey.trim()
-                ? existingCard.tenantKey
-                : DEFAULT_TENANT_KEY;
-        const baseSlug = slugify(patch.slug, {
-            lower: true,
-            strict: true,
-            trim: true,
-        });
-
-        const existing = await Card.findOne({ tenantKey, slug: baseSlug });
-        if (existing && existing._id.toString() !== req.params.id) {
-            patch.slug = await generateUniqueSlug(baseSlug, { tenantKey });
-        } else {
-            patch.slug = baseSlug;
         }
     }
 
@@ -1360,31 +1567,83 @@ export async function updateCard(req, res) {
 }
 
 export async function getCardBySlug(req, res) {
-    const tenant = resolveTenantKeyFromRequest(req);
-    if (tenant?.ok === false) {
+    const personalOrgId = await getPersonalOrgId();
+
+    // Personal public resolution is scoped to PERSONAL_ORG.
+    // Tolerant fallback keeps existing data readable until orgId backfill runs.
+    const card = await Card.findOne({
+        slug: req.params.slug,
+        isActive: true,
+        $or: [
+            { orgId: new mongoose.Types.ObjectId(personalOrgId) },
+            { orgId: { $exists: false } },
+            { orgId: null },
+        ],
+    });
+
+    if (!card) {
         return res.status(404).json({ message: "Not found" });
     }
 
-    const tenantKey = tenant?.tenantKey || DEFAULT_TENANT_KEY;
+    // IMPORTANT: slug-based access is public ONLY when published + user-owned.
+    // No owner-preview by slug (especially not for anonymous cards).
+    if (card.status !== "published") {
+        return res.status(404).json({ message: "Not found" });
+    }
 
-    const legacyFallbackOk = tenantKey === DEFAULT_TENANT_KEY;
-    const card = await Card.findOne(
-        legacyFallbackOk
-            ? {
-                  slug: req.params.slug,
-                  isActive: true,
-                  $or: [
-                      { tenantKey },
-                      { tenantKey: { $exists: false } },
-                      { tenantKey: null },
-                  ],
-              }
-            : {
-                  slug: req.params.slug,
-                  isActive: true,
-                  tenantKey,
-              },
-    );
+    // Defense in depth: anon-owned cards must never be reachable by slug.
+    if (card.anonymousId && !card.user) {
+        return res.status(404).json({ message: "Not found" });
+    }
+
+    if (!card.user) {
+        return res.status(404).json({ message: "Not found" });
+    }
+
+    const now = new Date();
+
+    // Public access rule: expired & unpaid published cards are blocked.
+    if (isTrialExpired(card, now) && !isEntitled(card, now)) {
+        return res.status(410).json({
+            code: "TRIAL_EXPIRED_PUBLIC",
+            message: "Trial expired",
+        });
+    }
+
+    const userTier = await User.findById(String(card.user))
+        .select("adminTier adminTierUntil")
+        .lean();
+    return res.json(toCardDTO(card, now, { user: userTier }));
+}
+
+export async function getCompanyCardByOrgSlugAndSlug(req, res) {
+    const orgSlug = String(req.params.orgSlug || "")
+        .trim()
+        .toLowerCase();
+    const slug = String(req.params.slug || "")
+        .trim()
+        .toLowerCase();
+
+    if (!orgSlug || !slug) {
+        return res.status(404).json({ message: "Not found" });
+    }
+
+    const org = await Organization.findOne({
+        slug: orgSlug,
+        isActive: true,
+    })
+        .select("_id")
+        .lean();
+
+    if (!org?._id) {
+        return res.status(404).json({ message: "Not found" });
+    }
+
+    const card = await Card.findOne({
+        orgId: org._id,
+        slug,
+        isActive: true,
+    });
 
     if (!card) {
         return res.status(404).json({ message: "Not found" });
@@ -1477,7 +1736,16 @@ export async function updateSlug(req, res) {
             .json({ code: "INVALID_SLUG", message: "Invalid slug" });
     }
 
-    const card = await Card.findOne({ user: actor.id, isActive: true });
+    const personalOrgId = await getPersonalOrgId();
+    const card = await Card.findOne({
+        user: actor.id,
+        isActive: true,
+        $or: [
+            { orgId: new mongoose.Types.ObjectId(personalOrgId) },
+            { orgId: { $exists: false } },
+            { orgId: null },
+        ],
+    }).sort({ createdAt: -1 });
 
     if (!card) return res.status(404).json({ message: "Not found" });
 
@@ -1488,11 +1756,11 @@ export async function updateSlug(req, res) {
         });
     }
 
-    const tenant = resolveTenantKeyFromRequest(req);
     const tenantKey =
         typeof card.tenantKey === "string" && card.tenantKey.trim()
             ? card.tenantKey
-            : tenant?.tenantKey || DEFAULT_TENANT_KEY;
+            : DEFAULT_TENANT_KEY;
+    const orgIdToSet = card.orgId || personalOrgId;
 
     if (String(card.slug || "") === nextSlug) {
         return res.json({ slug: nextSlug });
@@ -1516,6 +1784,7 @@ export async function updateSlug(req, res) {
                 $set: {
                     slug: nextSlug,
                     tenantKey,
+                    orgId: orgIdToSet,
                     "slugChange.updatedAt": now,
                 },
                 $inc: { "slugChange.count": 1 },
@@ -1544,6 +1813,7 @@ export async function updateSlug(req, res) {
                 $set: {
                     slug: nextSlug,
                     tenantKey,
+                    orgId: orgIdToSet,
                     "slugChange.monthKey": monthKey,
                     "slugChange.count": 1,
                     "slugChange.updatedAt": now,
@@ -1608,6 +1878,28 @@ export async function deleteCard(req, res) {
             error: err?.message || err,
         });
         return res.status(500).json({ message: "Failed to delete card" });
+    }
+
+    // Enterprise: membership revocation must block org-card deletes.
+    if (actor.type === "user" && card?.orgId) {
+        const personalOrgId = await getPersonalOrgId();
+        const cardOrgId = String(card.orgId || "");
+        const isNonPersonalOrg =
+            Boolean(cardOrgId) && cardOrgId !== String(personalOrgId);
+
+        if (isNonPersonalOrg) {
+            try {
+                await assertActiveOrgAndMembershipOrNotFound({
+                    orgId: card.orgId,
+                    userId: actor.id,
+                });
+            } catch (err) {
+                if (err instanceof HttpError || err?.statusCode === 404) {
+                    return res.status(404).json({ message: "Not found" });
+                }
+                throw err;
+            }
+        }
     }
 
     const rawPaths = collectSupabasePathsFromCard(card);

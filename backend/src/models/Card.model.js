@@ -66,9 +66,6 @@ const CardSchema = new mongoose.Schema(
             ref: "User",
             // Optional to support anonymous cards; keeps existing user-owned docs valid.
             required: false,
-            index: true,
-            unique: true,
-            sparse: true,
         },
 
         // One anonymous card per browser. Sparse+unique allows many docs without anonymousId.
@@ -86,6 +83,15 @@ const CardSchema = new mongoose.Schema(
             type: String,
             trim: true,
             lowercase: true,
+            default: null,
+            index: true,
+        },
+
+        // Path-tenancy: organization-scoped cards.
+        // NOTE: existing docs may have orgId missing/null until backfill.
+        orgId: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "Organization",
             default: null,
             index: true,
         },
@@ -445,14 +451,44 @@ const CardSchema = new mongoose.Schema(
 
 // Indexes (enterprise migration):
 // - Keep a non-unique slug index for existing query patterns.
-// - Enforce uniqueness on (tenantKey, slug) once tenantKey is backfilled.
+// - Enforce uniqueness on (orgId, slug) once orgId is backfilled.
+// - Keep legacy uniqueness on (tenantKey, slug) for now (backward compat).
+CardSchema.index({ user: 1 }, { name: "user_1", sparse: true });
 CardSchema.index({ slug: 1 }, { name: "slug_1" });
+// Enterprise bounded policy: one card per (orgId, user).
+// - Applies to all org-scoped cards (including PERSONAL_ORG).
+// - Does NOT apply to anonymous cards (user missing) or legacy docs where orgId is null/missing.
+CardSchema.index(
+    { orgId: 1, user: 1 },
+    {
+        unique: true,
+        name: "orgId_1_user_1",
+        partialFilterExpression: {
+            orgId: { $type: "objectId" },
+            user: { $type: "objectId" },
+        },
+    },
+);
+CardSchema.index(
+    { orgId: 1, slug: 1 },
+    {
+        unique: true,
+        name: "orgId_1_slug_1",
+        partialFilterExpression: {
+            orgId: { $type: "objectId" },
+            slug: { $type: "string" },
+        },
+    },
+);
 CardSchema.index(
     { tenantKey: 1, slug: 1 },
     {
         unique: true,
         name: "tenantKey_1_slug_1",
         partialFilterExpression: {
+            // MongoDB partial indexes do not support `$exists: false` on this cluster.
+            // `orgId: null` matches BOTH null and missing fields.
+            orgId: null,
             tenantKey: { $type: "string" },
             slug: { $type: "string" },
         },
