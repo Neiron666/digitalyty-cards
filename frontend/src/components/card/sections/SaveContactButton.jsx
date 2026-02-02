@@ -1,5 +1,16 @@
 import styles from "./SaveContactButton.module.css";
 
+function detectOrgSlugFromPathname() {
+    try {
+        if (typeof window === "undefined") return "";
+        const path = String(window.location?.pathname || "");
+        const m = path.match(/^\/c\/([^/]+)\//i);
+        return m && m[1] ? decodeURIComponent(m[1]).trim().toLowerCase() : "";
+    } catch {
+        return "";
+    }
+}
+
 function SaveContactButton({ card }) {
     const { business, contact } = card;
 
@@ -29,8 +40,11 @@ function SaveContactButton({ card }) {
     async function handleShare() {
         if (card?.status !== "published") return;
         const shareTitle = card?.seo?.title || businessName || "";
+        const orgSlug = detectOrgSlugFromPathname();
         const shareUrl = card?.slug
-            ? `${window.location.origin}/og/card/${card.slug}`
+            ? orgSlug
+                ? `${window.location.origin}/og/c/${orgSlug}/${card.slug}`
+                : `${window.location.origin}/og/card/${card.slug}`
             : window.location.href;
 
         try {

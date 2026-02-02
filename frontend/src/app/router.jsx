@@ -87,6 +87,17 @@ const router = createBrowserRouter([
             </ChunkErrorBoundary>
         ),
     },
+    {
+        // Standalone company card page (no marketing Header/Footer)
+        path: "/c/:orgSlug/:slug",
+        element: (
+            <ChunkErrorBoundary label="שגיאת טעינה בכרטיס">
+                <Suspense fallback={<RouteFallback label="טוען כרטיס…" />}>
+                    <PublicCard />
+                </Suspense>
+            </ChunkErrorBoundary>
+        ),
+    },
 ]);
 
 export default router;

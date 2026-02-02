@@ -345,6 +345,17 @@ function EditCard() {
 
     const createCardInFlightRef = useRef(null);
 
+    // Card context (SSoT): personal vs org card.
+    // - Personal continues to use GET /cards/mine and explicit POST /cards to create.
+    // - Org uses GET /orgs/:orgSlug/cards/mine (idempotent create server-side).
+    const [activeOrgSlug, setActiveOrgSlug] = useState("");
+    const [myOrgs, setMyOrgs] = useState([]);
+    const [orgsLoadState, setOrgsLoadState] = useState("idle");
+    const [orgsError, setOrgsError] = useState("");
+    const [orgCardError, setOrgCardError] = useState("");
+
+    const isOrgMode = Boolean(token) && Boolean(activeOrgSlug);
+
     function isCreateInFlightError(err) {
         const status = err?.response?.status;
         const code = err?.response?.data?.code;
@@ -365,7 +376,7 @@ function EditCard() {
         return new Promise((resolve) => setTimeout(resolve, t));
     }
 
-    async function fetchMineOnce() {
+    async function fetchPersonalMineOnce() {
         const res = await api.get("/cards/mine");
         return res?.data || null;
     }
@@ -376,7 +387,7 @@ function EditCard() {
 
         const promise = (async () => {
             // 1) If card already exists, do nothing.
-            const mine0 = await fetchMineOnce();
+            const mine0 = await fetchPersonalMineOnce();
             if (mine0 && mine0._id) return mine0;
 
             // 2) Try creating.
@@ -386,7 +397,7 @@ function EditCard() {
                 if (createdData && createdData._id) return createdData;
 
                 // Safety fallback: if response is malformed, re-fetch mine.
-                const mineAfter = await fetchMineOnce();
+                const mineAfter = await fetchPersonalMineOnce();
                 if (mineAfter && mineAfter._id) return mineAfter;
                 throw new Error("Create card returned invalid response");
             } catch (err) {
@@ -396,12 +407,12 @@ function EditCard() {
                 const delays = [100, 200, 400, 800];
                 for (const d of delays) {
                     await sleepMs(jitterDelayMs(d));
-                    const mine = await fetchMineOnce();
+                    const mine = await fetchPersonalMineOnce();
                     if (mine && mine._id) return mine;
                 }
 
                 // Last attempt (no extra delay)
-                const mineLast = await fetchMineOnce();
+                const mineLast = await fetchPersonalMineOnce();
                 if (mineLast && mineLast._id) return mineLast;
 
                 const retryErr = new Error(
@@ -425,7 +436,10 @@ function EditCard() {
     const initCard = useCallback(
         async (isMounted = () => true) => {
             try {
-                const res = await api.get("/cards/mine");
+                setOrgCardError("");
+                const res = isOrgMode
+                    ? await api.get(`/orgs/${activeOrgSlug}/cards/mine`)
+                    : await api.get("/cards/mine");
                 if (!isMounted()) return;
 
                 // P0: never overwrite local draft while user has unsaved edits.
@@ -441,6 +455,12 @@ function EditCard() {
 
                 // If no card (or malformed), create a persisted draft card server-side.
                 if (!mine || !mine._id) {
+                    if (isOrgMode) {
+                        setOrgCardError("אין גישה לארגון או שהכרטיס לא זמין");
+                        setIsInitializing(false);
+                        return;
+                    }
+
                     // Enterprise contract: authenticated users must explicitly create a card.
                     if (token) {
                         setNeedsCreateUserCard(true);
@@ -480,6 +500,14 @@ function EditCard() {
                 // If card creation is in-flight (race), retry via the shared retry helper.
                 if (isCreateInFlightError(err)) {
                     try {
+                        if (isOrgMode) {
+                            setOrgCardError(
+                                "אין גישה לארגון או שהכרטיס לא זמין",
+                            );
+                            setIsInitializing(false);
+                            return;
+                        }
+
                         // Enterprise contract: authenticated users must explicitly create a card.
                         if (token) {
                             setNeedsCreateUserCard(true);
@@ -508,6 +536,12 @@ function EditCard() {
                 // 404 can mean "no card" OR "card was deleted and editor is stale".
                 // If we previously had a card id in this session, treat 404 as deleted and exit.
                 if (status === 404) {
+                    if (isOrgMode) {
+                        setOrgCardError("אין גישה לארגון או שהכרטיס לא זמין");
+                        setIsInitializing(false);
+                        return;
+                    }
+
                     const hadCardId = Boolean(draftCardRef.current?._id);
                     if (hadCardId) {
                         navigate("/dashboard", {
@@ -545,7 +579,42 @@ function EditCard() {
                 setIsInitializing(false);
             }
         },
-        [navigate],
+        [navigate, activeOrgSlug, isOrgMode, token],
+    );
+
+    const loadMyOrgs = useCallback(async () => {
+        if (!token) return;
+        if (orgsLoadState === "loading" || orgsLoadState === "loaded") return;
+
+        setOrgsLoadState("loading");
+        setOrgsError("");
+        try {
+            const res = await api.get("/orgs/mine");
+            const list = Array.isArray(res?.data) ? res.data : [];
+            setMyOrgs(list);
+            setOrgsLoadState("loaded");
+        } catch (e) {
+            setOrgsLoadState("error");
+            setOrgsError("לא הצלחנו לטעון ארגונים");
+        }
+    }, [token, orgsLoadState]);
+
+    const handleContextChange = useCallback(
+        (nextOrgSlug) => {
+            const hasDirty =
+                dirtyPathsRef.current && dirtyPathsRef.current.size > 0;
+            if (hasDirty) {
+                alert("יש שינויים שלא נשמרו. שמור/בטל לפני החלפת כרטיס.");
+                return;
+            }
+
+            setOrgCardError("");
+            setActiveOrgSlug(String(nextOrgSlug || ""));
+
+            // Trigger a rehydrate via the existing init path.
+            setReloadKey((k) => k + 1);
+        },
+        [setReloadKey],
     );
 
     const discardUnsavedAndRehydrate = useCallback(async () => {
@@ -1403,29 +1472,88 @@ function EditCard() {
                         }}
                     />
                 )}
-                {draftCard?.slug ? (
-                    <div className={styles.publicLinkBox}>
-                        <div className={styles.publicLinkTitle} dir="rtl">
-                            {token && draftCard?.status === "published"
-                                ? "קישור ציבורי"
-                                : "קישור עתידי"}
-                        </div>
-                        {token && draftCard?.status === "published" ? (
-                            <a
-                                href={`/card/${draftCard.slug}`}
-                                target="_blank"
-                                rel="noreferrer"
-                                className={styles.breakWord}
+
+                {token ? (
+                    <div className={styles.cardContextBar} dir="rtl">
+                        <div className={styles.cardContextRow}>
+                            <div className={styles.cardContextLabel}>כרטיס</div>
+
+                            <select
+                                className={styles.cardContextSelect}
+                                value={activeOrgSlug}
+                                onFocus={loadMyOrgs}
+                                onMouseDown={loadMyOrgs}
+                                onChange={(e) =>
+                                    handleContextChange(e.target.value)
+                                }
+                                aria-label="Card context"
                             >
-                                {window.location.origin}/card/{draftCard.slug}
-                            </a>
-                        ) : (
-                            <div className={styles.breakWord}>
-                                {window.location.origin}/card/{draftCard.slug}
+                                <option value="">אישי</option>
+                                {(myOrgs || []).map((o) => (
+                                    <option
+                                        key={String(o?.id || o?.slug || "")}
+                                        value={String(o?.slug || "")}
+                                    >
+                                        {String(o?.name || o?.slug || "")}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+
+                        {orgsLoadState === "loading" ? (
+                            <div className={styles.cardContextHint}>
+                                טוען ארגונים…
                             </div>
-                        )}
+                        ) : null}
+                        {orgsError ? (
+                            <div className={styles.cardContextError}>
+                                {orgsError}
+                            </div>
+                        ) : null}
+                        {orgCardError ? (
+                            <div className={styles.cardContextError}>
+                                {orgCardError}
+                            </div>
+                        ) : null}
                     </div>
                 ) : null}
+
+                {draftCard?.slug
+                    ? (() => {
+                          const publicPath =
+                              draftCard?.publicPath ||
+                              `/card/${draftCard.slug}`;
+                          const publicUrl = `${window.location.origin}${publicPath}`;
+                          return (
+                              <div className={styles.publicLinkBox}>
+                                  <div
+                                      className={styles.publicLinkTitle}
+                                      dir="rtl"
+                                  >
+                                      {token &&
+                                      draftCard?.status === "published"
+                                          ? "קישור ציבורי"
+                                          : "קישור עתידי"}
+                                  </div>
+                                  {token &&
+                                  draftCard?.status === "published" ? (
+                                      <a
+                                          href={publicPath}
+                                          target="_blank"
+                                          rel="noreferrer"
+                                          className={styles.breakWord}
+                                      >
+                                          {publicUrl}
+                                      </a>
+                                  ) : (
+                                      <div className={styles.breakWord}>
+                                          {publicUrl}
+                                      </div>
+                                  )}
+                              </div>
+                          );
+                      })()
+                    : null}
 
                 {section === "card" ? (
                     <Editor

@@ -80,3 +80,54 @@ export function getAdminSiteAnalyticsSummary(params = {}) {
 export function getAdminSiteAnalyticsSources(params = {}) {
     return api.get("/admin/site-analytics/sources", { params });
 }
+
+// Organizations (admin)
+export function listAdminOrganizations(params = {}) {
+    return api.get("/admin/orgs", { params });
+}
+
+export function createAdminOrganization({ name, slug, note } = {}) {
+    return api.post("/admin/orgs", { name, slug, note });
+}
+
+export function getAdminOrganizationById(id) {
+    return api.get(`/admin/orgs/${id}`);
+}
+
+export function patchAdminOrganization(id, patch = {}) {
+    return api.patch(`/admin/orgs/${id}`, patch);
+}
+
+// Organization members (admin)
+export function listAdminOrgMembers(orgId, params = {}) {
+    return api.get(`/admin/orgs/${orgId}/members`, { params });
+}
+
+export function addAdminOrgMember(orgId, { userId, email, role } = {}) {
+    return api.post(`/admin/orgs/${orgId}/members`, { userId, email, role });
+}
+
+export function patchAdminOrgMember(orgId, memberId, patch = {}) {
+    return api.patch(`/admin/orgs/${orgId}/members/${memberId}`, patch);
+}
+
+export function deleteAdminOrgMember(orgId, memberId) {
+    return api.delete(`/admin/orgs/${orgId}/members/${memberId}`);
+}
+
+// Allowed hosts allowlist (admin)
+export function listAdminAllowedHosts(params = {}) {
+    return api.get("/admin/allowed-hosts", { params });
+}
+
+export function adminAddAllowedHost({ host, note } = {}) {
+    return api.post("/admin/allowed-hosts", { host, note });
+}
+
+export function adminUpdateAllowedHost(id, patch = {}) {
+    return api.patch(`/admin/allowed-hosts/${id}`, patch);
+}
+
+export function adminDeactivateAllowedHost(id) {
+    return api.delete(`/admin/allowed-hosts/${id}`);
+}

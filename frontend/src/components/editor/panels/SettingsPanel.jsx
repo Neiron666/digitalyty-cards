@@ -27,7 +27,15 @@ export default function SettingsPanel({
 }) {
     const { token } = useAuth();
     const slug = card?.slug;
-    const publicUrl = slug ? `${window.location.origin}/card/${slug}` : "";
+
+    const origin =
+        typeof window !== "undefined" && window.location?.origin
+            ? window.location.origin
+            : "";
+
+    const fallbackPublicPath = slug ? `/card/${slug}` : "";
+    const publicPath = card?.publicPath || fallbackPublicPath;
+    const publicUrl = publicPath ? `${origin}${publicPath}` : "";
     const isPublished = card?.status === "published";
     const isPublicLink = Boolean(token) && isPublished;
 
@@ -57,10 +65,17 @@ export default function SettingsPanel({
         );
     }, [token, card?.status, editingDisabled, onUpdateSlug]);
 
+    const publicPathPrefix = useMemo(() => {
+        if (!publicPath) return "/card";
+        const parts = String(publicPath).split("/").filter(Boolean);
+        if (parts.length < 2) return "/card";
+        return `/${parts.slice(0, -1).join("/")}`;
+    }, [publicPath]);
+
     const previewUrl = useMemo(() => {
         const s = String(slugDraft || "").trim();
-        return s ? `${window.location.origin}/card/${s}` : "";
-    }, [slugDraft]);
+        return s ? `${origin}${publicPathPrefix}/${s}` : "";
+    }, [slugDraft, origin, publicPathPrefix]);
 
     function mapSlugError(err) {
         const code = err?.response?.data?.code;
@@ -174,7 +189,7 @@ export default function SettingsPanel({
                         <div className={styles.urlTitle}>סלאג (כתובת קצרה)</div>
 
                         <Input
-                            label="לאחר ‎/card/‎"
+                            label={`לאחר ‎${publicPathPrefix}/‎`}
                             value={slugDraft}
                             onChange={(e) => {
                                 setSlugDraft(e.target.value);

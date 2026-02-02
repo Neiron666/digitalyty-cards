@@ -114,11 +114,32 @@ function normalizeAction(action) {
     return allowed.has(a) ? a : "other";
 }
 
-export function trackView(slug, utm = getUtm(), ref = document.referrer || "") {
+function detectOrgSlugFromPath() {
+    try {
+        if (typeof window === "undefined") return "";
+        const path = String(window.location?.pathname || "");
+        const m = path.match(/^\/c\/([^/]+)\//i);
+        return m && m[1] ? decodeURIComponent(m[1]).trim().toLowerCase() : "";
+    } catch {
+        return "";
+    }
+}
+
+export function trackView(
+    slug,
+    utm = getUtm(),
+    ref = document.referrer || "",
+    orgSlug = "",
+) {
     if (!slug) return;
+    const resolvedOrgSlug =
+        typeof orgSlug === "string" && orgSlug.trim()
+            ? orgSlug.trim().toLowerCase()
+            : detectOrgSlugFromPath();
     send({
         slug,
         event: "view",
+        ...(resolvedOrgSlug ? { orgSlug: resolvedOrgSlug } : {}),
         utm,
         ref,
         deviceId: getOrCreateDeviceId(),
@@ -130,12 +151,18 @@ export function trackClick(
     action,
     utm = getUtm(),
     ref = document.referrer || "",
+    orgSlug = "",
 ) {
     if (!slug) return;
+    const resolvedOrgSlug =
+        typeof orgSlug === "string" && orgSlug.trim()
+            ? orgSlug.trim().toLowerCase()
+            : detectOrgSlugFromPath();
     send({
         slug,
         event: "click",
         action: normalizeAction(action),
+        ...(resolvedOrgSlug ? { orgSlug: resolvedOrgSlug } : {}),
         utm,
         ref,
         deviceId: getOrCreateDeviceId(),

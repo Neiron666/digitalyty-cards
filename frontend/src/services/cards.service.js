@@ -12,6 +12,10 @@ export function getCardBySlug(slug) {
     return api.get(`/cards/${slug}`).then((r) => r.data);
 }
 
+export function getCompanyCardBySlug(orgSlug, slug) {
+    return api.get(`/c/${orgSlug}/${slug}`).then((r) => r.data);
+}
+
 export function deleteCard(id) {
     return api.delete(`/cards/${id}`);
 }

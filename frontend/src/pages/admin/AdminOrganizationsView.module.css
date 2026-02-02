@@ -1,0 +1,230 @@
+.wrap {
+    display: block;
+}
+
+.grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 16px;
+}
+
+@media (min-width: 1000px) {
+    .grid {
+        grid-template-columns: 1fr 1fr;
+        align-items: start;
+    }
+}
+
+.panel {
+    background: #fff;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    border-radius: 12px;
+    padding: 16px;
+}
+
+.h2 {
+    margin: 0 0 12px;
+    font-size: 18px;
+}
+
+.h3 {
+    margin: 18px 0 10px;
+    font-size: 16px;
+}
+
+.searchRow {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.tableWrap {
+    overflow-x: auto;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    border-radius: 10px;
+}
+
+.table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 520px;
+}
+
+.table th,
+.table td {
+    padding: 10px;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+    text-align: start;
+    vertical-align: middle;
+}
+
+.row:hover {
+    background: rgba(0, 0, 0, 0.02);
+}
+
+.cellMono {
+    font-family:
+        ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+        "Liberation Mono", "Courier New", monospace;
+    word-break: break-word;
+}
+
+.cell {
+    word-break: break-word;
+}
+
+.cellActions {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-start;
+    align-items: center;
+}
+
+.pager {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 10px;
+    flex-wrap: wrap;
+}
+
+.pagerMeta {
+    color: rgba(0, 0, 0, 0.7);
+    font-size: 13px;
+}
+
+.pagerControls {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.pagerPage {
+    min-width: 70px;
+    text-align: center;
+}
+
+.pagerLimit {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.limitLabel {
+    font-size: 13px;
+    color: rgba(0, 0, 0, 0.7);
+}
+
+.form {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 10px;
+}
+
+.label {
+    font-size: 13px;
+    color: rgba(0, 0, 0, 0.75);
+}
+
+.detailsGrid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 10px;
+    margin-bottom: 12px;
+}
+
+@media (min-width: 520px) {
+    .detailsGrid {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+
+.detailItem {
+    background: rgba(0, 0, 0, 0.02);
+    border-radius: 10px;
+    padding: 10px;
+}
+
+.detailLabel {
+    font-size: 12px;
+    color: rgba(0, 0, 0, 0.6);
+    margin-bottom: 4px;
+}
+
+.detailValue {
+    font-size: 14px;
+}
+
+.detailValueMono {
+    font-family:
+        ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+        "Liberation Mono", "Courier New", monospace;
+    font-size: 13px;
+    word-break: break-word;
+}
+
+.noteBlock {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 10px;
+    margin: 10px 0 14px;
+}
+
+.memberForm {
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    border-radius: 10px;
+    padding: 12px;
+    margin-bottom: 12px;
+}
+
+.memberFormRow {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+@media (min-width: 700px) {
+    .memberFormRow {
+        grid-template-columns: 1fr 1fr;
+        align-items: end;
+    }
+}
+
+.memberCol {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 6px;
+}
+
+.memberColActions {
+    display: flex;
+    justify-content: flex-start;
+    align-items: flex-end;
+}
+
+.select {
+    width: 100%;
+    border: 1px solid rgba(0, 0, 0, 0.15);
+    border-radius: 10px;
+    padding: 10px;
+    font: inherit;
+    background: #fff;
+}
+
+.selectInline {
+    width: 100%;
+    border: 1px solid rgba(0, 0, 0, 0.15);
+    border-radius: 10px;
+    padding: 8px;
+    font: inherit;
+    background: #fff;
+}
+
+.empty {
+    padding: 14px;
+    text-align: center;
+    color: rgba(0, 0, 0, 0.6);
+}

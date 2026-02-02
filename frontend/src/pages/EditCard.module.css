@@ -189,3 +189,56 @@
     outline: 3px solid rgba(212, 175, 55, 0.5);
     outline-offset: 2px;
 }
+
+.cardContextBar {
+    width: 100%;
+    max-width: 720px;
+    margin-inline: auto;
+    margin-block: 10px;
+    padding: 12px 14px;
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border);
+    background: var(--bg-card);
+    color: var(--text-main);
+}
+
+.cardContextRow {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.cardContextLabel {
+    font-weight: 900;
+    white-space: nowrap;
+}
+
+.cardContextSelect {
+    width: 100%;
+    max-width: 360px;
+    padding: 10px 12px;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border);
+    background: var(--bg-surface);
+    color: var(--text-main);
+    font-weight: 800;
+    font-family: inherit;
+}
+
+.cardContextSelect:focus-visible {
+    outline: 3px solid rgba(212, 175, 55, 0.5);
+    outline-offset: 2px;
+}
+
+.cardContextHint {
+    margin-top: 8px;
+    font-weight: 700;
+    opacity: 0.85;
+}
+
+.cardContextError {
+    margin-top: 8px;
+    color: #ef4444;
+    font-weight: 800;
+}

@@ -17,6 +17,7 @@ import {
     listAdminUsers,
 } from "../services/admin.service";
 import AdminAnalyticsView from "./admin/AdminAnalyticsView";
+import AdminOrganizationsView from "./admin/AdminOrganizationsView";
 import styles from "./Admin.module.css";
 
 // Admin UI Hebrew + RTL (local strings dictionary, no i18n framework)
@@ -144,6 +145,7 @@ const STR = {
         btn_apply: "החל",
 
         section_users: "משתמשים",
+        section_orgs: "ארגונים",
         th_email: "אימייל",
         th_card: "כרטיס",
         th_role: "תפקיד",
@@ -981,7 +983,7 @@ export default function Admin() {
                                         handleTabListKeyDown(e, {
                                             current: directoryTab,
                                             setCurrent: setDirectoryTab,
-                                            order: ["cards", "users"],
+                                            order: ["cards", "users", "orgs"],
                                             tabListRef: directoryTabListRef,
                                         })
                                     }
@@ -1015,6 +1017,21 @@ export default function Admin() {
                                         onClick={() => setDirectoryTab("users")}
                                     >
                                         {t("section_users")}
+                                    </button>
+                                    <button
+                                        type="button"
+                                        className={`${styles.tab} ${
+                                            directoryTab === "orgs"
+                                                ? styles.tabActive
+                                                : ""
+                                        }`}
+                                        role="tab"
+                                        data-tab="orgs"
+                                        aria-selected={directoryTab === "orgs"}
+                                        aria-controls="admin-directory-panel"
+                                        onClick={() => setDirectoryTab("orgs")}
+                                    >
+                                        {t("section_orgs")}
                                     </button>
                                 </div>
 
@@ -1059,6 +1076,9 @@ export default function Admin() {
                                 role="tabpanel"
                                 aria-label="Directory panel"
                             >
+                                {directoryTab === "orgs" ? (
+                                    <AdminOrganizationsView />
+                                ) : null}
                                 {directoryTab === "users" ? (
                                     <table className={styles.table}>
                                         <thead>

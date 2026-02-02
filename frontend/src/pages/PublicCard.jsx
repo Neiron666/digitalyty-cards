@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
-import { getCardBySlug } from "../services/cards.service";
+import { getCardBySlug, getCompanyCardBySlug } from "../services/cards.service";
 import { trackView } from "../services/analytics.client";
 import CardRenderer from "../components/card/CardRenderer";
 import SeoHelmet from "../components/seo/SeoHelmet";
@@ -79,19 +79,26 @@ function normalizeAbsoluteUrl(origin, value) {
     return `${originTrimmed}/${rawValue}`;
 }
 
-function resolveAbsoluteCanonical({ slug, seoCanonicalUrl, publicOrigin }) {
+function resolveAbsoluteCanonical({
+    slug,
+    orgSlug,
+    seoCanonicalUrl,
+    publicOrigin,
+}) {
     const candidate =
         typeof seoCanonicalUrl === "string" ? seoCanonicalUrl.trim() : "";
     if (candidate) {
         return normalizeAbsoluteUrl(publicOrigin, candidate);
     }
 
-    const basePath = `/card/${String(slug || "").trim()}`;
+    const basePath = orgSlug
+        ? `/c/${String(orgSlug || "").trim()}/${String(slug || "").trim()}`
+        : `/card/${String(slug || "").trim()}`;
     return normalizeAbsoluteUrl(publicOrigin, basePath);
 }
 
 function PublicCard() {
-    const { slug } = useParams();
+    const { slug, orgSlug } = useParams();
     const [card, setCard] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -100,7 +107,9 @@ function PublicCard() {
     useEffect(() => {
         async function loadCard() {
             try {
-                const data = await getCardBySlug(slug);
+                const data = orgSlug
+                    ? await getCompanyCardBySlug(orgSlug, slug)
+                    : await getCardBySlug(slug);
                 setCard(data);
             } catch (err) {
                 const status = err?.response?.status;
@@ -112,13 +121,13 @@ function PublicCard() {
         }
 
         loadCard();
-    }, [slug]);
+    }, [slug, orgSlug]);
 
     useEffect(() => {
         if (!card?.slug || trackedRef.current) return;
         trackedRef.current = true;
-        trackView(card.slug);
-    }, [card?.slug]);
+        trackView(card.slug, undefined, undefined, orgSlug);
+    }, [card?.slug, orgSlug]);
 
     if (loading) return <p>טוען כרטיס...</p>;
     if (error) return <p>{error}</p>;
@@ -148,6 +157,7 @@ function PublicCard() {
     const publicOrigin = getPublicOrigin();
     const canonicalResolved = resolveAbsoluteCanonical({
         slug: card.slug,
+        orgSlug,
         seoCanonicalUrl: card.seo?.canonicalUrl,
         publicOrigin,
     });

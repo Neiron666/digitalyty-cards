@@ -49,6 +49,7 @@ export function shouldTrackSitePagePath(pagePath) {
     if (!p) return false;
 
     if (p === "/card" || p.startsWith("/card/")) return false;
+    if (p === "/c" || p.startsWith("/c/")) return false;
     if (isExcludedPagePath(p)) return false;
     return true;
 }

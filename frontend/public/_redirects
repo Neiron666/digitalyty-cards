@@ -1,0 +1,5 @@
+/sitemap.xml  /sitemap.xml  200
+/og/*         /og/:splat    200
+/card/*       /index.html   200
+/c/*          /index.html   200
+/*            /index.html   200
