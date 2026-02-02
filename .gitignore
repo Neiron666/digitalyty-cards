@@ -32,3 +32,5 @@ missing_*.txt
 # Temporary files
 _tmp_*.txt
 *_tmp_*.txt
+
+_tmp_*.json
