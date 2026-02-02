@@ -1638,7 +1638,7 @@ export async function getCompanyCardByOrgSlugAndSlug(req, res) {
         slug: orgSlug,
         isActive: true,
     })
-        .select("_id")
+        .select("_id slug")
         .lean();
 
     if (!org?._id) {
@@ -1686,8 +1686,9 @@ export async function getCompanyCardByOrgSlugAndSlug(req, res) {
 
     const dto = toCardDTO(card, now, { user: userTier });
     if (dto?.slug) {
-        dto.publicPath = `/c/${orgSlug}/${dto.slug}`;
-        dto.ogPath = `/og/c/${orgSlug}/${dto.slug}`;
+        const canonicalOrgSlug = org?.slug ? String(org.slug) : orgSlug;
+        dto.publicPath = `/c/${canonicalOrgSlug}/${dto.slug}`;
+        dto.ogPath = `/og/c/${canonicalOrgSlug}/${dto.slug}`;
     }
     return res.json(dto);
 }

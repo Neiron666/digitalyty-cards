@@ -16,9 +16,14 @@ export default function QRCodeBlock({ slug, publicPath }) {
 
         const raw = typeof publicPath === "string" ? publicPath.trim() : "";
         if (raw) {
-            if (isAbsoluteUrl(raw)) return raw;
-            const normalized = raw.startsWith("/") ? raw : `/${raw}`;
-            return `${origin}${normalized}`;
+            if (isAbsoluteUrl(raw)) {
+                if (raw.startsWith(origin)) return raw;
+                // Unsafe: absolute URL to a different origin is ignored.
+                // Fall through to slug-based URL.
+            } else {
+                const normalized = raw.startsWith("/") ? raw : `/${raw}`;
+                return `${origin}${normalized}`;
+            }
         }
 
         if (!slug) return "";
