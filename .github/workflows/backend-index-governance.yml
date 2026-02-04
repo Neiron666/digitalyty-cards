@@ -1,0 +1,81 @@
+name: Backend Index Governance
+
+on:
+    pull_request:
+    push:
+        branches:
+            - main
+            - release/**
+
+permissions:
+    contents: read
+
+jobs:
+    card-index-drift:
+        runs-on: ubuntu-latest
+        timeout-minutes: 10
+        defaults:
+            run:
+                working-directory: backend
+                shell: bash
+
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4
+
+            - name: Setup Node
+              uses: actions/setup-node@v4
+              with:
+                  node-version: "20"
+                  cache: "npm"
+                  cache-dependency-path: backend/package-lock.json
+
+            - name: Versions
+              run: |
+                  set -euo pipefail
+                  node -v
+                  npm -v
+
+            - name: Install (backend)
+              run: npm ci
+
+            # PR policy: warning-only (does not fail the workflow)
+            - name: Sanity (PR warning) - card index drift
+              if: github.event_name == 'pull_request'
+              continue-on-error: true
+              env:
+                  MONGO_URI_DRIFT_CHECK: ${{ secrets.MONGO_URI_DRIFT_CHECK }}
+                  MONGO_URI: ${{ secrets.MONGO_URI }}
+              run: |
+                  set -euo pipefail
+
+                  # Prefer dedicated CI/staging DB secret; fallback to legacy secret if present.
+                  EFFECTIVE_MONGO_URI="${MONGO_URI_DRIFT_CHECK:-${MONGO_URI:-}}"
+
+                  if [ -z "$EFFECTIVE_MONGO_URI" ]; then
+                    echo "WARN: MONGO_URI_DRIFT_CHECK/MONGO_URI secret is missing; skipping sanity:card-index-drift on PR."
+                    exit 0
+                  fi
+
+                  export MONGO_URI="$EFFECTIVE_MONGO_URI"
+                  npm run sanity:card-index-drift
+
+            # main/release policy: fail the workflow on drift
+            - name: Sanity (main/release gate) - card index drift
+              if: github.event_name == 'push'
+              env:
+                  MONGO_URI_DRIFT_CHECK: ${{ secrets.MONGO_URI_DRIFT_CHECK }}
+                  MONGO_URI: ${{ secrets.MONGO_URI }}
+              run: |
+                  set -euo pipefail
+
+                  # Prefer dedicated CI/staging DB secret; fallback to legacy secret if present.
+                  EFFECTIVE_MONGO_URI="${MONGO_URI_DRIFT_CHECK:-${MONGO_URI:-}}"
+
+                  if [ -z "$EFFECTIVE_MONGO_URI" ]; then
+                    echo "ERROR: MONGO_URI_DRIFT_CHECK/MONGO_URI secret is missing; cannot gate sanity:card-index-drift."
+                    exit 1
+                  fi
+
+                  export MONGO_URI="$EFFECTIVE_MONGO_URI"
+                  npm run sanity:card-index-drift

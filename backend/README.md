@@ -4,6 +4,24 @@
 - Exit codes: `0` = clean, `2` = issues found, `1` = runtime error.
 - Windows: `npm.cmd run sanity:ownership-consistency`
 
+## Index Governance
+
+Runtime ≠ Sanity ≠ Migration:
+
+- Runtime (`connectDB`): Mongoose `autoIndex/autoCreate` are **disabled by default** to prevent startup crashes from index drift.
+    - Override via ENV: `MONGOOSE_AUTO_INDEX=true|false`, `MONGOOSE_AUTO_CREATE=true|false`.
+- Sanity (`sanity:card-index-drift`): **read-only** drift control (no index mutations). Prints `EXIT:<code>`.
+    - `missing/mismatches` fail the check (`EXIT:1`).
+    - `unexpected` and `warnings` are informational and do NOT fail when `missing/mismatches = 0`.
+- Migration (`migrate:card-user-index`): manual repair tool for the `user_1` index options.
+    - Dry-run by default (prints plan and `EXIT:1` when drift is detected).
+    - Apply must be manual in a maintenance window:
+        - `npm.cmd run migrate:card-user-index -- --apply --i-understand-index-downtime`
+        - Alternative unlock: `set ALLOW_INDEX_MIGRATION=1` (and `--force` is required when `NODE_ENV=production`).
+    - DoD: after apply, `npm.cmd run sanity:card-index-drift` must return `EXIT:0`.
+
+Do NOT run `--apply` automatically in CI.
+
 ## Release sanity gates (SSoT)
 
 Windows commands (must-pass before release):
