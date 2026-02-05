@@ -45,6 +45,8 @@ First line MUST be:
 - Do not fork public vs preview rendering with separate DOM.
 - Do not change CardLayout DOM skeleton unless explicitly approved migration phase with PROOF.
 
+* FLEX ONLY (hard rule): CSS Grid is forbidden anywhere in this repo. Use Flexbox layouts only (no `display: grid`, no `grid-*` properties).
+
 ---
 
 ## 1) Non-Negotiable Guardrails

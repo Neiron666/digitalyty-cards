@@ -7,6 +7,19 @@ import { requireAuth } from "../middlewares/auth.middleware.js";
 
 const router = Router();
 
+function normalizeEmail(value) {
+    if (typeof value !== "string") return "";
+    return value.trim().toLowerCase();
+}
+
+function isValidEmail(value) {
+    const email = normalizeEmail(value);
+    if (!email) return false;
+    if (email.length > 254) return false;
+    // Minimal sanity check (we rely on User collection as the real validator).
+    return email.includes("@") && !email.includes(" ");
+}
+
 function noStore(req, res, next) {
     res.set(
         "Cache-Control",
@@ -22,9 +35,38 @@ function noStore(req, res, next) {
 
 // REGISTER
 router.post("/register", async (req, res) => {
-    const { email, password } = req.body;
+    const rawEmail = req.body?.email;
+    const email = normalizeEmail(rawEmail);
+    const password = req.body?.password;
+
+    if (!isValidEmail(rawEmail)) {
+        return res.status(400).json({ message: "Invalid email" });
+    }
+    if (typeof password !== "string" || !password) {
+        return res.status(400).json({ message: "Invalid password" });
+    }
+
+    // Prevent casing-duplicates until we can enforce a case-insensitive unique index.
+    const existing = await User.findOne({ email }).collation({
+        locale: "en",
+        strength: 2, // case-insensitive
+    });
+    if (existing) {
+        return res.status(409).json({ message: "Unable to register" });
+    }
+
     const passwordHash = await bcrypt.hash(password, 10);
-    const user = await User.create({ email, passwordHash });
+
+    let user;
+    try {
+        user = await User.create({ email, passwordHash });
+    } catch (err) {
+        // Preserve current API shape; avoid leaking DB/index details.
+        if (err && (err.code === 11000 || err.code === 11001)) {
+            return res.status(409).json({ message: "Unable to register" });
+        }
+        throw err;
+    }
 
     // Best-effort: claim anonymous card right after registration.
     const anonymousId = req?.anonymousId ? String(req.anonymousId) : "";
@@ -46,8 +88,15 @@ router.post("/register", async (req, res) => {
 
 // LOGIN
 router.post("/login", async (req, res) => {
-    const { email, password } = req.body;
-    const user = await User.findOne({ email });
+    const email = normalizeEmail(req.body?.email);
+    const password = req.body?.password;
+    if (!email || typeof password !== "string" || !password) {
+        return res.status(401).json({ message: "Invalid credentials" });
+    }
+    const user = await User.findOne({ email }).collation({
+        locale: "en",
+        strength: 2, // case-insensitive
+    });
     if (!user) return res.status(401).json({ message: "Invalid credentials" });
 
     const ok = await bcrypt.compare(password, user.passwordHash);
