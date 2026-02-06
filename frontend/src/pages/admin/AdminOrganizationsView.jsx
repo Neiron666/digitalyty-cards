@@ -4,6 +4,7 @@ import Input from "../../components/ui/Input";
 import FlashBanner from "../../components/ui/FlashBanner/FlashBanner";
 import {
     addAdminOrgMember,
+    createAdminOrgInvite,
     createAdminOrganization,
     deleteAdminOrgMember,
     getAdminOrganizationById,
@@ -112,6 +113,11 @@ export default function AdminOrganizationsView() {
     const [addRole, setAddRole] = useState("member");
     const [addBusy, setAddBusy] = useState(false);
 
+    const [inviteEmail, setInviteEmail] = useState("");
+    const [inviteRole, setInviteRole] = useState("member");
+    const [inviteBusy, setInviteBusy] = useState(false);
+    const [inviteLink, setInviteLink] = useState("");
+
     const [memberBusyId, setMemberBusyId] = useState(null);
 
     const flashTimerRef = useRef(null);
@@ -183,6 +189,12 @@ export default function AdminOrganizationsView() {
         loadSelectedOrgAndMembers(selectedOrgId);
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [selectedOrgId, membersPage, membersLimit]);
+
+    useEffect(() => {
+        setInviteEmail("");
+        setInviteRole("member");
+        setInviteLink("");
+    }, [selectedOrgId]);
 
     async function handleSearchSubmit(e) {
         e.preventDefault();
@@ -323,6 +335,32 @@ export default function AdminOrganizationsView() {
             showFlash("error", mapAdminApiError(err));
         } finally {
             setMemberBusyId(null);
+        }
+    }
+
+    async function handleCreateInvite(e) {
+        e.preventDefault();
+        if (!selectedOrgId) return;
+
+        setInviteBusy(true);
+        setInviteLink("");
+        try {
+            const res = await createAdminOrgInvite(selectedOrgId, {
+                email: inviteEmail.trim(),
+                role: inviteRole,
+            });
+
+            const link = String(res?.data?.inviteLink || "").trim();
+            if (link) {
+                setInviteLink(link);
+                showFlash("success", "ההזמנה נוצרה.");
+            } else {
+                showFlash("error", "אירעה שגיאה. נסה שוב.");
+            }
+        } catch (err) {
+            showFlash("error", mapAdminApiError(err));
+        } finally {
+            setInviteBusy(false);
         }
     }
 
@@ -568,6 +606,76 @@ export default function AdminOrganizationsView() {
                                         </Button>
                                     </div>
                                 </div>
+                            </form>
+
+                            <h3 className={styles.h3}>הזמנות</h3>
+
+                            <form
+                                className={styles.memberForm}
+                                onSubmit={handleCreateInvite}
+                            >
+                                <div className={styles.memberFormRow}>
+                                    <div className={styles.memberCol}>
+                                        <label className={styles.label}>
+                                            Email
+                                        </label>
+                                        <Input
+                                            value={inviteEmail}
+                                            onChange={(e) =>
+                                                setInviteEmail(e.target.value)
+                                            }
+                                            placeholder="user@example.com"
+                                            required
+                                        />
+                                    </div>
+                                    <div className={styles.memberCol}>
+                                        <label className={styles.label}>
+                                            Role
+                                        </label>
+                                        <select
+                                            className={styles.select}
+                                            value={inviteRole}
+                                            onChange={(e) =>
+                                                setInviteRole(e.target.value)
+                                            }
+                                        >
+                                            <option value="member">
+                                                member
+                                            </option>
+                                            <option value="admin">admin</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div className={styles.memberFormRow}>
+                                    <div className={styles.memberColActions}>
+                                        <Button
+                                            type="submit"
+                                            disabled={
+                                                inviteBusy ||
+                                                !String(
+                                                    inviteEmail || "",
+                                                ).trim()
+                                            }
+                                        >
+                                            Create invite
+                                        </Button>
+                                    </div>
+                                </div>
+
+                                {inviteLink ? (
+                                    <div className={styles.memberCol}>
+                                        <label className={styles.label}>
+                                            Invite link
+                                        </label>
+                                        <div
+                                            className={styles.detailValueMono}
+                                            dir="ltr"
+                                        >
+                                            {inviteLink}
+                                        </div>
+                                    </div>
+                                ) : null}
                             </form>
 
                             <div className={styles.tableWrap}>

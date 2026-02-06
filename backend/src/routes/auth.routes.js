@@ -47,10 +47,14 @@ router.post("/register", async (req, res) => {
     }
 
     // Prevent casing-duplicates until we can enforce a case-insensitive unique index.
-    const existing = await User.findOne({ email }).collation({
-        locale: "en",
-        strength: 2, // case-insensitive
-    });
+    // 2-step lookup to prefer the default index path; fallback catches legacy casing.
+    let existing = await User.findOne({ email });
+    if (!existing) {
+        existing = await User.findOne({ email }).collation({
+            locale: "en",
+            strength: 2, // case-insensitive
+        });
+    }
     if (existing) {
         return res.status(409).json({ message: "Unable to register" });
     }
@@ -93,10 +97,14 @@ router.post("/login", async (req, res) => {
     if (!email || typeof password !== "string" || !password) {
         return res.status(401).json({ message: "Invalid credentials" });
     }
-    const user = await User.findOne({ email }).collation({
-        locale: "en",
-        strength: 2, // case-insensitive
-    });
+    // 2-step lookup to prefer the default index path; fallback supports legacy casing.
+    let user = await User.findOne({ email });
+    if (!user) {
+        user = await User.findOne({ email }).collation({
+            locale: "en",
+            strength: 2, // case-insensitive
+        });
+    }
     if (!user) return res.status(401).json({ message: "Invalid credentials" });
 
     const ok = await bcrypt.compare(password, user.passwordHash);

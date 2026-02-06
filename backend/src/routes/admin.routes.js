@@ -16,13 +16,16 @@ import {
 } from "../controllers/admin.controller.js";
 import {
     adminAddOrgMember,
+    adminCreateOrgInvite,
     adminCreateOrganization,
     adminDeleteOrgMember,
     adminGetOrganizationById,
+    adminListOrgInvites,
     adminListOrgMembers,
     adminListOrganizations,
     adminPatchOrgMember,
     adminPatchOrganization,
+    adminRevokeOrgInvite,
 } from "../controllers/adminOrganizations.controller.js";
 import {
     getAdminAnalyticsSources,
@@ -45,6 +48,7 @@ router.get("/users/:id", getUserById);
 router.get("/cards/:id", getCardById);
 router.get("/orgs/:id", adminGetOrganizationById);
 router.get("/orgs/:id/members", adminListOrgMembers);
+router.get("/orgs/:id/invites", adminListOrgInvites);
 router.get("/analytics/summary", getAdminAnalyticsSummary);
 router.get("/analytics/sources", getAdminAnalyticsSources);
 router.get("/site-analytics/summary", getAdminSiteAnalyticsSummary);
@@ -55,6 +59,8 @@ router.get("/site-analytics/diagnostics", getAdminSiteAnalyticsDiagnostics);
 router.post("/orgs", adminCreateOrganization);
 router.patch("/orgs/:id", adminPatchOrganization);
 router.post("/orgs/:id/members", adminAddOrgMember);
+router.post("/orgs/:id/invites", adminCreateOrgInvite);
+router.post("/orgs/:id/invites/:inviteId/revoke", adminRevokeOrgInvite);
 router.patch("/orgs/:id/members/:memberId", adminPatchOrgMember);
 router.delete("/orgs/:id/members/:memberId", adminDeleteOrgMember);
 router.post("/cards/:id/delete", deleteCardPermanently);

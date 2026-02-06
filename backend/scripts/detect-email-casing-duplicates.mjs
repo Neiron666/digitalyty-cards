@@ -21,7 +21,8 @@ async function main() {
     User.schema.set("autoIndex", false);
 
     assert(
-        typeof process.env.MONGO_URI === "string" && process.env.MONGO_URI.trim(),
+        typeof process.env.MONGO_URI === "string" &&
+            process.env.MONGO_URI.trim(),
         "Missing MONGO_URI in env",
     );
 

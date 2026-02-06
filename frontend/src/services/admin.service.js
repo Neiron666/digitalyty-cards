@@ -115,6 +115,11 @@ export function deleteAdminOrgMember(orgId, memberId) {
     return api.delete(`/admin/orgs/${orgId}/members/${memberId}`);
 }
 
+// Organization invites (admin)
+export function createAdminOrgInvite(orgId, { email, role } = {}) {
+    return api.post(`/admin/orgs/${orgId}/invites`, { email, role });
+}
+
 // Allowed hosts allowlist (admin)
 export function listAdminAllowedHosts(params = {}) {
     return api.get("/admin/allowed-hosts", { params });

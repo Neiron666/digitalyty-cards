@@ -1,0 +1,162 @@
+.main {
+    padding: 24px 16px;
+}
+
+.container {
+    max-width: 960px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.title {
+    margin: 0;
+}
+
+.flash {
+    display: flex;
+    flex-direction: column;
+}
+
+.section {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.sectionTitle {
+    margin: 0;
+}
+
+.hint {
+    opacity: 0.9;
+}
+
+.orgSingle {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.orgPicker {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    max-width: 420px;
+}
+
+.orgLabel {
+    font-weight: 600;
+}
+
+.orgValue {
+    font-weight: 600;
+}
+
+.select {
+    padding: 10px 12px;
+    border-radius: 10px;
+    border: 1px solid rgba(0, 0, 0, 0.15);
+}
+
+.form {
+    display: flex;
+    flex-direction: row;
+    gap: 12px;
+    align-items: flex-end;
+    flex-wrap: wrap;
+}
+
+.field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 260px;
+    flex: 1 1 260px;
+}
+
+.fieldLabel {
+    font-weight: 600;
+}
+
+.input {
+    padding: 10px 12px;
+    border-radius: 10px;
+    border: 1px solid rgba(0, 0, 0, 0.15);
+}
+
+.inviteLinkWrap {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.inviteLinkLabel {
+    font-weight: 600;
+}
+
+.inviteLinkValue {
+    direction: ltr;
+    unicode-bidi: plaintext;
+    padding: 10px 12px;
+    border-radius: 10px;
+    border: 1px solid rgba(0, 0, 0, 0.15);
+    overflow-wrap: anywhere;
+}
+
+.list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.listHeader {
+    display: flex;
+    flex-direction: row;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.listTitle {
+    font-weight: 700;
+}
+
+.listMeta {
+    opacity: 0.9;
+}
+
+.table {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.rowHead,
+.row {
+    display: flex;
+    flex-direction: row;
+    gap: 10px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.rowHead {
+    font-weight: 700;
+}
+
+.cellEmail {
+    flex: 1 1 280px;
+}
+
+.cellStatus {
+    flex: 0 0 90px;
+}
+
+.cellActions {
+    flex: 0 0 auto;
+}

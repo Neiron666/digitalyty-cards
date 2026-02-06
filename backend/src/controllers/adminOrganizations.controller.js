@@ -1,8 +1,12 @@
 import mongoose from "mongoose";
+import crypto from "crypto";
 
 import Organization from "../models/Organization.model.js";
 import OrganizationMember from "../models/OrganizationMember.model.js";
+import OrgInvite from "../models/OrgInvite.model.js";
+import OrgInviteAudit from "../models/OrgInviteAudit.model.js";
 import User from "../models/User.model.js";
+import { sendOrgInviteEmailMailjetBestEffort } from "../services/mailjet.service.js";
 import {
     isReservedOrgSlug,
     isValidOrgSlug,
@@ -65,6 +69,20 @@ function pickMemberDTO({ member, user }) {
     };
 }
 
+function pickInviteDTO(invite) {
+    if (!invite) return null;
+    return {
+        id: String(invite._id),
+        orgId: String(invite.orgId),
+        email: String(invite.email || ""),
+        role: String(invite.role || "member"),
+        expiresAt: invite.expiresAt,
+        revokedAt: invite.revokedAt || null,
+        usedAt: invite.usedAt || null,
+        createdAt: invite.createdAt,
+    };
+}
+
 function normalizeName(value) {
     if (typeof value !== "string") return "";
     return value.trim();
@@ -105,6 +123,21 @@ function normalizeMemberStatus(value) {
 
 function isMongoDupKey(err) {
     return Boolean(err && (err.code === 11000 || err.code === 11001));
+}
+
+function requireFrontendPublicBaseUrl(req, res) {
+    const raw =
+        typeof process.env.FRONTEND_PUBLIC_BASE_URL === "string"
+            ? process.env.FRONTEND_PUBLIC_BASE_URL.trim()
+            : "";
+
+    if (!raw) {
+        // Do not guess the origin.
+        res.status(500).json({ message: "Server error" });
+        return null;
+    }
+
+    return raw.replace(/\/+$/g, "");
 }
 
 export async function adminListOrganizations(req, res) {
@@ -161,6 +194,16 @@ export async function adminCreateOrganization(req, res) {
         return res.status(400).json({
             code: "INVALID_NOTE",
             message: "Invalid note",
+        });
+    }
+
+    // Enterprise-safe: don't rely solely on DB unique indexes being present.
+    // Sanity scripts disable autoIndex/autoCreate by design, and environments can drift.
+    const existing = await Organization.findOne({ slug }).select("_id").lean();
+    if (existing?._id) {
+        return res.status(409).json({
+            code: "ORG_SLUG_TAKEN",
+            message: "Organization slug is already taken",
         });
     }
 
@@ -316,6 +359,160 @@ async function requireOrgById(req, res) {
     }
 
     return org;
+}
+
+export async function adminCreateOrgInvite(req, res) {
+    const org = await requireOrgById(req, res);
+    if (!org) return;
+
+    const rawEmail = req.body?.email;
+    const email = normalizeEmail(rawEmail);
+    if (!isValidEmail(email)) {
+        return res
+            .status(400)
+            .json({ code: "INVALID_EMAIL", message: "Invalid email" });
+    }
+
+    const hasRole = Object.prototype.hasOwnProperty.call(
+        req.body || {},
+        "role",
+    );
+    let role = "member";
+    if (hasRole) {
+        const parsed = normalizeMemberRole(req.body?.role);
+        if (!parsed) {
+            return res.status(400).json({
+                code: "INVALID_ROLE",
+                message: "role must be one of: member | admin",
+            });
+        }
+        role = parsed;
+    }
+
+    const baseUrl = requireFrontendPublicBaseUrl(req, res);
+    if (!baseUrl) return;
+
+    const ttlRaw = Number.parseInt(
+        String(process.env.ORG_INVITE_TTL_SECONDS || "604800"),
+        10,
+    );
+    const ttlSeconds = Number.isFinite(ttlRaw) && ttlRaw > 0 ? ttlRaw : 604800;
+    const now = new Date();
+    const expiresAt = new Date(now.getTime() + ttlSeconds * 1000);
+
+    const rawToken = crypto.randomBytes(32).toString("hex");
+    const tokenHash = crypto
+        .createHash("sha256")
+        .update(rawToken)
+        .digest("hex");
+
+    const createdByUserId = req.user?.id || req.userId;
+    if (!isValidObjectId(createdByUserId)) {
+        return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    const inviteLink = `${baseUrl}/invite?token=${rawToken}`;
+
+    const created = await OrgInvite.create({
+        orgId: org._id,
+        email,
+        role,
+        tokenHash,
+        expiresAt,
+        createdByUserId,
+        revokedAt: null,
+        usedAt: null,
+    });
+
+    try {
+        await OrgInviteAudit.create({
+            eventType: "INVITE_CREATED",
+            orgId: org._id,
+            inviteId: created._id,
+            emailNormalized: email,
+            actorUserId: createdByUserId,
+        });
+    } catch (err) {
+        console.error("[audit] invite create failed", err?.message || err);
+    }
+
+    // Best-effort: email sending must not affect invite creation or response.
+    // Never log the raw token / inviteLink.
+    sendOrgInviteEmailMailjetBestEffort({
+        toEmail: email,
+        inviteLink,
+        orgId: org._id,
+        inviteId: created._id,
+    }).catch((err) => {
+        console.error("[mailjet] best-effort send failed", {
+            orgId: String(org._id),
+            inviteId: String(created._id),
+            toEmail: email,
+            error: err?.message || err,
+        });
+    });
+
+    return res.status(201).json({
+        inviteId: String(created._id),
+        inviteLink,
+        expiresAt: created.expiresAt,
+    });
+}
+
+export async function adminListOrgInvites(req, res) {
+    const org = await requireOrgById(req, res);
+    if (!org) return;
+
+    const invites = await OrgInvite.find({ orgId: org._id })
+        .sort({ createdAt: -1 })
+        .select("orgId email role expiresAt revokedAt usedAt createdAt")
+        .lean();
+
+    const items = (invites || []).map((i) => pickInviteDTO(i));
+    return res.json({ total: items.length, items });
+}
+
+export async function adminRevokeOrgInvite(req, res) {
+    const org = await requireOrgById(req, res);
+    if (!org) return;
+
+    const inviteId = String(req.params.inviteId || "");
+    if (!isValidObjectId(inviteId)) {
+        return res
+            .status(400)
+            .json({ code: "INVALID_INVITE_ID", message: "Invalid inviteId" });
+    }
+
+    const invite = await OrgInvite.findOne({ _id: inviteId, orgId: org._id })
+        .select("_id revokedAt email")
+        .lean();
+
+    if (!invite?._id) {
+        return res
+            .status(404)
+            .json({ code: "NOT_FOUND", message: "Not found" });
+    }
+
+    if (!invite.revokedAt) {
+        await OrgInvite.updateOne(
+            { _id: invite._id },
+            { $set: { revokedAt: new Date() } },
+        );
+
+        try {
+            await OrgInviteAudit.create({
+                eventType: "INVITE_REVOKED",
+                orgId: org._id,
+                inviteId: invite._id,
+                emailNormalized: normalizeEmail(invite.email),
+                actorUserId: req.user?.id || req.userId,
+            });
+        } catch (err) {
+            console.error("[audit] invite revoke failed", err?.message || err);
+        }
+    }
+
+    return res.json({ ok: true });
 }
 
 export async function adminListOrgMembers(req, res) {

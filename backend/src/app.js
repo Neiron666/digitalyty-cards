@@ -16,6 +16,8 @@ import { anonymousMiddleware } from "./middlewares/anonymous.middleware.js";
 import { requireAdmin } from "./middlewares/admin.middleware.js";
 import adminRoutes from "./routes/admin.routes.js";
 import orgRoutes from "./routes/org.routes.js";
+import invitesRoutes from "./routes/invites.routes.js";
+import orgInvitesRoutes from "./routes/orgInvites.routes.js";
 import path from "path";
 
 const app = express();
@@ -69,6 +71,12 @@ app.use("/api/cards", cardRoutes);
 
 // User org API
 app.use("/api/orgs", orgRoutes);
+
+// Org-admin self-serve invites (auth required)
+app.use("/api/orgs", orgInvitesRoutes);
+
+// Public org invites
+app.use("/api/invites", invitesRoutes);
 
 // Company public resolve API
 app.use("/api/c", companyPublicRoutes);

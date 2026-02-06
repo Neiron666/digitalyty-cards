@@ -15,11 +15,13 @@ import Cards from "../pages/Cards";
 // auth
 import Login from "../pages/Login";
 import Register from "../pages/Register";
+import InviteAccept from "../pages/InviteAccept";
 
 // product
 import Dashboard from "../pages/Dashboard";
 const EditCard = lazy(() => import("../pages/EditCard"));
 const Admin = lazy(() => import("../pages/Admin"));
+const OrgInvites = lazy(() => import("../pages/OrgInvites"));
 
 // public card
 const PublicCard = lazy(() => import("../pages/PublicCard"));
@@ -42,9 +44,22 @@ const router = createBrowserRouter([
             // auth
             { path: "login", element: <Login /> },
             { path: "register", element: <Register /> },
+            { path: "invite", element: <InviteAccept /> },
 
             // product
             { path: "dashboard", element: <Dashboard /> },
+            {
+                path: "org/invites",
+                element: (
+                    <ChunkErrorBoundary label="שגיאת טעינה בהזמנות הארגון">
+                        <Suspense
+                            fallback={<RouteFallback label="טוען הזמנות…" />}
+                        >
+                            <OrgInvites />
+                        </Suspense>
+                    </ChunkErrorBoundary>
+                ),
+            },
             {
                 path: "edit/:section?/:tab?",
                 element: (
