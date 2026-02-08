@@ -103,10 +103,6 @@ export function listAdminOrgMembers(orgId, params = {}) {
     return api.get(`/admin/orgs/${orgId}/members`, { params });
 }
 
-export function addAdminOrgMember(orgId, { userId, email, role } = {}) {
-    return api.post(`/admin/orgs/${orgId}/members`, { userId, email, role });
-}
-
 export function patchAdminOrgMember(orgId, memberId, patch = {}) {
     return api.patch(`/admin/orgs/${orgId}/members/${memberId}`, patch);
 }

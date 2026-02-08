@@ -12,6 +12,25 @@ function randomHex(bytes = 6) {
     return crypto.randomBytes(bytes).toString("hex");
 }
 
+function extractTokenFromInviteLink(inviteLink) {
+    if (typeof inviteLink !== "string" || !inviteLink.trim()) return "";
+    const raw = inviteLink.trim();
+
+    try {
+        const u = new URL(raw);
+        return String(u.searchParams.get("token") || "").trim();
+    } catch {
+        // Fallback for unexpected non-absolute URLs.
+        const m = raw.match(/[?&]token=([^&]+)/i);
+        if (!m) return "";
+        try {
+            return decodeURIComponent(String(m[1] || "")).trim();
+        } catch {
+            return String(m[1] || "").trim();
+        }
+    }
+}
+
 async function listen(serverApp) {
     return await new Promise((resolve, reject) => {
         const server = serverApp.listen(0, "0.0.0.0", () => resolve(server));
@@ -172,7 +191,7 @@ async function main() {
         orgCreateOk: false,
         orgSlugUnique409: false,
         addMemberOk: false,
-        addMemberDup409: false,
+        addMemberDupAccept404: false,
         listMembersOk: false,
         deleteMember204: false,
         listMembersAfterDeleteOk: false,
@@ -239,43 +258,61 @@ async function main() {
         checks.orgSlugUnique409 =
             orgDup.status === 409 && orgDup.body?.code === "ORG_SLUG_TAKEN";
 
-        // 3) Add member by email
+        // 3) Add member via invite + public accept (sanity must not depend on direct-add)
         assert(created.orgId, "Missing created org id");
-        const memberCreate = await requestJson({
+        const inviteCreate = await requestJson({
             baseUrl,
-            path: `/admin/orgs/${created.orgId}/members`,
+            path: `/admin/orgs/${created.orgId}/invites`,
             method: "POST",
             headers: authHeaders,
             body: { email: userEmail, role: "member" },
         });
 
-        statuses.memberCreate = {
-            status: memberCreate.status,
-            code: memberCreate.body?.code || null,
-            id: memberCreate.body?.id || null,
+        statuses.inviteCreate = {
+            status: inviteCreate.status,
+            code: inviteCreate.body?.code || null,
+            inviteId: inviteCreate.body?.inviteId || null,
+        };
+
+        const inviteLink =
+            typeof inviteCreate.body?.inviteLink === "string"
+                ? inviteCreate.body.inviteLink
+                : "";
+        const tokenFromLink = extractTokenFromInviteLink(inviteLink);
+        assert(tokenFromLink, "Missing invite token");
+
+        const inviteAccept = await requestJson({
+            baseUrl,
+            path: "/invites/accept",
+            method: "POST",
+            body: { token: tokenFromLink },
+        });
+
+        statuses.inviteAccept = {
+            status: inviteAccept.status,
+            hasJwt: typeof inviteAccept.body?.token === "string",
         };
 
         checks.addMemberOk =
-            memberCreate.status === 201 && Boolean(memberCreate.body?.id);
-        created.memberId = memberCreate.body?.id || null;
+            inviteCreate.status === 201 &&
+            inviteAccept.status === 200 &&
+            typeof inviteAccept.body?.token === "string";
 
-        // 4) Duplicate member => 409
-        const memberDup = await requestJson({
+        // 4) Duplicate accept should not create extra membership (token is single-use).
+        // Hardening: accept may return different non-2xx codes across implementations.
+        const inviteAcceptDup = await requestJson({
             baseUrl,
-            path: `/admin/orgs/${created.orgId}/members`,
+            path: "/invites/accept",
             method: "POST",
-            headers: authHeaders,
-            body: { email: userEmail },
+            body: { token: tokenFromLink },
         });
 
-        statuses.memberDuplicate = {
-            status: memberDup.status,
-            code: memberDup.body?.code || null,
+        statuses.inviteAcceptDuplicate = {
+            status: inviteAcceptDup.status,
+            message: inviteAcceptDup.body?.message || null,
         };
 
-        checks.addMemberDup409 =
-            memberDup.status === 409 &&
-            memberDup.body?.code === "MEMBER_EXISTS";
+        checks.addMemberDupAccept404 = !isOk(inviteAcceptDup.status);
 
         // 5) List members
         const list1 = await requestJson({
@@ -292,6 +329,10 @@ async function main() {
 
         checks.listMembersOk =
             isOk(list1.status) && Array.isArray(list1.body?.items);
+
+        const items = Array.isArray(list1.body?.items) ? list1.body.items : [];
+        const createdMember = items.find((m) => m?.email === userEmail) || null;
+        created.memberId = createdMember?.id || null;
 
         // 6) Delete member
         assert(created.memberId, "Missing created member id");

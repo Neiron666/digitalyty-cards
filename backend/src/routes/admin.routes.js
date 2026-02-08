@@ -15,7 +15,6 @@ import {
     setUserTier,
 } from "../controllers/admin.controller.js";
 import {
-    adminAddOrgMember,
     adminCreateOrgInvite,
     adminCreateOrganization,
     adminDeleteOrgMember,
@@ -58,7 +57,6 @@ router.get("/site-analytics/diagnostics", getAdminSiteAnalyticsDiagnostics);
 // safe write actions (no generic patch)
 router.post("/orgs", adminCreateOrganization);
 router.patch("/orgs/:id", adminPatchOrganization);
-router.post("/orgs/:id/members", adminAddOrgMember);
 router.post("/orgs/:id/invites", adminCreateOrgInvite);
 router.post("/orgs/:id/invites/:inviteId/revoke", adminRevokeOrgInvite);
 router.patch("/orgs/:id/members/:memberId", adminPatchOrgMember);

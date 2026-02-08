@@ -22,6 +22,25 @@ function randomHex(bytes = 6) {
     return crypto.randomBytes(bytes).toString("hex");
 }
 
+function extractTokenFromInviteLink(inviteLink) {
+    if (typeof inviteLink !== "string" || !inviteLink.trim()) return "";
+    const raw = inviteLink.trim();
+
+    try {
+        const u = new URL(raw);
+        return String(u.searchParams.get("token") || "").trim();
+    } catch {
+        // Fallback for unexpected non-absolute URLs.
+        const m = raw.match(/[?&]token=([^&]+)/i);
+        if (!m) return "";
+        try {
+            return decodeURIComponent(String(m[1] || "")).trim();
+        } catch {
+            return String(m[1] || "").trim();
+        }
+    }
+}
+
 async function listen(serverApp) {
     return await new Promise((resolve, reject) => {
         const server = serverApp.listen(0, "0.0.0.0", () => resolve(server));
@@ -248,23 +267,60 @@ async function main() {
         created.orgId = orgCreate.body?.id || null;
         assert(created.orgId, "Missing org id");
 
-        // Add member
-        const memberCreate = await requestJson({
+        // Add member via invite + public accept (sanity must not depend on direct-add)
+        const inviteCreate = await requestJson({
             baseUrl,
-            path: `/admin/orgs/${created.orgId}/members`,
+            path: `/admin/orgs/${created.orgId}/invites`,
             method: "POST",
             headers: adminHeaders,
             body: { email: userEmail, role: "member" },
         });
 
-        statuses.memberCreate = {
-            status: memberCreate.status,
-            code: memberCreate.body?.code || null,
-            id: memberCreate.body?.id || null,
+        statuses.inviteCreate = {
+            status: inviteCreate.status,
+            code: inviteCreate.body?.code || null,
+            inviteId: inviteCreate.body?.inviteId || null,
         };
 
-        assert(memberCreate.status === 201, "Failed to add member");
-        created.memberId = memberCreate.body?.id || null;
+        assert(inviteCreate.status === 201, "Failed to create invite");
+        const inviteLink =
+            typeof inviteCreate.body?.inviteLink === "string"
+                ? inviteCreate.body.inviteLink
+                : "";
+        const tokenFromLink = extractTokenFromInviteLink(inviteLink);
+        assert(tokenFromLink, "Missing invite token");
+
+        const inviteAccept = await requestJson({
+            baseUrl,
+            path: "/invites/accept",
+            method: "POST",
+            body: { token: tokenFromLink },
+        });
+
+        statuses.inviteAccept = {
+            status: inviteAccept.status,
+            hasJwt: typeof inviteAccept.body?.token === "string",
+        };
+
+        assert(inviteAccept.status === 200, "Failed to accept invite");
+
+        const listMembers = await requestJson({
+            baseUrl,
+            path: `/admin/orgs/${created.orgId}/members?page=1&limit=10`,
+            method: "GET",
+            headers: adminHeaders,
+        });
+
+        statuses.listMembers = {
+            status: listMembers.status,
+            total: listMembers.body?.total ?? null,
+        };
+
+        const items = Array.isArray(listMembers.body?.items)
+            ? listMembers.body.items
+            : [];
+        const member = items.find((m) => m?.email === userEmail) || null;
+        created.memberId = member?.id || null;
         assert(created.memberId, "Missing member id");
 
         // Ensure personal card exists for member user
