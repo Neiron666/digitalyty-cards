@@ -3,7 +3,6 @@ import Button from "../../components/ui/Button";
 import Input from "../../components/ui/Input";
 import FlashBanner from "../../components/ui/FlashBanner/FlashBanner";
 import {
-    addAdminOrgMember,
     createAdminOrgInvite,
     createAdminOrganization,
     deleteAdminOrgMember,
@@ -31,10 +30,18 @@ function clampInt(value, { min, max, fallback }) {
 function mapAdminApiError(err) {
     const status = err?.response?.status;
     const code = err?.response?.data?.code;
+    const apiMessage =
+        typeof err?.response?.data?.message === "string"
+            ? err.response.data.message.trim()
+            : "";
 
     if (status === 409 && code === "ORG_SLUG_TAKEN") return "הסלאג כבר תפוס.";
     if (status === 409 && code === "MEMBER_EXISTS")
         return "החבר כבר קיים בארגון.";
+    if (status === 409 && code === "INVITE_ALREADY_PENDING")
+        return "כבר קיימת הזמנה ממתינה לאימייל הזה.";
+    if (status === 409 && code === "SEAT_LIMIT_REACHED")
+        return apiMessage || "הגעת למגבלת המושבים.";
     if (status === 404 && code === "USER_NOT_FOUND") return "המשתמש לא נמצא.";
     if (status === 400 && code === "INVALID_SLUG") return "סלאג לא תקין.";
     if (status === 400 && code === "RESERVED_SLUG")
@@ -109,11 +116,6 @@ export default function AdminOrganizationsView() {
     const [membersPage, setMembersPage] = useState(1);
     const [membersLimit, setMembersLimit] = useState(25);
     const [membersLoading, setMembersLoading] = useState(false);
-
-    const [addUserId, setAddUserId] = useState("");
-    const [addEmail, setAddEmail] = useState("");
-    const [addRole, setAddRole] = useState("member");
-    const [addBusy, setAddBusy] = useState(false);
 
     const [inviteEmail, setInviteEmail] = useState("");
     const [inviteRole, setInviteRole] = useState("member");
@@ -220,6 +222,17 @@ export default function AdminOrganizationsView() {
         return { ok: true, value: n };
     }
 
+    const seatLimitRaw = selectedOrg?.seatLimit;
+    const hasSeatLimit =
+        seatLimitRaw !== null &&
+        seatLimitRaw !== undefined &&
+        Number.isFinite(Number(seatLimitRaw));
+    const seatLimit = hasSeatLimit ? Number(seatLimitRaw) : null;
+    const usedSeats = Number(selectedOrg?.usedSeats ?? 0);
+    const remainingSeats = hasSeatLimit
+        ? Math.max(0, seatLimit - usedSeats)
+        : null;
+
     async function handleSearchSubmit(e) {
         e.preventDefault();
         setPage(1);
@@ -230,28 +243,22 @@ export default function AdminOrganizationsView() {
         e.preventDefault();
         setCreateBusy(true);
         try {
-            const res = await createAdminOrganization({
-                name: createName,
-                slug: createSlug,
-                note: createNote,
-            });
-            const created = res?.data || null;
-
             const seatLimitParsed = parseSeatLimitInput(createSeatLimit);
             if (!seatLimitParsed.ok) {
                 showFlash(
                     "error",
                     "Seat limit must be a positive integer or empty",
                 );
-            } else if (created?.id && seatLimitParsed.value !== null) {
-                try {
-                    await patchAdminOrganization(String(created.id), {
-                        seatLimit: seatLimitParsed.value,
-                    });
-                } catch (err) {
-                    showFlash("error", mapAdminApiError(err));
-                }
+                return;
             }
+
+            const res = await createAdminOrganization({
+                name: createName,
+                slug: createSlug,
+                note: createNote,
+                seatLimit: seatLimitParsed.value,
+            });
+            const created = res?.data || null;
 
             showFlash("success", "הארגון נוצר.");
             setCreateName("");
@@ -336,29 +343,6 @@ export default function AdminOrganizationsView() {
             showFlash("error", mapAdminApiError(err));
         } finally {
             setSelectedBusy(false);
-        }
-    }
-
-    async function handleAddMember(e) {
-        e.preventDefault();
-        if (!selectedOrgId) return;
-
-        setAddBusy(true);
-        try {
-            await addAdminOrgMember(selectedOrgId, {
-                userId: addUserId.trim() || undefined,
-                email: addEmail.trim() || undefined,
-                role: addRole,
-            });
-            showFlash("success", "החבר נוסף.");
-            setAddUserId("");
-            setAddEmail("");
-            setAddRole("member");
-            await loadSelectedOrgAndMembers(selectedOrgId);
-        } catch (err) {
-            showFlash("error", mapAdminApiError(err));
-        } finally {
-            setAddBusy(false);
         }
     }
 
@@ -647,67 +631,18 @@ export default function AdminOrganizationsView() {
 
                             <h3 className={styles.h3}>חברים</h3>
 
-                            <form
-                                className={styles.memberForm}
-                                onSubmit={handleAddMember}
-                            >
-                                <div className={styles.memberFormRow}>
-                                    <div className={styles.memberCol}>
-                                        <label className={styles.label}>
-                                            UserId
-                                        </label>
-                                        <Input
-                                            value={addUserId}
-                                            onChange={(e) =>
-                                                setAddUserId(e.target.value)
-                                            }
-                                            placeholder="ObjectId"
-                                        />
-                                    </div>
-                                    <div className={styles.memberCol}>
-                                        <label className={styles.label}>
-                                            או Email
-                                        </label>
-                                        <Input
-                                            value={addEmail}
-                                            onChange={(e) =>
-                                                setAddEmail(e.target.value)
-                                            }
-                                            placeholder="user@example.com"
-                                        />
-                                    </div>
-                                </div>
-
-                                <div className={styles.memberFormRow}>
-                                    <div className={styles.memberCol}>
-                                        <label className={styles.label}>
-                                            Role
-                                        </label>
-                                        <select
-                                            className={styles.select}
-                                            value={addRole}
-                                            onChange={(e) =>
-                                                setAddRole(e.target.value)
-                                            }
-                                        >
-                                            <option value="member">
-                                                member
-                                            </option>
-                                            <option value="admin">admin</option>
-                                        </select>
-                                    </div>
-                                    <div className={styles.memberColActions}>
-                                        <Button
-                                            type="submit"
-                                            disabled={addBusy}
-                                        >
-                                            הוסף
-                                        </Button>
-                                    </div>
-                                </div>
-                            </form>
-
                             <h3 className={styles.h3}>הזמנות</h3>
+
+                            <div className={styles.detailItem}>
+                                <div className={styles.detailLabel}>Seats</div>
+                                <div className={styles.detailValue}>
+                                    Seats: {usedSeats}/
+                                    {hasSeatLimit ? seatLimit : "∞"}
+                                    <br />
+                                    Remaining:{" "}
+                                    {hasSeatLimit ? remainingSeats : "∞"}
+                                </div>
+                            </div>
 
                             <form
                                 className={styles.memberForm}

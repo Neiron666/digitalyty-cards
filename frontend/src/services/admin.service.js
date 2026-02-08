@@ -86,8 +86,8 @@ export function listAdminOrganizations(params = {}) {
     return api.get("/admin/orgs", { params });
 }
 
-export function createAdminOrganization({ name, slug, note } = {}) {
-    return api.post("/admin/orgs", { name, slug, note });
+export function createAdminOrganization({ name, slug, note, seatLimit } = {}) {
+    return api.post("/admin/orgs", { name, slug, note, seatLimit });
 }
 
 export function getAdminOrganizationById(id) {

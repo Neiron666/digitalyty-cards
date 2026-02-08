@@ -171,6 +171,17 @@ export async function adminCreateOrganization(req, res) {
     const slug = normalizeOrgSlug(req.body?.slug);
     const note = normalizeNote(req.body?.note);
 
+    let seatLimit;
+    if (Object.prototype.hasOwnProperty.call(req.body || {}, "seatLimit")) {
+        seatLimit = normalizeSeatLimit(req.body?.seatLimit);
+        if (seatLimit === null && req.body?.seatLimit !== null) {
+            return res.status(400).json({
+                code: "INVALID_SEAT_LIMIT",
+                message: "seatLimit must be a positive integer or null",
+            });
+        }
+    }
+
     if (!name || name.length > 120) {
         return res.status(400).json({
             code: "INVALID_NAME",
@@ -210,7 +221,10 @@ export async function adminCreateOrganization(req, res) {
     }
 
     try {
-        const created = await Organization.create({ name, slug, note });
+        const payload = { name, slug, note };
+        if (seatLimit !== undefined) payload.seatLimit = seatLimit;
+
+        const created = await Organization.create(payload);
         return res.status(201).json(pickOrgDTO(created));
     } catch (err) {
         if (isMongoDupKey(err)) {
@@ -243,7 +257,17 @@ export async function adminGetOrganizationById(req, res) {
         });
     }
 
-    return res.json(pickOrgDTO(org));
+    const now = new Date();
+    const seatUsage = await getOrgSeatUsage({ orgId: org._id, now });
+
+    return res.json({
+        ...pickOrgDTO(org),
+        usedSeats: Number(seatUsage?.usedSeats || 0),
+        usedSeatsBreakdown: {
+            activeMemberships: Number(seatUsage?.activeMemberships || 0),
+            pendingInvites: Number(seatUsage?.pendingInvites || 0),
+        },
+    });
 }
 
 export async function adminPatchOrganization(req, res) {
