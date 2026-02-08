@@ -16,6 +16,10 @@ function normalizeEmail(value) {
 function classifyError(err) {
     const status = err?.response?.status;
     const code = err?.response?.data?.code;
+    const apiMessage =
+        typeof err?.response?.data?.message === "string"
+            ? err.response.data.message.trim()
+            : "";
 
     if (status === 401) {
         return { type: "error", message: "צריך להתחבר" };
@@ -33,6 +37,13 @@ function classifyError(err) {
             return { type: "error", message: "אימייל לא תקין" };
         }
         return { type: "error", message: "בקשה לא תקינה" };
+    }
+
+    if (status === 409 && code === "SEAT_LIMIT_REACHED") {
+        return {
+            type: "error",
+            message: apiMessage || "הגעת למגבלת המושבים / Seat limit reached",
+        };
     }
 
     if (status && status >= 500) {
@@ -156,6 +167,26 @@ export default function OrgInvites() {
         if (!id) return null;
         return (orgs || []).find((o) => String(o?.id || "") === id) || null;
     }, [orgs, selectedOrgId]);
+
+    const seatLimitRaw = selectedOrg?.seatLimit;
+    const hasSeatLimit =
+        seatLimitRaw !== null &&
+        seatLimitRaw !== undefined &&
+        Number.isFinite(Number(seatLimitRaw));
+    const seatLimit = hasSeatLimit ? Number(seatLimitRaw) : null;
+    const usedSeats = Number(selectedOrg?.usedSeats ?? 0);
+    const remainingSeats = hasSeatLimit
+        ? Math.max(0, seatLimit - usedSeats)
+        : null;
+
+    const breakdown = selectedOrg?.usedSeatsBreakdown;
+    const breakdownActive = Number(breakdown?.activeMemberships ?? 0);
+    const breakdownPending = Number(breakdown?.pendingInvites ?? 0);
+    const hasBreakdown = Boolean(
+        breakdown &&
+        (breakdown.activeMemberships !== undefined ||
+            breakdown.pendingInvites !== undefined),
+    );
 
     useEffect(() => {
         let stopped = false;
@@ -494,6 +525,28 @@ export default function OrgInvites() {
                 <section className={styles.section}>
                     <h2 className={styles.sectionTitle}>ארגון</h2>
                     {renderOrgPicker()}
+                    {selectedOrg ? (
+                        <>
+                            <div className={styles.hint}>
+                                Seats: {usedSeats}/
+                                {hasSeatLimit ? seatLimit : "∞"}
+                                {hasSeatLimit
+                                    ? ` (left: ${remainingSeats})`
+                                    : ""}
+                            </div>
+                            {!hasSeatLimit ? (
+                                <div className={styles.hint}>
+                                    Seat limit not set
+                                </div>
+                            ) : null}
+                            {hasBreakdown ? (
+                                <div className={styles.hint}>
+                                    Breakdown: {breakdownActive} active +{" "}
+                                    {breakdownPending} pending
+                                </div>
+                            ) : null}
+                        </>
+                    ) : null}
                     {selectedOrg?.myRole && selectedOrg.myRole !== "admin" ? (
                         <div className={styles.hint}>
                             הרשאות: {String(selectedOrg.myRole)}

@@ -16,6 +16,14 @@ const OrganizationSchema = new mongoose.Schema(
         name: { type: String, required: true, trim: true, maxlength: 120 },
         note: { type: String, default: "", trim: true, maxlength: 500 },
         isActive: { type: Boolean, default: true, index: true },
+        seatLimit: {
+            type: Number,
+            default: null,
+            validate: {
+                validator: (v) => v === null || (Number.isInteger(v) && v > 0),
+                message: "seatLimit must be a positive integer",
+            },
+        },
     },
     { timestamps: true },
 );

@@ -7,6 +7,7 @@ import OrgInvite from "../models/OrgInvite.model.js";
 import OrgInviteAudit from "../models/OrgInviteAudit.model.js";
 import User from "../models/User.model.js";
 import { sendOrgInviteEmailMailjetBestEffort } from "../services/mailjet.service.js";
+import { getOrgSeatUsage, normalizeSeatLimit } from "../utils/orgSeats.util.js";
 import {
     isReservedOrgSlug,
     isValidOrgSlug,
@@ -50,6 +51,7 @@ function pickOrgDTO(org) {
         slug: org.slug || "",
         note: org.note || "",
         isActive: Boolean(org.isActive),
+        seatLimit: org.seatLimit === null ? null : Number(org.seatLimit),
         createdAt: org.createdAt,
         updatedAt: org.updatedAt,
     };
@@ -151,7 +153,7 @@ export async function adminListOrganizations(req, res) {
             .sort({ createdAt: -1 })
             .skip(skip)
             .limit(limit)
-            .select("slug name note isActive createdAt updatedAt")
+            .select("slug name note isActive seatLimit createdAt updatedAt")
             .lean(),
         Organization.countDocuments(filter),
     ]);
@@ -231,7 +233,7 @@ export async function adminGetOrganizationById(req, res) {
     }
 
     const org = await Organization.findById(id)
-        .select("slug name note isActive createdAt updatedAt")
+        .select("slug name note isActive seatLimit createdAt updatedAt")
         .lean();
 
     if (!org?._id) {
@@ -299,6 +301,17 @@ export async function adminPatchOrganization(req, res) {
         $set.isActive = v;
     }
 
+    if (Object.prototype.hasOwnProperty.call(body, "seatLimit")) {
+        const seatLimit = normalizeSeatLimit(body?.seatLimit);
+        if (seatLimit === null && body?.seatLimit !== null) {
+            return res.status(400).json({
+                code: "INVALID_SEAT_LIMIT",
+                message: "seatLimit must be a positive integer or null",
+            });
+        }
+        $set.seatLimit = seatLimit;
+    }
+
     if (!Object.keys($set).length) {
         if (!hasAnyKeys) {
             return res.status(400).json({
@@ -323,7 +336,7 @@ export async function adminPatchOrganization(req, res) {
                 runValidators: true,
             },
         )
-            .select("slug name note isActive createdAt updatedAt")
+            .select("slug name note isActive seatLimit createdAt updatedAt")
             .lean();
 
         if (!updated?._id) {
@@ -352,7 +365,9 @@ async function requireOrgById(req, res) {
         return null;
     }
 
-    const org = await Organization.findById(orgId).select("_id").lean();
+    const org = await Organization.findById(orgId)
+        .select("_id seatLimit")
+        .lean();
     if (!org?._id) {
         res.status(404).json({ code: "NOT_FOUND", message: "Not found" });
         return null;
@@ -398,6 +413,35 @@ export async function adminCreateOrgInvite(req, res) {
     );
     const ttlSeconds = Number.isFinite(ttlRaw) && ttlRaw > 0 ? ttlRaw : 604800;
     const now = new Date();
+
+    const existingPending = await OrgInvite.findOne({
+        orgId: org._id,
+        email,
+        revokedAt: null,
+        usedAt: null,
+        expiresAt: { $gt: now },
+    })
+        .select("_id")
+        .lean();
+
+    if (existingPending?._id) {
+        return res.status(409).json({
+            code: "INVITE_ALREADY_PENDING",
+            message: "Invite already pending",
+        });
+    }
+
+    const seatLimit = org?.seatLimit;
+    const hasSeatLimit = typeof seatLimit === "number";
+    if (hasSeatLimit) {
+        const seatUsage = await getOrgSeatUsage({ orgId: org._id, now });
+        if (seatUsage.usedSeats >= seatLimit) {
+            return res.status(409).json({
+                code: "SEAT_LIMIT_REACHED",
+                message: "Seat limit reached",
+            });
+        }
+    }
     const expiresAt = new Date(now.getTime() + ttlSeconds * 1000);
 
     const rawToken = crypto.randomBytes(32).toString("hex");
@@ -607,6 +651,19 @@ export async function adminAddOrgMember(req, res) {
         role = parsed;
     }
 
+    const seatLimit = org?.seatLimit;
+    const hasSeatLimit = typeof seatLimit === "number";
+    if (hasSeatLimit) {
+        const now = new Date();
+        const seatUsage = await getOrgSeatUsage({ orgId: org._id, now });
+        if (seatUsage.usedSeats >= seatLimit) {
+            return res.status(409).json({
+                code: "SEAT_LIMIT_REACHED",
+                message: "Seat limit reached",
+            });
+        }
+    }
+
     try {
         const created = await OrganizationMember.create({
             orgId: org._id,
@@ -663,6 +720,34 @@ export async function adminPatchOrgMember(req, res) {
             });
         }
         $set.status = status;
+    }
+
+    const seatLimit = org?.seatLimit;
+    const hasSeatLimit = typeof seatLimit === "number";
+    if ($set.status === "active" && hasSeatLimit) {
+        const current = await OrganizationMember.findOne({
+            _id: memberId,
+            orgId: org._id,
+        })
+            .select("_id status")
+            .lean();
+
+        if (!current?._id) {
+            return res
+                .status(404)
+                .json({ code: "NOT_FOUND", message: "Not found" });
+        }
+
+        if (String(current.status || "") !== "active") {
+            const now = new Date();
+            const seatUsage = await getOrgSeatUsage({ orgId: org._id, now });
+            if (seatUsage.usedSeats >= seatLimit) {
+                return res.status(409).json({
+                    code: "SEAT_LIMIT_REACHED",
+                    message: "Seat limit reached",
+                });
+            }
+        }
     }
 
     if (!Object.keys($set).length) {

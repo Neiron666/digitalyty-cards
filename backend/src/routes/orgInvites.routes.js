@@ -5,12 +5,14 @@ import { requireAuth } from "../middlewares/auth.middleware.js";
 import OrgInvite from "../models/OrgInvite.model.js";
 import OrgInviteAudit from "../models/OrgInviteAudit.model.js";
 import OrganizationMember from "../models/OrganizationMember.model.js";
+import Organization from "../models/Organization.model.js";
 import { sendOrgInviteEmailMailjetBestEffort } from "../services/mailjet.service.js";
 import {
     assertActiveOrgAndMembershipOrNotFound,
     isValidObjectId,
 } from "../utils/orgMembership.util.js";
 import { HttpError } from "../utils/httpError.js";
+import { getOrgSeatUsage } from "../utils/orgSeats.util.js";
 
 const router = Router();
 
@@ -116,6 +118,49 @@ router.post("/:orgId/invites", requireAuth, async (req, res, next) => {
 
         const role = parseInviteRole(req.body?.role);
 
+        const now = new Date();
+
+        const existingPending = await OrgInvite.findOne({
+            orgId: org._id,
+            email,
+            revokedAt: null,
+            usedAt: null,
+            expiresAt: { $gt: now },
+        })
+            .select("_id")
+            .lean();
+
+        if (existingPending?._id) {
+            return res.status(409).json({
+                code: "INVITE_ALREADY_PENDING",
+                message: "Invite already pending",
+            });
+        }
+
+        // IMPORTANT: org from membership util is projected and may not include seatLimit.
+        // Fetch seatLimit explicitly and avoid truthy checks (seatLimit=0 must still enforce).
+        const orgMeta = await Organization.findById(org._id)
+            .select("_id seatLimit")
+            .lean();
+        if (!orgMeta?._id) notFound();
+
+        const seatLimitRaw = orgMeta.seatLimit;
+        const hasSeatLimit =
+            seatLimitRaw !== null &&
+            seatLimitRaw !== undefined &&
+            Number.isFinite(Number(seatLimitRaw));
+
+        if (hasSeatLimit) {
+            const seatLimit = Number(seatLimitRaw);
+            const seatUsage = await getOrgSeatUsage({ orgId: org._id, now });
+            if (Number(seatUsage.usedSeats || 0) >= seatLimit) {
+                return res.status(409).json({
+                    code: "SEAT_LIMIT_REACHED",
+                    message: "הגעת למגבלת המושבים / Seat limit reached",
+                });
+            }
+        }
+
         const baseUrl = requireFrontendPublicBaseUrl();
 
         const ttlRaw = Number.parseInt(
@@ -124,7 +169,6 @@ router.post("/:orgId/invites", requireAuth, async (req, res, next) => {
         );
         const ttlSeconds =
             Number.isFinite(ttlRaw) && ttlRaw > 0 ? ttlRaw : 604800;
-        const now = new Date();
         const expiresAt = new Date(now.getTime() + ttlSeconds * 1000);
 
         const rawToken = crypto.randomBytes(32).toString("hex");

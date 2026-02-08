@@ -8,6 +8,7 @@ import OrganizationMember from "../models/OrganizationMember.model.js";
 import Organization from "../models/Organization.model.js";
 import User from "../models/User.model.js";
 import { signToken } from "../utils/jwt.js";
+import { getOrgSeatUsage } from "../utils/orgSeats.util.js";
 
 const router = Router();
 
@@ -63,6 +64,31 @@ router.post("/accept", async (req, res) => {
     const email = normalizeEmail(preflight.email);
     if (!isValidEmail(email)) return notFound(res);
 
+    const org = await Organization.findOne({
+        _id: preflight.orgId,
+        isActive: true,
+    })
+        .select("_id seatLimit")
+        .lean();
+
+    if (!org?._id) return notFound(res);
+
+    if (org?.seatLimit) {
+        const seatUsage = await getOrgSeatUsage({ orgId: org._id, now });
+        // Canonical enterprise rule is: usedSeats >= seatLimit => reject.
+        // But for public accept, the current invite is still pending and already
+        // counted in usedSeats (pendingInvites), so exclude it.
+        const effectiveUsedSeats = Math.max(
+            0,
+            Number(seatUsage.usedSeats || 0) - 1,
+        );
+
+        if (effectiveUsedSeats >= Number(org.seatLimit)) {
+            // Anti-enumeration: behave like token invalid/expired.
+            return notFound(res);
+        }
+    }
+
     let user = await findUserByEmailCaseInsensitive(email);
 
     // Enterprise hardening: if this invite would create a new user,
@@ -87,15 +113,6 @@ router.post("/accept", async (req, res) => {
     ).lean();
 
     if (!invite) return notFound(res);
-
-    const org = await Organization.findOne({
-        _id: invite.orgId,
-        isActive: true,
-    })
-        .select("_id")
-        .lean();
-
-    if (!org?._id) return notFound(res);
 
     if (!user) {
         const passwordHash = await bcrypt.hash(password, 10);

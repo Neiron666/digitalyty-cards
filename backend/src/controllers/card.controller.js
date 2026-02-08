@@ -3,6 +3,7 @@ import slugify from "slugify";
 import User from "../models/User.model.js";
 import Organization from "../models/Organization.model.js";
 import OrganizationMember from "../models/OrganizationMember.model.js";
+import { getOrgSeatUsageByOrgIds } from "../utils/orgSeats.util.js";
 import mongoose from "mongoose";
 import { hasAccess } from "../utils/planAccess.js";
 import crypto from "crypto";
@@ -662,8 +663,11 @@ export async function getMyOrganizations(req, res) {
         _id: { $in: orgIds },
         isActive: true,
     })
-        .select("_id slug name")
+        .select("_id slug name seatLimit")
         .lean();
+
+    const now = new Date();
+    const seatUsageByOrgId = await getOrgSeatUsageByOrgIds({ orgIds, now });
 
     const orgById = new Map((orgs || []).map((o) => [String(o._id), o]));
 
@@ -672,12 +676,24 @@ export async function getMyOrganizations(req, res) {
         const orgId = m?.orgId ? String(m.orgId) : "";
         const org = orgById.get(orgId);
         if (!org?._id) continue;
+
+        const seatUsage = seatUsageByOrgId.get(orgId) || {
+            activeMemberships: 0,
+            pendingInvites: 0,
+            usedSeats: 0,
+        };
         out.push({
             id: String(org._id),
             slug: String(org.slug || "").trim(),
             name: String(org.name || "").trim(),
             myRole: String(m.role || "member"),
             myStatus: String(m.status || "active"),
+            seatLimit: org.seatLimit === null ? null : Number(org.seatLimit),
+            usedSeats: Number(seatUsage.usedSeats || 0),
+            usedSeatsBreakdown: {
+                activeMemberships: Number(seatUsage.activeMemberships || 0),
+                pendingInvites: Number(seatUsage.pendingInvites || 0),
+            },
         });
     }
 

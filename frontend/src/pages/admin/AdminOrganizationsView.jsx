@@ -96,10 +96,12 @@ export default function AdminOrganizationsView() {
     const [createName, setCreateName] = useState("");
     const [createSlug, setCreateSlug] = useState("");
     const [createNote, setCreateNote] = useState("");
+    const [createSeatLimit, setCreateSeatLimit] = useState("");
     const [createBusy, setCreateBusy] = useState(false);
 
     const [selectedOrgId, setSelectedOrgId] = useState(null);
     const [selectedOrg, setSelectedOrg] = useState(null);
+    const [selectedSeatLimit, setSelectedSeatLimit] = useState("");
     const [selectedBusy, setSelectedBusy] = useState(false);
 
     const [members, setMembers] = useState([]);
@@ -196,6 +198,28 @@ export default function AdminOrganizationsView() {
         setInviteLink("");
     }, [selectedOrgId]);
 
+    useEffect(() => {
+        if (!selectedOrg) {
+            setSelectedSeatLimit("");
+            return;
+        }
+
+        const v = selectedOrg?.seatLimit;
+        if (v === null || v === undefined) {
+            setSelectedSeatLimit("");
+            return;
+        }
+        setSelectedSeatLimit(String(v));
+    }, [selectedOrg]);
+
+    function parseSeatLimitInput(raw) {
+        const s = String(raw ?? "").trim();
+        if (!s) return { ok: true, value: null };
+        const n = Number.parseInt(s, 10);
+        if (!Number.isFinite(n) || n <= 0) return { ok: false, value: null };
+        return { ok: true, value: n };
+    }
+
     async function handleSearchSubmit(e) {
         e.preventDefault();
         setPage(1);
@@ -212,10 +236,28 @@ export default function AdminOrganizationsView() {
                 note: createNote,
             });
             const created = res?.data || null;
+
+            const seatLimitParsed = parseSeatLimitInput(createSeatLimit);
+            if (!seatLimitParsed.ok) {
+                showFlash(
+                    "error",
+                    "Seat limit must be a positive integer or empty",
+                );
+            } else if (created?.id && seatLimitParsed.value !== null) {
+                try {
+                    await patchAdminOrganization(String(created.id), {
+                        seatLimit: seatLimitParsed.value,
+                    });
+                } catch (err) {
+                    showFlash("error", mapAdminApiError(err));
+                }
+            }
+
             showFlash("success", "הארגון נוצר.");
             setCreateName("");
             setCreateSlug("");
             setCreateNote("");
+            setCreateSeatLimit("");
             setPage(1);
             await loadOrgs();
             if (created?.id) {
@@ -259,6 +301,33 @@ export default function AdminOrganizationsView() {
         try {
             const res = await patchAdminOrganization(selectedOrgId, {
                 note: safeString(selectedOrg?.note),
+            });
+            setSelectedOrg(res?.data || null);
+            showFlash("success", "עודכן.");
+            await loadOrgs();
+        } catch (err) {
+            showFlash("error", mapAdminApiError(err));
+        } finally {
+            setSelectedBusy(false);
+        }
+    }
+
+    async function handleUpdateOrgSeatLimit() {
+        if (!selectedOrgId) return;
+
+        const parsed = parseSeatLimitInput(selectedSeatLimit);
+        if (!parsed.ok) {
+            showFlash(
+                "error",
+                "Seat limit must be a positive integer or empty",
+            );
+            return;
+        }
+
+        setSelectedBusy(true);
+        try {
+            const res = await patchAdminOrganization(selectedOrgId, {
+                seatLimit: parsed.value,
             });
             setSelectedOrg(res?.data || null);
             showFlash("success", "עודכן.");
@@ -481,6 +550,15 @@ export default function AdminOrganizationsView() {
                             onChange={(e) => setCreateNote(e.target.value)}
                             placeholder="note"
                         />
+                        <label className={styles.label}>
+                            Seat limit (optional)
+                        </label>
+                        <Input
+                            value={createSeatLimit}
+                            onChange={(e) => setCreateSeatLimit(e.target.value)}
+                            inputMode="numeric"
+                            placeholder="e.g. 25"
+                        />
                         <Button type="submit" disabled={createBusy}>
                             צור
                         </Button>
@@ -539,6 +617,27 @@ export default function AdminOrganizationsView() {
                                 />
                                 <Button
                                     onClick={handleUpdateOrgNote}
+                                    disabled={selectedBusy}
+                                    variant="secondary"
+                                >
+                                    שמור
+                                </Button>
+                            </div>
+
+                            <div className={styles.noteBlock}>
+                                <label className={styles.label}>
+                                    Seat limit (empty = not set)
+                                </label>
+                                <Input
+                                    value={selectedSeatLimit}
+                                    onChange={(e) =>
+                                        setSelectedSeatLimit(e.target.value)
+                                    }
+                                    inputMode="numeric"
+                                    placeholder="e.g. 25"
+                                />
+                                <Button
+                                    onClick={handleUpdateOrgSeatLimit}
                                     disabled={selectedBusy}
                                     variant="secondary"
                                 >
