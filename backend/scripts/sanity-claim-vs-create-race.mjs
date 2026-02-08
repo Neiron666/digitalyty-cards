@@ -8,6 +8,7 @@ import { connectDB } from "../src/config/db.js";
 import Card from "../src/models/Card.model.js";
 import User from "../src/models/User.model.js";
 import { signToken } from "../src/utils/jwt.js";
+import { getPersonalOrgId } from "../src/utils/personalOrg.util.js";
 
 async function listen(serverApp) {
     return await new Promise((resolve, reject) => {
@@ -63,6 +64,11 @@ const created = {
 };
 
 await connectDB(mongoUri);
+
+const personalOrgId = await getPersonalOrgId();
+assert(personalOrgId, "Missing personalOrgId");
+const personalOrgIdStr = String(personalOrgId);
+
 const server = await listen(app);
 const addr = server.address();
 const baseUrl = `http://127.0.0.1:${addr.port}/api`;
@@ -158,6 +164,15 @@ try {
     assert(
         String(freshClaimedCard.user) === String(user._id),
         "Expected Mongo Card.user to equal user._id",
+    );
+
+    assert(
+        freshClaimedCard?.orgId,
+        "Expected Mongo Card.orgId to exist after claim",
+    );
+    assert(
+        String(freshClaimedCard.orgId) === personalOrgIdStr,
+        "Expected Mongo Card.orgId to equal personalOrgId after claim",
     );
 
     const anonLeft = await Card.findOne({ anonymousId }).lean();

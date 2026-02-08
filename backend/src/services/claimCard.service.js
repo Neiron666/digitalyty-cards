@@ -1,5 +1,7 @@
 import Card from "../models/Card.model.js";
 import User from "../models/User.model.js";
+import mongoose from "mongoose";
+import { getPersonalOrgId } from "../utils/personalOrg.util.js";
 import {
     copyObjectBetweenBuckets,
     getAnonPrivateBucketName,
@@ -165,6 +167,33 @@ export async function claimAnonymousCardForUser({
         return { ok: true, claimed: false, card: null };
     }
 
+    // SSoT guard: if user already has a personal-scope card (even when user.cardId is missing),
+    // do NOT claim and do NOT write anything.
+    const personalOrgId = await getPersonalOrgId();
+    const personalOrgObjectId = new mongoose.Types.ObjectId(personalOrgId);
+    const personalScopeOr = [
+        { orgId: personalOrgObjectId },
+        { orgId: { $exists: false } },
+        { orgId: null },
+    ];
+
+    const existingPersonal = await Card.exists({
+        user: user._id,
+        isActive: true,
+        $or: personalScopeOr,
+    });
+
+    if (existingPersonal) {
+        if (strict) {
+            return {
+                ok: false,
+                code: "USER_ALREADY_HAS_CARD",
+                message: "User already has a card",
+            };
+        }
+        return { ok: true, claimed: false, card: null };
+    }
+
     const card = await Card.findOne({ anonymousId: aid });
     if (!card) {
         if (strict) {
@@ -311,6 +340,10 @@ export async function claimAnonymousCardForUser({
     }
 
     try {
+        // Normalize personal-scope orgId to prevent legacy null/missing orgId bypass.
+        if (card.orgId === null || card.orgId === undefined) {
+            card.orgId = personalOrgObjectId;
+        }
         card.user = user._id;
         card.anonymousId = undefined;
         await card.save();

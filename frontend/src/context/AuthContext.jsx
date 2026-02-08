@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect } from "react";
+import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import api from "../services/api";
 import {
     login as loginRequest,
@@ -9,7 +9,8 @@ import {
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
-    const [token, setToken] = useState(null);
+    // ✅ sync hydration: token is available on first render
+    const [token, setToken] = useState(() => localStorage.getItem("token"));
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
 
@@ -33,54 +34,55 @@ export function AuthProvider({ children }) {
         }
     }
 
-    // при старте приложения
+    // ✅ keep axios defaults in sync with token state (single source of truth)
     useEffect(() => {
-        const storedToken = localStorage.getItem("token");
-        if (storedToken) {
-            setToken(storedToken);
-            api.defaults.headers.common.Authorization = `Bearer ${storedToken}`;
-            // Do not block rendering while loading email.
+        if (token) {
+            api.defaults.headers.common.Authorization = `Bearer ${token}`;
+            // non-blocking: do not block UI rendering on /me
             queueMicrotask(() => {
                 loadMeSafely();
             });
+        } else {
+            delete api.defaults.headers.common.Authorization;
+            setUser(null);
         }
+
+        // children may render after first sync
         setLoading(false);
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+    }, [token]);
 
     async function login(email, password) {
         const res = await loginRequest(email, password);
-        const token = res.data.token;
+        const nextToken = res.data.token;
 
-        localStorage.setItem("token", token);
-        api.defaults.headers.common.Authorization = `Bearer ${token}`;
-        setToken(token);
+        localStorage.setItem("token", nextToken);
+        setToken(nextToken); // effect will sync axios + loadMe
         setUser(null);
-        await loadMeSafely();
     }
 
     async function register(email, password) {
         const res = await registerRequest(email, password);
-        const token = res.data.token;
+        const nextToken = res.data.token;
 
-        localStorage.setItem("token", token);
-        api.defaults.headers.common.Authorization = `Bearer ${token}`;
-        setToken(token);
+        localStorage.setItem("token", nextToken);
+        setToken(nextToken); // effect will sync axios + loadMe
         setUser(null);
-        await loadMeSafely();
     }
 
     function logout() {
         localStorage.removeItem("token");
-        delete api.defaults.headers.common.Authorization;
-        setToken(null);
+        setToken(null); // effect will clear axios defaults
         setUser(null);
     }
 
+    const value = useMemo(
+        () => ({ token, user, isAuthenticated, login, register, logout }),
+        [token, user, isAuthenticated],
+    );
+
     return (
-        <AuthContext.Provider
-            value={{ token, user, isAuthenticated, login, register, logout }}
-        >
+        <AuthContext.Provider value={value}>
             {!loading && children}
         </AuthContext.Provider>
     );

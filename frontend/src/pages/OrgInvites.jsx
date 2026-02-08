@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 import api from "../services/api";
 import { useAuth } from "../context/AuthContext";
+import { getHasOrgAdmin } from "../services/orgAdminGate";
 import FlashBanner from "../components/ui/FlashBanner/FlashBanner";
 import Button from "../components/ui/Button";
 import styles from "./OrgInvites.module.css";
@@ -42,6 +44,10 @@ function classifyError(err) {
 
 export default function OrgInvites() {
     const { token } = useAuth();
+    const navigate = useNavigate();
+
+    const [gateState, setGateState] = useState(token ? "checking" : "unauth");
+    const [gateAllowed, setGateAllowed] = useState(false);
 
     const [flash, setFlash] = useState(null);
 
@@ -69,6 +75,42 @@ export default function OrgInvites() {
     }, []);
 
     useEffect(() => {
+        if (!token) {
+            setGateAllowed(false);
+            setGateState("unauth");
+            return;
+        }
+
+        const controller = new AbortController();
+        let alive = true;
+
+        setGateAllowed(false);
+        setGateState("checking");
+
+        (async () => {
+            const ok = await getHasOrgAdmin({
+                token,
+                signal: controller.signal,
+            });
+            if (!alive || !mountedRef.current) return;
+
+            if (!ok) {
+                setGateState("denied");
+                navigate("/edit", { replace: true });
+                return;
+            }
+
+            setGateAllowed(true);
+            setGateState("allowed");
+        })();
+
+        return () => {
+            alive = false;
+            controller.abort();
+        };
+    }, [navigate, token]);
+
+    useEffect(() => {
         let stopped = false;
 
         const loadOrgs = async () => {
@@ -76,6 +118,10 @@ export default function OrgInvites() {
                 setOrgsState("unauth");
                 setOrgs([]);
                 setSelectedOrgId("");
+                return;
+            }
+
+            if (!gateAllowed) {
                 return;
             }
 
@@ -103,7 +149,7 @@ export default function OrgInvites() {
         return () => {
             stopped = true;
         };
-    }, [token]);
+    }, [gateAllowed, token]);
 
     const selectedOrg = useMemo(() => {
         const id = String(selectedOrgId || "");
@@ -117,6 +163,7 @@ export default function OrgInvites() {
         const loadInvites = async () => {
             setInviteLink("");
             if (!token) return;
+            if (!gateAllowed) return;
             if (!selectedOrgId) {
                 setInvites([]);
                 setInvitesTotal(0);
@@ -152,12 +199,17 @@ export default function OrgInvites() {
         return () => {
             stopped = true;
         };
-    }, [token, selectedOrgId]);
+    }, [gateAllowed, token, selectedOrgId]);
 
     const handleCreateInvite = async (e) => {
         e?.preventDefault?.();
         if (!token) {
             setFlash({ type: "error", message: "צריך להתחבר" });
+            return;
+        }
+
+        if (!gateAllowed) {
+            setFlash({ type: "error", message: "אין גישה או שהמשאב לא זמין" });
             return;
         }
 
@@ -222,6 +274,10 @@ export default function OrgInvites() {
         if (!id) return;
         if (!token) {
             setFlash({ type: "error", message: "צריך להתחבר" });
+            return;
+        }
+        if (!gateAllowed) {
+            setFlash({ type: "error", message: "אין גישה או שהמשאב לא זמין" });
             return;
         }
         if (!selectedOrgId) return;
@@ -408,6 +464,17 @@ export default function OrgInvites() {
             </div>
         );
     };
+
+    if (token && gateState === "checking") {
+        return (
+            <main className={styles.main} dir="rtl">
+                <div className={styles.container}>
+                    <h1 className={styles.title}>הזמנות לארגון</h1>
+                    <div className={styles.hint}>טוען…</div>
+                </div>
+            </main>
+        );
+    }
 
     return (
         <main className={styles.main} dir="rtl">

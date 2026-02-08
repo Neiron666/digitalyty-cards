@@ -1,14 +1,39 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, NavLink, useNavigate } from "react-router-dom";
 import Button from "../ui/Button";
 import { useAuth } from "../../context/AuthContext";
+import { getHasOrgAdmin } from "../../services/orgAdminGate";
 import styles from "./Header.module.css";
 
 export default function Header() {
     const [mobileOpen, setMobileOpen] = useState(false);
+    const [hasOrgAdmin, setHasOrgAdmin] = useState(false);
     const navigate = useNavigate();
     const { token, user, logout } = useAuth();
     const isAuth = Boolean(token);
+
+    useEffect(() => {
+        if (!token) {
+            setHasOrgAdmin(false);
+            return;
+        }
+
+        const controller = new AbortController();
+        let alive = true;
+
+        (async () => {
+            const ok = await getHasOrgAdmin({
+                token,
+                signal: controller.signal,
+            });
+            if (!alive) return;
+            setHasOrgAdmin(Boolean(ok));
+        })();
+
+        return () => {
+            alive = false;
+        };
+    }, [token]);
 
     const navItems = useMemo(() => {
         const items = [
@@ -24,8 +49,12 @@ export default function Header() {
             items.unshift({ to: "/edit", label: "הכרטיס שלי" });
         }
 
+        if (isAuth && hasOrgAdmin) {
+            items.unshift({ to: "/org/invites", label: "Org Admin" });
+        }
+
         return items;
-    }, [isAuth]);
+    }, [hasOrgAdmin, isAuth]);
 
     const closeMobile = () => setMobileOpen(false);
 
