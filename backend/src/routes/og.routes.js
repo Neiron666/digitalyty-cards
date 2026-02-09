@@ -1,6 +1,7 @@
 import { Router } from "express";
 import Card from "../models/Card.model.js";
 import Organization from "../models/Organization.model.js";
+import OrganizationMember from "../models/OrganizationMember.model.js";
 import { isEntitled, isTrialExpired } from "../utils/trial.js";
 import { getSiteUrl } from "../utils/siteUrl.util.js";
 import { getPersonalOrgId } from "../utils/personalOrg.util.js";
@@ -112,6 +113,20 @@ router.get("/og/c/:orgSlug/:slug", async (req, res) => {
     });
 
     if (!card) {
+        return res.status(404).send("Not found");
+    }
+
+    // Anti-enumeration: revoked members must not be publicly resolvable.
+    // IMPORTANT: membership-gate MUST happen before any distinguishable public responses (e.g., 410).
+    const ownerMember = await OrganizationMember.findOne({
+        orgId: org._id,
+        userId: String(card.user),
+        status: "active",
+    })
+        .select("_id")
+        .lean();
+
+    if (!ownerMember?._id) {
         return res.status(404).send("Not found");
     }
 

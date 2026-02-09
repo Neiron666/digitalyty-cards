@@ -67,6 +67,8 @@ function isOk(status) {
     return status >= 200 && status < 300;
 }
 
+const SANITY_INVITE_PASSWORD = "Sanity#Pass12345";
+
 async function getOrgMembershipIndexDebt(OrganizationMember) {
     try {
         const indexes = await OrganizationMember.collection.indexes();
@@ -93,7 +95,7 @@ async function getOrgMembershipIndexDebt(OrganizationMember) {
     }
 }
 
-async function cleanup(models, { adminUserId, userId, orgId }) {
+async function cleanup(models, { adminUserId, userId, userEmail, orgId }) {
     const { Organization, OrganizationMember, User } = models;
     try {
         if (orgId) {
@@ -105,7 +107,11 @@ async function cleanup(models, { adminUserId, userId, orgId }) {
     }
 
     try {
-        if (userId) await User.deleteOne({ _id: userId });
+        if (userId) {
+            await User.deleteOne({ _id: userId });
+        } else if (userEmail) {
+            await User.deleteOne({ email: String(userEmail || "") });
+        }
     } catch {
         // ignore
     }
@@ -183,6 +189,7 @@ async function main() {
     const created = {
         adminUserId: null,
         userId: null,
+        userEmail: null,
         orgId: null,
         memberId: null,
     };
@@ -212,14 +219,11 @@ async function main() {
         const token = signToken(String(admin._id));
         const authHeaders = { Authorization: `Bearer ${token}` };
 
-        // Create a normal user (member target)
-        const userEmail = `sanity-user-${Date.now()}-${randomHex()}@example.com`;
-        const user = await User.create({
-            email: userEmail,
-            passwordHash: "sanity",
-            role: "user",
-        });
-        created.userId = String(user._id);
+        // Member target email MUST be new-user flow (sanity must not hit INVITE_LOGIN_REQUIRED)
+        const userEmail = `sanity+${Date.now()}-${Math.random()
+            .toString(16)
+            .slice(2)}@example.test`;
+        created.userEmail = userEmail;
 
         // 1) Create org
         const orgSlug = `sanity-org-${randomHex(4)}`;
@@ -285,13 +289,19 @@ async function main() {
             baseUrl,
             path: "/invites/accept",
             method: "POST",
-            body: { token: tokenFromLink },
+            body: { token: tokenFromLink, password: SANITY_INVITE_PASSWORD },
         });
 
         statuses.inviteAccept = {
             status: inviteAccept.status,
             hasJwt: typeof inviteAccept.body?.token === "string",
+            body: inviteAccept.body || null,
         };
+
+        assert(
+            inviteAccept.status === 200,
+            `Failed to accept invite: status=${inviteAccept.status}`,
+        );
 
         checks.addMemberOk =
             inviteCreate.status === 201 &&
@@ -317,7 +327,7 @@ async function main() {
         // 5) List members
         const list1 = await requestJson({
             baseUrl,
-            path: `/admin/orgs/${created.orgId}/members?page=1&limit=10`,
+            path: `/admin/orgs/${created.orgId}/members?page=1&limit=50`,
             method: "GET",
             headers: authHeaders,
         });
@@ -333,6 +343,19 @@ async function main() {
         const items = Array.isArray(list1.body?.items) ? list1.body.items : [];
         const createdMember = items.find((m) => m?.email === userEmail) || null;
         created.memberId = createdMember?.id || null;
+
+        if (!created.memberId) {
+            const emailsSample = items
+                .map((m) => String(m?.email || "").trim())
+                .filter(Boolean)
+                .slice(0, 10);
+            statuses.createdMemberLookup = {
+                wantedEmail: userEmail,
+                total: list1.body?.total ?? null,
+                itemsCount: items.length,
+                emailsSample,
+            };
+        }
 
         // 6) Delete member
         assert(created.memberId, "Missing created member id");

@@ -7,6 +7,7 @@ import OrgInviteAudit from "../models/OrgInviteAudit.model.js";
 import OrganizationMember from "../models/OrganizationMember.model.js";
 import Organization from "../models/Organization.model.js";
 import User from "../models/User.model.js";
+import { optionalAuth } from "../middlewares/auth.middleware.js";
 import { signToken } from "../utils/jwt.js";
 import { getOrgSeatUsage } from "../utils/orgSeats.util.js";
 
@@ -39,7 +40,7 @@ async function findUserByEmailCaseInsensitive(emailNormalized) {
     return user;
 }
 
-router.post("/accept", async (req, res) => {
+router.post("/accept", optionalAuth, async (req, res) => {
     const token =
         typeof req.body?.token === "string" ? req.body.token.trim() : "";
     const password = req.body?.password;
@@ -68,7 +69,7 @@ router.post("/accept", async (req, res) => {
         _id: preflight.orgId,
         isActive: true,
     })
-        .select("_id seatLimit")
+        .select("_id slug seatLimit")
         .lean();
 
     if (!org?._id) return notFound(res);
@@ -90,6 +91,24 @@ router.post("/accept", async (req, res) => {
     }
 
     let user = await findUserByEmailCaseInsensitive(email);
+
+    // Existing-user enterprise policy:
+    // - Do not accept "new password" input for existing accounts.
+    // - Require login to accept invite.
+    // - If logged-in user does not match invite email => anti-enum 404.
+    if (user) {
+        const authUserId = req?.userId ? String(req.userId) : "";
+        if (!authUserId) {
+            return res.status(409).json({
+                code: "INVITE_LOGIN_REQUIRED",
+                message: "Login required",
+            });
+        }
+
+        if (String(user._id) !== authUserId) {
+            return notFound(res);
+        }
+    }
 
     // Enterprise hardening: if this invite would create a new user,
     // require a password BEFORE consuming the invite.
@@ -170,7 +189,13 @@ router.post("/accept", async (req, res) => {
         console.error("[audit] invite accept failed", err?.message || err);
     }
 
-    return res.json({ token: signToken(user._id) });
+    return res.json({
+        token: signToken(user._id),
+        orgId: String(org._id),
+        orgSlug: String(org.slug || "")
+            .trim()
+            .toLowerCase(),
+    });
 });
 
 export default router;

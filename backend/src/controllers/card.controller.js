@@ -1686,6 +1686,20 @@ export async function getCompanyCardByOrgSlugAndSlug(req, res) {
         return res.status(404).json({ message: "Not found" });
     }
 
+    // Anti-enumeration: revoked members must not be publicly resolvable.
+    // IMPORTANT: membership-gate MUST happen before any distinguishable public responses (e.g., 410).
+    const ownerMember = await OrganizationMember.findOne({
+        orgId: org._id,
+        userId: String(card.user),
+        status: "active",
+    })
+        .select("_id")
+        .lean();
+
+    if (!ownerMember?._id) {
+        return res.status(404).json({ message: "Not found" });
+    }
+
     const now = new Date();
 
     // Public access rule: expired & unpaid published cards are blocked.

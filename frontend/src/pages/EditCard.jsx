@@ -356,6 +356,11 @@ function EditCard() {
 
     const isOrgMode = Boolean(token) && Boolean(activeOrgSlug);
 
+    // One-time org-context bootstrap from URL query (?org=...)
+    const orgFromQueryRef = useRef(null);
+    const orgFromQueryLoadRequestedRef = useRef(false);
+    const orgFromQueryAppliedRef = useRef(false);
+
     function isCreateInFlightError(err) {
         const status = err?.response?.status;
         const code = err?.response?.data?.code;
@@ -616,6 +621,72 @@ function EditCard() {
         },
         [setReloadKey],
     );
+
+    useEffect(() => {
+        if (orgFromQueryAppliedRef.current) return;
+        if (!token) return;
+
+        if (orgFromQueryRef.current === null) {
+            try {
+                const search =
+                    typeof window !== "undefined"
+                        ? String(window.location?.search || "")
+                        : "";
+                const params = new URLSearchParams(search);
+                orgFromQueryRef.current = String(params.get("org") || "")
+                    .trim()
+                    .toLowerCase();
+            } catch {
+                orgFromQueryRef.current = "";
+            }
+        }
+
+        const requestedOrgSlug = String(orgFromQueryRef.current || "")
+            .trim()
+            .toLowerCase();
+
+        if (!requestedOrgSlug) {
+            orgFromQueryAppliedRef.current = true;
+            return;
+        }
+
+        // Do not override an already-chosen context.
+        if (activeOrgSlug) {
+            orgFromQueryAppliedRef.current = true;
+            return;
+        }
+
+        if (orgsLoadState !== "loaded") {
+            if (!orgFromQueryLoadRequestedRef.current) {
+                orgFromQueryLoadRequestedRef.current = true;
+                loadMyOrgs();
+            }
+            return;
+        }
+
+        const list = Array.isArray(myOrgs) ? myOrgs : [];
+        const exists = list.some(
+            (o) =>
+                String(o?.slug || "")
+                    .trim()
+                    .toLowerCase() === requestedOrgSlug,
+        );
+
+        if (!exists) {
+            orgFromQueryAppliedRef.current = true;
+            return;
+        }
+
+        orgFromQueryAppliedRef.current = true;
+        handleContextChange(requestedOrgSlug);
+    }, [
+        token,
+        activeOrgSlug,
+        orgsLoadState,
+        myOrgs,
+        loadMyOrgs,
+        handleContextChange,
+    ]);
 
     const discardUnsavedAndRehydrate = useCallback(async () => {
         // 1) Clear dirty first (initCard refuses to overwrite when dirty).

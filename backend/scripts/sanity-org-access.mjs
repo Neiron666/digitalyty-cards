@@ -73,6 +73,17 @@ async function requestJson({ baseUrl, path, method, headers, body }) {
     return { status: res.status, body: await readJson(res) };
 }
 
+async function requestText({ url, method, headers }) {
+    const res = await fetch(url, {
+        method: method || "GET",
+        headers: { ...(headers || {}) },
+    });
+    const text = await res.text();
+    return { status: res.status, text };
+}
+
+const SANITY_INVITE_PASSWORD = "Sanity#Pass12345";
+
 async function getCardIndexDebt(Card) {
     try {
         const indexes = await Card.collection.indexes();
@@ -99,7 +110,10 @@ async function getCardIndexDebt(Card) {
     }
 }
 
-async function cleanup(models, { adminUserId, userId, otherUserId, orgId }) {
+async function cleanup(
+    models,
+    { adminUserId, userId, userEmail, otherUserId, orgId },
+) {
     const { Card, Organization, OrganizationMember, User } = models;
     try {
         const userIds = [userId, otherUserId].filter(Boolean);
@@ -120,7 +134,11 @@ async function cleanup(models, { adminUserId, userId, otherUserId, orgId }) {
     }
 
     try {
-        if (userId) await User.deleteOne({ _id: userId });
+        if (userId) {
+            await User.deleteOne({ _id: userId });
+        } else if (userEmail) {
+            await User.deleteOne({ email: String(userEmail || "") });
+        }
     } catch {
         // ignore
     }
@@ -196,6 +214,7 @@ async function main() {
     const created = {
         adminUserId: null,
         userId: null,
+        userEmail: null,
         otherUserId: null,
         orgId: null,
         memberId: null,
@@ -224,16 +243,12 @@ async function main() {
         const adminToken = signToken(String(admin._id));
         const adminHeaders = { Authorization: `Bearer ${adminToken}` };
 
-        // Member user + JWT
-        const userEmail = `sanity-user-${Date.now()}-${randomHex()}@example.com`;
-        const user = await User.create({
-            email: userEmail,
-            passwordHash: "sanity",
-            role: "user",
-        });
-        created.userId = String(user._id);
-        const userToken = signToken(String(user._id));
-        const userHeaders = { Authorization: `Bearer ${userToken}` };
+        // Member user email MUST be new-user flow (sanity must not hit INVITE_LOGIN_REQUIRED)
+        const userEmail = `sanity+${Date.now()}-${Math.random()
+            .toString(16)
+            .slice(2)}@example.test`;
+        created.userEmail = userEmail;
+        let userHeaders = null;
 
         // Non-member user + JWT
         const otherEmail = `sanity-user2-${Date.now()}-${randomHex()}@example.com`;
@@ -294,7 +309,7 @@ async function main() {
             baseUrl,
             path: "/invites/accept",
             method: "POST",
-            body: { token: tokenFromLink },
+            body: { token: tokenFromLink, password: SANITY_INVITE_PASSWORD },
         });
 
         statuses.inviteAccept = {
@@ -302,11 +317,22 @@ async function main() {
             hasJwt: typeof inviteAccept.body?.token === "string",
         };
 
-        assert(inviteAccept.status === 200, "Failed to accept invite");
+        assert(
+            inviteAccept.status === 200,
+            `Failed to accept invite: status=${inviteAccept.status}`,
+        );
+        assert(
+            typeof inviteAccept.body?.token === "string" &&
+                inviteAccept.body.token.trim(),
+            "Missing JWT from invite accept",
+        );
+
+        const userJwt = String(inviteAccept.body.token);
+        userHeaders = { Authorization: `Bearer ${userJwt}` };
 
         const listMembers = await requestJson({
             baseUrl,
-            path: `/admin/orgs/${created.orgId}/members?page=1&limit=10`,
+            path: `/admin/orgs/${created.orgId}/members?page=1&limit=50`,
             method: "GET",
             headers: adminHeaders,
         });
@@ -321,6 +347,19 @@ async function main() {
             : [];
         const member = items.find((m) => m?.email === userEmail) || null;
         created.memberId = member?.id || null;
+
+        if (!created.memberId) {
+            const emailsSample = items
+                .map((m) => String(m?.email || "").trim())
+                .filter(Boolean)
+                .slice(0, 10);
+            statuses.createdMemberLookup = {
+                wantedEmail: userEmail,
+                total: listMembers.body?.total ?? null,
+                itemsCount: items.length,
+                emailsSample,
+            };
+        }
         assert(created.memberId, "Missing member id");
 
         // Ensure personal card exists for member user
@@ -391,6 +430,18 @@ async function main() {
 
         created.orgCardId = orgCard1.body?._id || null;
 
+        const orgCardSlugFromDto = String(orgCard1.body?.slug || "").trim();
+        const orgCardPath = String(orgCard1.body?.publicPath || "");
+        const orgCardSlugFromPath = orgCardPath.startsWith(`/c/${orgSlug}/`)
+            ? String(orgCardPath.slice(`/c/${orgSlug}/`.length))
+                  .split(/[/?#]/)[0]
+                  .trim()
+            : "";
+        const orgCardSlug =
+            orgCardSlugFromPath || orgCardSlugFromDto || "";
+
+        statuses.orgCardSlug = orgCardSlug || null;
+
         checks.memberGetsOrgCard =
             orgCard1.status === 200 &&
             Boolean(created.orgCardId) &&
@@ -415,6 +466,85 @@ async function main() {
             "Org card must be idempotent (same card id)",
         );
 
+        // Publish org card so it becomes publicly resolvable by /c/:orgSlug/:slug and OG.
+        assert(orgCardSlug, "Missing org card slug");
+        const publish = await requestJson({
+            baseUrl,
+            path: `/cards/${created.orgCardId}`,
+            method: "PATCH",
+            headers: userHeaders,
+            body: {
+                status: "published",
+                business: { name: "Sanity Biz" },
+                design: { templateId: "classic" },
+            },
+        });
+
+        statuses.publish = {
+            status: publish.status,
+            cardStatus: publish.body?.status || null,
+            publishError: publish.body?.publishError || null,
+        };
+
+        assert(publish.status === 200, "Failed to publish org card");
+        assert(
+            publish.body?.status === "published" && !publish.body?.publishError,
+            "Org card must be published for public surface checks",
+        );
+
+        const serverBaseUrl = `http://127.0.0.1:${port}`;
+        const publicPath = `/c/${orgSlug}/${orgCardSlug}`;
+        const ogPath = `/og/c/${orgSlug}/${orgCardSlug}`;
+
+        // Public surface checks while membership is active.
+        const publicResolveActive = await requestJson({
+            baseUrl,
+            path: publicPath,
+            method: "GET",
+        });
+
+        statuses.publicResolveActive = {
+            status: publicResolveActive.status,
+            publicPath: publicResolveActive.body?.publicPath || null,
+        };
+
+        const ogActive = await requestText({
+            url: `${serverBaseUrl}${ogPath}`,
+        });
+
+        statuses.ogActive = {
+            status: ogActive.status,
+        };
+
+        const sitemapActive = await requestText({
+            url: `${serverBaseUrl}/sitemap.xml`,
+        });
+
+        const sitemapContainsBefore =
+            sitemapActive.status === 200 &&
+            String(sitemapActive.text || "").includes(publicPath);
+
+        statuses.sitemapActive = {
+            status: sitemapActive.status,
+            containsOrgUrl: sitemapContainsBefore,
+            sample: sitemapContainsBefore
+                ? publicPath
+                : String(sitemapActive.text || "").slice(0, 160),
+        };
+
+        assert(
+            publicResolveActive.status === 200,
+            "Public org resolve must be 200 for active membership",
+        );
+        assert(
+            ogActive.status === 200,
+            "OG org route must be 200 for active membership",
+        );
+        assert(
+            sitemapContainsBefore,
+            "sitemap.xml must include org card URL for active membership",
+        );
+
         // Revoke membership via admin
         const revoke = await requestJson({
             baseUrl,
@@ -430,6 +560,54 @@ async function main() {
         };
 
         assert(revoke.status === 200, "Failed to revoke membership");
+
+        // Public surfaces must become anti-enum 404 after revocation (no 410/other signals).
+        const publicResolveRevoked = await requestJson({
+            baseUrl,
+            path: publicPath,
+            method: "GET",
+        });
+
+        statuses.publicResolveRevoked = {
+            status: publicResolveRevoked.status,
+        };
+
+        const ogRevoked = await requestText({
+            url: `${serverBaseUrl}${ogPath}`,
+        });
+
+        statuses.ogRevoked = {
+            status: ogRevoked.status,
+        };
+
+        const sitemapRevoked = await requestText({
+            url: `${serverBaseUrl}/sitemap.xml`,
+        });
+
+        const sitemapContainsAfter =
+            sitemapRevoked.status === 200 &&
+            String(sitemapRevoked.text || "").includes(publicPath);
+
+        statuses.sitemapRevoked = {
+            status: sitemapRevoked.status,
+            containsOrgUrl: sitemapContainsAfter,
+            sample: sitemapContainsAfter
+                ? publicPath
+                : String(sitemapRevoked.text || "").slice(0, 160),
+        };
+
+        assert(
+            publicResolveRevoked.status === 404,
+            "Public org resolve must be 404 after revocation (anti-enum)",
+        );
+        assert(
+            ogRevoked.status === 404,
+            "OG org route must be 404 after revocation (anti-enum)",
+        );
+        assert(
+            !sitemapContainsAfter,
+            "sitemap.xml must not include org card URL after revocation",
+        );
 
         // Attempt write after revocation => 404
         const patchAfterRevoke = await requestJson({

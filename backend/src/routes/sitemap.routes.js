@@ -1,6 +1,7 @@
 import { Router } from "express";
 import Card from "../models/Card.model.js";
 import Organization from "../models/Organization.model.js";
+import OrganizationMember from "../models/OrganizationMember.model.js";
 import { isEntitled, isTrialExpired } from "../utils/trial.js";
 import { getSiteUrl } from "../utils/siteUrl.util.js";
 import { getPersonalOrgId } from "../utils/personalOrg.util.js";
@@ -15,7 +16,7 @@ router.get("/sitemap.xml", async (req, res) => {
         isActive: true,
         status: "published",
         user: { $exists: true, $ne: null },
-    }).select("slug orgId trialEndsAt billing plan");
+    }).select("slug orgId user trialEndsAt billing plan");
 
     const now = new Date();
     const visible = cards.filter(
@@ -41,6 +42,37 @@ router.get("/sitemap.xml", async (req, res) => {
         : [];
     const orgSlugById = new Map(orgs.map((o) => [String(o._id), o.slug]));
 
+    // Membership-gate for org-card URLs (batched, fixed number of queries; no N+1).
+    // NOTE: sitemap output is not bounded by design today (it loads all visible cards);
+    // this filter is a security/visibility gate only.
+    const companyCards = visible.filter((c) => {
+        const orgId = c?.orgId ? String(c.orgId) : "";
+        return Boolean(orgId) && orgId !== personalOrgIdStr;
+    });
+
+    const companyUserIds = Array.from(
+        new Set(
+            companyCards
+                .map((c) => (c?.user ? String(c.user) : ""))
+                .filter(Boolean),
+        ),
+    );
+
+    const activeMembershipPairs = new Set();
+    if (companyOrgIds.length && companyUserIds.length) {
+        const memberships = await OrganizationMember.find({
+            orgId: { $in: companyOrgIds },
+            userId: { $in: companyUserIds },
+            status: "active",
+        })
+            .select("orgId userId")
+            .lean();
+
+        for (const m of memberships || []) {
+            activeMembershipPairs.add(`${String(m.orgId)}:${String(m.userId)}`);
+        }
+    }
+
     const urls = visible
         .map((c) => {
             const slug = String(c.slug || "");
@@ -53,6 +85,10 @@ router.get("/sitemap.xml", async (req, res) => {
 
             const orgSlug = orgSlugById.get(orgId);
             if (!orgSlug) return "";
+
+            const userId = c?.user ? String(c.user) : "";
+            if (!userId) return "";
+            if (!activeMembershipPairs.has(`${orgId}:${userId}`)) return "";
             return `<url><loc>${siteUrl}/c/${orgSlug}/${slug}</loc></url>`;
         })
         .filter(Boolean)
