@@ -37,17 +37,63 @@ function Register() {
             await registerUser(form.email, form.password);
             await login(form.email, form.password);
 
-            // Serialize: ensure claim completes before editor init can create a new user-card.
+            async function fetchMineOnce() {
+                const res = await api.get("/cards/mine");
+                return res?.data || null;
+            }
+
             const anonId = getAnonymousId();
+
+            // 1) If backend already claimed best-effort during /auth/register, do not block.
+            try {
+                const mine0 = await fetchMineOnce();
+                if (mine0 && mine0._id) {
+                    if (anonId) clearAnonymousId();
+                    navigate("/edit", { replace: true });
+                    return;
+                }
+            } catch (err) {
+                console.warn("[auth] mine after login failed", {
+                    status: err?.response?.status,
+                    message: err?.message,
+                });
+                // Do not block registration on transient failures here.
+                navigate("/edit", { replace: true });
+                return;
+            }
+
+            // Serialize: ensure claim completes before editor init can create a new user-card.
             if (anonId) {
+                let claimErr = null;
                 try {
                     await api.post("/cards/claim");
+                } catch (err) {
+                    claimErr = err;
+                }
+
+                // 2) Deterministic verification: mine → optional claim → mine
+                let mine1 = null;
+                try {
+                    mine1 = await fetchMineOnce();
+                } catch (err) {
+                    console.warn("[auth] mine after claim failed", {
+                        status: err?.response?.status,
+                        message: err?.message,
+                    });
+                    // Don't block registration if we cannot verify.
+                    navigate("/edit", { replace: true });
+                    return;
+                }
+
+                if (mine1 && mine1._id) {
                     clearAnonymousId();
                     navigate("/edit", { replace: true });
                     return;
-                } catch (err) {
-                    const status = err?.response?.status;
-                    const code = err?.response?.data?.code;
+                }
+
+                if (claimErr) {
+                    const status = claimErr?.response?.status;
+                    const code = claimErr?.response?.data?.code;
 
                     if (status === 409 && code === "USER_ALREADY_HAS_CARD") {
                         navigate("/edit", { replace: true });
@@ -89,13 +135,20 @@ function Register() {
                     console.error("[auth] claim failed", {
                         status,
                         code,
-                        message: err?.message,
+                        message: claimErr?.message,
                     });
+                    // Only show finish-migrating error when mine is still empty.
                     setError(
                         "We couldn't finish migrating your card. Please try again.",
                     );
                     return;
                 }
+
+                // Claim succeeded but mine is still empty.
+                setError(
+                    "We couldn't finish migrating your card. Please try again.",
+                );
+                return;
             }
 
             navigate("/edit", { replace: true });

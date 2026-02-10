@@ -1,0 +1,14 @@
+HTTP/1.1 200 OK
+X-Powered-By: Express
+Access-Control-Allow-Origin: *
+Cache-Control: no-store, no-cache, must-revalidate, proxy-revalidate
+Pragma: no-cache
+Expires: 0
+Surrogate-Control: no-store
+Vary: Authorization
+Content-Type: application/json; charset=utf-8
+Content-Length: 45
+Date: Tue, 10 Feb 2026 19:05:33 GMT
+Connection: keep-alive
+Keep-Alive: timeout=5
+

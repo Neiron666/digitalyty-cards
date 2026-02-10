@@ -24,7 +24,7 @@ export function AuthProvider({ children }) {
             const status = err?.response?.status;
             if (status === 401) {
                 localStorage.removeItem("token");
-                delete api.defaults.headers.common.Authorization;
+                applyToken(null);
                 setToken(null);
                 setUser(null);
                 return;
@@ -34,16 +34,24 @@ export function AuthProvider({ children }) {
         }
     }
 
+    function applyToken(nextToken) {
+        if (nextToken) {
+            api.defaults.headers.common.Authorization = `Bearer ${nextToken}`;
+            return;
+        }
+        delete api.defaults.headers.common.Authorization;
+    }
+
     // ✅ keep axios defaults in sync with token state (single source of truth)
     useEffect(() => {
         if (token) {
-            api.defaults.headers.common.Authorization = `Bearer ${token}`;
+            applyToken(token);
             // non-blocking: do not block UI rendering on /me
             queueMicrotask(() => {
                 loadMeSafely();
             });
         } else {
-            delete api.defaults.headers.common.Authorization;
+            applyToken(null);
             setUser(null);
         }
 
@@ -57,6 +65,7 @@ export function AuthProvider({ children }) {
         const nextToken = res.data.token;
 
         localStorage.setItem("token", nextToken);
+        applyToken(nextToken); // sync: ensure immediate auth for requests after await login
         setToken(nextToken); // effect will sync axios + loadMe
         setUser(null);
     }
@@ -66,12 +75,14 @@ export function AuthProvider({ children }) {
         const nextToken = res.data.token;
 
         localStorage.setItem("token", nextToken);
+        applyToken(nextToken); // sync: ensure immediate auth for requests after await register
         setToken(nextToken); // effect will sync axios + loadMe
         setUser(null);
     }
 
     function logout() {
         localStorage.removeItem("token");
+        applyToken(null);
         setToken(null); // effect will clear axios defaults
         setUser(null);
     }
