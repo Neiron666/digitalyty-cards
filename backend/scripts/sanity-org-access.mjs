@@ -235,6 +235,10 @@ async function main() {
         mineIsPersonalPath: false,
         nonMemberOrgCard404: false,
         memberGetsOrgCard: false,
+        publishPatchDtoPublicPathIsOrg: false,
+        publishPatchDtoOgPathIsOrg: false,
+        patchSaveDtoPublicPathIsOrg: false,
+        patchSaveDtoOgPathIsOrg: false,
         revokeBlocksOrgWrites404: false,
     };
 
@@ -446,8 +450,7 @@ async function main() {
                   .split(/[/?#]/)[0]
                   .trim()
             : "";
-        const orgCardSlug =
-            orgCardSlugFromPath || orgCardSlugFromDto || "";
+        const orgCardSlug = orgCardSlugFromPath || orgCardSlugFromDto || "";
 
         statuses.orgCardSlug = orgCardSlug || null;
 
@@ -475,6 +478,32 @@ async function main() {
             "Org card must be idempotent (same card id)",
         );
 
+        // Draft save PATCH (contract check): ensure PATCH /cards/:id returns org-scoped publicPath/ogPath.
+        // IMPORTANT: do this BEFORE publish so we test the normal draft save path.
+        const patchSave = await requestJson({
+            baseUrl,
+            path: `/cards/${created.orgCardId}`,
+            method: "PATCH",
+            headers: userHeaders,
+            body: { seo: { title: "sanity-save-patch" } },
+        });
+
+        const expectedOrgPublicPathSave = `/c/${String(created.orgSlug || "")}/${String(statuses.orgCardSlug || "")}`;
+        const expectedOrgOgPathSave = `/og/c/${String(created.orgSlug || "")}/${String(statuses.orgCardSlug || "")}`;
+
+        statuses.patchSave = {
+            status: patchSave.status,
+            publicPath: patchSave.body?.publicPath ?? null,
+            ogPath: patchSave.body?.ogPath ?? null,
+            expectedPublicPath: expectedOrgPublicPathSave,
+            expectedOgPath: expectedOrgOgPathSave,
+        };
+
+        checks.patchSaveDtoPublicPathIsOrg =
+            patchSave.body?.publicPath === expectedOrgPublicPathSave;
+        checks.patchSaveDtoOgPathIsOrg =
+            patchSave.body?.ogPath === expectedOrgOgPathSave;
+
         // Publish org card so it becomes publicly resolvable by /c/:orgSlug/:slug and OG.
         assert(orgCardSlug, "Missing org card slug");
         const publish = await requestJson({
@@ -494,6 +523,19 @@ async function main() {
             cardStatus: publish.body?.status || null,
             publishError: publish.body?.publishError || null,
         };
+
+        const expectedOrgPublicPath = `/c/${String(created.orgSlug || "")}/${String(statuses.orgCardSlug || "")}`;
+        const expectedOrgOgPath = `/og/c/${String(created.orgSlug || "")}/${String(statuses.orgCardSlug || "")}`;
+
+        checks.publishPatchDtoPublicPathIsOrg =
+            publish.body?.publicPath === expectedOrgPublicPath;
+        checks.publishPatchDtoOgPathIsOrg =
+            publish.body?.ogPath === expectedOrgOgPath;
+
+        statuses.publish.publicPath = publish.body?.publicPath ?? null;
+        statuses.publish.ogPath = publish.body?.ogPath ?? null;
+        statuses.publish.expectedPublicPath = expectedOrgPublicPath;
+        statuses.publish.expectedOgPath = expectedOrgOgPath;
 
         assert(publish.status === 200, "Failed to publish org card");
         assert(
