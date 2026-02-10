@@ -96,7 +96,7 @@ async function getOrgMembershipIndexDebt(OrganizationMember) {
 }
 
 async function cleanup(models, { adminUserId, userId, userEmail, orgId }) {
-    const { Organization, OrganizationMember, User } = models;
+    const { Card, Organization, OrganizationMember, User } = models;
     try {
         if (orgId) {
             await OrganizationMember.deleteMany({ orgId });
@@ -107,10 +107,17 @@ async function cleanup(models, { adminUserId, userId, userEmail, orgId }) {
     }
 
     try {
-        if (userId) {
-            await User.deleteOne({ _id: userId });
-        } else if (userEmail) {
-            await User.deleteOne({ email: String(userEmail || "") });
+        let resolvedUserId = userId || null;
+        if (!resolvedUserId && userEmail) {
+            const u = await User.findOne({ email: userEmail })
+                .select("_id")
+                .lean();
+            resolvedUserId = u?._id || null;
+        }
+
+        if (resolvedUserId) {
+            await Card.deleteMany({ user: resolvedUserId });
+            await User.deleteOne({ _id: resolvedUserId });
         }
     } catch {
         // ignore
@@ -133,19 +140,21 @@ async function main() {
     // Static ESM imports run before this function body and can schedule index builds.
     const [
         { default: app },
+        { default: Card },
         { default: Organization },
         { default: OrganizationMember },
         { default: User },
         { signToken },
     ] = await Promise.all([
         import("../src/app.js"),
+        import("../src/models/Card.model.js"),
         import("../src/models/Organization.model.js"),
         import("../src/models/OrganizationMember.model.js"),
         import("../src/models/User.model.js"),
         import("../src/utils/jwt.js"),
     ]);
 
-    const models = { Organization, OrganizationMember, User };
+    const models = { Card, Organization, OrganizationMember, User };
 
     // Defense-in-depth: ensure Mongoose doesn't try to auto-create indexes.
     Organization.schema.set("autoIndex", false);

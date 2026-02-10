@@ -49,12 +49,16 @@ export default function Header() {
             items.unshift({ to: "/edit", label: "הכרטיס שלי" });
         }
 
+        if (isAuth && user?.role === "admin") {
+            items.unshift({ to: "/admin", label: "Admin" });
+        }
+
         if (isAuth && hasOrgAdmin) {
             items.unshift({ to: "/org/invites", label: "Org Admin" });
         }
 
         return items;
-    }, [hasOrgAdmin, isAuth]);
+    }, [hasOrgAdmin, isAuth, user?.role]);
 
     const closeMobile = () => setMobileOpen(false);
 

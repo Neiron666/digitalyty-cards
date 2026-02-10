@@ -3,6 +3,7 @@ import { createBrowserRouter } from "react-router-dom";
 import Layout from "../components/layout/Layout";
 import ChunkErrorBoundary from "./ChunkErrorBoundary";
 import RouteFallback from "./RouteFallback";
+import { useAuth } from "../context/AuthContext";
 
 // pages
 import Home from "../pages/Home";
@@ -26,6 +27,19 @@ const OrgInvites = lazy(() => import("../pages/OrgInvites"));
 // public card
 const PublicCard = lazy(() => import("../pages/PublicCard"));
 import NotFound from "../pages/NotFound";
+
+function AdminRouteGate() {
+    const { user } = useAuth();
+    if (user?.role !== "admin") return <NotFound />;
+
+    return (
+        <ChunkErrorBoundary label="שגיאת טעינה ב-Admin">
+            <Suspense fallback={<RouteFallback label="טוען Admin…" />}>
+                <Admin />
+            </Suspense>
+        </ChunkErrorBoundary>
+    );
+}
 
 const router = createBrowserRouter([
     {
@@ -76,15 +90,7 @@ const router = createBrowserRouter([
             // admin (not linked in UI)
             {
                 path: "admin",
-                element: (
-                    <ChunkErrorBoundary label="שגיאת טעינה ב-Admin">
-                        <Suspense
-                            fallback={<RouteFallback label="טוען Admin…" />}
-                        >
-                            <Admin />
-                        </Suspense>
-                    </ChunkErrorBoundary>
-                ),
+                element: <AdminRouteGate />,
             },
 
             // fallback

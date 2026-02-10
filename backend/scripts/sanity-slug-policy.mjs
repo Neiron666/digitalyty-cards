@@ -135,6 +135,7 @@ async function cleanupDocs({ userId }) {
     if (!userId) return;
 
     try {
+        await Card.deleteMany({ user: userId });
         const u = await User.findById(userId).lean();
         if (u?.cardId) {
             await Card.deleteOne({ _id: u.cardId });

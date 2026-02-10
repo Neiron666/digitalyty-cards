@@ -115,8 +115,17 @@ async function cleanup(
     { adminUserId, userId, userEmail, otherUserId, orgId },
 ) {
     const { Card, Organization, OrganizationMember, User } = models;
+
+    let resolvedUserId = userId || null;
     try {
-        const userIds = [userId, otherUserId].filter(Boolean);
+        if (!resolvedUserId && userEmail) {
+            const u = await User.findOne({ email: userEmail })
+                .select("_id")
+                .lean();
+            resolvedUserId = u?._id || null;
+        }
+
+        const userIds = [resolvedUserId, otherUserId].filter(Boolean);
         if (userIds.length) {
             await Card.deleteMany({ user: { $in: userIds } });
         }
@@ -134,8 +143,8 @@ async function cleanup(
     }
 
     try {
-        if (userId) {
-            await User.deleteOne({ _id: userId });
+        if (resolvedUserId) {
+            await User.deleteOne({ _id: resolvedUserId });
         } else if (userEmail) {
             await User.deleteOne({ email: String(userEmail || "") });
         }

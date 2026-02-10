@@ -9,6 +9,8 @@ import { getPersonalOrgId } from "../src/utils/personalOrg.util.js";
 
 const SAMPLE_LIMIT = 10;
 const DUP_CARD_IDS_LIMIT = 5;
+const VERBOSE =
+    process.argv.includes("--verbose") || process.env.SANITY_VERBOSE === "1";
 
 function safeString(value) {
     if (value === null || value === undefined) return null;
@@ -46,7 +48,6 @@ async function runAggregates({ usersColl, cardsColl }) {
         {
             $project: {
                 _id: 0,
-                email: 1,
                 userId: "$_id",
                 cardId: 1,
             },
@@ -77,11 +78,12 @@ async function runAggregates({ usersColl, cardsColl }) {
         {
             $project: {
                 _id: 0,
-                email: 1,
                 userId: "$_id",
                 cardId: 1,
                 cardUser: "$card.user",
-                cardAnonymousId: "$card.anonymousId",
+                hasAnonymousId: {
+                    $ne: [{ $ifNull: ["$card.anonymousId", null] }, null],
+                },
                 cardSlug: "$card.slug",
                 cardStatus: "$card.status",
             },
@@ -174,23 +176,7 @@ async function runAggregates({ usersColl, cardsColl }) {
         { $sort: { count: -1 } },
     ];
 
-    const [
-        A_samples,
-        B_samples,
-        C_samples,
-        E_samples,
-        F_samples,
-        A_count,
-        B_count,
-        C_count,
-        E_count,
-        F_count,
-    ] = await Promise.all([
-        User.aggregate(A_pipeline).allowDiskUse(true).limit(SAMPLE_LIMIT),
-        User.aggregate(B_pipeline).allowDiskUse(true).limit(SAMPLE_LIMIT),
-        Card.aggregate(C_pipeline).allowDiskUse(true).limit(SAMPLE_LIMIT),
-        Card.aggregate(E_pipeline).allowDiskUse(true).limit(SAMPLE_LIMIT),
-        Card.aggregate(F_pipeline).allowDiskUse(true).limit(SAMPLE_LIMIT),
+    const [A_count, B_count, C_count, E_count, F_count] = await Promise.all([
         User.aggregate([...A_pipeline, { $count: "count" }])
             .allowDiskUse(true)
             .then((r) => (r && r[0] ? r[0].count : 0)),
@@ -214,12 +200,49 @@ async function runAggregates({ usersColl, cardsColl }) {
         anonymousId: { $exists: true, $ne: null },
     });
 
+    const counts = {
+        A_users_cardId_missing_card: A_count,
+        B_users_cardId_ownership_mismatch: B_count,
+        C_cards_user_missing_user_doc: C_count,
+        D_cards_both_user_and_anonymousId: D_count,
+        E_duplicate_cards_per_user: E_count,
+        F_duplicate_cards_per_org_user: F_count,
+    };
+
+    const { totalIssues } = summarizeCounts(counts);
+    const ok = totalIssues === 0;
+    const includeSamples = VERBOSE || !ok;
+
+    if (!includeSamples) {
+        return {
+            ok,
+            counts,
+            samples: {
+                A: [],
+                B: [],
+                C: [],
+                D: [],
+                E: [],
+                F: [],
+            },
+        };
+    }
+
+    const [A_samples, B_samples, C_samples, E_samples, F_samples] =
+        await Promise.all([
+            User.aggregate(A_pipeline).allowDiskUse(true).limit(SAMPLE_LIMIT),
+            User.aggregate(B_pipeline).allowDiskUse(true).limit(SAMPLE_LIMIT),
+            Card.aggregate(C_pipeline).allowDiskUse(true).limit(SAMPLE_LIMIT),
+            Card.aggregate(E_pipeline).allowDiskUse(true).limit(SAMPLE_LIMIT),
+            Card.aggregate(F_pipeline).allowDiskUse(true).limit(SAMPLE_LIMIT),
+        ]);
+
     const D_samples_raw = await Card.find(
         {
             user: { $exists: true, $ne: null },
             anonymousId: { $exists: true, $ne: null },
         },
-        { slug: 1, status: 1, user: 1, anonymousId: 1 },
+        { slug: 1, status: 1, user: 1 },
     )
         .limit(SAMPLE_LIMIT)
         .lean();
@@ -227,20 +250,14 @@ async function runAggregates({ usersColl, cardsColl }) {
     const D_samples = D_samples_raw.map((c) => ({
         cardId: c?._id,
         cardUser: c?.user,
-        cardAnonymousId: c?.anonymousId || null,
+        hasAnonymousId: true,
         slug: c?.slug || "",
         status: c?.status || "",
     }));
 
     return {
-        counts: {
-            A_users_cardId_missing_card: A_count,
-            B_users_cardId_ownership_mismatch: B_count,
-            C_cards_user_missing_user_doc: C_count,
-            D_cards_both_user_and_anonymousId: D_count,
-            E_duplicate_cards_per_user: E_count,
-            F_duplicate_cards_per_org_user: F_count,
-        },
+        ok,
+        counts,
         samples: {
             A: A_samples,
             B: B_samples,
@@ -258,11 +275,10 @@ async function main() {
     const usersColl = User.collection.name;
     const cardsColl = Card.collection.name;
 
-    const { counts, samples } = await runAggregates({ usersColl, cardsColl });
-
-    const { totalIssues } = summarizeCounts(counts);
-
-    const ok = totalIssues === 0;
+    const { ok, counts, samples } = await runAggregates({
+        usersColl,
+        cardsColl,
+    });
 
     console.log(
         JSON.stringify(

@@ -211,6 +211,7 @@ try {
 
     try {
         if (created.userId) {
+            await Card.deleteMany({ user: created.userId });
             const u = await User.findById(created.userId).lean();
             if (u?.cardId) await Card.deleteOne({ _id: u.cardId });
         }

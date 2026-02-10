@@ -6,9 +6,35 @@
 - Access is controlled server-side by RBAC:
     - JWT must be present (`Authorization: Bearer <token>`).
     - The server loads the user from MongoDB and requires `user.role === 'admin'`.
+- Anti-enumeration (enterprise):
+    - UI: if not platform-admin, `/admin` must render the same NotFound as any unknown route.
+    - API: `/api/admin/*` must return uniform `404` on all deny paths (no `401/403`), with `Cache-Control: no-store`.
+    - UX: do not mount the Admin app or trigger admin API calls unless `me.role === 'admin'`.
 - There is no “secret admin link” security; the backend check is the source of truth.
 - Admin write actions are whitelisted (no generic admin patch).
 - Every admin write requires a `reason` and is recorded in the admin audit log.
+
+## Post-mortem: Admin anti-enumeration hardening (Feb 2026)
+
+What happened:
+
+- `/admin` was discoverable for non-admin users via distinguishable UI (“login required/access denied”).
+- `/api/admin/*` returned distinguishable status codes/messages (`401/403`) for non-admin vs unauth.
+
+Why it matters:
+
+- Enterprise requirement: non-admin/unauth traffic must not learn that an admin surface exists.
+
+Remediation:
+
+- Frontend: route-level gate renders NotFound and prevents mounting the Admin page unless `me.role === 'admin'`.
+- Backend: admin middleware returns uniform `404` (and `no-store`) for all deny paths.
+
+Verification:
+
+- Unauth user: `/admin` renders NotFound; `/api/admin/*` returns 404.
+- Auth non-admin: same as unauth (UI NotFound + API 404).
+- Admin: `/admin` loads normally and admin API works.
 
 ## Promote a user to admin
 
@@ -117,7 +143,7 @@ Admin write actions are stored in the `AdminAudit` collection.
 
 ## Manual test checklist
 
-1. Login with a normal user and open `/admin` → should show “Access denied”.
+1. Login with a normal user and open `/admin` → should show NotFound (looks like a normal 404).
 2. Promote that user to `role=admin` in MongoDB.
 3. Login again and open `/admin` → should load stats + lists.
 4. Select a card and try:

@@ -19,7 +19,7 @@ export function AuthProvider({ children }) {
     async function loadMeSafely() {
         try {
             const me = await getMe();
-            setUser({ email: me?.email });
+            setUser({ email: me?.email, role: me?.role });
         } catch (err) {
             const status = err?.response?.status;
             if (status === 401) {
