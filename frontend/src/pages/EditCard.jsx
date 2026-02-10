@@ -354,12 +354,28 @@ function EditCard() {
     const [orgsError, setOrgsError] = useState("");
     const [orgCardError, setOrgCardError] = useState("");
 
+    // Bootstrap gate: for authenticated sessions, resolve card context BEFORE hitting /cards/mine
+    // to avoid a personal-first race during invite onboarding.
+    const [contextResolved, setContextResolved] = useState(() => !token);
+
     const isOrgMode = Boolean(token) && Boolean(activeOrgSlug);
 
     // One-time org-context bootstrap from URL query (?org=...)
     const orgFromQueryRef = useRef(null);
     const orgFromQueryLoadRequestedRef = useRef(false);
     const orgFromQueryAppliedRef = useRef(false);
+
+    useEffect(() => {
+        // Keep bootstrap behavior stable when auth state changes.
+        // - Anonymous: no org bootstrap needed.
+        // - Authenticated: require context resolve before first initCard.
+        setContextResolved(!token);
+
+        // Reset one-time query bootstrap on auth transitions.
+        orgFromQueryRef.current = null;
+        orgFromQueryLoadRequestedRef.current = false;
+        orgFromQueryAppliedRef.current = false;
+    }, [token]);
 
     function isCreateInFlightError(err) {
         const status = err?.response?.status;
@@ -441,6 +457,9 @@ function EditCard() {
     const initCard = useCallback(
         async (isMounted = () => true) => {
             try {
+                // Enterprise: for authenticated users, do not start personal init until context is resolved.
+                if (token && !contextResolved) return;
+
                 setOrgCardError("");
                 const res = isOrgMode
                     ? await api.get(`/orgs/${activeOrgSlug}/cards/mine`)
@@ -580,11 +599,19 @@ function EditCard() {
                     }
                 }
 
+                // Org-mode error fallback (network/5xx/timeout/status undefined):
+                // do not dead-end on "loading" and do not leak existence details.
+                if (isOrgMode) {
+                    setOrgCardError("אין גישה לארגון או שהכרטיס לא זמין");
+                    setIsInitializing(false);
+                    return;
+                }
+
                 // Do not redirect to /login here; anonymous flow must stay on /edit
                 setIsInitializing(false);
             }
         },
-        [navigate, activeOrgSlug, isOrgMode, token],
+        [navigate, activeOrgSlug, isOrgMode, token, contextResolved],
     );
 
     const loadMyOrgs = useCallback(async () => {
@@ -623,8 +650,19 @@ function EditCard() {
     );
 
     useEffect(() => {
-        if (orgFromQueryAppliedRef.current) return;
+        // Resolve default context for authenticated users BEFORE calling initCard().
+        // Rules:
+        //  a) ?org=<slug> AND slug exists in myOrgs => choose it
+        //  b) else if myOrgs.length > 0 => choose first org (org-first default)
+        //  c) else => personal ("")
         if (!token) return;
+        if (contextResolved) return;
+
+        // Do not override an already-chosen context.
+        if (activeOrgSlug) {
+            setContextResolved(true);
+            return;
+        }
 
         if (orgFromQueryRef.current === null) {
             try {
@@ -645,17 +683,17 @@ function EditCard() {
             .trim()
             .toLowerCase();
 
-        if (!requestedOrgSlug) {
+        // Error fallback: do not dead-end on orgs/mine failures.
+        // Best-effort org-first when ?org is present (invite onboarding), otherwise degrade to personal.
+        if (orgsLoadState === "error") {
+            const nextOrgSlug = requestedOrgSlug ? requestedOrgSlug : "";
+            setActiveOrgSlug(nextOrgSlug);
             orgFromQueryAppliedRef.current = true;
+            setContextResolved(true);
             return;
         }
 
-        // Do not override an already-chosen context.
-        if (activeOrgSlug) {
-            orgFromQueryAppliedRef.current = true;
-            return;
-        }
-
+        // Ensure membership-based org list is loaded.
         if (orgsLoadState !== "loaded") {
             if (!orgFromQueryLoadRequestedRef.current) {
                 orgFromQueryLoadRequestedRef.current = true;
@@ -665,27 +703,34 @@ function EditCard() {
         }
 
         const list = Array.isArray(myOrgs) ? myOrgs : [];
-        const exists = list.some(
-            (o) =>
-                String(o?.slug || "")
-                    .trim()
-                    .toLowerCase() === requestedOrgSlug,
-        );
 
-        if (!exists) {
-            orgFromQueryAppliedRef.current = true;
-            return;
-        }
+        const requestedExists =
+            Boolean(requestedOrgSlug) &&
+            list.some(
+                (o) =>
+                    String(o?.slug || "")
+                        .trim()
+                        .toLowerCase() === requestedOrgSlug,
+            );
 
+        const firstOrgSlug = String(list?.[0]?.slug || "")
+            .trim()
+            .toLowerCase();
+
+        const nextOrgSlug = requestedExists
+            ? requestedOrgSlug
+            : firstOrgSlug || "";
+
+        setActiveOrgSlug(nextOrgSlug);
         orgFromQueryAppliedRef.current = true;
-        handleContextChange(requestedOrgSlug);
+        setContextResolved(true);
     }, [
         token,
+        contextResolved,
         activeOrgSlug,
         orgsLoadState,
         myOrgs,
         loadMyOrgs,
-        handleContextChange,
     ]);
 
     const discardUnsavedAndRehydrate = useCallback(async () => {
@@ -719,12 +764,21 @@ function EditCard() {
 
     useEffect(() => {
         let isMounted = true;
+
+        // Gate: do not initialize personal card for authenticated sessions
+        // until context was resolved (query org / first org / personal).
+        if (token && !contextResolved) {
+            return () => {
+                isMounted = false;
+            };
+        }
+
         initCard(() => isMounted);
 
         return () => {
             isMounted = false;
         };
-    }, [initCard, reloadKey]);
+    }, [initCard, reloadKey, token, contextResolved]);
 
     useEffect(() => {
         if (!editingDisabled) return;
@@ -1421,7 +1475,42 @@ function EditCard() {
     }
 
     if (!draftCard?._id) {
-        if (token && needsCreateUserCard) {
+        if (token && !contextResolved) {
+            return <div className={styles.editCard}>טוען...</div>;
+        }
+
+        if (token && contextResolved && isOrgMode && orgCardError) {
+            return (
+                <div className={styles.editCard}>
+                    <main className={styles.main}>
+                        <section
+                            className={styles.createCta}
+                            dir="rtl"
+                            role="region"
+                            aria-label="Org context error"
+                        >
+                            <div className={styles.createCtaTitle}>
+                                לא הצלחנו לפתוח את ההקשר הארגוני
+                            </div>
+                            <div className={styles.createCtaText}>
+                                {orgCardError}
+                            </div>
+                            <div className={styles.createCtaActions}>
+                                <button
+                                    type="button"
+                                    className={styles.createCtaButton}
+                                    onClick={() => handleContextChange("")}
+                                >
+                                    מעבר לאישי
+                                </button>
+                            </div>
+                        </section>
+                    </main>
+                </div>
+            );
+        }
+
+        if (token && contextResolved && !activeOrgSlug && needsCreateUserCard) {
             return (
                 <div className={styles.editCard}>
                     <main className={styles.main}>
