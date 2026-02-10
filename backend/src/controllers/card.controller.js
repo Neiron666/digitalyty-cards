@@ -1573,6 +1573,36 @@ export async function updateCard(req, res) {
             : null;
 
     const dto = toCardDTO(card, now, { user: userTier });
+
+    // SSoT: always return correct public/og paths for PATCH responses.
+    // Frontend may replace the whole draftCard with this DTO (publish/save).
+    if (dto && typeof dto === "object" && dto?.slug) {
+        const personalOrgId = await getPersonalOrgId();
+        const cardOrgId = String(card?.orgId || "");
+        const isPersonalScope =
+            !cardOrgId || cardOrgId === String(personalOrgId);
+
+        if (isPersonalScope) {
+            dto.publicPath = `/card/${dto.slug}`;
+            dto.ogPath = `/og/card/${dto.slug}`;
+        } else {
+            const org = await Organization.findById(card.orgId)
+                .select("slug isActive")
+                .lean();
+
+            const orgSlug = String(org?.slug || "")
+                .trim()
+                .toLowerCase();
+            const isActive = org?.isActive !== false;
+
+            if (!orgSlug || !isActive) {
+                return res.status(404).json({ message: "Not found" });
+            }
+
+            dto.publicPath = `/c/${orgSlug}/${dto.slug}`;
+            dto.ogPath = `/og/c/${orgSlug}/${dto.slug}`;
+        }
+    }
     if (publishError) {
         return res.json({ ...dto, publishError });
     }
@@ -1886,6 +1916,166 @@ export async function updateSlug(req, res) {
 
         console.error("[cards] updateSlug failed", {
             actorType: actor.type,
+            error: err?.message || err,
+        });
+        return res.status(500).json({ message: "Failed to update slug" });
+    }
+}
+
+export async function updateMyOrgCardSlug(req, res) {
+    // IMPORTANT (enterprise anti-enumeration):
+    // membership gate must run BEFORE any distinguishable errors (invalid slug / draft-only / limit / taken).
+    const userId = req?.userId ? String(req.userId) : "";
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+        return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    const orgSlug = String(req.params.orgSlug || "")
+        .trim()
+        .toLowerCase();
+    if (!orgSlug) return res.status(404).json({ message: "Not found" });
+
+    const org = await Organization.findOne({ slug: orgSlug, isActive: true })
+        .select("_id slug")
+        .lean();
+    if (!org?._id) return res.status(404).json({ message: "Not found" });
+
+    const member = await OrganizationMember.findOne({
+        orgId: org._id,
+        userId,
+        status: "active",
+    })
+        .select("_id")
+        .lean();
+    if (!member?._id) return res.status(404).json({ message: "Not found" });
+
+    const card = await Card.findOne({
+        orgId: org._id,
+        user: userId,
+        isActive: true,
+    });
+
+    if (!card) return res.status(404).json({ message: "Not found" });
+
+    const nextSlug = normalizeSlugInput(req.body?.slug);
+    if (!isValidSlug(nextSlug) || RESERVED_SLUGS.has(nextSlug)) {
+        return res
+            .status(400)
+            .json({ code: "INVALID_SLUG", message: "Invalid slug" });
+    }
+
+    if (card.status !== "draft") {
+        return res.status(403).json({
+            code: "SLUG_ONLY_DRAFT",
+            message: "Slug can be changed only while in draft",
+        });
+    }
+
+    const tenantKey =
+        typeof card.tenantKey === "string" && card.tenantKey.trim()
+            ? card.tenantKey
+            : DEFAULT_TENANT_KEY;
+
+    const canonicalOrgSlug = org?.slug ? String(org.slug) : orgSlug;
+
+    if (String(card.slug || "") === nextSlug) {
+        return res.json({
+            slug: nextSlug,
+            publicPath: `/c/${canonicalOrgSlug}/${nextSlug}`,
+            ogPath: `/og/c/${canonicalOrgSlug}/${nextSlug}`,
+        });
+    }
+
+    try {
+        const now = new Date();
+        const monthKey = toIsrael(now).toFormat("yyyy-LL");
+
+        // Attempt 1: same-month increment when under limit
+        const updatedSameMonth = await Card.findOneAndUpdate(
+            {
+                _id: card._id,
+                orgId: org._id,
+                user: new mongoose.Types.ObjectId(userId),
+                isActive: true,
+                status: "draft",
+                slug: { $ne: nextSlug },
+                "slugChange.monthKey": monthKey,
+                "slugChange.count": { $lt: 2 },
+            },
+            {
+                $set: {
+                    slug: nextSlug,
+                    tenantKey,
+                    "slugChange.updatedAt": now,
+                },
+                $inc: { "slugChange.count": 1 },
+            },
+            { new: true, runValidators: true },
+        );
+
+        if (updatedSameMonth) {
+            const s = String(updatedSameMonth.slug || nextSlug);
+            return res.json({
+                slug: s,
+                publicPath: `/c/${canonicalOrgSlug}/${s}`,
+                ogPath: `/og/c/${canonicalOrgSlug}/${s}`,
+            });
+        }
+
+        // Attempt 2: new month (or uninitialized) => reset count to 1
+        const updatedNewMonth = await Card.findOneAndUpdate(
+            {
+                _id: card._id,
+                orgId: org._id,
+                user: new mongoose.Types.ObjectId(userId),
+                isActive: true,
+                status: "draft",
+                slug: { $ne: nextSlug },
+                $or: [
+                    { "slugChange.monthKey": { $exists: false } },
+                    { "slugChange.monthKey": null },
+                    { "slugChange.monthKey": { $ne: monthKey } },
+                ],
+            },
+            {
+                $set: {
+                    slug: nextSlug,
+                    tenantKey,
+                    "slugChange.monthKey": monthKey,
+                    "slugChange.count": 1,
+                    "slugChange.updatedAt": now,
+                },
+            },
+            { new: true, runValidators: true },
+        );
+
+        if (updatedNewMonth) {
+            const s = String(updatedNewMonth.slug || nextSlug);
+            return res.json({
+                slug: s,
+                publicPath: `/c/${canonicalOrgSlug}/${s}`,
+                ogPath: `/og/c/${canonicalOrgSlug}/${s}`,
+            });
+        }
+
+        return res.status(429).json({
+            code: "SLUG_CHANGE_LIMIT",
+            message: "Slug can be changed at most 2 times per month",
+        });
+    } catch (err) {
+        if (
+            err?.code === 11000 ||
+            (err?.name === "MongoServerError" &&
+                String(err?.message || "").includes("E11000"))
+        ) {
+            return res
+                .status(409)
+                .json({ code: "SLUG_TAKEN", message: "Slug already in use" });
+        }
+
+        console.error("[orgs] updateMyOrgCardSlug failed", {
+            orgSlug,
+            userId,
             error: err?.message || err,
         });
         return res.status(500).json({ message: "Failed to update slug" });

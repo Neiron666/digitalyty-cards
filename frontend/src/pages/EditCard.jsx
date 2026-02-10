@@ -182,15 +182,31 @@ function EditCard() {
     }, [clearDeleteNoticeTimer]);
 
     const lastRefetchAtRef = useRef(0);
+    const orgContextRef = useRef({ isOrgMode: false, activeOrgSlug: "" });
 
     const handleUpdateSlug = useCallback(
         async (nextSlug) => {
-            const payload = await updateCardSlug(nextSlug);
+            const ctx = orgContextRef.current || {
+                isOrgMode: false,
+                activeOrgSlug: "",
+            };
+            const payload =
+                ctx.isOrgMode && ctx.activeOrgSlug
+                    ? await api
+                          .patch(`/orgs/${ctx.activeOrgSlug}/cards/mine/slug`, {
+                              slug: nextSlug,
+                          })
+                          .then((r) => r.data)
+                    : await updateCardSlug(nextSlug);
             const updatedSlug = String(payload?.slug || "").trim();
             if (!updatedSlug) return "";
             setDraftCard((prev) => ({
                 ...(prev || {}),
                 slug: updatedSlug,
+                ...(payload?.publicPath
+                    ? { publicPath: payload.publicPath }
+                    : null),
+                ...(payload?.ogPath ? { ogPath: payload.ogPath } : null),
             }));
 
             // SSoT: refresh slugPolicy counters from backend without overwriting draft.
@@ -205,6 +221,12 @@ function EditCard() {
                             typeof mine.slug === "string"
                                 ? mine.slug
                                 : prev?.slug,
+                        ...(typeof mine.publicPath === "string"
+                            ? { publicPath: mine.publicPath }
+                            : null),
+                        ...(typeof mine.ogPath === "string"
+                            ? { ogPath: mine.ogPath }
+                            : null),
                     }));
                 }
             } catch {
@@ -360,6 +382,10 @@ function EditCard() {
 
     const isOrgMode = Boolean(token) && Boolean(activeOrgSlug);
 
+    // Keep org context available for callbacks defined above this section.
+    orgContextRef.current.isOrgMode = isOrgMode;
+    orgContextRef.current.activeOrgSlug = activeOrgSlug;
+
     // One-time org-context bootstrap from URL query (?org=...)
     const orgFromQueryRef = useRef(null);
     const orgFromQueryLoadRequestedRef = useRef(false);
@@ -399,6 +425,18 @@ function EditCard() {
 
     async function fetchPersonalMineOnce() {
         const res = await api.get("/cards/mine");
+        return res?.data || null;
+    }
+
+    async function fetchMineOnce() {
+        const ctx = orgContextRef.current || {
+            isOrgMode: false,
+            activeOrgSlug: "",
+        };
+        const res =
+            ctx.isOrgMode && ctx.activeOrgSlug
+                ? await api.get(`/orgs/${ctx.activeOrgSlug}/cards/mine`)
+                : await api.get("/cards/mine");
         return res?.data || null;
     }
 
