@@ -1,6 +1,8 @@
 import mongoose from "mongoose";
 import User from "../models/User.model.js";
 import Card from "../models/Card.model.js";
+import OrganizationMember from "../models/OrganizationMember.model.js";
+import OrgInvite from "../models/OrgInvite.model.js";
 import { logAdminAction } from "../services/adminAudit.service.js";
 import {
     removeObjects,
@@ -326,20 +328,7 @@ export async function getCardById(req, res) {
     );
 }
 
-export async function deleteCardPermanently(req, res) {
-    const reason = requireReason(req, res);
-    if (!reason) return;
-
-    const id = String(req.params.id || "");
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-        return res
-            .status(400)
-            .json({ code: "INVALID_ID", message: "Invalid id" });
-    }
-
-    const card = await Card.findById(id);
-    if (!card) return res.status(404).json({ message: "Not found" });
-
+async function deleteCardPermanentlyCore({ card }) {
     const rawPaths = collectSupabasePathsFromCard(card);
     const paths = normalizeSupabasePaths(rawPaths);
 
@@ -357,7 +346,9 @@ export async function deleteCardPermanently(req, res) {
                 ? Array.from(
                       new Set(
                           [
-                              getAnonPrivateBucketName({ allowFallback: true }),
+                              getAnonPrivateBucketName({
+                                  allowFallback: true,
+                              }),
                               getPublicBucketName(),
                           ].filter(Boolean),
                       ),
@@ -371,7 +362,10 @@ export async function deleteCardPermanently(req, res) {
             cardId: String(card._id),
             error: err?.message || err,
         });
-        return res.status(502).json({ message: "Failed to delete media" });
+        const e = new Error("Failed to delete media");
+        e.status = 502;
+        e.code = "SUPABASE_DELETE_FAILED";
+        throw e;
     }
 
     let cascade;
@@ -382,19 +376,64 @@ export async function deleteCardPermanently(req, res) {
             cardId: String(card._id),
             error: err?.message || err,
         });
-        return res
-            .status(500)
-            .json({ message: "Failed to delete related data" });
+        const e = new Error("Failed to delete related data");
+        e.status = 500;
+        e.code = "CASCADE_DELETE_FAILED";
+        throw e;
     }
 
     await Card.deleteOne({ _id: card._id });
 
     if (card?.user) {
         // Best-effort unlink from user (keeps owner-delete behavior consistent)
-        await User.updateOne(
-            { _id: card.user, cardId: card._id },
-            { $unset: { cardId: 1 } },
-        );
+        try {
+            await User.updateOne(
+                { _id: card.user, cardId: card._id },
+                { $unset: { cardId: 1 } },
+            );
+        } catch (err) {
+            console.warn("[users] unlink cardId failed", {
+                userId: String(card.user),
+                cardId: String(card._id),
+                error: err?.message || err,
+            });
+        }
+    }
+
+    return {
+        ok: true,
+        media: { pathCount: paths.length },
+        cascade,
+    };
+}
+
+export async function deleteCardPermanently(req, res) {
+    const reason = requireReason(req, res);
+    if (!reason) return;
+
+    const id = String(req.params.id || "");
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+        return res
+            .status(400)
+            .json({ code: "INVALID_ID", message: "Invalid id" });
+    }
+
+    const card = await Card.findById(id);
+    if (!card) return res.status(404).json({ message: "Not found" });
+
+    let core;
+    try {
+        core = await deleteCardPermanentlyCore({ card });
+    } catch (err) {
+        if (err?.status === 502) {
+            return res.status(502).json({ message: "Failed to delete media" });
+        }
+        if (err?.status === 500) {
+            return res
+                .status(500)
+                .json({ message: "Failed to delete related data" });
+        }
+        throw err;
     }
 
     await logAdminAction({
@@ -410,10 +449,106 @@ export async function deleteCardPermanently(req, res) {
                 : card?.anonymousId
                   ? { type: "anonymous", anonymousId: String(card.anonymousId) }
                   : { type: "none" },
-            media: { pathCount: paths.length },
-            cascade,
+            media: core.media,
+            cascade: core.cascade,
         },
     });
+
+    return res.json({ ok: true });
+}
+
+export async function deleteUserPermanently(req, res) {
+    const reason = requireReason(req, res);
+    if (!reason) return;
+
+    const confirm =
+        typeof req.body?.confirm === "string" ? req.body.confirm.trim() : "";
+    if (confirm !== "DELETE") {
+        return res.status(400).json({
+            code: "CONFIRM_REQUIRED",
+            message: 'confirm must be exactly "DELETE"',
+        });
+    }
+
+    const targetUserId = String(req.params.id || "");
+    if (!mongoose.Types.ObjectId.isValid(targetUserId)) {
+        return res
+            .status(400)
+            .json({ code: "INVALID_ID", message: "Invalid id" });
+    }
+
+    if (String(req.userId || "") === targetUserId) {
+        return res.status(409).json({
+            code: "SELF_DELETE_FORBIDDEN",
+            message: "Admin cannot delete self",
+        });
+    }
+
+    const user = await User.findById(targetUserId).select("role").lean();
+    if (user?.role === "admin") {
+        return res.status(409).json({
+            code: "TARGET_IS_ADMIN",
+            message: "Permanent delete for admin users is not allowed (MVP)",
+        });
+    }
+
+    const cards = await Card.find({ user: targetUserId });
+
+    let deletedCardsCount = 0;
+    for (const card of cards) {
+        try {
+            await deleteCardPermanentlyCore({ card });
+            deletedCardsCount += 1;
+        } catch (err) {
+            const status = Number(err?.status || 500);
+            const code =
+                typeof err?.code === "string" && err.code
+                    ? err.code
+                    : status === 502
+                      ? "SUPABASE_DELETE_FAILED"
+                      : "DELETE_FAILED";
+            const message = err?.message || "Delete failed";
+            return res.status(status).json({ code, message });
+        }
+    }
+
+    const [membershipsRes, invitesRes] = await Promise.all([
+        OrganizationMember.deleteMany({ userId: targetUserId }),
+        // Operational garbage only: delete still-pending invites created by this user.
+        OrgInvite.deleteMany({
+            createdByUserId: targetUserId,
+            revokedAt: null,
+            usedAt: null,
+        }),
+    ]);
+
+    const deletedMembershipsCount = Number(membershipsRes?.deletedCount || 0);
+    const deletedInvitesCount = Number(invitesRes?.deletedCount || 0);
+
+    const userDeleteRes = await User.deleteOne({ _id: targetUserId });
+    const deletedUserCount = Number(userDeleteRes?.deletedCount || 0);
+
+    const didWork =
+        deletedCardsCount > 0 ||
+        deletedMembershipsCount > 0 ||
+        deletedInvitesCount > 0 ||
+        deletedUserCount > 0;
+
+    if (didWork) {
+        await logAdminAction({
+            adminUserId: req.userId,
+            action: "USER_DELETE_PERMANENT",
+            targetType: "user",
+            targetId: new mongoose.Types.ObjectId(targetUserId),
+            reason,
+            meta: {
+                targetUserId,
+                deletedCardsCount,
+                deletedInvitesCount,
+                deletedMembershipsCount,
+            },
+        });
+    }
 
     return res.json({ ok: true });
 }

@@ -64,6 +64,13 @@ export function adminSetUserTier(id, { tier, until, reason }) {
     });
 }
 
+export function adminDeleteUserPermanently(userId, { reason } = {}) {
+    return api.post(`/admin/users/${userId}/delete`, {
+        reason,
+        confirm: "DELETE",
+    });
+}
+
 export function getAdminAnalyticsSummary(params = {}) {
     return api.get("/admin/analytics/summary", { params });
 }

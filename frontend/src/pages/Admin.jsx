@@ -6,6 +6,7 @@ import { useAuth } from "../context/AuthContext";
 import {
     adminDeactivateCard,
     adminDeleteCard,
+    adminDeleteUserPermanently,
     adminExtendTrial,
     adminOverridePlan,
     adminReactivateCard,
@@ -13,6 +14,7 @@ import {
     adminSetUserTier,
     getAdminCardById,
     getAdminStats,
+    getAdminUserById,
     listAdminCards,
     listAdminUsers,
 } from "../services/admin.service";
@@ -285,10 +287,12 @@ export default function Admin() {
 
     const [directoryTab, setDirectoryTab] = useState("cards");
     const [selectedTab, setSelectedTab] = useState("general");
+    const [selectedUserTab, setSelectedUserTab] = useState("general");
     const [cardsQuery, setCardsQuery] = useState("");
     const directoryTabListRef = useRef(null);
     const selectedTabListRef = useRef(null);
     const selectedTabListRefMobile = useRef(null);
+    const selectedUserTabListRef = useRef(null);
 
     const [loading, setLoading] = useState(false);
     const [accessDenied, setAccessDenied] = useState(false);
@@ -320,6 +324,14 @@ export default function Admin() {
 
     const [selectedCardId, setSelectedCardId] = useState("");
     const [selectedCard, setSelectedCard] = useState(null);
+
+    const [selectedUserId, setSelectedUserId] = useState("");
+    const [selectedUser, setSelectedUser] = useState(null);
+    const [selectedUserError, setSelectedUserError] = useState("");
+
+    const [userDeleteConfirm, setUserDeleteConfirm] = useState("");
+    const [userDeleteError, setUserDeleteError] = useState("");
+    const [userDeleteSuccess, setUserDeleteSuccess] = useState("");
 
     const [reason, setReason] = useState("");
     const [trialDays, setTrialDays] = useState(7);
@@ -459,6 +471,14 @@ export default function Admin() {
         }
     }
 
+    useEffect(() => {
+        if (directoryTab === "users") return;
+        setSelectedUserId("");
+        setSelectedUser(null);
+        setSelectedUserTab("general");
+        setSelectedUserError("");
+    }, [directoryTab]);
+
     function handleRefreshClick() {
         if (adminMode === "analytics") {
             setAnalyticsRefreshKey((k) => k + 1);
@@ -492,6 +512,30 @@ export default function Admin() {
         }
     }
 
+    async function loadUser(id) {
+        setSelectedUserId(id);
+        setSelectedUser(null);
+        setSelectedUserTab("general");
+        setSelectedUserError("");
+        setUserDeleteConfirm("");
+        setUserDeleteError("");
+        setUserDeleteSuccess("");
+
+        setLoading(true);
+        try {
+            const res = await getAdminUserById(id);
+            setSelectedUser(res.data);
+        } catch (err) {
+            if (isAccessDenied(err)) {
+                setAccessDenied(true);
+            } else {
+                setSelectedUserError(mapApiErrorToHebrew(err, "err_generic"));
+            }
+        } finally {
+            setLoading(false);
+        }
+    }
+
     function requireReason() {
         const r = String(reason || "").trim();
         if (!r) {
@@ -503,6 +547,22 @@ export default function Admin() {
 
     function normalizeActionError(err) {
         return mapApiErrorToHebrew(err, "err_generic");
+    }
+
+    function getServerCodeMessage(err) {
+        const code = err?.response?.data?.code;
+        const msg = err?.response?.data?.message;
+        const message =
+            typeof msg === "string" && msg.trim()
+                ? msg.trim()
+                : typeof err?.message === "string" && err.message.trim()
+                  ? err.message.trim()
+                  : "Request failed";
+
+        if (typeof code === "string" && code.trim()) {
+            return `${code.trim()}: ${message}`;
+        }
+        return message;
     }
 
     async function runAction(actionKey, fn) {
@@ -642,6 +702,63 @@ export default function Admin() {
         } finally {
             setLoading(false);
             setActionLoading((prev) => ({ ...prev, userTier: false }));
+        }
+    }
+
+    async function runUserDeletePermanent() {
+        if (!selectedUser?._id) return;
+
+        const r = requireReason();
+        if (!r) return;
+
+        setUserDeleteError("");
+        setUserDeleteSuccess("");
+
+        if (String(userDeleteConfirm || "").trim() !== "DELETE") {
+            setUserDeleteError("יש להקליד DELETE לאישור");
+            return;
+        }
+
+        const confirmed = window.confirm(
+            "Delete this user permanently? This cannot be undone.",
+        );
+        if (!confirmed) return;
+
+        setLoading(true);
+        try {
+            await adminDeleteUserPermanently(selectedUser._id, { reason: r });
+
+            setUsers((prev) =>
+                Array.isArray(prev)
+                    ? prev.filter((u) => u?._id !== selectedUser._id)
+                    : prev,
+            );
+
+            setCards((prev) =>
+                Array.isArray(prev)
+                    ? prev.filter((c) => {
+                          const owner = c?.ownerSummary;
+                          if (owner?.type !== "user") return true;
+                          return owner?.userId !== selectedUser._id;
+                      })
+                    : prev,
+            );
+
+            setSelectedUserId("");
+            setSelectedUser(null);
+            setSelectedUserTab("general");
+
+            setReason("");
+            setUserDeleteConfirm("");
+            setUserDeleteSuccess("המשתמש נמחק לצמיתות");
+        } catch (err) {
+            if (isAccessDenied(err)) {
+                setAccessDenied(true);
+            } else {
+                setUserDeleteError(getServerCodeMessage(err));
+            }
+        } finally {
+            setLoading(false);
         }
     }
 
@@ -1093,14 +1210,26 @@ export default function Admin() {
                                             {users.map((u) => (
                                                 <tr key={u._id}>
                                                     <td data-label="אימייל">
-                                                        <span
+                                                        <button
                                                             className={
-                                                                styles.ltr
+                                                                styles.rowBtn
                                                             }
-                                                            dir="ltr"
+                                                            type="button"
+                                                            onClick={() =>
+                                                                loadUser(u._id)
+                                                            }
+                                                            disabled={loading}
+                                                            title={u._id}
                                                         >
-                                                            {u.email}
-                                                        </span>
+                                                            <span
+                                                                className={
+                                                                    styles.ltr
+                                                                }
+                                                                dir="ltr"
+                                                            >
+                                                                {u.email}
+                                                            </span>
+                                                        </button>
                                                     </td>
                                                     <td data-label="כרטיס">
                                                         {u?.cardSummary
@@ -3474,6 +3603,366 @@ export default function Admin() {
                                 ) : null}
                             </div>
                         </div>
+
+                        {directoryTab === "users" && selectedUser ? (
+                            <div className={styles.cardShell}>
+                                <div className={styles.cardHeader}>
+                                    <div className={styles.headerRow}>
+                                        <h2 className={styles.h2}>
+                                            משתמש נבחר
+                                        </h2>
+                                    </div>
+
+                                    {userDeleteSuccess ? (
+                                        <FlashBanner
+                                            type="success"
+                                            message={userDeleteSuccess}
+                                            autoHideMs={4500}
+                                            onDismiss={() =>
+                                                setUserDeleteSuccess("")
+                                            }
+                                        />
+                                    ) : null}
+
+                                    {selectedUserError ? (
+                                        <p className={styles.errorText}>
+                                            {selectedUserError}
+                                        </p>
+                                    ) : null}
+
+                                    <div className={styles.selectedHeaderStrip}>
+                                        <div className={styles.selectedPrimary}>
+                                            <span
+                                                className={styles.selectedLabel}
+                                            >
+                                                {t("th_email")}:
+                                            </span>{" "}
+                                            <span
+                                                className={`${styles.ltr} ${styles.selectedValue}`}
+                                                dir="ltr"
+                                                title={
+                                                    selectedUser?.email || ""
+                                                }
+                                            >
+                                                {selectedUser?.email || ""}
+                                            </span>
+                                        </div>
+                                        <div className={styles.selectedMeta}>
+                                            <span className={styles.metaPill}>
+                                                <span
+                                                    className={styles.metaKey}
+                                                >
+                                                    ID:
+                                                </span>{" "}
+                                                <span
+                                                    className={styles.ltr}
+                                                    dir="ltr"
+                                                    title={
+                                                        selectedUser?._id || ""
+                                                    }
+                                                >
+                                                    {selectedUser?._id || ""}
+                                                </span>
+                                            </span>
+                                            <span className={styles.metaPill}>
+                                                <span
+                                                    className={styles.metaKey}
+                                                >
+                                                    {t("th_role")}:
+                                                </span>{" "}
+                                                <span>
+                                                    {roleHe(selectedUser?.role)}
+                                                </span>
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    <div
+                                        className={styles.tabs}
+                                        role="tablist"
+                                        aria-label="Selected user tabs"
+                                        ref={selectedUserTabListRef}
+                                        onKeyDown={(e) =>
+                                            handleTabListKeyDown(e, {
+                                                current: selectedUserTab,
+                                                setCurrent: setSelectedUserTab,
+                                                order: [
+                                                    "general",
+                                                    "billing",
+                                                    "actions",
+                                                    "danger",
+                                                ],
+                                                tabListRef:
+                                                    selectedUserTabListRef,
+                                            })
+                                        }
+                                    >
+                                        <button
+                                            type="button"
+                                            className={`${styles.tab} ${
+                                                selectedUserTab === "general"
+                                                    ? styles.tabActive
+                                                    : ""
+                                            }`}
+                                            role="tab"
+                                            aria-selected={
+                                                selectedUserTab === "general"
+                                            }
+                                            onClick={() =>
+                                                setSelectedUserTab("general")
+                                            }
+                                        >
+                                            כללי
+                                        </button>
+                                        <button
+                                            type="button"
+                                            className={`${styles.tab} ${
+                                                selectedUserTab === "billing"
+                                                    ? styles.tabActive
+                                                    : ""
+                                            }`}
+                                            role="tab"
+                                            aria-selected={
+                                                selectedUserTab === "billing"
+                                            }
+                                            onClick={() =>
+                                                setSelectedUserTab("billing")
+                                            }
+                                        >
+                                            חיוב
+                                        </button>
+                                        <button
+                                            type="button"
+                                            className={`${styles.tab} ${
+                                                selectedUserTab === "actions"
+                                                    ? styles.tabActive
+                                                    : ""
+                                            }`}
+                                            role="tab"
+                                            aria-selected={
+                                                selectedUserTab === "actions"
+                                            }
+                                            onClick={() =>
+                                                setSelectedUserTab("actions")
+                                            }
+                                        >
+                                            פעולות
+                                        </button>
+                                        <button
+                                            type="button"
+                                            className={`${styles.tab} ${
+                                                selectedUserTab === "danger"
+                                                    ? styles.tabActive
+                                                    : ""
+                                            }`}
+                                            role="tab"
+                                            aria-selected={
+                                                selectedUserTab === "danger"
+                                            }
+                                            onClick={() =>
+                                                setSelectedUserTab("danger")
+                                            }
+                                        >
+                                            סכנה
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div className={styles.cardBody}>
+                                    {selectedUserTab === "general" ? (
+                                        <div className={styles.sectionBlock}>
+                                            <div className={styles.kv}>
+                                                <dl className={styles.kvDl}>
+                                                    <dt className={styles.kvDt}>
+                                                        {t("th_email")}
+                                                    </dt>
+                                                    <dd className={styles.kvDd}>
+                                                        <span
+                                                            className={
+                                                                styles.ltr
+                                                            }
+                                                            dir="ltr"
+                                                        >
+                                                            {selectedUser?.email ||
+                                                                ""}
+                                                        </span>
+                                                    </dd>
+
+                                                    <dt className={styles.kvDt}>
+                                                        {t("th_role")}
+                                                    </dt>
+                                                    <dd className={styles.kvDd}>
+                                                        {roleHe(
+                                                            selectedUser?.role,
+                                                        )}
+                                                    </dd>
+
+                                                    <dt className={styles.kvDt}>
+                                                        {t("th_created")}
+                                                    </dt>
+                                                    <dd className={styles.kvDd}>
+                                                        {formatDate(
+                                                            selectedUser?.createdAt,
+                                                        )}
+                                                    </dd>
+
+                                                    <dt className={styles.kvDt}>
+                                                        עודכן
+                                                    </dt>
+                                                    <dd className={styles.kvDd}>
+                                                        {selectedUser?.updatedAt
+                                                            ? formatDate(
+                                                                  selectedUser.updatedAt,
+                                                              )
+                                                            : "—"}
+                                                    </dd>
+
+                                                    <dt className={styles.kvDt}>
+                                                        {t("th_card")}
+                                                    </dt>
+                                                    <dd className={styles.kvDd}>
+                                                        {selectedUser?.cardId ? (
+                                                            <span
+                                                                className={
+                                                                    styles.ltr
+                                                                }
+                                                                dir="ltr"
+                                                            >
+                                                                {String(
+                                                                    selectedUser.cardId,
+                                                                )}
+                                                            </span>
+                                                        ) : (
+                                                            "—"
+                                                        )}
+                                                    </dd>
+                                                </dl>
+                                            </div>
+                                        </div>
+                                    ) : selectedUserTab === "billing" ? (
+                                        <div className={styles.sectionBlock}>
+                                            <div className={styles.kv}>
+                                                <dl className={styles.kvDl}>
+                                                    <dt className={styles.kvDt}>
+                                                        Plan
+                                                    </dt>
+                                                    <dd className={styles.kvDd}>
+                                                        {planHe(
+                                                            selectedUser?.plan,
+                                                        )}
+                                                    </dd>
+
+                                                    <dt className={styles.kvDt}>
+                                                        Tier
+                                                    </dt>
+                                                    <dd className={styles.kvDd}>
+                                                        {selectedUser?.adminTier
+                                                            ? tierHe(
+                                                                  selectedUser.adminTier,
+                                                              )
+                                                            : "—"}
+                                                        {selectedUser?.adminTierUntil
+                                                            ? ` · עד ${formatDate(selectedUser.adminTierUntil)}`
+                                                            : ""}
+                                                    </dd>
+
+                                                    <dt className={styles.kvDt}>
+                                                        Subscription
+                                                    </dt>
+                                                    <dd className={styles.kvDd}>
+                                                        <span
+                                                            className={
+                                                                styles.ltr
+                                                            }
+                                                            dir="ltr"
+                                                        >
+                                                            {selectedUser
+                                                                ?.subscription
+                                                                ?.status
+                                                                ? String(
+                                                                      selectedUser
+                                                                          .subscription
+                                                                          .status,
+                                                                  )
+                                                                : "inactive"}
+                                                        </span>
+                                                        {selectedUser
+                                                            ?.subscription
+                                                            ?.expiresAt
+                                                            ? ` · expires ${formatDate(selectedUser.subscription.expiresAt)}`
+                                                            : ""}
+                                                        {selectedUser
+                                                            ?.subscription
+                                                            ?.provider
+                                                            ? ` · provider ${String(selectedUser.subscription.provider)}`
+                                                            : ""}
+                                                    </dd>
+                                                </dl>
+                                            </div>
+                                        </div>
+                                    ) : selectedUserTab === "danger" ? (
+                                        <div className={styles.sectionBlock}>
+                                            <div
+                                                className={styles.sectionTitle}
+                                            >
+                                                סכנה
+                                            </div>
+
+                                            <Input
+                                                label={t("label_reason")}
+                                                value={reason}
+                                                onChange={(e) =>
+                                                    setReason(e.target.value)
+                                                }
+                                                placeholder={t(
+                                                    "placeholder_reason",
+                                                )}
+                                                required
+                                            />
+
+                                            <Input
+                                                label='הקלד "DELETE" לאישור'
+                                                value={userDeleteConfirm}
+                                                onChange={(e) =>
+                                                    setUserDeleteConfirm(
+                                                        e.target.value,
+                                                    )
+                                                }
+                                                placeholder="DELETE"
+                                                required
+                                            />
+
+                                            <div className={styles.actionGroup}>
+                                                <Button
+                                                    variant="danger"
+                                                    disabled={loading}
+                                                    loading={loading}
+                                                    onClick={
+                                                        runUserDeletePermanent
+                                                    }
+                                                >
+                                                    Delete user permanently
+                                                </Button>
+
+                                                {userDeleteError ? (
+                                                    <p
+                                                        className={
+                                                            styles.errorText
+                                                        }
+                                                    >
+                                                        {userDeleteError}
+                                                    </p>
+                                                ) : null}
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <p className={styles.muted}>
+                                            Coming later
+                                        </p>
+                                    )}
+                                </div>
+                            </div>
+                        ) : null}
                     </section>
                 </div>
             ) : (

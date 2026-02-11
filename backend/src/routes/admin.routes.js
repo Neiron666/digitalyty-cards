@@ -6,6 +6,7 @@ import {
     getUserById,
     getCardById,
     deleteCardPermanently,
+    deleteUserPermanently,
     deactivateCard,
     reactivateCard,
     extendTrial,
@@ -69,5 +70,6 @@ router.post("/cards/:id/plan/override", overridePlan);
 router.post("/cards/:id/analytics-premium", setAnalyticsPremium);
 router.post("/cards/:id/tier", setCardTier);
 router.post("/users/:id/tier", setUserTier);
+router.post("/users/:id/delete", deleteUserPermanently);
 
 export default router;
