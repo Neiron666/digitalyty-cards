@@ -76,7 +76,7 @@ export default function Header() {
             <div className={styles.inner}>
                 {/* Logo */}
                 <Link to="/" className={styles.logo}>
-                    Digitalyty
+                    Cardigo
                 </Link>
 
                 {/* Mobile menu toggle */}

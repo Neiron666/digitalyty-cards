@@ -1,8 +1,8 @@
 # frontend.instructions.md
 
-# Frontend Instructions (React/Vite/CSS Modules) — Digitalyty Cards (Enterprise, RTL-first)
+# Frontend Instructions (React/Vite/CSS Modules) — Cardigo (Enterprise, RTL-first)
 
-You are working on the frontend of Digitalyty Cards (Vite + React + CSS Modules), RTL-first.
+You are working on the frontend of Cardigo (Vite + React + CSS Modules), RTL-first.
 This product has strict guardrails: SSoT render chain, token-only skins, and zero inline CSS.
 
 ---

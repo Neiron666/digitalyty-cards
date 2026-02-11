@@ -41,7 +41,7 @@ function getMailjetConfig() {
         apiKey,
         apiSecret,
         fromEmail,
-        fromName: fromName || "Digitalyty",
+        fromName: fromName || "Cardigo",
         inviteSubject:
             inviteSubjectRaw || "You’re invited to join an organization",
         inviteTextPrefix:

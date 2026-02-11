@@ -1,8 +1,8 @@
 # backend.instructions.md
 
-# Backend Instructions (Node/Express/Mongo) — Digitalyty Cards (Enterprise)
+# Backend Instructions (Node/Express/Mongo) — Cardigo (Enterprise)
 
-You are working on the backend of Digitalyty Cards (monorepo: backend/ + frontend/).
+You are working on the backend of Cardigo (monorepo: backend/ + frontend/).
 This is an enterprise-grade product: stability, backward compatibility, security, and bounded writes are non-negotiable.
 
 ---

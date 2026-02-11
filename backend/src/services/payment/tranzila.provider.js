@@ -31,7 +31,7 @@ export default {
         }
 
         const amount = PRICES[plan];
-        const description = `Digitalyty Cards – ${plan} plan`;
+        const description = `Cardigo – ${plan} plan`;
 
         const payload = [
             `terminal=${TRANZILA_CONFIG.terminal}`,

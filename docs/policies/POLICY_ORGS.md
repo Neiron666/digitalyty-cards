@@ -1,6 +1,6 @@
 # POLICY_ORGS.md
 
-> **SSoT (Single Source of Truth)** — политика организаций (Organizations) в Digitalyty Cards  
+> **SSoT (Single Source of Truth)** — политика организаций (Organizations) в Cardigo  
 > Статус: **v1 (Feb 2026)**  
 > Цель: B2B-онбординг “директор + N сотрудников” **без self-serve создания org**, с минимальным blast radius и enterprise-guardrails.
 

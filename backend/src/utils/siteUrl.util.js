@@ -14,6 +14,15 @@ export function getSiteUrl() {
     const normalized = stripTrailingSlash(raw);
     if (normalized) return normalized;
 
-    // Safe fallback (production default domain). Prefer setting SITE_URL explicitly.
-    return "https://digitalyty.co.il";
+    // Safe fallback (canonical production domain). Prefer setting SITE_URL explicitly.
+    // NOTE: do not leak legacy domains on public SEO surfaces when env is misconfigured.
+    try {
+        // eslint-disable-next-line no-console
+        console.warn(
+            "[siteUrl] SITE_URL/PUBLIC_ORIGIN/PUBLIC_URL not set; using canonical fallback",
+        );
+    } catch {
+        // ignore
+    }
+    return "https://cardigo.co.il";
 }

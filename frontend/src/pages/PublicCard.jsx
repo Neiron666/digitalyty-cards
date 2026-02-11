@@ -144,7 +144,7 @@ function PublicCard() {
     const fallbackDescription =
         card.content?.description?.slice(0, 160) ||
         card.content?.aboutText?.slice(0, 160) ||
-        "כרטיס ביקור דיגיטלי לעסקים – Digitalyty";
+        "כרטיס ביקור דיגיטלי לעסקים – Cardigo";
 
     const title = card.seo?.title || fallbackTitle;
     const description = card.seo?.description || fallbackDescription;
@@ -152,7 +152,7 @@ function PublicCard() {
     const image =
         card.design?.coverImage ||
         card.design?.logo ||
-        "https://digitalyty.co.il/og-default.jpg";
+        "https://cardigo.co.il/og-default.jpg";
 
     const publicOrigin = getPublicOrigin();
     const canonicalResolved = resolveAbsoluteCanonical({

@@ -17,7 +17,7 @@ export async function createPayment(req, res) {
 
     const payment = createTranzilaPayment({
         amount: PRICES[plan],
-        description: `Digitalyty Cards — ${plan}`,
+        description: `Cardigo — ${plan}`,
         userId,
         plan,
     });

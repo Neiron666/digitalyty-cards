@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://digitalyty.co.il/sitemap.xml
+Sitemap: https://cardigo.co.il/sitemap.xml

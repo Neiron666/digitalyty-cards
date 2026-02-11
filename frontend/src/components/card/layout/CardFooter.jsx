@@ -9,11 +9,11 @@ function CardFooter({ card }) {
             <div className={styles.platform}>
                 נבנה ע״י{" "}
                 <a
-                    href="https://digitalyty.co.il"
+                    href="https://cardigo.co.il"
                     target="_blank"
                     rel="noreferrer"
                 >
-                    Digitalyty
+                    Cardigo
                 </a>
             </div>
 

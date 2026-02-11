@@ -46,7 +46,7 @@ router.get("/og/card/:slug", async (req, res) => {
 
     const title = card.seo?.title || "כרטיס ביקור דיגיטלי";
     const description =
-        card.seo?.description || "כרטיס ביקור דיגיטלי לעסקים – Digitalyty";
+        card.seo?.description || "כרטיס ביקור דיגיטלי לעסקים – Cardigo";
 
     const image =
         card.design?.coverImage ||
@@ -139,7 +139,7 @@ router.get("/og/c/:orgSlug/:slug", async (req, res) => {
 
     const title = card.seo?.title || "כרטיס ביקור דיגיטלי";
     const description =
-        card.seo?.description || "כרטיס ביקור דיגיטלי לעסקים – Digitalyty";
+        card.seo?.description || "כרטיס ביקור דיגיטלי לעסקים – Cardigo";
 
     const image =
         card.design?.coverImage ||

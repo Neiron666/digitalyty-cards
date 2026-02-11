@@ -1,6 +1,6 @@
 # SECURITY_AUTH_INVITES.md
 
-> **SSoT (Single Source of Truth)** — безопасность, auth, invites, восстановление доступа (Digitalyty Cards)  
+> **SSoT (Single Source of Truth)** — безопасность, auth, invites, восстановление доступа (Cardigo)  
 > Статус: **v1 (Feb 2026)**  
 > Цель: enterprise-качество безопасности при минимальном blast radius и без self-serve org creation.
 

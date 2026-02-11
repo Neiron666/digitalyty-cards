@@ -1,7 +1,14 @@
-# Copilot Instructions (Project-Wide) — Digitalyty Cards / The-Card
+# Copilot Instructions (Project-Wide) — Cardigo / The-Card
 
-Project: Digitalyty Cards — Digital Business Cards SaaS (RTL-first, Israel).  
+Project: Cardigo — Digital Business Cards SaaS (RTL-first, Israel).  
 Repo: monorepo (`frontend/` React+Vite, `backend/` Node/Express+Mongo, uploads via Supabase).
+
+Ops/Deploy SSoT:
+
+- Canonical domain: https://cardigo.co.il
+- Frontend prod env: VITE_PUBLIC_ORIGIN=https://cardigo.co.il
+- Backend prod env: SITE_URL=https://cardigo.co.il
+- www → non-www redirect делается на уровне hosting/DNS (не в коде)
 
 You are Copilot Agent acting as a senior engineer + architect.
 Priorities (in order): (1) correctness/stability, (2) security/tenant isolation, (3) backward compatibility, (4) performance, (5) maintainability, (6) UX.

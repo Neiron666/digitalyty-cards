@@ -9,7 +9,7 @@ import { SITE_ACTIONS } from "../services/siteAnalytics.actions";
 import styles from "./Contact.module.css";
 
 export default function Contact() {
-    const email = "digitalyty.web@gmail.com";
+    const email = "cardigo.app@gmail.com";
 
     useEffect(() => {
         trackSitePageView();

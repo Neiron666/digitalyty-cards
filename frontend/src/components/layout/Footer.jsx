@@ -6,7 +6,7 @@ export default function Footer() {
         <footer className={styles.footer} id="contact">
             <div className={styles.inner}>
                 <div className={styles.col}>
-                    <div className={styles.brand}>Digitalyty</div>
+                    <div className={styles.brand}>Cardigo</div>
                     <div className={styles.text}>
                         כרטיסי ביקור דיגיטליים לעסקים — יצירה, התאמה אישית
                         ושיתוף בלחיצה.
@@ -51,13 +51,13 @@ export default function Footer() {
                         תנאי שימוש
                     </Link>
                     <div className={styles.text}>
-                        אימייל: digitalyty.web@gmail.com
+                        אימייל: cardigo.app@gmail.com
                     </div>
                 </div>
             </div>
 
             <div className={styles.bottom}>
-                © {new Date().getFullYear()} Digitalyty. כל הזכויות שמורות.
+                © {new Date().getFullYear()} Cardigo. כל הזכויות שמורות.
             </div>
         </footer>
     );
