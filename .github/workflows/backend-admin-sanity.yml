@@ -1,0 +1,92 @@
+name: Backend Admin Sanity
+
+on:
+    workflow_dispatch:
+    schedule:
+        # Nightly (UTC)
+        - cron: "13 2 * * *"
+
+permissions:
+    contents: read
+
+concurrency:
+    group: backend-admin-sanity
+    cancel-in-progress: false
+
+jobs:
+    admin-user-delete:
+        runs-on: ubuntu-latest
+        timeout-minutes: 20
+        defaults:
+            run:
+                working-directory: backend
+                shell: bash
+
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4
+
+            - name: Setup Node
+              uses: actions/setup-node@v4
+              with:
+                  node-version: "20"
+                  cache: "npm"
+                  cache-dependency-path: backend/package-lock.json
+
+            - name: Install (backend)
+              run: npm ci
+
+            - name: Check required secrets
+              env:
+                  MONGO_URI_DRIFT_CHECK: ${{ secrets.MONGO_URI_DRIFT_CHECK }}
+                  MONGO_URI: ${{ secrets.MONGO_URI }}
+                  JWT_SECRET: ${{ secrets.JWT_SECRET }}
+                  SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+                  SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+                  SUPABASE_STORAGE_BUCKET: ${{ secrets.SUPABASE_STORAGE_BUCKET }}
+              run: |
+                  set -euo pipefail
+
+                  # Prefer dedicated CI/staging DB secret; fallback to legacy secret if present.
+                  EFFECTIVE_MONGO_URI="${MONGO_URI_DRIFT_CHECK:-${MONGO_URI:-}}"
+
+                  if [ -z "$EFFECTIVE_MONGO_URI" ]; then
+                    echo "SKIP: missing MONGO_URI_DRIFT_CHECK/MONGO_URI"
+                    exit 0
+                  fi
+
+                  if [ -z "${JWT_SECRET:-}" ]; then
+                    echo "SKIP: missing JWT_SECRET"
+                    exit 0
+                  fi
+
+                  if [ -z "${SUPABASE_URL:-}" ]; then
+                    echo "SKIP: missing SUPABASE_URL"
+                    exit 0
+                  fi
+
+                  if [ -z "${SUPABASE_SERVICE_ROLE_KEY:-}" ]; then
+                    echo "SKIP: missing SUPABASE_SERVICE_ROLE_KEY"
+                    exit 0
+                  fi
+
+                  if [ -z "${SUPABASE_STORAGE_BUCKET:-}" ]; then
+                    echo "SKIP: missing SUPABASE_STORAGE_BUCKET"
+                    exit 0
+                  fi
+
+                  echo "OK: required secrets present"
+
+            - name: Sanity - admin user delete
+              env:
+                  MONGO_URI_DRIFT_CHECK: ${{ secrets.MONGO_URI_DRIFT_CHECK }}
+                  MONGO_URI: ${{ secrets.MONGO_URI }}
+                  JWT_SECRET: ${{ secrets.JWT_SECRET }}
+                  SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+                  SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+                  SUPABASE_STORAGE_BUCKET: ${{ secrets.SUPABASE_STORAGE_BUCKET }}
+              run: |
+                  set -euo pipefail
+                  EFFECTIVE_MONGO_URI="${MONGO_URI_DRIFT_CHECK:-${MONGO_URI:-}}"
+                  export MONGO_URI="$EFFECTIVE_MONGO_URI"
+                  npm run sanity:admin-user-delete

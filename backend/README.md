@@ -1,5 +1,13 @@
 ## Sanity scripts
 
+## CI policy (enterprise)
+
+- `sanity:imports` is a CI gate on **every** backend PR and on `main`/`release/**` pushes.
+    - It must not require secrets and must never start the HTTP server.
+- `sanity:admin-user-delete` is a **mutating integration sanity** (Mongo + Supabase Storage).
+    - Run **manual/nightly only** (not on every PR).
+    - Requires staging secrets: `MONGO_URI` (or `MONGO_URI_DRIFT_CHECK`), `JWT_SECRET`, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_STORAGE_BUCKET`.
+
 - `sanity:ownership-consistency` checks User↔Card ownership invariants (A–E) and prints a JSON report.
 - Exit codes: `0` = clean, `2` = issues found, `1` = runtime error.
 - Windows: `npm.cmd run sanity:ownership-consistency`

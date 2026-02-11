@@ -16,7 +16,8 @@
         "sanity:slug-policy": "node scripts/sanity-slug-policy.mjs",
         "sanity:org-membership": "node scripts/sanity-org-membership.mjs",
         "sanity:org-access": "node scripts/sanity-org-access.mjs",
-        "sanity:admin-user-delete": "node scripts/sanity-admin-user-delete.mjs"
+        "sanity:admin-user-delete": "node scripts/sanity-admin-user-delete.mjs",
+        "sanity:imports": "node scripts/sanity-imports.mjs"
     },
     "keywords": [],
     "author": "",

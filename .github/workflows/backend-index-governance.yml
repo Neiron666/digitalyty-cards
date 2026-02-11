@@ -39,6 +39,9 @@ jobs:
             - name: Install (backend)
               run: npm ci
 
+            - name: Sanity - imports (no secrets)
+              run: npm run sanity:imports
+
             # PR policy: warning-only (does not fail the workflow)
             - name: Sanity (PR warning) - card index drift
               if: github.event_name == 'pull_request'
