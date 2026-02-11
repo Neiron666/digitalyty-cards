@@ -79,7 +79,8 @@
 
     --cta-bg: linear-gradient(135deg, #f1d57a, #d4af37);
     --action-bg: var(--cta-bg);
-    --hero-gradient: radial-gradient(
+    --hero-gradient:
+        radial-gradient(
             circle at 30% 20%,
             rgba(212, 175, 55, 0.22),
             transparent 40%
@@ -103,7 +104,8 @@
 
     --cta-bg: linear-gradient(135deg, #64d7e6, #2fb7c9);
     --action-bg: var(--cta-bg);
-    --hero-gradient: radial-gradient(
+    --hero-gradient:
+        radial-gradient(
             circle at 20% 15%,
             rgba(47, 183, 201, 0.22),
             transparent 42%
@@ -127,7 +129,8 @@
 
     --cta-bg: linear-gradient(135deg, #65d79a, #2fb36f);
     --action-bg: var(--cta-bg);
-    --hero-gradient: radial-gradient(
+    --hero-gradient:
+        radial-gradient(
             circle at 25% 20%,
             rgba(47, 179, 111, 0.22),
             transparent 42%
