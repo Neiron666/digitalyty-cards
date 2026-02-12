@@ -52,6 +52,7 @@
 //     return json(200, { ok: true }, { "set-cookie": cookie });
 // };
 
+// frontend/netlify/functions/auth.js
 const crypto = require("crypto");
 
 function json(statusCode, payload, extraHeaders = {}) {
@@ -70,6 +71,13 @@ function hash8(v) {
     return crypto.createHash("sha256").update(v).digest("hex").slice(0, 8);
 }
 
+function stripBomAndTrim(s) {
+    // Remove UTF-8 BOM if present + trim whitespace/CRLF.
+    return String(s)
+        .replace(/^\uFEFF/, "")
+        .trim();
+}
+
 function tryParseJson(text) {
     try {
         return { ok: true, value: JSON.parse(text), error: "" };
@@ -77,92 +85,71 @@ function tryParseJson(text) {
         return {
             ok: false,
             value: null,
-            error: e && e.message ? String(e.message) : "parse_error",
+            error:
+                e && e.message
+                    ? String(e.message).slice(0, 120)
+                    : "parse_error",
         };
     }
 }
 
-function normalizeEscapedJson(text) {
-    // Handles bodies like: {\"password\":\"ping2026\"}
-    // Also collapses double backslashes.
-    return String(text)
-        .replace(/\\\\/g, "\\") // \\ -> \
-        .replace(/\\"/g, '"'); // \" -> "
+function safeB64Head(str, maxBytes = 64) {
+    try {
+        const buf = Buffer.from(String(str), "utf8");
+        return buf.slice(0, maxBytes).toString("base64");
+    } catch {
+        return "";
+    }
 }
 
-function readJsonBody(event) {
+function charCodesHead(str, n = 12) {
+    const s = String(str);
+    const out = [];
+    for (let i = 0; i < Math.min(n, s.length); i++) out.push(s.charCodeAt(i));
+    return out;
+}
+
+function parseFormUrlEncoded(text) {
+    try {
+        const params = new URLSearchParams(String(text));
+        const password = params.get("password") || "";
+        return { ok: true, value: { password } };
+    } catch {
+        return { ok: false, value: null };
+    }
+}
+
+function readBody(event) {
     const raw = event && event.body;
     if (raw === undefined || raw === null) {
-        return {
-            ok: false,
-            value: null,
-            textHead: "",
-            normHead: "",
-            stage: "no_body",
-            err1: "",
-            err2: "",
-        };
+        return { ok: false, value: null, stage: "no_body" };
     }
 
     const isB64 = (event && event.isBase64Encoded) === true;
 
-    const text = isB64
+    const decoded = isB64
         ? Buffer.from(String(raw), "base64").toString("utf8")
         : String(raw);
 
-    // Stage 1: normal JSON
-    const p1 = tryParseJson(text);
-    if (p1.ok) {
-        // If it parses into a STRING that itself may be JSON, try parsing again.
-        if (typeof p1.value === "string") {
-            const p1b = tryParseJson(p1.value);
-            if (p1b.ok) {
-                return {
-                    ok: true,
-                    value: p1b.value,
-                    textHead: text.slice(0, 16),
-                    normHead: String(p1.value).slice(0, 16),
-                    stage: "double_parse",
-                    err1: "",
-                    err2: "",
-                };
-            }
-        }
+    const cleaned = stripBomAndTrim(decoded);
 
-        return {
-            ok: true,
-            value: p1.value,
-            textHead: text.slice(0, 16),
-            normHead: "",
-            stage: "parse_ok",
-            err1: "",
-            err2: "",
-        };
+    // 1) JSON
+    const j = tryParseJson(cleaned);
+    if (j.ok && j.value && typeof j.value === "object") {
+        return { ok: true, value: j.value, stage: "json_ok" };
     }
 
-    // Stage 2: ALWAYS try normalization (no fragile conditions)
-    const norm = normalizeEscapedJson(text);
-    const p2 = tryParseJson(norm);
-    if (p2.ok) {
-        return {
-            ok: true,
-            value: p2.value,
-            textHead: text.slice(0, 16),
-            normHead: norm.slice(0, 16),
-            stage: "normalized_parse_ok",
-            err1: "",
-            err2: "",
-        };
+    // 2) Fallback: x-www-form-urlencoded
+    const f = parseFormUrlEncoded(cleaned);
+    if (f.ok) {
+        return { ok: true, value: f.value, stage: "form_ok" };
     }
 
     return {
         ok: false,
         value: null,
-        textHead: text.slice(0, 16),
-        normHead: norm.slice(0, 16),
         stage: "parse_failed",
-        err1: p1.error,
-        err2: p2.error,
+        errJson: j.error,
     };
 }
 
@@ -170,7 +157,7 @@ exports.handler = async function handler(event) {
     const method = String(
         event && event.httpMethod ? event.httpMethod : "",
     ).toUpperCase();
-    const ver = "auth_v6";
+    const ver = "auth_v7";
 
     if (method !== "POST") {
         return json(
@@ -185,60 +172,52 @@ exports.handler = async function handler(event) {
     const debug = String(process.env.CARDIGO_GATE_DEBUG || "") === "1";
 
     if (!gatePasswordRaw || !cookieValueRaw) {
-        const payload = { ok: false, code: "GATE_MISCONFIG", ver };
-        if (debug) {
-            payload.debug = {
-                hasGatePassword: Boolean(gatePasswordRaw),
-                hasCookieValue: Boolean(cookieValueRaw),
-                gatePasswordLen:
-                    typeof gatePasswordRaw === "string"
-                        ? gatePasswordRaw.length
-                        : 0,
-                cookieValueLen:
-                    typeof cookieValueRaw === "string"
-                        ? cookieValueRaw.length
-                        : 0,
-            };
-        }
-        return json(500, payload);
+        return json(500, { ok: false, code: "GATE_MISCONFIG", ver });
     }
 
-    const parsed = readJsonBody(event);
+    const parsed = readBody(event);
     const body =
         parsed.ok && parsed.value && typeof parsed.value === "object"
             ? parsed.value
             : {};
 
-    const providedRaw = typeof body.password === "string" ? body.password : "";
-    const provided = providedRaw.trim();
+    const provided =
+        typeof body.password === "string" ? body.password.trim() : "";
     const expected = String(gatePasswordRaw).trim();
 
     if (provided !== expected) {
         const payload = { ok: false, code: "GATE_BAD_PASSWORD", ver };
 
         if (debug) {
+            const ct =
+                (event &&
+                    event.headers &&
+                    (event.headers["content-type"] ||
+                        event.headers["Content-Type"])) ||
+                "";
+
             payload.debug = {
+                // compare signals
                 expectedLen: expected.length,
                 providedLen: provided.length,
                 expectedHash8: hash8(expected),
                 providedHash8: hash8(provided),
 
+                // parse stage
                 parseOk: Boolean(parsed.ok),
                 stage: parsed.stage,
-                textHead: parsed.textHead,
-                normHead: parsed.normHead,
-                err1: parsed.err1,
-                err2: parsed.err2,
+                errJson: parsed.errJson || "",
 
-                hasBody: Boolean(event && event.body != null),
-                bodyType: event ? typeof event.body : "no_event",
-                bodyLen:
-                    event && event.body != null ? String(event.body).length : 0,
-                isBase64Flag: event ? event.isBase64Encoded : undefined,
-                bodyHead:
-                    event && event.body != null
-                        ? String(event.body).slice(0, 16)
-                        : "",
+                // raw-body proofs (not affected by JSON escaping)
+                contentType: String(ct),
+                rawBodyB64Head: safeB64Head(
+                    event && event.body != null ? String(event.body) : "",
+                ),
+                charCodesHead: charCodesHead(
+                    event && event.body != null ? String(event.body) : "",
+                    12,
+                ),
+                // note: if BOM exists in decoded string, charCodesHead should start with 65279.
             };
         }
 
