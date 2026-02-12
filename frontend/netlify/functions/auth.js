@@ -157,13 +157,21 @@ exports.handler = async function handler(event) {
     const method = String(
         event && event.httpMethod ? event.httpMethod : "",
     ).toUpperCase();
-    const ver = "auth_v7";
+    const ver = "auth_v8";
 
     if (method !== "POST") {
         return json(
             405,
             { ok: false, code: "METHOD_NOT_ALLOWED", ver },
             { Allow: "POST" },
+        );
+    }
+
+    if (event && event.body != null && String(event.body).length > 4096) {
+        return json(
+            413,
+            { ok: false, code: "GATE_BODY_TOO_LARGE", ver },
+            { "cache-control": "no-store" },
         );
     }
 
@@ -185,17 +193,22 @@ exports.handler = async function handler(event) {
         typeof body.password === "string" ? body.password.trim() : "";
     const expected = String(gatePasswordRaw).trim();
 
-    if (provided !== expected) {
+    let passwordOk = false;
+    if (provided.length === expected.length) {
+        try {
+            passwordOk = crypto.timingSafeEqual(
+                Buffer.from(provided),
+                Buffer.from(expected),
+            );
+        } catch {
+            passwordOk = false;
+        }
+    }
+
+    if (!passwordOk) {
         const payload = { ok: false, code: "GATE_BAD_PASSWORD", ver };
 
         if (debug) {
-            const ct =
-                (event &&
-                    event.headers &&
-                    (event.headers["content-type"] ||
-                        event.headers["Content-Type"])) ||
-                "";
-
             payload.debug = {
                 // compare signals
                 expectedLen: expected.length,
@@ -207,17 +220,6 @@ exports.handler = async function handler(event) {
                 parseOk: Boolean(parsed.ok),
                 stage: parsed.stage,
                 errJson: parsed.errJson || "",
-
-                // raw-body proofs (not affected by JSON escaping)
-                contentType: String(ct),
-                rawBodyB64Head: safeB64Head(
-                    event && event.body != null ? String(event.body) : "",
-                ),
-                charCodesHead: charCodesHead(
-                    event && event.body != null ? String(event.body) : "",
-                    12,
-                ),
-                // note: if BOM exists in decoded string, charCodesHead should start with 65279.
             };
         }
 
@@ -225,7 +227,7 @@ exports.handler = async function handler(event) {
     }
 
     const cookieValue = String(cookieValueRaw);
-    const cookie = `__Host-cardigo_gate=${cookieValue}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=43200`;
+    const cookie = `__Host-cardigo_gate=${cookieValue}; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=43200`;
 
     return json(200, { ok: true, ver }, { "set-cookie": cookie });
 };
