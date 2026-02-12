@@ -52,6 +52,7 @@
 //     return json(200, { ok: true }, { "set-cookie": cookie });
 // };
 
+// frontend/netlify/functions/auth.js
 const crypto = require("crypto");
 
 function json(statusCode, payload, extraHeaders = {}) {
@@ -70,37 +71,50 @@ function hash8(v) {
     return crypto.createHash("sha256").update(v).digest("hex").slice(0, 8);
 }
 
+function parsePossiblyDoubleEncodedJson(text) {
+    // 1) Normal JSON object: {"password":"..."}
+    // 2) JSON string containing JSON: "{\"password\":\"...\"}"
+    // 3) Some runtimes send escaped quotes/backslashes in event.body as a plain string
+    try {
+        const first = JSON.parse(text);
+
+        if (typeof first === "string") {
+            // If the first parse yields a string, try parsing again.
+            try {
+                const second = JSON.parse(first);
+                return { ok: true, value: second };
+            } catch {
+                return { ok: false, value: null };
+            }
+        }
+
+        return { ok: true, value: first };
+    } catch {
+        return { ok: false, value: null };
+    }
+}
+
 function readJsonBody(event) {
     const raw = event && event.body;
     if (raw === undefined || raw === null) {
         return { ok: false, value: null, textHead: "" };
     }
 
-    // Decode base64 ONLY when strictly boolean true.
     const isB64 = (event && event.isBase64Encoded) === true;
 
     const text = isB64
         ? Buffer.from(String(raw), "base64").toString("utf8")
         : String(raw);
 
-    try {
-        return {
-            ok: true,
-            value: JSON.parse(text),
-            textHead: text.slice(0, 16),
-        };
-    } catch {
-        return { ok: false, value: null, textHead: text.slice(0, 16) };
-    }
+    const parsed = parsePossiblyDoubleEncodedJson(text);
+    return { ok: parsed.ok, value: parsed.value, textHead: text.slice(0, 16) };
 }
 
 exports.handler = async function handler(event) {
     const method = String(
         event && event.httpMethod ? event.httpMethod : "",
     ).toUpperCase();
-
-    // Version marker to prove deploy updated (safe).
-    const ver = "auth_v3";
+    const ver = "auth_v4";
 
     if (method !== "POST") {
         return json(
@@ -134,11 +148,12 @@ exports.handler = async function handler(event) {
     }
 
     const parsed = readJsonBody(event);
-    const body = parsed && parsed.ok ? parsed.value : {};
+    const body =
+        parsed.ok && parsed.value && typeof parsed.value === "object"
+            ? parsed.value
+            : {};
 
     const providedRaw = typeof body.password === "string" ? body.password : "";
-
-    // Normalize to eliminate invisible whitespace.
     const provided = providedRaw.trim();
     const expected = String(gatePasswordRaw).trim();
 
@@ -147,17 +162,14 @@ exports.handler = async function handler(event) {
 
         if (debug) {
             payload.debug = {
-                // compare signals
                 expectedLen: expected.length,
                 providedLen: provided.length,
                 expectedHash8: hash8(expected),
                 providedHash8: hash8(provided),
 
-                // parser signals
-                parseOk: Boolean(parsed && parsed.ok),
-                textHead: parsed ? parsed.textHead : "",
+                parseOk: Boolean(parsed.ok),
+                textHead: parsed.textHead,
 
-                // raw event/body telemetry (safe)
                 hasBody: Boolean(event && event.body != null),
                 bodyType: event ? typeof event.body : "no_event",
                 bodyLen:
@@ -173,7 +185,6 @@ exports.handler = async function handler(event) {
         return json(401, payload);
     }
 
-    // __Host- prefix rules: Secure + Path=/ + no Domain attribute
     const cookieValue = String(cookieValueRaw);
     const cookie = `__Host-cardigo_gate=${cookieValue}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=43200`;
 
