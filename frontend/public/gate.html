@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Cardigo Gate</title>
+</head>
+
+<body>
+    <h1>כניסה</h1>
+
+    <form id="gateForm" method="post" action="/.netlify/functions/auth">
+        <label for="password">Password</label>
+        <input id="password" name="password" type="password" autocomplete="current-password" required />
+        <button type="submit">Enter</button>
+    </form>
+
+    <p id="message" aria-live="polite"></p>
+
+    <script>
+        (function () {
+            var form = document.getElementById('gateForm');
+            var input = document.getElementById('password');
+            var msg = document.getElementById('message');
+
+            function setMessage(text) {
+                msg.textContent = String(text || '');
+            }
+
+            form.addEventListener('submit', function (e) {
+                e.preventDefault();
+                setMessage('');
+
+                var password = input.value || '';
+
+                fetch('/.netlify/functions/auth', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ password: password }),
+                    credentials: 'include'
+                })
+                    .then(function (res) {
+                        return res
+                            .json()
+                            .catch(function () {
+                                return {};
+                            })
+                            .then(function (data) {
+                                return { status: res.status, data: data || {} };
+                            });
+                    })
+                    .then(function (result) {
+                        if (result && result.data && result.data.ok === true) {
+                            location.href = '/edit/card/templates';
+                            return;
+                        }
+
+                        var code = (result && result.data && result.data.code) ? result.data.code : 'GATE_ERROR';
+                        setMessage(code);
+                    })
+                    .catch(function () {
+                        setMessage('GATE_ERROR');
+                    });
+            });
+        })();
+    </script>
+</body>
+
+</html>
