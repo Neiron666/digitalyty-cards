@@ -1,3 +1,4 @@
+/api/*        https://cardigo-backend.onrender.com/api/:splat    200
 /sitemap.xml  https://cardigo-backend.onrender.com/sitemap.xml  200
 /og/*         https://cardigo-backend.onrender.com/og/:splat     200
 /card/*       /index.html   200
