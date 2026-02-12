@@ -71,33 +71,27 @@ function hash8(v) {
     return crypto.createHash("sha256").update(v).digest("hex").slice(0, 8);
 }
 
-function parsePossiblyDoubleEncodedJson(text) {
-    // 1) Normal JSON object: {"password":"..."}
-    // 2) JSON string containing JSON: "{\"password\":\"...\"}"
-    // 3) Some runtimes send escaped quotes/backslashes in event.body as a plain string
+function tryParseJson(text) {
     try {
-        const first = JSON.parse(text);
-
-        if (typeof first === "string") {
-            // If the first parse yields a string, try parsing again.
-            try {
-                const second = JSON.parse(first);
-                return { ok: true, value: second };
-            } catch {
-                return { ok: false, value: null };
-            }
-        }
-
-        return { ok: true, value: first };
+        return { ok: true, value: JSON.parse(text) };
     } catch {
         return { ok: false, value: null };
     }
 }
 
+function normalizeEscapedJsonObject(text) {
+    // Handles bodies like: {\"password\":\"ping2026\"}
+    // which is NOT valid JSON as-is, but is common when quotes are escaped upstream.
+    // Also collapses double backslashes.
+    return String(text)
+        .replace(/\\\\/g, "\\") // \\ -> \
+        .replace(/\\"/g, '"'); // \" -> "
+}
+
 function readJsonBody(event) {
     const raw = event && event.body;
     if (raw === undefined || raw === null) {
-        return { ok: false, value: null, textHead: "" };
+        return { ok: false, value: null, textHead: "", normHead: "" };
     }
 
     const isB64 = (event && event.isBase64Encoded) === true;
@@ -106,15 +100,43 @@ function readJsonBody(event) {
         ? Buffer.from(String(raw), "base64").toString("utf8")
         : String(raw);
 
-    const parsed = parsePossiblyDoubleEncodedJson(text);
-    return { ok: parsed.ok, value: parsed.value, textHead: text.slice(0, 16) };
+    // 1) Normal parse
+    const p1 = tryParseJson(text);
+    if (p1.ok)
+        return {
+            ok: true,
+            value: p1.value,
+            textHead: text.slice(0, 16),
+            normHead: "",
+        };
+
+    // 2) If it looks like escaped quotes, normalize and parse again
+    let norm = "";
+    if (text.includes('\\"')) {
+        norm = normalizeEscapedJsonObject(text);
+        const p2 = tryParseJson(norm);
+        if (p2.ok)
+            return {
+                ok: true,
+                value: p2.value,
+                textHead: text.slice(0, 16),
+                normHead: norm.slice(0, 16),
+            };
+    }
+
+    return {
+        ok: false,
+        value: null,
+        textHead: text.slice(0, 16),
+        normHead: norm ? norm.slice(0, 16) : "",
+    };
 }
 
 exports.handler = async function handler(event) {
     const method = String(
         event && event.httpMethod ? event.httpMethod : "",
     ).toUpperCase();
-    const ver = "auth_v4";
+    const ver = "auth_v5";
 
     if (method !== "POST") {
         return json(
@@ -169,6 +191,7 @@ exports.handler = async function handler(event) {
 
                 parseOk: Boolean(parsed.ok),
                 textHead: parsed.textHead,
+                normHead: parsed.normHead,
 
                 hasBody: Boolean(event && event.body != null),
                 bodyType: event ? typeof event.body : "no_event",
