@@ -52,7 +52,6 @@
 //     return json(200, { ok: true }, { "set-cookie": cookie });
 // };
 
-// frontend/netlify/functions/auth.js
 const crypto = require("crypto");
 
 function json(statusCode, payload, extraHeaders = {}) {
@@ -73,15 +72,18 @@ function hash8(v) {
 
 function tryParseJson(text) {
     try {
-        return { ok: true, value: JSON.parse(text) };
-    } catch {
-        return { ok: false, value: null };
+        return { ok: true, value: JSON.parse(text), error: "" };
+    } catch (e) {
+        return {
+            ok: false,
+            value: null,
+            error: e && e.message ? String(e.message) : "parse_error",
+        };
     }
 }
 
-function normalizeEscapedJsonObject(text) {
+function normalizeEscapedJson(text) {
     // Handles bodies like: {\"password\":\"ping2026\"}
-    // which is NOT valid JSON as-is, but is common when quotes are escaped upstream.
     // Also collapses double backslashes.
     return String(text)
         .replace(/\\\\/g, "\\") // \\ -> \
@@ -91,7 +93,15 @@ function normalizeEscapedJsonObject(text) {
 function readJsonBody(event) {
     const raw = event && event.body;
     if (raw === undefined || raw === null) {
-        return { ok: false, value: null, textHead: "", normHead: "" };
+        return {
+            ok: false,
+            value: null,
+            textHead: "",
+            normHead: "",
+            stage: "no_body",
+            err1: "",
+            err2: "",
+        };
     }
 
     const isB64 = (event && event.isBase64Encoded) === true;
@@ -100,35 +110,59 @@ function readJsonBody(event) {
         ? Buffer.from(String(raw), "base64").toString("utf8")
         : String(raw);
 
-    // 1) Normal parse
+    // Stage 1: normal JSON
     const p1 = tryParseJson(text);
-    if (p1.ok)
+    if (p1.ok) {
+        // If it parses into a STRING that itself may be JSON, try parsing again.
+        if (typeof p1.value === "string") {
+            const p1b = tryParseJson(p1.value);
+            if (p1b.ok) {
+                return {
+                    ok: true,
+                    value: p1b.value,
+                    textHead: text.slice(0, 16),
+                    normHead: String(p1.value).slice(0, 16),
+                    stage: "double_parse",
+                    err1: "",
+                    err2: "",
+                };
+            }
+        }
+
         return {
             ok: true,
             value: p1.value,
             textHead: text.slice(0, 16),
             normHead: "",
+            stage: "parse_ok",
+            err1: "",
+            err2: "",
         };
+    }
 
-    // 2) If it looks like escaped quotes, normalize and parse again
-    let norm = "";
-    if (text.includes('\\"')) {
-        norm = normalizeEscapedJsonObject(text);
-        const p2 = tryParseJson(norm);
-        if (p2.ok)
-            return {
-                ok: true,
-                value: p2.value,
-                textHead: text.slice(0, 16),
-                normHead: norm.slice(0, 16),
-            };
+    // Stage 2: ALWAYS try normalization (no fragile conditions)
+    const norm = normalizeEscapedJson(text);
+    const p2 = tryParseJson(norm);
+    if (p2.ok) {
+        return {
+            ok: true,
+            value: p2.value,
+            textHead: text.slice(0, 16),
+            normHead: norm.slice(0, 16),
+            stage: "normalized_parse_ok",
+            err1: "",
+            err2: "",
+        };
     }
 
     return {
         ok: false,
         value: null,
         textHead: text.slice(0, 16),
-        normHead: norm ? norm.slice(0, 16) : "",
+        normHead: norm.slice(0, 16),
+        stage: "parse_failed",
+        err1: p1.error,
+        err2: p2.error,
     };
 }
 
@@ -136,7 +170,7 @@ exports.handler = async function handler(event) {
     const method = String(
         event && event.httpMethod ? event.httpMethod : "",
     ).toUpperCase();
-    const ver = "auth_v5";
+    const ver = "auth_v6";
 
     if (method !== "POST") {
         return json(
@@ -190,8 +224,11 @@ exports.handler = async function handler(event) {
                 providedHash8: hash8(provided),
 
                 parseOk: Boolean(parsed.ok),
+                stage: parsed.stage,
                 textHead: parsed.textHead,
                 normHead: parsed.normHead,
+                err1: parsed.err1,
+                err2: parsed.err2,
 
                 hasBody: Boolean(event && event.body != null),
                 bodyType: event ? typeof event.body : "no_event",
