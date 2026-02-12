@@ -69,10 +69,13 @@ function readJsonBody(event) {
     const raw = event && event.body;
     if (raw === undefined || raw === null) return null;
 
-    const text =
-        event && event.isBase64Encoded
-            ? Buffer.from(String(raw), "base64").toString("utf8")
-            : String(raw);
+    // IMPORTANT: decode base64 ONLY when the flag is strictly boolean true.
+    // Some runtimes may provide "false" as a string, which is truthy in JS.
+    const isB64 = (event && event.isBase64Encoded) === true;
+
+    const text = isB64
+        ? Buffer.from(String(raw), "base64").toString("utf8")
+        : String(raw);
 
     try {
         return JSON.parse(text);
@@ -82,8 +85,6 @@ function readJsonBody(event) {
 }
 
 function hash8(v) {
-    // Safe fingerprint for debugging without leaking the value.
-    // Empty string stays empty.
     if (typeof v !== "string" || v.length === 0) return "";
     return crypto.createHash("sha256").update(v).digest("hex").slice(0, 8);
 }
@@ -102,12 +103,9 @@ exports.handler = async function handler(event) {
 
     const gatePasswordRaw = process.env.CARDIGO_GATE_PASSWORD;
     const cookieValueRaw = process.env.CARDIGO_GATE_COOKIE_VALUE;
-
     const debug = String(process.env.CARDIGO_GATE_DEBUG || "") === "1";
 
-    // Hard misconfig: env not present at all
     if (!gatePasswordRaw || !cookieValueRaw) {
-        // Optional safe debug to confirm env presence/length (still no value)
         const payload = { ok: false, code: "GATE_MISCONFIG" };
         if (debug) {
             payload.debug = {
@@ -129,7 +127,6 @@ exports.handler = async function handler(event) {
     const body = readJsonBody(event) || {};
     const providedRaw = typeof body.password === "string" ? body.password : "";
 
-    // Normalize: removes invisible leading/trailing spaces from both sides
     const provided = providedRaw.trim();
     const expected = String(gatePasswordRaw).trim();
 
@@ -146,7 +143,6 @@ exports.handler = async function handler(event) {
         return json(401, payload);
     }
 
-    // __Host- prefix rules: Secure + Path=/ + no Domain attribute
     const cookieValue = String(cookieValueRaw);
     const cookie = `__Host-cardigo_gate=${cookieValue}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=43200`;
 
