@@ -1,6 +1,6 @@
-/api/*        https://cardigo-backend.onrender.com/api/:splat    200
-/sitemap.xml  https://cardigo-backend.onrender.com/sitemap.xml  200
-/og/*         https://cardigo-backend.onrender.com/og/:splat     200
+/api/*        /.netlify/functions/proxy/api/:splat     200
+/sitemap.xml  /.netlify/functions/proxy/sitemap.xml    200
+/og/*         /.netlify/functions/proxy/og/:splat      200
 /card/*       /index.html   200
 /c/*          /index.html   200
 /*            /index.html   200

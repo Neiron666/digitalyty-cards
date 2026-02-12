@@ -46,6 +46,18 @@ app.use((err, req, res, next) => {
     return next(err);
 });
 
+app.use((req, res, next) => {
+    const sharedSecret = process.env.CARDIGO_PROXY_SHARED_SECRET;
+    if (!sharedSecret) return next();
+
+    const provided = req.header("x-cardigo-proxy-secret");
+    if (provided !== sharedSecret) {
+        return res.status(403).json({ ok: false, code: "PROXY_FORBIDDEN" });
+    }
+
+    return next();
+});
+
 // Local uploads (dev fallback when Cloudinary isn't configured)
 app.use("/uploads", express.static(path.resolve(process.cwd(), "uploads")));
 
