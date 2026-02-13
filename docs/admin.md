@@ -1,5 +1,9 @@
 # Admin Cabinet
 
+## Temporary API gate
+
+For the current temporary API gate (password → cookie) and how to safely open the API later, see [SECURITY_TEMP_API_GATE.md](security/SECURITY_TEMP_API_GATE.md).
+
 ## Security model
 
 - Admin UI is a normal browser page at `/admin`.
