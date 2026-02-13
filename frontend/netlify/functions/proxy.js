@@ -110,6 +110,7 @@ exports.handler = async function handler(event) {
 
         const method = String(event.httpMethod || "GET").toUpperCase();
         const requestHeaders = stripHopByHop(event.headers);
+        requestHeaders["accept-encoding"] = "identity";
         requestHeaders["x-cardigo-proxy-secret"] = sharedSecret;
 
         const hasBody =
@@ -132,13 +133,15 @@ exports.handler = async function handler(event) {
         });
 
         const responseHeaders = {};
+        const blacklist = [
+            "content-encoding",
+            "content-length",
+            "transfer-encoding",
+        ];
         for (const [key, value] of response.headers.entries()) {
-            if (String(key).toLowerCase() === "transfer-encoding") continue;
+            if (blacklist.includes(String(key).toLowerCase())) continue;
             responseHeaders[key] = value;
         }
-
-        const contentType = response.headers.get("content-type") || "";
-        const textLike = isTextLikeContentType(contentType);
 
         const arrayBuffer = await response.arrayBuffer();
         const buffer = Buffer.from(arrayBuffer);
@@ -146,10 +149,8 @@ exports.handler = async function handler(event) {
         return {
             statusCode: response.status,
             headers: responseHeaders,
-            body: textLike
-                ? buffer.toString("utf8")
-                : buffer.toString("base64"),
-            isBase64Encoded: !textLike,
+            body: buffer.toString("base64"),
+            isBase64Encoded: true,
         };
     } catch (err) {
         return {
