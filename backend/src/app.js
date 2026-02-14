@@ -50,6 +50,18 @@ app.use((req, res, next) => {
     const sharedSecret = process.env.CARDIGO_PROXY_SHARED_SECRET;
     if (!sharedSecret) return next();
 
+    const allowLocalDirect = process.env.ALLOW_LOCAL_DIRECT === "1";
+    const isProd = process.env.NODE_ENV === "production";
+    const remoteAddress = req.socket?.remoteAddress || "";
+    const isLoopback =
+        remoteAddress === "127.0.0.1" ||
+        remoteAddress === "::1" ||
+        remoteAddress === "::ffff:127.0.0.1";
+
+    if (!isProd && allowLocalDirect && isLoopback) {
+        return next();
+    }
+
     const provided = req.header("x-cardigo-proxy-secret");
     if (provided !== sharedSecret) {
         return res.status(403).json({ ok: false, code: "PROXY_FORBIDDEN" });

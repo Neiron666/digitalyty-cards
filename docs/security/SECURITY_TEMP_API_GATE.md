@@ -125,9 +125,75 @@ curl.exe -i -b cg_cookies.txt https://cardigo.co.il/api/health
 curl.exe -i https://cardigo-backend.onrender.com/api/health
 ```
 
+## Local development (without Render and without gate-cookie)
+
+The temporary password gate (cookie) is designed for the production site and is **not** a good fit for `http://localhost` / `http://127.0.0.1`.
+
+Why the gate cookie is not suitable for localhost (expected behavior):
+
+- The cookie is set as `__Host-*` + `Secure` + `SameSite=Strict`.
+    - `Secure` cookies are only stored/sent over HTTPS.
+    - `SameSite=Strict` is enforced by the browser using same-site rules (scheme/host matter).
+- Environment scope: changing `$env:*` in PowerShell does **not** affect a backend process that is already running in a different terminal/process.
+    - Env vars must be set **before** starting `node`/`nodemon` (same terminal/process) or provided via a `.env` file / OS environment.
+
+Supported local development modes:
+
+### Mode A (simple): origin-lock OFF locally
+
+- Run the backend locally with `CARDIGO_PROXY_SHARED_SECRET` **unset/empty**.
+    - Origin-lock middleware is inactive and requests to `http://127.0.0.1:<PORT>/api/*` are not blocked by `PROXY_FORBIDDEN`.
+    - Requests will still be subject to the normal auth layer (JWT), so protected endpoints may return auth errors (that is expected).
+
+### Mode B (keep origin-lock ON locally): loopback-only bypass
+
+- Run the backend locally with `CARDIGO_PROXY_SHARED_SECRET` set **and** `ALLOW_LOCAL_DIRECT=1`.
+    - This enables a dev-only bypass for loopback requests when `NODE_ENV != production`.
+    - This is useful if you want to keep origin-lock semantics enabled while developing on the same machine.
+
+#### Bypass safety notes
+
+Bypass is allowed only when **all** of the following are true:
+
+- `NODE_ENV !== "production"`
+- `ALLOW_LOCAL_DIRECT === "1"`
+- `remoteAddress` is loopback: `127.0.0.1` / `::1` / `::ffff:127.0.0.1`
+
+Risk note: `ALLOW_LOCAL_DIRECT` is **strictly local-only**. Never set it in any deployed environment (Render/Netlify/prod/staging). If the service ever runs behind a reverse proxy on the same host, loopback may appear “local” and the bypass could unintentionally apply.
+
+### Local smoke suite (PowerShell)
+
+All commands use `curl.exe` and `127.0.0.1` (avoid `localhost` to reduce cookie/host confusion).
+
+Mode A (origin-lock OFF):
+
+```powershell
+curl.exe -i http://127.0.0.1:<PORT>/api/health
+
+# Protected endpoints should fail with an auth-related response (expected),
+# but MUST NOT fail with PROXY_FORBIDDEN in Mode A.
+curl.exe -i http://127.0.0.1:<PORT>/api/cards/mine
+```
+
+Mode B (origin-lock ON locally; show difference with/without bypass):
+
+```powershell
+# Start backend with origin-lock ON but bypass OFF (expect PROXY_FORBIDDEN)
+cmd /v:on /c "set NODE_ENV=development& set CARDIGO_PROXY_SHARED_SECRET=<SHARED_SECRET>& set ALLOW_LOCAL_DIRECT=& pushd backend& npm.cmd run dev"
+
+curl.exe -i http://127.0.0.1:<PORT>/api/health
+
+# Start backend with origin-lock ON and bypass ON (expect 200 on /api/health from loopback)
+cmd /v:on /c "set NODE_ENV=development& set CARDIGO_PROXY_SHARED_SECRET=<SHARED_SECRET>& set ALLOW_LOCAL_DIRECT=1& pushd backend& npm.cmd run dev"
+
+curl.exe -i http://127.0.0.1:<PORT>/api/health
+```
+
 ## How to open the API for broad use (safe removal plan)
 
 This gate is intentionally temporary. Removing it should be a **deliberate** change with clear acceptance criteria.
+
+To “open” the API you must deliberately remove the gate/auth and decide what to do about Netlify routing (redirects/proxy) and the backend origin-lock policy (keep locked vs make public).
 
 ### Step 0 — Decide desired security model
 
