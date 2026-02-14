@@ -33,6 +33,12 @@ missing_*.txt
 _tmp_*.txt
 *_tmp_*.txt
 
+
 _tmp_*.json
 /_tmp/
 /_tmp/**
+
+_gallery_*.txt
+*_gallery_*.txt
+
+
