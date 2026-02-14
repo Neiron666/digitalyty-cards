@@ -1,1 +1,0 @@
-﻿C:\Users\User\Desktop\Visit-me\Projects\Digitalyty-card-app\digitalyty-cards\frontend\src\components\editor\EditorPreview.jsx:8: <div className={styles.phoneFrame} data-preview="phone">

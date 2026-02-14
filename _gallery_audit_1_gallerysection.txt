@@ -1,3 +1,0 @@
-﻿C:\Users\User\Desktop\Visit-me\Projects\Digitalyty-card-app\digitalyty-cards\frontend\src\components\card\sections\GallerySection.jsx:2: import styles from "./GallerySection.module.css";
-C:\Users\User\Desktop\Visit-me\Projects\Digitalyty-card-app\digitalyty-cards\frontend\src\components\card\sections\GallerySection.jsx:5: function GallerySection({ card }) {
-C:\Users\User\Desktop\Visit-me\Projects\Digitalyty-card-app\digitalyty-cards\frontend\src\components\card\sections\GallerySection.jsx:33: export default GallerySection;
