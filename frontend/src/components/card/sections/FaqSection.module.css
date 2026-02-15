@@ -5,13 +5,13 @@
     --faq-accent: var(--action-bg, var(--primary, #4f7cff));
     --faq-answer: var(--contact-btn-secondary, var(--primary, #4f7cff));
 
-    --faq-text: var(--text-main, #eaf0ff);
+    --faq-text: var(--faq-text, #eaf0ff);
     --faq-muted: var(--text-subtitle, rgba(234, 240, 255, 0.78));
     --faq-focus-ring: var(
         --focus-ring,
         0 0 0 3px color-mix(in srgb, var(--faq-accent) 40%, transparent)
     );
-    --icon-color: var(--bg-surface, #eaf0ff);
+    --icon-color: var(--faq-text, #eaf0ff);
 
     /* Animation ceiling (skins may override via --faq-answer-max). */
     --_faq-answer-max: var(--faq-answer-max, 56rem);

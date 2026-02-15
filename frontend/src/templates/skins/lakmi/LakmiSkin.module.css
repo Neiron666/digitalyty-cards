@@ -1,60 +1,119 @@
 .theme {
-    --bg-main: #faf7f4;
-    --bg-surface: #ffffff;
-    --bg-card: #ffffff;
+    /* =========================================================
+       CORE COLORS (SSoT) — универсальные роли
+       ========================================================= */
+    --c-neutral-bg: #faf7f4;
+    --c-neutral-surface: #fff9f9;
+    --c-neutral-card: #ffffff;
 
-    /* Accent: rose */
-    --main-token-color: #a9863e;
-    --secondary-token-color: rgba(193, 138, 168, 1);
-    --secondary-token-color-rgb: 193, 138, 168;
-    --contact-btn-color: var(--main-token-color);
-    --contact-btn-bg: var(--main-token-color);
-    --contact-btn-fg: #ffffff;
-    --contact-btn-border: var(--main-token-color);
-    --contact-btn-outline: var(--secondary-token-color);
-    --contact-btn-secondary: var(--secondary-token-color);
-    --contact-btn-hover-fg: #ffffff;
+    --c-neutral-text: #1a1a1a;
+    --rgb-neutral-text: 26, 26, 26;
 
-    --primary: var(--main-token-color);
-    --primary-hover: #a9863e;
-    --secondary: var(--secondary-token-color);
-    --secondary-hover: rgba(193, 138, 168, 0.9);
+    /* Brand roles */
+    --c-brand-primary: #a9863e; /* главный */
+    --c-brand-secondary: #c18aa8; /* второстепенный (rose в этой палитре) */
+    --c-brand-accent: #c8a75c; /* поддержка/акцент (бордеры/dividers/action) */
 
-    /* Accent: gold for key borders/dividers */
-    --avatar-border: #c8a75c;
-    --avatar-bg: #ffffff;
+    /* “On” colors */
+    --c-on-primary: #ffffff;
 
-    --text-main: #1a1a1a;
+    /* RGB helpers */
+    --rgb-neutral-surface: 255, 255, 255;
+    --rgb-brand-secondary: 193, 138, 168;
+    --rgb-brand-accent: 200, 167, 92;
+
+    /* =========================================================
+       SEMANTIC TOKENS — ниже только var()/rgba(var(--rgb-*),a)
+       ========================================================= */
+    --bg-main: var(--c-neutral-bg);
+    --bg-surface: var(--c-neutral-surface);
+    --bg-card: var(--c-neutral-card);
+
+    --text-main: var(--c-neutral-text);
+
+    /* Legacy / public tokens that other parts already expect */
+    --main-token-color: var(--c-brand-primary);
+    --secondary-token-color: var(--c-brand-secondary);
+    --secondary-token-color-rgb: var(--rgb-brand-secondary);
+
+    /* Primary/secondary system */
+    --primary: var(--c-brand-primary);
+    --primary-hover: var(
+        --c-brand-primary
+    ); /* при желании: --c-brand-primary-hover */
+    --secondary: var(--c-brand-secondary);
+    --secondary-hover: rgba(var(--rgb-brand-secondary), 0.9);
+
+    /* Contact button (derived) */
+    --contact-btn-color: var(--primary);
+    --contact-btn-bg: var(--primary);
+    --contact-btn-fg: var(--c-on-primary);
+    --contact-btn-border: var(--primary);
+    --contact-btn-outline: var(--secondary);
+    --contact-btn-secondary: var(--secondary);
+    --contact-btn-hover-fg: var(--c-on-primary);
+
+    /* Avatar */
+    --avatar-border: var(--c-brand-accent);
+    --avatar-bg: var(--bg-surface);
+
+    /* Typography */
+    --action-text: var(--c-neutral-text);
     --text-subtitle: var(--action-text);
     --color-title: var(--text-main);
-    --name-color: var(--main-token-color);
+    --name-color: var(--primary);
 
-    --border: rgba(26, 26, 26, 0.14);
-    --shadow-soft: 0 18px 48px rgba(26, 26, 26, 0.14);
+    /* Borders / shadows */
+    --border: rgba(var(--rgb-neutral-text), 0.14);
+    --shadow-soft: 0 18px 48px rgba(var(--rgb-neutral-text), 0.14);
 
-    --section-bg: rgba(200, 167, 92, 0.06);
-    --section-border: rgba(26, 26, 26, 0.1);
+    /* Sections */
+    --section-bg: rgba(var(--rgb-brand-accent), 0.06);
+    --section-border: rgba(var(--rgb-neutral-text), 0.1);
+
+    /* faq */
+    --faq-text: var(--c-on-primary);
 
     /* Zebra surfaces (tokens only) */
     --section-surface-odd: var(--bg-surface);
     --section-surface-even:
-        linear-gradient(rgba(193, 138, 168, 0.22), rgba(200, 167, 92, 0.1)),
+        linear-gradient(
+            rgba(var(--rgb-brand-secondary), 0.22),
+            rgba(var(--rgb-brand-accent), 0.1)
+        ),
         var(--section-bg);
     --section-border-odd: none;
     --section-border-even: none;
 
-    --action-bg: #c8a75c;
-    --action-text: #1a1a1a;
-    --action-border: rgba(200, 167, 92, 0.38);
+    /* Action surface */
+    --action-bg: var(--c-brand-accent);
+    --action-border: rgba(var(--rgb-brand-accent), 0.38);
 
-    --focus-ring: 0 0 0 3px rgba(193, 138, 168, 0.32);
+    /* Focus */
+    --focus-ring: 0 0 0 3px rgba(var(--rgb-brand-secondary), 0.32);
 
+    /* Hero overlay */
     --hero-overlay-bg: linear-gradient(
         180deg,
-        rgba(255, 255, 255, 0.12),
-        rgba(230, 183, 210, 0.52)
+        rgba(var(--rgb-neutral-surface), 0.12),
+        rgba(var(--rgb-brand-secondary), 0.52)
     );
     --hero-image-position: center;
 
-    --hero-divider-border: #a9863e;
+    /* Divider */
+    --hero-divider-border: var(--primary);
+}
+
+@media (max-width: 900px) {
+    .theme {
+        /* чтобы shadow тоже был SSoT и не зависел от “чужих” чисел */
+        --shadow-soft: 0 14px 36px rgba(var(--rgb-neutral-text), 0.12);
+    }
+}
+
+@media (max-width: 520px) {
+    .theme {
+        --hero-min-height: 200px;
+        --card-radius: var(--radius-md);
+    }
 }

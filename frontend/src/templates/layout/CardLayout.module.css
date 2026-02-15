@@ -736,3 +736,16 @@
         --contact-btn-size-lg: 52px;
     }
 }
+
+@media (max-width: 900px) {
+    .theme {
+        --shadow-soft: 0 14px 36px rgba(31, 26, 23, 0.12);
+    }
+}
+
+@media (max-width: 520px) {
+    .theme {
+        --hero-min-height: 200px;
+        --card-radius: var(--radius-md);
+    }
+}
