@@ -129,6 +129,31 @@ function EditCard() {
         },
     };
 
+    function withPreviewMediaTouched(nextDraft) {
+        if (!nextDraft || typeof nextDraft !== "object") return nextDraft;
+        const prevFlags =
+            nextDraft.flags && typeof nextDraft.flags === "object"
+                ? nextDraft.flags
+                : {};
+        const prevLocks =
+            prevFlags.previewLocks && typeof prevFlags.previewLocks === "object"
+                ? prevFlags.previewLocks
+                : {};
+
+        if (prevLocks.mediaTouched === true) return nextDraft;
+
+        return {
+            ...nextDraft,
+            flags: {
+                ...prevFlags,
+                previewLocks: {
+                    ...prevLocks,
+                    mediaTouched: true,
+                },
+            },
+        };
+    }
+
     // Phase 2: draft-first editing.
     // `draftCard` is the SSoT for editor UI (panels + preview).
     const [draftCard, setDraftCard] = useState(emptyCard);
@@ -1140,6 +1165,22 @@ function EditCard() {
                     continue;
                 }
 
+                if (section === "flags") {
+                    // Preview-only locks must never leak to backend.
+                    const raw =
+                        draftCard?.flags && typeof draftCard.flags === "object"
+                            ? draftCard.flags
+                            : null;
+                    if (!raw) {
+                        payload.flags = raw;
+                        continue;
+                    }
+
+                    const { previewLocks, ...rest } = raw;
+                    payload.flags = rest;
+                    continue;
+                }
+
                 payload[section] = draftCard?.[section];
             }
         }
@@ -1151,8 +1192,20 @@ function EditCard() {
 
         try {
             const res = await api.patch(`/cards/${cardId}`, payload);
+            const previewLocks = draftCardRef.current?.flags?.previewLocks;
             const normalized = normalizeCardForEditor(res.data);
-            setDraftCard(normalized);
+
+            const normalizedWithLocks = previewLocks
+                ? {
+                      ...normalized,
+                      flags: {
+                          ...(normalized?.flags || {}),
+                          previewLocks,
+                      },
+                  }
+                : normalized;
+
+            setDraftCard(normalizedWithLocks);
             setDirtyPaths(new Set());
             setSaveState("saved");
             return true;
@@ -1360,10 +1413,25 @@ function EditCard() {
             const key = String(sectionOrPath || "");
             if (!key) return;
 
+            const designMediaKeys = new Set([
+                "backgroundImage",
+                "coverImage",
+                "avatarImage",
+                "logo",
+            ]);
+
+            const isDesignMediaPath =
+                key.startsWith("design.") &&
+                designMediaKeys.has(key.split(".")[1] || "");
+
             if (key.includes(".")) {
-                setDraftCard((prev) =>
-                    prev ? setIn(prev, key, patchOrValue) : prev,
-                );
+                setDraftCard((prev) => {
+                    if (!prev) return prev;
+                    const next = setIn(prev, key, patchOrValue);
+                    return isDesignMediaPath
+                        ? withPreviewMediaTouched(next)
+                        : next;
+                });
                 setDirtyPaths((prev) => {
                     const next = new Set(prev);
                     next.add(key);
@@ -1371,9 +1439,25 @@ function EditCard() {
                 });
             } else {
                 if (isPlainObject(patchOrValue)) {
-                    setDraftCard((prev) =>
-                        prev ? mergeSection(prev, key, patchOrValue) : prev,
-                    );
+                    const shouldTouchMedia =
+                        key === "design" &&
+                        Object.keys(patchOrValue || {}).some((fieldKey) => {
+                            if (!designMediaKeys.has(fieldKey)) return false;
+                            const prevDesign =
+                                draftCardRef.current?.design || {};
+                            return (
+                                prevDesign?.[fieldKey] !==
+                                patchOrValue[fieldKey]
+                            );
+                        });
+
+                    setDraftCard((prev) => {
+                        if (!prev) return prev;
+                        const next = mergeSection(prev, key, patchOrValue);
+                        return shouldTouchMedia
+                            ? withPreviewMediaTouched(next)
+                            : next;
+                    });
                     setDirtyPaths((prev) => {
                         const next = new Set(prev);
                         next.add(key);
@@ -1417,9 +1501,13 @@ function EditCard() {
                         }
                     }
                 } else {
-                    setDraftCard((prev) =>
-                        prev ? { ...(prev || {}), [key]: patchOrValue } : prev,
-                    );
+                    setDraftCard((prev) => {
+                        if (!prev) return prev;
+                        const next = { ...(prev || {}), [key]: patchOrValue };
+                        return key === "gallery"
+                            ? withPreviewMediaTouched(next)
+                            : next;
+                    });
                     setDirtyPaths((prev) => {
                         const next = new Set(prev);
                         next.add(key);

@@ -3,6 +3,18 @@ import {
     normalizeTemplateId,
 } from "../../templates/templates.config";
 
+const DEMO_COVER_URL = "/templates/previews/demo-cover.webp";
+const DEMO_AVATAR_URL = "/templates/previews/demo-avatar.webp";
+
+const DEMO_GALLERY_URLS = [
+    "/templates/previews/gallery/demo-1.webp",
+    "/templates/previews/gallery/demo-2.webp",
+    "/templates/previews/gallery/demo-3.webp",
+    "/templates/previews/gallery/demo-4.webp",
+    "/templates/previews/gallery/demo-5.webp",
+    "/templates/previews/gallery/demo-6.webp",
+];
+
 function isNonEmptyString(value) {
     return typeof value === "string" && value.trim().length > 0;
 }
@@ -70,6 +82,19 @@ function hasAnyReviewValue(reviews) {
     return false;
 }
 
+function hasAnyFaqValue(faq) {
+    if (!faq || typeof faq !== "object") return false;
+
+    if (isNonEmptyString(faq.title) || isNonEmptyString(faq.lead)) return true;
+
+    const items = Array.isArray(faq.items) ? faq.items : [];
+    for (const it of items) {
+        if (!it || typeof it !== "object") continue;
+        if (isNonEmptyString(it.q) || isNonEmptyString(it.a)) return true;
+    }
+    return false;
+}
+
 export function hasUserBusiness(card) {
     const business = card?.business || {};
     return (
@@ -116,7 +141,8 @@ export function hasUserSections(card) {
     const content = card?.content || {};
     const hasAbout = hasAnyNonEmptyString(content, ["aboutTitle", "aboutText"]);
     const hasReviews = hasAnyReviewValue(card?.reviews);
-    return hasAbout || hasReviews;
+    const hasFaq = hasAnyFaqValue(card?.faq);
+    return hasAbout || hasReviews || hasFaq;
 }
 
 function normalizeReviewsForPreview(reviews) {
@@ -177,7 +203,16 @@ export function isCardNearlyEmpty(card) {
     const previewReviews = normalizeReviewsForPreview(card.reviews);
     const hasReviews = previewReviews.length > 0;
 
-    return !(hasIdentity || hasAbout || hasContacts || hasMedia || hasReviews);
+    const hasFaq = hasAnyFaqValue(card.faq);
+
+    return !(
+        hasIdentity ||
+        hasAbout ||
+        hasContacts ||
+        hasMedia ||
+        hasReviews ||
+        hasFaq
+    );
 }
 
 export function buildDemoCard(templateId) {
@@ -185,17 +220,22 @@ export function buildDemoCard(templateId) {
         normalizeTemplateId(templateId) || "roismanA11yLight";
     const template = getTemplateById(normalizedTemplateId);
     const placeholder = template?.previewImage;
+    const coverPlaceholder = isNonEmptyString(DEMO_COVER_URL)
+        ? DEMO_COVER_URL
+        : placeholder;
+    const avatarPlaceholder = isNonEmptyString(DEMO_AVATAR_URL)
+        ? DEMO_AVATAR_URL
+        : placeholder;
 
-    const gallery = placeholder
-        ? [1, 2, 3, 4, 5].map(() => ({ url: placeholder }))
-        : [];
+    const gallery = DEMO_GALLERY_URLS.map((url) => ({ url }));
 
     return {
         status: "draft",
         slug: "",
         business: {
             name: "דוגמא – שם העסק",
-            category: "יועץ/ת עסקי/ת",
+            category: " דוגמא – קטגורית העסק",
+            slogan: "דוגמא – הסלוגן של העסק",
             city: "תל אביב",
         },
         contact: {
@@ -205,7 +245,7 @@ export function buildDemoCard(templateId) {
             website: "https://example.com",
         },
         content: {
-            aboutTitle: "אודות",
+            aboutTitle: "אודות דוגמא",
             aboutText:
                 "טקסט דוגמה קצר כדי להראות איך הכרטיס נראה כשהוא מלא. הוסיפו את הפרטים שלכם כדי להתאים אותו לעסק.",
         },
@@ -214,10 +254,24 @@ export function buildDemoCard(templateId) {
             { text: "שירות מעולה ומקצועי. מומלץ!", name: "דוגמא" },
             { text: "חוויה מצוינת, מענה מהיר ותוצאה מדהימה.", name: "דוגמא" },
         ],
+        faq: {
+            title: "שאלות  – דוגמא",
+            // lead: "טקסט דוגמה קצר שמסביר למה החלק הזה חשוב.",
+            items: [
+                {
+                    q: "שאלה לדוגמה 1?",
+                    a: "תשובה לדוגמה 1 – כאן אפשר להסביר בקצרה ובבהירות.",
+                },
+                {
+                    q: "שאלה לדוגמה 2?",
+                    a: "תשובה לדוגמה 2 – טקסט דוגמה כדי לראות איך זה נראה בכרטיס.",
+                },
+            ],
+        },
         design: {
             templateId: normalizedTemplateId,
-            backgroundImage: placeholder || null,
-            avatarImage: placeholder || null,
+            backgroundImage: coverPlaceholder || null,
+            avatarImage: avatarPlaceholder || null,
         },
     };
 }
@@ -226,6 +280,7 @@ export function withDemoPreviewCard(card) {
     if (!card || typeof card !== "object") return card;
 
     const templateId = card?.design?.templateId;
+    const mediaTouched = card?.flags?.previewLocks?.mediaTouched === true;
 
     // Enterprise demo behavior: demo fills only untouched groups.
     // Once user touches any field in a group, demo for that whole group is disabled.
@@ -244,7 +299,7 @@ export function withDemoPreviewCard(card) {
         demoPatch.contact = demo.contact;
     }
 
-    if (!hasUserMedia(card)) {
+    if (!mediaTouched && !hasUserMedia(card)) {
         demoPatch.gallery = demo.gallery;
         demoPatch.design = {
             ...(demoPatch.design || {}),
@@ -256,6 +311,7 @@ export function withDemoPreviewCard(card) {
     if (!hasUserSections(card)) {
         demoPatch.content = demo.content;
         demoPatch.reviews = demo.reviews;
+        demoPatch.faq = demo.faq;
     }
 
     const merged = mergeWithDemo(card, demoPatch);
