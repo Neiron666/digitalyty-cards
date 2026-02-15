@@ -20,13 +20,13 @@
     --focus-ring: 0 0 0 3px rgba(79, 124, 255, 0.35);
 
     --font-family: "Heebo", system-ui, sans-serif;
-
+    /* 
     --fs-base: 15px;
     --fs-h1: 28px;
     --fs-h2: 20px;
     --fs-h3: 16px;
     --lh-tight: 1.1;
-    --lh-normal: 1.45;
+    --lh-normal: 1.45; */
 
     --action-bg: var(--cta-bg, var(--primary));
     --action-text: #ffffff;
@@ -96,10 +96,11 @@
     --primary: #2fb7c9;
     --primary-hover: #2698a7;
     --primary-contrast: #0b1220;
-
+    --text-main: #063037;
     /* Backward-compat (legacy token names) */
-    --text-main: #eaf0ff;
-    --text-muted: #a8b3cf;
+
+    --text-main: var(--primary);
+    --text-muted: var(--primary-hover);
     --border: rgba(255, 255, 255, 0.08);
 
     --cta-bg: linear-gradient(135deg, #64d7e6, #2fb7c9);

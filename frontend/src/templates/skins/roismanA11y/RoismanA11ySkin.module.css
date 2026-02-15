@@ -7,7 +7,7 @@
     --main-token-color: #094a56;
     --main-token-color-rgb: 12, 106, 122;
 
-    --secondary-token-color: #0c697ade;
+    --secondary-token-color: #0c6a7a;
 
     --contact-btn-color: var(--main-token-color);
 
@@ -17,7 +17,7 @@
     --contact-btn-hover-fg: #ffffff;
 
     --primary: var(--main-token-color);
-    --primary-hover: var(--main-token-color);
+    --primary-hover: var(--secondary-token-color);
 
     --secondary: var(--secondary-token-color);
     --avatar-border: var(--main-token-color);

@@ -13,7 +13,7 @@ export const TEMPLATES = [
     {
         id: "roismanA11yLight",
         label: "Roisman A11y Light",
-        name: "Roisman A11y Light",
+        name: "מפרץ",
         skinKey: "roismanA11y",
         previewImage: PREVIEW_PLACEHOLDER_PNG,
         supports: {
@@ -93,7 +93,7 @@ export const TEMPLATES = [
     {
         id: "lakmi",
         label: "Lakmi",
-        name: "Lakmi",
+        name: "ורד-זהב",
         skinKey: "lakmi",
         previewImage: PREVIEW_PLACEHOLDER_PNG,
         supports: {
@@ -173,7 +173,7 @@ export const TEMPLATES = [
     {
         id: "galit",
         label: "Galit",
-        name: "Galit",
+        name: "אבן-שמיים",
         skinKey: "galit",
         previewImage: PREVIEW_PLACEHOLDER_PNG,
         supports: {
@@ -254,7 +254,7 @@ export const TEMPLATES = [
     {
         id: "customV1",
         skinKey: "custom",
-        name: "Custom (Palette)",
+        name: "בחירה עצמית",
         backgroundMode: "photo",
         previewImage: PREVIEW_PLACEHOLDER_PNG,
         supports: {
@@ -330,7 +330,7 @@ export const TEMPLATES = [
     {
         id: "beauty",
         skinKey: "beauty",
-        name: "Beauty",
+        name: "שקד",
         backgroundMode: "photo",
         previewImage: PREVIEW_PLACEHOLDER_PNG,
         supports: {
