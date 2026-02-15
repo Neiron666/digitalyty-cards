@@ -116,7 +116,10 @@ function DesignPanel({ card, design, plan, onChange, onFieldChange, cardId }) {
     }
 
     return (
-        <Panel title="עיצוב">
+        <Panel
+            title="ראש הכרטיס
+"
+        >
             {paletteKeys.length ? (
                 <div className={styles.field}>
                     <label className={styles.label} htmlFor="customPaletteKey">

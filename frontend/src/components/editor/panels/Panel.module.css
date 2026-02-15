@@ -19,3 +19,7 @@
     flex-direction: column;
     gap: 14px;
 }
+.body h2,
+.body h3 {
+    text-align: center;
+}

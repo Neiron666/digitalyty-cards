@@ -162,7 +162,7 @@ function DesignEditor({ design, onChange, plan, cardId }) {
 
     return (
         <aside className={styles.root}>
-            <h2>עיצוב הכרטיס</h2>
+            {/* <h2>ראש הכרטיס</h2> */}
 
             {template?.supports?.backgroundImage && (
                 <section className={styles.section}>

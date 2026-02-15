@@ -10,21 +10,28 @@
     --gold: #d4af37;
     --gold-soft: rgba(212, 175, 55, 0.35);
     --gold-fade: rgba(212, 175, 55, 0.15);
+    --bg-main: #020617;
 }
 
 html,
 body {
     margin: 0;
     padding: 0;
-    background: radial-gradient(
-            900px 360px at 80% 0%,
-            rgba(59, 130, 246, 0.18),
+    background:
+        radial-gradient(
+            1500px 360px at 80% 0%,
+            rgba(59, 130, 246, 0.5),
             transparent 60%
         ),
         radial-gradient(
-            700px 320px at 10% 30%,
-            rgba(59, 130, 246, 0.12),
+            1800px 320px at 10% 30%,
+            rgba(59, 130, 246, 0.6),
             transparent 60%
+        ),
+        radial-gradient(
+            1200px 420px at 85% 95%,
+            rgba(59, 130, 246, 0.3),
+            transparent 62%
         ),
         var(--bg-main);
     background-attachment: fixed;

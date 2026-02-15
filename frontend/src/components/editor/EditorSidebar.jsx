@@ -5,6 +5,7 @@ import {
     PANEL_BUSINESS,
     PANEL_CONTACT,
     PANEL_CONTENT,
+    PANEL_HEAD,
     PANEL_DESIGN,
     PANEL_GALLERY,
     PANEL_REVIEWS,
@@ -16,10 +17,11 @@ import {
 
 const TABS = [
     { id: PANEL_TEMPLATES, label: "תבניות" },
+    { id: PANEL_DESIGN, label: "עיצוב אישי" },
+    { id: PANEL_HEAD, label: "ראש הכרטיס" },
     { id: PANEL_BUSINESS, label: "פרטי העסק" },
     { id: PANEL_CONTACT, label: "פרטי קשר" },
     { id: PANEL_CONTENT, label: "תוכן" },
-    { id: PANEL_DESIGN, label: "עיצוב" },
     { id: PANEL_GALLERY, label: "גלריה" },
     { id: PANEL_REVIEWS, label: "ביקורות" },
     { id: PANEL_FAQ, label: "שאלות ותשובות" },

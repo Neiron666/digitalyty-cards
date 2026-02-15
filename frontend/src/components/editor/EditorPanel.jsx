@@ -77,7 +77,7 @@ export default function EditorPanel({
                 />
             );
 
-        case "design":
+        case "head":
             return (
                 <DesignPanel
                     design={card.design}
@@ -86,6 +86,9 @@ export default function EditorPanel({
                     onChange={(design) => onFieldChange?.("design", design)}
                 />
             );
+
+        case "design":
+            return <div dir="rtl">בקרוב: עיצוב אישי</div>;
 
         case "gallery":
             return (

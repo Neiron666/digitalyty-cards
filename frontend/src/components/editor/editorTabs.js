@@ -2,6 +2,7 @@ export const PANEL_TEMPLATES = "templates";
 export const PANEL_BUSINESS = "business";
 export const PANEL_CONTACT = "contact";
 export const PANEL_CONTENT = "content";
+export const PANEL_HEAD = "head";
 export const PANEL_DESIGN = "design";
 export const PANEL_GALLERY = "gallery";
 export const PANEL_REVIEWS = "reviews";
@@ -15,6 +16,7 @@ export const EDITOR_CARD_TABS = Object.freeze([
     PANEL_BUSINESS,
     PANEL_CONTACT,
     PANEL_CONTENT,
+    PANEL_HEAD,
     PANEL_DESIGN,
     PANEL_GALLERY,
     PANEL_REVIEWS,
