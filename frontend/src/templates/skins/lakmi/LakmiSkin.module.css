@@ -7,9 +7,9 @@
     --c-neutral-card: #ffffff;
     --c-section-bg: rgba(255, 255, 255, 0.92);
 
-    /* ----------- --section-all-backgrond рычаг для всего бэкграунда---------  */
-    --c-section-all-backgrond: unset; /* Меняет все bg в карточке когда задаеться значение */
-    --rgb-section-all-backgrond: unset; /* Меняет все bg в карточке когда задаеться значение */
+    /* ----------- --sections-all-backgronds рычаг для всего бэкграунда---------  */
+    --c-sections-all-backgronds: unset; /* Меняет все bg в карточке когда задаеться значение */
+    --rgb-sections-all-backgronds: unset; /* Меняет все bg в карточке когда задаеться значение */
 
     --section-bg-zebra: white; /* fallback for non-supporting browsers */
     --rgb-section-bg-zebra: 255, 255, 255; /* for rgba() fallback */
@@ -18,7 +18,7 @@
     --c-neutral-text: #1a1a1a;
     --rgb-neutral-text: 26, 26, 26;
 
-    /* -----------brand-primary рычаг для основного цвета бренда---------  */
+    /* -----------brand-primary рычаг для основного цвета бренда и фона кнопок---------  */
     --c-brand-primary: #a9863e; /* H1, svg bg, text deco underline*/
 
     /* -----------brand-secondary рычаг для второстепенного цвета бренда---------  */
@@ -38,9 +38,9 @@
        ========================================================= */
     --bg-main: var(--c-neutral-bg);
     --bg-surface: var(--c-neutral-surface);
-    --bg-card: var(--c-section-all-backgrond, var(--c-neutral-card));
+    --bg-card: var(--c-sections-all-backgronds, var(--c-neutral-card));
     --bg-section: var(--c-section-bg);
-    --background-color: var(--c-section-all-backgrond, var(--c-neutral-bg));
+    --background-color: var(--c-sections-all-backgronds, var(--c-neutral-bg));
     --text-main: var(--c-neutral-text);
 
     /* Legacy / public tokens that other parts already expect */
@@ -83,7 +83,7 @@
 
     /* Sections */
     --section-bg: rgba(
-        var(--rgb-section-all-backgrond, var(--rgb-section-bg-zebra)),
+        var(--rgb-sections-all-backgronds, var(--rgb-section-bg-zebra)),
         1
     );
     --section-border: rgba(var(--rgb-neutral-text), 0.1);
