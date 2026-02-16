@@ -5,7 +5,7 @@
     --faq-accent: var(--action-bg, var(--primary, #4f7cff));
     --faq-answer: var(--contact-btn-secondary, var(--primary, #4f7cff));
 
-    --faq-text: var(--faq-text, #eaf0ff);
+    /* --faq-text: var(--faq-text, #eaf0ff); */
     --faq-muted: var(--text-subtitle, rgba(234, 240, 255, 0.78));
     --faq-focus-ring: var(
         --focus-ring,
@@ -23,7 +23,7 @@
 
 .title {
     /* Keep Section title layout, but allow skins to tune via tokens */
-    color: var(--faq-text);
+    color: var(--text-main, #eaf0ff);
     text-decoration-color: var(--faq-accent);
 }
 
@@ -176,7 +176,7 @@
 .answer {
     padding-block: 0.75rem 1rem;
     padding-inline: 1rem;
-    color: var(--faq-text);
+    color: var(--text-main, #eaf0ff);
     font-size: var(--fs-10, 0.875rem);
     line-height: var(--lh-normal, 1.6);
     background: linear-gradient(

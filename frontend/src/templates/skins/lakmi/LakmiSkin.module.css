@@ -5,22 +5,25 @@
     --c-neutral-bg: #faf7f4;
     --c-neutral-surface: #fff9f9;
     --c-neutral-card: #ffffff;
-
+    --c-section-bg: rgba(255, 255, 255, 0.92);
+    --section-bg-zebra: white; /* fallback for non-supporting browsers */
+    --rgb-section-bg-zebra: 255, 255, 255; /* for rgba() fallback */
     --c-neutral-text: #1a1a1a;
     --rgb-neutral-text: 26, 26, 26;
 
     /* Brand roles */
-    --c-brand-primary: #a9863e; /* главный */
+    --c-brand-primary: #a9863e; /* H1, svg bg, text deco underline*/
     --c-brand-secondary: #c18aa8; /* второстепенный (rose в этой палитре) */
-    --c-brand-accent: #c8a75c; /* поддержка/акцент (бордеры/dividers/action) */
+    --c-brand-accent: #c8a75c; /* временно отключен*/
 
-    /* “On” colors */
+    /* button text cololor */
     --c-on-primary: #ffffff;
 
     /* RGB helpers */
-    --rgb-neutral-surface: 255, 255, 255;
+    --rgb-neutral-surface: 255, 249, 249;
     --rgb-brand-secondary: 193, 138, 168;
     --rgb-brand-accent: 200, 167, 92;
+    --rgb-brand-primary: 169, 134, 62;
 
     /* =========================================================
        SEMANTIC TOKENS — ниже только var()/rgba(var(--rgb-*),a)
@@ -28,7 +31,8 @@
     --bg-main: var(--c-neutral-bg);
     --bg-surface: var(--c-neutral-surface);
     --bg-card: var(--c-neutral-card);
-
+    --bg-section: var(--c-section-bg);
+    --background-color: var(--c-neutral-bg);
     --text-main: var(--c-neutral-text);
 
     /* Legacy / public tokens that other parts already expect */
@@ -54,7 +58,7 @@
     --contact-btn-hover-fg: var(--c-on-primary);
 
     /* Avatar */
-    --avatar-border: var(--c-brand-accent);
+    --avatar-border: var(--c-brand-primary);
     --avatar-bg: var(--bg-surface);
 
     /* Typography */
@@ -68,26 +72,31 @@
     --shadow-soft: 0 18px 48px rgba(var(--rgb-neutral-text), 0.14);
 
     /* Sections */
-    --section-bg: rgba(var(--rgb-brand-accent), 0.06);
+    --section-bg: rgba(var(--rgb-section-bg-zebra), 1);
     --section-border: rgba(var(--rgb-neutral-text), 0.1);
 
     /* faq */
     --faq-text: var(--c-on-primary);
 
     /* Zebra surfaces (tokens only) */
-    --section-surface-odd: var(--bg-surface);
+    --section-surface-odd:
+        linear-gradient(
+            rgba(var(--rgb-brand-primary), 0.15),
+            rgba(var(--rgb-brand-secondary), 0)
+        ),
+        var(--section-bg);
     --section-surface-even:
         linear-gradient(
-            rgba(var(--rgb-brand-secondary), 0.22),
-            rgba(var(--rgb-brand-accent), 0.1)
+            rgba(var(--rgb-brand-secondary), 0.15),
+            rgba(var(--rgb-brand-primary), 0)
         ),
         var(--section-bg);
     --section-border-odd: none;
     --section-border-even: none;
 
     /* Action surface */
-    --action-bg: var(--c-brand-accent);
-    --action-border: rgba(var(--rgb-brand-accent), 0.38);
+    --action-bg: var(--c-brand-primary);
+    --action-border: rgba(var(--rgb-brand-primary), 0.38);
 
     /* Focus */
     --focus-ring: 0 0 0 3px rgba(var(--rgb-brand-secondary), 0.32);

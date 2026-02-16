@@ -254,7 +254,7 @@ export const TEMPLATES = [
     {
         id: "customV1",
         skinKey: "custom",
-        name: "בחירה עצמית",
+        name: "עיצוב עצמי",
         backgroundMode: "photo",
         previewImage: PREVIEW_PLACEHOLDER_PNG,
         supports: {

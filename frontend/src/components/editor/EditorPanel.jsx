@@ -88,7 +88,7 @@ export default function EditorPanel({
             );
 
         case "design":
-            return <div dir="rtl">בקרוב: עיצוב אישי</div>;
+            return <div dir="rtl">בקרוב: עיצוב עצמי</div>;
 
         case "gallery":
             return (

@@ -17,7 +17,7 @@ import {
 
 const TABS = [
     { id: PANEL_TEMPLATES, label: "תבניות" },
-    { id: PANEL_DESIGN, label: "עיצוב אישי" },
+    { id: PANEL_DESIGN, label: "עיצוב עצמי" },
     { id: PANEL_HEAD, label: "ראש הכרטיס" },
     { id: PANEL_BUSINESS, label: "פרטי העסק" },
     { id: PANEL_CONTACT, label: "פרטי קשר" },
