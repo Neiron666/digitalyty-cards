@@ -2,21 +2,29 @@
     /* =========================================================
        CORE COLORS (SSoT) — универсальные роли
        ========================================================= */
-    --c-neutral-bg: #faf7f4;
-    --c-neutral-surface: #fff9f9;
+    --c-neutral-bg: white; /* основной фон карточки и страницы */
+    --c-neutral-surface: #fffafa;
     --c-neutral-card: #ffffff;
     --c-section-bg: rgba(255, 255, 255, 0.92);
+
+    /* ----------- --section-all-backgrond рычаг для всего бэкграунда---------  */
+    --c-section-all-backgrond: unset; /* Меняет все bg в карточке когда задаеться значение */
+    --rgb-section-all-backgrond: unset; /* Меняет все bg в карточке когда задаеться значение */
+
     --section-bg-zebra: white; /* fallback for non-supporting browsers */
     --rgb-section-bg-zebra: 255, 255, 255; /* for rgba() fallback */
+
+    /* -----------neutral-text рычаг для цвета текста---------  */
     --c-neutral-text: #1a1a1a;
     --rgb-neutral-text: 26, 26, 26;
 
-    /* Brand roles */
+    /* -----------brand-primary рычаг для основного цвета бренда---------  */
     --c-brand-primary: #a9863e; /* H1, svg bg, text deco underline*/
-    --c-brand-secondary: #c18aa8; /* второстепенный (rose в этой палитре) */
-    --c-brand-accent: #c8a75c; /* временно отключен*/
 
-    /* button text cololor */
+    /* -----------brand-secondary рычаг для второстепенного цвета бренда---------  */
+    --c-brand-secondary: #c18aa8; /* второстепенный (rose в этой палитре) */
+
+    /* -----------on-primary рычаг для цвета текста на кнопках---------  */
     --c-on-primary: #ffffff;
 
     /* RGB helpers */
@@ -30,9 +38,9 @@
        ========================================================= */
     --bg-main: var(--c-neutral-bg);
     --bg-surface: var(--c-neutral-surface);
-    --bg-card: var(--c-neutral-card);
+    --bg-card: var(--c-section-all-backgrond, var(--c-neutral-card));
     --bg-section: var(--c-section-bg);
-    --background-color: var(--c-neutral-bg);
+    --background-color: var(--c-section-all-backgrond, var(--c-neutral-bg));
     --text-main: var(--c-neutral-text);
 
     /* Legacy / public tokens that other parts already expect */
@@ -48,6 +56,8 @@
     --secondary: var(--c-brand-secondary);
     --secondary-hover: rgba(var(--rgb-brand-secondary), 0.9);
 
+    /* hero divider */
+    --card-bg: var(--bg-card);
     /* Contact button (derived) */
     --contact-btn-color: var(--primary);
     --contact-btn-bg: var(--primary);
@@ -72,7 +82,10 @@
     --shadow-soft: 0 18px 48px rgba(var(--rgb-neutral-text), 0.14);
 
     /* Sections */
-    --section-bg: rgba(var(--rgb-section-bg-zebra), 1);
+    --section-bg: rgba(
+        var(--rgb-section-all-backgrond, var(--rgb-section-bg-zebra)),
+        1
+    );
     --section-border: rgba(var(--rgb-neutral-text), 0.1);
 
     /* faq */
