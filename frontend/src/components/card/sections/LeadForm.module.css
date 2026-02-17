@@ -1,0 +1,30 @@
+.content {
+    /* Override shared Section content alignment for form usability (RTL-friendly). */
+    text-align: start;
+}
+
+.form {
+    /* Token binding for Form.module.css (no hardcoded colors). */
+    --card-text: var(--text-main);
+    --input-bg: var(var(--section-bg), var(--bg-surface));
+    --border: var(var(--section-border), var(--border));
+    --gold: var(--action-bg);
+    --gold-fade: color-mix(in srgb, var(--action-bg) 28%, transparent);
+
+    /* Ensure inputs have a radius even if a skin forgot it (size-only fallback). */
+    /* --radius-md: var(--radius-md, var(--action-radius, 18px)); */
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    min-width: 0;
+}
+
+.error,
+.success {
+    margin: 0;
+    font-size: var(--fs-14, 0.875rem);
+    line-height: var(--lh-normal, 1.5);
+    color: var(--text-main);
+    overflow-wrap: anywhere;
+    word-break: break-word;
+}

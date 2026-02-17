@@ -33,7 +33,7 @@
     --shadow-soft: 0 18px 48px rgba(11, 27, 43, 0.16);
 
     --section-bg: rgba(11, 27, 43, 0.035);
-    --section-border: rgba(11, 27, 43, 0.12);
+    --section-border: var(--border);
 
     /* Zebra (odd/even surfaces; gradients allowed) */
     --section-surface-odd: var(--bg-surface);

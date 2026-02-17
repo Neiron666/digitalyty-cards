@@ -1,16 +1,20 @@
 import { useState } from "react";
 import { createLead } from "../../../services/leads.service";
 import Paywall from "../../common/Paywall";
+import Section from "./Section";
 import formStyles from "../../ui/Form.module.css";
 import { trackClick } from "../../../services/analytics.client";
+import styles from "./LeadForm.module.css";
 
 export default function LeadForm({ cardId, slug, entitlements, onUpgrade }) {
     if (!entitlements?.canUseLeads) {
         return (
-            <Paywall
-                text="טופס יצירת קשר זמין למנויים בלבד"
-                onUpgrade={onUpgrade}
-            />
+            <Section title="צרו קשר" contentClassName={styles.content}>
+                <Paywall
+                    text="טופס יצירת קשר זמין למנויים בלבד"
+                    onUpgrade={onUpgrade}
+                />
+            </Section>
         );
     }
     const [form, setForm] = useState({
@@ -42,49 +46,55 @@ export default function LeadForm({ cardId, slug, entitlements, onUpgrade }) {
     }
 
     if (status === "success") {
-        return <p>תודה! פנייתך נשלחה בהצלחה</p>;
+        return (
+            <Section title="צרו קשר" contentClassName={styles.content}>
+                <p className={styles.success}>תודה! פנייתך נשלחה בהצלחה</p>
+            </Section>
+        );
     }
 
     return (
-        <form className="lead-form" onSubmit={handleSubmit}>
-            <h3>צרו קשר</h3>
+        <Section title="צרו קשר" contentClassName={styles.content}>
+            <form className={styles.form} onSubmit={handleSubmit}>
+                <input
+                    placeholder="שם מלא"
+                    value={form.name}
+                    required
+                    onChange={(e) => update("name", e.target.value)}
+                    className={formStyles.input}
+                />
 
-            <input
-                placeholder="שם מלא"
-                value={form.name}
-                required
-                onChange={(e) => update("name", e.target.value)}
-                className={formStyles.input}
-            />
+                <input
+                    type="email"
+                    placeholder="אימייל"
+                    value={form.email}
+                    onChange={(e) => update("email", e.target.value)}
+                    className={formStyles.input}
+                />
 
-            <input
-                type="email"
-                placeholder="אימייל"
-                value={form.email}
-                onChange={(e) => update("email", e.target.value)}
-                className={formStyles.input}
-            />
+                <input
+                    placeholder="טלפון"
+                    value={form.phone}
+                    onChange={(e) => update("phone", e.target.value)}
+                    className={formStyles.input}
+                />
 
-            <input
-                placeholder="טלפון"
-                value={form.phone}
-                onChange={(e) => update("phone", e.target.value)}
-                className={formStyles.input}
-            />
+                <textarea
+                    placeholder="הודעה"
+                    rows={3}
+                    value={form.message}
+                    onChange={(e) => update("message", e.target.value)}
+                    className={formStyles.textarea}
+                />
 
-            <textarea
-                placeholder="הודעה"
-                rows={3}
-                value={form.message}
-                onChange={(e) => update("message", e.target.value)}
-                className={formStyles.textarea}
-            />
+                <button type="submit" disabled={status === "loading"}>
+                    שלח
+                </button>
 
-            <button type="submit" disabled={status === "loading"}>
-                שלח
-            </button>
-
-            {status === "error" && <p className="error">שגיאה בשליחת הטופס</p>}
-        </form>
+                {status === "error" ? (
+                    <p className={styles.error}>שגיאה בשליחת הטופס</p>
+                ) : null}
+            </form>
+        </Section>
     );
 }
