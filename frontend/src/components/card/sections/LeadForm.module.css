@@ -5,9 +5,9 @@
 
 .form {
     /* Token binding for Form.module.css (no hardcoded colors). */
-    --card-text: var(--text-main);
-    --input-bg: var(var(--section-bg), var(--bg-surface));
-    --border: var(var(--section-border), var(--border));
+    /* --card-text: var(--text-main); */
+    /* --input-bg: var(--section-bg, var(--bg-surface)); */
+    /* --border: var(--section-border, var(--border)); */
     --gold: var(--action-bg);
     --gold-fade: color-mix(in srgb, var(--action-bg) 28%, transparent);
 

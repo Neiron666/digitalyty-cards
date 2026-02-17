@@ -68,7 +68,8 @@
     /* Borders / shadows */
     --border: rgba(var(--rgb-neutral-text), 0.14);
     --shadow-soft: 0 18px 48px rgba(var(--rgb-neutral-text), 0.14);
-
+    --avatar-border: var(--c-brand-primary);
+    --avatar-bg: var(--bg-surface);
     /* Sections */
     --section-bg: rgba(var(--rgb-sections-all-backgronds, 255, 255, 255), 1);
     --section-border: rgba(var(--rgb-neutral-text), 0.1);

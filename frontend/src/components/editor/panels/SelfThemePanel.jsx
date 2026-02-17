@@ -211,7 +211,7 @@ export default function SelfThemePanel({
                 איפוס
             </button>
 
-            <div className={styles.status}>
+            {/* <div className={styles.status}>
                 <div className={styles.statusRow}>
                     <div>ניגודיות טקסט מול רקע</div>
                     <div
@@ -249,7 +249,7 @@ export default function SelfThemePanel({
                         תקן ניגודיות
                     </button>
                 ) : null}
-            </div>
+            </div> */}
         </div>
     );
 }
