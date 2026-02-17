@@ -418,6 +418,17 @@ const CardSchema = new mongoose.Schema(
             buttonTextColor: String,
             font: String,
 
+            // Self theme (token-levers v1)
+            // Optional, backward compatible. Values are sanitized at read/generation time.
+            selfThemeV1: {
+                bg: { type: String, default: null },
+                text: { type: String, default: null },
+                primary: { type: String, default: null },
+                secondary: { type: String, default: null },
+                onPrimary: { type: String, default: null },
+                version: { type: Number, default: 1 },
+            },
+
             // new template assets
             backgroundImage: String,
             backgroundOverlay: { type: Number, default: 40 },

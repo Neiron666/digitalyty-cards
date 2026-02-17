@@ -33,6 +33,8 @@ export default function CardLayout({
     extraThemeClass,
     mode,
     onUpgrade,
+    templateId,
+    selfThemeActive,
 }) {
     const design = card?.design || {};
     const coverRaw = design?.backgroundImage || design?.coverImage || null;
@@ -57,7 +59,13 @@ export default function CardLayout({
     const rootClass = cx(styles.root, skin?.theme, extraThemeClass);
 
     return (
-        <div className={rootClass} data-mode={mode}>
+        <div
+            className={rootClass}
+            data-mode={mode}
+            data-cardigo-scope="card"
+            data-template-id={String(templateId || "")}
+            data-self-theme={selfThemeActive ? "1" : undefined}
+        >
             <div className={cx(styles.card, skin?.card)}>
                 <header className={cx(styles.hero, skin?.hero)}>
                     {hasCover ? (

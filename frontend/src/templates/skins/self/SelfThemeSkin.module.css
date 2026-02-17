@@ -1,0 +1,101 @@
+.theme {
+    /* =========================================================
+       CORE COLORS (SSoT) — levers (user-controlled via external CSS)
+       ========================================================= */
+    --c-neutral-bg: white;
+    --c-neutral-surface: #fffafa;
+    --c-neutral-card: #ffffff;
+    --c-section-bg: rgba(255, 255, 255, 0.92);
+
+    /* Lever: all backgrounds */
+    --c-sections-all-backgronds: unset;
+    --rgb-sections-all-backgronds: unset;
+
+    /* Lever: neutral text */
+    --c-neutral-text: #1a1a1a;
+    --rgb-neutral-text: 26, 26, 26;
+
+    /* Lever: brand primary */
+    --c-brand-primary: #a9863e;
+    --rgb-brand-primary: 169, 134, 62;
+
+    /* Lever: brand secondary */
+    --c-brand-secondary: #c18aa8;
+    --rgb-brand-secondary: 193, 138, 168;
+
+    /* Lever: text on primary */
+    --c-on-primary: #ffffff;
+
+    /* =========================================================
+       SEMANTIC TOKENS (skins are token-only)
+       ========================================================= */
+    --bg-main: var(--c-neutral-bg);
+    --bg-surface: var(--c-neutral-surface);
+    --bg-card: var(--c-sections-all-backgronds, var(--c-neutral-card));
+    --bg-section: var(--c-section-bg);
+
+    /* Legacy alias used by some layout parts */
+    --background-color: var(--c-sections-all-backgronds, var(--c-neutral-bg));
+
+    /* Layout consumption */
+    --card-bg: var(--bg-card);
+    --text-main: var(--c-neutral-text);
+
+    /* Primary/secondary system */
+    --primary: var(--c-brand-primary);
+    --primary-hover: var(--c-brand-primary);
+    --secondary: var(--c-brand-secondary);
+    --secondary-hover: rgba(var(--rgb-brand-secondary), 0.9);
+
+    /* Actions / contact buttons */
+    --action-bg: var(--c-brand-primary);
+    --action-border: rgba(var(--rgb-brand-primary), 0.38);
+    --action-text: var(--c-on-primary);
+
+    --contact-btn-color: var(--primary);
+    --contact-btn-bg: var(--primary);
+    --contact-btn-fg: var(--c-on-primary);
+    --contact-btn-border: var(--primary);
+    --contact-btn-outline: var(--secondary);
+    --contact-btn-secondary: var(--secondary);
+    --contact-btn-hover-fg: var(--c-on-primary);
+
+    /* Typography */
+    --text-subtitle: var(--c-neutral-text);
+    --color-title: var(--text-main);
+    --name-color: var(--primary);
+
+    /* Borders / shadows */
+    --border: rgba(var(--rgb-neutral-text), 0.14);
+    --shadow-soft: 0 18px 48px rgba(var(--rgb-neutral-text), 0.14);
+
+    /* Sections */
+    --section-bg: rgba(var(--rgb-sections-all-backgronds, 255, 255, 255), 1);
+    --section-border: rgba(var(--rgb-neutral-text), 0.1);
+
+    /* Focus */
+    --focus-ring: 0 0 0 3px rgba(var(--rgb-brand-secondary), 0.32);
+
+    /* Hero overlay */
+    --hero-overlay-bg: linear-gradient(
+        180deg,
+        rgba(var(--rgb-neutral-surface, 255, 249, 249), 0.12),
+        rgba(var(--rgb-brand-secondary), 0.52)
+    );
+
+    /* Divider */
+    --hero-divider-border: var(--primary);
+}
+
+@media (max-width: 900px) {
+    .theme {
+        --shadow-soft: 0 14px 36px rgba(var(--rgb-neutral-text), 0.12);
+    }
+}
+
+@media (max-width: 520px) {
+    .theme {
+        --hero-min-height: 200px;
+        --card-radius: var(--radius-md);
+    }
+}

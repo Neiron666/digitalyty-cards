@@ -1,3 +1,4 @@
+import { Helmet } from "react-helmet-async";
 import { getTemplateById, normalizeTemplateId } from "./templates.config";
 import CardLayout from "./layout/CardLayout";
 import SkinBase from "./skins/_base/SkinBase.module.css";
@@ -7,6 +8,7 @@ import BeautySkin from "./skins/beauty/BeautySkin.module.css";
 import RoismanA11ySkin from "./skins/roismanA11y/RoismanA11ySkin.module.css";
 import LakmiSkin from "./skins/lakmi/LakmiSkin.module.css";
 import galitSkin from "./skins/galit/GalitSkin.module.css";
+import SelfThemeSkin from "./skins/self/SelfThemeSkin.module.css";
 
 function toPascalCaseKey(key) {
     return String(key || "")
@@ -65,10 +67,21 @@ export default function TemplateRenderer({ card, onUpgrade, mode }) {
         roismanA11y: RoismanA11ySkin,
         lakmi: LakmiSkin,
         galit: galitSkin,
+        self: SelfThemeSkin,
     };
 
     const skinKey = template?.skinKey;
     const skin = skinModules[skinKey] || SkinBase;
+
+    const isSelfThemeSkin =
+        String(skinKey || "")
+            .trim()
+            .toLowerCase() === "self";
+
+    const selfThemeActive =
+        isSelfThemeSkin &&
+        Boolean(card?._id) &&
+        Boolean(card?.design?.selfThemeV1);
 
     // Fixed skins must be token-only CSS modules; layout stays shared (CardLayout).
 
@@ -81,14 +94,27 @@ export default function TemplateRenderer({ card, onUpgrade, mode }) {
         : undefined;
 
     return (
-        <CardLayout
-            card={card}
-            supports={supports}
-            skin={skin}
-            extraThemeClass={extraThemeClass}
-            mode={mode}
-            onUpgrade={onUpgrade}
-        />
+        <>
+            {selfThemeActive ? (
+                <Helmet>
+                    <link
+                        rel="stylesheet"
+                        href={`/api/cards/${card._id}/self-theme.css`}
+                    />
+                </Helmet>
+            ) : null}
+
+            <CardLayout
+                card={card}
+                supports={supports}
+                skin={skin}
+                extraThemeClass={extraThemeClass}
+                mode={mode}
+                onUpgrade={onUpgrade}
+                templateId={templateId}
+                selfThemeActive={selfThemeActive}
+            />
+        </>
     );
 }
 

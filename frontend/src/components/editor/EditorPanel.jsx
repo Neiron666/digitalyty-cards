@@ -5,6 +5,7 @@ import GalleryPanel from "./panels/GalleryPanel";
 import ReviewsPanel from "./panels/ReviewsPanel";
 import FaqPanel from "./panels/FaqPanel";
 import DesignPanel from "./panels/DesignPanel";
+import SelfThemePanel from "./panels/SelfThemePanel";
 import SettingsPanel from "./panels/SettingsPanel";
 import SeoPanel from "./panels/SeoPanel";
 import AnalyticsPanel from "./panels/AnalyticsPanel";
@@ -88,7 +89,14 @@ export default function EditorPanel({
             );
 
         case "design":
-            return <div dir="rtl">בקרוב: עיצוב עצמי</div>;
+            return (
+                <SelfThemePanel
+                    card={card}
+                    plan={effectivePlan}
+                    disabled={editingDisabled}
+                    onFieldChange={onFieldChange}
+                />
+            );
 
         case "gallery":
             return (

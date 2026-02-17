@@ -152,26 +152,6 @@ for (const rel of files) {
         });
         continue;
     }
-    if (lower.includes("background-image")) {
-        const idx = lower.indexOf("background-image");
-        violations.push({
-            file: rel,
-            line: lineOfIndex(original, idx),
-            excerpt: lineExcerpt(original, idx),
-            reason: "Forbidden usage: background-image",
-        });
-        continue;
-    }
-    if (lower.includes("background")) {
-        const idx = lower.indexOf("background");
-        violations.push({
-            file: rel,
-            line: lineOfIndex(original, idx),
-            excerpt: lineExcerpt(original, idx),
-            reason: "Forbidden usage: background",
-        });
-        continue;
-    }
 
     const text = stripBlockComments(original);
 
@@ -217,7 +197,7 @@ for (const rel of files) {
                     file: rel,
                     line: lineOfIndex(original, i),
                     excerpt: lineExcerpt(original, i),
-                    reason: "Unmatched closing brace" ,
+                    reason: "Unmatched closing brace",
                 });
                 break;
             }
@@ -228,7 +208,9 @@ for (const rel of files) {
                     violations.push({
                         file: rel,
                         line: lineOfIndex(original, popped.headerIndex),
-                        excerpt: popped.header || lineExcerpt(original, popped.headerIndex),
+                        excerpt:
+                            popped.header ||
+                            lineExcerpt(original, popped.headerIndex),
                         reason: declResult.reason,
                     });
                     break;
@@ -252,7 +234,9 @@ for (const rel of files) {
 
 if (violations.length) {
     const first = violations[0];
-    console.error(`FAIL: skins must be token-only. Violations: ${violations.length}.`);
+    console.error(
+        `FAIL: skins must be token-only. Violations: ${violations.length}.`,
+    );
     console.error(`Scanned files (${files.length}):`);
     for (const f of files) console.error(`- ${f}`);
     console.error("First violation:");

@@ -5,6 +5,7 @@ import {
     createCard,
     updateCard,
     getCardBySlug,
+    getSelfThemeCssById,
     deleteCard,
     claimCard,
     updateSlug,
@@ -33,6 +34,9 @@ router.patch("/:id", requireAuthOrAnonymous, updateCard);
 router.post("/claim", requireAuth, claimCard);
 
 router.delete("/:id", requireAuthOrAnonymous, deleteCard);
+
+// Self theme stylesheet (id-based; must be above /:slug)
+router.get("/:id/self-theme.css", optionalAuth, getSelfThemeCssById);
 
 // Public route (optional auth allows owner-only preview access)
 router.get("/:slug", optionalAuth, getCardBySlug);

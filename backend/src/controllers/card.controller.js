@@ -1753,6 +1753,145 @@ export async function getCompanyCardByOrgSlugAndSlug(req, res) {
     return res.json(dto);
 }
 
+function normalizeHexColor(input) {
+    if (typeof input !== "string") return null;
+    const raw = input.trim().toLowerCase();
+    if (!raw) return null;
+
+    if (/^#[0-9a-f]{6}$/.test(raw)) return raw;
+    if (/^#[0-9a-f]{3}$/.test(raw)) {
+        return `#${raw[1]}${raw[1]}${raw[2]}${raw[2]}${raw[3]}${raw[3]}`;
+    }
+
+    return null;
+}
+
+function hexToRgbTriplet(hex) {
+    const h = normalizeHexColor(hex);
+    if (!h) return null;
+    const v = h.replace("#", "");
+    const r = parseInt(v.slice(0, 2), 16);
+    const g = parseInt(v.slice(2, 4), 16);
+    const b = parseInt(v.slice(4, 6), 16);
+    return `${r}, ${g}, ${b}`;
+}
+
+function asNotFound(res) {
+    return res.status(404).end();
+}
+
+export async function getSelfThemeCssById(req, res) {
+    const id = String(req.params.id || "").trim();
+    if (!mongoose.Types.ObjectId.isValid(id)) return asNotFound(res);
+
+    const card = await Card.findById(id);
+    if (!card || card.isActive === false) return asNotFound(res);
+
+    // Hard gate: self theme applies only to customV1.
+    const templateId = String(card?.design?.templateId || "").trim();
+    if (templateId !== "customV1") return asNotFound(res);
+
+    const st =
+        card?.design && typeof card.design === "object"
+            ? card.design.selfThemeV1
+            : null;
+    if (!st || typeof st !== "object") return asNotFound(res);
+
+    const actor = resolveActor(req);
+    const isOwner = Boolean(
+        actor &&
+        (actor.type === "user"
+            ? String(card.user || "") === actor.id
+            : String(card.anonymousId || "") === actor.id),
+    );
+
+    if (!isOwner) {
+        // Public-only rules (anti-enumeration => 404 for any denied access)
+        if (card.status !== "published") return asNotFound(res);
+
+        // Defense in depth: anon-owned cards must never be publicly resolvable.
+        if (card.anonymousId && !card.user) return asNotFound(res);
+        if (!card.user) return asNotFound(res);
+
+        const now = new Date();
+        if (isTrialExpired(card, now) && !isEntitled(card, now)) {
+            return asNotFound(res);
+        }
+
+        // Org invariant: revoked members must not be publicly resolvable.
+        // NOTE: personal cards should pass without membership checks.
+        const personalOrgId = await getPersonalOrgId();
+        const cardOrgId = String(card?.orgId || "");
+        const isNonPersonalOrg =
+            Boolean(cardOrgId) && cardOrgId !== String(personalOrgId);
+
+        if (isNonPersonalOrg) {
+            try {
+                await assertActiveOrgAndMembershipOrNotFound({
+                    orgId: card.orgId,
+                    userId: String(card.user),
+                });
+            } catch (err) {
+                if (err instanceof HttpError || err?.statusCode === 404) {
+                    return asNotFound(res);
+                }
+                throw err;
+            }
+        }
+    }
+
+    const bg = normalizeHexColor(st.bg);
+    const text = normalizeHexColor(st.text);
+    const primary = normalizeHexColor(st.primary);
+    const secondary = normalizeHexColor(st.secondary);
+    const onPrimary = normalizeHexColor(st.onPrimary);
+
+    const cssLines = [];
+    cssLines.push(
+        ':where([data-cardigo-scope="card"][data-template-id="customV1"][data-self-theme="1"]) {',
+    );
+
+    if (bg) {
+        cssLines.push(`  --c-sections-all-backgronds: ${bg};`);
+        const rgb = hexToRgbTriplet(bg);
+        if (rgb) cssLines.push(`  --rgb-sections-all-backgronds: ${rgb};`);
+
+        // Layout safety (avoid legacy/global overrides)
+        cssLines.push(`  --bg-card: ${bg};`);
+        cssLines.push(`  --card-bg: var(--bg-card);`);
+    }
+
+    if (text) {
+        cssLines.push(`  --c-neutral-text: ${text};`);
+        const rgb = hexToRgbTriplet(text);
+        if (rgb) cssLines.push(`  --rgb-neutral-text: ${rgb};`);
+        cssLines.push(`  --text-main: var(--c-neutral-text);`);
+    }
+
+    if (primary) {
+        cssLines.push(`  --c-brand-primary: ${primary};`);
+        const rgb = hexToRgbTriplet(primary);
+        if (rgb) cssLines.push(`  --rgb-brand-primary: ${rgb};`);
+    }
+
+    if (secondary) {
+        cssLines.push(`  --c-brand-secondary: ${secondary};`);
+        const rgb = hexToRgbTriplet(secondary);
+        if (rgb) cssLines.push(`  --rgb-brand-secondary: ${rgb};`);
+    }
+
+    if (onPrimary) {
+        cssLines.push(`  --c-on-primary: ${onPrimary};`);
+    }
+
+    cssLines.push("}");
+
+    res.setHeader("Content-Type", "text/css; charset=utf-8");
+    res.setHeader("X-Content-Type-Options", "nosniff");
+    res.setHeader("Cache-Control", "no-store");
+    return res.status(200).send(cssLines.join("\n") + "\n");
+}
+
 function normalizeSlugInput(value) {
     if (typeof value !== "string") return "";
     return value.trim().toLowerCase();

@@ -1,0 +1,155 @@
+.root {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding: 16px;
+}
+
+.notice {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 12px;
+    border: 1px solid rgba(0, 0, 0, 0.12);
+    border-radius: 12px;
+    background: rgba(0, 0, 0, 0.03);
+}
+
+.title {
+    font-size: 14px;
+    font-weight: 700;
+    margin: 0;
+}
+
+.text {
+    font-size: 13px;
+    margin: 0;
+    opacity: 0.9;
+}
+
+.grid {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 12px;
+    border: 1px solid rgba(0, 0, 0, 0.12);
+    border-radius: 14px;
+    background: #ffffff;
+}
+
+.meta {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+    color: var(--text-main-black, #000);
+}
+
+.label {
+    font-size: 14px;
+    font-weight: 700;
+    margin: 0;
+}
+
+.hint {
+    font-size: 12px;
+    margin: 0;
+    opacity: 0.85;
+}
+
+.controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+}
+
+.colorInput {
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    border: 1px solid rgba(0, 0, 0, 0.25);
+    border-radius: 12px;
+    background: #ffffff;
+    cursor: pointer;
+}
+
+.colorInput:focus-visible {
+    outline: 3px solid rgba(0, 0, 0, 0.7);
+    outline-offset: 2px;
+}
+
+.hex {
+    font-family:
+        ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+        "Liberation Mono", monospace;
+    font-size: 12px;
+    opacity: 0.85;
+    min-width: 78px;
+    text-align: left;
+    color: var(--text-main-black, #000);
+}
+
+.status {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 12px;
+    border: 1px solid rgba(0, 0, 0, 0.12);
+    border-radius: 14px;
+    background: rgba(0, 0, 0, 0.02);
+}
+
+.statusRow {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 700;
+    border: 1px solid rgba(0, 0, 0, 0.2);
+    background: rgba(255, 255, 255, 0.9);
+}
+
+.badgeFail {
+    background: rgba(0, 0, 0, 0.06);
+}
+
+.fixButton {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 44px;
+    padding-inline: 14px;
+    border-radius: 12px;
+    border: 1px solid rgba(0, 0, 0, 0.25);
+    background: #ffffff;
+    cursor: pointer;
+    font-weight: 700;
+    font-size: 13px;
+}
+
+.fixButton:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.fixButton:focus-visible {
+    outline: 3px solid rgba(0, 0, 0, 0.7);
+    outline-offset: 2px;
+}

@@ -253,7 +253,7 @@ export const TEMPLATES = [
 
     {
         id: "customV1",
-        skinKey: "custom",
+        skinKey: "self",
         name: "עיצוב עצמי",
         backgroundMode: "photo",
         previewImage: PREVIEW_PLACEHOLDER_PNG,
@@ -271,12 +271,8 @@ export const TEMPLATES = [
         // Palette-only customization (renderer applies palette classes, no inline styles)
         designDefaults: {
             templateId: "customV1",
-            customPaletteKey: "gold",
             backgroundOverlay: 40,
         },
-        // Source of truth: palette keys (lowercase)
-        customPalettes: ["gold", "ocean", "forest"],
-        defaultPaletteKey: "gold",
         seededFields: [
             "name",
             "headline",
