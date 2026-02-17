@@ -1539,6 +1539,75 @@ export async function updateCard(req, res) {
 
     const $set = buildSetUpdateFromPatch(patch);
 
+    const selfThemeV1Touched =
+        (patch?.design &&
+            Object.prototype.hasOwnProperty.call(
+                patch.design,
+                "selfThemeV1",
+            )) ||
+        Object.prototype.hasOwnProperty.call($set, "design.selfThemeV1") ||
+        Object.keys($set).some((k) => k.startsWith("design.selfThemeV1."));
+
+    const $unset = {};
+
+    if (selfThemeV1Touched) {
+        const leafPrefix = "design.selfThemeV1.";
+        const leafEntries = [];
+
+        for (const key of Object.keys($set)) {
+            if (!key.startsWith(leafPrefix)) continue;
+            leafEntries.push([key.slice(leafPrefix.length), $set[key]]);
+            delete $set[key];
+        }
+
+        if (
+            patch?.design &&
+            Object.prototype.hasOwnProperty.call(patch.design, "selfThemeV1")
+        ) {
+            if (patch.design.selfThemeV1 === null) {
+                delete $set["design.selfThemeV1"];
+                $unset["design.selfThemeV1"] = 1;
+            } else if (isPlainObject(patch.design.selfThemeV1)) {
+                delete $unset["design.selfThemeV1"];
+                $set["design.selfThemeV1"] = patch.design.selfThemeV1;
+            }
+        } else if (leafEntries.length) {
+            const assembledSelfThemeV1 = {};
+
+            for (const [suffix, value] of leafEntries) {
+                const parts =
+                    typeof suffix === "string" && suffix
+                        ? suffix.split(".")
+                        : [];
+                if (!parts.length) continue;
+
+                let cursor = assembledSelfThemeV1;
+                for (let i = 0; i < parts.length; i += 1) {
+                    const part = parts[i];
+                    if (
+                        part === "__proto__" ||
+                        part === "constructor" ||
+                        part === "prototype"
+                    ) {
+                        cursor = null;
+                        break;
+                    }
+
+                    const isLeaf = i === parts.length - 1;
+                    if (isLeaf) {
+                        cursor[part] = value;
+                    } else {
+                        const next = cursor[part];
+                        cursor[part] = isPlainObject(next) ? next : {};
+                        cursor = cursor[part];
+                    }
+                }
+            }
+
+            $set["design.selfThemeV1"] = assembledSelfThemeV1;
+        }
+    }
+
     if (faqTouched) {
         // Remove any dot-path updates for faq.* and write faq as a whole.
         for (const key of Object.keys($set)) {
@@ -1559,11 +1628,15 @@ export async function updateCard(req, res) {
         $set.business = normalizedBusinessForSet;
     }
 
-    const card = await Card.findByIdAndUpdate(
-        req.params.id,
-        { $set },
-        { new: true, runValidators: true },
-    );
+    const updateDoc = {
+        $set,
+        ...(Object.keys($unset).length ? { $unset } : {}),
+    };
+
+    const card = await Card.findByIdAndUpdate(req.params.id, updateDoc, {
+        new: true,
+        runValidators: true,
+    });
 
     const userTier =
         owner.type === "user"
@@ -1848,7 +1921,7 @@ export async function getSelfThemeCssById(req, res) {
 
     const cssLines = [];
     cssLines.push(
-        ':where([data-cardigo-scope="card"][data-template-id="customV1"][data-self-theme="1"]) {',
+        '[data-cardigo-scope="card"][data-template-id="customV1"][data-self-theme="1"] {',
     );
 
     if (bg) {

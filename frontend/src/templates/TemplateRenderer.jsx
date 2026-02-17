@@ -1,3 +1,4 @@
+import { useEffect, useMemo, useState } from "react";
 import { Helmet } from "react-helmet-async";
 import { getTemplateById, normalizeTemplateId } from "./templates.config";
 import CardLayout from "./layout/CardLayout";
@@ -9,6 +10,27 @@ import RoismanA11ySkin from "./skins/roismanA11y/RoismanA11ySkin.module.css";
 import LakmiSkin from "./skins/lakmi/LakmiSkin.module.css";
 import galitSkin from "./skins/galit/GalitSkin.module.css";
 import SelfThemeSkin from "./skins/self/SelfThemeSkin.module.css";
+
+function normalizeHexColor(value) {
+    if (typeof value !== "string") return null;
+    const raw = value.trim().toLowerCase();
+    if (!raw) return null;
+    if (/^#[0-9a-f]{6}$/.test(raw)) return raw;
+    if (/^#[0-9a-f]{3}$/.test(raw)) {
+        return `#${raw[1]}${raw[1]}${raw[2]}${raw[2]}${raw[3]}${raw[3]}`;
+    }
+    return null;
+}
+
+function hexToRgbTriplet(hex) {
+    const h = normalizeHexColor(hex);
+    if (!h) return null;
+    const v = h.replace("#", "");
+    const r = parseInt(v.slice(0, 2), 16);
+    const g = parseInt(v.slice(2, 4), 16);
+    const b = parseInt(v.slice(4, 6), 16);
+    return `${r}, ${g}, ${b}`;
+}
 
 function toPascalCaseKey(key) {
     return String(key || "")
@@ -73,15 +95,104 @@ export default function TemplateRenderer({ card, onUpgrade, mode }) {
     const skinKey = template?.skinKey;
     const skin = skinModules[skinKey] || SkinBase;
 
-    const isSelfThemeSkin =
-        String(skinKey || "")
-            .trim()
-            .toLowerCase() === "self";
+    // SSoT gating: self theme applies only to templates that declare it in registry.
+    // Editor mode uses a blob stylesheet (no backend fetch, no _id required).
+    // Public mode uses same-origin endpoint (requires _id).
+    const isCustomV1 = template?.selfThemeV1 === true;
+    const hasSelfTheme = Boolean(card?.design?.selfThemeV1);
 
-    const selfThemeActive =
-        isSelfThemeSkin &&
-        Boolean(card?._id) &&
-        Boolean(card?.design?.selfThemeV1);
+    const selfThemeEditorActive =
+        mode === "editor" && isCustomV1 && hasSelfTheme;
+
+    const selfThemePublicActive =
+        mode !== "editor" && isCustomV1 && hasSelfTheme && Boolean(card?._id);
+
+    const selfThemeScopeActive = selfThemeEditorActive || selfThemePublicActive;
+
+    const selfThemeVersion =
+        Number(card?.design?.selfThemeV1?.version) > 0
+            ? Number(card.design.selfThemeV1.version)
+            : 1;
+
+    const selfThemeCssText = useMemo(() => {
+        if (!selfThemeEditorActive) return null;
+
+        const st =
+            card?.design && typeof card.design === "object"
+                ? card.design.selfThemeV1
+                : null;
+        if (!st || typeof st !== "object") return null;
+
+        const bg = normalizeHexColor(st.bg);
+        const text = normalizeHexColor(st.text);
+        const primary = normalizeHexColor(st.primary);
+        const secondary = normalizeHexColor(st.secondary);
+        const onPrimary = normalizeHexColor(st.onPrimary);
+
+        const cssLines = [];
+        cssLines.push(
+            `[data-cardigo-scope="card"][data-template-id="${templateId}"][data-self-theme="1"] {`,
+        );
+
+        if (bg) {
+            cssLines.push(`  --c-sections-all-backgronds: ${bg};`);
+            const rgb = hexToRgbTriplet(bg);
+            if (rgb) cssLines.push(`  --rgb-sections-all-backgronds: ${rgb};`);
+            cssLines.push(`  --bg-card: ${bg};`);
+            cssLines.push(`  --card-bg: var(--bg-card);`);
+        }
+
+        if (text) {
+            cssLines.push(`  --c-neutral-text: ${text};`);
+            const rgb = hexToRgbTriplet(text);
+            if (rgb) cssLines.push(`  --rgb-neutral-text: ${rgb};`);
+            cssLines.push(`  --text-main: var(--c-neutral-text);`);
+        }
+
+        if (primary) {
+            cssLines.push(`  --c-brand-primary: ${primary};`);
+            const rgb = hexToRgbTriplet(primary);
+            if (rgb) cssLines.push(`  --rgb-brand-primary: ${rgb};`);
+        }
+
+        if (secondary) {
+            cssLines.push(`  --c-brand-secondary: ${secondary};`);
+            const rgb = hexToRgbTriplet(secondary);
+            if (rgb) cssLines.push(`  --rgb-brand-secondary: ${rgb};`);
+        }
+
+        if (onPrimary) {
+            cssLines.push(`  --c-on-primary: ${onPrimary};`);
+        }
+
+        cssLines.push("}");
+        return cssLines.join("\n") + "\n";
+    }, [
+        selfThemeEditorActive,
+        templateId,
+        card?.design?.selfThemeV1?.bg,
+        card?.design?.selfThemeV1?.text,
+        card?.design?.selfThemeV1?.primary,
+        card?.design?.selfThemeV1?.secondary,
+        card?.design?.selfThemeV1?.onPrimary,
+    ]);
+
+    const [selfThemeBlobUrl, setSelfThemeBlobUrl] = useState(null);
+    useEffect(() => {
+        if (!selfThemeCssText) {
+            setSelfThemeBlobUrl(null);
+            return;
+        }
+
+        const url = URL.createObjectURL(
+            new Blob([selfThemeCssText], { type: "text/css" }),
+        );
+        setSelfThemeBlobUrl(url);
+
+        return () => {
+            URL.revokeObjectURL(url);
+        };
+    }, [selfThemeCssText]);
 
     // Fixed skins must be token-only CSS modules; layout stays shared (CardLayout).
 
@@ -95,12 +206,22 @@ export default function TemplateRenderer({ card, onUpgrade, mode }) {
 
     return (
         <>
-            {selfThemeActive ? (
+            {selfThemeScopeActive ? (
                 <Helmet>
-                    <link
-                        rel="stylesheet"
-                        href={`/api/cards/${card._id}/self-theme.css`}
-                    />
+                    {selfThemeEditorActive ? (
+                        selfThemeBlobUrl ? (
+                            <link
+                                key={selfThemeBlobUrl}
+                                rel="stylesheet"
+                                href={selfThemeBlobUrl}
+                            />
+                        ) : null
+                    ) : selfThemePublicActive ? (
+                        <link
+                            rel="stylesheet"
+                            href={`/api/cards/${card._id}/self-theme.css?v=${selfThemeVersion}`}
+                        />
+                    ) : null}
                 </Helmet>
             ) : null}
 
@@ -112,7 +233,7 @@ export default function TemplateRenderer({ card, onUpgrade, mode }) {
                 mode={mode}
                 onUpgrade={onUpgrade}
                 templateId={templateId}
-                selfThemeActive={selfThemeActive}
+                selfThemeActive={selfThemeScopeActive}
             />
         </>
     );

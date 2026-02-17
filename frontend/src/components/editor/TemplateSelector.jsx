@@ -3,6 +3,7 @@ import Button from "../ui/Button";
 import styles from "./TemplateSelector.module.css";
 
 export default function TemplateSelector({ value, onSelect }) {
+    const visibleTemplates = TEMPLATES.filter((tpl) => !tpl?.selfThemeV1);
     return (
         <div className={styles.root}>
             <div className={styles.head}>
@@ -13,7 +14,7 @@ export default function TemplateSelector({ value, onSelect }) {
             </div>
 
             <div className={styles.grid}>
-                {TEMPLATES.map((tpl) => {
+                {visibleTemplates.map((tpl) => {
                     const selected = value === tpl.id;
                     const previewSrc = tpl.previewImage || tpl.preview;
                     const description = tpl.description || "";

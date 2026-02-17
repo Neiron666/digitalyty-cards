@@ -1,5 +1,4 @@
 import { useMemo } from "react";
-import { normalizeTemplateId } from "../../../templates/templates.config";
 import styles from "./SelfThemePanel.module.css";
 
 function clamp01(value) {
@@ -95,12 +94,10 @@ function ColorRow({ id, label, hint, value, disabled, onChange, ariaLabel }) {
 export default function SelfThemePanel({
     card,
     plan,
+    selfThemeAllowed,
     disabled,
     onFieldChange,
 }) {
-    const templateId = normalizeTemplateId(card?.design?.templateId);
-    const isCustomV1 = templateId === "customV1";
-
     const selfTheme =
         card?.design && typeof card.design === "object"
             ? card.design.selfThemeV1
@@ -112,8 +109,8 @@ export default function SelfThemePanel({
     const secondary = normalizeHex(selfTheme?.secondary) || "#C18AA8";
     const onPrimary = normalizeHex(selfTheme?.onPrimary) || "#FFFFFF";
 
-    const isFree = plan === "free";
-    const controlsDisabled = Boolean(disabled) || isFree || !isCustomV1;
+    const isLocked = !Boolean(selfThemeAllowed);
+    const controlsDisabled = Boolean(disabled) || isLocked;
 
     const contrastTextBg = useMemo(() => contrastRatio(text, bg), [text, bg]);
     const contrastOnPrimary = useMemo(
@@ -125,26 +122,20 @@ export default function SelfThemePanel({
     const passOnPrimary = (contrastOnPrimary || 0) >= 4.5;
 
     function write(path, value) {
+        if (!selfThemeAllowed) return;
         onFieldChange?.(path, value);
-        onFieldChange?.("design.selfThemeV1.version", 1);
     }
 
-    if (!isCustomV1) {
-        return (
-            <div className={styles.root} dir="rtl">
-                <div className={styles.notice}>
-                    <p className={styles.title}>עיצוב עצמי</p>
-                    <p className={styles.text}>
-                        זמין רק עבור תבנית עיצוב עצמי (customV1).
-                    </p>
-                </div>
-            </div>
-        );
+    function writeSelfTheme(path, value) {
+        if (!selfThemeAllowed) return;
+        if (disabled) return;
+        write(path, value);
+        write("design.selfThemeV1.version", 1);
     }
 
     return (
         <div className={styles.root} dir="rtl">
-            {isFree ? (
+            {isLocked ? (
                 <div className={styles.notice}>
                     <p className={styles.title}>עיצוב עצמי</p>
                     <p className={styles.text}>זמין במסלול פרימיום.</p>
@@ -159,7 +150,7 @@ export default function SelfThemePanel({
                     value={bg}
                     disabled={controlsDisabled}
                     ariaLabel="בחר צבע רקע"
-                    onChange={(v) => write("design.selfThemeV1.bg", v)}
+                    onChange={(v) => writeSelfTheme("design.selfThemeV1.bg", v)}
                 />
                 <ColorRow
                     id="selftheme-text"
@@ -168,7 +159,9 @@ export default function SelfThemePanel({
                     value={text}
                     disabled={controlsDisabled}
                     ariaLabel="בחר צבע טקסט"
-                    onChange={(v) => write("design.selfThemeV1.text", v)}
+                    onChange={(v) =>
+                        writeSelfTheme("design.selfThemeV1.text", v)
+                    }
                 />
                 <ColorRow
                     id="selftheme-primary"
@@ -177,7 +170,9 @@ export default function SelfThemePanel({
                     value={primary}
                     disabled={controlsDisabled}
                     ariaLabel="בחר צבע ראשי"
-                    onChange={(v) => write("design.selfThemeV1.primary", v)}
+                    onChange={(v) =>
+                        writeSelfTheme("design.selfThemeV1.primary", v)
+                    }
                 />
                 <ColorRow
                     id="selftheme-secondary"
@@ -186,7 +181,9 @@ export default function SelfThemePanel({
                     value={secondary}
                     disabled={controlsDisabled}
                     ariaLabel="בחר צבע משני"
-                    onChange={(v) => write("design.selfThemeV1.secondary", v)}
+                    onChange={(v) =>
+                        writeSelfTheme("design.selfThemeV1.secondary", v)
+                    }
                 />
                 <ColorRow
                     id="selftheme-onprimary"
@@ -195,9 +192,24 @@ export default function SelfThemePanel({
                     value={onPrimary}
                     disabled={controlsDisabled}
                     ariaLabel="בחר צבע טקסט על כפתורים"
-                    onChange={(v) => write("design.selfThemeV1.onPrimary", v)}
+                    onChange={(v) =>
+                        writeSelfTheme("design.selfThemeV1.onPrimary", v)
+                    }
                 />
             </div>
+
+            <button
+                type="button"
+                className={styles.fixButton}
+                disabled={controlsDisabled}
+                onClick={() => {
+                    if (!selfThemeAllowed) return;
+                    if (disabled) return;
+                    onFieldChange?.("design.selfThemeV1", null);
+                }}
+            >
+                איפוס
+            </button>
 
             <div className={styles.status}>
                 <div className={styles.statusRow}>
@@ -228,7 +240,10 @@ export default function SelfThemePanel({
                         disabled={controlsDisabled}
                         onClick={() => {
                             const best = pickBestOnPrimary(primary);
-                            write("design.selfThemeV1.onPrimary", best);
+                            writeSelfTheme(
+                                "design.selfThemeV1.onPrimary",
+                                best,
+                            );
                         }}
                     >
                         תקן ניגודיות

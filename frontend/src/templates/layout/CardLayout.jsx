@@ -179,16 +179,15 @@ export default function CardLayout({
                                 publicPath={card?.publicPath}
                             />
                         )}
+                        <div className={cx(styles.formWrap, skin?.formWrap)}>
+                            <LeadForm
+                                cardId={card?._id}
+                                slug={card?.slug}
+                                entitlements={card?.entitlements}
+                                onUpgrade={onUpgrade}
+                            />
+                        </div>
                     </section>
-
-                    <div className={cx(styles.formWrap, skin?.formWrap)}>
-                        <LeadForm
-                            cardId={card?._id}
-                            slug={card?.slug}
-                            entitlements={card?.entitlements}
-                            onUpgrade={onUpgrade}
-                        />
-                    </div>
                 </main>
 
                 <footer className={cx(styles.footerWrap, skin?.footerWrap)}>

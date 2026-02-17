@@ -26,6 +26,7 @@ export default function EditorPanel({
 }) {
     const effectivePlan = card?.effectiveBilling?.plan || "free";
     const galleryLimit = card?.entitlements?.galleryLimit;
+    const selfThemeAllowed = Boolean(card?.entitlements?.design?.customColors);
 
     function applyPatch(sectionName, patch) {
         if (!patch || typeof patch !== "object") return;
@@ -93,6 +94,7 @@ export default function EditorPanel({
                 <SelfThemePanel
                     card={card}
                     plan={effectivePlan}
+                    selfThemeAllowed={selfThemeAllowed}
                     disabled={editingDisabled}
                     onFieldChange={onFieldChange}
                 />

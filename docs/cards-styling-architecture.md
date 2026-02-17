@@ -143,6 +143,95 @@ Allowed skin keys (контракт): frontend/scripts/check-template-contract.m
 
 Проверка запрета magic comparisons и "gold" fallback patterns: frontend/scripts/check-template-contract.mjs
 
+## Self Theme (עיצוב עצמי)
+
+### 1) Overview
+
+- Self Theme — режим кастомизации token-based дизайна (в первую очередь цветов) поверх self skin (SelfThemeSkin).
+- UX цель: во вкладке “עיצוב עצמי” пользователь видит live preview до Save, а применять/персистить изменения — только через Save.
+
+### 2) Behavior Contract (SSoT bullets)
+
+- Tab navigation не пишет в draft/dirty (никаких hidden writes).
+- В “תבניות” self-theme template скрыт (registry-driven флаг `selfThemeV1`).
+- Во вкладке “עיצוב עצמי” preview сразу выглядит как self-template (SelfThemeSkin), но draft `design.templateId` не меняется до успешного Save.
+- Online изменения цветов видны до Save (preview-only + editor blob CSS), без скрытых записей и без доп. запросов.
+- Persist: `design.templateId` форсится только в `commitDraft` payload и только при `selfThemeDirty` + `entitlements.design.customColors` + order-guard.
+- Reset: кнопка “איפוס” и auto-reset возвращают к дефолтам SelfThemeSkin через очистку `design.selfThemeV1`, без второго PATCH.
+
+Implementation anchors (без line numbers):
+
+- frontend/src/templates/templates.config.js — registry templates (`selfThemeV1`, `skinKey`)
+- frontend/src/templates/TemplateRenderer.jsx — gating self-theme + CSS injection (editor blob / public endpoint)
+- frontend/src/components/editor/TemplateSelector.jsx — скрытие self-theme template в “תבניות”
+- frontend/src/components/editor/panels/SelfThemePanel.jsx — запись `design.selfThemeV1.*` + reset “איפוס”
+- frontend/src/components/editor/EditorPreview.jsx — preview-only override при tab "design"
+- frontend/src/pages/EditCard.jsx — `commitDraft` payload forcing + order-guard + auto-reset
+- backend/src/controllers/card.controller.js — atomic normalization `design.selfThemeV1` ($unset / atomic $set)
+
+### 3) Data Model
+
+- `design.templateId` — SSoT выбора шаблона (registry template).
+- `design.selfThemeV1` — overrides (object / field absent). `null` допустим как transient значение в draft/patch, но запись в Mongo нормализуется (см. Reset semantics / Postmortem).
+- `entitlements.design.customColors` — write gate для персиста self-theme.
+
+### 4) Preview-only override (Why)
+
+- Почему существует: при входе в tab "design" пользователь должен сразу видеть self-skin и live изменения до Save, при этом запрещены hidden writes.
+- Что гарантирует: это только render-layer override (preview card clone), без изменения draft/dirty и без сетевых запросов.
+
+### 5) Save pipeline & intent guards
+
+- Единственный PATCH: `commitDraft` формирует payload и отправляет его на `/cards/:id`.
+- `selfThemeDirty` учитывает и точный путь `design.selfThemeV1`, и любые `design.selfThemeV1.*` (dirtyPaths — unordered).
+- Order-guard через seq refs: если после self-theme изменений пользователь выбрал другой template, не форсим self-template обратно.
+- Важно: переключение `templateId` — payload-only; draft не мутировать до успешного Save.
+
+### 6) Reset semantics
+
+- “איפוס” = явный user-action: очищает `design.selfThemeV1` (возврат к дефолтам self skin) и применяется при следующем Save.
+- Auto-reset = silent cleanup: при уходе с self-theme template на другой очищает `design.selfThemeV1` внутри обработчика смены `design.templateId`, не превращая это в self-theme user-change для order-guard.
+
+### 7) Postmortem (P0 incident)
+
+- Симптом: Mongo error “Cannot create field 'onPrimary' in element {selfThemeV1: null}”.
+- Причина: backend flatten → `$set` создавал dot-path set (`design.selfThemeV1.onPrimary`) поверх существующего `design.selfThemeV1: null`.
+- Фикс (backend atomic normalization, один Mongo update):
+    - удалить dot-leaves `design.selfThemeV1.*` из `$set`
+    - reset (`null`) → `$unset` `design.selfThemeV1`
+    - object → atomic `$set["design.selfThemeV1"] = obj`
+    - `updateDoc` добавляет `$unset` только если он непустой
+    - без extra queries/requests
+
+### 8) Pitfalls & Guardrails (Don’ts)
+
+- Не делать magic compare по "customV1" — только registry-driven флаг `selfThemeV1`.
+- Не делать hidden writes на tab-open/mount.
+- Не хранить `design.selfThemeV1: null` в Mongo без atomic write / `$unset` нормализации (иначе возможен dot-path crash).
+- Не добавлять второй PATCH для self-theme.
+- Не ломать SSoT render chain (CardRenderer → TemplateRenderer → CardLayout) и DOM skeleton / data-атрибуты CardLayout.
+
+### 9) Manual QA checklist + Commands
+
+Сценарии:
+
+- Live preview во вкладке “עיצוב עצמי” до Save (draft/templateId не меняется).
+- Save применяет self-template и сохраняет overrides.
+- Reset → Save → change color → Save (без Mongo ошибки).
+- Auto-reset при смене template с self-theme на любой другой.
+- Entitlement off: self-theme нельзя персистить/форсить templateId.
+
+Команды (Windows):
+
+- Frontend gates (из `frontend/`):
+    - `npm.cmd run check:inline-styles`
+    - `npm.cmd run check:skins`
+    - `npm.cmd run check:contract`
+    - `npm.cmd run build --if-present`
+- Backend sanity (из `backend/`, при необходимости):
+    - `npm.cmd run sanity:imports`
+    - `npm.cmd run sanity:ownership-consistency`
+
 3. Layout: DOM skeleton + “публичный API” hooks
    SSoT layout skeleton
 

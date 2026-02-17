@@ -7,6 +7,7 @@ import { EDITOR_CARD_TABS } from "../components/editor/editorTabs";
 import { deleteCard, updateCardSlug } from "../services/cards.service";
 import api, { getAnonymousId } from "../services/api";
 import { useAuth } from "../context/AuthContext";
+import { TEMPLATES } from "../templates/templates.config";
 import styles from "./EditCard.module.css";
 
 const REFETCH_THROTTLE_MS = 15_000;
@@ -274,6 +275,22 @@ function EditCard() {
     useEffect(() => {
         dirtyPathsRef.current = dirtyPaths;
     }, [dirtyPaths]);
+
+    // Order-aware intent guard for self-theme vs template selection.
+    const changeSeqRef = useRef(0);
+    const lastSelfThemeChangeSeqRef = useRef(0);
+    const lastTemplateChangeSeqRef = useRef(0);
+    const lastSeqCardIdRef = useRef(null);
+
+    useEffect(() => {
+        const nextId = draftCard?._id ? String(draftCard._id) : null;
+        if (lastSeqCardIdRef.current === nextId) return;
+
+        lastSeqCardIdRef.current = nextId;
+        changeSeqRef.current = 0;
+        lastSelfThemeChangeSeqRef.current = 0;
+        lastTemplateChangeSeqRef.current = 0;
+    }, [draftCard?._id]);
 
     const closeUnsavedModal = useCallback(() => {
         setIsUnsavedModalOpen(false);
@@ -1185,6 +1202,48 @@ function EditCard() {
             }
         }
 
+        const selfThemeAllowed = Boolean(
+            draftCard?.entitlements?.design?.customColors,
+        );
+
+        const selfThemeTemplateId =
+            TEMPLATES.find((t) => t?.selfThemeV1 === true)?.id || null;
+
+        const selfThemeDirty = Array.from(dirtyPaths).some((p) => {
+            const path = String(p || "");
+            return (
+                path === "design.selfThemeV1" ||
+                path.startsWith("design.selfThemeV1.")
+            );
+        });
+
+        const templateChangedAfterSelfTheme =
+            lastTemplateChangeSeqRef.current >
+            lastSelfThemeChangeSeqRef.current;
+
+        const userChoseOtherTemplate =
+            selfThemeTemplateId &&
+            String(draftCard?.design?.templateId || "") !==
+                String(selfThemeTemplateId);
+
+        const blockForce =
+            templateChangedAfterSelfTheme && Boolean(userChoseOtherTemplate);
+
+        const shouldForceSelfThemeTemplate =
+            selfThemeAllowed &&
+            selfThemeDirty &&
+            Boolean(selfThemeTemplateId) &&
+            !blockForce;
+
+        if (shouldForceSelfThemeTemplate) {
+            payload.design = {
+                ...(payload.design && typeof payload.design === "object"
+                    ? payload.design
+                    : {}),
+                templateId: selfThemeTemplateId,
+            };
+        }
+
         if (Object.keys(payload).length === 0) return false;
 
         setSaveState("saving");
@@ -1425,9 +1484,44 @@ function EditCard() {
                 designMediaKeys.has(key.split(".")[1] || "");
 
             if (key.includes(".")) {
+                changeSeqRef.current += 1;
+                if (
+                    key === "design.selfThemeV1" ||
+                    key.startsWith("design.selfThemeV1.")
+                ) {
+                    lastSelfThemeChangeSeqRef.current = changeSeqRef.current;
+                }
+                if (key === "design.templateId") {
+                    lastTemplateChangeSeqRef.current = changeSeqRef.current;
+                }
+
                 setDraftCard((prev) => {
                     if (!prev) return prev;
-                    const next = setIn(prev, key, patchOrValue);
+                    let next = setIn(prev, key, patchOrValue);
+
+                    // Silent cleanup: leaving self-theme template should reset overrides to defaults
+                    // without affecting self-theme order-guard semantics.
+                    if (key === "design.templateId") {
+                        const selfThemeTemplateId =
+                            TEMPLATES.find((t) => t?.selfThemeV1 === true)
+                                ?.id || null;
+
+                        const prevTemplateIdRaw = prev?.design?.templateId;
+                        const nextTemplateIdRaw = patchOrValue;
+
+                        const prevTemplateId = String(prevTemplateIdRaw || "");
+                        const nextTemplateId = String(nextTemplateIdRaw || "");
+                        const selfId = String(selfThemeTemplateId || "");
+
+                        if (
+                            selfId &&
+                            prevTemplateId === selfId &&
+                            nextTemplateId !== selfId
+                        ) {
+                            next = setIn(next, "design.selfThemeV1", null);
+                        }
+                    }
+
                     return isDesignMediaPath
                         ? withPreviewMediaTouched(next)
                         : next;
@@ -1439,6 +1533,37 @@ function EditCard() {
                 });
             } else {
                 if (isPlainObject(patchOrValue)) {
+                    if (key === "design") {
+                        const prevDesign = draftCardRef.current?.design || {};
+                        const nextDesign = patchOrValue || {};
+
+                        const selfThemeTouched =
+                            Object.prototype.hasOwnProperty.call(
+                                nextDesign,
+                                "selfThemeV1",
+                            ) &&
+                            prevDesign?.selfThemeV1 !== nextDesign.selfThemeV1;
+
+                        const templateTouched =
+                            Object.prototype.hasOwnProperty.call(
+                                nextDesign,
+                                "templateId",
+                            ) &&
+                            prevDesign?.templateId !== nextDesign.templateId;
+
+                        if (selfThemeTouched || templateTouched) {
+                            changeSeqRef.current += 1;
+                            if (selfThemeTouched) {
+                                lastSelfThemeChangeSeqRef.current =
+                                    changeSeqRef.current;
+                            }
+                            if (templateTouched) {
+                                lastTemplateChangeSeqRef.current =
+                                    changeSeqRef.current;
+                            }
+                        }
+                    }
+
                     const shouldTouchMedia =
                         key === "design" &&
                         Object.keys(patchOrValue || {}).some((fieldKey) => {
