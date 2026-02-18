@@ -137,10 +137,12 @@ export default function SelfThemePanel({
         <div className={styles.root} dir="rtl">
             {isLocked ? (
                 <div className={styles.notice}>
-                    <p className={styles.title}>עיצוב עצמי</p>
+                    <h2 className={styles.title}>עיצוב עצמי</h2>
                     <p className={styles.text}>זמין במסלול פרימיום.</p>
                 </div>
-            ) : null}
+            ) : (
+                <h2 className={styles.title}>עיצוב עצמי</h2>
+            )}
 
             <div className={styles.grid}>
                 <ColorRow

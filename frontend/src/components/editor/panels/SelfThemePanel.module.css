@@ -16,8 +16,10 @@
 }
 
 .title {
-    font-size: 14px;
+    /* font-size: 14px; */
+    text-align: center;
     font-weight: 700;
+    text-decoration: underline var(--c-gold, #000);
     margin: 0;
 }
 
