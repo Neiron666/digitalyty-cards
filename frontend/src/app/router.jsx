@@ -26,6 +26,7 @@ const OrgInvites = lazy(() => import("../pages/OrgInvites"));
 
 // public card
 const PublicCard = lazy(() => import("../pages/PublicCard"));
+const PreviewCard = lazy(() => import("../pages/PreviewCard"));
 import NotFound from "../pages/NotFound";
 
 function AdminRouteGate() {
@@ -115,6 +116,28 @@ const router = createBrowserRouter([
             <ChunkErrorBoundary label="שגיאת טעינה בכרטיס">
                 <Suspense fallback={<RouteFallback label="טוען כרטיס…" />}>
                     <PublicCard />
+                </Suspense>
+            </ChunkErrorBoundary>
+        ),
+    },
+    {
+        // Standalone preview personal card page (no marketing Header/Footer)
+        path: "/preview/card/:slug",
+        element: (
+            <ChunkErrorBoundary label="שגיאת טעינה בכרטיס">
+                <Suspense fallback={<RouteFallback label="טוען כרטיס…" />}>
+                    <PreviewCard />
+                </Suspense>
+            </ChunkErrorBoundary>
+        ),
+    },
+    {
+        // Standalone preview company card page (no marketing Header/Footer)
+        path: "/preview/c/:orgSlug/:slug",
+        element: (
+            <ChunkErrorBoundary label="שגיאת טעינה בכרטיס">
+                <Suspense fallback={<RouteFallback label="טוען כרטיס…" />}>
+                    <PreviewCard />
                 </Suspense>
             </ChunkErrorBoundary>
         ),

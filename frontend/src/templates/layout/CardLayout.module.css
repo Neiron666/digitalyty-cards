@@ -66,6 +66,14 @@
     --fs-h2: var(--fs-20);
     --fs-h3: var(--fs-18);
 
+    --fs-h4: 1.25rem;
+    --fs-h5: 1.125rem;
+    --fs-h6: 1rem;
+    --fs-body: 1rem;
+    --fs-body-sm: 0.9375rem;
+    --fs-caption: 0.875rem;
+    --fs-ui: 0.875rem;
+
     /* Legacy aliases (back-compat only) */
     --text-h1: var(--fs-h1);
     --text-h2: var(--fs-h2);

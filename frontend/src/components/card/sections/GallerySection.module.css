@@ -125,7 +125,7 @@
     border: 0;
     background: var(--contact-btn-bg, transparent);
     color: var(--bg-surface, #111);
-    font-size: 22px;
+    font-size: var(--fs-14, 1.375rem);
     line-height: 1;
     cursor: pointer;
     border-radius: 10px;
@@ -196,7 +196,7 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    font-size: 26px;
+    font-size: var(--fs-16, 1.625rem);
     line-height: 1;
 }
 

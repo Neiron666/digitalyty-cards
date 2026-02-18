@@ -1,0 +1,38 @@
+.previewPage {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    min-height: 100vh;
+}
+
+.previewContainer {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    /* padding: 1rem; */
+    gap: 0.75rem;
+}
+
+.previewNotice {
+    position: fixed;
+    top: 1rem;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    max-width: 420px;
+    padding: 0.5rem 0.75rem;
+    background: rgba(0, 0, 0, 0.57);
+    color: rgba(255, 255, 255, 0.743);
+    font-weight: 600;
+    border-radius: 14px;
+    border: 1px solid var(--gold);
+    font-size: 2rem;
+    line-height: var(--lh-normal, 1.4);
+    text-align: center;
+}

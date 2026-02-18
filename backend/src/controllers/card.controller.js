@@ -1685,6 +1685,162 @@ export async function updateCard(req, res) {
     return res.json(dto);
 }
 
+function setDraftNoStore(res) {
+    res.set("Cache-Control", "private, no-store");
+    res.set("Pragma", "no-cache");
+    res.set("Expires", "0");
+    res.set("Surrogate-Control", "no-store");
+    // Critical: response depends on authentication context.
+    res.set("Vary", "Authorization, Cookie");
+}
+
+function getRequesterUserId(req) {
+    return req.user?.id || req.userId || req.user?.userId || null;
+}
+
+export async function getPreviewCardBySlug(req, res) {
+    const requesterUserId = getRequesterUserId(req);
+    if (!requesterUserId) {
+        return res.status(404).json({ message: "Not found" });
+    }
+
+    const slug = String(req.params.slug || "").trim();
+    if (!slug) {
+        return res.status(404).json({ message: "Not found" });
+    }
+
+    const personalOrgId = await getPersonalOrgId();
+
+    // Preview personal resolution is scoped to PERSONAL_ORG.
+    // Tolerant fallback keeps existing data readable until orgId backfill runs.
+    const card = await Card.findOne({
+        slug,
+        isActive: true,
+        $or: [
+            { orgId: new mongoose.Types.ObjectId(personalOrgId) },
+            { orgId: { $exists: false } },
+            { orgId: null },
+        ],
+    });
+
+    if (!card) {
+        return res.status(404).json({ message: "Not found" });
+    }
+
+    // Defense in depth: anon-owned cards must never be reachable by slug.
+    if (card.anonymousId && !card.user) {
+        return res.status(404).json({ message: "Not found" });
+    }
+
+    if (!card.user) {
+        return res.status(404).json({ message: "Not found" });
+    }
+
+    const isOwner = String(card.user) === String(requesterUserId);
+    if (!isOwner) {
+        return res.status(404).json({ message: "Not found" });
+    }
+
+    const now = new Date();
+
+    const userTier = await User.findById(String(card.user))
+        .select("adminTier adminTierUntil")
+        .lean();
+
+    const dto = toCardDTO(card, now, { user: userTier });
+    if (dto?.slug) {
+        dto.publicPath = `/card/${dto.slug}`;
+        dto.ogPath = `/og/card/${dto.slug}`;
+    }
+
+    // Preview responses must never be cacheable.
+    setDraftNoStore(res);
+    return res.json(dto);
+}
+
+export async function getPreviewCompanyCardByOrgSlugAndSlug(req, res) {
+    const orgSlug = String(req.params.orgSlug || "")
+        .trim()
+        .toLowerCase();
+    const slug = String(req.params.slug || "")
+        .trim()
+        .toLowerCase();
+
+    if (!orgSlug || !slug) {
+        return res.status(404).json({ message: "Not found" });
+    }
+
+    const org = await Organization.findOne({
+        slug: orgSlug,
+        isActive: true,
+    })
+        .select("_id slug")
+        .lean();
+
+    if (!org?._id) {
+        return res.status(404).json({ message: "Not found" });
+    }
+
+    // Membership gate MUST happen before owner gate (and before any distinguishable responses).
+    const requesterUserId = getRequesterUserId(req);
+    if (!requesterUserId) {
+        return res.status(404).json({ message: "Not found" });
+    }
+
+    const requesterMember = await OrganizationMember.findOne({
+        orgId: org._id,
+        userId: String(requesterUserId),
+        status: "active",
+    })
+        .select("_id")
+        .lean();
+
+    if (!requesterMember?._id) {
+        return res.status(404).json({ message: "Not found" });
+    }
+
+    const card = await Card.findOne({
+        orgId: org._id,
+        slug,
+        isActive: true,
+    });
+
+    if (!card) {
+        return res.status(404).json({ message: "Not found" });
+    }
+
+    // Defense in depth: anon-owned cards must never be reachable by slug.
+    if (card.anonymousId && !card.user) {
+        return res.status(404).json({ message: "Not found" });
+    }
+
+    if (!card.user) {
+        return res.status(404).json({ message: "Not found" });
+    }
+
+    const isOwner = String(card.user) === String(requesterUserId);
+    if (!isOwner) {
+        return res.status(404).json({ message: "Not found" });
+    }
+
+    const now = new Date();
+
+    const userTier = await User.findById(String(card.user))
+        .select("adminTier adminTierUntil")
+        .lean();
+
+    const dto = toCardDTO(card, now, { user: userTier });
+    if (dto?.slug) {
+        const canonicalOrgSlug = org?.slug ? String(org.slug) : orgSlug;
+        dto.publicPath = `/c/${canonicalOrgSlug}/${dto.slug}`;
+        dto.ogPath = `/og/c/${canonicalOrgSlug}/${dto.slug}`;
+    }
+
+    // Preview responses must never be cacheable.
+    setDraftNoStore(res);
+    return res.json(dto);
+}
+
 export async function getCardBySlug(req, res) {
     const personalOrgId = await getPersonalOrgId();
 
@@ -1704,12 +1860,6 @@ export async function getCardBySlug(req, res) {
         return res.status(404).json({ message: "Not found" });
     }
 
-    // IMPORTANT: slug-based access is public ONLY when published + user-owned.
-    // No owner-preview by slug (especially not for anonymous cards).
-    if (card.status !== "published") {
-        return res.status(404).json({ message: "Not found" });
-    }
-
     // Defense in depth: anon-owned cards must never be reachable by slug.
     if (card.anonymousId && !card.user) {
         return res.status(404).json({ message: "Not found" });
@@ -1719,10 +1869,25 @@ export async function getCardBySlug(req, res) {
         return res.status(404).json({ message: "Not found" });
     }
 
+    const requesterUserId = getRequesterUserId(req);
+    const isOwner = Boolean(
+        requesterUserId && String(card.user || "") === String(requesterUserId),
+    );
+
+    // IMPORTANT: slug-based access is public ONLY when published.
+    // Draft is accessible ONLY to the owner with a valid JWT.
+    if (card.status !== "published" && !isOwner) {
+        return res.status(404).json({ message: "Not found" });
+    }
+
     const now = new Date();
 
     // Public access rule: expired & unpaid published cards are blocked.
-    if (isTrialExpired(card, now) && !isEntitled(card, now)) {
+    if (
+        card.status === "published" &&
+        isTrialExpired(card, now) &&
+        !isEntitled(card, now)
+    ) {
         return res.status(410).json({
             code: "TRIAL_EXPIRED_PUBLIC",
             message: "Trial expired",
@@ -1737,6 +1902,10 @@ export async function getCardBySlug(req, res) {
     if (dto?.slug) {
         dto.publicPath = `/card/${dto.slug}`;
         dto.ogPath = `/og/card/${dto.slug}`;
+    }
+
+    if (card.status !== "published") {
+        setDraftNoStore(res);
     }
     return res.json(dto);
 }
@@ -1774,18 +1943,28 @@ export async function getCompanyCardByOrgSlugAndSlug(req, res) {
         return res.status(404).json({ message: "Not found" });
     }
 
-    // IMPORTANT: slug-based access is public ONLY when published + user-owned.
-    // No owner-preview by slug (especially not for anonymous cards).
-    if (card.status !== "published") {
-        return res.status(404).json({ message: "Not found" });
-    }
-
     // Defense in depth: anon-owned cards must never be reachable by slug.
     if (card.anonymousId && !card.user) {
         return res.status(404).json({ message: "Not found" });
     }
 
     if (!card.user) {
+        return res.status(404).json({ message: "Not found" });
+    }
+
+    // Draft preview is member-only (active membership). Gate membership first.
+    const requesterUserId = getRequesterUserId(req);
+    const requesterMember = requesterUserId
+        ? await OrganizationMember.findOne({
+              orgId: org._id,
+              userId: String(requesterUserId),
+              status: "active",
+          })
+              .select("_id")
+              .lean()
+        : null;
+
+    if (card.status !== "published" && !requesterMember?._id) {
         return res.status(404).json({ message: "Not found" });
     }
 
@@ -1806,7 +1985,11 @@ export async function getCompanyCardByOrgSlugAndSlug(req, res) {
     const now = new Date();
 
     // Public access rule: expired & unpaid published cards are blocked.
-    if (isTrialExpired(card, now) && !isEntitled(card, now)) {
+    if (
+        card.status === "published" &&
+        isTrialExpired(card, now) &&
+        !isEntitled(card, now)
+    ) {
         return res.status(410).json({
             code: "TRIAL_EXPIRED_PUBLIC",
             message: "Trial expired",
@@ -1822,6 +2005,10 @@ export async function getCompanyCardByOrgSlugAndSlug(req, res) {
         const canonicalOrgSlug = org?.slug ? String(org.slug) : orgSlug;
         dto.publicPath = `/c/${canonicalOrgSlug}/${dto.slug}`;
         dto.ogPath = `/og/c/${canonicalOrgSlug}/${dto.slug}`;
+    }
+
+    if (card.status !== "published") {
+        setDraftNoStore(res);
     }
     return res.json(dto);
 }

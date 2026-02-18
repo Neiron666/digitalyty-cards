@@ -72,7 +72,7 @@
 }
 
 .label {
-    font-size: var(--contact-label-fs, var(--fs-10, 12px));
+    font-size: var(--contact-label-fs, var(--fs-10, 0.75rem));
     line-height: 1.1;
     text-align: center;
     color: var(--main-token-color, var(--text, currentColor));
