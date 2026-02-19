@@ -19,7 +19,7 @@
     /* font-size: 14px; */
     text-align: center;
     font-weight: 700;
-    text-decoration: underline var(--c-gold, #000);
+    text-decoration: underline var(--gold) 1px;
     margin: 0;
 }
 
@@ -133,17 +133,34 @@
 }
 
 .fixButton {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    height: 44px;
-    padding-inline: 14px;
+    appearance: none;
     border-radius: 12px;
-    border: 1px solid rgba(0, 0, 0, 0.25);
-    background: #ffffff;
+    padding: 12px 14px;
+    font-weight: 900;
     cursor: pointer;
-    font-weight: 700;
-    font-size: var(--fs-body-sm);
+    font-family: inherit;
+
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    background: rgba(255, 255, 255, 0.06);
+    color: inherit;
+
+    transition:
+        background 120ms ease,
+        border-color 120ms ease,
+        transform 120ms ease;
+}
+
+.fixButton:hover {
+    background: rgba(255, 255, 255, 0.1);
+    filter: brightness(1.05);
+    border-color: var(--gold-fade);
+    color: var(--gold);
+    background: linear-gradient(
+        90deg,
+        transparent,
+        var(--gold-soft),
+        transparent
+    );
 }
 
 .fixButton:disabled {

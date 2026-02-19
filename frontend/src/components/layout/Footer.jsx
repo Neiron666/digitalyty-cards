@@ -6,7 +6,25 @@ export default function Footer() {
         <footer className={styles.footer} id="contact">
             <div className={styles.inner}>
                 <div className={styles.col}>
-                    <div className={styles.brand}>Cardigo</div>
+                    <Link
+                        to="/"
+                        className={styles.brand}
+                        aria-label="כרטיס ביקור דיגיטלי - כרדיגו"
+                    >
+                        <picture>
+                            <source
+                                type="image/webp"
+                                srcSet="/images/brand-logo/cardigo-logo.webp"
+                            />
+                            <img
+                                src="/images/brand-logo/cardigo-logo.png"
+                                alt="כרטיס ביקור דיגיטלי - כרדיגו"
+                                className={styles.brandLogoImage}
+                                loading="lazy"
+                                decoding="async"
+                            />
+                        </picture>
+                    </Link>
                     <div className={styles.text}>
                         כרטיסי ביקור דיגיטליים לעסקים — יצירה, התאמה אישית
                         ושיתוף בלחיצה.

@@ -75,8 +75,24 @@ export default function Header() {
         <header className={styles.header}>
             <div className={styles.inner}>
                 {/* Logo */}
-                <Link to="/" className={styles.logo}>
-                    Cardigo
+                <Link
+                    to="/"
+                    className={styles.logo}
+                    aria-label="כרטיס ביקור דיגיטלי - כרדיגו"
+                >
+                    <picture>
+                        <source
+                            type="image/webp"
+                            srcSet="/images/brand-logo/cardigo-logo.webp"
+                        />
+                        <img
+                            src="/images/brand-logo/cardigo-logo.png"
+                            alt="כרטיס ביקור דיגיטלי - כרדיגו"
+                            className={styles.logoImage}
+                            loading="eager"
+                            decoding="async"
+                        />
+                    </picture>
                 </Link>
 
                 {/* Mobile menu toggle */}

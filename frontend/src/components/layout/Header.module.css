@@ -11,8 +11,7 @@
     max-width: 90%;
     margin: 0 auto;
     padding: 14px 20px;
-    display: grid;
-    grid-template-columns: 200px 1fr 280px;
+    display: flex;
     align-items: center;
     gap: 14px;
 }
@@ -21,6 +20,16 @@
     font-weight: 900;
     font-size: 1.1rem;
     letter-spacing: 0.3px;
+    display: flex;
+    align-items: center;
+    flex: 0 0 200px;
+}
+
+.logoImage {
+    block-size: 1.75rem;
+    inline-size: auto;
+    max-inline-size: 100%;
+    display: block;
 }
 
 .nav {
@@ -28,6 +37,8 @@
     justify-content: center;
     gap: 16px;
     flex-wrap: wrap;
+    flex: 1 1 auto;
+    min-width: 0;
 }
 
 .navLink {
@@ -68,6 +79,7 @@
     display: flex;
     justify-content: flex-end;
     gap: 10px;
+    flex: 0 0 280px;
 }
 
 .authBlock {
@@ -210,31 +222,8 @@
 }
 
 /* Responsive */
-/* @media (max-width: 1024px) {
-    .inner {
-        grid-template-columns: 1fr auto;
-        grid-template-areas:
-            "logo actions"
-            "nav nav";
-    }
-
-    .logo {
-        grid-area: logo;
-    }
-
-    .actions {
-        grid-area: actions;
-    }
-
-    .nav {
-        grid-area: nav;
-        justify-content: flex-start;
-    }
-} */
-
 @media (max-width: 1300px) {
     .inner {
-        grid-template-columns: 1fr auto;
         align-items: center;
     }
 
@@ -246,6 +235,7 @@
     .burger {
         display: inline-flex;
         flex-direction: column;
+        margin-inline-start: auto;
     }
     .userEmail {
         max-width: 100%;

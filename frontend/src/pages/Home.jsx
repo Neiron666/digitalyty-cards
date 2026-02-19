@@ -67,9 +67,28 @@ export default function Home() {
             <section className={styles.hero}>
                 <div className={styles.heroInner}>
                     <div className={styles.heroText}>
-                        <div className={styles.kicker}>
+                        <Link
+                            to="/"
+                            className={styles.heroLogoLink}
+                            aria-label="כרטיס ביקור דיגיטלי - כרדיגו"
+                        >
+                            <picture>
+                                <source
+                                    type="image/webp"
+                                    srcSet="/images/brand-logo/cardigo-logo.webp"
+                                />
+                                <img
+                                    src="/images/brand-logo/cardigo-logo.png"
+                                    alt="כרטיס ביקור דיגיטלי - כרדיגו"
+                                    className={styles.heroLogoImage}
+                                    loading="eager"
+                                    decoding="async"
+                                />
+                            </picture>
+                        </Link>
+                        {/* <div className={styles.kicker}>
                             כרטיס ביקור דיגיטלי מתקדם
-                        </div>
+                        </div> */}
                         <h1 className={styles.h1}>
                             כרטיס ביקור דיגיטלי מקצועי שמביא יותר לקוחות
                         </h1>

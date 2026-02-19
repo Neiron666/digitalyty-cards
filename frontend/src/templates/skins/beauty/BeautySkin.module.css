@@ -1,83 +1,135 @@
 .theme {
-    --bg-main: #f7f3ef;
-    --bg-surface: #ffffff;
-    --bg-card: #ffffff;
-    --text-main: #1f1a17;
-    --text-muted: #6b6059;
-    --border: rgba(31, 26, 23, 0.08);
+    /* =========================================================
+       CORE COLORS (SSoT) — универсальные роли
+       ========================================================= */
+    --c-neutral-bg: #ffffff; /* основной фон карточки и страницы */
+    --c-neutral-surface: #ffffff; /* для bg отзывы */
+    --c-neutral-card: #ffffff;
+    --c-section-bg: rgba(255, 255, 255, 0.92);
 
-    --primary: #d2a679;
-    --primary-hover: #bf9468;
-    --primary-contrast: #1f1a17;
+    /* ----------- --sections-all-backgronds рычаг для всего бэкграунда---------  */
+    --c-sections-all-backgronds: unset; /* Меняет все bg в карточке когда задаеться значение */
+    --rgb-sections-all-backgronds: unset; /* Меняет все bg в карточке когда задаеться значение */
 
-    --radius-sm: 12px;
-    --radius-md: 18px;
-    --radius-lg: 24px;
-    --shadow-soft: 0 18px 44px rgba(31, 26, 23, 0.12);
-    --focus-ring: 0 0 0 3px rgba(210, 166, 121, 0.4);
+    --section-bg-zebra: #ffffff; /* fallback for non-supporting browsers */
+    --rgb-section-bg-zebra: 255, 255, 255; /* for rgba() fallback */
 
-    --font-family: "Heebo", system-ui, sans-serif;
+    /* -----------neutral-text рычаг для цвета текста---------  */
+    --c-neutral-text: #1a1a1a;
+    --rgb-neutral-text: 26, 26, 26;
 
-    /* --fs-base: 15px; */
-    /* --fs-h1: var(--fs-h1, 24px);
-    --fs-h2: var(--fs-h2, 20px);
-    --fs-h3: var(--fs-h3, 16px); */
-    --lh-tight: 1.05;
-    --lh-normal: 1.5;
+    /* -----------brand-primary рычаг для основного цвета бренда и фона кнопок---------  */
+    --c-brand-primary: #d2a679; /* H1, svg bg, text deco underline*/
 
-    --cta-bg: linear-gradient(135deg, #e6c7a6, #d2a679);
-    --cta-text: #1f1a17;
-    --cta-border: rgba(31, 26, 23, 0.12);
-    --cta-radius: 18px;
+    /* -----------brand-secondary рычаг для второстепенного цвета бренда---------  */
+    --c-brand-secondary: #895827; /* второстепенный (rose в этой палитре) */
 
-    --social-bg: rgba(210, 166, 121, 0.12);
-    --social-border: rgba(210, 166, 121, 0.28);
-    --social-icon: #1f1a17;
+    /* -----------on-primary рычаг для цвета текста на кнопках---------  */
+    --c-on-primary: #ffffff;
 
-    --section-bg: rgba(255, 255, 255, 0.92);
-    --section-border: rgba(31, 26, 23, 0.06);
-    --section-radius: 18px;
+    /* RGB helpers */
+    --rgb-neutral-surface: 233, 206, 178;
+    --rgb-brand-secondary: 137, 88, 39;
+    --rgb-brand-accent: 210, 166, 121;
+    --rgb-brand-primary: 210, 166, 121;
 
-    --faq-surface: rgba(255, 255, 255, 0.96);
-    --faq-border: rgba(31, 26, 23, 0.08);
-    --faq-accent: var(--primary);
-    --faq-text: var(--text-main);
-    --faq-muted: var(--text-muted);
-    --faq-answer-max: 48rem;
-    --faq-focus-ring: 0 0 0 3px rgba(210, 166, 121, 0.35);
+    /* =========================================================
+       SEMANTIC TOKENS — ниже только var()/rgba(var(--rgb-*),a)
+       ========================================================= */
+    --bg-main: var(--c-neutral-bg);
+    --bg-surface: var(--c-neutral-surface);
+    --bg-card: var(--c-sections-all-backgronds, var(--c-neutral-card));
+    --bg-section: var(--c-section-bg);
+    --background-color: var(--c-sections-all-backgronds, var(--c-neutral-bg));
+    --text-main: var(--c-neutral-text);
 
-    --hero-gradient:
-        radial-gradient(
-            circle at 20% 20%,
-            rgba(210, 166, 121, 0.18),
-            transparent 32%
+    /* Legacy / public tokens that other parts already expect */
+    --main-token-color: var(--c-brand-primary);
+    --secondary-token-color: var(--c-brand-secondary);
+    --secondary-token-color-rgb: var(--rgb-brand-secondary);
+
+    /* Primary/secondary system */
+    --primary: var(--c-brand-primary);
+    --primary-hover: var(
+        --c-brand-primary
+    ); /* при желании: --c-brand-primary-hover */
+    --secondary: var(--c-brand-secondary);
+    --secondary-hover: rgba(var(--rgb-brand-secondary), 0.9);
+
+    /* hero divider */
+    --card-bg: var(--bg-card);
+    /* Contact button (derived) */
+    --contact-btn-color: var(--primary);
+    --contact-btn-bg: var(--primary);
+    --contact-btn-fg: var(--c-on-primary);
+    --contact-btn-border: var(--primary);
+    --contact-btn-outline: var(--secondary);
+    --contact-btn-secondary: var(--secondary);
+    --contact-btn-hover-fg: var(--c-on-primary);
+
+    /* Avatar */
+    --avatar-border: var(--c-brand-primary);
+    --avatar-bg: var(--bg-surface);
+
+    /* Typography */
+    --action-text: var(--c-neutral-text);
+    --text-subtitle: var(--action-text);
+    --color-title: var(--text-main);
+    --name-color: var(--primary);
+
+    /* Borders / shadows */
+    --border: rgba(var(--rgb-neutral-text), 0.14);
+    --shadow-soft: 0 18px 48px rgba(var(--rgb-neutral-text), 0.14);
+
+    /* Sections */
+    --section-bg: rgba(
+        var(--rgb-sections-all-backgronds, var(--rgb-section-bg-zebra)),
+        1
+    );
+    --section-border: rgba(var(--rgb-neutral-text), 0.1);
+
+    /* faq */
+    --faq-text: var(--c-on-primary);
+
+    /* Zebra surfaces (tokens only) */
+    --section-surface-odd:
+        linear-gradient(
+            rgba(var(--rgb-brand-primary), 0.15),
+            rgba(var(--rgb-brand-secondary), 0)
         ),
-        radial-gradient(
-            circle at 80% 0%,
-            rgba(172, 142, 118, 0.22),
-            transparent 28%
-        );
+        var(--section-bg);
+    --section-surface-even:
+        linear-gradient(
+            rgba(var(--rgb-brand-secondary), 0.15),
+            rgba(var(--rgb-brand-primary), 0)
+        ),
+        var(--section-bg);
+    --section-border-odd: none;
+    --section-border-even: none;
 
+    /* Action surface */
+    --action-bg: var(--c-brand-primary);
+    --action-border: rgba(var(--rgb-brand-primary), 0.38);
+
+    /* Focus */
+    --focus-ring: 0 0 0 3px rgba(var(--rgb-brand-secondary), 0.32);
+
+    /* Hero overlay */
     --hero-overlay-bg: linear-gradient(
         180deg,
-        rgba(255, 255, 255, 0.06),
-        rgba(0, 0, 0, 0.16)
+        rgba(var(--rgb-neutral-surface), 0.12),
+        rgba(var(--rgb-brand-secondary), 0.52)
     );
+    --hero-image-position: center;
 
-    --avatar-border: rgba(255, 255, 255, 0.9);
-    --avatar-shadow: 0 18px 50px rgba(0, 0, 0, 0.14);
-    --avatar-bg: rgba(255, 255, 255, 0.8);
-
-    --name-letter-spacing: -0.01em;
-    --section-backdrop-filter: none;
-
-    --hero-min-height: 220px;
-    --card-radius: var(--radius-lg);
+    /* Divider */
+    --hero-divider-border: var(--primary);
 }
 
 @media (max-width: 900px) {
     .theme {
-        --shadow-soft: 0 14px 36px rgba(31, 26, 23, 0.12);
+        /* чтобы shadow тоже был SSoT и не зависел от “чужих” чисел */
+        --shadow-soft: 0 14px 36px rgba(var(--rgb-neutral-text), 0.12);
     }
 }
 

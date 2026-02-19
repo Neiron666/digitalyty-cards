@@ -1,57 +1,117 @@
 .theme {
-    --bg-main: #f6f8fb;
-    --bg-surface: #ffffff;
-    --bg-card: #ffffff;
+    /* =========================================================
+       CORE COLORS (SSoT) — универсальные роли
+       (взято ТОЛЬКО из палитры, которую ты прислал)
+       ========================================================= */
+    --c-neutral-bg: #f6f8fb; /* основной фон страницы */
+    --c-neutral-surface: #ffffff;
+    --c-neutral-card: #ffffff;
 
-    --main-token-color: #094a56;
-    --main-token-color-rgb: 12, 106, 122;
+    /* В исходнике section-bg был очень лёгкий tint от тёмного текста.
+       В эталоне держим отдельную роль для секций. */
+    --c-section-bg: rgba(11, 27, 43, 0.035);
 
-    --secondary-token-color: #0c6a7a;
+    /* ----------- --sections-all-backgronds рычаг для всего бэкграунда---------  */
+    --c-sections-all-backgronds: unset; /* Меняет все bg в карточке когда задаеться значение */
+    --rgb-sections-all-backgronds: unset; /* Меняет все bg в карточке когда задаеться значение */
 
-    --contact-btn-color: var(--main-token-color);
+    --section-bg-zebra: #ffffff; /* fallback for non-supporting browsers */
+    --rgb-section-bg-zebra: 255, 255, 255; /* for rgba() fallback */
 
-    /* --contact-btn-bg: var(--main-token-color); */
-    --contact-btn-fg: #ffffff;
-    /* --contact-btn-border: rgba(12, 106, 122, 0.25); */
-    --contact-btn-hover-fg: #ffffff;
+    /* -----------neutral-text рычаг для цвета текста---------  */
+    --c-neutral-text: #063037;
+    --rgb-neutral-text: 6, 48, 55;
 
-    --primary: var(--main-token-color);
-    --primary-hover: var(--secondary-token-color);
+    /* -----------brand-primary рычаг для основного цвета бренда и фона кнопок---------  */
+    --c-brand-primary: #094a56;
 
-    --secondary: var(--secondary-token-color);
-    --avatar-border: var(--main-token-color);
-    /* --avatar-shadow: 0 12px 32px rgba(0, 0, 0, 0.35); */
-    --avatar-bg: #ffffff;
+    /* -----------brand-secondary рычаг для второстепенного цвета бренда---------  */
+    --c-brand-secondary: #0c6a7a;
 
-    --text-main: #063037;
-    --text-subtitle: #375a5f;
+    /* -----------on-primary рычаг для цвета текста на кнопках---------  */
+    --c-on-primary: #ffffff;
+
+    /* RGB helpers */
+    --rgb-neutral-surface: 255, 255, 255;
+    --rgb-brand-secondary: 12, 106, 122;
+    --rgb-brand-primary: 9, 74, 86;
+
+    /* =========================================================
+       SEMANTIC TOKENS — ниже только var()/rgba(var(--rgb-*),a)
+       ========================================================= */
+    --bg-main: var(--c-neutral-bg);
+    --bg-surface: var(--c-neutral-surface);
+    --bg-card: var(--c-sections-all-backgronds, var(--c-neutral-card));
+    --bg-section: var(--c-section-bg);
+    --background-color: var(--c-sections-all-backgronds, var(--c-neutral-bg));
+    --text-main: var(--c-neutral-text);
+
+    /* Legacy / public tokens that other parts already expect */
+    --main-token-color: var(--c-brand-primary);
+    --secondary-token-color: var(--c-brand-secondary);
+    --secondary-token-color-rgb: var(--rgb-brand-secondary);
+
+    /* Primary/secondary system */
+    --primary: var(--c-brand-primary);
+    --primary-hover: var(--c-brand-secondary);
+    --secondary: var(--c-brand-secondary);
+    --secondary-hover: rgba(var(--rgb-brand-secondary), 0.9);
+
+    /* hero divider */
+    --card-bg: var(--bg-card);
+
+    /* Contact button (derived) */
+    --contact-btn-color: var(--primary);
+    --contact-btn-bg: var(--primary);
+    --contact-btn-fg: var(--c-on-primary);
+    --contact-btn-border: var(--primary);
+    --contact-btn-outline: var(--secondary);
+    --contact-btn-secondary: var(--secondary);
+    --contact-btn-hover-fg: var(--c-on-primary);
+
+    /* Avatar */
+    --avatar-border: var(--c-brand-primary);
+    --avatar-bg: var(--bg-surface);
+
+    /* Typography */
+    --action-text: var(--c-on-primary);
+    --text-subtitle: #375a5f; /* из исходника */
     --color-title: var(--text-main);
-
     --name-color: var(--text-main);
 
+    /* Borders / shadows */
     --border: rgba(11, 27, 43, 0.14);
     --shadow-soft: 0 18px 48px rgba(11, 27, 43, 0.16);
 
-    --section-bg: rgba(11, 27, 43, 0.035);
-    --section-border: var(--border);
+    /* Sections */
+    --section-bg: rgba(
+        var(--rgb-sections-all-backgronds, var(--rgb-section-bg-zebra)),
+        1
+    );
+    --section-border: rgba(var(--rgb-neutral-text), 0.1);
 
-    /* Zebra (odd/even surfaces; gradients allowed) */
+    /* faq */
+    --faq-text: var(--c-on-primary);
+
+    /* Zebra surfaces (tokens only) */
     --section-surface-odd: var(--bg-surface);
     --section-surface-even:
         linear-gradient(
-            rgba(var(--main-token-color-rgb), 0.3),
+            rgba(var(--rgb-brand-secondary), 0.3),
             rgba(0, 0, 0, 0.04)
         ),
         var(--section-bg);
     --section-border-odd: none;
     --section-border-even: none;
 
-    --action-bg: #0c6a7a;
-    --action-text: #ffffff;
-    --action-border: rgba(12, 106, 122, 0.35);
+    /* Action surface */
+    --action-bg: var(--c-brand-secondary);
+    --action-border: rgba(var(--rgb-brand-secondary), 0.35);
 
-    --focus-ring: 0 0 0 3px rgba(12, 106, 122, 0.28);
+    /* Focus */
+    --focus-ring: 0 0 0 3px rgba(var(--rgb-brand-secondary), 0.28);
 
+    /* Hero overlay */
     --hero-overlay-bg: linear-gradient(
         180deg,
         rgba(255, 255, 255, 0.1),
@@ -59,5 +119,20 @@
     );
     --hero-image-position: center;
 
-    --hero-divider-border: var(--main-token-color);
+    /* Divider */
+    --hero-divider-border: var(--primary);
+}
+
+@media (max-width: 900px) {
+    .theme {
+        /* чтобы shadow тоже был SSoT и не зависел от “чужих” чисел */
+        --shadow-soft: 0 14px 36px rgba(11, 27, 43, 0.14);
+    }
+}
+
+@media (max-width: 520px) {
+    .theme {
+        --hero-min-height: 200px;
+        --card-radius: var(--radius-md);
+    }
 }
