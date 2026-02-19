@@ -46,12 +46,12 @@
 }
 
 .hint {
-    font-size: 12px;
+    font-size: var(--fs-caption);
     opacity: 0.8;
 }
 
 .incompleteHint {
-    font-size: 12px;
+    font-size: var(--fs-caption);
     opacity: 0.95;
     color: rgba(255, 199, 92, 0.95);
 }

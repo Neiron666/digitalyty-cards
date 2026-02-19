@@ -17,7 +17,7 @@
 
 .sectionTitle {
     margin: 0;
-    font-size: 14px;
+    font-size: var(--fs-ui);
     font-weight: 900;
 }
 
@@ -50,5 +50,5 @@
 .helper {
     margin: 6px 0 0;
     color: var(--text-muted, #c8d2ea);
-    font-size: 13px;
+    font-size: var(--fs-body-sm);
 }

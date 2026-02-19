@@ -10,13 +10,13 @@
 }
 
 .title {
-    font-size: 16px;
+    font-size: var(--fs-body);
     font-weight: 700;
     color: rgba(0, 0, 0, 0.9);
 }
 
 .subtitle {
-    font-size: 13px;
+    font-size: var(--fs-body-sm);
     line-height: 1.5;
     color: rgba(0, 0, 0, 0.7);
     max-width: 52ch;

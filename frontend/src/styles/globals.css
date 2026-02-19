@@ -13,6 +13,27 @@
     --bg-main: #020617;
 }
 
+#root {
+    /* APP TYPOGRAPHY TOKENS (SSoT) — rem-only */
+    --fs-caption: 0.75rem; /* 12px */
+    --fs-body-sm: 0.8125rem; /* 13px */
+    --fs-ui: 0.875rem; /* 14px */
+    --fs-body: 1rem; /* 16px */
+    --fs-h6: 1.125rem; /* 18px */
+
+    --fs-hero-title: 2.2rem;
+    --fs-display-outlined: 2.1rem;
+    --fs-display-step-num: 3.6rem;
+}
+
+@media (min-width: 80rem) {
+    #root {
+        --fs-hero-title: 3.2rem;
+        --fs-display-outlined: 3rem;
+        --fs-display-step-num: 4.8rem;
+    }
+}
+
 html,
 body {
     margin: 0;

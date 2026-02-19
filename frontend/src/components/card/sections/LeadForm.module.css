@@ -17,6 +17,19 @@
     flex-direction: column;
     gap: 12px;
     min-width: 0;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md, 18px);
+    background: var(--input-bg);
+    padding: 12px;
+}
+.form input,
+.form textarea {
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm, 14px);
+    background: white;
+    color: var(--card-text);
+    padding: 8px 12px;
+    font-size: var(--fs-ui);
 }
 
 .error,

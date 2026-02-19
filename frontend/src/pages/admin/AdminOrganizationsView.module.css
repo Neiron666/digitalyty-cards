@@ -24,12 +24,12 @@
 
 .h2 {
     margin: 0 0 12px;
-    font-size: 18px;
+    font-size: var(--fs-h6);
 }
 
 .h3 {
     margin: 18px 0 10px;
-    font-size: 16px;
+    font-size: var(--fs-body);
 }
 
 .searchRow {
@@ -92,7 +92,7 @@
 
 .pagerMeta {
     color: rgba(0, 0, 0, 0.7);
-    font-size: 13px;
+    font-size: var(--fs-body-sm);
 }
 
 .pagerControls {
@@ -113,7 +113,7 @@
 }
 
 .limitLabel {
-    font-size: 13px;
+    font-size: var(--fs-body-sm);
     color: rgba(0, 0, 0, 0.7);
 }
 
@@ -124,7 +124,7 @@
 }
 
 .label {
-    font-size: 13px;
+    font-size: var(--fs-body-sm);
     color: rgba(0, 0, 0, 0.75);
 }
 
@@ -148,20 +148,20 @@
 }
 
 .detailLabel {
-    font-size: 12px;
+    font-size: var(--fs-caption);
     color: rgba(0, 0, 0, 0.6);
     margin-bottom: 4px;
 }
 
 .detailValue {
-    font-size: 14px;
+    font-size: var(--fs-ui);
 }
 
 .detailValueMono {
     font-family:
         ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
         "Liberation Mono", "Courier New", monospace;
-    font-size: 13px;
+    font-size: var(--fs-body-sm);
     word-break: break-word;
 }
 

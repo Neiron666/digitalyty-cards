@@ -32,7 +32,7 @@
 
 .title {
     margin: 0;
-    font-size: 16px;
+    font-size: var(--fs-body);
     font-weight: 900;
     color: var(--text-main);
 }
@@ -40,7 +40,7 @@
 .subtitle {
     margin: 0;
     opacity: 0.75;
-    font-size: 13px;
+    font-size: var(--fs-body-sm);
 }
 
 .rangeTabs {
@@ -75,7 +75,7 @@
 .optOutHint {
     margin: 0;
     opacity: 0.75;
-    font-size: 12px;
+    font-size: var(--fs-caption);
 }
 
 .tab {
@@ -140,11 +140,11 @@
 
 .kpiLabel {
     opacity: 0.75;
-    font-size: 12px;
+    font-size: var(--fs-caption);
 }
 
 .kpiValue {
-    font-size: 18px;
+    font-size: var(--fs-h6);
     font-weight: 900;
 }
 

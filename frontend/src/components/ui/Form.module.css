@@ -7,7 +7,7 @@
     border: 1px solid var(--border);
     background: var(--input-bg);
     color: var(--card-text);
-    font-size: 16px;
+    font-size: var(--fs-body);
     font-family: inherit;
     transition:
         border-color 0.2s ease,
