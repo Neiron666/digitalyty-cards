@@ -15,6 +15,10 @@
     gap: 0.75rem;
 }
 
+.previewContainer > * {
+    width: 100%;
+}
+
 .previewNotice {
     position: fixed;
     top: 1rem;

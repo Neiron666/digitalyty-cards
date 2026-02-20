@@ -28,6 +28,26 @@
     border: 1px solid rgba(255, 255, 255, 0.12);
 }
 
+.coverSlot {
+    width: 80%;
+    aspect-ratio: 16 / 9;
+    overflow: hidden;
+    border-radius: var(--radius-md, 14px);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: rgba(122, 122, 122, 0.18);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--gold);
+}
+
+.coverSlotImage {
+    width: 100%;
+    height: 100%;
+    display: block;
+    object-fit: cover;
+}
+
 .avatarPreview {
     width: 96px;
     height: 96px;
@@ -35,6 +55,58 @@
     border: 1px solid rgba(255, 255, 255, 0.12);
     display: block;
     object-fit: cover;
+}
+
+.avatarSlot {
+    inline-size: 160px;
+    aspect-ratio: 1 / 1;
+    border-radius: 999px;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: rgba(122, 122, 122, 0.18);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--gold);
+}
+
+.avatarSlotImage {
+    width: 100%;
+    height: 100%;
+    display: block;
+    object-fit: cover;
+}
+
+.emptyState {
+    padding: 12px;
+    color: var(--text-muted, #c8d2ea);
+    text-align: center;
+    font-size: var(--fs-body);
+}
+
+.uploadRow {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+    justify-content: center;
+}
+
+.uploadButton.uploadButton {
+    width: auto;
+}
+
+.hiddenFileInput {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    clip-path: inset(50%);
+    white-space: nowrap;
+    border: 0;
 }
 
 .label {
@@ -51,4 +123,9 @@
     margin: 6px 0 0;
     color: var(--text-muted, #c8d2ea);
     font-size: var(--fs-body-sm);
+}
+@media screen and (max-width: 768px) {
+    .coverSlot {
+        width: 100%;
+    }
 }

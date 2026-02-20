@@ -1,6 +1,8 @@
+import { useRef } from "react";
 import Panel from "./Panel";
 import styles from "./HeaderPanel.module.css";
 import { uploadDesignAsset } from "../../../services/upload.service";
+import Button from "../../ui/Button";
 
 const ALLOWED_MIME = new Set(["image/jpeg", "image/png", "image/webp"]);
 const MAX_BYTES = 2 * 1024 * 1024;
@@ -9,6 +11,9 @@ function HeaderPanel({ card, design, onChange, editingDisabled }) {
     const safeDesign = design || {};
     const cardId = card?._id || card?.id;
     const uploadDisabled = !cardId || editingDisabled;
+
+    const backgroundInputRef = useRef(null);
+    const avatarInputRef = useRef(null);
 
     async function handleUpload(kind, file) {
         if (uploadDisabled || !file) return;
@@ -50,29 +55,50 @@ function HeaderPanel({ card, design, onChange, editingDisabled }) {
                 {/* Background upload & preview */}
                 <section>
                     <h3>תמונת רקע</h3>
-                    {(safeDesign?.backgroundImage ||
-                        safeDesign?.coverImage) && (
-                        <img
-                            src={
-                                safeDesign?.backgroundImage ||
-                                safeDesign?.coverImage
-                            }
-                            alt="Background preview"
-                            className={styles.preview}
-                        />
-                    )}
-                    <label className={styles.label}>
-                        העלאת תמונה
+                    <div className={styles.coverSlot}>
+                        {safeDesign?.backgroundImage ||
+                        safeDesign?.coverImage ? (
+                            <img
+                                src={
+                                    safeDesign?.backgroundImage ||
+                                    safeDesign?.coverImage
+                                }
+                                alt="Background preview"
+                                className={styles.coverImage}
+                            />
+                        ) : (
+                            <div className={styles.emptyState}>
+                                לא הועלתה תמונת רקע
+                            </div>
+                        )}
+                    </div>
+
+                    <div className={styles.uploadRow}>
+                        <Button
+                            variant="secondary"
+                            size="small"
+                            className={styles.uploadButton}
+                            disabled={uploadDisabled}
+                            onClick={() => {
+                                if (uploadDisabled) return;
+                                backgroundInputRef.current?.click();
+                            }}
+                        >
+                            העלאת תמונה
+                        </Button>
                         <input
+                            ref={backgroundInputRef}
+                            className={styles.hiddenFileInput}
                             type="file"
                             accept="image/*"
                             disabled={uploadDisabled}
                             aria-disabled={uploadDisabled}
+                            aria-label="העלאת תמונת רקע"
                             onChange={(e) =>
                                 handleUpload("background", e.target.files?.[0])
                             }
                         />
-                    </label>
+                    </div>
                     {!cardId && (
                         <p className={styles.disabledText}>
                             שמור/י את הכרטיס כדי להעלות תמונות.
@@ -98,25 +124,48 @@ function HeaderPanel({ card, design, onChange, editingDisabled }) {
                 {/* Avatar upload & preview */}
                 <section>
                     <h3>תמונה עגולה (Avatar)</h3>
-                    {(safeDesign?.avatarImage || safeDesign?.logo) && (
-                        <img
-                            src={safeDesign?.avatarImage || safeDesign?.logo}
-                            alt="Avatar preview"
-                            className={styles.avatarPreview}
-                        />
-                    )}
-                    <label className={styles.label}>
-                        העלאת תמונה
+                    <div className={styles.avatarSlot}>
+                        {safeDesign?.avatarImage || safeDesign?.logo ? (
+                            <img
+                                src={
+                                    safeDesign?.avatarImage || safeDesign?.logo
+                                }
+                                alt="Avatar preview"
+                                className={styles.avatarImage}
+                            />
+                        ) : (
+                            <div className={styles.emptyState}>
+                                לא הועלתה תמונת פרופיל
+                            </div>
+                        )}
+                    </div>
+
+                    <div className={styles.uploadRow}>
+                        <Button
+                            variant="secondary"
+                            size="small"
+                            className={styles.uploadButton}
+                            disabled={uploadDisabled}
+                            onClick={() => {
+                                if (uploadDisabled) return;
+                                avatarInputRef.current?.click();
+                            }}
+                        >
+                            העלאת תמונה
+                        </Button>
                         <input
+                            ref={avatarInputRef}
+                            className={styles.hiddenFileInput}
                             type="file"
                             accept="image/*"
                             disabled={uploadDisabled}
                             aria-disabled={uploadDisabled}
+                            aria-label="העלאת תמונת פרופיל"
                             onChange={(e) =>
                                 handleUpload("avatar", e.target.files?.[0])
                             }
                         />
-                    </label>
+                    </div>
                 </section>
             </div>
         </Panel>

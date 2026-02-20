@@ -8,6 +8,7 @@ import {
 import { uploadDesignAsset } from "../../../services/upload.service";
 import CropModal from "../media/CropModal";
 import { getCroppedBlob } from "../../../utils/imageCropper";
+import Button from "../../ui/Button";
 import styles from "./DesignEditor.module.css";
 
 const ALLOWED_MIME = new Set(["image/jpeg", "image/png", "image/webp"]);
@@ -34,6 +35,8 @@ function DesignEditor({ design, onChange, plan, cardId }) {
     const [pendingFile, setPendingFile] = useState(null);
 
     const objectUrlRef = useRef(null);
+    const backgroundInputRef = useRef(null);
+    const avatarInputRef = useRef(null);
 
     const hasBackgroundImage = useMemo(
         () => Boolean(safeDesign?.backgroundImage || safeDesign?.coverImage),
@@ -44,6 +47,10 @@ function DesignEditor({ design, onChange, plan, cardId }) {
         () => Boolean(safeDesign?.avatarImage || safeDesign?.logo),
         [safeDesign?.avatarImage, safeDesign?.logo],
     );
+
+    const backgroundPreviewSrc =
+        safeDesign?.backgroundImage || safeDesign?.coverImage || "";
+    const avatarPreviewSrc = safeDesign?.avatarImage || safeDesign?.logo || "";
 
     useEffect(() => {
         return () => {
@@ -129,6 +136,7 @@ function DesignEditor({ design, onChange, plan, cardId }) {
             onChange({
                 ...safeDesign,
                 backgroundImage: url,
+                coverImage: url,
             });
         }
 
@@ -136,6 +144,7 @@ function DesignEditor({ design, onChange, plan, cardId }) {
             onChange({
                 ...safeDesign,
                 avatarImage: url,
+                logo: url,
             });
         }
 
@@ -167,20 +176,35 @@ function DesignEditor({ design, onChange, plan, cardId }) {
             {template?.supports?.backgroundImage && (
                 <section className={styles.section}>
                     <h3>תמונת רקע</h3>
-                    {hasBackgroundImage ? (
-                        <img
-                            src={
-                                safeDesign?.backgroundImage ||
-                                safeDesign?.coverImage
-                            }
-                            alt="Background preview"
-                            className={styles.previewImage}
-                        />
-                    ) : null}
-                    <label className={styles.label}>
-                        <span className={styles.labelTitle}>העלאת תמונה</span>
+                    <div className={styles.coverSlot}>
+                        {hasBackgroundImage ? (
+                            <img
+                                src={backgroundPreviewSrc}
+                                alt="Background preview"
+                                className={styles.coverSlotImage}
+                            />
+                        ) : (
+                            <div className={styles.emptyState}>
+                                העלה/י תמונה כדי לראות תצוגה מקדימה.
+                            </div>
+                        )}
+                    </div>
+
+                    <div className={styles.uploadRow}>
+                        <Button
+                            className={styles.uploadButton}
+                            disabled={!cardId}
+                            aria-label="העלאת תמונת רקע"
+                            onClick={() => {
+                                if (!cardId) return;
+                                backgroundInputRef.current?.click();
+                            }}
+                        >
+                            העלאת תמונה
+                        </Button>
                         <input
-                            className={styles.fileInput}
+                            ref={backgroundInputRef}
+                            className={styles.hiddenFileInput}
                             type="file"
                             accept="image/*"
                             disabled={!cardId}
@@ -192,7 +216,7 @@ function DesignEditor({ design, onChange, plan, cardId }) {
                                 )
                             }
                         />
-                    </label>
+                    </div>
 
                     {!cardId ? (
                         <p className={styles.helper}>
@@ -221,16 +245,35 @@ function DesignEditor({ design, onChange, plan, cardId }) {
             {template?.supports?.avatar && (
                 <section className={styles.section}>
                     <h3>תמונה עגולה (Avatar)</h3>
-                    {hasAvatarImage ? (
-                        <img
-                            src={safeDesign?.avatarImage || safeDesign?.logo}
-                            alt="Avatar preview"
-                            className={styles.avatarPreview}
-                        />
-                    ) : null}
-                    <label className={styles.label}>
-                        <span>העלאת תמונה</span>
+                    <div className={styles.avatarSlot}>
+                        {hasAvatarImage ? (
+                            <img
+                                src={avatarPreviewSrc}
+                                alt="Avatar preview"
+                                className={styles.avatarSlotImage}
+                            />
+                        ) : (
+                            <div className={styles.emptyState}>
+                                העלה/י תמונה כדי לראות תצוגה מקדימה.
+                            </div>
+                        )}
+                    </div>
+
+                    <div className={styles.uploadRow}>
+                        <Button
+                            className={styles.uploadButton}
+                            disabled={!cardId}
+                            aria-label="העלאת תמונת פרופיל"
+                            onClick={() => {
+                                if (!cardId) return;
+                                avatarInputRef.current?.click();
+                            }}
+                        >
+                            העלאת תמונה
+                        </Button>
                         <input
+                            ref={avatarInputRef}
+                            className={styles.hiddenFileInput}
                             type="file"
                             accept="image/*"
                             disabled={!cardId}
@@ -242,7 +285,7 @@ function DesignEditor({ design, onChange, plan, cardId }) {
                                 )
                             }
                         />
-                    </label>
+                    </div>
                 </section>
             )}
 
