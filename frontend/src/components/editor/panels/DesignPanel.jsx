@@ -18,7 +18,17 @@ function labelForPaletteKey(key) {
         .join(" ");
 }
 
-function DesignPanel({ card, design, plan, onChange, onFieldChange, cardId }) {
+function DesignPanel({
+    card,
+    design,
+    plan,
+    onChange,
+    onFieldChange,
+    cardId,
+    editingDisabled,
+    onDeleteDesignAsset,
+    deleteDesignAssetBusyKind,
+}) {
     const selectedTemplateId = normalizeTemplateId(design?.templateId);
     const selectedTemplate = getTemplateById(selectedTemplateId);
 
@@ -153,6 +163,9 @@ function DesignPanel({ card, design, plan, onChange, onFieldChange, cardId }) {
                 plan={plan}
                 onChange={onChange}
                 cardId={cardId}
+                editingDisabled={editingDisabled}
+                onDeleteDesignAsset={onDeleteDesignAsset}
+                deleteDesignAssetBusyKind={deleteDesignAssetBusyKind}
             />
         </Panel>
     );

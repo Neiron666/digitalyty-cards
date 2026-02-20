@@ -20,11 +20,22 @@ const AVATAR_ASPECT = 1;
 const COVER_OUTPUT = { width: 1600, height: 900 };
 const AVATAR_OUTPUT = { width: 600, height: 600 };
 
-function DesignEditor({ design, onChange, plan, cardId }) {
+function DesignEditor({
+    design,
+    onChange,
+    plan,
+    cardId,
+    editingDisabled,
+    onDeleteDesignAsset,
+    deleteDesignAssetBusyKind,
+}) {
     const safeDesign = design || {};
     const template = getTemplateById(
         normalizeTemplateId(safeDesign?.templateId),
     );
+
+    const isDeletingBackground = deleteDesignAssetBusyKind === "background";
+    const isDeletingAvatar = deleteDesignAssetBusyKind === "avatar";
 
     const [cropOpen, setCropOpen] = useState(false);
     const [cropKind, setCropKind] = useState(null);
@@ -169,6 +180,13 @@ function DesignEditor({ design, onChange, plan, cardId }) {
         }
     }
 
+    function requestDelete(kind) {
+        if (!cardId) return;
+        if (editingDisabled) return;
+        if (typeof onDeleteDesignAsset !== "function") return;
+        onDeleteDesignAsset(kind);
+    }
+
     return (
         <aside className={styles.root}>
             {/* <h2>ראש הכרטיס</h2> */}
@@ -193,15 +211,37 @@ function DesignEditor({ design, onChange, plan, cardId }) {
                     <div className={styles.uploadRow}>
                         <Button
                             className={styles.uploadButton}
+                            size="small"
                             disabled={!cardId}
                             aria-label="העלאת תמונת רקע"
                             onClick={() => {
                                 if (!cardId) return;
+                                if (editingDisabled) return;
                                 backgroundInputRef.current?.click();
                             }}
                         >
                             העלאת תמונה
                         </Button>
+
+                        {hasBackgroundImage ? (
+                            <Button
+                                className={styles.uploadButton}
+                                size="small"
+                                variant="danger"
+                                disabled={
+                                    !cardId ||
+                                    editingDisabled ||
+                                    isDeletingBackground ||
+                                    isDeletingAvatar
+                                }
+                                loading={isDeletingBackground}
+                                aria-label="הסרת תמונת רקע"
+                                onClick={() => requestDelete("background")}
+                            >
+                                הסרת תמונה
+                            </Button>
+                        ) : null}
+
                         <input
                             ref={backgroundInputRef}
                             className={styles.hiddenFileInput}
@@ -244,7 +284,7 @@ function DesignEditor({ design, onChange, plan, cardId }) {
 
             {template?.supports?.avatar && (
                 <section className={styles.section}>
-                    <h3>תמונה עגולה (Avatar)</h3>
+                    <h3> תמונה אישית (או לוגו)</h3>
                     <div className={styles.avatarSlot}>
                         {hasAvatarImage ? (
                             <img
@@ -262,15 +302,37 @@ function DesignEditor({ design, onChange, plan, cardId }) {
                     <div className={styles.uploadRow}>
                         <Button
                             className={styles.uploadButton}
+                            size="small"
                             disabled={!cardId}
                             aria-label="העלאת תמונת פרופיל"
                             onClick={() => {
                                 if (!cardId) return;
+                                if (editingDisabled) return;
                                 avatarInputRef.current?.click();
                             }}
                         >
                             העלאת תמונה
                         </Button>
+
+                        {hasAvatarImage ? (
+                            <Button
+                                className={styles.uploadButton}
+                                size="small"
+                                variant="danger"
+                                disabled={
+                                    !cardId ||
+                                    editingDisabled ||
+                                    isDeletingAvatar ||
+                                    isDeletingBackground
+                                }
+                                loading={isDeletingAvatar}
+                                aria-label="הסרת תמונת פרופיל"
+                                onClick={() => requestDelete("avatar")}
+                            >
+                                הסרת תמונה
+                            </Button>
+                        ) : null}
+
                         <input
                             ref={avatarInputRef}
                             className={styles.hiddenFileInput}
@@ -289,7 +351,7 @@ function DesignEditor({ design, onChange, plan, cardId }) {
                 </section>
             )}
 
-            <ColorPicker
+            {/* <ColorPicker
                 label="צבע ראשי"
                 value={safeDesign.primaryColor}
                 onChange={(primaryColor) =>
@@ -302,7 +364,7 @@ function DesignEditor({ design, onChange, plan, cardId }) {
                 value={safeDesign.font}
                 onChange={(font) => onChange({ ...safeDesign, font })}
                 disabled={plan === "free"}
-            />
+            /> */}
 
             <CropModal
                 open={cropOpen}

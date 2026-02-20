@@ -18,6 +18,8 @@ export default function EditorPanel({
     onFieldChange,
     editingDisabled,
     onDeleteCard,
+    onDeleteDesignAsset,
+    deleteDesignAssetBusyKind,
     isDeleting,
     onUpgrade,
     onPublish,
@@ -82,10 +84,14 @@ export default function EditorPanel({
         case "head":
             return (
                 <DesignPanel
+                    card={card}
                     design={card.design}
                     plan={effectivePlan}
                     cardId={card._id}
                     onChange={(design) => onFieldChange?.("design", design)}
+                    editingDisabled={editingDisabled}
+                    onDeleteDesignAsset={onDeleteDesignAsset}
+                    deleteDesignAssetBusyKind={deleteDesignAssetBusyKind}
                 />
             );
 

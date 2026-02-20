@@ -1,3 +1,14 @@
+/**
+ * LEGACY / DEAD UI (Cardigo)
+ * Этот компонент сейчас НЕ используется в реальном editor UI.
+ *
+ * Active path (current): EditorPanel(tab="head") → DesignPanel → DesignEditor
+ * Real file to edit: frontend/src/components/editor/design/DesignEditor.jsx
+ *
+ * Причина: исторический дубль панели “ראש הכרטיס”. Не подключать обратно без отдельного решения/миграции.
+ * Политика проекта: один источник правды для UI, без параллельных реализаций.
+ */
+// NOTE: Any UI work for header/background/avatar MUST be done in DesignEditor, not here.
 import { useRef } from "react";
 import Panel from "./Panel";
 import styles from "./HeaderPanel.module.css";

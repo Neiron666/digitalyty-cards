@@ -19,6 +19,8 @@ export default function Editor({
     onFieldChange,
     editingDisabled,
     onDeleteCard,
+    onDeleteDesignAsset,
+    deleteDesignAssetBusyKind,
     isDeleting,
     onRequestNavigate,
     onUpgrade,
@@ -269,6 +271,8 @@ export default function Editor({
                         onFieldChange={onFieldChange}
                         editingDisabled={editingDisabled}
                         onDeleteCard={onDeleteCard}
+                        onDeleteDesignAsset={onDeleteDesignAsset}
+                        deleteDesignAssetBusyKind={deleteDesignAssetBusyKind}
                         isDeleting={isDeleting}
                         onUpgrade={onUpgrade}
                         onPublish={onPublish}

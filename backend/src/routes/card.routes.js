@@ -7,6 +7,7 @@ import {
     getCardBySlug,
     getSelfThemeCssById,
     deleteCard,
+    deleteDesignAsset,
     claimCard,
     updateSlug,
 } from "../controllers/card.controller.js";
@@ -32,6 +33,12 @@ router.patch("/slug", requireAuthOrAnonymous, updateSlug);
 router.patch("/:id", requireAuthOrAnonymous, updateCard);
 
 router.post("/claim", requireAuth, claimCard);
+
+router.delete(
+    "/:id/design-asset/:kind",
+    requireAuthOrAnonymous,
+    deleteDesignAsset,
+);
 
 router.delete("/:id", requireAuthOrAnonymous, deleteCard);
 

@@ -168,6 +168,8 @@ function EditCard() {
     const [createUserCardError, setCreateUserCardError] = useState(null);
     const [reloadKey, setReloadKey] = useState(0);
     const [isDeleting, setIsDeleting] = useState(false);
+    const [deleteDesignAssetBusyKind, setDeleteDesignAssetBusyKind] =
+        useState(null);
 
     const [isUnsavedModalOpen, setIsUnsavedModalOpen] = useState(false);
     const [pendingAction, setPendingAction] = useState(null);
@@ -1464,6 +1466,117 @@ function EditCard() {
         }
     }, []);
 
+    const opsDeleteDesignAsset = useCallback(
+        async (kindRaw) => {
+            const cardId = draftCardRef.current?._id;
+            if (!cardId) return;
+
+            const kind =
+                kindRaw === "avatar" || kindRaw === "background"
+                    ? kindRaw
+                    : null;
+            if (!kind) return;
+
+            if (deleteDesignAssetBusyKind) return;
+            setDeleteDesignAssetBusyKind(kind);
+
+            const clearPrefixes =
+                kind === "background"
+                    ? [
+                          "design.backgroundImage",
+                          "design.coverImage",
+                          "design.backgroundImagePath",
+                          "design.coverImagePath",
+                      ]
+                    : [
+                          "design.avatarImage",
+                          "design.logo",
+                          "design.avatarImagePath",
+                          "design.logoPath",
+                      ];
+
+            try {
+                const res = await api.delete(
+                    `/cards/${cardId}/design-asset/${kind}`,
+                );
+                const patch = res?.data?.designPatch;
+
+                if (!patch || typeof patch !== "object") {
+                    throw new Error("Delete response missing designPatch");
+                }
+
+                setDraftCard((prev) => {
+                    const prevDraft = prev || {};
+                    const prevDesign =
+                        prevDraft.design && typeof prevDraft.design === "object"
+                            ? prevDraft.design
+                            : {};
+                    const next = {
+                        ...prevDraft,
+                        design: {
+                            ...prevDesign,
+                            ...patch,
+                        },
+                    };
+                    return withPreviewMediaTouched(next);
+                });
+
+                setDirtyPaths((prev) => {
+                    const next = new Set(prev);
+
+                    const touchedSections = new Set();
+                    for (const prefix of clearPrefixes) {
+                        const pfx = String(prefix || "");
+                        if (!pfx) continue;
+                        touchedSections.add(pfx.split(".")[0]);
+
+                        for (const existing of Array.from(next)) {
+                            if (
+                                existing === pfx ||
+                                existing.startsWith(`${pfx}.`)
+                            ) {
+                                next.delete(existing);
+                            }
+                        }
+                    }
+
+                    for (const section of touchedSections) {
+                        if (!section) continue;
+                        if (!next.has(section)) continue;
+
+                        let hasOther = false;
+                        for (const existing of next) {
+                            if (existing.startsWith(`${section}.`)) {
+                                hasOther = true;
+                                break;
+                            }
+                        }
+                        if (!hasOther) next.delete(section);
+                    }
+
+                    if (next.size === 0) {
+                        setSaveState("saved");
+                        setSaveErrorText(null);
+                    } else {
+                        setSaveState("dirty");
+                    }
+
+                    return next;
+                });
+            } catch (err) {
+                const message =
+                    err?.response?.data?.message ||
+                    err?.message ||
+                    "שגיאה במחיקה";
+                setSaveState("error");
+                setSaveErrorText(String(message));
+            } finally {
+                setDeleteDesignAssetBusyKind(null);
+            }
+        },
+        [deleteDesignAssetBusyKind],
+    );
+
     // Phase 2: draft-only updates. No debounce, no network.
     const onFieldChange = useCallback(
         (sectionOrPath, patchOrValue) => {
@@ -1972,6 +2085,8 @@ function EditCard() {
                         onFieldChange={onFieldChange}
                         editingDisabled={editingDisabled}
                         onDeleteCard={handleDelete}
+                        onDeleteDesignAsset={opsDeleteDesignAsset}
+                        deleteDesignAssetBusyKind={deleteDesignAssetBusyKind}
                         isDeleting={isDeleting}
                         onRequestNavigate={requestNavigate}
                         onPublish={handlePublish}

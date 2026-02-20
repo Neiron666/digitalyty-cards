@@ -2584,6 +2584,208 @@ export async function deleteCard(req, res) {
     return res.json({ ok: true });
 }
 
+function normalizeDesignAssetKind(raw) {
+    const normalized = raw ? String(raw).trim().toLowerCase() : "";
+    if (normalized === "background" || normalized === "avatar")
+        return normalized;
+    return "";
+}
+
+function nonEmptyString(v) {
+    return typeof v === "string" && v.trim();
+}
+
+function buildDesignPatchForKind(kind) {
+    if (kind === "background") {
+        return {
+            backgroundImage: null,
+            coverImage: null,
+            backgroundImagePath: null,
+            coverImagePath: null,
+        };
+    }
+
+    return {
+        avatarImage: null,
+        logo: null,
+        avatarImagePath: null,
+        logoPath: null,
+    };
+}
+
+export async function deleteDesignAsset(req, res) {
+    const actor = resolveActor(req) || resolveOwnerContext(req);
+    if (!actor) return res.status(401).json({ message: "Unauthorized" });
+
+    const id = String(req.params.id || "");
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+        return res
+            .status(400)
+            .json({ code: "INVALID_ID", message: "Invalid id" });
+    }
+
+    const kind = normalizeDesignAssetKind(req.params.kind);
+    if (!kind) {
+        return res.status(400).json({
+            code: "INVALID_KIND",
+            message: "Invalid kind",
+        });
+    }
+
+    const card = await Card.findById(id);
+    if (!card) return res.status(404).json({ message: "Not found" });
+
+    try {
+        // IMPORTANT: delete must be allowed even when trial is locked/expired.
+        assertCardOwner(card, actor);
+    } catch (err) {
+        if (err instanceof HttpError || err?.statusCode) {
+            return res.status(err.statusCode).json({
+                code: err.code,
+                message: err.message,
+            });
+        }
+        console.error("[cards] deleteDesignAsset auth failed", {
+            cardId: String(card._id),
+            kind,
+            error: err?.message || err,
+        });
+        return res.status(500).json({ message: "Failed to delete asset" });
+    }
+
+    // Enterprise: membership revocation must block org-card deletes.
+    if (actor.type === "user" && card?.orgId) {
+        const personalOrgId = await getPersonalOrgId();
+        const cardOrgId = String(card.orgId || "");
+        const isNonPersonalOrg =
+            Boolean(cardOrgId) && cardOrgId !== String(personalOrgId);
+
+        if (isNonPersonalOrg) {
+            try {
+                await assertActiveOrgAndMembershipOrNotFound({
+                    orgId: card.orgId,
+                    userId: actor.id,
+                });
+            } catch (err) {
+                if (err instanceof HttpError || err?.statusCode === 404) {
+                    return res.status(404).json({ message: "Not found" });
+                }
+                throw err;
+            }
+        }
+    }
+
+    const design =
+        card?.design && typeof card.design === "object" ? card.design : {};
+
+    const hasAnyUrl =
+        kind === "background"
+            ? Boolean(
+                  nonEmptyString(design?.backgroundImage) ||
+                  nonEmptyString(design?.coverImage),
+              )
+            : Boolean(
+                  nonEmptyString(design?.avatarImage) ||
+                  nonEmptyString(design?.logo),
+              );
+
+    const pathsFromDesign =
+        kind === "background"
+            ? [design?.backgroundImagePath, design?.coverImagePath]
+                  .filter(nonEmptyString)
+                  .map((p) => p.trim())
+            : [design?.avatarImagePath, design?.logoPath]
+                  .filter(nonEmptyString)
+                  .map((p) => p.trim());
+
+    let fallbackUploadPath = "";
+    if (pathsFromDesign.length === 0 && hasAnyUrl) {
+        const uploads = Array.isArray(card?.uploads) ? card.uploads : [];
+        for (let i = uploads.length - 1; i >= 0; i -= 1) {
+            const u = uploads[i];
+            if (!u || typeof u !== "object") continue;
+            if (u.kind !== kind) continue;
+            const p = typeof u.path === "string" ? u.path.trim() : "";
+            if (!p) continue;
+            fallbackUploadPath = p;
+            break;
+        }
+    }
+
+    const candidatePaths = Array.from(
+        new Set(
+            [...(pathsFromDesign || []), fallbackUploadPath].filter(Boolean),
+        ),
+    );
+
+    if (!hasAnyUrl && candidatePaths.length === 0) {
+        return res.json({
+            ok: true,
+            kind,
+            didDelete: false,
+            designPatch: buildDesignPatchForKind(kind),
+        });
+    }
+
+    const normalizedSafePaths = normalizeSupabasePaths(candidatePaths);
+    if (normalizedSafePaths.length === 0) {
+        return res.status(409).json({
+            code: "NO_STORAGE_PATH",
+            message: "No storage path for this asset",
+        });
+    }
+
+    try {
+        const buckets = resolveCleanupBucketsForCard(card);
+        await removeObjects({ paths: normalizedSafePaths, buckets });
+    } catch (err) {
+        console.error("[supabase] deleteDesignAsset failed", {
+            cardId: String(card._id),
+            kind,
+            error: err?.message || err,
+        });
+        return res.status(502).json({
+            code: "STORAGE_DELETE_FAILED",
+            message: "Failed to delete media",
+        });
+    }
+
+    const unset = {};
+    if (kind === "background") {
+        unset["design.backgroundImage"] = 1;
+        unset["design.coverImage"] = 1;
+        unset["design.backgroundImagePath"] = 1;
+        unset["design.coverImagePath"] = 1;
+    } else {
+        unset["design.avatarImage"] = 1;
+        unset["design.logo"] = 1;
+        unset["design.avatarImagePath"] = 1;
+        unset["design.logoPath"] = 1;
+    }
+
+    // Keep upload ledger bounded and consistent: drop entries that point to the deleted object(s).
+    await Card.updateOne(
+        { _id: card._id },
+        {
+            $unset: unset,
+            $pull: {
+                uploads: {
+                    kind,
+                    path: { $in: normalizedSafePaths },
+                },
+            },
+        },
+        { runValidators: true },
+    );
+
+    return res.json({
+        ok: true,
+        kind,
+        didDelete: true,
+        designPatch: buildDesignPatchForKind(kind),
+    });
+}
+
 export async function claimCard(req, res) {
     const userId = resolveUserId(req);
     if (!userId) return res.status(401).json({ message: "Unauthorized" });
