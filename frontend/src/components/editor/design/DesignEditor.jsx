@@ -225,7 +225,7 @@ function DesignEditor({ design, onChange, plan, cardId }) {
                     ) : null}
 
                     <label className={styles.label}>
-                        <span className={styles.labelTitle}>Overlay</span>
+                        <span className={styles.labelTitle}>שקיפות רקע</span>
                         <input
                             type="range"
                             min={0}
