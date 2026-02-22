@@ -2,6 +2,10 @@ import { HttpError } from "./httpError.js";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
+function isAnonymousOwned(card) {
+    return !card?.user && Boolean(card?.anonymousId);
+}
+
 function resolveAdminOverride(card, now = new Date()) {
     const o =
         card?.adminOverride && typeof card.adminOverride === "object"
@@ -68,6 +72,9 @@ export function isEntitled(card, now = new Date()) {
     // Policy: user-owned free cards must never be trial-locked/deleted.
     if (card?.user) return true;
 
+    // Policy B: anonymous cards are a draft sandbox; never trial-locked/deleted.
+    if (isAnonymousOwned(card)) return true;
+
     // Trial grants access while active.
     const endsAtMs = card?.trialEndsAt
         ? new Date(card.trialEndsAt).getTime()
@@ -123,6 +130,18 @@ export function resolveBilling(card, now = new Date()) {
             until: paidUntilIso,
             isEntitled: true,
             isPaid: true,
+        };
+    }
+
+    // Policy B: anonymous cards are a draft sandbox; no trial countdown/lock.
+    // IMPORTANT: keep this BEFORE any trial auto-start logic.
+    if (isAnonymousOwned(card)) {
+        return {
+            source: "free",
+            plan: billingPlan,
+            until: null,
+            isEntitled: true,
+            isPaid: false,
         };
     }
 
@@ -189,6 +208,9 @@ export function ensureTrialStarted(card, now = new Date()) {
 
     // Policy: never start trial for user-owned cards.
     if (card?.user) return false;
+
+    // Policy B: never start trial for anonymous-owned cards.
+    if (isAnonymousOwned(card)) return false;
 
     // If already paid/adminOverride, don't start trial.
     const resolved = resolveBilling(card, now);

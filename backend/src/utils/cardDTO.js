@@ -171,7 +171,8 @@ export function toCardDTO(
 
     // Policy: user-owned free cards must not expose trial UX fields in the default DTO.
     // Keep trial fields available only via includePrivate=true (admin/debug).
-    if (!includePrivate && cardObj?.user) {
+    const isAnonymousOwned = !cardObj.user && Boolean(cardObj.anonymousId);
+    if (!includePrivate && (cardObj?.user || isAnonymousOwned)) {
         dto.trialStartedAt = null;
         dto.trialEndsAt = null;
         dto.trialEndsAtIsrael = null;
@@ -206,7 +207,6 @@ export function toCardDTO(
 
     // Anonymous cards: never leak internal storage paths in the default DTO.
     // Paths remain available only via includePrivate=true (admin/debug).
-    const isAnonymousOwned = !cardObj.user && Boolean(cardObj.anonymousId);
     if (!includePrivate && isAnonymousOwned) {
         if (dto.design && typeof dto.design === "object") {
             const nextDesign = { ...dto.design };

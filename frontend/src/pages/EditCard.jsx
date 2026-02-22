@@ -2119,8 +2119,7 @@ function EditCard() {
                 {shouldShowAnonCta ? (
                     <section className={styles.anonCta} dir="rtl" role="note">
                         <div className={styles.anonCtaText}>
-                            כדי לשמור את הכרטיס ולגבות את התמונות, מומלץ להירשם
-                            או להתחבר.
+                            זה טיוטה זמנית… נשמר ל-14 ימים. הרשמה תשמור לצמיתות.
                         </div>
                         <div className={styles.anonCtaActions}>
                             <Link

@@ -9,7 +9,7 @@ import {
     normalizeSupabasePaths,
 } from "../utils/supabasePaths.js";
 import { deleteCardCascade } from "../utils/cardDeleteCascade.js";
-import { isEntitled } from "../utils/trial.js";
+import { resolveBilling } from "../utils/trial.js";
 
 let running = false;
 
@@ -34,30 +34,31 @@ async function cleanupOnce() {
             anonymousId: { $exists: true, $ne: null },
             // Safety guard: never delete published cards.
             status: { $ne: "published" },
-            $or: [
-                { trialDeleteAt: { $ne: null, $lte: now } },
-                { updatedAt: { $lte: anonCutoff } },
-            ],
+            // Policy B: delete only by inactivity TTL (updatedAt cutoff).
+            updatedAt: { $lte: anonCutoff },
         }).select(
-            "trialDeleteAt trialEndsAt billing plan uploads gallery design anonymousId user status updatedAt",
+            "billing plan uploads gallery design anonymousId user status updatedAt",
         );
 
         let deletedCount = 0;
-        let deletedTrialCount = 0;
         let deletedAnonStaleCount = 0;
         let failedStorageDeletesCount = 0;
         let skippedPaid = 0;
         let removedObjectCount = 0;
 
         for (const card of candidates) {
-            if (isEntitled(card, now)) {
+            // IMPORTANT: do NOT use isEntitled() gating here.
+            // Policy B deletes anonymous cards by inactivity TTL regardless of trial/entitlement.
+            // Safety-net: skip only if a malformed user:null doc somehow has paid/admin override.
+            const billing = resolveBilling(card, now);
+            if (
+                billing?.source === "billing" ||
+                billing?.source === "adminOverride"
+            ) {
                 skippedPaid += 1;
                 continue;
             }
 
-            const isTrialDue = Boolean(card?.trialDeleteAt)
-                ? new Date(card.trialDeleteAt).getTime() <= now.getTime()
-                : false;
             const isAnonStale = Boolean(card?.updatedAt)
                 ? new Date(card.updatedAt).getTime() <= anonCutoff.getTime()
                 : false;
@@ -109,8 +110,7 @@ async function cleanupOnce() {
             await Card.deleteOne({ _id: card._id });
             deletedCount += 1;
 
-            if (isTrialDue) deletedTrialCount += 1;
-            else if (isAnonStale) deletedAnonStaleCount += 1;
+            if (isAnonStale) deletedAnonStaleCount += 1;
             else deletedAnonStaleCount += 1;
         }
 
@@ -118,7 +118,6 @@ async function cleanupOnce() {
             console.log("[trial-cleanup] done", {
                 candidates: candidates.length,
                 deletedCount,
-                deletedTrialCount,
                 deletedAnonStaleCount,
                 failedStorageDeletesCount,
                 skippedPaid,
