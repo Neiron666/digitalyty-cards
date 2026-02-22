@@ -6,6 +6,8 @@
 :root {
     --card-bg: #f8fafc;
     --card-text: #0f172a;
+    --placeholder-text-white: white;
+    --placeholder-text-black: #0f172a;
     --card-muted: #475569;
     --gold: #d4af37;
     --gold-soft: rgba(212, 175, 55, 0.35);

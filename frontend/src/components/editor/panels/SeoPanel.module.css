@@ -18,12 +18,206 @@
     min-width: 0;
 }
 
+.helperBlock {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 12px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    /* background: var(--input-bg); */
+    min-width: 0;
+}
+
+.helperHeader {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    align-items: flex-start;
+}
+
+.helperTitle {
+    min-width: 0;
+    /* color: var(--placeholder-text-black); */
+}
+
+.helperButton {
+    appearance: none;
+    border-radius: 12px;
+    padding: 12px 14px;
+    font-weight: 900;
+    cursor: pointer;
+    font-family: inherit;
+
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    background: rgba(255, 255, 255, 0.06);
+    color: inherit;
+
+    transition:
+        background 120ms ease,
+        border-color 120ms ease,
+        transform 120ms ease;
+}
+
+.helperButton:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.helperButton:focus,
+.helperButton:focus-visible {
+    outline: none;
+    border-color: var(--gold);
+    box-shadow: 0 0 0 2px var(--gold-fade);
+}
+
+.helperButton:hover:not(:disabled) {
+    filter: brightness(1.05);
+    border-color: var(--gold-fade);
+    color: var(--gold);
+    background: linear-gradient(
+        90deg,
+        transparent,
+        var(--gold-soft),
+        transparent
+    );
+}
+
+.helperValue {
+    overflow-wrap: anywhere;
+    word-break: break-word;
+    white-space: pre-wrap;
+    min-width: 0;
+    /* color: var(--placeholder-text-black); */
+}
+
+.hintText {
+    opacity: 0.85;
+}
+
+.warningText {
+    border-inline-start: 3px solid var(--gold);
+    padding-inline-start: 10px;
+}
+
+.jsonLdHelperRow {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.selectWrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+    flex: 1 1 100%;
+    min-width: 0;
+}
+
+.selectWrap::after {
+    content: "";
+    position: absolute;
+    inset-block-start: 50%;
+    inset-inline-end: 1rem;
+    inline-size: 0.55rem;
+    block-size: 0.55rem;
+    border-style: solid;
+    border-width: 0 0.125rem 0.125rem 0;
+    transform: translateY(-60%) rotate(45deg);
+    opacity: 0.7;
+    pointer-events: none;
+}
+
+.jsonLdSelect {
+    width: 100%;
+    appearance: none;
+    border-radius: 12px;
+    padding: 12px 14px;
+    font-weight: 900;
+    cursor: pointer;
+    font-family: inherit;
+
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    background: rgba(255, 255, 255, 0.06);
+    color: inherit;
+
+    transition:
+        background 120ms ease,
+        border-color 120ms ease,
+        transform 120ms ease;
+}
+.jsonLdSelect:focus,
+.jsonLdSelect:focus-visible {
+    filter: brightness(1.05);
+    border-color: var(--gold-fade);
+    color: var(--gold);
+    background: linear-gradient(
+        90deg,
+        transparent,
+        var(--gold-soft),
+        transparent
+    );
+}
+.jsonLdSelect:hover {
+    outline: none;
+    border-color: var(--gold);
+    box-shadow: 0 0 0 2px var(--gold-fade);
+}
+.jsonLdSelect option {
+    background: var(--bg-main);
+    color: var(--text-main);
+}
+
+.jsonLdActions {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    align-items: flex-start;
+}
+
+.jsonOkText {
+    opacity: 0.85;
+}
+
+.jsonBadText {
+    border-inline-start: 3px solid var(--gold);
+    padding-inline-start: 10px;
+}
+
+.microCopy {
+    padding: 12px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    background: var(--bg-card);
+    opacity: 0.9;
+}
+
 @media (min-width: 48rem) {
     .row {
         flex-direction: row;
         flex-wrap: wrap;
         gap: 12px;
         align-items: flex-start;
+    }
+
+    .helperHeader {
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+    }
+
+    .jsonLdHelperRow {
+        flex-direction: row;
+        flex-wrap: wrap;
+        align-items: flex-start;
+        gap: 12px;
+    }
+
+    .jsonLdActions {
+        flex-direction: row;
+        flex-wrap: wrap;
+        align-items: center;
     }
 
     .field {

@@ -139,6 +139,14 @@ export default function EditorPanel({
             return (
                 <SeoPanel
                     seo={card.seo}
+                    publicPath={card?.publicPath}
+                    slug={card?.slug}
+                    displayName={
+                        card?.business?.name ||
+                        card?.business?.businessName ||
+                        card?.business?.ownerName ||
+                        undefined
+                    }
                     disabled={editingDisabled}
                     onChange={(patch) => applyPatch("seo", patch)}
                 />
