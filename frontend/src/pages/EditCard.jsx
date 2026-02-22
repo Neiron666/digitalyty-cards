@@ -1204,6 +1204,112 @@ function EditCard() {
             }
         }
 
+        const seoDirty = dirtySections.has("seo");
+        if (seoDirty) {
+            const seo =
+                draftCard?.seo && typeof draftCard.seo === "object"
+                    ? draftCard.seo
+                    : {};
+
+            const pickString = (v) =>
+                typeof v === "string" ? String(v).trim() : "";
+
+            const hasAngleBrackets = (s) => /[<>]/.test(String(s || ""));
+
+            const isValidAbsoluteHttpUrl = (raw) => {
+                const v = pickString(raw);
+                if (!v) return true;
+                try {
+                    const u = new URL(v);
+                    return u.protocol === "http:" || u.protocol === "https:";
+                } catch {
+                    return false;
+                }
+            };
+
+            const isValidJsonLdString = (raw) => {
+                const v = pickString(raw);
+                if (!v) return true;
+                try {
+                    const parsed = JSON.parse(v);
+                    return (
+                        parsed !== null &&
+                        (typeof parsed === "object" || Array.isArray(parsed))
+                    );
+                } catch {
+                    return false;
+                }
+            };
+
+            const isValidGtmId = (raw) => {
+                const v = pickString(raw);
+                if (!v) return true;
+                return /^GTM-[A-Z0-9]+$/.test(v.toUpperCase());
+            };
+
+            const isValidGaMeasurementId = (raw) => {
+                const v = pickString(raw);
+                if (!v) return true;
+                return /^G-[A-Z0-9]+$/.test(v.toUpperCase());
+            };
+
+            const isValidMetaPixelId = (raw) => {
+                const v = pickString(raw);
+                if (!v) return true;
+                return /^[0-9]{5,20}$/.test(v);
+            };
+
+            const seoErrorMessageByField = {
+                "seo.canonicalUrl":
+                    "Canonical URL חייב להיות כתובת מלאה (https://...)",
+                "seo.jsonLd": "JSON-LD חייב להיות JSON תקין (אובייקט או מערך)",
+                "seo.robots": "Robots לא תקין (ללא < או >)",
+                "seo.gtmId": "GTM ID לא תקין. פורמט: GTM-XXXXXXX",
+                "seo.gaMeasurementId":
+                    "GA Measurement ID לא תקין. פורמט: G-XXXXXXX",
+                "seo.metaPixelId": "Meta Pixel ID חייב להיות מספר בלבד",
+                "seo.googleSiteVerification": "Verification token לא תקין",
+                "seo.facebookDomainVerification": "Verification token לא תקין",
+            };
+
+            let firstInvalidField = null;
+
+            if (!isValidAbsoluteHttpUrl(seo?.canonicalUrl)) {
+                firstInvalidField = "seo.canonicalUrl";
+            } else if (!isValidJsonLdString(seo?.jsonLd)) {
+                firstInvalidField = "seo.jsonLd";
+            } else if (!isValidGtmId(seo?.gtmId)) {
+                firstInvalidField = "seo.gtmId";
+            } else if (!isValidGaMeasurementId(seo?.gaMeasurementId)) {
+                firstInvalidField = "seo.gaMeasurementId";
+            } else if (!isValidMetaPixelId(seo?.metaPixelId)) {
+                firstInvalidField = "seo.metaPixelId";
+            } else if (
+                pickString(seo?.robots) &&
+                hasAngleBrackets(pickString(seo?.robots))
+            ) {
+                firstInvalidField = "seo.robots";
+            } else if (
+                pickString(seo?.googleSiteVerification) &&
+                hasAngleBrackets(pickString(seo?.googleSiteVerification))
+            ) {
+                firstInvalidField = "seo.googleSiteVerification";
+            } else if (
+                pickString(seo?.facebookDomainVerification) &&
+                hasAngleBrackets(pickString(seo?.facebookDomainVerification))
+            ) {
+                firstInvalidField = "seo.facebookDomainVerification";
+            }
+
+            if (firstInvalidField) {
+                setSaveState("error");
+                setSaveErrorText(
+                    seoErrorMessageByField[firstInvalidField] || "שגיאה בשמירה",
+                );
+                return false;
+            }
+        }
+
         const selfThemeAllowed = Boolean(
             draftCard?.entitlements?.design?.customColors,
         );
@@ -1271,6 +1377,52 @@ function EditCard() {
             setSaveState("saved");
             return true;
         } catch (err) {
+            const code = err?.response?.data?.code;
+
+            if (code === "INVALID_ID") {
+                setSaveState("error");
+                setSaveErrorText("מזהה לא תקין");
+                return false;
+            }
+
+            if (code === "VALIDATION_ERROR") {
+                const fields = err?.response?.data?.fields;
+                const list = Array.isArray(fields) ? fields : [];
+
+                const priority = [
+                    "seo.canonicalUrl",
+                    "seo.jsonLd",
+                    "seo.gtmId",
+                    "seo.gaMeasurementId",
+                    "seo.metaPixelId",
+                    "seo.robots",
+                    "seo.googleSiteVerification",
+                    "seo.facebookDomainVerification",
+                ];
+
+                const first = priority.find((p) => list.includes(p)) || null;
+                const messageByField = {
+                    "seo.canonicalUrl":
+                        "Canonical URL חייב להיות כתובת מלאה (https://...)",
+                    "seo.jsonLd":
+                        "JSON-LD חייב להיות JSON תקין (אובייקט או מערך)",
+                    "seo.robots": "Robots לא תקין (ללא < או >)",
+                    "seo.gtmId": "GTM ID לא תקין. פורמט: GTM-XXXXXXX",
+                    "seo.gaMeasurementId":
+                        "GA Measurement ID לא תקין. פורמט: G-XXXXXXX",
+                    "seo.metaPixelId": "Meta Pixel ID חייב להיות מספר בלבד",
+                    "seo.googleSiteVerification": "Verification token לא תקין",
+                    "seo.facebookDomainVerification":
+                        "Verification token לא תקין",
+                };
+
+                if (first) {
+                    setSaveState("error");
+                    setSaveErrorText(messageByField[first]);
+                    return false;
+                }
+            }
+
             const message =
                 err?.response?.data?.message || err?.message || "שגיאה בשמירה";
             setSaveState("error");
