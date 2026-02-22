@@ -3,7 +3,12 @@ import { useParams } from "react-router-dom";
 import { getCardBySlug, getCompanyCardBySlug } from "../services/cards.service";
 import { trackView } from "../services/analytics.client";
 import CardRenderer from "../components/card/CardRenderer";
-import SeoHelmet from "../components/seo/SeoHelmet";
+import SeoHelmet, {
+    getAllowTracking,
+    normalizeGaMeasurementId,
+    normalizeGtmId,
+    normalizeMetaPixelId,
+} from "../components/seo/SeoHelmet";
 import styles from "./PublicCardPage.module.css";
 
 function toPlainText(value) {
@@ -167,17 +172,67 @@ function PublicCard() {
 
     const faqJsonLd = buildFaqJsonLd(card, canonicalResolved);
 
+    const allowTracking = getAllowTracking();
+    const gtmIdNormalized = normalizeGtmId(card.seo?.gtmId);
+    const gaMeasurementIdNormalized = normalizeGaMeasurementId(
+        card.seo?.gaMeasurementId,
+    );
+    const metaPixelIdNormalized = normalizeMetaPixelId(card.seo?.metaPixelId);
+
+    const trackingMode = allowTracking
+        ? gtmIdNormalized
+            ? "gtm"
+            : gaMeasurementIdNormalized
+              ? "ga"
+              : metaPixelIdNormalized
+                ? "pixel"
+                : "none"
+        : "none";
+
     return (
         <div className={styles.publicPage}>
             <SeoHelmet
                 title={title}
                 description={description}
+                robots={card.seo?.robots}
+                googleSiteVerification={card.seo?.googleSiteVerification}
+                facebookDomainVerification={
+                    card.seo?.facebookDomainVerification
+                }
                 canonicalUrl={canonicalUrl}
                 url={url}
                 image={image}
                 jsonLd={card.seo?.jsonLd}
                 jsonLdItems={faqJsonLd ? [faqJsonLd] : []}
+                gtmId={card.seo?.gtmId}
+                gaMeasurementId={card.seo?.gaMeasurementId}
+                metaPixelId={card.seo?.metaPixelId}
             />
+
+            {trackingMode === "gtm" ? (
+                <noscript>
+                    <iframe
+                        title="GTM"
+                        src={`https://www.googletagmanager.com/ns.html?id=${gtmIdNormalized}`}
+                        height="0"
+                        width="0"
+                        frameBorder="0"
+                        hidden
+                        aria-hidden="true"
+                    />
+                </noscript>
+            ) : null}
+
+            {trackingMode === "pixel" ? (
+                <noscript>
+                    <img
+                        alt=""
+                        height="1"
+                        width="1"
+                        src={`https://www.facebook.com/tr?id=${metaPixelIdNormalized}&ev=PageView&noscript=1`}
+                    />
+                </noscript>
+            ) : null}
 
             <div className={styles.publicContainer}>
                 <CardRenderer

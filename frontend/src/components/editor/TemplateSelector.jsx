@@ -28,7 +28,8 @@ export default function TemplateSelector({ value, onSelect }) {
                             <div className={styles.preview}>
                                 <img
                                     src={previewSrc}
-                                    alt={tpl.name}
+                                    alt=""
+                                    aria-hidden="true"
                                     loading="lazy"
                                 />
                             </div>
@@ -41,6 +42,7 @@ export default function TemplateSelector({ value, onSelect }) {
                             <Button
                                 variant={selected ? "primary" : "secondary"}
                                 size="small"
+                                aria-label={`בחר תבנית: ${tpl.name}`}
                                 onClick={() => onSelect(tpl.id)}
                             >
                                 {selected ? "נבחר" : "בחר תבנית"}

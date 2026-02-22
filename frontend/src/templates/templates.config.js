@@ -15,7 +15,8 @@ export const TEMPLATES = [
         label: "Roisman A11y Light",
         name: "מפרץ",
         skinKey: "roismanA11y",
-        previewImage: PREVIEW_PLACEHOLDER_PNG,
+        previewImage:
+            "/templates/previews/preview-covers/roismana11ylight.webp",
         supports: {
             backgroundImage: true,
             avatar: true,
@@ -95,7 +96,7 @@ export const TEMPLATES = [
         label: "Lakmi",
         name: "ורד-זהב",
         skinKey: "lakmi",
-        previewImage: PREVIEW_PLACEHOLDER_PNG,
+        previewImage: "/templates/previews/preview-covers/lakmi.webp",
         supports: {
             backgroundImage: true,
             avatar: true,
@@ -175,7 +176,7 @@ export const TEMPLATES = [
         label: "Galit",
         name: "אבן-שמיים",
         skinKey: "galit",
-        previewImage: PREVIEW_PLACEHOLDER_PNG,
+        previewImage: "/templates/previews/preview-covers/galit.webp",
         supports: {
             backgroundImage: true,
             avatar: true,
@@ -329,7 +330,7 @@ export const TEMPLATES = [
         skinKey: "beauty",
         name: "שקד",
         backgroundMode: "photo",
-        previewImage: PREVIEW_PLACEHOLDER_PNG,
+        previewImage: "/templates/previews/preview-covers/beauty.webp",
         supports: {
             backgroundImage: true,
             avatar: true,

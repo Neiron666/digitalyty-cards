@@ -62,7 +62,7 @@ export default function PreviewCard() {
             </Helmet>
 
             <div className={styles.previewContainer}>
-                <div className={styles.previewNotice}>מצב תצוגה מקדימה</div>
+                {/* <div className={styles.previewNotice}>מצב תצוגה מקדימה</div> */}
                 <CardRenderer card={previewCard} mode="public" />
             </div>
         </div>
