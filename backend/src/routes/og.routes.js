@@ -63,6 +63,7 @@ router.get("/og/card/:slug", async (req, res) => {
     <meta name="description" content="${escapeHtml(description)}" />
 
     <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Cardigo" />
     <meta property="og:title" content="${escapeHtml(title)}" />
     <meta property="og:description" content="${escapeHtml(description)}" />
     <meta property="og:image" content="${escapeHtml(image)}" />
@@ -156,6 +157,7 @@ router.get("/og/c/:orgSlug/:slug", async (req, res) => {
     <meta name="description" content="${escapeHtml(description)}" />
 
     <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Cardigo" />
     <meta property="og:title" content="${escapeHtml(title)}" />
     <meta property="og:description" content="${escapeHtml(description)}" />
     <meta property="og:image" content="${escapeHtml(image)}" />

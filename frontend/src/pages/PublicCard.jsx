@@ -71,6 +71,17 @@ function isAbsoluteUrl(value) {
     return /^https?:\/\//i.test(String(value || "").trim());
 }
 
+function isValidAbsoluteHttpUrl(value) {
+    const v = typeof value === "string" ? value.trim() : "";
+    if (!v) return false;
+    try {
+        const u = new URL(v);
+        return u.protocol === "http:" || u.protocol === "https:";
+    } catch {
+        return false;
+    }
+}
+
 function normalizeAbsoluteUrl(origin, value) {
     const rawValue = typeof value === "string" ? value.trim() : "";
     if (!rawValue) return "";
@@ -82,24 +93,6 @@ function normalizeAbsoluteUrl(origin, value) {
 
     if (rawValue.startsWith("/")) return `${originTrimmed}${rawValue}`;
     return `${originTrimmed}/${rawValue}`;
-}
-
-function resolveAbsoluteCanonical({
-    slug,
-    orgSlug,
-    seoCanonicalUrl,
-    publicOrigin,
-}) {
-    const candidate =
-        typeof seoCanonicalUrl === "string" ? seoCanonicalUrl.trim() : "";
-    if (candidate) {
-        return normalizeAbsoluteUrl(publicOrigin, candidate);
-    }
-
-    const basePath = orgSlug
-        ? `/c/${String(orgSlug || "").trim()}/${String(slug || "").trim()}`
-        : `/card/${String(slug || "").trim()}`;
-    return normalizeAbsoluteUrl(publicOrigin, basePath);
 }
 
 function PublicCard() {
@@ -160,12 +153,17 @@ function PublicCard() {
         "https://cardigo.co.il/og-default.jpg";
 
     const publicOrigin = getPublicOrigin();
-    const canonicalResolved = resolveAbsoluteCanonical({
-        slug: card.slug,
-        orgSlug,
-        seoCanonicalUrl: card.seo?.canonicalUrl,
-        publicOrigin,
-    });
+    const seoCanonicalCandidate =
+        typeof card.seo?.canonicalUrl === "string"
+            ? card.seo.canonicalUrl.trim()
+            : "";
+
+    const canonicalResolved = isValidAbsoluteHttpUrl(seoCanonicalCandidate)
+        ? seoCanonicalCandidate
+        : normalizeAbsoluteUrl(
+              publicOrigin,
+              card.publicPath || (card.slug ? `/card/${card.slug}` : ""),
+          );
 
     const canonicalUrl = canonicalResolved;
     const url = canonicalResolved;

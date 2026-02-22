@@ -1,14 +1,37 @@
 import styles from "./SaveContactButton.module.css";
 
-function detectOrgSlugFromPathname() {
+function getPublicOrigin() {
+    const raw = import.meta.env.VITE_PUBLIC_ORIGIN;
+    if (typeof raw === "string" && raw.trim())
+        return raw.trim().replace(/\/$/, "");
     try {
-        if (typeof window === "undefined") return "";
-        const path = String(window.location?.pathname || "");
-        const m = path.match(/^\/c\/([^/]+)\//i);
-        return m && m[1] ? decodeURIComponent(m[1]).trim().toLowerCase() : "";
+        if (typeof window !== "undefined" && window.location?.origin)
+            return String(window.location.origin).trim().replace(/\/$/, "");
     } catch {
-        return "";
+        // ignore
     }
+    return "";
+}
+
+function normalizeAbsoluteUrl(origin, value) {
+    const rawValue = typeof value === "string" ? value.trim() : "";
+    if (!rawValue) return "";
+    if (/^https?:\/\//i.test(rawValue)) return rawValue;
+
+    const safeOrigin = typeof origin === "string" ? origin.trim() : "";
+    const originTrimmed = safeOrigin.replace(/\/$/, "");
+    if (!originTrimmed) return rawValue;
+
+    if (rawValue.startsWith("/")) return `${originTrimmed}${rawValue}`;
+    return `${originTrimmed}/${rawValue}`;
+}
+
+function deriveOgPathFromPublicPath(publicPath) {
+    const p = typeof publicPath === "string" ? publicPath.trim() : "";
+    if (!p) return "";
+    if (p.startsWith("/c/")) return `/og${p}`;
+    if (p.startsWith("/card/")) return `/og${p}`;
+    return "";
 }
 
 function SaveContactButton({ card }) {
@@ -40,12 +63,23 @@ function SaveContactButton({ card }) {
     async function handleShare() {
         if (card?.status !== "published") return;
         const shareTitle = card?.seo?.title || businessName || "";
-        const orgSlug = detectOrgSlugFromPathname();
-        const shareUrl = card?.slug
-            ? orgSlug
-                ? `${window.location.origin}/og/c/${orgSlug}/${card.slug}`
-                : `${window.location.origin}/og/card/${card.slug}`
-            : window.location.href;
+
+        const origin = getPublicOrigin();
+        const ogPath =
+            typeof card?.ogPath === "string" ? card.ogPath.trim() : "";
+        const publicPath =
+            typeof card?.publicPath === "string" ? card.publicPath.trim() : "";
+        const derivedOgPath = deriveOgPathFromPublicPath(publicPath);
+        const fallbackOgPath =
+            derivedOgPath || (card?.slug ? `/og/card/${card.slug}` : "");
+
+        const shareUrl = ogPath
+            ? normalizeAbsoluteUrl(origin, ogPath)
+            : fallbackOgPath
+              ? normalizeAbsoluteUrl(origin, fallbackOgPath)
+              : typeof window !== "undefined"
+                ? window.location.href
+                : "";
 
         try {
             if (navigator.share) {
