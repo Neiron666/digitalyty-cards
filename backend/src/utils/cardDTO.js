@@ -169,6 +169,14 @@ export function toCardDTO(
         entitlements,
     };
 
+    // Policy: user-owned free cards must not expose trial UX fields in the default DTO.
+    // Keep trial fields available only via includePrivate=true (admin/debug).
+    if (!includePrivate && cardObj?.user) {
+        dto.trialStartedAt = null;
+        dto.trialEndsAt = null;
+        dto.trialEndsAtIsrael = null;
+    }
+
     // Enterprise (additive): expose slug policy state for UI.
     // Keep slugChange server-controlled; UI only needs derived counters.
     // Limit to authenticated user-context DTOs (e.g., /cards/mine) to avoid widening

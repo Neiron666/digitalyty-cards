@@ -13,6 +13,10 @@
     min-height: 0;
 }
 
+.scrollLock {
+    overflow: hidden;
+}
+
 /* Nav */
 .sidebar {
     flex: 0 0 220px; /* фикс 220 */

@@ -158,7 +158,7 @@ export default function SeoPanel({
                         <div className={styles.helperBlock}>
                             <div className={styles.helperHeader}>
                                 <div className={styles.helperTitle}>
-                                    Public URL (SSoT)
+                                    כתובת ציבורית (SSoT)
                                 </div>
                                 <button
                                     type="button"
@@ -166,7 +166,7 @@ export default function SeoPanel({
                                     onClick={handleUseAsCanonical}
                                     disabled={disabled || !computedPublicUrl}
                                 >
-                                    Use as canonical
+                                    השתמש כקנוניקל (Canonical)
                                 </button>
                             </div>
                             <div className={styles.helperValue}>
@@ -222,18 +222,18 @@ export default function SeoPanel({
 
                         {!canonicalTrimmed ? (
                             <div className={styles.hintText}>
-                                ברירת מחדל: ייעשה שימוש ב-Public URL (SSoT)
+                                ברירת מחדל: ייעשה שימוש בכתובת הציבורית (SSoT)
                             </div>
                         ) : null}
                         {canonicalExampleCom ? (
                             <div className={styles.warningText}>
-                                נראה שזה example.com — לרוב זו כתובת דמו.
+                                נראה שזה example.com — לרוב זו כתובת דמו (Demo).
                             </div>
                         ) : null}
                         {canonicalHostMismatch ? (
                             <div className={styles.warningText}>
-                                שים לב: הדומיין של ה-Canonical שונה מהדומיין של
-                                ה-Public URL (SSoT).
+                                הקנוניקל (Canonical) מצביע על דומיין שונה
+                                מהכתובת הציבורית (SSoT).
                             </div>
                         ) : null}
                     </label>
@@ -331,7 +331,9 @@ export default function SeoPanel({
 
                 <div className={styles.row}>
                     <label className={styles.fieldFull}>
-                        <span className={styles.labelText}>JSON-LD (JSON)</span>
+                        <span className={styles.labelText}>
+                            סכימה מובנית (JSON-LD)
+                        </span>
 
                         <div className={styles.jsonLdHelperRow}>
                             <div className={styles.selectWrap}>
@@ -342,14 +344,14 @@ export default function SeoPanel({
                                         setJsonLdTemplateType(e.target.value)
                                     }
                                     disabled={disabled}
-                                    aria-label="JSON-LD template type"
+                                    aria-label="סוג תבנית JSON-LD"
                                 >
-                                    <option value="Person">Person</option>
+                                    <option value="Person">אדם (Person)</option>
                                     <option value="LocalBusiness">
-                                        LocalBusiness
+                                        עסק מקומי (LocalBusiness)
                                     </option>
                                     <option value="Organization">
-                                        Organization
+                                        ארגון (Organization)
                                     </option>
                                 </select>
                             </div>
@@ -361,7 +363,7 @@ export default function SeoPanel({
                                     onClick={handleInsertJsonLdTemplate}
                                     disabled={disabled}
                                 >
-                                    Insert template
+                                    הוסף/החלף תבנית (Template)
                                 </button>
                                 <button
                                     type="button"
@@ -374,7 +376,7 @@ export default function SeoPanel({
                                         !resolveJsonLdBaseUrl()
                                     }
                                 >
-                                    Sync url/@id from canonical
+                                    סנכרן/הכנס url/@id מהקנוניקל
                                 </button>
                             </div>
                         </div>
@@ -399,14 +401,14 @@ export default function SeoPanel({
                             value={value.jsonLd || ""}
                             onChange={(e) => update("jsonLd", e.target.value)}
                             disabled={disabled}
-                            placeholder='{"@context":"https://schema.org","@type":"LocalBusiness"}'
+                            placeholder='{"@context":"https://schema.org","@type":"LocalBusiness","name":"שם העסק"}'
                         />
                     </label>
                 </div>
 
                 <div className={styles.microCopy}>
-                    שיתוף ברשתות משתמש בדף /og/ לתצוגת מקדימה. הדפדפן מפנה את
-                    /og/ לכתובת הציבורית.
+                    לתצוגה מקדימה בשיתוף משתמשים בדף /og/ (OG). הדפדפן מפנה
+                    אוטומטית לכתובת הציבורית.
                 </div>
             </div>
         </Panel>

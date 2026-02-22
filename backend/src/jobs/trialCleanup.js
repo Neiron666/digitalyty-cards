@@ -18,17 +18,34 @@ async function cleanupOnce() {
     running = true;
 
     const now = new Date();
+    const anonTtlDaysRaw = Number(process.env.ANON_CARD_TTL_DAYS);
+    const anonTtlDays = Number.isFinite(anonTtlDaysRaw) ? anonTtlDaysRaw : 14;
+    const anonTtlMs = Math.max(1, anonTtlDays) * 24 * 60 * 60 * 1000;
+    const anonCutoff = new Date(now.getTime() - anonTtlMs);
 
     try {
         // Select only what we need.
         const candidates = await Card.find({
             isActive: true,
-            trialDeleteAt: { $ne: null, $lte: now },
+            // Never clean up user-owned cards.
+            // Note: in Mongo, { user: null } matches null OR missing fields.
+            user: null,
+            // Only anonymous-owned cards are eligible for cleanup.
+            anonymousId: { $exists: true, $ne: null },
+            // Safety guard: never delete published cards.
+            status: { $ne: "published" },
+            $or: [
+                { trialDeleteAt: { $ne: null, $lte: now } },
+                { updatedAt: { $lte: anonCutoff } },
+            ],
         }).select(
-            "trialDeleteAt trialEndsAt billing plan uploads gallery design anonymousId user",
+            "trialDeleteAt trialEndsAt billing plan uploads gallery design anonymousId user status updatedAt",
         );
 
         let deletedCount = 0;
+        let deletedTrialCount = 0;
+        let deletedAnonStaleCount = 0;
+        let failedStorageDeletesCount = 0;
         let skippedPaid = 0;
         let removedObjectCount = 0;
 
@@ -37,6 +54,13 @@ async function cleanupOnce() {
                 skippedPaid += 1;
                 continue;
             }
+
+            const isTrialDue = Boolean(card?.trialDeleteAt)
+                ? new Date(card.trialDeleteAt).getTime() <= now.getTime()
+                : false;
+            const isAnonStale = Boolean(card?.updatedAt)
+                ? new Date(card.updatedAt).getTime() <= anonCutoff.getTime()
+                : false;
 
             const rawPaths = collectSupabasePathsFromCard(card);
             const paths = normalizeSupabasePaths(rawPaths);
@@ -65,6 +89,7 @@ async function cleanupOnce() {
                         cardId: String(card._id),
                         error: err?.message || err,
                     });
+                    failedStorageDeletesCount += 1;
                     // Do not delete the card if media removal failed.
                     continue;
                 }
@@ -83,14 +108,22 @@ async function cleanupOnce() {
 
             await Card.deleteOne({ _id: card._id });
             deletedCount += 1;
+
+            if (isTrialDue) deletedTrialCount += 1;
+            else if (isAnonStale) deletedAnonStaleCount += 1;
+            else deletedAnonStaleCount += 1;
         }
 
         if (candidates.length) {
             console.log("[trial-cleanup] done", {
                 candidates: candidates.length,
                 deletedCount,
+                deletedTrialCount,
+                deletedAnonStaleCount,
+                failedStorageDeletesCount,
                 skippedPaid,
                 removedObjectCount,
+                anonTtlDays: Math.max(1, anonTtlDays),
             });
         }
     } catch (err) {

@@ -65,6 +65,9 @@ export function isEntitled(card, now = new Date()) {
 
     if (isPaid(card, now)) return true;
 
+    // Policy: user-owned free cards must never be trial-locked/deleted.
+    if (card?.user) return true;
+
     // Trial grants access while active.
     const endsAtMs = card?.trialEndsAt
         ? new Date(card.trialEndsAt).getTime()
@@ -123,6 +126,17 @@ export function resolveBilling(card, now = new Date()) {
         };
     }
 
+    // Policy: user-owned cards are free-to-edit when not paid/adminOverride.
+    if (card?.user) {
+        return {
+            source: "free",
+            plan: billingPlan,
+            until: null,
+            isEntitled: true,
+            isPaid: false,
+        };
+    }
+
     // 3) trial
     const trialEndsAtIso = card?.trialEndsAt
         ? new Date(card.trialEndsAt).toISOString()
@@ -172,6 +186,9 @@ export function resolveBilling(card, now = new Date()) {
 
 export function ensureTrialStarted(card, now = new Date()) {
     if (!card) return false;
+
+    // Policy: never start trial for user-owned cards.
+    if (card?.user) return false;
 
     // If already paid/adminOverride, don't start trial.
     const resolved = resolveBilling(card, now);

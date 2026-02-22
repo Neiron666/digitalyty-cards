@@ -115,6 +115,28 @@ export default function Editor({
         return () => window.removeEventListener("keydown", onKeyDown);
     }, [drawerOpen]);
 
+    useEffect(() => {
+        if (typeof document === "undefined") return;
+
+        const lockClass = styles.scrollLock;
+        const root = document.documentElement;
+        const body = document.body;
+        const shouldLock = Boolean(isMobile && drawerOpen);
+
+        if (shouldLock) {
+            root.classList.add(lockClass);
+            body.classList.add(lockClass);
+        } else {
+            root.classList.remove(lockClass);
+            body.classList.remove(lockClass);
+        }
+
+        return () => {
+            root.classList.remove(lockClass);
+            body.classList.remove(lockClass);
+        };
+    }, [drawerOpen, isMobile]);
+
     const allowedTabs = useMemo(
         () =>
             new Set(
