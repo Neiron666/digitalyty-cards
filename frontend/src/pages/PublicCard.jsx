@@ -62,9 +62,16 @@ function buildFaqJsonLd(card, canonicalUrl) {
 }
 
 function getPublicOrigin() {
-    const raw = import.meta.env.VITE_PUBLIC_ORIGIN;
-    if (typeof raw !== "string") return "";
-    return raw.trim().replace(/\/$/, "");
+    const envOrigin = String(import.meta.env.VITE_PUBLIC_ORIGIN || "").trim();
+    if (envOrigin) return envOrigin.replace(/\/$/, "");
+    try {
+        if (typeof window !== "undefined" && window.location?.origin) {
+            return String(window.location.origin).trim().replace(/\/$/, "");
+        }
+    } catch {
+        // ignore
+    }
+    return "";
 }
 
 function isAbsoluteUrl(value) {
