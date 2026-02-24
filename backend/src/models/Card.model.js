@@ -59,6 +59,39 @@ const FaqSchema = new mongoose.Schema(
     { _id: false },
 );
 
+const PayerSchema = new mongoose.Schema(
+    {
+        type: {
+            type: String,
+            enum: ["none", "user", "org"],
+            default: "none",
+        },
+        userId: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "User",
+            default: null,
+        },
+        orgId: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "Organization",
+            default: null,
+        },
+        note: {
+            type: String,
+            trim: true,
+            default: null,
+            maxlength: 80,
+        },
+        source: {
+            type: String,
+            enum: ["admin", "sync", "provider"],
+            default: null,
+        },
+        updatedAt: { type: Date, default: null },
+    },
+    { _id: false },
+);
+
 const CardSchema = new mongoose.Schema(
     {
         user: {
@@ -148,33 +181,11 @@ const CardSchema = new mongoose.Schema(
             },
             // Admin-only attribution (who pays for this card). Must not leak via public DTO.
             payer: {
-                type: {
-                    type: String,
-                    enum: ["none", "user", "org"],
-                    default: "none",
-                },
-                userId: {
-                    type: mongoose.Schema.Types.ObjectId,
-                    ref: "User",
-                    default: null,
-                },
-                orgId: {
-                    type: mongoose.Schema.Types.ObjectId,
-                    ref: "Organization",
-                    default: null,
-                },
-                note: {
-                    type: String,
-                    trim: true,
-                    default: null,
-                    maxlength: 80,
-                },
-                source: {
-                    type: String,
-                    enum: ["admin", "sync", "provider"],
-                    default: null,
-                },
-                updatedAt: { type: Date, default: null },
+                type: PayerSchema,
+                default: null,
+                // IMPORTANT: `validate` must be a path option on billing.payer.
+                // If placed inside the subdocument shape, Mongoose treats it as data paths
+                // (billing.payer.validate.validator) and tries to interpret `validator` as a type.
                 validate: {
                     validator: (payer) => {
                         if (payer === undefined || payer === null) return true;
