@@ -48,6 +48,56 @@ export function adminOverridePlan(id, { plan, until, reason }) {
     });
 }
 
+// Enterprise billing CRUD (admin)
+export function adminSetUserSubscription(
+    userId,
+    { plan, expiresAt, status, reason } = {},
+) {
+    return api.post(`/admin/billing/users/${userId}/subscription/set`, {
+        plan,
+        expiresAt,
+        provider: "admin",
+        status,
+        reason,
+    });
+}
+
+export function adminRevokeUserSubscription(userId, { reason } = {}) {
+    return api.post(`/admin/billing/users/${userId}/subscription/revoke`, {
+        reason,
+    });
+}
+
+export function adminSetCardBilling(
+    cardId,
+    { plan, paidUntil, status, reason } = {},
+) {
+    return api.post(`/admin/billing/cards/${cardId}/billing/set`, {
+        plan,
+        paidUntil,
+        status,
+        reason,
+    });
+}
+
+export function adminRevokeCardBilling(cardId, { reason } = {}) {
+    return api.post(`/admin/billing/cards/${cardId}/billing/revoke`, {
+        reason,
+    });
+}
+
+export function adminSyncCardBillingFromUser(cardId, { reason } = {}) {
+    return api.post(`/admin/billing/cards/${cardId}/billing/sync-from-user`, {
+        reason,
+    });
+}
+
+export function adminClearCardAdminOverride(cardId, { reason } = {}) {
+    return api.post(`/admin/cards/${cardId}/admin-override/clear`, {
+        reason,
+    });
+}
+
 export function adminSetCardTier(id, { tier, until, reason }) {
     return api.post(`/admin/cards/${id}/tier`, {
         tier,

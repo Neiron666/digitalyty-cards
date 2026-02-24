@@ -121,14 +121,42 @@ export default {
         await user.save();
 
         if (user.cardId) {
-            await Card.findByIdAndUpdate(user.cardId, {
-                plan,
-                billing: {
-                    status: "active",
-                    plan,
-                    paidUntil: expiresAt,
+            const paidUntil = expiresAt;
+
+            // Phase 2C: never overwrite billing wholesale (preserve billing.features + billing.payer).
+            // 1) Dot-path update for normal cases (billing missing or object).
+            await Card.updateOne(
+                {
+                    _id: user.cardId,
+                    $or: [
+                        { billing: { $exists: false } },
+                        { billing: { $type: "object" } },
+                    ],
                 },
-            });
+                {
+                    $set: {
+                        plan,
+                        "billing.status": "active",
+                        "billing.plan": plan,
+                        "billing.paidUntil": paidUntil,
+                    },
+                },
+            );
+
+            // 2) Fallback for billing === null (dot-path would fail). Do NOT set payer/features.
+            await Card.updateOne(
+                { _id: user.cardId, billing: null },
+                {
+                    $set: {
+                        plan,
+                        billing: {
+                            status: "active",
+                            plan,
+                            paidUntil: paidUntil,
+                        },
+                    },
+                },
+            );
         }
     },
 };

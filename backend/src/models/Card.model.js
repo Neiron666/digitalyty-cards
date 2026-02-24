@@ -146,6 +146,54 @@ const CardSchema = new mongoose.Schema(
             features: {
                 analyticsPremium: { type: Boolean, default: false },
             },
+            // Admin-only attribution (who pays for this card). Must not leak via public DTO.
+            payer: {
+                type: {
+                    type: String,
+                    enum: ["none", "user", "org"],
+                    default: "none",
+                },
+                userId: {
+                    type: mongoose.Schema.Types.ObjectId,
+                    ref: "User",
+                    default: null,
+                },
+                orgId: {
+                    type: mongoose.Schema.Types.ObjectId,
+                    ref: "Organization",
+                    default: null,
+                },
+                note: {
+                    type: String,
+                    trim: true,
+                    default: null,
+                    maxlength: 80,
+                },
+                source: {
+                    type: String,
+                    enum: ["admin", "sync", "provider"],
+                    default: null,
+                },
+                updatedAt: { type: Date, default: null },
+                validate: {
+                    validator: (payer) => {
+                        if (payer === undefined || payer === null) return true;
+                        if (typeof payer !== "object") return false;
+
+                        const t = payer.type;
+                        if (t === "org") {
+                            return Boolean(payer.orgId) && !payer.userId;
+                        }
+                        if (t === "user") {
+                            return Boolean(payer.userId) && !payer.orgId;
+                        }
+                        // none (or legacy/unknown) => both null.
+                        return !payer.userId && !payer.orgId;
+                    },
+                    message:
+                        "billing.payer invalid: org requires orgId only; user requires userId only; none requires both null",
+                },
+            },
         },
 
         // Support tool: temporary access override (not a billing source of truth).

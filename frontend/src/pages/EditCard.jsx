@@ -3,6 +3,7 @@ import { Link, useBlocker, useNavigate, useParams } from "react-router-dom";
 import Editor from "../components/editor/Editor";
 import ConfirmUnsavedChangesModal from "../components/editor/ConfirmUnsavedChangesModal";
 import TrialBanner from "../components/editor/TrialBanner";
+import PremiumExpiryBanner from "../components/editor/PremiumExpiryBanner";
 import { EDITOR_CARD_TABS } from "../components/editor/editorTabs";
 import { deleteCard, updateCardSlug } from "../services/cards.service";
 import api, { getAnonymousId } from "../services/api";
@@ -2073,6 +2074,28 @@ function EditCard() {
 
     const anonId = getAnonymousId();
     const shouldShowAnonCta = !token && Boolean(anonId);
+    const authenticatedSession = Boolean(token) && !shouldShowAnonCta;
+
+    const eb = draftCard?.effectiveBilling || null;
+    const untilIso = eb?.until;
+    const plan = eb?.plan;
+    const paid = eb?.isPaid === true;
+
+    const msPerDay = 24 * 60 * 60 * 1000;
+    const untilMs = untilIso ? new Date(untilIso).getTime() : NaN;
+    const msLeft = Number.isFinite(untilMs) ? untilMs - Date.now() : NaN;
+    const daysLeft =
+        Number.isFinite(msLeft) && msLeft > 0
+            ? Math.ceil(msLeft / msPerDay)
+            : null;
+
+    const showPremiumExpiryBanner =
+        authenticatedSession &&
+        paid &&
+        plan === "yearly" &&
+        typeof daysLeft === "number" &&
+        daysLeft >= 1 &&
+        daysLeft <= 14;
 
     return (
         <div className={styles.editCard}>
@@ -2119,7 +2142,8 @@ function EditCard() {
                 {shouldShowAnonCta ? (
                     <section className={styles.anonCta} dir="rtl" role="note">
                         <div className={styles.anonCtaText}>
-                            זה טיוטה זמנית… נשמר ל-14 ימים. הרשמה תשמור לצמיתות.
+                            זאת טיוטה זמנית… נשמר ל-14 ימים. הרשמה תשמור
+                            לצמיתות.
                         </div>
                         <div className={styles.anonCtaActions}>
                             <Link
@@ -2136,6 +2160,14 @@ function EditCard() {
                             </Link>
                         </div>
                     </section>
+                ) : null}
+                {showPremiumExpiryBanner ? (
+                    <PremiumExpiryBanner
+                        daysLeft={daysLeft}
+                        onCta={() => {
+                            window.location.href = "/pricing";
+                        }}
+                    />
                 ) : null}
                 {showTrialBanner && (
                     <TrialBanner

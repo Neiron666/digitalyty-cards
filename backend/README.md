@@ -12,6 +12,11 @@
 - Exit codes: `0` = clean, `2` = issues found, `1` = runtime error.
 - Windows: `npm.cmd run sanity:ownership-consistency`
 
+## Cleanup / TTL
+
+- `TRIAL_CLEANUP_INTERVAL_MS`: cleanup job schedule interval in ms (default: `3600000` = 1h).
+- `ANON_CARD_TTL_DAYS`: anonymous draft TTL by inactivity, based on `Card.updatedAt` (default: `14`).
+
 ## Index Governance
 
 Runtime ≠ Sanity ≠ Migration:

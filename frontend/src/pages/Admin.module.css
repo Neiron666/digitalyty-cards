@@ -1,11 +1,43 @@
 .adminRoot {
-    /* fallback */
-    height: calc(100vh - 64px);
-    overflow: hidden;
+    /* mobile-first: document scroll */
+    height: auto;
+    overflow: visible;
     padding: 12px;
     display: flex;
     flex-direction: column;
     gap: 12px;
+}
+
+.scrollArea {
+    flex: 0 0 auto;
+    min-height: 0;
+    min-width: 0;
+}
+
+@media (min-width: 60rem) {
+    .adminRoot {
+        height: calc(100vh - 64px);
+        overflow: hidden;
+    }
+
+    .scrollArea {
+        flex: 1 1 auto;
+        min-height: 0;
+        overflow-y: auto;
+        overscroll-behavior: contain;
+    }
+
+    .body {
+        flex: 0 0 auto;
+        min-height: auto;
+    }
+
+    .cardBody {
+        overflow: visible;
+        min-height: auto;
+        height: auto;
+        max-height: none;
+    }
 }
 
 /* @supports (height: 100dvh) {
@@ -271,6 +303,14 @@
     color: var(--gold);
     font-size: var(--fs-ui);
     opacity: 0.95;
+}
+
+.warningBox {
+    padding: 10px 12px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    background: var(--bg-card);
+    color: var(--gold);
 }
 
 .sectionBlock {

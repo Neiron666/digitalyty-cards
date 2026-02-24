@@ -11,6 +11,12 @@ import {
     reactivateCard,
     extendTrial,
     overridePlan,
+    adminSetUserSubscription,
+    adminRevokeUserSubscription,
+    adminSetCardBilling,
+    adminRevokeCardBilling,
+    adminSyncCardBillingFromUser,
+    adminClearCardAdminOverride,
     setAnalyticsPremium,
     setCardTier,
     setUserTier,
@@ -67,6 +73,22 @@ router.post("/cards/:id/deactivate", deactivateCard);
 router.post("/cards/:id/reactivate", reactivateCard);
 router.post("/cards/:id/trial/extend", extendTrial);
 router.post("/cards/:id/plan/override", overridePlan);
+// Enterprise billing CRUD (admin-only; reason + audit required)
+router.post(
+    "/billing/users/:userId/subscription/set",
+    adminSetUserSubscription,
+);
+router.post(
+    "/billing/users/:userId/subscription/revoke",
+    adminRevokeUserSubscription,
+);
+router.post("/billing/cards/:cardId/billing/set", adminSetCardBilling);
+router.post("/billing/cards/:cardId/billing/revoke", adminRevokeCardBilling);
+router.post(
+    "/billing/cards/:cardId/billing/sync-from-user",
+    adminSyncCardBillingFromUser,
+);
+router.post("/cards/:cardId/admin-override/clear", adminClearCardAdminOverride);
 router.post("/cards/:id/analytics-premium", setAnalyticsPremium);
 router.post("/cards/:id/tier", setCardTier);
 router.post("/users/:id/tier", setUserTier);

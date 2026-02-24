@@ -247,6 +247,9 @@ export async function listCards(req, res) {
     const owner = typeof req.query.owner === "string" ? req.query.owner : "";
     const status = typeof req.query.status === "string" ? req.query.status : "";
 
+    const userIdRaw =
+        typeof req.query.userId === "string" ? req.query.userId.trim() : "";
+
     const filter = {};
 
     if (owner === "user") filter.user = { $exists: true, $ne: null };
@@ -256,13 +259,21 @@ export async function listCards(req, res) {
     if (status === "draft" || status === "published") filter.status = status;
     if (q) filter.slug = q;
 
+    if (userIdRaw) {
+        const looksLikeObjectId = /^[0-9a-f]{24}$/i.test(userIdRaw);
+        if (!looksLikeObjectId || !mongoose.Types.ObjectId.isValid(userIdRaw)) {
+            return res.status(400).json({ ok: false, code: "INVALID_USER_ID" });
+        }
+        filter.user = userIdRaw;
+    }
+
     const [items, total] = await Promise.all([
         Card.find(filter)
             .sort({ updatedAt: -1 })
             .skip(skip)
             .limit(limit)
             .select(
-                "slug status isActive plan user anonymousId trialEndsAt trialStartedAt billing adminOverride adminTier adminTierUntil adminTierByAdmin adminTierReason adminTierCreatedAt createdAt updatedAt",
+                "slug status isActive plan user orgId anonymousId trialEndsAt trialStartedAt billing adminOverride adminTier adminTierUntil adminTierByAdmin adminTierReason adminTierCreatedAt createdAt updatedAt",
             ),
         Card.countDocuments(filter),
     ]);
@@ -305,6 +316,8 @@ export async function listCards(req, res) {
 
         return {
             ...dto,
+            orgId: c?.orgId ? String(c.orgId) : null,
+            scope: c?.orgId ? "org" : "personal",
             ownerSummary,
         };
     });
@@ -685,23 +698,63 @@ export async function extendTrial(req, res) {
         billingStatus: existing.billing?.status,
     };
 
-    const nextBilling = {
-        status: existing.billing?.status || "free",
-        plan: existing.billing?.plan || existing.plan || "free",
-        paidUntil: existing.billing?.paidUntil || null,
-    };
-    if (nextBilling.status === "free") nextBilling.status = "trial";
+    const billingIsObject =
+        Boolean(existing.billing) &&
+        typeof existing.billing === "object" &&
+        !Array.isArray(existing.billing);
 
-    const update = {
-        trialStartedAt: existing.trialStartedAt || now,
-        trialEndsAt,
-        trialDeleteAt,
-        billing: nextBilling,
-    };
+    let nextBillingStatus = existing.billing?.status || "free";
+    if (nextBillingStatus === "free") nextBillingStatus = "trial";
+
+    const nextBillingPlan = existing.billing?.plan || existing.plan || "free";
+    const nextBillingPaidUntil = existing.billing?.paidUntil || null;
+
+    const preservedFeatures =
+        existing.billing?.features &&
+        typeof existing.billing.features === "object" &&
+        !Array.isArray(existing.billing.features)
+            ? existing.billing.features
+            : { analyticsPremium: false };
+
+    const preservedPayer =
+        existing.billing?.payer &&
+        typeof existing.billing.payer === "object" &&
+        !Array.isArray(existing.billing.payer)
+            ? existing.billing.payer
+            : {
+                  type: "none",
+                  userId: null,
+                  orgId: null,
+                  note: null,
+                  source: null,
+                  updatedAt: null,
+              };
+
+    const setUpdate = billingIsObject
+        ? {
+              trialStartedAt: existing.trialStartedAt || now,
+              trialEndsAt,
+              trialDeleteAt,
+              "billing.status": nextBillingStatus,
+              "billing.plan": nextBillingPlan,
+              "billing.paidUntil": nextBillingPaidUntil,
+          }
+        : {
+              trialStartedAt: existing.trialStartedAt || now,
+              trialEndsAt,
+              trialDeleteAt,
+              billing: {
+                  status: nextBillingStatus,
+                  plan: nextBillingPlan,
+                  paidUntil: nextBillingPaidUntil,
+                  features: preservedFeatures,
+                  payer: preservedPayer,
+              },
+          };
 
     const card = await Card.findByIdAndUpdate(
         req.params.id,
-        { $set: update },
+        { $set: setUpdate },
         { new: true, runValidators: true },
     );
     if (!card) return res.status(404).json({ message: "Not found" });
@@ -988,4 +1041,759 @@ export async function setUserTier(req, res) {
         ok: true,
         user,
     });
+}
+
+function parsePlanInput(req, res, { field = "plan" } = {}) {
+    const plan =
+        typeof req.body?.[field] === "string" ? req.body[field].trim() : "";
+    if (!plan || !["free", "monthly", "yearly"].includes(plan)) {
+        res.status(400).json({ code: "INVALID_PLAN", message: "Invalid plan" });
+        return null;
+    }
+    return plan;
+}
+
+function parseIsoDateOrNull(req, res, { field, code } = {}) {
+    const raw = req.body?.[field];
+    if (raw === null) return null;
+    if (raw === undefined) return undefined;
+    if (typeof raw !== "string") {
+        res.status(400).json({
+            code: code || "INVALID_DATE",
+            message: `Invalid ${field}`,
+        });
+        return undefined;
+    }
+
+    const trimmed = raw.trim();
+    if (!trimmed) return null;
+
+    const d = new Date(trimmed);
+    if (!Number.isFinite(d.getTime())) {
+        res.status(400).json({
+            code: code || "INVALID_DATE",
+            message: `Invalid ${field}`,
+        });
+        return undefined;
+    }
+    return d;
+}
+
+function mapUserSubscriptionStatusToEnum(raw) {
+    const v = typeof raw === "string" ? raw.trim().toLowerCase() : "";
+    if (v === "active") return "active";
+    if (v === "expired") return "expired";
+    if (v === "inactive") return "inactive";
+
+    // Backward/operational compatibility: accept requested admin-tool labels.
+    if (v === "canceled" || v === "free") return "inactive";
+    if (v === "past_due") return "active";
+    return null;
+}
+
+export async function adminSetUserSubscription(req, res) {
+    const reason = requireReason(req, res);
+    if (!reason) return;
+
+    const userId = String(req.params.userId || "");
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+        return res
+            .status(400)
+            .json({ code: "INVALID_ID", message: "Invalid userId" });
+    }
+
+    const plan = parsePlanInput(req, res);
+    if (!plan) return;
+
+    const expiresAt = parseIsoDateOrNull(req, res, {
+        field: "expiresAt",
+        code: "INVALID_EXPIRES_AT",
+    });
+    if (expiresAt === undefined) return;
+
+    const rawStatus = req.body?.status;
+    const mappedStatus =
+        rawStatus !== undefined
+            ? mapUserSubscriptionStatusToEnum(rawStatus)
+            : null;
+    if (rawStatus !== undefined && !mappedStatus) {
+        return res.status(400).json({
+            code: "INVALID_STATUS",
+            message: "Invalid status",
+        });
+    }
+
+    const now = new Date();
+
+    if (plan === "free") {
+        if (expiresAt !== null) {
+            return res.status(400).json({
+                code: "INVALID_EXPIRES_AT",
+                message: "expiresAt must be null for free plan",
+            });
+        }
+    } else {
+        if (!expiresAt) {
+            return res.status(400).json({
+                code: "INVALID_EXPIRES_AT",
+                message: "expiresAt is required for paid plan",
+            });
+        }
+        if (expiresAt.getTime() <= now.getTime()) {
+            return res.status(400).json({
+                code: "INVALID_EXPIRES_AT",
+                message: "expiresAt must be in the future",
+            });
+        }
+    }
+
+    const existing = await User.findById(userId).select(
+        "plan subscription cardId",
+    );
+    if (!existing) return res.status(404).json({ message: "Not found" });
+
+    const before = {
+        plan: existing.plan,
+        subscription: {
+            status: existing.subscription?.status || "inactive",
+            expiresAt: existing.subscription?.expiresAt || null,
+            provider: existing.subscription?.provider || null,
+        },
+    };
+
+    const next = {
+        plan,
+        subscription: {
+            status: mappedStatus || (plan === "free" ? "inactive" : "active"),
+            expiresAt: plan === "free" ? null : expiresAt,
+            provider: "admin",
+        },
+    };
+
+    const user = await User.findByIdAndUpdate(
+        userId,
+        { $set: next },
+        { new: true, runValidators: true },
+    ).select("plan subscription cardId");
+    if (!user) return res.status(404).json({ message: "Not found" });
+
+    const after = {
+        plan: user.plan,
+        subscription: {
+            status: user.subscription?.status || "inactive",
+            expiresAt: user.subscription?.expiresAt || null,
+            provider: user.subscription?.provider || null,
+        },
+    };
+
+    await logAdminAction({
+        adminUserId: req.userId,
+        action: "USER_SUBSCRIPTION_SET",
+        targetType: "user",
+        targetId: user._id,
+        reason,
+        meta: {
+            before,
+            after,
+        },
+    });
+
+    const cardIds = user?.cardId ? [String(user.cardId)] : [];
+    return res.json({
+        ok: true,
+        userId: String(user._id),
+        plan: user.plan,
+        subscription: {
+            status: user.subscription?.status || "inactive",
+            expiresAt: user.subscription?.expiresAt
+                ? new Date(user.subscription.expiresAt).toISOString()
+                : null,
+            provider: user.subscription?.provider || null,
+        },
+        cardIds,
+    });
+}
+
+export async function adminRevokeUserSubscription(req, res) {
+    const reason = requireReason(req, res);
+    if (!reason) return;
+
+    const userId = String(req.params.userId || "");
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+        return res
+            .status(400)
+            .json({ code: "INVALID_ID", message: "Invalid userId" });
+    }
+
+    const existing = await User.findById(userId).select(
+        "plan subscription cardId",
+    );
+    if (!existing) return res.status(404).json({ message: "Not found" });
+
+    const before = {
+        plan: existing.plan,
+        subscription: {
+            status: existing.subscription?.status || "inactive",
+            expiresAt: existing.subscription?.expiresAt || null,
+            provider: existing.subscription?.provider || null,
+        },
+    };
+
+    const update = {
+        plan: "free",
+        subscription: {
+            status: "inactive",
+            expiresAt: null,
+            provider: "admin",
+        },
+    };
+
+    const user = await User.findByIdAndUpdate(
+        userId,
+        { $set: update },
+        { new: true, runValidators: true },
+    ).select("plan subscription cardId");
+    if (!user) return res.status(404).json({ message: "Not found" });
+
+    const after = {
+        plan: user.plan,
+        subscription: {
+            status: user.subscription?.status || "inactive",
+            expiresAt: user.subscription?.expiresAt || null,
+            provider: user.subscription?.provider || null,
+        },
+    };
+
+    await logAdminAction({
+        adminUserId: req.userId,
+        action: "USER_SUBSCRIPTION_REVOKE",
+        targetType: "user",
+        targetId: user._id,
+        reason,
+        meta: {
+            before,
+            after,
+        },
+    });
+
+    const cardIds = user?.cardId ? [String(user.cardId)] : [];
+    return res.json({
+        ok: true,
+        userId: String(user._id),
+        plan: user.plan,
+        subscription: {
+            status: user.subscription?.status || "inactive",
+            expiresAt: null,
+            provider: user.subscription?.provider || null,
+        },
+        cardIds,
+    });
+}
+
+function parseCardBillingStatus(req, res) {
+    const status =
+        typeof req.body?.status === "string" ? req.body.status.trim() : "";
+    if (
+        !status ||
+        !["active", "free", "past_due", "canceled"].includes(status)
+    ) {
+        res.status(400).json({
+            code: "INVALID_STATUS",
+            message: "Invalid status",
+        });
+        return null;
+    }
+    return status;
+}
+
+async function loadCardWithTier(cardId) {
+    const card = await Card.findById(cardId);
+    if (!card) return { card: null, userTier: null };
+    const userTier = card?.user ? await loadUserTierById(card.user) : null;
+    return { card, userTier };
+}
+
+export async function adminSetCardBilling(req, res) {
+    const reason = requireReason(req, res);
+    if (!reason) return;
+
+    const cardId = String(req.params.cardId || "");
+    if (!mongoose.Types.ObjectId.isValid(cardId)) {
+        return res
+            .status(400)
+            .json({ code: "INVALID_ID", message: "Invalid cardId" });
+    }
+
+    const plan = parsePlanInput(req, res);
+    if (!plan) return;
+
+    const status = parseCardBillingStatus(req, res);
+    if (!status) return;
+
+    const paidUntil = parseIsoDateOrNull(req, res, {
+        field: "paidUntil",
+        code: "INVALID_PAID_UNTIL",
+    });
+    if (paidUntil === undefined) return;
+
+    const now = new Date();
+
+    if (plan === "free") {
+        if (status !== "free") {
+            return res.status(400).json({
+                code: "INVALID_STATUS",
+                message: 'status must be "free" for free plan',
+            });
+        }
+        if (paidUntil !== null) {
+            return res.status(400).json({
+                code: "INVALID_PAID_UNTIL",
+                message: "paidUntil must be null for free plan",
+            });
+        }
+    } else {
+        if (status !== "active") {
+            return res.status(400).json({
+                code: "INVALID_STATUS",
+                message: 'status must be "active" for paid plan',
+            });
+        }
+        if (!paidUntil) {
+            return res.status(400).json({
+                code: "INVALID_PAID_UNTIL",
+                message: "paidUntil is required for paid plan",
+            });
+        }
+        if (paidUntil.getTime() <= now.getTime()) {
+            return res.status(400).json({
+                code: "INVALID_PAID_UNTIL",
+                message: "paidUntil must be in the future",
+            });
+        }
+    }
+
+    const existing = await Card.findById(cardId);
+    if (!existing) return res.status(404).json({ message: "Not found" });
+
+    const payerTypeRaw = req.body?.payerType;
+    const payerTypeProvided = payerTypeRaw !== undefined;
+    const payerType =
+        typeof payerTypeRaw === "string"
+            ? payerTypeRaw.trim().toLowerCase()
+            : "";
+
+    let payerNote =
+        typeof req.body?.payerNote === "string"
+            ? req.body.payerNote.trim()
+            : "";
+    if (payerNote && payerNote.length > 80) {
+        return res.status(400).json({
+            code: "PAYER_NOTE_TOO_LONG",
+            message: "payerNote too long (max 80)",
+        });
+    }
+    if (!payerNote) payerNote = null;
+
+    let payerPatch = null;
+    if (payerTypeProvided) {
+        if (!payerType || !["none", "user", "org"].includes(payerType)) {
+            return res.status(400).json({
+                code: "INVALID_PAYER_TYPE",
+                message: "payerType must be one of: none | user | org",
+            });
+        }
+
+        const payerOrgIdRaw = req.body?.payerOrgId;
+        const payerOrgId =
+            payerOrgIdRaw !== undefined && payerOrgIdRaw !== null
+                ? String(payerOrgIdRaw)
+                : null;
+
+        const nowPayer = new Date();
+
+        if (payerType === "org") {
+            if (!existing.orgId) {
+                return res.status(400).json({
+                    code: "CARD_NOT_ORG",
+                    message: "Card has no orgId",
+                });
+            }
+            if (payerOrgId && String(existing.orgId) !== payerOrgId) {
+                return res.status(400).json({
+                    code: "PAYER_ORG_MISMATCH",
+                    message: "payerOrgId must match card.orgId",
+                });
+            }
+
+            payerPatch = {
+                type: "org",
+                orgId: existing.orgId,
+                userId: null,
+                note: payerNote,
+                source: "admin",
+                updatedAt: nowPayer,
+            };
+        } else if (payerType === "user") {
+            if (!existing.user) {
+                return res.status(400).json({
+                    code: "CARD_HAS_NO_OWNER",
+                    message: "Card has no owner user",
+                });
+            }
+            payerPatch = {
+                type: "user",
+                userId: existing.user,
+                orgId: null,
+                note: payerNote,
+                source: "admin",
+                updatedAt: nowPayer,
+            };
+        } else {
+            payerPatch = {
+                type: "none",
+                userId: null,
+                orgId: null,
+                note: null,
+                source: "admin",
+                updatedAt: nowPayer,
+            };
+        }
+    }
+
+    const before = {
+        plan: existing.plan,
+        billing: {
+            status: existing.billing?.status || "free",
+            plan: existing.billing?.plan || "free",
+            paidUntil: existing.billing?.paidUntil || null,
+        },
+        adminOverride: existing.adminOverride || null,
+    };
+
+    const features =
+        existing.billing?.features &&
+        typeof existing.billing.features === "object"
+            ? existing.billing.features
+            : { analyticsPremium: false };
+
+    const billingIsObject =
+        Boolean(existing.billing) &&
+        typeof existing.billing === "object" &&
+        !Array.isArray(existing.billing);
+
+    const setUpdate = {};
+    if (billingIsObject) {
+        setUpdate.plan = plan;
+        setUpdate["billing.status"] = status;
+        setUpdate["billing.plan"] = plan;
+        setUpdate["billing.paidUntil"] = plan === "free" ? null : paidUntil;
+
+        if (payerPatch) {
+            setUpdate["billing.payer.type"] = payerPatch.type;
+            setUpdate["billing.payer.userId"] = payerPatch.userId;
+            setUpdate["billing.payer.orgId"] = payerPatch.orgId;
+            setUpdate["billing.payer.note"] = payerPatch.note;
+            setUpdate["billing.payer.source"] = payerPatch.source;
+            setUpdate["billing.payer.updatedAt"] = payerPatch.updatedAt;
+        }
+    } else {
+        const preservedPayer =
+            existing.billing?.payer &&
+            typeof existing.billing.payer === "object" &&
+            !Array.isArray(existing.billing.payer)
+                ? existing.billing.payer
+                : {
+                      type: "none",
+                      userId: null,
+                      orgId: null,
+                      note: null,
+                      source: null,
+                      updatedAt: null,
+                  };
+
+        setUpdate.plan = plan;
+        setUpdate.billing = {
+            status,
+            plan,
+            paidUntil: plan === "free" ? null : paidUntil,
+            features,
+            payer: payerPatch || preservedPayer,
+        };
+    }
+
+    const card = await Card.findByIdAndUpdate(
+        cardId,
+        { $set: setUpdate },
+        { new: true, runValidators: true },
+    );
+    if (!card) return res.status(404).json({ message: "Not found" });
+
+    const after = {
+        plan: card.plan,
+        billing: {
+            status: card.billing?.status || "free",
+            plan: card.billing?.plan || "free",
+            paidUntil: card.billing?.paidUntil || null,
+        },
+        adminOverride: card.adminOverride || null,
+    };
+
+    await logAdminAction({
+        adminUserId: req.userId,
+        action: "CARD_BILLING_SET",
+        targetType: "card",
+        targetId: card._id,
+        reason,
+        meta: {
+            before,
+            after,
+        },
+    });
+
+    const dtoNow = new Date();
+    const userTier = card?.user ? await loadUserTierById(card.user) : null;
+    return res.json(
+        toCardDTO(card, dtoNow, { includePrivate: true, user: userTier }),
+    );
+}
+
+export async function adminRevokeCardBilling(req, res) {
+    const reason = requireReason(req, res);
+    if (!reason) return;
+
+    req.body = {
+        ...(req.body && typeof req.body === "object" ? req.body : {}),
+        plan: "free",
+        status: "free",
+        paidUntil: null,
+        reason,
+    };
+
+    return adminSetCardBilling(req, res);
+}
+
+export async function adminSyncCardBillingFromUser(req, res) {
+    const reason = requireReason(req, res);
+    if (!reason) return;
+
+    const cardId = String(req.params.cardId || "");
+    if (!mongoose.Types.ObjectId.isValid(cardId)) {
+        return res
+            .status(400)
+            .json({ code: "INVALID_ID", message: "Invalid cardId" });
+    }
+
+    const existing = await Card.findById(cardId);
+    if (!existing) return res.status(404).json({ message: "Not found" });
+
+    const forceRaw = req.body?.force;
+    const force =
+        forceRaw === true ||
+        forceRaw === 1 ||
+        forceRaw === "1" ||
+        String(forceRaw || "")
+            .trim()
+            .toLowerCase() === "true";
+
+    if (existing.billing?.payer?.type === "org" && force !== true) {
+        return res.status(409).json({
+            ok: false,
+            code: "ORG_PAYER_LOCKED",
+            message:
+                "Org payer lock. Use force to sync billing without changing payer.",
+        });
+    }
+
+    if (!existing.user) {
+        return res.status(400).json({
+            code: "CARD_HAS_NO_OWNER",
+            message: "Card has no owner user",
+        });
+    }
+
+    const owner = await User.findById(existing.user).select(
+        "plan subscription",
+    );
+    if (!owner) {
+        return res.status(400).json({
+            code: "OWNER_NOT_FOUND",
+            message: "Owner user not found",
+        });
+    }
+
+    const before = {
+        plan: existing.plan,
+        billing: {
+            status: existing.billing?.status || "free",
+            plan: existing.billing?.plan || "free",
+            paidUntil: existing.billing?.paidUntil || null,
+        },
+        adminOverride: existing.adminOverride || null,
+        owner: {
+            plan: owner.plan,
+            subscription: {
+                status: owner.subscription?.status || "inactive",
+                expiresAt: owner.subscription?.expiresAt || null,
+                provider: owner.subscription?.provider || null,
+            },
+        },
+    };
+
+    const now = new Date();
+    const ownerPlan = owner.plan;
+    const ownerExpiresAt = owner.subscription?.expiresAt
+        ? new Date(owner.subscription.expiresAt)
+        : null;
+
+    const shouldRevoke =
+        ownerPlan === "free" ||
+        !ownerExpiresAt ||
+        !Number.isFinite(ownerExpiresAt.getTime()) ||
+        ownerExpiresAt.getTime() <= now.getTime();
+
+    const features =
+        existing.billing?.features &&
+        typeof existing.billing.features === "object" &&
+        !Array.isArray(existing.billing.features)
+            ? existing.billing.features
+            : { analyticsPremium: false };
+
+    const nextPlan = shouldRevoke ? "free" : ownerPlan;
+
+    const preservedPayer =
+        existing.billing?.payer &&
+        typeof existing.billing.payer === "object" &&
+        !Array.isArray(existing.billing.payer)
+            ? existing.billing.payer
+            : {
+                  type: "none",
+                  userId: null,
+                  orgId: null,
+                  note: null,
+                  source: null,
+                  updatedAt: null,
+              };
+
+    const nextBillingStatus = shouldRevoke ? "free" : "active";
+    const nextBillingPlan = shouldRevoke ? "free" : ownerPlan;
+    const nextBillingPaidUntil = shouldRevoke ? null : ownerExpiresAt;
+
+    const billingIsObject =
+        Boolean(existing.billing) &&
+        typeof existing.billing === "object" &&
+        !Array.isArray(existing.billing);
+
+    const setUpdate = billingIsObject
+        ? {
+              plan: nextPlan,
+              "billing.status": nextBillingStatus,
+              "billing.plan": nextBillingPlan,
+              "billing.paidUntil": nextBillingPaidUntil,
+          }
+        : {
+              plan: nextPlan,
+              billing: {
+                  status: nextBillingStatus,
+                  plan: nextBillingPlan,
+                  paidUntil: nextBillingPaidUntil,
+                  features,
+                  payer: preservedPayer,
+              },
+          };
+
+    const card = await Card.findByIdAndUpdate(
+        cardId,
+        { $set: setUpdate },
+        { new: true, runValidators: true },
+    );
+    if (!card) return res.status(404).json({ message: "Not found" });
+
+    const after = {
+        plan: card.plan,
+        billing: {
+            status: card.billing?.status || "free",
+            plan: card.billing?.plan || "free",
+            paidUntil: card.billing?.paidUntil || null,
+        },
+        adminOverride: card.adminOverride || null,
+    };
+
+    await logAdminAction({
+        adminUserId: req.userId,
+        action: "CARD_BILLING_SYNC_FROM_USER",
+        targetType: "card",
+        targetId: card._id,
+        reason,
+        meta: {
+            mode: shouldRevoke ? "revoke" : "paid",
+            before,
+            after,
+        },
+    });
+
+    const dtoNow = new Date();
+    const userTier = card?.user ? await loadUserTierById(card.user) : null;
+    return res.json(
+        toCardDTO(card, dtoNow, { includePrivate: true, user: userTier }),
+    );
+}
+
+export async function adminClearCardAdminOverride(req, res) {
+    const reason = requireReason(req, res);
+    if (!reason) return;
+
+    const cardId = String(req.params.cardId || "");
+    if (!mongoose.Types.ObjectId.isValid(cardId)) {
+        return res
+            .status(400)
+            .json({ code: "INVALID_ID", message: "Invalid cardId" });
+    }
+
+    const existing = await Card.findById(cardId);
+    if (!existing) return res.status(404).json({ message: "Not found" });
+
+    const before = {
+        adminOverride: existing.adminOverride || null,
+        plan: existing.plan,
+        billing: {
+            status: existing.billing?.status || "free",
+            plan: existing.billing?.plan || "free",
+            paidUntil: existing.billing?.paidUntil || null,
+        },
+    };
+
+    const card = await Card.findByIdAndUpdate(
+        cardId,
+        { $set: { adminOverride: null } },
+        { new: true, runValidators: true },
+    );
+    if (!card) return res.status(404).json({ message: "Not found" });
+
+    const after = {
+        adminOverride: card.adminOverride || null,
+        plan: card.plan,
+        billing: {
+            status: card.billing?.status || "free",
+            plan: card.billing?.plan || "free",
+            paidUntil: card.billing?.paidUntil || null,
+        },
+    };
+
+    await logAdminAction({
+        adminUserId: req.userId,
+        action: "CARD_ADMIN_OVERRIDE_CLEAR",
+        targetType: "card",
+        targetId: card._id,
+        reason,
+        meta: {
+            before,
+            after,
+        },
+    });
+
+    const dtoNow = new Date();
+    const userTier = card?.user ? await loadUserTierById(card.user) : null;
+    return res.json(
+        toCardDTO(card, dtoNow, { includePrivate: true, user: userTier }),
+    );
 }
