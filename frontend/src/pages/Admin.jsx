@@ -1042,17 +1042,32 @@ export default function Admin() {
     ]);
 
     useEffect(() => {
-        const current = String(billingUserExpiresAt || "").trim();
-        if (current) return;
-        const iso = selectedUser?.subscription?.expiresAt || null;
-        setBillingUserExpiresAt(isoToDatetimeLocalValue(iso));
-
+        const nextUserId = selectedUser?._id ? String(selectedUser._id) : "";
         const currUserId = String(billingUserId || "").trim();
-        if (!currUserId && selectedUser?._id) {
-            setBillingUserId(String(selectedUser._id));
+
+        if (!nextUserId) return;
+
+        if (nextUserId !== currUserId) {
+            setBillingUserId(nextUserId);
+            setBillingUserPlan(selectedUser?.plan ?? "free");
+
+            const iso = selectedUser?.subscription?.expiresAt || null;
+            setBillingUserExpiresAt(isoToDatetimeLocalValue(iso));
+
+            // Reset card-scoped state to avoid stale cards from the previously selected user.
+            setBillingCards([]);
+            setBillingCardsStatus("idle");
+            setBillingCardsError("");
+            setBillingCardId("");
+            setBillingCardResult(null);
         }
+
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [selectedUser?._id, selectedUser?.subscription?.expiresAt]);
+    }, [
+        selectedUser?._id,
+        selectedUser?.subscription?.expiresAt,
+        selectedUser?.plan,
+    ]);
 
     useEffect(() => {
         if (!billingUserIdTrimmed || !billingUserIdLooksValid) {
@@ -3198,13 +3213,14 @@ export default function Admin() {
                                                         const slug = String(
                                                             c?.slug || "",
                                                         );
-                                                        const scope =
-                                                            String(
-                                                                c?.scope || "",
-                                                            ) ||
-                                                            (c?.orgId
-                                                                ? "org"
-                                                                : "personal");
+                                                        const scopeRaw =
+                                                            typeof c?.scope ===
+                                                            "string"
+                                                                ? c.scope
+                                                                : "";
+                                                        const scope = scopeRaw
+                                                            .trim()
+                                                            .toLowerCase();
                                                         const orgId = String(
                                                             c?.orgId || "",
                                                         );
@@ -3216,14 +3232,20 @@ export default function Admin() {
                                                                 ?.plan || "",
                                                         ).trim();
 
-                                                        const scopeLabel =
+                                                        let scopeLabel = `כרטיס: ${slug}`;
+                                                        if (
+                                                            scope === "personal"
+                                                        ) {
+                                                            scopeLabel = `אישי: ${slug}`;
+                                                        } else if (
                                                             scope === "org"
-                                                                ? `ארגוני: ${slug}${
-                                                                      orgLast6
-                                                                          ? ` (org#${orgLast6})`
-                                                                          : ""
-                                                                  }`
-                                                                : `אישי: ${slug}`;
+                                                        ) {
+                                                            scopeLabel = `ארגוני: ${slug}${
+                                                                orgLast6
+                                                                    ? ` (org#${orgLast6})`
+                                                                    : ""
+                                                            }`;
+                                                        }
 
                                                         const label = plan
                                                             ? `${scopeLabel} — ${plan}`

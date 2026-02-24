@@ -22,6 +22,7 @@ import {
     nowUtc,
     parseIsraelLocalToUtc,
 } from "../utils/time.util.js";
+import { getPersonalOrgId } from "../utils/personalOrg.util.js";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -278,6 +279,15 @@ export async function listCards(req, res) {
         Card.countDocuments(filter),
     ]);
 
+    let personalOrgIdStr = "";
+    try {
+        const personalOrgId = await getPersonalOrgId();
+        personalOrgIdStr = personalOrgId ? String(personalOrgId) : "";
+    } catch {
+        // Fallback: if personal org cannot be resolved, keep legacy scope heuristic.
+        personalOrgIdStr = "";
+    }
+
     const userIds = Array.from(
         new Set(
             items
@@ -314,10 +324,17 @@ export async function listCards(req, res) {
             ownerSummary = { type: "anonymous" };
         }
 
+        const orgIdOut = c?.orgId ? String(c.orgId) : null;
+        const isPersonalScope = !orgIdOut
+            ? true
+            : personalOrgIdStr
+              ? orgIdOut === personalOrgIdStr
+              : false;
+
         return {
             ...dto,
-            orgId: c?.orgId ? String(c.orgId) : null,
-            scope: c?.orgId ? "org" : "personal",
+            orgId: orgIdOut,
+            scope: isPersonalScope ? "personal" : "org",
             ownerSummary,
         };
     });
