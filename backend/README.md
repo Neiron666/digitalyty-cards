@@ -35,6 +35,10 @@ Runtime ≠ Sanity ≠ Migration:
 
 Do NOT run `--apply` automatically in CI.
 
+## Runbooks” / “Operational docs
+
+docs/auth-forgot-reset-runbook.md
+
 ## Release sanity gates (SSoT)
 
 Windows commands (must-pass before release):

@@ -233,12 +233,35 @@ router.post("/forgot", async (req, res) => {
                 rawToken,
             )}`;
 
-            await sendPasswordResetEmailMailjetBestEffort({
+            const sendRes = await sendPasswordResetEmailMailjetBestEffort({
                 toEmail: user.email,
                 resetLink,
                 userId: user._id,
                 resetId: created._id,
             });
+
+            // Mailer safety: if Mailjet is not configured and the send was skipped,
+            // do NOT invalidate existing tokens (avoid locking the user out of the last working link).
+            const didAttemptSend = !sendRes?.skipped;
+            if (didAttemptSend) {
+                const now = new Date();
+                try {
+                    await PasswordReset.updateMany(
+                        {
+                            userId: user._id,
+                            _id: { $ne: created._id },
+                            usedAt: null,
+                            expiresAt: { $gt: now },
+                        },
+                        { $set: { usedAt: now } },
+                    );
+                } catch (err) {
+                    console.error(
+                        "[auth] forgot invalidate previous tokens failed",
+                        err?.message || err,
+                    );
+                }
+            }
 
             break;
         } catch (err) {
