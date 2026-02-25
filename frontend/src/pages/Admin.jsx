@@ -186,6 +186,14 @@ const STR = {
         label_user_tier_until: "עד תאריך (משתמש)",
         btn_apply: "החל",
 
+        section_legend: "מקרא",
+        section_danger: "אזור סכנה",
+        confirm_delete_card: "למחוק את הכרטיס לצמיתות? פעולה זו בלתי הפיכה.",
+        confirm_delete_user: "למחוק את המשתמש לצמיתות? פעולה זו בלתי הפיכה.",
+        btn_delete_card_permanently: "מחק כרטיס לצמיתות",
+        btn_delete_user_permanently: "מחק משתמש לצמיתות",
+        msg_coming_later: "בקרוב",
+
         section_users: "משתמשים",
         section_orgs: "ארגונים",
         th_email: "אימייל",
@@ -969,9 +977,7 @@ export default function Admin() {
         const r = requireReason();
         if (!r) return;
 
-        const confirmed = window.confirm(
-            "Delete this card permanently? This cannot be undone.",
-        );
+        const confirmed = window.confirm(t("confirm_delete_card"));
         if (!confirmed) return;
 
         setActionError((prev) => ({ ...prev, delete: "" }));
@@ -1062,9 +1068,7 @@ export default function Admin() {
             return;
         }
 
-        const confirmed = window.confirm(
-            "Delete this user permanently? This cannot be undone.",
-        );
+        const confirmed = window.confirm(t("confirm_delete_user"));
         if (!confirmed) return;
 
         setLoading(true);
@@ -1330,6 +1334,85 @@ export default function Admin() {
         const nextId = order[nextIndex];
         setCurrent(nextId);
         focusTabInList(tabListRef.current, nextId);
+    }
+
+    /* ---- shared danger tab body (card) — used by mobile + desktop ---- */
+    function renderCardDangerTab() {
+        if (!selectedCard) return null;
+        return (
+            <div className={styles.sectionBlock}>
+                <div className={styles.sectionTitle}>{t("section_danger")}</div>
+                <Input
+                    label={t("label_reason")}
+                    value={reason}
+                    onChange={(e) => setReason(e.target.value)}
+                    placeholder={t("placeholder_reason")}
+                    required
+                />
+
+                <div className={styles.actionGroup}>
+                    {selectedCard.isActive ? (
+                        <Button
+                            variant="secondary"
+                            disabled={loading || actionLoading.deactivate}
+                            loading={actionLoading.deactivate}
+                            onClick={() =>
+                                runAction("deactivate", async (r) => {
+                                    const res = await adminDeactivateCard(
+                                        selectedCard._id,
+                                        r,
+                                    );
+                                    return res.data;
+                                })
+                            }
+                        >
+                            {t("btn_deactivate")}
+                        </Button>
+                    ) : (
+                        <Button
+                            variant="secondary"
+                            disabled={loading || actionLoading.reactivate}
+                            loading={actionLoading.reactivate}
+                            onClick={() =>
+                                runAction("reactivate", async (r) => {
+                                    const res = await adminReactivateCard(
+                                        selectedCard._id,
+                                        r,
+                                    );
+                                    return res.data;
+                                })
+                            }
+                        >
+                            {t("btn_reactivate")}
+                        </Button>
+                    )}
+
+                    {selectedCard.isActive && actionError.deactivate ? (
+                        <p className={styles.errorText}>
+                            {actionError.deactivate}
+                        </p>
+                    ) : null}
+                    {!selectedCard.isActive && actionError.reactivate ? (
+                        <p className={styles.errorText}>
+                            {actionError.reactivate}
+                        </p>
+                    ) : null}
+
+                    <Button
+                        variant="danger"
+                        disabled={loading || actionLoading.delete}
+                        loading={actionLoading.delete}
+                        onClick={runDeleteAction}
+                    >
+                        {t("btn_delete_card_permanently")}
+                    </Button>
+
+                    {actionError.delete ? (
+                        <p className={styles.errorText}>{actionError.delete}</p>
+                    ) : null}
+                </div>
+            </div>
+        );
     }
 
     return (
@@ -3271,6 +3354,10 @@ export default function Admin() {
                                                     </div>
                                                 </div>
                                             ) : null}
+
+                                            {selectedTab === "danger"
+                                                ? renderCardDangerTab()
+                                                : null}
                                         </>
                                     ) : null}
                                 </div>
@@ -5921,157 +6008,9 @@ export default function Admin() {
                                                 </div>
                                             ) : null}
 
-                                            {selectedTab === "danger" ? (
-                                                <div
-                                                    className={
-                                                        styles.sectionBlock
-                                                    }
-                                                >
-                                                    <div
-                                                        className={
-                                                            styles.sectionTitle
-                                                        }
-                                                    >
-                                                        Danger
-                                                    </div>
-                                                    <Input
-                                                        label={t(
-                                                            "label_reason",
-                                                        )}
-                                                        value={reason}
-                                                        onChange={(e) =>
-                                                            setReason(
-                                                                e.target.value,
-                                                            )
-                                                        }
-                                                        placeholder={t(
-                                                            "placeholder_reason",
-                                                        )}
-                                                        required
-                                                    />
-
-                                                    <div
-                                                        className={
-                                                            styles.actionGroup
-                                                        }
-                                                    >
-                                                        {selectedCard.isActive ? (
-                                                            <Button
-                                                                variant="secondary"
-                                                                disabled={
-                                                                    loading ||
-                                                                    actionLoading.deactivate
-                                                                }
-                                                                loading={
-                                                                    actionLoading.deactivate
-                                                                }
-                                                                onClick={() =>
-                                                                    runAction(
-                                                                        "deactivate",
-                                                                        async (
-                                                                            r,
-                                                                        ) => {
-                                                                            const res =
-                                                                                await adminDeactivateCard(
-                                                                                    selectedCard._id,
-                                                                                    r,
-                                                                                );
-                                                                            return res.data;
-                                                                        },
-                                                                    )
-                                                                }
-                                                            >
-                                                                {t(
-                                                                    "btn_deactivate",
-                                                                )}
-                                                            </Button>
-                                                        ) : (
-                                                            <Button
-                                                                variant="secondary"
-                                                                disabled={
-                                                                    loading ||
-                                                                    actionLoading.reactivate
-                                                                }
-                                                                loading={
-                                                                    actionLoading.reactivate
-                                                                }
-                                                                onClick={() =>
-                                                                    runAction(
-                                                                        "reactivate",
-                                                                        async (
-                                                                            r,
-                                                                        ) => {
-                                                                            const res =
-                                                                                await adminReactivateCard(
-                                                                                    selectedCard._id,
-                                                                                    r,
-                                                                                );
-                                                                            return res.data;
-                                                                        },
-                                                                    )
-                                                                }
-                                                            >
-                                                                {t(
-                                                                    "btn_reactivate",
-                                                                )}
-                                                            </Button>
-                                                        )}
-
-                                                        {selectedCard.isActive &&
-                                                        actionError.deactivate ? (
-                                                            <p
-                                                                className={
-                                                                    styles.errorText
-                                                                }
-                                                            >
-                                                                {
-                                                                    actionError.deactivate
-                                                                }
-                                                            </p>
-                                                        ) : null}
-                                                        {!selectedCard.isActive &&
-                                                        actionError.reactivate ? (
-                                                            <p
-                                                                className={
-                                                                    styles.errorText
-                                                                }
-                                                            >
-                                                                {
-                                                                    actionError.reactivate
-                                                                }
-                                                            </p>
-                                                        ) : null}
-
-                                                        <Button
-                                                            variant="danger"
-                                                            disabled={
-                                                                loading ||
-                                                                actionLoading.delete
-                                                            }
-                                                            loading={
-                                                                actionLoading.delete
-                                                            }
-                                                            onClick={
-                                                                runDeleteAction
-                                                            }
-                                                        >
-                                                            Delete permanently
-                                                        </Button>
-
-                                                        {actionError.delete ? (
-                                                            <p
-                                                                className={
-                                                                    styles.errorText
-                                                                }
-                                                            >
-                                                                {
-                                                                    actionError.delete
-                                                                }
-                                                            </p>
-                                                        ) : null}
-                                                    </div>
-                                                </div>
-                                            ) : null}
+                                            {selectedTab === "danger"
+                                                ? renderCardDangerTab()
+                                                : null}
                                         </>
                                     ) : null}
                                 </div>
@@ -6530,7 +6469,9 @@ export default function Admin() {
                                                             runUserDeletePermanent
                                                         }
                                                     >
-                                                        Delete user permanently
+                                                        {t(
+                                                            "btn_delete_user_permanently",
+                                                        )}
                                                     </Button>
 
                                                     {userDeleteError ? (
@@ -6546,7 +6487,7 @@ export default function Admin() {
                                             </div>
                                         ) : (
                                             <p className={styles.muted}>
-                                                Coming later
+                                                {t("msg_coming_later")}
                                             </p>
                                         )}
                                     </div>

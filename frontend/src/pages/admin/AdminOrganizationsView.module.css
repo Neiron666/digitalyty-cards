@@ -3,15 +3,15 @@
 }
 
 .grid {
-    display: grid;
-    grid-template-columns: 1fr;
+    display: flex;
+    flex-direction: column;
     gap: 16px;
 }
 
 @media (min-width: 1000px) {
     .grid {
-        grid-template-columns: 1fr 1fr;
-        align-items: start;
+        flex-direction: row;
+        align-items: flex-start;
     }
 }
 
@@ -20,6 +20,8 @@
     border: 1px solid rgba(0, 0, 0, 0.08);
     border-radius: 12px;
     padding: 16px;
+    flex: 1 1 0;
+    min-width: 0;
 }
 
 .h2 {
@@ -118,8 +120,8 @@
 }
 
 .form {
-    display: grid;
-    grid-template-columns: 1fr;
+    display: flex;
+    flex-direction: column;
     gap: 10px;
 }
 
@@ -129,15 +131,16 @@
 }
 
 .detailsGrid {
-    display: grid;
-    grid-template-columns: 1fr;
+    display: flex;
+    flex-direction: column;
     gap: 10px;
     margin-bottom: 12px;
 }
 
 @media (min-width: 520px) {
     .detailsGrid {
-        grid-template-columns: 1fr 1fr;
+        flex-direction: row;
+        flex-wrap: wrap;
     }
 }
 
@@ -145,6 +148,8 @@
     background: rgba(0, 0, 0, 0.02);
     border-radius: 10px;
     padding: 10px;
+    flex: 1 1 0;
+    min-width: 10rem;
 }
 
 .detailLabel {
@@ -166,8 +171,8 @@
 }
 
 .noteBlock {
-    display: grid;
-    grid-template-columns: 1fr;
+    display: flex;
+    flex-direction: column;
     gap: 10px;
     margin: 10px 0 14px;
 }
@@ -180,22 +185,27 @@
 }
 
 .memberFormRow {
-    display: grid;
-    grid-template-columns: 1fr;
+    display: flex;
+    flex-direction: column;
     gap: 10px;
     margin-bottom: 10px;
 }
 
 @media (min-width: 700px) {
     .memberFormRow {
-        grid-template-columns: 1fr 1fr;
-        align-items: end;
+        flex-direction: row;
+        align-items: flex-end;
+    }
+
+    .memberFormRow > * {
+        flex: 1 1 0;
+        min-width: 0;
     }
 }
 
 .memberCol {
-    display: grid;
-    grid-template-columns: 1fr;
+    display: flex;
+    flex-direction: column;
     gap: 6px;
 }
 

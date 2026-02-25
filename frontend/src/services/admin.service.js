@@ -182,6 +182,14 @@ export function createAdminOrgInvite(orgId, { email, role } = {}) {
     return api.post(`/admin/orgs/${orgId}/invites`, { email, role });
 }
 
+export function listAdminOrgInvites(orgId) {
+    return api.get(`/admin/orgs/${orgId}/invites`);
+}
+
+export function revokeAdminOrgInvite(orgId, inviteId) {
+    return api.post(`/admin/orgs/${orgId}/invites/${inviteId}/revoke`);
+}
+
 // Allowed hosts allowlist (admin)
 export function listAdminAllowedHosts(params = {}) {
     return api.get("/admin/allowed-hosts", { params });

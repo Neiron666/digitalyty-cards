@@ -7,10 +7,12 @@ import {
     createAdminOrganization,
     deleteAdminOrgMember,
     getAdminOrganizationById,
+    listAdminOrgInvites,
     listAdminOrgMembers,
     listAdminOrganizations,
     patchAdminOrgMember,
     patchAdminOrganization,
+    revokeAdminOrgInvite,
 } from "../../services/admin.service";
 import styles from "./AdminOrganizationsView.module.css";
 
@@ -124,6 +126,10 @@ export default function AdminOrganizationsView() {
 
     const [memberBusyId, setMemberBusyId] = useState(null);
 
+    const [orgInvites, setOrgInvites] = useState([]);
+    const [orgInvitesLoading, setOrgInvitesLoading] = useState(false);
+    const [revokeBusyId, setRevokeBusyId] = useState(null);
+
     const flashTimerRef = useRef(null);
 
     function showFlash(type, text) {
@@ -194,10 +200,30 @@ export default function AdminOrganizationsView() {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [selectedOrgId, membersPage, membersLimit]);
 
+    async function loadInvites(orgId) {
+        const id = String(orgId || "");
+        if (!id) {
+            setOrgInvites([]);
+            return;
+        }
+        setOrgInvitesLoading(true);
+        try {
+            const res = await listAdminOrgInvites(id);
+            const items = res?.data?.items;
+            setOrgInvites(Array.isArray(items) ? items : []);
+        } catch {
+            setOrgInvites([]);
+        } finally {
+            setOrgInvitesLoading(false);
+        }
+    }
+
     useEffect(() => {
         setInviteEmail("");
         setInviteRole("member");
         setInviteLink("");
+        loadInvites(selectedOrgId);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [selectedOrgId]);
 
     useEffect(() => {
@@ -379,6 +405,12 @@ export default function AdminOrganizationsView() {
 
     async function handleMemberDelete(member) {
         if (!selectedOrgId || !member?.id) return;
+
+        const confirmed = window.confirm(
+            "להסיר את החבר מהארגון? פעולה זו בלתי הפיכה.",
+        );
+        if (!confirmed) return;
+
         setMemberBusyId(member.id);
         try {
             await deleteAdminOrgMember(selectedOrgId, member.id);
@@ -407,6 +439,7 @@ export default function AdminOrganizationsView() {
             if (link) {
                 setInviteLink(link);
                 showFlash("success", "ההזמנה נוצרה.");
+                loadInvites(selectedOrgId);
             } else {
                 showFlash("error", "אירעה שגיאה. נסה שוב.");
             }
@@ -414,6 +447,40 @@ export default function AdminOrganizationsView() {
             showFlash("error", mapAdminApiError(err));
         } finally {
             setInviteBusy(false);
+        }
+    }
+
+    function inviteStatus(inv) {
+        if (inv.revokedAt) return "בוטלה";
+        if (inv.usedAt) return "נוצלה";
+        if (inv.expiresAt && new Date(inv.expiresAt) < new Date())
+            return "פג תוקף";
+        return "ממתינה";
+    }
+
+    async function handleRevokeInvite(inv) {
+        if (!selectedOrgId || !inv?.id) return;
+        const confirmed = window.confirm("לבטל את ההזמנה? לא ניתן לשחזר.");
+        if (!confirmed) return;
+        setRevokeBusyId(inv.id);
+        try {
+            await revokeAdminOrgInvite(selectedOrgId, inv.id);
+            showFlash("success", "ההזמנה בוטלה.");
+            await loadInvites(selectedOrgId);
+        } catch (err) {
+            showFlash("error", mapAdminApiError(err));
+        } finally {
+            setRevokeBusyId(null);
+        }
+    }
+
+    async function handleCopyInviteLink() {
+        if (!inviteLink) return;
+        try {
+            await navigator.clipboard.writeText(inviteLink);
+            showFlash("success", "הקישור הועתק.");
+        } catch {
+            showFlash("error", "לא ניתן להעתיק. העתק ידנית.");
         }
     }
 
@@ -651,7 +718,7 @@ export default function AdminOrganizationsView() {
                                 <div className={styles.memberFormRow}>
                                     <div className={styles.memberCol}>
                                         <label className={styles.label}>
-                                            Email
+                                            אימייל
                                         </label>
                                         <Input
                                             value={inviteEmail}
@@ -664,7 +731,7 @@ export default function AdminOrganizationsView() {
                                     </div>
                                     <div className={styles.memberCol}>
                                         <label className={styles.label}>
-                                            Role
+                                            תפקיד
                                         </label>
                                         <select
                                             className={styles.select}
@@ -692,7 +759,7 @@ export default function AdminOrganizationsView() {
                                                 ).trim()
                                             }
                                         >
-                                            Create invite
+                                            צור הזמנה
                                         </Button>
                                     </div>
                                 </div>
@@ -700,7 +767,7 @@ export default function AdminOrganizationsView() {
                                 {inviteLink ? (
                                     <div className={styles.memberCol}>
                                         <label className={styles.label}>
-                                            Invite link
+                                            קישור הזמנה
                                         </label>
                                         <div
                                             className={styles.detailValueMono}
@@ -708,10 +775,117 @@ export default function AdminOrganizationsView() {
                                         >
                                             {inviteLink}
                                         </div>
+                                        <Button
+                                            size="small"
+                                            onClick={handleCopyInviteLink}
+                                        >
+                                            העתק קישור
+                                        </Button>
                                     </div>
                                 ) : null}
                             </form>
 
+                            {/* ─── Invites table ─── */}
+                            <h3 className={styles.h3}>הזמנות</h3>
+                            {orgInvitesLoading ? (
+                                <p>טוען הזמנות…</p>
+                            ) : orgInvites.length === 0 ? (
+                                <p>אין הזמנות.</p>
+                            ) : (
+                                <div className={styles.tableWrap}>
+                                    <table className={styles.table}>
+                                        <thead>
+                                            <tr>
+                                                <th>אימייל</th>
+                                                <th>תפקיד</th>
+                                                <th>סטטוס</th>
+                                                <th>נוצר</th>
+                                                <th />
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {orgInvites.map((inv) => {
+                                                const status =
+                                                    inviteStatus(inv);
+                                                const canRevoke =
+                                                    status === "ממתינה";
+                                                const busy =
+                                                    revokeBusyId === inv.id;
+                                                return (
+                                                    <tr
+                                                        key={inv.id}
+                                                        className={styles.row}
+                                                    >
+                                                        <td
+                                                            className={
+                                                                styles.cellMono
+                                                            }
+                                                            dir="ltr"
+                                                        >
+                                                            {inv.email}
+                                                        </td>
+                                                        <td
+                                                            className={
+                                                                styles.cell
+                                                            }
+                                                        >
+                                                            {inv.role}
+                                                        </td>
+                                                        <td
+                                                            className={
+                                                                styles.cell
+                                                            }
+                                                        >
+                                                            {status}
+                                                        </td>
+                                                        <td
+                                                            className={
+                                                                styles.cell
+                                                            }
+                                                            dir="ltr"
+                                                        >
+                                                            {inv.createdAt
+                                                                ? new Date(
+                                                                      inv.createdAt,
+                                                                  ).toLocaleDateString(
+                                                                      "he-IL",
+                                                                  )
+                                                                : "—"}
+                                                        </td>
+                                                        <td
+                                                            className={
+                                                                styles.cellActions
+                                                            }
+                                                        >
+                                                            {canRevoke ? (
+                                                                <Button
+                                                                    size="small"
+                                                                    variant="danger"
+                                                                    disabled={
+                                                                        busy
+                                                                    }
+                                                                    onClick={() =>
+                                                                        handleRevokeInvite(
+                                                                            inv,
+                                                                        )
+                                                                    }
+                                                                >
+                                                                    {busy
+                                                                        ? "מבטל…"
+                                                                        : "ביטול"}
+                                                                </Button>
+                                                            ) : null}
+                                                        </td>
+                                                    </tr>
+                                                );
+                                            })}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            )}
+
+                            {/* ─── Members table ─── */}
+                            <h3 className={styles.h3}>חברים</h3>
                             <div className={styles.tableWrap}>
                                 <table className={styles.table}>
                                     <thead>
