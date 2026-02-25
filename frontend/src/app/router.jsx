@@ -19,6 +19,8 @@ import Register from "../pages/Register";
 import InviteAccept from "../pages/InviteAccept";
 import ForgotPassword from "../pages/ForgotPassword";
 import ResetPassword from "../pages/ResetPassword";
+import SignupLinkRequest from "../pages/SignupLinkRequest";
+import SignupConsume from "../pages/SignupConsume";
 
 // product
 import Dashboard from "../pages/Dashboard";
@@ -64,6 +66,8 @@ const router = createBrowserRouter([
             { path: "invite", element: <InviteAccept /> },
             { path: "forgot-password", element: <ForgotPassword /> },
             { path: "reset-password", element: <ResetPassword /> },
+            { path: "signup-link", element: <SignupLinkRequest /> },
+            { path: "signup", element: <SignupConsume /> },
 
             // product
             { path: "dashboard", element: <Dashboard /> },

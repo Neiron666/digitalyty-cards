@@ -38,6 +38,7 @@ Do NOT run `--apply` automatically in CI.
 ## Runbooks” / “Operational docs
 
 docs/auth-forgot-reset-runbook.md
+docs/auth-signup-token-runbook.md
 
 ## Release sanity gates (SSoT)
 

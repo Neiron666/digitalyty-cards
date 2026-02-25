@@ -1,0 +1,15 @@
+.form {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.error {
+    color: var(--c-danger);
+    font-size: var(--fs-14);
+}
+
+.message {
+    color: var(--c-text);
+    font-size: var(--fs-14);
+}

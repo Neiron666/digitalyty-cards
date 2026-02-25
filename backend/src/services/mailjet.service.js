@@ -46,6 +46,16 @@ function getMailjetConfig() {
             ? process.env.MAILJET_RESET_TEXT_PREFIX.trim()
             : "";
 
+    const signupSubjectRaw =
+        typeof process.env.MAILJET_SIGNUP_SUBJECT === "string"
+            ? process.env.MAILJET_SIGNUP_SUBJECT.trim()
+            : "";
+
+    const signupTextPrefixRaw =
+        typeof process.env.MAILJET_SIGNUP_TEXT_PREFIX === "string"
+            ? process.env.MAILJET_SIGNUP_TEXT_PREFIX.trim()
+            : "";
+
     return {
         enabled,
         apiKey,
@@ -61,6 +71,11 @@ function getMailjetConfig() {
         resetTextPrefix:
             resetTextPrefixRaw ||
             "קיבלנו בקשה לאיפוס סיסמה. אם לא ביקשתם זאת, אפשר להתעלם מההודעה הזו.",
+
+        signupSubject: signupSubjectRaw || "Complete your signup",
+        signupTextPrefix:
+            signupTextPrefixRaw ||
+            "Open the link to complete your signup. If you already have an account, use Login / Forgot password.",
     };
 }
 
@@ -252,6 +267,83 @@ export async function sendPasswordResetEmailMailjetBestEffort({
         console.error("[mailjet] reset send error", {
             userId: String(userId || ""),
             resetId: String(resetId || ""),
+            toEmail: toEmailNormalized,
+            error: err?.message || err,
+        });
+        return { ok: false };
+    }
+}
+
+export async function sendSignupLinkEmailMailjetBestEffort({
+    toEmail,
+    signupLink,
+    emailNormalized,
+    tokenId,
+}) {
+    const cfg = getMailjetConfig();
+    const toEmailNormalized = normalizeEmail(toEmail);
+
+    if (!cfg.enabled) {
+        return { ok: true, skipped: true, reason: "MAILJET_NOT_CONFIGURED" };
+    }
+
+    if (!toEmailNormalized || !signupLink) {
+        return { ok: false, skipped: true, reason: "INVALID_INPUT" };
+    }
+
+    const auth = Buffer.from(`${cfg.apiKey}:${cfg.apiSecret}`).toString(
+        "base64",
+    );
+
+    const subject = cfg.signupSubject;
+    const prefix = cfg.signupTextPrefix;
+    const text = `${prefix}\n\nOpen the link:\n${signupLink}\n`;
+
+    const payload = {
+        Messages: [
+            {
+                From: {
+                    Email: cfg.fromEmail,
+                    Name: cfg.fromName,
+                },
+                To: [{ Email: toEmailNormalized }],
+                Subject: subject,
+                TextPart: text,
+            },
+        ],
+    };
+
+    const body = JSON.stringify(payload);
+
+    try {
+        const res = await httpsRequestJson({
+            hostname: "api.mailjet.com",
+            path: "/v3.1/send",
+            method: "POST",
+            timeoutMs: 10_000,
+            headers: {
+                Authorization: `Basic ${auth}`,
+                "Content-Type": "application/json",
+                "Content-Length": Buffer.byteLength(body),
+            },
+            body,
+        });
+
+        const ok = res.statusCode >= 200 && res.statusCode < 300;
+        if (!ok) {
+            console.error("[mailjet] signup send failed", {
+                statusCode: res.statusCode,
+                emailNormalized: String(emailNormalized || ""),
+                tokenId: String(tokenId || ""),
+                toEmail: toEmailNormalized,
+            });
+        }
+
+        return { ok };
+    } catch (err) {
+        console.error("[mailjet] signup send error", {
+            emailNormalized: String(emailNormalized || ""),
+            tokenId: String(tokenId || ""),
             toEmail: toEmailNormalized,
             error: err?.message || err,
         });

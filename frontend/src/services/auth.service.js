@@ -21,3 +21,9 @@ export const forgotPassword = (email) => api.post("/auth/forgot", { email });
 
 export const resetPassword = (token, password) =>
     api.post("/auth/reset", { token, password });
+
+export const requestSignupLink = (email) =>
+    api.post("/auth/signup-link", { email });
+
+export const consumeSignupToken = (token, password) =>
+    api.post("/auth/signup-consume", { token, password });

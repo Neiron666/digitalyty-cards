@@ -1,0 +1,32 @@
+.form {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.error {
+    color: var(--c-danger);
+    font-size: var(--fs-14);
+}
+
+.messageBox {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.message {
+    color: var(--c-text);
+    font-size: var(--fs-14);
+}
+
+.hint {
+    color: var(--c-text-muted);
+    font-size: var(--fs-12);
+}
+
+.sep {
+    padding-inline: 8px;
+    color: var(--c-text-muted);
+    font-size: var(--fs-14);
+}

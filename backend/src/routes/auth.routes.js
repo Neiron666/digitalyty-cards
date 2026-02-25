@@ -3,22 +3,31 @@ import crypto from "crypto";
 import bcrypt from "bcrypt";
 import User from "../models/User.model.js";
 import PasswordReset from "../models/PasswordReset.model.js";
+import EmailSignupToken from "../models/EmailSignupToken.model.js";
 import { signToken } from "../utils/jwt.js";
 import { claimAnonymousCardForUser } from "../services/claimCard.service.js";
 import { requireAuth } from "../middlewares/auth.middleware.js";
 import { getSiteUrl } from "../utils/siteUrl.util.js";
 import { sendPasswordResetEmailMailjetBestEffort } from "../services/mailjet.service.js";
+import { sendSignupLinkEmailMailjetBestEffort } from "../services/mailjet.service.js";
 
 const router = Router();
 
 const RESET_TOKEN_TTL_MS = 30 * 60 * 1000;
+const SIGNUP_TOKEN_TTL_MS = 30 * 60 * 1000;
 
 const AUTH_RATE_WINDOW_MS = 10 * 60 * 1000;
 const FORGOT_RATE_LIMIT = 20;
 const RESET_RATE_LIMIT = 40;
+const SIGNUP_LINK_RATE_LIMIT = 30;
+const SIGNUP_CONSUME_RATE_LIMIT = 60;
+const SIGNUP_LINK_EMAIL_RATE_LIMIT = 5;
 
 const inMemoryForgotRate = new Map();
 const inMemoryResetRate = new Map();
+const inMemorySignupLinkRate = new Map();
+const inMemorySignupConsumeRate = new Map();
+const inMemorySignupLinkEmailRate = new Map();
 let rateSweepTick = 0;
 const RATE_SWEEP_EVERY = 500;
 
@@ -70,6 +79,27 @@ function rateLimitByIp(req, map, limit) {
     return true;
 }
 
+function rateLimitByKey(key, map, limit) {
+    if (!key) return true;
+
+    const now = Date.now();
+
+    rateSweepTick += 1;
+    if (rateSweepTick % RATE_SWEEP_EVERY === 0) {
+        sweepRateMap(map, now);
+    }
+
+    const entry = map.get(key);
+    if (!entry || entry.resetAt <= now) {
+        map.set(key, { count: 1, resetAt: now + AUTH_RATE_WINDOW_MS });
+        return true;
+    }
+
+    entry.count += 1;
+    if (entry.count > limit) return false;
+    return true;
+}
+
 function normalizeEmail(value) {
     if (typeof value !== "string") return "";
     return value.trim().toLowerCase();
@@ -81,6 +111,17 @@ function isValidEmail(value) {
     if (email.length > 254) return false;
     // Minimal sanity check (we rely on User collection as the real validator).
     return email.includes("@") && !email.includes(" ");
+}
+
+async function findUserByEmailCaseInsensitive(emailNormalized) {
+    let user = await User.findOne({ email: emailNormalized });
+    if (!user) {
+        user = await User.findOne({ email: emailNormalized }).collation({
+            locale: "en",
+            strength: 2,
+        });
+    }
+    return user;
 }
 
 function sha256Hex(value) {
@@ -276,6 +317,176 @@ router.post("/forgot", async (req, res) => {
 
     // Best-effort / anti-enumeration: never reveal status.
     return res.sendStatus(204);
+});
+
+// SIGNUP VIA EMAIL TOKEN (magic link)
+router.post("/signup-link", async (req, res) => {
+    try {
+        // Anti-enumeration invariant: always 204.
+        if (
+            !rateLimitByIp(
+                req,
+                inMemorySignupLinkRate,
+                SIGNUP_LINK_RATE_LIMIT,
+            )
+        ) {
+            return res.sendStatus(204);
+        }
+
+        const rawEmail = req.body?.email;
+        const emailNormalized = normalizeEmail(rawEmail);
+
+        // Anti-enumeration: always 204, even for invalid inputs.
+        if (!isValidEmail(rawEmail)) {
+            return res.sendStatus(204);
+        }
+
+        // Per-email rate limit: protect against targeted abuse on a single address.
+        if (
+            !rateLimitByKey(
+                emailNormalized,
+                inMemorySignupLinkEmailRate,
+                SIGNUP_LINK_EMAIL_RATE_LIMIT,
+            )
+        ) {
+            return res.sendStatus(204);
+        }
+
+        const existing = await findUserByEmailCaseInsensitive(emailNormalized);
+        if (existing) {
+            return res.sendStatus(204);
+        }
+
+        const siteUrl = getSiteUrl();
+
+        // Retry once on duplicate tokenHash just in case.
+        let created = null;
+        for (let attempt = 0; attempt < 2; attempt += 1) {
+            const rawToken = crypto.randomBytes(32).toString("hex");
+            const tokenHash = sha256Hex(rawToken);
+            const expiresAt = new Date(Date.now() + SIGNUP_TOKEN_TTL_MS);
+
+            try {
+                created = await EmailSignupToken.create({
+                    emailNormalized,
+                    tokenHash,
+                    expiresAt,
+                });
+
+                const signupLink = `${siteUrl}/signup?token=${encodeURIComponent(
+                    rawToken,
+                )}`;
+
+                const sendRes = await sendSignupLinkEmailMailjetBestEffort({
+                    toEmail: emailNormalized,
+                    signupLink,
+                    emailNormalized,
+                    tokenId: created._id,
+                });
+
+                // Single-active: invalidate other active tokens only if send was attempted.
+                const didAttemptSend = !sendRes?.skipped;
+                if (didAttemptSend) {
+                    const now = new Date();
+                    try {
+                        await EmailSignupToken.updateMany(
+                            {
+                                emailNormalized,
+                                _id: { $ne: created._id },
+                                usedAt: null,
+                                expiresAt: { $gt: now },
+                            },
+                            { $set: { usedAt: now } },
+                        );
+                    } catch (err) {
+                        console.error(
+                            "[auth] signup-link invalidate previous tokens failed",
+                            err?.message || err,
+                        );
+                    }
+                }
+
+                break;
+            } catch (err) {
+                if (err && (err.code === 11000 || err.code === 11001)) {
+                    continue;
+                }
+                console.error("[auth] signup-link failed", err?.message || err);
+                break;
+            }
+        }
+
+        return res.sendStatus(204);
+    } catch (err) {
+        console.error("[auth] signup-link handler failed", err?.message || err);
+        return res.sendStatus(204);
+    }
+});
+
+// No per-email limit on consume: email is unknown until after DB consume; adding a DB read just for rate limiting would increase blast radius.
+router.post("/signup-consume", async (req, res) => {
+    const fail = () => res.status(400).json({ message: "Unable to complete signup" });
+
+    try {
+        // Enterprise contract: neutral 400 on any failure (including rate limit).
+        if (
+            !rateLimitByIp(
+                req,
+                inMemorySignupConsumeRate,
+                SIGNUP_CONSUME_RATE_LIMIT,
+            )
+        ) {
+            return fail();
+        }
+
+        const rawToken = String(req.body?.token || "").trim();
+        const password = req.body?.password;
+
+        if (!rawToken || typeof password !== "string" || !password) {
+            return fail();
+        }
+
+        const tokenHash = sha256Hex(rawToken);
+        const now = new Date();
+
+        // Atomically mark token as used to prevent reuse.
+        const consumed = await EmailSignupToken.findOneAndUpdate(
+            { tokenHash, usedAt: null, expiresAt: { $gt: now } },
+            { $set: { usedAt: now } },
+            { new: false },
+        );
+
+        if (!consumed) {
+            return fail();
+        }
+
+        const emailNormalized = normalizeEmail(consumed.emailNormalized);
+        if (!emailNormalized || !isValidEmail(emailNormalized)) {
+            return fail();
+        }
+
+        const existing = await findUserByEmailCaseInsensitive(emailNormalized);
+        if (existing) {
+            return fail();
+        }
+
+        const passwordHash = await bcrypt.hash(password, 10);
+
+        let user;
+        try {
+            user = await User.create({ email: emailNormalized, passwordHash });
+        } catch (err) {
+            if (err && (err.code === 11000 || err.code === 11001)) {
+                return fail();
+            }
+            throw err;
+        }
+
+        return res.json({ token: signToken(user._id) });
+    } catch (err) {
+        console.error("[auth] signup-consume failed", err?.message || err);
+        return fail();
+    }
 });
 
 // RESET PASSWORD
