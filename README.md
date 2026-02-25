@@ -13,6 +13,7 @@ Before making any changes, read and follow our corporate standards:
 
 - **Typography & Mobile-First Policy (ENFORCED):** `docs/policies/typography-mobile-first.md`
 - [Runbook: SEO & Scripts (GTM / GA4 / Meta Pixel)](docs/runbooks/seo-scripts.md)
+- [Runbook: Backend Verification & Deploy (Render + Windows)](docs/runbooks/backend-verification-and-deploy.md)
 
 Hard constraints (non-negotiable):
 
