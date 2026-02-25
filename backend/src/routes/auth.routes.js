@@ -324,11 +324,7 @@ router.post("/signup-link", async (req, res) => {
     try {
         // Anti-enumeration invariant: always 204.
         if (
-            !rateLimitByIp(
-                req,
-                inMemorySignupLinkRate,
-                SIGNUP_LINK_RATE_LIMIT,
-            )
+            !rateLimitByIp(req, inMemorySignupLinkRate, SIGNUP_LINK_RATE_LIMIT)
         ) {
             return res.sendStatus(204);
         }
@@ -425,7 +421,8 @@ router.post("/signup-link", async (req, res) => {
 
 // No per-email limit on consume: email is unknown until after DB consume; adding a DB read just for rate limiting would increase blast radius.
 router.post("/signup-consume", async (req, res) => {
-    const fail = () => res.status(400).json({ message: "Unable to complete signup" });
+    const fail = () =>
+        res.status(400).json({ message: "Unable to complete signup" });
 
     try {
         // Enterprise contract: neutral 400 on any failure (including rate limit).
