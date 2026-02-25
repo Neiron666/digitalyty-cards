@@ -1,11 +1,74 @@
 import { Router } from "express";
+import crypto from "crypto";
 import bcrypt from "bcrypt";
 import User from "../models/User.model.js";
+import PasswordReset from "../models/PasswordReset.model.js";
 import { signToken } from "../utils/jwt.js";
 import { claimAnonymousCardForUser } from "../services/claimCard.service.js";
 import { requireAuth } from "../middlewares/auth.middleware.js";
+import { getSiteUrl } from "../utils/siteUrl.util.js";
+import { sendPasswordResetEmailMailjetBestEffort } from "../services/mailjet.service.js";
 
 const router = Router();
+
+const RESET_TOKEN_TTL_MS = 30 * 60 * 1000;
+
+const AUTH_RATE_WINDOW_MS = 10 * 60 * 1000;
+const FORGOT_RATE_LIMIT = 20;
+const RESET_RATE_LIMIT = 40;
+
+const inMemoryForgotRate = new Map();
+const inMemoryResetRate = new Map();
+let rateSweepTick = 0;
+const RATE_SWEEP_EVERY = 500;
+
+function getClientIp(req) {
+    const xf = req.headers["x-forwarded-for"];
+    if (typeof xf === "string" && xf.trim()) {
+        return xf.split(",")[0].trim();
+    }
+    return req.ip || req.connection?.remoteAddress || "";
+}
+
+function sweepRateMap(map, now) {
+    // Prevent unbounded growth (best-effort).
+    if (!map || map.size <= 10_000) {
+        for (const [k, v] of map.entries()) {
+            if (!v || v.resetAt <= now) map.delete(k);
+        }
+        return;
+    }
+
+    // If map got too big, aggressively remove some entries.
+    let removed = 0;
+    for (const key of map.keys()) {
+        map.delete(key);
+        removed += 1;
+        if (removed >= 2000) break;
+    }
+}
+
+function rateLimitByIp(req, map, limit) {
+    const ip = getClientIp(req);
+    if (!ip) return true;
+
+    const now = Date.now();
+
+    rateSweepTick += 1;
+    if (rateSweepTick % RATE_SWEEP_EVERY === 0) {
+        sweepRateMap(map, now);
+    }
+
+    const entry = map.get(ip);
+    if (!entry || entry.resetAt <= now) {
+        map.set(ip, { count: 1, resetAt: now + AUTH_RATE_WINDOW_MS });
+        return true;
+    }
+
+    entry.count += 1;
+    if (entry.count > limit) return false;
+    return true;
+}
 
 function normalizeEmail(value) {
     if (typeof value !== "string") return "";
@@ -18,6 +81,13 @@ function isValidEmail(value) {
     if (email.length > 254) return false;
     // Minimal sanity check (we rely on User collection as the real validator).
     return email.includes("@") && !email.includes(" ");
+}
+
+function sha256Hex(value) {
+    return crypto
+        .createHash("sha256")
+        .update(String(value || ""))
+        .digest("hex");
 }
 
 function noStore(req, res, next) {
@@ -111,6 +181,122 @@ router.post("/login", async (req, res) => {
     if (!ok) return res.status(401).json({ message: "Invalid credentials" });
 
     res.json({ token: signToken(user._id) });
+});
+
+// FORGOT PASSWORD (anti-enumeration)
+router.post("/forgot", async (req, res) => {
+    if (!rateLimitByIp(req, inMemoryForgotRate, FORGOT_RATE_LIMIT)) {
+        return res.status(429).json({
+            code: "RATE_LIMITED",
+            message: "Too many requests",
+        });
+    }
+
+    const rawEmail = req.body?.email;
+    const email = normalizeEmail(rawEmail);
+
+    // Anti-enumeration: always 204, even for invalid inputs.
+    if (!isValidEmail(rawEmail)) {
+        return res.sendStatus(204);
+    }
+
+    // 2-step lookup to prefer the default index path; fallback supports legacy casing.
+    let user = await User.findOne({ email });
+    if (!user) {
+        user = await User.findOne({ email }).collation({
+            locale: "en",
+            strength: 2,
+        });
+    }
+
+    if (!user) {
+        return res.sendStatus(204);
+    }
+
+    const siteUrl = getSiteUrl();
+
+    // Extremely low collision risk, but retry once on duplicate key just in case.
+    let created = null;
+    for (let attempt = 0; attempt < 2; attempt += 1) {
+        const rawToken = crypto.randomBytes(32).toString("hex");
+        const tokenHash = sha256Hex(rawToken);
+        const expiresAt = new Date(Date.now() + RESET_TOKEN_TTL_MS);
+
+        try {
+            created = await PasswordReset.create({
+                userId: user._id,
+                tokenHash,
+                expiresAt,
+            });
+
+            const resetLink = `${siteUrl}/reset-password?token=${encodeURIComponent(
+                rawToken,
+            )}`;
+
+            await sendPasswordResetEmailMailjetBestEffort({
+                toEmail: user.email,
+                resetLink,
+                userId: user._id,
+                resetId: created._id,
+            });
+
+            break;
+        } catch (err) {
+            // Duplicate tokenHash (unlikely): retry once. Any other error: stop.
+            if (err && (err.code === 11000 || err.code === 11001)) {
+                continue;
+            }
+            console.error("[auth] forgot failed", err?.message || err);
+            break;
+        }
+    }
+
+    // Best-effort / anti-enumeration: never reveal status.
+    return res.sendStatus(204);
+});
+
+// RESET PASSWORD
+router.post("/reset", async (req, res) => {
+    if (!rateLimitByIp(req, inMemoryResetRate, RESET_RATE_LIMIT)) {
+        return res.status(429).json({
+            code: "RATE_LIMITED",
+            message: "Too many requests",
+        });
+    }
+
+    const rawToken = String(req.body?.token || "").trim();
+    const password = req.body?.password;
+
+    if (!rawToken || typeof password !== "string" || !password) {
+        return res.status(400).json({ message: "Unable to reset password" });
+    }
+
+    const tokenHash = sha256Hex(rawToken);
+    const now = new Date();
+
+    // Atomically mark token as used to prevent reuse.
+    const reset = await PasswordReset.findOneAndUpdate(
+        { tokenHash, usedAt: null, expiresAt: { $gt: now } },
+        { $set: { usedAt: now } },
+        { new: false },
+    );
+
+    if (!reset) {
+        return res.status(400).json({ message: "Unable to reset password" });
+    }
+
+    const passwordHash = await bcrypt.hash(password, 10);
+
+    const upd = await User.updateOne(
+        { _id: reset.userId },
+        { $set: { passwordHash } },
+    );
+
+    if (!upd?.matchedCount) {
+        return res.status(400).json({ message: "Unable to reset password" });
+    }
+
+    return res.sendStatus(204);
 });
 
 // ME (JWT-only)

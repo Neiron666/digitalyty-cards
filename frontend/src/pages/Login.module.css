@@ -2,3 +2,10 @@
     color: #ef4444;
     font-size: var(--fs-ui);
 }
+
+.note {
+    color: var(--text-muted);
+    font-size: var(--fs-ui);
+    text-align: center;
+    margin-bottom: 10px;
+}

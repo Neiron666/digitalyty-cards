@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import AuthLayout from "../components/auth/AuthLayout";
 import Input from "../components/ui/Input";
@@ -8,10 +8,13 @@ import styles from "./Login.module.css";
 
 function Login() {
     const navigate = useNavigate();
+    const [searchParams] = useSearchParams();
     const { login } = useAuth();
     const [form, setForm] = useState({ email: "", password: "" });
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
+
+    const resetDone = searchParams.get("reset") === "1";
 
     function update(field, value) {
         setForm((p) => ({ ...p, [field]: value }));
@@ -36,10 +39,20 @@ function Login() {
             title="התחברות"
             footer={
                 <>
-                    אין לך חשבון? <Link to="/register">צור חשבון</Link>
+                    <div>
+                        אין לך חשבון? <Link to="/register">צור חשבון</Link>
+                    </div>
+                    <div>
+                        <Link to="/forgot-password">שכחת סיסמה?</Link>
+                    </div>
                 </>
             }
         >
+            {resetDone && (
+                <p className={styles.note}>
+                    הסיסמה עודכנה בהצלחה. אפשר להתחבר.
+                </p>
+            )}
             <form onSubmit={handleSubmit}>
                 <Input
                     label="אימייל"

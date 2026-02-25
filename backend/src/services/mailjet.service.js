@@ -36,6 +36,16 @@ function getMailjetConfig() {
             ? process.env.MAILJET_INVITE_TEXT_PREFIX.trim()
             : "";
 
+    const resetSubjectRaw =
+        typeof process.env.MAILJET_RESET_SUBJECT === "string"
+            ? process.env.MAILJET_RESET_SUBJECT.trim()
+            : "";
+
+    const resetTextPrefixRaw =
+        typeof process.env.MAILJET_RESET_TEXT_PREFIX === "string"
+            ? process.env.MAILJET_RESET_TEXT_PREFIX.trim()
+            : "";
+
     return {
         enabled,
         apiKey,
@@ -47,6 +57,10 @@ function getMailjetConfig() {
         inviteTextPrefix:
             inviteTextPrefixRaw ||
             "You have been invited to join an organization.",
+        resetSubject: resetSubjectRaw || "איפוס סיסמה",
+        resetTextPrefix:
+            resetTextPrefixRaw ||
+            "קיבלנו בקשה לאיפוס סיסמה. אם לא ביקשתם זאת, אפשר להתעלם מההודעה הזו.",
     };
 }
 
@@ -161,6 +175,83 @@ export async function sendOrgInviteEmailMailjetBestEffort({
         console.error("[mailjet] invite send error", {
             orgId: String(orgId || ""),
             inviteId: String(inviteId || ""),
+            toEmail: toEmailNormalized,
+            error: err?.message || err,
+        });
+        return { ok: false };
+    }
+}
+
+export async function sendPasswordResetEmailMailjetBestEffort({
+    toEmail,
+    resetLink,
+    userId,
+    resetId,
+}) {
+    const cfg = getMailjetConfig();
+    const toEmailNormalized = normalizeEmail(toEmail);
+
+    if (!cfg.enabled) {
+        return { ok: true, skipped: true, reason: "MAILJET_NOT_CONFIGURED" };
+    }
+
+    if (!toEmailNormalized || !resetLink) {
+        return { ok: false, skipped: true, reason: "INVALID_INPUT" };
+    }
+
+    const auth = Buffer.from(`${cfg.apiKey}:${cfg.apiSecret}`).toString(
+        "base64",
+    );
+
+    const subject = cfg.resetSubject;
+    const prefix = cfg.resetTextPrefix;
+    const text = `${prefix}\n\nכדי לאפס את הסיסמה, פתחו את הקישור:\n${resetLink}\n`;
+
+    const payload = {
+        Messages: [
+            {
+                From: {
+                    Email: cfg.fromEmail,
+                    Name: cfg.fromName,
+                },
+                To: [{ Email: toEmailNormalized }],
+                Subject: subject,
+                TextPart: text,
+            },
+        ],
+    };
+
+    const body = JSON.stringify(payload);
+
+    try {
+        const res = await httpsRequestJson({
+            hostname: "api.mailjet.com",
+            path: "/v3.1/send",
+            method: "POST",
+            timeoutMs: 10_000,
+            headers: {
+                Authorization: `Basic ${auth}`,
+                "Content-Type": "application/json",
+                "Content-Length": Buffer.byteLength(body),
+            },
+            body,
+        });
+
+        const ok = res.statusCode >= 200 && res.statusCode < 300;
+        if (!ok) {
+            console.error("[mailjet] reset send failed", {
+                statusCode: res.statusCode,
+                userId: String(userId || ""),
+                resetId: String(resetId || ""),
+                toEmail: toEmailNormalized,
+            });
+        }
+
+        return { ok };
+    } catch (err) {
+        console.error("[mailjet] reset send error", {
+            userId: String(userId || ""),
+            resetId: String(resetId || ""),
             toEmail: toEmailNormalized,
             error: err?.message || err,
         });

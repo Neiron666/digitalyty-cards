@@ -20,6 +20,10 @@ export function getAdminCardById(id) {
     return api.get(`/admin/cards/${id}`);
 }
 
+export function listAdminAudit(params = {}) {
+    return api.get("/admin/audit", { params });
+}
+
 export function adminDeactivateCard(id, reason) {
     return api.post(`/admin/cards/${id}/deactivate`, { reason });
 }
@@ -86,10 +90,15 @@ export function adminRevokeCardBilling(cardId, { reason } = {}) {
     });
 }
 
-export function adminSyncCardBillingFromUser(cardId, { reason } = {}) {
-    return api.post(`/admin/billing/cards/${cardId}/billing/sync-from-user`, {
-        reason,
-    });
+export function adminSyncCardBillingFromUser(cardId, { reason, force } = {}) {
+    const body = {};
+    if (reason !== undefined) body.reason = reason;
+    if (force !== undefined) body.force = force;
+
+    return api.post(
+        `/admin/billing/cards/${cardId}/billing/sync-from-user`,
+        body,
+    );
 }
 
 export function adminClearCardAdminOverride(cardId, { reason } = {}) {

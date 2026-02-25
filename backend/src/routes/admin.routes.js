@@ -3,6 +3,7 @@ import {
     getAdminStats,
     listUsers,
     listCards,
+    listAdminAudit,
     getUserById,
     getCardById,
     deleteCardPermanently,
@@ -49,6 +50,7 @@ const router = Router();
 router.get("/stats", getAdminStats);
 router.get("/users", listUsers);
 router.get("/cards", listCards);
+router.get("/audit", listAdminAudit);
 router.get("/orgs", adminListOrganizations);
 router.get("/users/:id", getUserById);
 router.get("/cards/:id", getCardById);

@@ -17,6 +17,8 @@ import Cards from "../pages/Cards";
 import Login from "../pages/Login";
 import Register from "../pages/Register";
 import InviteAccept from "../pages/InviteAccept";
+import ForgotPassword from "../pages/ForgotPassword";
+import ResetPassword from "../pages/ResetPassword";
 
 // product
 import Dashboard from "../pages/Dashboard";
@@ -60,6 +62,8 @@ const router = createBrowserRouter([
             { path: "login", element: <Login /> },
             { path: "register", element: <Register /> },
             { path: "invite", element: <InviteAccept /> },
+            { path: "forgot-password", element: <ForgotPassword /> },
+            { path: "reset-password", element: <ResetPassword /> },
 
             // product
             { path: "dashboard", element: <Dashboard /> },

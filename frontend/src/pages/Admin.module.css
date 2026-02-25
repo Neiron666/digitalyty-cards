@@ -425,6 +425,90 @@
     flex: 0 0 auto;
 }
 
+.formRow .toggleRow {
+    flex: 0 0 auto;
+    min-width: auto;
+}
+
+.toggleRow {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: var(--fs-body-sm);
+    opacity: 0.95;
+    white-space: nowrap;
+}
+
+.provenancePanel {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding-top: 10px;
+    border-top: 1px dashed var(--border);
+}
+
+.provenanceHeader {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.provenanceHeaderLeft {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    min-width: 0;
+}
+
+.provenancePill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 8px;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    background: transparent;
+    font-size: var(--fs-caption);
+    font-weight: 900;
+}
+
+.auditList {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.auditRow {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 8px 10px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    background: transparent;
+}
+
+.auditMeta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    align-items: baseline;
+    font-size: var(--fs-caption);
+}
+
+.auditKey {
+    font-weight: 900;
+    opacity: 0.85;
+}
+
+.auditReason {
+    font-size: var(--fs-ui);
+    opacity: 0.95;
+}
+
 .selectField {
     display: flex;
     flex-direction: column;

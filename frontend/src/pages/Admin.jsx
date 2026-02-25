@@ -21,6 +21,7 @@ import {
     getAdminCardById,
     getAdminStats,
     getAdminUserById,
+    listAdminAudit,
     listAdminCards,
     listAdminUsers,
 } from "../services/admin.service";
@@ -116,6 +117,18 @@ const STR = {
         label_trial_ends: "סיום תקופת ניסיון",
         label_effective_billing: "סטטוס תשלום בפועל",
 
+        section_provenance: "מקור סטטוס (Provenance)",
+        label_raw_billing: "Billing (Raw)",
+        label_raw_payer: "Payer (Raw)",
+        label_audit_history: "Audit אחרון",
+        label_latest_audit: "אירוע אחרון",
+        label_when: "מתי",
+        label_action: "פעולה",
+        label_mode: "mode",
+        label_by_admin: "admin",
+        msg_audit_loading: "טוען audit…",
+        msg_audit_empty: "אין אירועי audit לכרטיס זה.",
+
         label_analytics: "אנליטיקה",
         label_can_view_analytics: "גישה לאנליטיקה",
         label_analytics_retention: "שמירת נתונים (ימים)",
@@ -188,6 +201,12 @@ const STR = {
         label_no_slug: "(אין סלאג)",
         msg_loading_card: "טוען כרטיס…",
 
+        label_force_org_payer: "Force (org payer)",
+        msg_sync_uses_saved_db:
+            "Sync uses saved DB User.subscription.expiresAt.",
+        err_org_payer_locked:
+            "התשלום משויך לארגון (Org payer lock). סמן Force (org payer) ונסה שוב.",
+
         err_reason_required: "יש למלא סיבה.",
         err_reason_too_long: "הסיבה ארוכה מדי.",
         err_invalid_tier: "רמת פיצ'רים לא תקינה.",
@@ -227,6 +246,7 @@ function mapApiErrorToHebrew(err, fallbackKey = "err_generic") {
 
     if (code === "REASON_REQUIRED") return t("err_reason_required");
     if (code === "REASON_TOO_LONG") return t("err_reason_too_long");
+    if (code === "ORG_PAYER_LOCKED") return t("err_org_payer_locked");
     if (code === "INVALID_TIER") return t("err_invalid_tier");
     if (code === "INVALID_UNTIL") return t("err_invalid_until");
 
@@ -259,6 +279,15 @@ function planHe(plan) {
     if (plan === "monthly") return t("plan_monthly");
     if (plan === "yearly") return t("plan_yearly");
     return String(plan || "");
+}
+
+function billingStatusHe(status) {
+    if (status === "free") return t("billing_status_free");
+    if (status === "trial") return t("billing_status_trial");
+    if (status === "active") return t("billing_status_active");
+    if (status === "past_due") return t("billing_status_past_due");
+    if (status === "canceled") return t("billing_status_canceled");
+    return String(status || "");
 }
 
 function tierHe(tier) {
@@ -369,6 +398,10 @@ export default function Admin() {
     const [selectedCardId, setSelectedCardId] = useState("");
     const [selectedCard, setSelectedCard] = useState(null);
 
+    const [selectedAuditItems, setSelectedAuditItems] = useState([]);
+    const [selectedAuditStatus, setSelectedAuditStatus] = useState("idle");
+    const [selectedAuditError, setSelectedAuditError] = useState("");
+
     const [selectedUserId, setSelectedUserId] = useState("");
     const [selectedUser, setSelectedUser] = useState(null);
     const [selectedUserError, setSelectedUserError] = useState("");
@@ -404,6 +437,7 @@ export default function Admin() {
     const [billingCardId, setBillingCardId] = useState("");
     const [billingCardPlan, setBillingCardPlan] = useState("free");
     const [billingCardPaidUntil, setBillingCardPaidUntil] = useState("");
+    const [billingCardForceSync, setBillingCardForceSync] = useState(false);
     const [billingCardResult, setBillingCardResult] = useState(null);
 
     const billingUserIdTrimmed = useMemo(
@@ -458,6 +492,17 @@ export default function Admin() {
         if (!selectedCard) return null;
         return selectedCard?.effectiveBilling || null;
     }, [selectedCard]);
+
+    const selectedProvenanceSource = useMemo(() => {
+        if (!selectedCard) return "";
+        if (selectedCard?.adminOverride) return "adminOverride";
+        return String(selectedBilling?.source || "");
+    }, [selectedCard, selectedBilling]);
+
+    const selectedLatestAudit = useMemo(() => {
+        if (!Array.isArray(selectedAuditItems)) return null;
+        return selectedAuditItems.length ? selectedAuditItems[0] : null;
+    }, [selectedAuditItems]);
 
     const selectedEffectiveTier = useMemo(() => {
         if (!selectedCard) return "";
@@ -858,6 +903,46 @@ export default function Admin() {
         }
     }
 
+    async function runBillingCardActionNoReason(actionKey, fn) {
+        setActionError((prev) => ({ ...prev, [actionKey]: "" }));
+
+        setLoading(true);
+        setError("");
+        setActionLoading((prev) => ({ ...prev, [actionKey]: true }));
+        try {
+            const dto = await fn();
+            setBillingCardResult(dto);
+
+            const nextCardId = dto?._id;
+            if (typeof nextCardId === "string" && nextCardId.trim()) {
+                setBillingCardId(nextCardId.trim());
+            }
+
+            const nextPlan = dto?.plan;
+            if (typeof nextPlan === "string" && nextPlan.trim()) {
+                setBillingCardPlan(nextPlan.trim());
+            }
+
+            const nextPaidUntil = dto?.billing?.paidUntil || null;
+            setBillingCardPaidUntil(isoToDatetimeLocalValue(nextPaidUntil));
+
+            if (dto?._id && selectedCard?._id === dto._id) {
+                setSelectedCard(dto);
+            }
+            if (dto?._id) updateCardInList(dto);
+        } catch (err) {
+            if (isAccessDenied(err)) {
+                setAccessDenied(true);
+            } else {
+                const msg = normalizeActionError(err);
+                setActionError((prev) => ({ ...prev, [actionKey]: msg }));
+            }
+        } finally {
+            setLoading(false);
+            setActionLoading((prev) => ({ ...prev, [actionKey]: false }));
+        }
+    }
+
     function removeCardFromLists(cardId) {
         if (!cardId) return;
 
@@ -1144,6 +1229,46 @@ export default function Admin() {
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [selectedCard?._id, selectedCard?.billing?.paidUntil]);
+
+    useEffect(() => {
+        const cardId = String(selectedCard?._id || "").trim();
+        if (!cardId) {
+            setSelectedAuditItems([]);
+            setSelectedAuditStatus("idle");
+            setSelectedAuditError("");
+            return;
+        }
+
+        let cancelled = false;
+        setSelectedAuditStatus("loading");
+        setSelectedAuditError("");
+
+        (async () => {
+            try {
+                const res = await listAdminAudit({
+                    targetType: "card",
+                    targetId: cardId,
+                    limit: 10,
+                });
+                if (cancelled) return;
+
+                const items = Array.isArray(res?.data?.items)
+                    ? res.data.items
+                    : [];
+                setSelectedAuditItems(items);
+                setSelectedAuditStatus("ready");
+            } catch (err) {
+                if (cancelled) return;
+                setSelectedAuditItems([]);
+                setSelectedAuditStatus("error");
+                setSelectedAuditError(mapApiErrorToHebrew(err, "err_generic"));
+            }
+        })();
+
+        return () => {
+            cancelled = true;
+        };
+    }, [selectedCard?._id]);
 
     if (!token) {
         return (
@@ -2435,6 +2560,335 @@ export default function Admin() {
                                                                   : ""}
                                                         </dd>
                                                     </dl>
+
+                                                    <div
+                                                        className={
+                                                            styles.provenancePanel
+                                                        }
+                                                    >
+                                                        <div
+                                                            className={
+                                                                styles.provenanceHeader
+                                                            }
+                                                        >
+                                                            <div
+                                                                className={
+                                                                    styles.provenanceHeaderLeft
+                                                                }
+                                                            >
+                                                                <span
+                                                                    className={
+                                                                        styles.provenancePill
+                                                                    }
+                                                                >
+                                                                    {t(
+                                                                        "section_provenance",
+                                                                    )}
+                                                                    :{" "}
+                                                                    <span
+                                                                        className={
+                                                                            styles.ltr
+                                                                        }
+                                                                        dir="ltr"
+                                                                    >
+                                                                        {selectedProvenanceSource ||
+                                                                            "—"}
+                                                                    </span>
+                                                                </span>
+
+                                                                {selectedLatestAudit ? (
+                                                                    <span
+                                                                        className={
+                                                                            styles.muted
+                                                                        }
+                                                                    >
+                                                                        {t(
+                                                                            "label_latest_audit",
+                                                                        )}
+                                                                        :{" "}
+                                                                        <span
+                                                                            className={
+                                                                                styles.ltr
+                                                                            }
+                                                                            dir="ltr"
+                                                                        >
+                                                                            {selectedLatestAudit.action ||
+                                                                                ""}
+                                                                            {selectedLatestAudit.mode
+                                                                                ? ` (${selectedLatestAudit.mode})`
+                                                                                : ""}
+                                                                        </span>
+                                                                    </span>
+                                                                ) : null}
+                                                            </div>
+                                                        </div>
+
+                                                        <dl
+                                                            className={
+                                                                styles.kvDl
+                                                            }
+                                                        >
+                                                            <dt
+                                                                className={
+                                                                    styles.kvDt
+                                                                }
+                                                            >
+                                                                {t(
+                                                                    "label_raw_billing",
+                                                                )}
+                                                            </dt>
+                                                            <dd
+                                                                className={
+                                                                    styles.kvDd
+                                                                }
+                                                            >
+                                                                <span
+                                                                    className={
+                                                                        styles.ltr
+                                                                    }
+                                                                    dir="ltr"
+                                                                >
+                                                                    status=
+                                                                    {billingStatusHe(
+                                                                        selectedCard
+                                                                            ?.billing
+                                                                            ?.status,
+                                                                    )}
+                                                                    {selectedCard
+                                                                        ?.billing
+                                                                        ?.plan
+                                                                        ? ` · plan=${planHe(selectedCard.billing.plan)}`
+                                                                        : ""}
+                                                                    {selectedCard
+                                                                        ?.billing
+                                                                        ?.paidUntil
+                                                                        ? ` · paidUntil=${selectedCard.billing.paidUntil}`
+                                                                        : ""}
+                                                                </span>
+                                                            </dd>
+
+                                                            <dt
+                                                                className={
+                                                                    styles.kvDt
+                                                                }
+                                                            >
+                                                                {t(
+                                                                    "label_raw_payer",
+                                                                )}
+                                                            </dt>
+                                                            <dd
+                                                                className={
+                                                                    styles.kvDd
+                                                                }
+                                                            >
+                                                                <span
+                                                                    className={
+                                                                        styles.ltr
+                                                                    }
+                                                                    dir="ltr"
+                                                                >
+                                                                    {selectedCard
+                                                                        ?.billing
+                                                                        ?.payer
+                                                                        ? `type=${selectedCard.billing.payer.type || ""} · source=${selectedCard.billing.payer.source || ""}${selectedCard.billing.payer.updatedAt ? ` · updatedAt=${selectedCard.billing.payer.updatedAt}` : ""}`
+                                                                        : "—"}
+                                                                </span>
+                                                            </dd>
+
+                                                            <dt
+                                                                className={
+                                                                    styles.kvDt
+                                                                }
+                                                            >
+                                                                {t(
+                                                                    "label_audit_history",
+                                                                )}
+                                                            </dt>
+                                                            <dd
+                                                                className={
+                                                                    styles.kvDd
+                                                                }
+                                                            >
+                                                                {selectedAuditStatus ===
+                                                                "loading" ? (
+                                                                    <span
+                                                                        className={
+                                                                            styles.muted
+                                                                        }
+                                                                    >
+                                                                        {t(
+                                                                            "msg_audit_loading",
+                                                                        )}
+                                                                    </span>
+                                                                ) : selectedAuditStatus ===
+                                                                  "error" ? (
+                                                                    <span
+                                                                        className={
+                                                                            styles.errorText
+                                                                        }
+                                                                    >
+                                                                        {
+                                                                            selectedAuditError
+                                                                        }
+                                                                    </span>
+                                                                ) : selectedAuditItems.length ===
+                                                                  0 ? (
+                                                                    <span
+                                                                        className={
+                                                                            styles.muted
+                                                                        }
+                                                                    >
+                                                                        {t(
+                                                                            "msg_audit_empty",
+                                                                        )}
+                                                                    </span>
+                                                                ) : (
+                                                                    <div
+                                                                        className={
+                                                                            styles.auditList
+                                                                        }
+                                                                    >
+                                                                        {selectedAuditItems.map(
+                                                                            (
+                                                                                a,
+                                                                                idx,
+                                                                            ) => (
+                                                                                <div
+                                                                                    key={`${a?.createdAt || ""}-${idx}`}
+                                                                                    className={
+                                                                                        styles.auditRow
+                                                                                    }
+                                                                                >
+                                                                                    <div
+                                                                                        className={
+                                                                                            styles.auditMeta
+                                                                                        }
+                                                                                    >
+                                                                                        <span>
+                                                                                            <span
+                                                                                                className={
+                                                                                                    styles.auditKey
+                                                                                                }
+                                                                                            >
+                                                                                                {t(
+                                                                                                    "label_when",
+                                                                                                )}
+
+                                                                                                :
+                                                                                            </span>{" "}
+                                                                                            <span
+                                                                                                className={
+                                                                                                    styles.ltr
+                                                                                                }
+                                                                                                dir="ltr"
+                                                                                            >
+                                                                                                {formatDate(
+                                                                                                    a?.createdAt,
+                                                                                                )}
+                                                                                            </span>
+                                                                                        </span>
+                                                                                        <span>
+                                                                                            <span
+                                                                                                className={
+                                                                                                    styles.auditKey
+                                                                                                }
+                                                                                            >
+                                                                                                {t(
+                                                                                                    "label_action",
+                                                                                                )}
+
+                                                                                                :
+                                                                                            </span>{" "}
+                                                                                            <span
+                                                                                                className={
+                                                                                                    styles.ltr
+                                                                                                }
+                                                                                                dir="ltr"
+                                                                                            >
+                                                                                                {a?.action ||
+                                                                                                    ""}
+                                                                                            </span>
+                                                                                        </span>
+                                                                                        {a?.mode ? (
+                                                                                            <span>
+                                                                                                <span
+                                                                                                    className={
+                                                                                                        styles.auditKey
+                                                                                                    }
+                                                                                                >
+                                                                                                    {t(
+                                                                                                        "label_mode",
+                                                                                                    )}
+
+                                                                                                    :
+                                                                                                </span>{" "}
+                                                                                                <span
+                                                                                                    className={
+                                                                                                        styles.ltr
+                                                                                                    }
+                                                                                                    dir="ltr"
+                                                                                                >
+                                                                                                    {
+                                                                                                        a.mode
+                                                                                                    }
+                                                                                                </span>
+                                                                                            </span>
+                                                                                        ) : null}
+                                                                                        {a?.byAdmin ? (
+                                                                                            <span>
+                                                                                                <span
+                                                                                                    className={
+                                                                                                        styles.auditKey
+                                                                                                    }
+                                                                                                >
+                                                                                                    {t(
+                                                                                                        "label_by_admin",
+                                                                                                    )}
+
+                                                                                                    :
+                                                                                                </span>{" "}
+                                                                                                <span
+                                                                                                    className={
+                                                                                                        styles.ltr
+                                                                                                    }
+                                                                                                    dir="ltr"
+                                                                                                >
+                                                                                                    {a?.byAdminEmail ||
+                                                                                                        a.byAdmin}
+                                                                                                </span>
+                                                                                            </span>
+                                                                                        ) : null}
+                                                                                    </div>
+                                                                                    {a?.reason ? (
+                                                                                        <div
+                                                                                            className={
+                                                                                                styles.auditReason
+                                                                                            }
+                                                                                        >
+                                                                                            <span
+                                                                                                className={
+                                                                                                    styles.auditKey
+                                                                                                }
+                                                                                            >
+                                                                                                {t(
+                                                                                                    "label_reason",
+                                                                                                )}
+
+                                                                                                :
+                                                                                            </span>{" "}
+                                                                                            {
+                                                                                                a.reason
+                                                                                            }
+                                                                                        </div>
+                                                                                    ) : null}
+                                                                                </div>
+                                                                            ),
+                                                                        )}
+                                                                    </div>
+                                                                )}
+                                                            </dd>
+                                                        </dl>
+                                                    </div>
                                                 </div>
                                             ) : null}
 
@@ -2860,6 +3314,17 @@ export default function Admin() {
                                         />
 
                                         <div className={styles.formRow}>
+                                            <Input
+                                                label={t("label_reason")}
+                                                value={reason}
+                                                onChange={(e) =>
+                                                    setReason(e.target.value)
+                                                }
+                                                placeholder={t(
+                                                    "placeholder_reason",
+                                                )}
+                                            />
+
                                             <label
                                                 className={styles.selectField}
                                             >
@@ -3537,14 +4002,16 @@ export default function Admin() {
                                                     actionLoading.billingCardSync
                                                 }
                                                 onClick={() =>
-                                                    runBillingCardAction(
+                                                    runBillingCardActionNoReason(
                                                         "billingCardSync",
-                                                        async (r) => {
+                                                        async () => {
                                                             const res =
                                                                 await adminSyncCardBillingFromUser(
                                                                     billingCardId,
                                                                     {
-                                                                        reason: r,
+                                                                        force: billingCardForceSync
+                                                                            ? true
+                                                                            : undefined,
                                                                     },
                                                                 );
                                                             return res.data;
@@ -3554,6 +4021,23 @@ export default function Admin() {
                                             >
                                                 {t("btn_sync_from_user")}
                                             </Button>
+
+                                            <label className={styles.toggleRow}>
+                                                <input
+                                                    type="checkbox"
+                                                    checked={
+                                                        billingCardForceSync
+                                                    }
+                                                    onChange={(e) =>
+                                                        setBillingCardForceSync(
+                                                            e.target.checked,
+                                                        )
+                                                    }
+                                                />
+                                                <span>
+                                                    {t("label_force_org_payer")}
+                                                </span>
+                                            </label>
 
                                             <Button
                                                 variant="secondary"
@@ -3583,6 +4067,10 @@ export default function Admin() {
                                                 {t("btn_clear_override")}
                                             </Button>
                                         </div>
+
+                                        <p className={styles.muted}>
+                                            {t("msg_sync_uses_saved_db")}
+                                        </p>
 
                                         {actionError.billingCardSet ? (
                                             <p className={styles.errorText}>
@@ -4368,6 +4856,335 @@ export default function Admin() {
                                                             </>
                                                         ) : null}
                                                     </dl>
+
+                                                    <div
+                                                        className={
+                                                            styles.provenancePanel
+                                                        }
+                                                    >
+                                                        <div
+                                                            className={
+                                                                styles.provenanceHeader
+                                                            }
+                                                        >
+                                                            <div
+                                                                className={
+                                                                    styles.provenanceHeaderLeft
+                                                                }
+                                                            >
+                                                                <span
+                                                                    className={
+                                                                        styles.provenancePill
+                                                                    }
+                                                                >
+                                                                    {t(
+                                                                        "section_provenance",
+                                                                    )}
+                                                                    :{" "}
+                                                                    <span
+                                                                        className={
+                                                                            styles.ltr
+                                                                        }
+                                                                        dir="ltr"
+                                                                    >
+                                                                        {selectedProvenanceSource ||
+                                                                            "—"}
+                                                                    </span>
+                                                                </span>
+
+                                                                {selectedLatestAudit ? (
+                                                                    <span
+                                                                        className={
+                                                                            styles.muted
+                                                                        }
+                                                                    >
+                                                                        {t(
+                                                                            "label_latest_audit",
+                                                                        )}
+                                                                        :{" "}
+                                                                        <span
+                                                                            className={
+                                                                                styles.ltr
+                                                                            }
+                                                                            dir="ltr"
+                                                                        >
+                                                                            {selectedLatestAudit.action ||
+                                                                                ""}
+                                                                            {selectedLatestAudit.mode
+                                                                                ? ` (${selectedLatestAudit.mode})`
+                                                                                : ""}
+                                                                        </span>
+                                                                    </span>
+                                                                ) : null}
+                                                            </div>
+                                                        </div>
+
+                                                        <dl
+                                                            className={
+                                                                styles.kvDl
+                                                            }
+                                                        >
+                                                            <dt
+                                                                className={
+                                                                    styles.kvDt
+                                                                }
+                                                            >
+                                                                {t(
+                                                                    "label_raw_billing",
+                                                                )}
+                                                            </dt>
+                                                            <dd
+                                                                className={
+                                                                    styles.kvDd
+                                                                }
+                                                            >
+                                                                <span
+                                                                    className={
+                                                                        styles.ltr
+                                                                    }
+                                                                    dir="ltr"
+                                                                >
+                                                                    status=
+                                                                    {billingStatusHe(
+                                                                        selectedCard
+                                                                            ?.billing
+                                                                            ?.status,
+                                                                    )}
+                                                                    {selectedCard
+                                                                        ?.billing
+                                                                        ?.plan
+                                                                        ? ` · plan=${planHe(selectedCard.billing.plan)}`
+                                                                        : ""}
+                                                                    {selectedCard
+                                                                        ?.billing
+                                                                        ?.paidUntil
+                                                                        ? ` · paidUntil=${selectedCard.billing.paidUntil}`
+                                                                        : ""}
+                                                                </span>
+                                                            </dd>
+
+                                                            <dt
+                                                                className={
+                                                                    styles.kvDt
+                                                                }
+                                                            >
+                                                                {t(
+                                                                    "label_raw_payer",
+                                                                )}
+                                                            </dt>
+                                                            <dd
+                                                                className={
+                                                                    styles.kvDd
+                                                                }
+                                                            >
+                                                                <span
+                                                                    className={
+                                                                        styles.ltr
+                                                                    }
+                                                                    dir="ltr"
+                                                                >
+                                                                    {selectedCard
+                                                                        ?.billing
+                                                                        ?.payer
+                                                                        ? `type=${selectedCard.billing.payer.type || ""} · source=${selectedCard.billing.payer.source || ""}${selectedCard.billing.payer.updatedAt ? ` · updatedAt=${selectedCard.billing.payer.updatedAt}` : ""}`
+                                                                        : "—"}
+                                                                </span>
+                                                            </dd>
+
+                                                            <dt
+                                                                className={
+                                                                    styles.kvDt
+                                                                }
+                                                            >
+                                                                {t(
+                                                                    "label_audit_history",
+                                                                )}
+                                                            </dt>
+                                                            <dd
+                                                                className={
+                                                                    styles.kvDd
+                                                                }
+                                                            >
+                                                                {selectedAuditStatus ===
+                                                                "loading" ? (
+                                                                    <span
+                                                                        className={
+                                                                            styles.muted
+                                                                        }
+                                                                    >
+                                                                        {t(
+                                                                            "msg_audit_loading",
+                                                                        )}
+                                                                    </span>
+                                                                ) : selectedAuditStatus ===
+                                                                  "error" ? (
+                                                                    <span
+                                                                        className={
+                                                                            styles.errorText
+                                                                        }
+                                                                    >
+                                                                        {
+                                                                            selectedAuditError
+                                                                        }
+                                                                    </span>
+                                                                ) : selectedAuditItems.length ===
+                                                                  0 ? (
+                                                                    <span
+                                                                        className={
+                                                                            styles.muted
+                                                                        }
+                                                                    >
+                                                                        {t(
+                                                                            "msg_audit_empty",
+                                                                        )}
+                                                                    </span>
+                                                                ) : (
+                                                                    <div
+                                                                        className={
+                                                                            styles.auditList
+                                                                        }
+                                                                    >
+                                                                        {selectedAuditItems.map(
+                                                                            (
+                                                                                a,
+                                                                                idx,
+                                                                            ) => (
+                                                                                <div
+                                                                                    key={`${a?.createdAt || ""}-${idx}`}
+                                                                                    className={
+                                                                                        styles.auditRow
+                                                                                    }
+                                                                                >
+                                                                                    <div
+                                                                                        className={
+                                                                                            styles.auditMeta
+                                                                                        }
+                                                                                    >
+                                                                                        <span>
+                                                                                            <span
+                                                                                                className={
+                                                                                                    styles.auditKey
+                                                                                                }
+                                                                                            >
+                                                                                                {t(
+                                                                                                    "label_when",
+                                                                                                )}
+
+                                                                                                :
+                                                                                            </span>{" "}
+                                                                                            <span
+                                                                                                className={
+                                                                                                    styles.ltr
+                                                                                                }
+                                                                                                dir="ltr"
+                                                                                            >
+                                                                                                {formatDate(
+                                                                                                    a?.createdAt,
+                                                                                                )}
+                                                                                            </span>
+                                                                                        </span>
+                                                                                        <span>
+                                                                                            <span
+                                                                                                className={
+                                                                                                    styles.auditKey
+                                                                                                }
+                                                                                            >
+                                                                                                {t(
+                                                                                                    "label_action",
+                                                                                                )}
+
+                                                                                                :
+                                                                                            </span>{" "}
+                                                                                            <span
+                                                                                                className={
+                                                                                                    styles.ltr
+                                                                                                }
+                                                                                                dir="ltr"
+                                                                                            >
+                                                                                                {a?.action ||
+                                                                                                    ""}
+                                                                                            </span>
+                                                                                        </span>
+                                                                                        {a?.mode ? (
+                                                                                            <span>
+                                                                                                <span
+                                                                                                    className={
+                                                                                                        styles.auditKey
+                                                                                                    }
+                                                                                                >
+                                                                                                    {t(
+                                                                                                        "label_mode",
+                                                                                                    )}
+
+                                                                                                    :
+                                                                                                </span>{" "}
+                                                                                                <span
+                                                                                                    className={
+                                                                                                        styles.ltr
+                                                                                                    }
+                                                                                                    dir="ltr"
+                                                                                                >
+                                                                                                    {
+                                                                                                        a.mode
+                                                                                                    }
+                                                                                                </span>
+                                                                                            </span>
+                                                                                        ) : null}
+                                                                                        {a?.byAdmin ? (
+                                                                                            <span>
+                                                                                                <span
+                                                                                                    className={
+                                                                                                        styles.auditKey
+                                                                                                    }
+                                                                                                >
+                                                                                                    {t(
+                                                                                                        "label_by_admin",
+                                                                                                    )}
+
+                                                                                                    :
+                                                                                                </span>{" "}
+                                                                                                <span
+                                                                                                    className={
+                                                                                                        styles.ltr
+                                                                                                    }
+                                                                                                    dir="ltr"
+                                                                                                >
+                                                                                                    {a?.byAdminEmail ||
+                                                                                                        a.byAdmin}
+                                                                                                </span>
+                                                                                            </span>
+                                                                                        ) : null}
+                                                                                    </div>
+                                                                                    {a?.reason ? (
+                                                                                        <div
+                                                                                            className={
+                                                                                                styles.auditReason
+                                                                                            }
+                                                                                        >
+                                                                                            <span
+                                                                                                className={
+                                                                                                    styles.auditKey
+                                                                                                }
+                                                                                            >
+                                                                                                {t(
+                                                                                                    "label_reason",
+                                                                                                )}
+
+                                                                                                :
+                                                                                            </span>{" "}
+                                                                                            {
+                                                                                                a.reason
+                                                                                            }
+                                                                                        </div>
+                                                                                    ) : null}
+                                                                                </div>
+                                                                            ),
+                                                                        )}
+                                                                    </div>
+                                                                )}
+                                                            </dd>
+                                                        </dl>
+                                                    </div>
                                                 </div>
                                             ) : null}
 

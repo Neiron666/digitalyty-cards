@@ -1,6 +1,7 @@
 import mongoose from "mongoose";
 import User from "../models/User.model.js";
 import Card from "../models/Card.model.js";
+import AdminAudit from "../models/AdminAudit.model.js";
 import OrganizationMember from "../models/OrganizationMember.model.js";
 import OrgInvite from "../models/OrgInvite.model.js";
 import { logAdminAction } from "../services/adminAudit.service.js";
@@ -49,6 +50,96 @@ function parseSearch(req, { maxLen = 64 } = {}) {
     if (!raw) return null;
     const q = raw.slice(0, maxLen);
     return new RegExp(escapeRegExp(q), "i");
+}
+
+function parseAdminAuditQuery(req, res) {
+    const targetType =
+        typeof req.query?.targetType === "string"
+            ? req.query.targetType.trim()
+            : "";
+    if (!targetType || !["card", "user"].includes(targetType)) {
+        res.status(400).json({
+            code: "INVALID_TARGET_TYPE",
+            message: 'targetType must be one of: "card" | "user"',
+        });
+        return null;
+    }
+
+    const targetIdRaw =
+        typeof req.query?.targetId === "string"
+            ? req.query.targetId.trim()
+            : "";
+    if (!targetIdRaw || !mongoose.Types.ObjectId.isValid(targetIdRaw)) {
+        res.status(400).json({
+            code: "INVALID_TARGET_ID",
+            message: "Invalid targetId",
+        });
+        return null;
+    }
+
+    const limit = clampInt(req.query?.limit, {
+        min: 1,
+        max: 50,
+        fallback: 10,
+    });
+
+    return { targetType, targetId: targetIdRaw, limit };
+}
+
+export async function listAdminAudit(req, res) {
+    const parsed = parseAdminAuditQuery(req, res);
+    if (!parsed) return;
+
+    const items = await AdminAudit.find({
+        targetType: parsed.targetType,
+        targetId: parsed.targetId,
+    })
+        .sort({ createdAt: -1 })
+        .limit(parsed.limit)
+        .select("action createdAt reason meta adminUserId")
+        .lean();
+
+    const adminIds = Array.from(
+        new Set(
+            (Array.isArray(items) ? items : [])
+                .map((a) => (a?.adminUserId ? String(a.adminUserId) : ""))
+                .filter(Boolean),
+        ),
+    );
+
+    const adminUsers = adminIds.length
+        ? await User.find({ _id: { $in: adminIds } })
+              .select("email")
+              .lean()
+        : [];
+
+    const adminEmailById = new Map(
+        (Array.isArray(adminUsers) ? adminUsers : []).map((u) => [
+            String(u?._id || ""),
+            typeof u?.email === "string" && u.email.trim()
+                ? u.email.trim()
+                : null,
+        ]),
+    );
+
+    const out = (Array.isArray(items) ? items : []).map((a) => {
+        const meta = a?.meta && typeof a.meta === "object" ? a.meta : null;
+        const mode = meta && typeof meta.mode === "string" ? meta.mode : null;
+        return {
+            action: a?.action || "",
+            createdAt: a?.createdAt
+                ? new Date(a.createdAt).toISOString()
+                : null,
+            reason: a?.reason || "",
+            mode,
+            byAdmin: a?.adminUserId ? String(a.adminUserId) : null,
+            byAdminEmail: a?.adminUserId
+                ? adminEmailById.get(String(a.adminUserId)) || null
+                : null,
+        };
+    });
+
+    return res.json({ ok: true, items: out });
 }
 
 function requireReason(req, res) {
@@ -1590,8 +1681,15 @@ export async function adminRevokeCardBilling(req, res) {
 }
 
 export async function adminSyncCardBillingFromUser(req, res) {
-    const reason = requireReason(req, res);
-    if (!reason) return;
+    const rawReason =
+        typeof req.body?.reason === "string" ? req.body.reason.trim() : "";
+    if (rawReason.length > 500) {
+        return res.status(400).json({
+            code: "REASON_TOO_LONG",
+            message: "Reason too long",
+        });
+    }
+    const reason = rawReason || "AUTO: sync-from-user";
 
     const cardId = String(req.params.cardId || "");
     if (!mongoose.Types.ObjectId.isValid(cardId)) {

@@ -16,3 +16,8 @@ export async function getMe() {
     });
     return res.data;
 }
+
+export const forgotPassword = (email) => api.post("/auth/forgot", { email });
+
+export const resetPassword = (token, password) =>
+    api.post("/auth/reset", { token, password });
