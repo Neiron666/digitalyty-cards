@@ -1,7 +1,7 @@
 .grid {
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 16px;
 }
 
 .strong {
@@ -38,13 +38,13 @@
 .slugHelp {
     margin-top: 6px;
     opacity: 0.8;
-    font-size: 0.92rem;
+    font-size: var(--fs-ui);
 }
 
 .slugRemaining {
     margin-block-start: 4px;
     opacity: 0.85;
-    font-size: 0.92rem;
+    font-size: var(--fs-ui);
 }
 
 .slugRemainingValue {
@@ -67,7 +67,7 @@
 .slugOk {
     margin-top: 8px;
     color: rgba(125, 247, 171, 0.95);
-    font-size: 0.95rem;
+    font-size: var(--fs-ui);
 }
 
 .deleteInline {
@@ -92,17 +92,6 @@
 }
 
 /* ── Account summary block ── */
-
-.accountBlock {
-    border-top: 1px solid rgba(255, 255, 255, 0.08);
-    padding-top: 12px;
-    margin-top: 4px;
-}
-
-.accountTitle {
-    font-weight: 700;
-    margin-bottom: 8px;
-}
 
 .accountNote {
     opacity: 0.7;
@@ -154,20 +143,6 @@
 
 /* ── Billing / Payments block ── */
 
-.billingBlock {
-    border-top: 1px solid rgba(255, 255, 255, 0.08);
-    padding-top: 12px;
-    margin-top: 8px;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-}
-
-.billingTitle {
-    font-weight: 700;
-    margin-bottom: 2px;
-}
-
 .billingRow {
     display: flex;
     flex-wrap: wrap;
@@ -202,20 +177,6 @@
 
 /* ── Password change form ── */
 
-.pwBlock {
-    border-top: 1px solid rgba(255, 255, 255, 0.08);
-    padding-top: 10px;
-    margin-top: 8px;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-}
-
-.pwTitle {
-    font-weight: 700;
-    margin-bottom: 2px;
-}
-
 .pwSuccess {
     color: rgba(125, 247, 171, 0.95);
 }
@@ -227,20 +188,6 @@
 }
 
 /* ── Danger zone (account deletion) ── */
-
-.dangerBlock {
-    border-top: 1px solid rgba(255, 100, 100, 0.25);
-    padding-top: 12px;
-    margin-top: 10px;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-}
-
-.dangerTitle {
-    font-weight: 700;
-    color: rgba(255, 120, 120, 0.95);
-}
 
 .dangerText {
     opacity: 0.85;
@@ -255,4 +202,92 @@
     display: flex;
     gap: 10px;
     margin-top: 2px;
+}
+
+/* ── Section grouping (premium cards) ── */
+
+.section {
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.sectionTitle {
+    font-weight: 700;
+    font-size: var(--fs-h6);
+    margin: 0;
+    color: var(--text-main);
+    letter-spacing: 0.01em;
+    padding-block-end: 6px;
+    border-block-end: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+/* ── Collapsible (<details>/<summary>) ── */
+
+.collapsible {
+    display: flex;
+    flex-direction: column;
+}
+
+.collapsibleTrigger {
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    padding-block: 8px;
+    padding-inline: 10px;
+    font-weight: 600;
+    border-radius: var(--radius-sm);
+    list-style: none;
+    transition: background 0.15s ease;
+}
+
+.collapsibleTrigger:hover {
+    background: rgba(255, 255, 255, 0.04);
+}
+
+.collapsibleTrigger::-webkit-details-marker {
+    display: none;
+}
+
+.collapsibleTrigger::before {
+    content: "";
+    display: inline-block;
+    width: 0;
+    height: 0;
+    border-inline-start: 5px solid transparent;
+    border-inline-end: 5px solid transparent;
+    border-block-start: 6px solid currentColor;
+    margin-inline-end: 8px;
+    transition: transform 0.15s ease;
+    flex-shrink: 0;
+}
+
+.collapsible:not([open]) > .collapsibleTrigger::before {
+    transform: rotate(90deg);
+}
+
+.collapsibleTrigger:focus-visible {
+    outline: 2px solid rgba(100, 160, 255, 0.7);
+    outline-offset: 2px;
+}
+
+.collapsibleContent {
+    padding-block-start: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+/* ── Danger variant ── */
+
+.collapsibleDanger > .collapsibleTrigger {
+    color: rgba(255, 120, 120, 0.95);
+}
+
+.collapsibleDanger > .collapsibleTrigger:hover {
+    background: rgba(255, 100, 100, 0.06);
 }

@@ -27,3 +27,7 @@ export const requestSignupLink = (email) =>
 
 export const consumeSignupToken = (token, password) =>
     api.post("/auth/signup-consume", { token, password });
+
+export const verifyEmail = (token) => api.post("/auth/verify-email", { token });
+
+export const resendVerification = () => api.post("/auth/resend-verification");

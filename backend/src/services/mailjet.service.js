@@ -56,6 +56,16 @@ function getMailjetConfig() {
             ? process.env.MAILJET_SIGNUP_TEXT_PREFIX.trim()
             : "";
 
+    const verifySubjectRaw =
+        typeof process.env.MAILJET_VERIFY_SUBJECT === "string"
+            ? process.env.MAILJET_VERIFY_SUBJECT.trim()
+            : "";
+
+    const verifyTextPrefixRaw =
+        typeof process.env.MAILJET_VERIFY_TEXT_PREFIX === "string"
+            ? process.env.MAILJET_VERIFY_TEXT_PREFIX.trim()
+            : "";
+
     return {
         enabled,
         apiKey,
@@ -76,6 +86,11 @@ function getMailjetConfig() {
         signupTextPrefix:
             signupTextPrefixRaw ||
             "Open the link to complete your signup. If you already have an account, use Login / Forgot password.",
+
+        verifySubject: verifySubjectRaw || "אימות כתובת האימייל",
+        verifyTextPrefix:
+            verifyTextPrefixRaw ||
+            "כדי להשלים את ההרשמה, נא לאמת את כתובת האימייל על ידי לחיצה על הקישור.",
     };
 }
 
@@ -343,6 +358,83 @@ export async function sendSignupLinkEmailMailjetBestEffort({
     } catch (err) {
         console.error("[mailjet] signup send error", {
             emailNormalized: String(emailNormalized || ""),
+            tokenId: String(tokenId || ""),
+            toEmail: toEmailNormalized,
+            error: err?.message || err,
+        });
+        return { ok: false };
+    }
+}
+
+export async function sendVerificationEmailMailjetBestEffort({
+    toEmail,
+    verifyLink,
+    userId,
+    tokenId,
+}) {
+    const cfg = getMailjetConfig();
+    const toEmailNormalized = normalizeEmail(toEmail);
+
+    if (!cfg.enabled) {
+        return { ok: true, skipped: true, reason: "MAILJET_NOT_CONFIGURED" };
+    }
+
+    if (!toEmailNormalized || !verifyLink) {
+        return { ok: false, skipped: true, reason: "INVALID_INPUT" };
+    }
+
+    const auth = Buffer.from(`${cfg.apiKey}:${cfg.apiSecret}`).toString(
+        "base64",
+    );
+
+    const subject = cfg.verifySubject;
+    const prefix = cfg.verifyTextPrefix;
+    const text = `${prefix}\n\nלאימות האימייל, פתחו את הקישור:\n${verifyLink}\n`;
+
+    const payload = {
+        Messages: [
+            {
+                From: {
+                    Email: cfg.fromEmail,
+                    Name: cfg.fromName,
+                },
+                To: [{ Email: toEmailNormalized }],
+                Subject: subject,
+                TextPart: text,
+            },
+        ],
+    };
+
+    const body = JSON.stringify(payload);
+
+    try {
+        const res = await httpsRequestJson({
+            hostname: "api.mailjet.com",
+            path: "/v3.1/send",
+            method: "POST",
+            timeoutMs: 10_000,
+            headers: {
+                Authorization: `Basic ${auth}`,
+                "Content-Type": "application/json",
+                "Content-Length": Buffer.byteLength(body),
+            },
+            body,
+        });
+
+        const ok = res.statusCode >= 200 && res.statusCode < 300;
+        if (!ok) {
+            console.error("[mailjet] verify send failed", {
+                statusCode: res.statusCode,
+                userId: String(userId || ""),
+                tokenId: String(tokenId || ""),
+                toEmail: toEmailNormalized,
+            });
+        }
+
+        return { ok };
+    } catch (err) {
+        console.error("[mailjet] verify send error", {
+            userId: String(userId || ""),
             tokenId: String(tokenId || ""),
             toEmail: toEmailNormalized,
             error: err?.message || err,

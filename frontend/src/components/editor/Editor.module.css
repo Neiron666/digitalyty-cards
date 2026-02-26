@@ -299,14 +299,15 @@
     .sidebarSlot {
         position: fixed;
         top: 64px;
-        right: 0;
+        inset-inline-start: 0;
         height: calc(100vh - 64px);
+        height: calc(100dvh - 64px);
         width: min(86vw, 320px);
         z-index: 70;
         transform: translateX(110%);
         transition: transform 0.22s ease;
         background: var(--bg-surface);
-        border-left: 1px solid var(--border);
+        border-inline-end: 1px solid var(--border);
         padding: 14px;
         overflow-y: auto;
         -webkit-overflow-scrolling: touch;

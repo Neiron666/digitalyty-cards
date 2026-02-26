@@ -24,7 +24,6 @@ export default function SettingsPanel({
     card,
     plan,
     onDelete,
-    onUpgrade,
     editingDisabled,
     isDeleting,
     onPublish,
@@ -96,15 +95,6 @@ export default function SettingsPanel({
         } finally {
             setDelSubmitting(false);
         }
-    }
-
-    function resetPwForm() {
-        setPwCurrent("");
-        setPwNew("");
-        setPwConfirm("");
-        setPwError("");
-        setPwSuccess("");
-        setPwConfirmError("");
     }
 
     async function handleChangePassword(e) {
@@ -265,229 +255,200 @@ export default function SettingsPanel({
     return (
         <Panel title="הגדרות">
             <div className={styles.grid}>
-                <div className={styles.strong}>
-                    סטטוס: {isPublicLink ? "Public" : "Not public yet"}
+                {/* ── Section 1: כרטיס ── */}
+                <div className={styles.section}>
+                    <div className={styles.sectionTitle}>כרטיס</div>
+
+                    <div className={styles.strong}>
+                        סטטוס: {isPublicLink ? "Public" : "Not public yet"}
+                    </div>
+
+                    {accessLine && (
+                        <div className={styles.accessLine}>{accessLine}</div>
+                    )}
+
+                    {Boolean(token) && card?.status !== "published" && (
+                        <Button
+                            variant="primary"
+                            disabled={!canPublish}
+                            onClick={() => onPublish?.()}
+                        >
+                            פרסום
+                        </Button>
+                    )}
+
+                    {Boolean(token) && card?.status === "published" && (
+                        <Button
+                            variant="secondary"
+                            disabled={!Boolean(card?._id) || editingDisabled}
+                            onClick={() => onUnpublish?.()}
+                        >
+                            החזרה לטיוטה
+                        </Button>
+                    )}
+
+                    {publicUrl && isPublicLink && (
+                        <div className={styles.urlBlock}>
+                            <div className={styles.urlTitle}>קישור ציבורי</div>
+                            <a
+                                href={publicUrl}
+                                target="_blank"
+                                rel="noreferrer"
+                            >
+                                {publicUrl}
+                            </a>
+                        </div>
+                    )}
+
+                    {publicUrl && !isPublicLink && (
+                        <div className={styles.urlBlock}>
+                            <div className={styles.urlTitle}>קישור עתידי</div>
+                            <div>{publicUrl}</div>
+                            <div className={styles.urlNote}>
+                                יהפוך לציבורי אחרי הרשמה + פרסום.
+                            </div>
+                        </div>
+                    )}
+
+                    {Boolean(token) && (
+                        <div className={styles.slugBlock}>
+                            <div className={styles.urlTitle}>
+                                סלאג (כתובת קצרה)
+                            </div>
+
+                            <Input
+                                label={`לאחר ‎${publicPathPrefix}/‎`}
+                                value={slugDraft}
+                                onChange={(e) => {
+                                    setSlugDraft(e.target.value);
+                                    setSlugError("");
+                                    setSlugOk("");
+                                }}
+                                placeholder="my-business"
+                                dir="ltr"
+                                autoComplete="off"
+                                spellCheck={false}
+                                className={styles.slugInput}
+                                error={slugError}
+                                disabled={!canEditSlug || slugBusy}
+                            />
+
+                            <div className={styles.slugHelp}>
+                                אפשר לשנות סלאג רק בטיוטה ועד פעמיים בחודש.
+                            </div>
+
+                            <div className={styles.slugRemaining}>
+                                נותרו{" "}
+                                <span className={styles.slugRemainingValue}>
+                                    {slugRemaining === null
+                                        ? `—/${slugLimit}`
+                                        : `${slugRemaining}/${slugLimit}`}
+                                </span>{" "}
+                                שינויים החודש.
+                            </div>
+
+                            {previewUrl ? (
+                                <div className={styles.slugPreview} dir="ltr">
+                                    {previewUrl}
+                                </div>
+                            ) : null}
+
+                            {slugOk ? (
+                                <div className={styles.slugOk}>{slugOk}</div>
+                            ) : null}
+
+                            <div className={styles.slugActions}>
+                                <Button
+                                    variant="secondary"
+                                    disabled={
+                                        !canEditSlug ||
+                                        slugBusy ||
+                                        String(slugDraft || "").trim() ===
+                                            String(slug || "").trim()
+                                    }
+                                    onClick={handleSlugSave}
+                                >
+                                    {slugBusy ? "מעדכן..." : "עדכון סלאג"}
+                                </Button>
+                            </div>
+                        </div>
+                    )}
+
+                    <Button
+                        variant="ghost"
+                        onClick={onDelete}
+                        disabled={!card?._id || Boolean(isDeleting)}
+                    >
+                        {isDeleting ? (
+                            <span className={styles.deleteInline}>
+                                <span
+                                    className={styles.spinner}
+                                    aria-hidden="true"
+                                />
+                                מוחק...
+                            </span>
+                        ) : (
+                            "מחיקת כרטיס"
+                        )}
+                    </Button>
                 </div>
 
-                {accessLine && (
-                    <div className={styles.accessLine}>{accessLine}</div>
-                )}
-
-                {Boolean(token) && card?.status !== "published" && (
-                    <Button
-                        variant="primary"
-                        disabled={!canPublish}
-                        onClick={() => onPublish?.()}
-                    >
-                        פרסום
-                    </Button>
-                )}
-
-                {Boolean(token) && card?.status === "published" && (
-                    <Button
-                        variant="secondary"
-                        disabled={!Boolean(card?._id) || editingDisabled}
-                        onClick={() => onUnpublish?.()}
-                    >
-                        החזרה לטיוטה
-                    </Button>
-                )}
-
-                {publicUrl && isPublicLink && (
-                    <div className={styles.urlBlock}>
-                        <div className={styles.urlTitle}>קישור ציבורי</div>
-                        <a href={publicUrl} target="_blank" rel="noreferrer">
-                            {publicUrl}
-                        </a>
-                    </div>
-                )}
-
-                {publicUrl && !isPublicLink && (
-                    <div className={styles.urlBlock}>
-                        <div className={styles.urlTitle}>קישור עתידי</div>
-                        <div>{publicUrl}</div>
-                        <div className={styles.urlNote}>
-                            יהפוך לציבורי אחרי הרשמה + פרסום.
-                        </div>
-                    </div>
-                )}
-
-                {Boolean(token) && (
-                    <div className={styles.slugBlock}>
-                        <div className={styles.urlTitle}>סלאג (כתובת קצרה)</div>
-
-                        <Input
-                            label={`לאחר ‎${publicPathPrefix}/‎`}
-                            value={slugDraft}
-                            onChange={(e) => {
-                                setSlugDraft(e.target.value);
-                                setSlugError("");
-                                setSlugOk("");
-                            }}
-                            placeholder="my-business"
-                            dir="ltr"
-                            autoComplete="off"
-                            spellCheck={false}
-                            className={styles.slugInput}
-                            error={slugError}
-                            disabled={!canEditSlug || slugBusy}
-                        />
-
-                        <div className={styles.slugHelp}>
-                            אפשר לשנות סלאג רק בטיוטה ועד פעמיים בחודש.
-                        </div>
-
-                        <div className={styles.slugRemaining}>
-                            נותרו{" "}
-                            <span className={styles.slugRemainingValue}>
-                                {slugRemaining === null
-                                    ? `—/${slugLimit}`
-                                    : `${slugRemaining}/${slugLimit}`}
-                            </span>{" "}
-                            שינויים החודש.
-                        </div>
-
-                        {previewUrl ? (
-                            <div className={styles.slugPreview} dir="ltr">
-                                {previewUrl}
-                            </div>
-                        ) : null}
-
-                        {slugOk ? (
-                            <div className={styles.slugOk}>{slugOk}</div>
-                        ) : null}
-
-                        <div className={styles.slugActions}>
-                            <Button
-                                variant="secondary"
-                                disabled={
-                                    !canEditSlug ||
-                                    slugBusy ||
-                                    String(slugDraft || "").trim() ===
-                                        String(slug || "").trim()
-                                }
-                                onClick={handleSlugSave}
-                            >
-                                {slugBusy ? "מעדכן..." : "עדכון סלאג"}
-                            </Button>
-                        </div>
-                    </div>
-                )}
-
-                {plan === "free" && (
-                    <Button
-                        variant="secondary"
-                        onClick={() => onUpgrade?.("monthly")}
-                    >
-                        שדרוג לחבילה חודשית – 29.90 ₪
-                    </Button>
-                )}
-
-                <Button
-                    variant="ghost"
-                    onClick={onDelete}
-                    disabled={!card?._id || Boolean(isDeleting)}
-                >
-                    {isDeleting ? (
-                        <span className={styles.deleteInline}>
-                            <span
-                                className={styles.spinner}
-                                aria-hidden="true"
-                            />
-                            מוחק...
-                        </span>
-                    ) : (
-                        "מחיקת כרטיס"
-                    )}
-                </Button>
-
                 {isAuthenticated && (
-                    <div className={styles.accountBlock}>
-                        <div className={styles.accountTitle}>חשבון</div>
+                    <>
+                        {/* ── Section 2: חשבון ── */}
+                        <div className={styles.section}>
+                            <div className={styles.sectionTitle}>חשבון</div>
 
-                        {accountLoading && (
-                            <div className={styles.accountNote}>טוען...</div>
-                        )}
-
-                        {accountError && (
-                            <div className={styles.accountError}>
-                                {accountError}
-                            </div>
-                        )}
-
-                        {account && !accountLoading && (
-                            <div className={styles.accountFields}>
-                                <div className={styles.accountRow}>
-                                    <span className={styles.accountLabel}>
-                                        אימייל
-                                    </span>
-                                    <span
-                                        className={styles.accountValue}
-                                        dir="ltr"
-                                    >
-                                        {account.email || "—"}
-                                    </span>
+                            {accountLoading && (
+                                <div className={styles.accountNote}>
+                                    טוען...
                                 </div>
+                            )}
 
-                                <div className={styles.accountRow}>
-                                    <span className={styles.accountLabel}>
-                                        תוכנית
-                                    </span>
-                                    <span className={styles.accountValue}>
-                                        {account.plan === "yearly"
-                                            ? "שנתית"
-                                            : account.plan === "monthly"
-                                              ? "חודשית"
-                                              : "חינם"}
-                                    </span>
+                            {accountError && (
+                                <div className={styles.accountError}>
+                                    {accountError}
                                 </div>
+                            )}
 
-                                <div className={styles.accountRow}>
-                                    <span className={styles.accountLabel}>
-                                        מנוי
-                                    </span>
-                                    <span className={styles.accountValue}>
-                                        {account.subscription?.status ===
-                                        "active"
-                                            ? "פעיל"
-                                            : account.subscription?.status ===
-                                                "expired"
-                                              ? "פג תוקף"
-                                              : "לא פעיל"}
-                                    </span>
-                                </div>
-
-                                {account.subscription?.expiresAt && (
+                            {account && !accountLoading && (
+                                <div className={styles.accountFields}>
                                     <div className={styles.accountRow}>
                                         <span className={styles.accountLabel}>
-                                            בתוקף עד
+                                            אימייל
                                         </span>
-                                        <span className={styles.accountValue}>
-                                            {formatDate(
-                                                account.subscription.expiresAt,
-                                            )}
+                                        <span
+                                            className={styles.accountValue}
+                                            dir="ltr"
+                                        >
+                                            {account.email || "—"}
                                         </span>
                                     </div>
-                                )}
 
-                                {account.orgMemberships?.length > 0 && (
-                                    <div className={styles.accountOrgs}>
-                                        <span className={styles.accountLabel}>
-                                            ארגונים
-                                        </span>
-                                        <ul className={styles.orgList}>
-                                            {account.orgMemberships.map((m) => (
-                                                <li key={m.orgId}>
-                                                    {m.orgName || m.orgSlug}
-                                                </li>
-                                            ))}
-                                        </ul>
-                                    </div>
-                                )}
-                            </div>
-                        )}
+                                    {account.orgMemberships?.length > 0 && (
+                                        <div className={styles.accountOrgs}>
+                                            <span
+                                                className={styles.accountLabel}
+                                            >
+                                                ארגונים
+                                            </span>
+                                            <ul className={styles.orgList}>
+                                                {account.orgMemberships.map(
+                                                    (m) => (
+                                                        <li key={m.orgId}>
+                                                            {m.orgName ||
+                                                                m.orgSlug}
+                                                        </li>
+                                                    ),
+                                                )}
+                                            </ul>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+                        </div>
 
-                        {/* ── Billing / Payments block ── */}
+                        {/* ── Section 3: תשלומים ── */}
                         {(() => {
                             const sub = account?.subscription || {};
                             const acPlan = account?.plan || "free";
@@ -540,8 +501,8 @@ export default function SettingsPanel({
                             }
 
                             return (
-                                <div className={styles.billingBlock}>
-                                    <div className={styles.billingTitle}>
+                                <div className={styles.section}>
+                                    <div className={styles.sectionTitle}>
                                         תשלומים
                                     </div>
 
@@ -689,161 +650,175 @@ export default function SettingsPanel({
                             );
                         })()}
 
-                        <form
-                            className={styles.pwBlock}
-                            onSubmit={handleChangePassword}
-                            autoComplete="off"
-                        >
-                            <div className={styles.pwTitle}>שינוי סיסמה</div>
+                        {/* ── Section 4: פעולות ── */}
+                        <div className={styles.section}>
+                            <div className={styles.sectionTitle}>פעולות</div>
 
-                            <Input
-                                label="סיסמה נוכחית"
-                                type="password"
-                                value={pwCurrent}
-                                onChange={(e) => {
-                                    setPwCurrent(e.target.value);
-                                    setPwError("");
-                                    setPwSuccess("");
-                                }}
-                                autoComplete="current-password"
-                                disabled={pwSubmitting}
-                            />
-
-                            <Input
-                                label="סיסמה חדשה"
-                                type="password"
-                                value={pwNew}
-                                onChange={(e) => {
-                                    setPwNew(e.target.value);
-                                    setPwError("");
-                                    setPwSuccess("");
-                                    setPwConfirmError("");
-                                }}
-                                autoComplete="new-password"
-                                disabled={pwSubmitting}
-                            />
-
-                            <Input
-                                label="אימות סיסמה חדשה"
-                                type="password"
-                                value={pwConfirm}
-                                onChange={(e) => {
-                                    setPwConfirm(e.target.value);
-                                    setPwConfirmError("");
-                                    setPwSuccess("");
-                                }}
-                                error={pwConfirmError}
-                                autoComplete="new-password"
-                                disabled={pwSubmitting}
-                            />
-
-                            {pwError && (
-                                <div className={styles.accountError}>
-                                    {pwError}
-                                </div>
-                            )}
-
-                            {pwSuccess && (
-                                <div className={styles.pwSuccess}>
-                                    {pwSuccess}
-                                </div>
-                            )}
-
-                            <div className={styles.pwActions}>
-                                <Button
-                                    type="submit"
-                                    variant="secondary"
-                                    loading={pwSubmitting}
-                                    disabled={
-                                        pwSubmitting ||
-                                        !pwCurrent.trim() ||
-                                        !pwNew.trim() ||
-                                        !pwConfirm.trim()
-                                    }
-                                >
+                            <details className={styles.collapsible}>
+                                <summary className={styles.collapsibleTrigger}>
                                     שינוי סיסמה
-                                </Button>
-                            </div>
-                        </form>
-
-                        <form
-                            className={styles.dangerBlock}
-                            onSubmit={handleDeleteAccount}
-                            autoComplete="off"
-                        >
-                            <div className={styles.dangerTitle}>
-                                מחיקת חשבון
-                            </div>
-
-                            <div className={styles.dangerText}>
-                                מחיקת החשבון תמחק לצמיתות את הכרטיס האישי,
-                                תמונות, לידים ונתוני אנליטיקה.
-                            </div>
-                            <div className={styles.dangerText}>
-                                לא ניתן לשחזר.
-                            </div>
-                            <div className={styles.dangerText}>
-                                לא ניתן החזר כספי אוטומטי על תשלום קיים.
-                            </div>
-
-                            <Input
-                                label='הקלד "מחיקה" לאישור'
-                                value={delConfirm}
-                                onChange={(e) => {
-                                    setDelConfirm(e.target.value);
-                                    setDelError("");
-                                    setDelBlockOrgs(null);
-                                }}
-                                placeholder="מחיקה"
-                                autoComplete="off"
-                                disabled={delSubmitting}
-                            />
-
-                            <Input
-                                label="סיסמה נוכחית"
-                                type="password"
-                                value={delPassword}
-                                onChange={(e) => {
-                                    setDelPassword(e.target.value);
-                                    setDelError("");
-                                    setDelBlockOrgs(null);
-                                }}
-                                autoComplete="current-password"
-                                disabled={delSubmitting}
-                            />
-
-                            {delBlockOrgs && (
-                                <div className={styles.dangerError}>
-                                    אתה המנהל היחיד בארגונים:{" "}
-                                    {delBlockOrgs
-                                        .map((o) => o.orgName || o.orgSlug)
-                                        .join(", ")}
-                                    . העבר ניהול לפני מחיקה.
-                                </div>
-                            )}
-
-                            {delError && (
-                                <div className={styles.dangerError}>
-                                    {delError}
-                                </div>
-                            )}
-
-                            <div className={styles.dangerActions}>
-                                <Button
-                                    type="submit"
-                                    variant="ghost"
-                                    loading={delSubmitting}
-                                    disabled={
-                                        delSubmitting ||
-                                        delConfirm.trim() !== "מחיקה" ||
-                                        !delPassword.trim()
-                                    }
+                                </summary>
+                                <form
+                                    className={styles.collapsibleContent}
+                                    onSubmit={handleChangePassword}
+                                    autoComplete="off"
                                 >
-                                    מחק חשבון
-                                </Button>
-                            </div>
-                        </form>
-                    </div>
+                                    <Input
+                                        label="סיסמה נוכחית"
+                                        type="password"
+                                        value={pwCurrent}
+                                        onChange={(e) => {
+                                            setPwCurrent(e.target.value);
+                                            setPwError("");
+                                            setPwSuccess("");
+                                        }}
+                                        autoComplete="current-password"
+                                        disabled={pwSubmitting}
+                                    />
+
+                                    <Input
+                                        label="סיסמה חדשה"
+                                        type="password"
+                                        value={pwNew}
+                                        onChange={(e) => {
+                                            setPwNew(e.target.value);
+                                            setPwError("");
+                                            setPwSuccess("");
+                                            setPwConfirmError("");
+                                        }}
+                                        autoComplete="new-password"
+                                        disabled={pwSubmitting}
+                                    />
+
+                                    <Input
+                                        label="אימות סיסמה חדשה"
+                                        type="password"
+                                        value={pwConfirm}
+                                        onChange={(e) => {
+                                            setPwConfirm(e.target.value);
+                                            setPwConfirmError("");
+                                            setPwSuccess("");
+                                        }}
+                                        error={pwConfirmError}
+                                        autoComplete="new-password"
+                                        disabled={pwSubmitting}
+                                    />
+
+                                    {pwError && (
+                                        <div className={styles.accountError}>
+                                            {pwError}
+                                        </div>
+                                    )}
+
+                                    {pwSuccess && (
+                                        <div className={styles.pwSuccess}>
+                                            {pwSuccess}
+                                        </div>
+                                    )}
+
+                                    <div className={styles.pwActions}>
+                                        <Button
+                                            type="submit"
+                                            variant="secondary"
+                                            loading={pwSubmitting}
+                                            disabled={
+                                                pwSubmitting ||
+                                                !pwCurrent.trim() ||
+                                                !pwNew.trim() ||
+                                                !pwConfirm.trim()
+                                            }
+                                        >
+                                            שינוי סיסמה
+                                        </Button>
+                                    </div>
+                                </form>
+                            </details>
+
+                            <details
+                                className={`${styles.collapsible} ${styles.collapsibleDanger}`}
+                            >
+                                <summary className={styles.collapsibleTrigger}>
+                                    מחיקת חשבון
+                                </summary>
+                                <form
+                                    className={styles.collapsibleContent}
+                                    onSubmit={handleDeleteAccount}
+                                    autoComplete="off"
+                                >
+                                    <div className={styles.dangerText}>
+                                        מחיקת החשבון תמחק לצמיתות את הכרטיס
+                                        האישי, תמונות, לידים ונתוני אנליטיקה.
+                                    </div>
+                                    <div className={styles.dangerText}>
+                                        לא ניתן לשחזר.
+                                    </div>
+                                    <div className={styles.dangerText}>
+                                        לא ניתן החזר כספי אוטומטי על תשלום קיים.
+                                    </div>
+
+                                    <Input
+                                        label='הקלד "מחיקה" לאישור'
+                                        value={delConfirm}
+                                        onChange={(e) => {
+                                            setDelConfirm(e.target.value);
+                                            setDelError("");
+                                            setDelBlockOrgs(null);
+                                        }}
+                                        placeholder="מחיקה"
+                                        autoComplete="off"
+                                        disabled={delSubmitting}
+                                    />
+
+                                    <Input
+                                        label="סיסמה נוכחית"
+                                        type="password"
+                                        value={delPassword}
+                                        onChange={(e) => {
+                                            setDelPassword(e.target.value);
+                                            setDelError("");
+                                            setDelBlockOrgs(null);
+                                        }}
+                                        autoComplete="current-password"
+                                        disabled={delSubmitting}
+                                    />
+
+                                    {delBlockOrgs && (
+                                        <div className={styles.dangerError}>
+                                            אתה המנהל היחיד בארגונים:{" "}
+                                            {delBlockOrgs
+                                                .map(
+                                                    (o) =>
+                                                        o.orgName || o.orgSlug,
+                                                )
+                                                .join(", ")}
+                                            . העבר ניהול לפני מחיקה.
+                                        </div>
+                                    )}
+
+                                    {delError && (
+                                        <div className={styles.dangerError}>
+                                            {delError}
+                                        </div>
+                                    )}
+
+                                    <div className={styles.dangerActions}>
+                                        <Button
+                                            type="submit"
+                                            variant="ghost"
+                                            loading={delSubmitting}
+                                            disabled={
+                                                delSubmitting ||
+                                                delConfirm.trim() !== "מחיקה" ||
+                                                !delPassword.trim()
+                                            }
+                                        >
+                                            מחק חשבון
+                                        </Button>
+                                    </div>
+                                </form>
+                            </details>
+                        </div>
+                    </>
                 )}
             </div>
         </Panel>

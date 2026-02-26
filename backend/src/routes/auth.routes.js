@@ -4,30 +4,43 @@ import bcrypt from "bcrypt";
 import User from "../models/User.model.js";
 import PasswordReset from "../models/PasswordReset.model.js";
 import EmailSignupToken from "../models/EmailSignupToken.model.js";
+import EmailVerificationToken from "../models/EmailVerificationToken.model.js";
 import { signToken } from "../utils/jwt.js";
 import { claimAnonymousCardForUser } from "../services/claimCard.service.js";
 import { requireAuth } from "../middlewares/auth.middleware.js";
 import { getSiteUrl } from "../utils/siteUrl.util.js";
 import { sendPasswordResetEmailMailjetBestEffort } from "../services/mailjet.service.js";
 import { sendSignupLinkEmailMailjetBestEffort } from "../services/mailjet.service.js";
+import { sendVerificationEmailMailjetBestEffort } from "../services/mailjet.service.js";
 
 const router = Router();
 
 const RESET_TOKEN_TTL_MS = 30 * 60 * 1000;
 const SIGNUP_TOKEN_TTL_MS = 30 * 60 * 1000;
+const VERIFY_TOKEN_TTL_MS = 24 * 60 * 60 * 1000; // 24h for email verification
 
 const AUTH_RATE_WINDOW_MS = 10 * 60 * 1000;
 const FORGOT_RATE_LIMIT = 20;
 const RESET_RATE_LIMIT = 40;
+const REGISTER_RATE_LIMIT = 20;
+const LOGIN_RATE_LIMIT = 30;
 const SIGNUP_LINK_RATE_LIMIT = 30;
 const SIGNUP_CONSUME_RATE_LIMIT = 60;
 const SIGNUP_LINK_EMAIL_RATE_LIMIT = 5;
+const VERIFY_EMAIL_RATE_LIMIT = 30;
+const RESEND_VERIFY_RATE_LIMIT = 5;
 
+const PASSWORD_MIN_LENGTH = 8;
+
+const inMemoryRegisterRate = new Map();
+const inMemoryLoginRate = new Map();
 const inMemoryForgotRate = new Map();
 const inMemoryResetRate = new Map();
 const inMemorySignupLinkRate = new Map();
 const inMemorySignupConsumeRate = new Map();
 const inMemorySignupLinkEmailRate = new Map();
+const inMemoryVerifyEmailRate = new Map();
+const inMemoryResendVerifyRate = new Map();
 let rateSweepTick = 0;
 const RATE_SWEEP_EVERY = 500;
 
@@ -146,6 +159,13 @@ function noStore(req, res, next) {
 
 // REGISTER
 router.post("/register", async (req, res) => {
+    if (!rateLimitByIp(req, inMemoryRegisterRate, REGISTER_RATE_LIMIT)) {
+        return res.status(429).json({
+            code: "RATE_LIMITED",
+            message: "Too many requests",
+        });
+    }
+
     const rawEmail = req.body?.email;
     const email = normalizeEmail(rawEmail);
     const password = req.body?.password;
@@ -155,6 +175,11 @@ router.post("/register", async (req, res) => {
     }
     if (typeof password !== "string" || !password) {
         return res.status(400).json({ message: "Invalid password" });
+    }
+    if (password.length < PASSWORD_MIN_LENGTH) {
+        return res.status(400).json({
+            message: `Password must be at least ${PASSWORD_MIN_LENGTH} characters`,
+        });
     }
 
     // Prevent casing-duplicates until we can enforce a case-insensitive unique index.
@@ -198,11 +223,46 @@ router.post("/register", async (req, res) => {
         );
     }
 
-    res.json({ token: signToken(user._id) });
+    // Best-effort: send email verification link.
+    try {
+        const siteUrl = getSiteUrl();
+        const rawToken = crypto.randomBytes(32).toString("hex");
+        const tokenHash = sha256Hex(rawToken);
+        const expiresAt = new Date(Date.now() + VERIFY_TOKEN_TTL_MS);
+
+        const vToken = await EmailVerificationToken.create({
+            userId: user._id,
+            tokenHash,
+            expiresAt,
+        });
+
+        const verifyLink = `${siteUrl}/verify-email?token=${encodeURIComponent(rawToken)}`;
+
+        await sendVerificationEmailMailjetBestEffort({
+            toEmail: email,
+            verifyLink,
+            userId: user._id,
+            tokenId: vToken._id,
+        });
+    } catch (err) {
+        console.error(
+            "[auth] send verification email after register failed",
+            err?.message || err,
+        );
+    }
+
+    res.json({ token: signToken(user._id), isVerified: false });
 });
 
 // LOGIN
 router.post("/login", async (req, res) => {
+    if (!rateLimitByIp(req, inMemoryLoginRate, LOGIN_RATE_LIMIT)) {
+        return res.status(429).json({
+            code: "RATE_LIMITED",
+            message: "Too many requests",
+        });
+    }
+
     const email = normalizeEmail(req.body?.email);
     const password = req.body?.password;
     if (!email || typeof password !== "string" || !password) {
@@ -442,6 +502,9 @@ router.post("/signup-consume", async (req, res) => {
         if (!rawToken || typeof password !== "string" || !password) {
             return fail();
         }
+        if (password.length < PASSWORD_MIN_LENGTH) {
+            return fail();
+        }
 
         const tokenHash = sha256Hex(rawToken);
         const now = new Date();
@@ -471,7 +534,11 @@ router.post("/signup-consume", async (req, res) => {
 
         let user;
         try {
-            user = await User.create({ email: emailNormalized, passwordHash });
+            user = await User.create({
+                email: emailNormalized,
+                passwordHash,
+                isVerified: true, // Magic link already proves email ownership.
+            });
         } catch (err) {
             if (err && (err.code === 11000 || err.code === 11001)) {
                 return fail();
@@ -535,10 +602,140 @@ router.get("/me", noStore, requireAuth, async (req, res) => {
     const userId = req.user?.id || req.userId || req.user?.userId;
     if (!userId) return res.status(401).json({ message: "Invalid token" });
 
-    const user = await User.findById(String(userId)).select("email role");
+    const user = await User.findById(String(userId)).select(
+        "email role isVerified",
+    );
     if (!user) return res.status(404).json({ message: "User not found" });
 
-    return res.json({ email: user.email, role: user.role });
+    return res.json({
+        email: user.email,
+        role: user.role,
+        isVerified: Boolean(user.isVerified),
+    });
+});
+
+// VERIFY EMAIL (consume verification token)
+router.post("/verify-email", async (req, res) => {
+    if (!rateLimitByIp(req, inMemoryVerifyEmailRate, VERIFY_EMAIL_RATE_LIMIT)) {
+        return res.status(429).json({
+            code: "RATE_LIMITED",
+            message: "Too many requests",
+        });
+    }
+
+    const rawToken = String(req.body?.token || "").trim();
+    if (!rawToken) {
+        return res.status(400).json({ message: "Invalid or expired token" });
+    }
+
+    const tokenHash = sha256Hex(rawToken);
+    const now = new Date();
+
+    // Atomically mark token as used to prevent reuse.
+    const consumed = await EmailVerificationToken.findOneAndUpdate(
+        { tokenHash, usedAt: null, expiresAt: { $gt: now } },
+        { $set: { usedAt: now } },
+        { new: false },
+    );
+
+    if (!consumed) {
+        return res.status(400).json({ message: "Invalid or expired token" });
+    }
+
+    const upd = await User.updateOne(
+        { _id: consumed.userId },
+        { $set: { isVerified: true } },
+    );
+
+    if (!upd?.matchedCount) {
+        return res.status(400).json({ message: "Unable to verify email" });
+    }
+
+    return res.json({ verified: true });
+});
+
+// RESEND VERIFICATION EMAIL (requires auth)
+router.post("/resend-verification", requireAuth, async (req, res) => {
+    const userId = req.user?.id || req.userId || req.user?.userId;
+    if (!userId) return res.status(401).json({ message: "Invalid token" });
+
+    if (
+        !rateLimitByIp(req, inMemoryResendVerifyRate, RESEND_VERIFY_RATE_LIMIT)
+    ) {
+        return res.status(429).json({
+            code: "RATE_LIMITED",
+            message: "Too many requests",
+        });
+    }
+
+    const user = await User.findById(String(userId)).select("email isVerified");
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    if (user.isVerified) {
+        return res.json({ message: "Already verified" });
+    }
+
+    const siteUrl = getSiteUrl();
+
+    // Retry once on duplicate tokenHash.
+    for (let attempt = 0; attempt < 2; attempt += 1) {
+        const rawToken = crypto.randomBytes(32).toString("hex");
+        const tokenHash = sha256Hex(rawToken);
+        const expiresAt = new Date(Date.now() + VERIFY_TOKEN_TTL_MS);
+
+        try {
+            const created = await EmailVerificationToken.create({
+                userId: user._id,
+                tokenHash,
+                expiresAt,
+            });
+
+            const verifyLink = `${siteUrl}/verify-email?token=${encodeURIComponent(rawToken)}`;
+
+            const sendRes = await sendVerificationEmailMailjetBestEffort({
+                toEmail: user.email,
+                verifyLink,
+                userId: user._id,
+                tokenId: created._id,
+            });
+
+            // Invalidate previous tokens only if send was attempted.
+            const didAttemptSend = !sendRes?.skipped;
+            if (didAttemptSend) {
+                const now = new Date();
+                try {
+                    await EmailVerificationToken.updateMany(
+                        {
+                            userId: user._id,
+                            _id: { $ne: created._id },
+                            usedAt: null,
+                            expiresAt: { $gt: now },
+                        },
+                        { $set: { usedAt: now } },
+                    );
+                } catch (err) {
+                    console.error(
+                        "[auth] resend-verification invalidate previous tokens failed",
+                        err?.message || err,
+                    );
+                }
+            }
+
+            break;
+        } catch (err) {
+            if (err && (err.code === 11000 || err.code === 11001)) {
+                continue;
+            }
+            console.error(
+                "[auth] resend-verification failed",
+                err?.message || err,
+            );
+            break;
+        }
+    }
+
+    // Anti-enumeration: always success.
+    return res.json({ message: "Verification email sent" });
 });
 
 export default router;

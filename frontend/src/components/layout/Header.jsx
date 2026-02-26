@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, NavLink, useNavigate } from "react-router-dom";
 import Button from "../ui/Button";
 import { useAuth } from "../../context/AuthContext";
@@ -60,7 +60,41 @@ export default function Header() {
         return items;
     }, [hasOrgAdmin, isAuth, user?.role]);
 
-    const closeMobile = () => setMobileOpen(false);
+    const closeMobile = useCallback(() => setMobileOpen(false), []);
+
+    // Lock body scroll when mobile drawer is open.
+    useEffect(() => {
+        if (typeof document === "undefined") return;
+
+        const lockClass = styles.scrollLock;
+        const root = document.documentElement;
+        const body = document.body;
+
+        if (mobileOpen) {
+            root.classList.add(lockClass);
+            body.classList.add(lockClass);
+        } else {
+            root.classList.remove(lockClass);
+            body.classList.remove(lockClass);
+        }
+
+        return () => {
+            root.classList.remove(lockClass);
+            body.classList.remove(lockClass);
+        };
+    }, [mobileOpen]);
+
+    // Close drawer on Escape key.
+    useEffect(() => {
+        if (!mobileOpen) return;
+
+        const onKeyDown = (e) => {
+            if (e.key === "Escape") closeMobile();
+        };
+
+        window.addEventListener("keydown", onKeyDown);
+        return () => window.removeEventListener("keydown", onKeyDown);
+    }, [mobileOpen, closeMobile]);
 
     const handleLogout = () => {
         logout();
@@ -183,11 +217,19 @@ export default function Header() {
             </div>
 
             {/* Mobile drawer */}
-            {mobileOpen && (
-                <div className={styles.overlay} onClick={closeMobile} />
-            )}
+            <div
+                className={
+                    mobileOpen
+                        ? `${styles.overlay} ${styles.overlayOpen}`
+                        : styles.overlay
+                }
+                onClick={closeMobile}
+                aria-hidden="true"
+            />
             <aside
                 id="mobile-nav"
+                role="dialog"
+                aria-modal={mobileOpen ? "true" : undefined}
                 className={
                     mobileOpen
                         ? `${styles.drawer} ${styles.drawerOpen}`

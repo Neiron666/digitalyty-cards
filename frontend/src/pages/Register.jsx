@@ -1,16 +1,15 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { register as registerUser } from "../services/auth.service";
-import { useAuth } from "../context/AuthContext";
 import AuthLayout from "../components/auth/AuthLayout";
 import Input from "../components/ui/Input";
 import Button from "../components/ui/Button";
 import api, { clearAnonymousId, getAnonymousId } from "../services/api";
 import styles from "./Register.module.css";
 
+const PASSWORD_MIN_LENGTH = 8;
+
 function Register() {
-    const navigate = useNavigate();
-    const { login } = useAuth();
     const [form, setForm] = useState({
         email: "",
         password: "",
@@ -18,6 +17,7 @@ function Register() {
     });
     const [error, setError] = useState("");
     const [loading, setLoading] = useState(false);
+    const [registered, setRegistered] = useState(false);
 
     function update(field, value) {
         setForm((prev) => ({ ...prev, [field]: value }));
@@ -27,136 +27,69 @@ function Register() {
         e.preventDefault();
         setError("");
 
+        if (form.password.length < PASSWORD_MIN_LENGTH) {
+            setError(`הסיסמה חייבת לכלול לפחות ${PASSWORD_MIN_LENGTH} תווים`);
+            return;
+        }
+
         if (form.password !== form.confirmPassword) {
-            setError("Passwords do not match");
+            setError("הסיסמאות לא תואמות");
             return;
         }
 
         setLoading(true);
         try {
-            await registerUser(form.email, form.password);
-            await login(form.email, form.password);
+            const regRes = await registerUser(form.email, form.password);
+            const jwt = regRes?.data?.token;
 
-            async function fetchMineOnce() {
-                const res = await api.get("/cards/mine");
-                return res?.data || null;
+            // Store token so user has a session (even if not verified yet).
+            if (jwt) {
+                localStorage.setItem("token", jwt);
+                api.defaults.headers.common.Authorization = `Bearer ${jwt}`;
             }
 
-            const anonId = getAnonymousId();
-
-            // 1) If backend already claimed best-effort during /auth/register, do not block.
-            try {
-                const mine0 = await fetchMineOnce();
-                if (mine0 && mine0._id) {
-                    if (anonId) clearAnonymousId();
-                    navigate("/edit", { replace: true });
-                    return;
-                }
-            } catch (err) {
-                console.warn("[auth] mine after login failed", {
-                    status: err?.response?.status,
-                    message: err?.message,
-                });
-                // Do not block registration on transient failures here.
-                navigate("/edit", { replace: true });
-                return;
-            }
-
-            // Serialize: ensure claim completes before editor init can create a new user-card.
-            if (anonId) {
-                let claimErr = null;
+            // Best-effort: claim anonymous card in the background.
+            const anonymousId = getAnonymousId();
+            if (anonymousId) {
                 try {
                     await api.post("/cards/claim");
-                } catch (err) {
-                    claimErr = err;
-                }
-
-                // 2) Deterministic verification: mine → optional claim → mine
-                let mine1 = null;
-                try {
-                    mine1 = await fetchMineOnce();
-                } catch (err) {
-                    console.warn("[auth] mine after claim failed", {
-                        status: err?.response?.status,
-                        message: err?.message,
-                    });
-                    // Don't block registration if we cannot verify.
-                    navigate("/edit", { replace: true });
-                    return;
-                }
-
-                if (mine1 && mine1._id) {
                     clearAnonymousId();
-                    navigate("/edit", { replace: true });
-                    return;
+                } catch {
+                    // Non-blocking; claim can fail gracefully.
                 }
-
-                if (claimErr) {
-                    const status = claimErr?.response?.status;
-                    const code = claimErr?.response?.data?.code;
-
-                    if (status === 409 && code === "USER_ALREADY_HAS_CARD") {
-                        navigate("/edit", { replace: true });
-                        return;
-                    }
-
-                    if (status === 403 && code === "CLAIM_NOT_ALLOWED") {
-                        setError(
-                            "Claim is only allowed right after registration.",
-                        );
-                        return;
-                    }
-
-                    if (status === 404 && code === "NO_ANON_CARD") {
-                        console.warn("[auth] claim: no anon card", {
-                            status,
-                            code,
-                        });
-                        navigate("/edit", { replace: true });
-                        return;
-                    }
-
-                    if (status === 400) {
-                        console.warn("[auth] claim: bad request", {
-                            status,
-                            code,
-                        });
-                        navigate("/edit", { replace: true });
-                        return;
-                    }
-
-                    if (status === 502 || status === 500) {
-                        setError(
-                            "We couldn't migrate your card right now. Please try again.",
-                        );
-                        return;
-                    }
-
-                    console.error("[auth] claim failed", {
-                        status,
-                        code,
-                        message: claimErr?.message,
-                    });
-                    // Only show finish-migrating error when mine is still empty.
-                    setError(
-                        "We couldn't finish migrating your card. Please try again.",
-                    );
-                    return;
-                }
-
-                // Claim succeeded but mine is still empty.
-                setError(
-                    "We couldn't finish migrating your card. Please try again.",
-                );
-                return;
             }
 
-            navigate("/edit", { replace: true });
+            // Show "check your email" message.
+            setRegistered(true);
         } catch (err) {
-            setError(err.response?.data?.message || "Registration failed");
+            setError(err.response?.data?.message || "שגיאה בהרשמה");
         } finally {
             setLoading(false);
         }
+    }
+
+    // Post-registration: show "check your email" message.
+    if (registered) {
+        return (
+            <AuthLayout
+                title="בדקו את האימייל"
+                footer={
+                    <>
+                        <Link to="/login">התחברות</Link>
+                    </>
+                }
+            >
+                <div className={styles.form}>
+                    <p className={styles.successMessage}>
+                        נשלח אימייל אימות לכתובת <strong>{form.email}</strong>.
+                    </p>
+                    <p className={styles.successHint}>
+                        לחצו על הקישור באימייל כדי להשלים את ההרשמה. אם לא
+                        קיבלתם — בדקו בתיקיית הספאם.
+                    </p>
+                </div>
+            </AuthLayout>
+        );
     }
 
     return (
@@ -185,6 +118,7 @@ function Register() {
                     value={form.password}
                     onChange={(e) => update("password", e.target.value)}
                     required
+                    minLength={PASSWORD_MIN_LENGTH}
                 />
 
                 <Input
@@ -199,7 +133,7 @@ function Register() {
                 {error && <p className={styles.error}>{error}</p>}
 
                 <Button type="submit" fullWidth loading={loading}>
-                    צור כרטיס ראשון
+                    צור חשבון
                 </Button>
             </form>
         </AuthLayout>

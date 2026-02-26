@@ -40,6 +40,18 @@
     font-size: var(--fs-ui);
 }
 
+.successMessage {
+    color: var(--c-text);
+    font-size: var(--fs-body);
+    text-align: center;
+}
+
+.successHint {
+    color: var(--c-text-muted, #666);
+    font-size: var(--fs-ui);
+    text-align: center;
+}
+
 .button {
     padding: 12px;
     background: #0b5cff;

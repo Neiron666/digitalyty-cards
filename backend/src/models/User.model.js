@@ -5,6 +5,9 @@ const UserSchema = new mongoose.Schema(
         email: { type: String, unique: true, index: true },
         passwordHash: String,
 
+        // Email verification status: false until user clicks verification link.
+        isVerified: { type: Boolean, default: false },
+
         role: {
             type: String,
             enum: ["user", "admin"],
@@ -54,7 +57,7 @@ const UserSchema = new mongoose.Schema(
             },
         },
     },
-    { timestamps: true }
+    { timestamps: true },
 );
 
 export default mongoose.model("User", UserSchema);

@@ -794,6 +794,7 @@ export async function getOrCreateMyOrgCard(req, res) {
 
     const dto = toCardDTO(card, now, {
         user: userTier || null,
+        exposeSlugPolicy: true,
     });
 
     if (dto?.slug) {

@@ -1,3 +1,7 @@
+.scrollLock {
+    overflow: hidden;
+}
+
 .header {
     position: sticky;
     top: 0;
@@ -144,20 +148,32 @@
     background: rgba(2, 6, 23, 0.55);
     backdrop-filter: blur(4px);
     z-index: 60;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.22s ease;
+}
+
+.overlayOpen {
+    opacity: 1;
+    pointer-events: auto;
 }
 
 .drawer {
     position: fixed;
     top: 0;
-    right: 0;
+    inset-inline-start: 0;
     height: 100vh;
+    height: 100dvh;
     width: min(86vw, 360px);
     background: rgba(2, 6, 23, 0.97);
-    border-left: 1px solid var(--gold-fade);
+    border-inline-end: 1px solid var(--gold-fade);
     box-shadow: -18px 0 45px rgba(0, 0, 0, 0.45);
     z-index: 70;
     transform: translateX(110%);
     transition: transform 0.22s ease;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
 
     display: flex;
     flex-direction: column;
@@ -196,11 +212,19 @@
     flex-direction: column;
     gap: 6px;
     padding: 14px 0;
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
 }
 
 .drawerNav .navLink {
     background: rgba(255, 255, 255, 0.02);
     border: 1px solid rgba(212, 175, 55, 0.12);
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
 }
 
 .drawerNav .navLinkActive {

@@ -1,5 +1,6 @@
 import express from "express";
 import cors from "cors";
+import helmet from "helmet";
 import cardRoutes from "./routes/card.routes.js";
 import { errorMiddleware } from "./middlewares/error.middleware.js";
 import uploadRoutes from "./routes/upload.routes.js";
@@ -28,7 +29,39 @@ const app = express();
 // Disabling ETags avoids 304 responses with empty bodies for XHR clients.
 app.set("etag", false);
 
-app.use(cors());
+// Security headers (enterprise baseline).
+app.use(
+    helmet({
+        // Allow SPA to inline scripts/styles as needed;
+        // contentSecurityPolicy is best set at reverse-proxy for more control.
+        contentSecurityPolicy: false,
+        // Allow embedding by our own domain only.
+        frameguard: { action: "sameorigin" },
+    }),
+);
+
+// CORS: allow only canonical origin in production; permissive otherwise.
+const CORS_ORIGINS = process.env.CORS_ORIGINS
+    ? process.env.CORS_ORIGINS.split(",")
+          .map((o) => o.trim())
+          .filter(Boolean)
+    : [];
+
+app.use(
+    cors(
+        CORS_ORIGINS.length > 0
+            ? {
+                  origin(origin, cb) {
+                      // Allow requests with no origin (server-to-server, curl, mobile).
+                      if (!origin) return cb(null, true);
+                      if (CORS_ORIGINS.includes(origin)) return cb(null, true);
+                      return cb(new Error("CORS not allowed"));
+                  },
+                  credentials: true,
+              }
+            : undefined,
+    ),
+);
 app.use(express.json());
 
 // Site analytics write endpoint must be "always 204".

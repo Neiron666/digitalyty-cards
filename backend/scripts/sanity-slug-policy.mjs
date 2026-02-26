@@ -202,7 +202,7 @@ async function main() {
                 re: /exposeSlugPolicy\s*:\s*true/g,
             });
             statuses.exposeSlugPolicyMatches = count;
-            checks.exposeSlugPolicySingleMatch = count === 1;
+            checks.exposeSlugPolicySingleMatch = count === 2;
         } catch {
             statuses.exposeSlugPolicyMatches = null;
             checks.exposeSlugPolicySingleMatch = false;
