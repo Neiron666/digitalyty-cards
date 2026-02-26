@@ -8,6 +8,7 @@ import {
     adminDeleteCard,
     adminDeleteUserPermanently,
     adminExtendTrial,
+    adminSetAnalyticsPremium,
     adminSetUserSubscription,
     adminRevokeUserSubscription,
     adminOverridePlan,
@@ -186,7 +187,46 @@ const STR = {
         label_user_tier_until: "עד תאריך (משתמש)",
         btn_apply: "החל",
 
+        label_analytics_premium: "אנליטיקס פרימיום",
+
+        label_payer_type: "סוג משלם",
+        label_payer_note: "הערת משלם",
+        opt_keep_current: "השאר ללא שינוי",
+        opt_payer_none: "ללא",
+        opt_payer_user: "משתמש",
+        opt_payer_org: "ארגון",
+
         section_legend: "מקרא",
+        legend_intro:
+            "לוח ניהול למנהלים בלבד. כל פעולה דורשת מילוי שדה «סיבה» ונרשמת ב־Audit לצורכי מעקב ובקרה.",
+        legend_nav: "ניווט",
+        legend_nav_desc:
+            "לוח הניהול מחולק לשלושה אזורים: סרגל סטטיסטיקות עליון, אזור מרכזי עם טבלאות ספרייה (כרטיסים / משתמשים / ארגונים), ופאנל כרטיס נבחר עם טאבים.",
+        legend_tab_general: "טאב «כללי»",
+        legend_tab_general_desc:
+            "מציג פרטי כרטיס בסיסיים: מזהה פנימי (MongoDB ID), סלאג (כתובת קצרה), סטטוס (טיוטה/מפורסם), פעיל (כן/לא), ובעלות (משתמש/אנונימי).",
+        legend_tab_billing: "טאב «חיוב»",
+        legend_tab_billing_desc:
+            "מציג מצב חיוב בפועל: מסלול תשלום (free/monthly/yearly), גישה פעילה (entitled), שולם (isPaid), רמת פיצ'רים (free/basic/premium) + מקור + תוקף, סיום ניסיון, וסטטוס תשלום מפורט.",
+        legend_provenance: "Provenance",
+        legend_provenance_desc:
+            "בתוך טאב חיוב — מציג נתונים גולמיים: Billing Raw (status · plan · paidUntil), Payer Raw (type · source · updatedAt), והיסטוריית Audit עם פעולה, מקור, admin, וסיבה.",
+        legend_tab_actions: "טאב «פעולות מנהל»",
+        legend_tab_actions_items:
+            "הארכת ניסיון (ימים / תאריך מדויק), הטבת מסלול ידנית (plan override), רמת פיצ'רים לכרטיס (tier override), רמת פיצ'רים למשתמש (רק אם הכרטיס בבעלות משתמש), אנליטיקס פרימיום (toggle).",
+        legend_tab_danger: "טאב «אזור סכנה»",
+        legend_tab_danger_desc:
+            "השבתה/הפעלה מחדש של כרטיס (isActive), מחיקת כרטיס לצמיתות, מחיקת משתמש לצמיתות. כל פעולה דורשת אישור.",
+        legend_billing_crud: "פאנל «ניהול חיובים»",
+        legend_billing_crud_desc: "פאנל ימני נפרד עם שתי יחידות:",
+        legend_user_sub:
+            "מנוי משתמש — הגדרת plan + תוקף ברמת User.subscription. לא משפיע ישירות על כרטיס עד ביצוע סנכרון.",
+        legend_card_billing:
+            "חיוב כרטיס (SSoT) — קובע Card.billing ומשפיע מיידית על effectiveBilling. כולל: מסלול, תשלום עד, סוג משלם, הערת משלם, סנכרון מהמשתמש, Force org payer, וניקוי Override.",
+        legend_slug_note:
+            "סלאג: כתובת קצרה. כרטיסים אישיים: /card/:slug. כרטיסי ארגון: /c/:orgSlug/:slug.",
+        legend_ltr_note:
+            "ערכים טכניים (ID, אימייל, סלאג, תאריכים) מוצגים LTR למניעת בלבול בממשק RTL.",
         section_danger: "אזור סכנה",
         confirm_delete_card: "למחוק את הכרטיס לצמיתות? פעולה זו בלתי הפיכה.",
         confirm_delete_user: "למחוק את המשתמש לצמיתות? פעולה זו בלתי הפיכה.",
@@ -354,11 +394,9 @@ export default function Admin() {
     const [adminMode, setAdminMode] = useState("manage");
     const [analyticsRefreshKey, setAnalyticsRefreshKey] = useState(0);
 
-    const [directoryTab, setDirectoryTab] = useState("cards");
     const [selectedTab, setSelectedTab] = useState("general");
     const [selectedUserTab, setSelectedUserTab] = useState("general");
     const [cardsQuery, setCardsQuery] = useState("");
-    const directoryTabListRef = useRef(null);
     const selectedTabListRef = useRef(null);
     const selectedTabListRefMobile = useRef(null);
     const selectedUserTabListRef = useRef(null);
@@ -381,6 +419,7 @@ export default function Admin() {
         billingCardRevoke: false,
         billingCardSync: false,
         billingOverrideClear: false,
+        analyticsPremium: false,
     });
 
     const [actionError, setActionError] = useState({
@@ -397,6 +436,7 @@ export default function Admin() {
         billingCardRevoke: "",
         billingCardSync: "",
         billingOverrideClear: "",
+        analyticsPremium: "",
     });
 
     const [stats, setStats] = useState(null);
@@ -447,6 +487,11 @@ export default function Admin() {
     const [billingCardPaidUntil, setBillingCardPaidUntil] = useState("");
     const [billingCardForceSync, setBillingCardForceSync] = useState(false);
     const [billingCardResult, setBillingCardResult] = useState(null);
+
+    const [billingCardPayerType, setBillingCardPayerType] = useState("");
+    const [billingCardPayerNote, setBillingCardPayerNote] = useState("");
+    const [billingCardPayerNoteTouched, setBillingCardPayerNoteTouched] =
+        useState(false);
 
     const billingUserIdTrimmed = useMemo(
         () => String(billingUserId || "").trim(),
@@ -601,14 +646,6 @@ export default function Admin() {
             setLoading(false);
         }
     }
-
-    useEffect(() => {
-        if (directoryTab === "users") return;
-        setSelectedUserId("");
-        setSelectedUser(null);
-        setSelectedUserTab("general");
-        setSelectedUserError("");
-    }, [directoryTab]);
 
     function handleRefreshClick() {
         if (adminMode === "analytics") {
@@ -891,6 +928,10 @@ export default function Admin() {
 
             const nextPaidUntil = dto?.billing?.paidUntil || null;
             setBillingCardPaidUntil(isoToDatetimeLocalValue(nextPaidUntil));
+
+            setBillingCardPayerType("");
+            setBillingCardPayerNote(dto?.billing?.payer?.note ?? "");
+            setBillingCardPayerNoteTouched(false);
 
             if (dto?._id && selectedCard?._id === dto._id) {
                 setSelectedCard(dto);
@@ -1415,6 +1456,41 @@ export default function Admin() {
         );
     }
 
+    /* ---- shared analytics premium toggle — used by mobile + desktop ---- */
+    function renderAnalyticsPremiumToggle() {
+        return (
+            <div className={styles.formRow}>
+                <label className={styles.toggleRow}>
+                    <input
+                        type="checkbox"
+                        checked={Boolean(
+                            selectedCard?.billing?.features?.analyticsPremium,
+                        )}
+                        disabled={
+                            actionLoading.analyticsPremium || !selectedCard?._id
+                        }
+                        onChange={(e) => {
+                            const next = e.target.checked;
+                            runAction("analyticsPremium", async (r) => {
+                                const res = await adminSetAnalyticsPremium(
+                                    selectedCard._id,
+                                    { enabled: next, reason: r },
+                                );
+                                return res.data;
+                            });
+                        }}
+                    />
+                    <span>{t("label_analytics_premium")}</span>
+                </label>
+                {actionError.analyticsPremium ? (
+                    <p className={styles.errorText}>
+                        {actionError.analyticsPremium}
+                    </p>
+                ) : null}
+            </div>
+        );
+    }
+
     return (
         <main className={styles.adminRoot} dir="rtl">
             <header className={styles.topbar}>
@@ -1432,7 +1508,7 @@ export default function Admin() {
                     <div
                         className={styles.tabs}
                         role="tablist"
-                        aria-label="Admin mode"
+                        aria-label="מצב ניהול"
                     >
                         <button
                             type="button"
@@ -1502,332 +1578,257 @@ export default function Admin() {
                                             {t("section_legend")}
                                         </summary>
                                         <div className={styles.legend}>
-                                            <p>
-                                                הלוח הזה מיועד למנהלים בלבד. כל
-                                                פעולה אדמינית דורשת מילוי “סיבה”
-                                                ונרשמת ביומן הפעולות לצורכי מעקב
-                                                ובקרה.
+                                            <p className={styles.legendIntro}>
+                                                {t("legend_intro")}
                                             </p>
 
-                                            <p>
-                                                סטטיסטיקות: סיכום מהיר של כמות
-                                                משתמשים, כרטיסים, כרטיסים
-                                                אנונימיים, כרטיסים בבעלות
-                                                משתמשים, כרטיסים מפורסמים
-                                                וכרטיסים פעילים.
-                                            </p>
+                                            <section
+                                                className={styles.legendGroup}
+                                            >
+                                                <h4
+                                                    className={
+                                                        styles.legendHeading
+                                                    }
+                                                >
+                                                    {t("legend_nav")}
+                                                </h4>
+                                                <p>{t("legend_nav_desc")}</p>
+                                            </section>
 
-                                            <p>
-                                                טבלאות “משתמשים” ו“כרטיסים”:
-                                                לחיצה על שורה טוענת את הכרטיס
-                                                הנבחר ומציגה את כל הפרטים
-                                                והפעולות האפשריות.
-                                            </p>
+                                            <section
+                                                className={styles.legendGroup}
+                                            >
+                                                <h4
+                                                    className={
+                                                        styles.legendHeading
+                                                    }
+                                                >
+                                                    {t("legend_tab_general")}
+                                                </h4>
+                                                <p>
+                                                    {t(
+                                                        "legend_tab_general_desc",
+                                                    )}
+                                                </p>
+                                                <dl className={styles.legendDl}>
+                                                    <dt>{t("label_slug")}</dt>
+                                                    <dd>
+                                                        {t("legend_slug_note")}
+                                                    </dd>
+                                                </dl>
+                                            </section>
 
-                                            <p>
-                                                מזהה כרטיס (ID פנימי): המזהה
-                                                הפנימי של הכרטיס במסד הנתונים
-                                                (MongoDB). זה לא הסלאג ולא כתובת
-                                                האתר.
-                                            </p>
+                                            <section
+                                                className={styles.legendGroup}
+                                            >
+                                                <h4
+                                                    className={
+                                                        styles.legendHeading
+                                                    }
+                                                >
+                                                    {t("legend_tab_billing")}
+                                                </h4>
+                                                <p>
+                                                    {t(
+                                                        "legend_tab_billing_desc",
+                                                    )}
+                                                </p>
+                                                <dl className={styles.legendDl}>
+                                                    <dt>
+                                                        {t("legend_provenance")}
+                                                    </dt>
+                                                    <dd>
+                                                        {t(
+                                                            "legend_provenance_desc",
+                                                        )}
+                                                    </dd>
+                                                </dl>
+                                            </section>
 
-                                            <p>
-                                                סלאג: הכתובת הקצרה של הכרטיס —
-                                                החלק שמופיע ב־URL אחרי ‎/card/‎.
-                                                הסלאג מוצג משמאל לימין (LTR) כדי
-                                                שיהיה קריא.
-                                            </p>
+                                            <section
+                                                className={styles.legendGroup}
+                                            >
+                                                <h4
+                                                    className={
+                                                        styles.legendHeading
+                                                    }
+                                                >
+                                                    {t("legend_tab_actions")}
+                                                </h4>
+                                                <p>
+                                                    {t(
+                                                        "legend_tab_actions_items",
+                                                    )}
+                                                </p>
+                                            </section>
 
-                                            <p>
-                                                סטטוס: “טיוטה” או “מפורסם”. רק
-                                                כרטיס “מפורסם” יכול להיות נגיש
-                                                לציבור, וגם זה רק אם הוא פעיל
-                                                ובבעלות משתמש (לא אנונימי).
-                                            </p>
+                                            <section
+                                                className={styles.legendGroup}
+                                            >
+                                                <h4
+                                                    className={
+                                                        styles.legendHeading
+                                                    }
+                                                >
+                                                    {t("legend_tab_danger")}
+                                                </h4>
+                                                <p>
+                                                    {t(
+                                                        "legend_tab_danger_desc",
+                                                    )}
+                                                </p>
+                                            </section>
 
-                                            <p>
-                                                פעיל: אם “לא” — הכרטיס מושבת
-                                                (isActive=false). במצב זה הכרטיס
-                                                לא נגיש לציבור לפי סלאג, לא
-                                                נאספים לידים, ולא נאספת
-                                                אנליטיקה.
-                                            </p>
+                                            <section
+                                                className={styles.legendGroup}
+                                            >
+                                                <h4
+                                                    className={
+                                                        styles.legendHeading
+                                                    }
+                                                >
+                                                    {t("legend_billing_crud")}
+                                                </h4>
+                                                <p>
+                                                    {t(
+                                                        "legend_billing_crud_desc",
+                                                    )}
+                                                </p>
+                                                <dl className={styles.legendDl}>
+                                                    <dt>
+                                                        {t(
+                                                            "section_user_subscription",
+                                                        )}
+                                                    </dt>
+                                                    <dd>
+                                                        {t("legend_user_sub")}
+                                                    </dd>
+                                                    <dt>
+                                                        {t(
+                                                            "section_card_billing_crud",
+                                                        )}
+                                                    </dt>
+                                                    <dd>
+                                                        {t(
+                                                            "legend_card_billing",
+                                                        )}
+                                                    </dd>
+                                                </dl>
+                                            </section>
 
-                                            <p>
-                                                בעלות: “משתמש” או “אנונימי”.
-                                                כרטיס אנונימי לא משויך למשתמש,
-                                                ולכן אין אפשרות להחיל עליו “רמת
-                                                פיצ’רים למשתמש (ידני)”.
-                                            </p>
-
-                                            <p>
-                                                מסלול תשלום בפועל: המסלול
-                                                שהמערכת מחשיבה כבתוקף לצורכי
-                                                גישה (free / monthly / yearly),
-                                                לפי תשלום/ניסיון/הטבות ידניות.
-                                            </p>
-
-                                            <p>
-                                                גישה פעילה: האם יש זכאות לגישה
-                                                עכשיו (למשל ניסיון בתוקף או
-                                                תשלום בתוקף). ייתכן “כן” גם אם
-                                                “שולם” הוא “לא” (לדוגמה בתקופת
-                                                ניסיון או בהטבה ידנית).
-                                            </p>
-
-                                            <p>
-                                                שולם: האם יש תשלום פעיל בפועל.
-                                                זה מדד תשלום בלבד, לא בהכרח מדד
-                                                גישה.
-                                            </p>
-
-                                            <p>
-                                                רמת פיצ’רים בפועל: free / basic
-                                                / premium. זה משפיע על פיצ’רים
-                                                שהכרטיס מקבל (למשל יכולות), ולא
-                                                משנה את החיוב או התשלום של
-                                                הלקוח.
-                                            </p>
-
-                                            <p>
-                                                מקור: מאיפה נקבעה “רמת הפיצ’רים
-                                                בפועל” (לדוגמה: לפי כרטיס, לפי
-                                                משתמש, או לפי חיוב).
-                                            </p>
-
-                                            <p>
-                                                עד: תאריך/זמן תפוגה של
-                                                הטבה/override. אם מוגדר “עד”,
-                                                אחרי הזמן הזה ההטבה תסתיים
-                                                והמערכת תחזור להתנהגות הרגילה.
-                                            </p>
-
-                                            <p>
-                                                סיום תקופת ניסיון: מוצג בשעון
-                                                ישראל. אחרי הזמן הזה, אם אין
-                                                זכאות אחרת, הגישה תיחסם.
-                                            </p>
-
-                                            <p>
-                                                סטטוס תשלום בפועל: מציג מקור +
-                                                מסלול + תאריך “עד” (אם קיים),
-                                                כדי להבין מה בדיוק המערכת מחשיבה
-                                                כמצב החיוב/גישה הנוכחי.
-                                            </p>
-
-                                            <p>
-                                                הטבת מסלול (ידני): מאפשרת לקבוע
-                                                מסלול לצורכי זכאות בלבד (ללא
-                                                שינוי תשלום בפועל). השדה “עד
-                                                תאריך” מוחל עד סוף היום של
-                                                התאריך שנבחר (UTC).
-                                            </p>
-
-                                            <p>
-                                                רמת פיצ’רים לכרטיס (ידני): קובעת
-                                                רמת פיצ’רים לכרטיס ספציפי. אם
-                                                מוגדר — זה גובר על רמת הפיצ’רים
-                                                של המשתמש ועל מה שנגזר מהחיוב.
-                                            </p>
-
-                                            <p>
-                                                רמת פיצ’רים למשתמש (ידני): קובעת
-                                                רמת פיצ’רים לכל הכרטיסים של
-                                                המשתמש (אלא אם לכרטיס יש
-                                                override משלו). מופיע רק אם
-                                                הכרטיס בבעלות משתמש.
-                                            </p>
-
-                                            <p>
-                                                השבת כרטיס: משבית את הכרטיס
-                                                (isActive=false) בלי למחוק אותו.
-                                                הפעל כרטיס: מחזיר את הכרטיס
-                                                לפעיל (isActive=true).
-                                            </p>
-
-                                            <p>
-                                                הארכת ניסיון: “ימים מעכשיו” קובע
-                                                סיום לסוף היום בישראל לאחר N
-                                                ימים. “יום ושעה מדויקים” קובע
-                                                תאריך/שעה בישראל בדיוק. ימים=0
-                                                מסיים ניסיון מיידית.
-                                            </p>
-
-                                            <p>
-                                                שים לב: ערכים טכניים כמו ID,
-                                                אימייל וסלאג מוצגים כ־LTR כדי
-                                                למנוע בלבול בתוך ממשק RTL.
+                                            <p className={styles.legendNote}>
+                                                {t("legend_ltr_note")}
                                             </p>
                                         </div>
                                     </details>
                                 </div>
                             </div>
 
-                            <div
-                                className={`${styles.cardShell} ${styles.directoryCard}`}
+                            {error ? (
+                                <FlashBanner
+                                    type="error"
+                                    message={error}
+                                    autoHideMs={0}
+                                    onDismiss={() => setError("")}
+                                />
+                            ) : null}
+
+                            <details
+                                className={`${styles.queuePanel} ${styles.queueCards}`}
+                                open
                             >
-                                <div className={styles.cardHeader}>
-                                    {error ? (
-                                        <FlashBanner
-                                            type="error"
-                                            message={error}
-                                            autoHideMs={0}
-                                            onDismiss={() => setError("")}
-                                        />
-                                    ) : null}
-                                    <div
-                                        className={styles.tabs}
-                                        role="tablist"
-                                        aria-label="Directory tabs"
-                                        ref={directoryTabListRef}
-                                        onKeyDown={(e) =>
-                                            handleTabListKeyDown(e, {
-                                                current: directoryTab,
-                                                setCurrent: setDirectoryTab,
-                                                order: [
-                                                    "cards",
-                                                    "users",
-                                                    "orgs",
-                                                ],
-                                                tabListRef: directoryTabListRef,
-                                            })
-                                        }
-                                    >
-                                        <button
-                                            type="button"
-                                            className={`${styles.tab} ${
-                                                directoryTab === "cards"
-                                                    ? styles.tabActive
-                                                    : ""
-                                            }`}
-                                            role="tab"
-                                            data-tab="cards"
-                                            aria-selected={
-                                                directoryTab === "cards"
-                                            }
-                                            aria-controls="admin-directory-panel"
-                                            onClick={() =>
-                                                setDirectoryTab("cards")
-                                            }
-                                        >
-                                            {t("section_cards")}
-                                        </button>
-                                        <button
-                                            type="button"
-                                            className={`${styles.tab} ${
-                                                directoryTab === "users"
-                                                    ? styles.tabActive
-                                                    : ""
-                                            }`}
-                                            role="tab"
-                                            data-tab="users"
-                                            aria-selected={
-                                                directoryTab === "users"
-                                            }
-                                            aria-controls="admin-directory-panel"
-                                            onClick={() =>
-                                                setDirectoryTab("users")
-                                            }
-                                        >
-                                            {t("section_users")}
-                                        </button>
-                                        <button
-                                            type="button"
-                                            className={`${styles.tab} ${
-                                                directoryTab === "orgs"
-                                                    ? styles.tabActive
-                                                    : ""
-                                            }`}
-                                            role="tab"
-                                            data-tab="orgs"
-                                            aria-selected={
-                                                directoryTab === "orgs"
-                                            }
-                                            aria-controls="admin-directory-panel"
-                                            onClick={() =>
-                                                setDirectoryTab("orgs")
-                                            }
-                                        >
-                                            {t("section_orgs")}
-                                        </button>
+                                <summary className={styles.queueSummary}>
+                                    {t("section_cards")}
+                                    <span className={styles.queueCount}>
+                                        ({filteredCards.length}/{cards.length})
+                                    </span>
+                                </summary>
+                                <div className={styles.queueBody}>
+                                    <div className={styles.directoryTools}>
+                                        <div className={styles.searchRow}>
+                                            <Input
+                                                label="חיפוש כרטיסים"
+                                                value={cardsQuery}
+                                                onChange={(e) =>
+                                                    setCardsQuery(
+                                                        e.target.value,
+                                                    )
+                                                }
+                                                placeholder="סלאג או אימייל בעלים"
+                                                className={styles.searchInput}
+                                            />
+
+                                            {String(cardsQuery || "").trim() ? (
+                                                <Button
+                                                    variant="secondary"
+                                                    size="small"
+                                                    onClick={() =>
+                                                        setCardsQuery("")
+                                                    }
+                                                >
+                                                    נקה
+                                                </Button>
+                                            ) : null}
+                                        </div>
+                                        <p className={styles.muted}>
+                                            מציג {filteredCards.length} מתוך{" "}
+                                            {cards.length}
+                                        </p>
                                     </div>
 
-                                    {directoryTab === "cards" ? (
-                                        <div className={styles.directoryTools}>
-                                            <div className={styles.searchRow}>
-                                                <Input
-                                                    label="חיפוש כרטיסים"
-                                                    value={cardsQuery}
-                                                    onChange={(e) =>
-                                                        setCardsQuery(
-                                                            e.target.value,
-                                                        )
-                                                    }
-                                                    placeholder="סלאג או אימייל בעלים"
-                                                    className={
-                                                        styles.searchInput
-                                                    }
-                                                />
-
-                                                {String(
-                                                    cardsQuery || "",
-                                                ).trim() ? (
-                                                    <Button
-                                                        variant="secondary"
-                                                        size="small"
-                                                        onClick={() =>
-                                                            setCardsQuery("")
-                                                        }
-                                                    >
-                                                        נקה
-                                                    </Button>
-                                                ) : null}
-                                            </div>
-                                            <p className={styles.muted}>
-                                                מציג {filteredCards.length} מתוך{" "}
-                                                {cards.length}
-                                            </p>
-                                        </div>
-                                    ) : null}
-                                </div>
-
-                                <div
-                                    id="admin-directory-panel"
-                                    className={styles.cardBody}
-                                    role="tabpanel"
-                                    aria-label="Directory panel"
-                                >
-                                    {directoryTab === "orgs" ? (
-                                        <AdminOrganizationsView />
-                                    ) : null}
-                                    {directoryTab === "users" ? (
-                                        <table className={styles.table}>
-                                            <thead>
-                                                <tr>
-                                                    <th>{t("th_email")}</th>
-                                                    <th>{t("th_card")}</th>
-                                                    <th>{t("th_role")}</th>
-                                                    <th>{t("th_created")}</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                {users.map((u) => (
-                                                    <tr key={u._id}>
-                                                        <td data-label="אימייל">
-                                                            <button
+                                    <table className={styles.table}>
+                                        <thead>
+                                            <tr>
+                                                <th>{t("th_slug")}</th>
+                                                <th>{t("th_owner")}</th>
+                                                <th>{t("label_status")}</th>
+                                                <th>{t("label_active")}</th>
+                                                <th>{t("th_updated")}</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {filteredCards.map((c) => (
+                                                <tr key={c._id}>
+                                                    <td data-label="סלאג">
+                                                        <button
+                                                            className={
+                                                                styles.rowBtn
+                                                            }
+                                                            onClick={() =>
+                                                                loadCard(c._id)
+                                                            }
+                                                            type="button"
+                                                            disabled={loading}
+                                                            title={c._id}
+                                                        >
+                                                            <span
                                                                 className={
-                                                                    styles.rowBtn
+                                                                    styles.ltr
                                                                 }
-                                                                type="button"
-                                                                onClick={() =>
-                                                                    loadUser(
-                                                                        u._id,
-                                                                    )
+                                                                dir="ltr"
+                                                            >
+                                                                {c.slug ||
+                                                                    t(
+                                                                        "label_no_slug",
+                                                                    )}
+                                                            </span>
+                                                        </button>
+                                                    </td>
+                                                    <td data-label="בעלות">
+                                                        {c?.ownerSummary
+                                                            ?.type ===
+                                                        "user" ? (
+                                                            <span
+                                                                title={
+                                                                    c
+                                                                        .ownerSummary
+                                                                        .email ||
+                                                                    ""
                                                                 }
-                                                                disabled={
-                                                                    loading
+                                                                className={
+                                                                    styles.truncate
                                                                 }
-                                                                title={u._id}
+                                                                dir="ltr"
                                                             >
                                                                 <span
                                                                     className={
@@ -1835,226 +1836,198 @@ export default function Admin() {
                                                                     }
                                                                     dir="ltr"
                                                                 >
-                                                                    {u.email}
+                                                                    {c
+                                                                        .ownerSummary
+                                                                        .email ||
+                                                                        "—"}
                                                                 </span>
-                                                            </button>
-                                                        </td>
-                                                        <td data-label="כרטיס">
-                                                            {u?.cardSummary
-                                                                ?.slug ? (
-                                                                <button
-                                                                    className={
-                                                                        styles.rowBtn
-                                                                    }
-                                                                    type="button"
-                                                                    onClick={() =>
-                                                                        loadCard(
-                                                                            u
-                                                                                .cardSummary
-                                                                                .cardId,
-                                                                        )
-                                                                    }
-                                                                    disabled={
-                                                                        loading
-                                                                    }
-                                                                    title={
+                                                            </span>
+                                                        ) : c?.ownerSummary
+                                                              ?.type ===
+                                                          "anonymous" ? (
+                                                            <span
+                                                                className={
+                                                                    styles.muted
+                                                                }
+                                                            >
+                                                                {t(
+                                                                    "owner_anonymous",
+                                                                )}
+                                                            </span>
+                                                        ) : (
+                                                            "—"
+                                                        )}
+                                                    </td>
+                                                    <td data-label="סטטוס">
+                                                        {cardStatusHe(c.status)}
+                                                    </td>
+                                                    <td data-label="פעיל">
+                                                        {boolHe(!!c.isActive)}
+                                                    </td>
+                                                    <td data-label="עודכן">
+                                                        {formatDate(
+                                                            c.updatedAt,
+                                                        )}
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+
+                                    {selectedCardId && !selectedCard ? (
+                                        <p className={styles.muted}>
+                                            {t("msg_loading_card")}
+                                        </p>
+                                    ) : null}
+                                </div>
+                            </details>
+
+                            <details
+                                className={`${styles.queuePanel} ${styles.queueUsers}`}
+                            >
+                                <summary className={styles.queueSummary}>
+                                    {t("section_users")}
+                                    <span className={styles.queueCount}>
+                                        ({users.length})
+                                    </span>
+                                </summary>
+                                <div className={styles.queueBody}>
+                                    <table className={styles.table}>
+                                        <thead>
+                                            <tr>
+                                                <th>{t("th_email")}</th>
+                                                <th>{t("th_card")}</th>
+                                                <th>{t("th_role")}</th>
+                                                <th>{t("th_created")}</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {users.map((u) => (
+                                                <tr key={u._id}>
+                                                    <td data-label="אימייל">
+                                                        <button
+                                                            className={
+                                                                styles.rowBtn
+                                                            }
+                                                            type="button"
+                                                            onClick={() =>
+                                                                loadUser(u._id)
+                                                            }
+                                                            disabled={loading}
+                                                            title={u._id}
+                                                        >
+                                                            <span
+                                                                className={
+                                                                    styles.ltr
+                                                                }
+                                                                dir="ltr"
+                                                            >
+                                                                {u.email}
+                                                            </span>
+                                                        </button>
+                                                    </td>
+                                                    <td data-label="כרטיס">
+                                                        {u?.cardSummary
+                                                            ?.slug ? (
+                                                            <button
+                                                                className={
+                                                                    styles.rowBtn
+                                                                }
+                                                                type="button"
+                                                                onClick={() =>
+                                                                    loadCard(
                                                                         u
                                                                             .cardSummary
-                                                                            .cardId
-                                                                    }
-                                                                >
-                                                                    <span
-                                                                        className={
-                                                                            styles.ltr
-                                                                        }
-                                                                        dir="ltr"
-                                                                    >
-                                                                        {
-                                                                            u
-                                                                                .cardSummary
-                                                                                .slug
-                                                                        }
-                                                                    </span>{" "}
-                                                                    (
-                                                                    <span
-                                                                        className={
-                                                                            styles.ltr
-                                                                        }
-                                                                        dir="ltr"
-                                                                    >
-                                                                        {cardStatusHe(
-                                                                            u
-                                                                                .cardSummary
-                                                                                .status,
-                                                                        )}
-                                                                    </span>
+                                                                            .cardId,
                                                                     )
-                                                                    {u
-                                                                        ?.cardSummary
-                                                                        ?.ownershipMismatch ? (
-                                                                        <span
-                                                                            className={
-                                                                                styles.mismatchBadge
-                                                                            }
-                                                                        >
-                                                                            ⚠
-                                                                            mismatch
-                                                                        </span>
-                                                                    ) : null}
-                                                                </button>
-                                                            ) : u?.cardSummary
-                                                                  ?.missing ? (
+                                                                }
+                                                                disabled={
+                                                                    loading
+                                                                }
+                                                                title={
+                                                                    u
+                                                                        .cardSummary
+                                                                        .cardId
+                                                                }
+                                                            >
                                                                 <span
                                                                     className={
-                                                                        styles.muted
+                                                                        styles.ltr
                                                                     }
+                                                                    dir="ltr"
                                                                 >
-                                                                    {t(
-                                                                        "label_missing",
+                                                                    {
+                                                                        u
+                                                                            .cardSummary
+                                                                            .slug
+                                                                    }
+                                                                </span>{" "}
+                                                                (
+                                                                <span
+                                                                    className={
+                                                                        styles.ltr
+                                                                    }
+                                                                    dir="ltr"
+                                                                >
+                                                                    {cardStatusHe(
+                                                                        u
+                                                                            .cardSummary
+                                                                            .status,
                                                                     )}
                                                                 </span>
-                                                            ) : (
-                                                                "—"
-                                                            )}
-                                                        </td>
-                                                        <td data-label="תפקיד">
-                                                            {roleHe(u.role)}
-                                                        </td>
-                                                        <td data-label="נוצר">
-                                                            {formatDate(
-                                                                u.createdAt,
-                                                            )}
-                                                        </td>
-                                                    </tr>
-                                                ))}
-                                            </tbody>
-                                        </table>
-                                    ) : (
-                                        <>
-                                            <table className={styles.table}>
-                                                <thead>
-                                                    <tr>
-                                                        <th>{t("th_slug")}</th>
-                                                        <th>{t("th_owner")}</th>
-                                                        <th>
-                                                            {t("label_status")}
-                                                        </th>
-                                                        <th>
-                                                            {t("label_active")}
-                                                        </th>
-                                                        <th>
-                                                            {t("th_updated")}
-                                                        </th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody>
-                                                    {filteredCards.map((c) => (
-                                                        <tr key={c._id}>
-                                                            <td data-label="סלאג">
-                                                                <button
-                                                                    className={
-                                                                        styles.rowBtn
-                                                                    }
-                                                                    onClick={() =>
-                                                                        loadCard(
-                                                                            c._id,
-                                                                        )
-                                                                    }
-                                                                    type="button"
-                                                                    disabled={
-                                                                        loading
-                                                                    }
-                                                                    title={
-                                                                        c._id
-                                                                    }
-                                                                >
+                                                                )
+                                                                {u?.cardSummary
+                                                                    ?.ownershipMismatch ? (
                                                                     <span
                                                                         className={
-                                                                            styles.ltr
-                                                                        }
-                                                                        dir="ltr"
-                                                                    >
-                                                                        {c.slug ||
-                                                                            t(
-                                                                                "label_no_slug",
-                                                                            )}
-                                                                    </span>
-                                                                </button>
-                                                            </td>
-                                                            <td data-label="בעלות">
-                                                                {c?.ownerSummary
-                                                                    ?.type ===
-                                                                "user" ? (
-                                                                    <span
-                                                                        title={
-                                                                            c
-                                                                                .ownerSummary
-                                                                                .email ||
-                                                                            ""
-                                                                        }
-                                                                        className={
-                                                                            styles.truncate
-                                                                        }
-                                                                        dir="ltr"
-                                                                    >
-                                                                        <span
-                                                                            className={
-                                                                                styles.ltr
-                                                                            }
-                                                                            dir="ltr"
-                                                                        >
-                                                                            {c
-                                                                                .ownerSummary
-                                                                                .email ||
-                                                                                "—"}
-                                                                        </span>
-                                                                    </span>
-                                                                ) : c
-                                                                      ?.ownerSummary
-                                                                      ?.type ===
-                                                                  "anonymous" ? (
-                                                                    <span
-                                                                        className={
-                                                                            styles.muted
+                                                                            styles.mismatchBadge
                                                                         }
                                                                     >
-                                                                        {t(
-                                                                            "owner_anonymous",
-                                                                        )}
+                                                                        ⚠
+                                                                        mismatch
                                                                     </span>
-                                                                ) : (
-                                                                    "—"
+                                                                ) : null}
+                                                            </button>
+                                                        ) : u?.cardSummary
+                                                              ?.missing ? (
+                                                            <span
+                                                                className={
+                                                                    styles.muted
+                                                                }
+                                                            >
+                                                                {t(
+                                                                    "label_missing",
                                                                 )}
-                                                            </td>
-                                                            <td data-label="סטטוס">
-                                                                {cardStatusHe(
-                                                                    c.status,
-                                                                )}
-                                                            </td>
-                                                            <td data-label="פעיל">
-                                                                {boolHe(
-                                                                    !!c.isActive,
-                                                                )}
-                                                            </td>
-                                                            <td data-label="עודכן">
-                                                                {formatDate(
-                                                                    c.updatedAt,
-                                                                )}
-                                                            </td>
-                                                        </tr>
-                                                    ))}
-                                                </tbody>
-                                            </table>
-
-                                            {selectedCardId && !selectedCard ? (
-                                                <p className={styles.muted}>
-                                                    {t("msg_loading_card")}
-                                                </p>
-                                            ) : null}
-                                        </>
-                                    )}
+                                                            </span>
+                                                        ) : (
+                                                            "—"
+                                                        )}
+                                                    </td>
+                                                    <td data-label="תפקיד">
+                                                        {roleHe(u.role)}
+                                                    </td>
+                                                    <td data-label="נוצר">
+                                                        {formatDate(
+                                                            u.createdAt,
+                                                        )}
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
                                 </div>
-                            </div>
+                            </details>
+
+                            <details
+                                className={`${styles.queuePanel} ${styles.queueOrgs}`}
+                            >
+                                <summary className={styles.queueSummary}>
+                                    {t("section_orgs")}
+                                </summary>
+                                <div className={styles.queueBody}>
+                                    <AdminOrganizationsView />
+                                </div>
+                            </details>
 
                             <div
                                 className={`${styles.cardShell} ${styles.selectedCard} ${styles.mobileOnly}`}
@@ -3007,6 +2980,7 @@ export default function Admin() {
                                                         required
                                                     />
 
+                                                    {renderAnalyticsPremiumToggle()}
                                                     <div
                                                         className={
                                                             styles.actionGroup
@@ -3943,6 +3917,58 @@ export default function Admin() {
                                                 }
                                             />
 
+                                            <label className={styles.field}>
+                                                {t("label_payer_type")}
+                                                <select
+                                                    className={styles.input}
+                                                    value={billingCardPayerType}
+                                                    onChange={(e) => {
+                                                        setBillingCardPayerType(
+                                                            e.target.value,
+                                                        );
+                                                        setActionError(
+                                                            (prev) => ({
+                                                                ...prev,
+                                                                billingCardSet:
+                                                                    "",
+                                                            }),
+                                                        );
+                                                    }}
+                                                >
+                                                    <option value="">
+                                                        {t("opt_keep_current")}
+                                                    </option>
+                                                    <option value="none">
+                                                        {t("opt_payer_none")}
+                                                    </option>
+                                                    <option value="user">
+                                                        {t("opt_payer_user")}
+                                                    </option>
+                                                    <option value="org">
+                                                        {t("opt_payer_org")}
+                                                    </option>
+                                                </select>
+                                            </label>
+
+                                            <Input
+                                                label={t("label_payer_note")}
+                                                value={billingCardPayerNote}
+                                                onChange={(e) => {
+                                                    setBillingCardPayerNote(
+                                                        e.target.value,
+                                                    );
+                                                    setBillingCardPayerNoteTouched(
+                                                        true,
+                                                    );
+                                                    setActionError((prev) => ({
+                                                        ...prev,
+                                                        billingCardSet: "",
+                                                    }));
+                                                }}
+                                                maxLength={80}
+                                                placeholder="עד 80 תווים"
+                                            />
+
                                             <Button
                                                 variant="secondary"
                                                 disabled={
@@ -4040,6 +4066,13 @@ export default function Admin() {
                                                                             paidUntil,
                                                                             status,
                                                                             reason: r,
+                                                                            payerType:
+                                                                                billingCardPayerType ||
+                                                                                undefined,
+                                                                            payerNote:
+                                                                                billingCardPayerNoteTouched
+                                                                                    ? billingCardPayerNote
+                                                                                    : undefined,
                                                                         },
                                                                     );
                                                                 return res.data;
@@ -5307,6 +5340,7 @@ export default function Admin() {
                                                         required
                                                     />
 
+                                                    {renderAnalyticsPremiumToggle()}
                                                     <div
                                                         className={
                                                             styles.actionGroup
@@ -6016,7 +6050,7 @@ export default function Admin() {
                                 </div>
                             </div>
 
-                            {directoryTab === "users" && selectedUser ? (
+                            {selectedUser ? (
                                 <div className={styles.cardShell}>
                                     <div className={styles.cardHeader}>
                                         <div className={styles.headerRow}>

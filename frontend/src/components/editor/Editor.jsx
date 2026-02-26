@@ -34,6 +34,16 @@ export default function Editor({
     dirtyPaths,
     saveState,
     saveErrorText,
+    // Mobile: compact context bar in topbar
+    activeOrgSlug,
+    myOrgs,
+    onContextChange,
+    onLoadOrgs,
+    showContextBar,
+    // Mobile: public link in sidebar drawer
+    publicUrl,
+    publicPath,
+    isPublished,
 }) {
     const navigate = useNavigate();
     const { tab } = useParams(); // route: /edit/card/:tab
@@ -215,8 +225,33 @@ export default function Editor({
                         <span className={styles.sectionsDot} />
                         <span className={styles.sectionsDot} />
                     </span>
-                    <span className={styles.sectionsLabel}>תפריט עריכה</span>
+                    {!showContextBar ? (
+                        <span className={styles.sectionsLabel}>
+                            תפריט עריכה
+                        </span>
+                    ) : null}
                 </button>
+
+                {isMobile && showContextBar ? (
+                    <select
+                        className={styles.contextSelect}
+                        value={activeOrgSlug || ""}
+                        onFocus={onLoadOrgs}
+                        onMouseDown={onLoadOrgs}
+                        onChange={(e) => onContextChange(e.target.value)}
+                        aria-label="הקשר כרטיס"
+                    >
+                        <option value="">אישי</option>
+                        {(myOrgs || []).map((o) => (
+                            <option
+                                key={String(o?.id || o?.slug || "")}
+                                value={String(o?.slug || "")}
+                            >
+                                {String(o?.name || o?.slug || "")}
+                            </option>
+                        ))}
+                    </select>
+                ) : null}
 
                 <div
                     className={styles.segmented}
@@ -282,6 +317,14 @@ export default function Editor({
                     activeTab={activeTab}
                     onChangeTab={handleChangeTab}
                     canShowAnalyticsTab={Boolean(canShowAnalyticsTab)}
+                    publicUrl={publicUrl}
+                    publicPath={publicPath}
+                    isPublished={isPublished}
+                    activeOrgSlug={activeOrgSlug}
+                    myOrgs={myOrgs}
+                    onContextChange={onContextChange}
+                    onLoadOrgs={onLoadOrgs}
+                    showContextBar={showContextBar}
                 />
             </div>
 

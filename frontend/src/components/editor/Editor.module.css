@@ -2,15 +2,20 @@
     display: flex;
     justify-content: flex-start;
     align-items: stretch;
-    gap: 24px;
-    padding-inline: 16px;
+    gap: 0;
+    padding: 0;
+    margin-inline: 8px;
+    margin-block: 8px;
 
-    /* Desktop viewport contract: keep the editor app-like.
-       64px is the existing project-wide header height contract. */
-
-    height: calc(90dvh - 64px);
+    /* Desktop viewport contract: fill available space below header.
+       64px header + 8px top margin + 8px bottom margin = 80px consumed. */
+    height: calc(100dvh - 80px);
     overflow: hidden;
     min-height: 0;
+
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border);
+    background: var(--bg-surface);
 }
 
 .scrollLock {
@@ -31,23 +36,23 @@
 .panel {
     /* Working area: grow on wide screens, stay usable on mid screens. */
     flex: 1 1 560px;
-    min-width: 480px;
+    min-width: 0;
     padding: 20px;
     background: var(--bg-card);
     overflow-y: auto;
-    min-width: 0;
     min-height: 0;
+    border-inline-start: 1px solid var(--border);
 }
 
 /* Preview */
 .preview {
     /* Preview should feel stable and not steal panel width. */
     flex: 0 0 420px;
-    min-width: 420px;
     max-width: 420px;
     overflow-y: auto;
-    min-width: 0; /* критично для 1fr-аналогов */
+    min-width: 0;
     min-height: 0;
+    border-inline-start: 1px solid var(--border);
 
     display: flex;
     justify-content: center;
@@ -101,30 +106,32 @@
 }
 
 .sidebarSlot {
-    /* Tabs rail (right column) */
+    /* Tabs rail (right column) — visually separated */
     flex: 0 0 280px;
     min-width: 0;
     min-height: 0;
     overflow-y: auto;
+    padding: 16px;
+    background: var(--bg-surface);
 }
 
 @media (max-width: 1200px) {
     .editor {
-        gap: 12px;
-        padding-inline: 10px;
+        gap: 0;
+        margin-inline: 4px;
     }
 
     .sidebarSlot {
         flex-basis: 220px;
+        padding: 12px;
     }
 
     .panel {
-        min-width: 360px;
+        min-width: 320px;
     }
 
     .preview {
         flex-basis: 360px;
-        min-width: 360px;
         max-width: 360px;
     }
 }
@@ -146,8 +153,13 @@
     .editor {
         flex-direction: column;
         justify-content: flex-start;
-        height: calc(100vh - 64px);
+        flex: 1 1 0;
+        height: auto;
+        min-height: 0;
         overflow: hidden;
+        margin: 0;
+        border-radius: 0;
+        border: 0;
     }
 
     .topbar {
@@ -190,9 +202,9 @@
     }
 
     .sectionsIcon {
-        display: grid;
-        grid-template-columns: repeat(2, 6px);
-        grid-template-rows: repeat(2, 6px);
+        display: flex;
+        flex-wrap: wrap;
+        width: 15px;
         gap: 3px;
     }
 
@@ -211,10 +223,34 @@
         white-space: nowrap;
     }
 
+    .contextSelect {
+        appearance: none;
+        padding-block: 8px;
+        padding-inline: 10px;
+        border-radius: 10px;
+        border: 1px solid var(--border);
+        background: rgba(255, 255, 255, 0.03);
+        color: var(--text-main);
+        font-weight: 800;
+        font-size: var(--fs-body-sm, 0.8125rem);
+        font-family: inherit;
+        max-width: 110px;
+        min-width: 0;
+        min-height: 44px;
+        cursor: pointer;
+        box-shadow: 0 0 0 1px var(--gold-soft);
+    }
+
+    .contextSelect:focus-visible {
+        outline: 2px solid var(--gold);
+        outline-offset: 2px;
+        color: var(--card-text);
+    }
+
     .segmented {
         display: inline-flex;
         border: 1px solid var(--border);
-        border-radius: 999px;
+        border-radius: 10px;
         overflow: hidden;
         background: rgba(255, 255, 255, 0.02);
     }
@@ -287,6 +323,7 @@
         overflow-y: auto;
         min-height: 0;
         -webkit-overflow-scrolling: touch;
+        border-inline-start: 0;
     }
 
     .preview {
@@ -298,6 +335,7 @@
         display: flex;
         justify-content: center;
         align-items: flex-start;
+        border-inline-start: 0;
     }
 
     .toast {

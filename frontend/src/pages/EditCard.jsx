@@ -2097,6 +2097,15 @@ function EditCard() {
         daysLeft >= 1 &&
         daysLeft <= 14;
 
+    // Pre-compute public link data (used in desktop block + passed to Editor for mobile)
+    const cardPublicPath = draftCard?.slug
+        ? draftCard?.publicPath || `/card/${draftCard.slug}`
+        : null;
+    const cardPublicUrl = cardPublicPath
+        ? `${window.location.origin}${cardPublicPath}`
+        : null;
+    const cardIsPublished = Boolean(token && draftCard?.status === "published");
+
     return (
         <div className={styles.editCard}>
             <ConfirmUnsavedChangesModal
@@ -2180,88 +2189,6 @@ function EditCard() {
                     />
                 )}
 
-                {token ? (
-                    <div className={styles.cardContextBar} dir="rtl">
-                        <div className={styles.cardContextRow}>
-                            <div className={styles.cardContextLabel}>כרטיס</div>
-
-                            <select
-                                className={styles.cardContextSelect}
-                                value={activeOrgSlug}
-                                onFocus={loadMyOrgs}
-                                onMouseDown={loadMyOrgs}
-                                onChange={(e) =>
-                                    handleContextChange(e.target.value)
-                                }
-                                aria-label="Card context"
-                            >
-                                <option value="">אישי</option>
-                                {(myOrgs || []).map((o) => (
-                                    <option
-                                        key={String(o?.id || o?.slug || "")}
-                                        value={String(o?.slug || "")}
-                                    >
-                                        {String(o?.name || o?.slug || "")}
-                                    </option>
-                                ))}
-                            </select>
-                        </div>
-
-                        {orgsLoadState === "loading" ? (
-                            <div className={styles.cardContextHint}>
-                                טוען ארגונים…
-                            </div>
-                        ) : null}
-                        {orgsError ? (
-                            <div className={styles.cardContextError}>
-                                {orgsError}
-                            </div>
-                        ) : null}
-                        {orgCardError ? (
-                            <div className={styles.cardContextError}>
-                                {orgCardError}
-                            </div>
-                        ) : null}
-                    </div>
-                ) : null}
-
-                {draftCard?.slug
-                    ? (() => {
-                          const publicPath =
-                              draftCard?.publicPath ||
-                              `/card/${draftCard.slug}`;
-                          const publicUrl = `${window.location.origin}${publicPath}`;
-                          return (
-                              <div className={styles.publicLinkBox}>
-                                  <div
-                                      className={styles.publicLinkTitle}
-                                      dir="rtl"
-                                  >
-                                      {token &&
-                                      draftCard?.status === "published"
-                                          ? "קישור ציבורי"
-                                          : "קישור עתידי"}
-                                  </div>
-                                  {token &&
-                                  draftCard?.status === "published" ? (
-                                      <a
-                                          href={publicPath}
-                                          target="_blank"
-                                          rel="noreferrer"
-                                          className={styles.breakWord}
-                                      >
-                                          {publicUrl}
-                                      </a>
-                                  ) : (
-                                      <div className={styles.breakWord}>
-                                          {publicUrl}
-                                      </div>
-                                  )}
-                              </div>
-                          );
-                      })()
-                    : null}
-
                 {section === "card" ? (
                     <Editor
                         card={draftCard}
@@ -2284,8 +2211,16 @@ function EditCard() {
                             Boolean(token) &&
                             Boolean(draftCard?.entitlements?.canViewAnalytics)
                         }
-                        // onUpgrade / onSelectTemplate intentionally omitted for now
-                        // previewHeader / previewFooter intentionally omitted for now
+                        // Mobile: compact context bar in topbar
+                        activeOrgSlug={activeOrgSlug}
+                        myOrgs={myOrgs}
+                        onContextChange={handleContextChange}
+                        onLoadOrgs={loadMyOrgs}
+                        showContextBar={Boolean(token)}
+                        // Mobile: public link in sidebar drawer
+                        publicUrl={cardPublicUrl}
+                        publicPath={cardPublicPath}
+                        isPublished={cardIsPublished}
                     />
                 ) : (
                     <div className={styles.comingSoon}>Coming soon</div>

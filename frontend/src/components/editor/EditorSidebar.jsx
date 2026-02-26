@@ -34,6 +34,14 @@ export default function EditorSidebar({
     activeTab,
     onChangeTab,
     canShowAnalyticsTab,
+    publicUrl,
+    publicPath,
+    isPublished,
+    activeOrgSlug,
+    myOrgs,
+    onContextChange,
+    onLoadOrgs,
+    showContextBar,
 }) {
     const items = canShowAnalyticsTab
         ? TABS
@@ -41,6 +49,52 @@ export default function EditorSidebar({
 
     return (
         <aside className={styles.sidebar}>
+            {showContextBar ? (
+                <div className={styles.contextBlock} dir="rtl">
+                    <div className={styles.contextLabel}>כרטיס</div>
+                    <select
+                        className={styles.contextSelect}
+                        value={activeOrgSlug || ""}
+                        onFocus={onLoadOrgs}
+                        onMouseDown={onLoadOrgs}
+                        onChange={(e) => onContextChange(e.target.value)}
+                        aria-label="הקשר כרטיס"
+                    >
+                        <option value="">אישי</option>
+                        {(myOrgs || []).map((o) => (
+                            <option
+                                key={String(o?.id || o?.slug || "")}
+                                value={String(o?.slug || "")}
+                            >
+                                {String(o?.name || o?.slug || "")}
+                            </option>
+                        ))}
+                    </select>
+                </div>
+            ) : null}
+
+            {publicUrl ? (
+                <div className={styles.publicLink} dir="rtl">
+                    <div className={styles.publicLinkTitle}>
+                        {isPublished ? "קישור ציבורי" : "קישור עתידי"}
+                    </div>
+                    {isPublished ? (
+                        <a
+                            href={publicPath}
+                            target="_blank"
+                            rel="noreferrer"
+                            className={styles.publicLinkUrl}
+                        >
+                            {publicUrl}
+                        </a>
+                    ) : (
+                        <span className={styles.publicLinkUrl}>
+                            {publicUrl}
+                        </span>
+                    )}
+                </div>
+            ) : null}
+
             <div className={styles.title}>עריכת כרטיס</div>
 
             <nav className={styles.nav}>

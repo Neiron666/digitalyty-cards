@@ -74,14 +74,12 @@ export function adminRevokeUserSubscription(userId, { reason } = {}) {
 
 export function adminSetCardBilling(
     cardId,
-    { plan, paidUntil, status, reason } = {},
+    { plan, paidUntil, status, reason, payerType, payerNote } = {},
 ) {
-    return api.post(`/admin/billing/cards/${cardId}/billing/set`, {
-        plan,
-        paidUntil,
-        status,
-        reason,
-    });
+    const body = { plan, paidUntil, status, reason };
+    if (payerType !== undefined && payerType !== "") body.payerType = payerType;
+    if (payerNote !== undefined) body.payerNote = payerNote;
+    return api.post(`/admin/billing/cards/${cardId}/billing/set`, body);
 }
 
 export function adminRevokeCardBilling(cardId, { reason } = {}) {
@@ -103,6 +101,13 @@ export function adminSyncCardBillingFromUser(cardId, { reason, force } = {}) {
 
 export function adminClearCardAdminOverride(cardId, { reason } = {}) {
     return api.post(`/admin/cards/${cardId}/admin-override/clear`, {
+        reason,
+    });
+}
+
+export function adminSetAnalyticsPremium(cardId, { enabled, reason }) {
+    return api.post(`/admin/cards/${cardId}/analytics-premium`, {
+        enabled,
         reason,
     });
 }

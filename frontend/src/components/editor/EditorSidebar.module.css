@@ -51,3 +51,83 @@
         transparent
     );
 }
+
+/* ── Public link (shown in mobile drawer) ── */
+.publicLink {
+    padding-block: 10px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 8px;
+}
+
+.publicLinkTitle {
+    font-weight: 900;
+    font-size: var(--fs-body-sm, 0.8125rem);
+    margin-bottom: 4px;
+}
+
+.publicLinkUrl {
+    display: block;
+    overflow-wrap: anywhere;
+    word-break: break-all;
+    direction: ltr;
+    text-align: left;
+    color: var(--gold);
+    font-weight: 700;
+    font-size: var(--fs-caption, 0.75rem);
+    line-height: 1.4;
+    text-decoration: none;
+}
+
+a.publicLinkUrl:hover {
+    text-decoration: underline;
+}
+
+a.publicLinkUrl:focus-visible {
+    outline: 2px solid var(--gold);
+    outline-offset: 2px;
+}
+
+/* ── Context (org/personal) selector ── */
+.contextBlock {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding-block: 10px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 4px;
+}
+
+.contextLabel {
+    font-weight: 900;
+    font-size: var(--fs-body-sm, 0.8125rem);
+    white-space: nowrap;
+    flex: 0 0 auto;
+}
+
+.contextSelect {
+    appearance: none;
+    flex: 1 1 0;
+    min-width: 0;
+    padding-block: 8px;
+    padding-inline: 10px;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border);
+    background: rgba(255, 255, 255, 0.03);
+    color: var(--text-main);
+    font-weight: 800;
+    font-size: var(--fs-body-sm, 0.8125rem);
+    font-family: inherit;
+    cursor: pointer;
+    box-shadow: 0 0 0 1px var(--gold-soft);
+}
+
+.contextSelect option {
+    background: #fff;
+    color: #111;
+}
+
+.contextSelect:focus-visible {
+    outline: 2px solid var(--gold);
+    outline-offset: 2px;
+}
