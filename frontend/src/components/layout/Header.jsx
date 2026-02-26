@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, NavLink, useNavigate } from "react-router-dom";
 import Button from "../ui/Button";
 import { useAuth } from "../../context/AuthContext";
@@ -8,6 +8,7 @@ import styles from "./Header.module.css";
 export default function Header() {
     const [mobileOpen, setMobileOpen] = useState(false);
     const [hasOrgAdmin, setHasOrgAdmin] = useState(false);
+    const scrollYRef = useRef(0);
     const navigate = useNavigate();
     const { token, user, logout } = useAuth();
     const isAuth = Boolean(token);
@@ -62,7 +63,7 @@ export default function Header() {
 
     const closeMobile = useCallback(() => setMobileOpen(false), []);
 
-    // Lock body scroll when mobile drawer is open.
+    // Lock body scroll when mobile drawer is open (iOS-safe body-pinning).
     useEffect(() => {
         if (typeof document === "undefined") return;
 
@@ -71,16 +72,28 @@ export default function Header() {
         const body = document.body;
 
         if (mobileOpen) {
+            scrollYRef.current = window.scrollY;
             root.classList.add(lockClass);
             body.classList.add(lockClass);
+            body.style.position = "fixed";
+            body.style.top = `-${scrollYRef.current}px`;
+            body.style.insetInline = "0";
         } else {
             root.classList.remove(lockClass);
             body.classList.remove(lockClass);
+            body.style.position = "";
+            body.style.top = "";
+            body.style.insetInline = "";
+            window.scrollTo(0, scrollYRef.current);
         }
 
         return () => {
             root.classList.remove(lockClass);
             body.classList.remove(lockClass);
+            body.style.position = "";
+            body.style.top = "";
+            body.style.insetInline = "";
+            window.scrollTo(0, scrollYRef.current);
         };
     }, [mobileOpen]);
 
@@ -106,115 +119,117 @@ export default function Header() {
         isActive ? `${styles.navLink} ${styles.navLinkActive}` : styles.navLink;
 
     return (
-        <header className={styles.header}>
-            <div className={styles.inner}>
-                {/* Logo */}
-                <Link
-                    to="/"
-                    className={styles.logo}
-                    aria-label="כרטיס ביקור דיגיטלי - כרדיגו"
-                >
-                    <picture>
-                        <source
-                            type="image/webp"
-                            srcSet="/images/brand-logo/cardigo-logo.webp"
-                        />
-                        <img
-                            src="/images/brand-logo/cardigo-logo.png"
-                            alt="כרטיס ביקור דיגיטלי - כרדיגו"
-                            className={styles.logoImage}
-                            loading="eager"
-                            decoding="async"
-                        />
-                    </picture>
-                </Link>
+        <>
+            <header className={styles.header}>
+                <div className={styles.inner}>
+                    {/* Logo */}
+                    <Link
+                        to="/"
+                        className={styles.logo}
+                        aria-label="כרטיס ביקור דיגיטלי - כרדיגו"
+                    >
+                        <picture>
+                            <source
+                                type="image/webp"
+                                srcSet="/images/brand-logo/cardigo-logo.webp"
+                            />
+                            <img
+                                src="/images/brand-logo/cardigo-logo.png"
+                                alt="כרטיס ביקור דיגיטלי - כרדיגו"
+                                className={styles.logoImage}
+                                loading="eager"
+                                decoding="async"
+                            />
+                        </picture>
+                    </Link>
 
-                {/* Mobile menu toggle */}
-                <button
-                    type="button"
-                    className={
-                        mobileOpen
-                            ? `${styles.burger} ${styles.burgerOpen}`
-                            : styles.burger
-                    }
-                    aria-label={mobileOpen ? "סגירת תפריט" : "פתיחת תפריט"}
-                    aria-expanded={mobileOpen}
-                    aria-controls="mobile-nav"
-                    onClick={() => setMobileOpen((v) => !v)}
-                >
-                    <span className={styles.burgerLine} />
-                    <span className={styles.burgerLine} />
-                    <span className={styles.burgerLine} />
-                </button>
+                    {/* Mobile menu toggle */}
+                    <button
+                        type="button"
+                        className={
+                            mobileOpen
+                                ? `${styles.burger} ${styles.burgerOpen}`
+                                : styles.burger
+                        }
+                        aria-label={mobileOpen ? "סגירת תפריט" : "פתיחת תפריט"}
+                        aria-expanded={mobileOpen}
+                        aria-controls="mobile-nav"
+                        onClick={() => setMobileOpen((v) => !v)}
+                    >
+                        <span className={styles.burgerLine} />
+                        <span className={styles.burgerLine} />
+                        <span className={styles.burgerLine} />
+                    </button>
 
-                {/* Navigation */}
-                <nav className={styles.nav}>
-                    {navItems.map((item) => (
-                        <NavLink
-                            key={item.to}
-                            to={item.to}
-                            end={item.end}
-                            className={navLinkClass}
-                        >
-                            {item.label}
-                        </NavLink>
-                    ))}
-                </nav>
-
-                {/* Actions */}
-                <div className={styles.actions}>
-                    {!isAuth ? (
-                        <>
-                            <Button
-                                as={Link}
-                                to="/login"
-                                variant="secondary"
-                                size="small"
+                    {/* Navigation */}
+                    <nav className={styles.nav}>
+                        {navItems.map((item) => (
+                            <NavLink
+                                key={item.to}
+                                to={item.to}
+                                end={item.end}
+                                className={navLinkClass}
                             >
-                                התחברות
-                            </Button>
-                            <Button
-                                as={Link}
-                                to="/edit"
-                                variant="primary"
-                                size="small"
-                            >
-                                צור כרטיס חינם
-                            </Button>
-                        </>
-                    ) : (
-                        <div className={styles.authBlock}>
-                            <div className={styles.authButtons}>
+                                {item.label}
+                            </NavLink>
+                        ))}
+                    </nav>
+
+                    {/* Actions */}
+                    <div className={styles.actions}>
+                        {!isAuth ? (
+                            <>
                                 <Button
                                     as={Link}
-                                    to="/edit"
+                                    to="/login"
                                     variant="secondary"
                                     size="small"
                                 >
-                                    הכרטיס שלי
+                                    התחברות
                                 </Button>
-
                                 <Button
-                                    variant="ghost"
+                                    as={Link}
+                                    to="/edit"
+                                    variant="primary"
                                     size="small"
-                                    onClick={handleLogout}
                                 >
-                                    יציאה
+                                    צור כרטיס חינם
                                 </Button>
-                            </div>
+                            </>
+                        ) : (
+                            <div className={styles.authBlock}>
+                                <div className={styles.authButtons}>
+                                    <Button
+                                        as={Link}
+                                        to="/edit"
+                                        variant="secondary"
+                                        size="small"
+                                    >
+                                        הכרטיס שלי
+                                    </Button>
 
-                            {user?.email && (
-                                <span
-                                    className={styles.userEmail}
-                                    title={user.email}
-                                >
-                                    {user.email}
-                                </span>
-                            )}
-                        </div>
-                    )}
+                                    <Button
+                                        variant="ghost"
+                                        size="small"
+                                        onClick={handleLogout}
+                                    >
+                                        יציאה
+                                    </Button>
+                                </div>
+
+                                {user?.email && (
+                                    <span
+                                        className={styles.userEmail}
+                                        title={user.email}
+                                    >
+                                        {user.email}
+                                    </span>
+                                )}
+                            </div>
+                        )}
+                    </div>
                 </div>
-            </div>
+            </header>
 
             {/* Mobile drawer */}
             <div
@@ -316,6 +331,6 @@ export default function Header() {
                     )}
                 </div>
             </aside>
-        </header>
+        </>
     );
 }
