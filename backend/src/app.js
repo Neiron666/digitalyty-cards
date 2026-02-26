@@ -19,6 +19,7 @@ import orgRoutes from "./routes/org.routes.js";
 import invitesRoutes from "./routes/invites.routes.js";
 import orgInvitesRoutes from "./routes/orgInvites.routes.js";
 import previewRoutes from "./routes/preview.routes.js";
+import accountRoutes from "./routes/account.routes.js";
 import path from "path";
 
 const app = express();
@@ -83,6 +84,7 @@ app.use("/api/admin", requireAdmin, adminRoutes);
 
 app.use("/api/uploads", uploadRoutes);
 app.use("/api/payments", paymentRoutes);
+app.use("/api/account", accountRoutes);
 app.use("/api/auth", authRoutes);
 app.get("/api/health", (req, res) => {
     res.json({ status: "OK" });
