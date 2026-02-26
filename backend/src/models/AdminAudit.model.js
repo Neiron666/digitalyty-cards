@@ -11,7 +11,7 @@ const AdminAuditSchema = new mongoose.Schema(
         action: { type: String, required: true, index: true },
         targetType: {
             type: String,
-            enum: ["user", "card"],
+            enum: ["user", "card", "blog"],
             required: true,
         },
         targetId: {
@@ -22,7 +22,7 @@ const AdminAuditSchema = new mongoose.Schema(
         reason: { type: String, required: true },
         meta: { type: mongoose.Schema.Types.Mixed, default: null },
     },
-    { timestamps: true }
+    { timestamps: true },
 );
 
 export default mongoose.model("AdminAudit", AdminAuditSchema);

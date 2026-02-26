@@ -21,6 +21,7 @@ import invitesRoutes from "./routes/invites.routes.js";
 import orgInvitesRoutes from "./routes/orgInvites.routes.js";
 import previewRoutes from "./routes/preview.routes.js";
 import accountRoutes from "./routes/account.routes.js";
+import blogRoutes from "./routes/blog.routes.js";
 import path from "path";
 
 const app = express();
@@ -143,6 +144,9 @@ app.use("/api/c", companyPublicRoutes);
 
 // Preview resolve API (owner-only; anti-enumeration)
 app.use("/api/preview", previewRoutes);
+
+// Blog public read API
+app.use("/api/blog", blogRoutes);
 
 // API fallback: never return HTML for /api/*
 app.use("/api", (req, res) => {

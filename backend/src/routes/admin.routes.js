@@ -43,6 +43,16 @@ import {
     getAdminSiteAnalyticsSummary,
     getAdminSiteAnalyticsDiagnostics,
 } from "../controllers/adminSiteAnalytics.controller.js";
+import {
+    listAdminBlogPosts,
+    createBlogPost,
+    updateBlogPost,
+    publishBlogPost,
+    unpublishBlogPost,
+    deleteBlogPost,
+    uploadBlogHeroImage,
+} from "../controllers/adminBlog.controller.js";
+import { upload } from "../middlewares/upload.middleware.js";
 
 const router = Router();
 
@@ -95,5 +105,18 @@ router.post("/cards/:id/analytics-premium", setAnalyticsPremium);
 router.post("/cards/:id/tier", setCardTier);
 router.post("/users/:id/tier", setUserTier);
 router.post("/users/:id/delete", deleteUserPermanently);
+
+// Blog admin CRUD
+router.get("/blog/posts", listAdminBlogPosts);
+router.post("/blog/posts", createBlogPost);
+router.patch("/blog/posts/:id", updateBlogPost);
+router.post("/blog/posts/:id/publish", publishBlogPost);
+router.post("/blog/posts/:id/unpublish", unpublishBlogPost);
+router.post(
+    "/blog/posts/:id/upload-hero",
+    upload.single("image"),
+    uploadBlogHeroImage,
+);
+router.post("/blog/posts/:id/delete", deleteBlogPost);
 
 export default router;
