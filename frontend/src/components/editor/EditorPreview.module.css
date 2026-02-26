@@ -26,6 +26,7 @@
 @media (max-width: 1200px) {
     .phoneFrame {
         width: min(360px, 92vw);
+        align-self: center;
     }
 }
 
