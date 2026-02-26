@@ -63,6 +63,7 @@
     font-weight: 900;
     font-size: var(--fs-body-sm, 0.8125rem);
     margin-bottom: 4px;
+    text-align: center;
 }
 
 .publicLinkUrl {
@@ -70,7 +71,7 @@
     overflow-wrap: anywhere;
     word-break: break-all;
     direction: ltr;
-    text-align: left;
+    text-align: center;
     color: var(--gold);
     font-weight: 700;
     font-size: var(--fs-caption, 0.75rem);
