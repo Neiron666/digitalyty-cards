@@ -40,6 +40,7 @@ Do NOT run `--apply` automatically in CI.
 docs/auth-forgot-reset-runbook.md
 docs/auth-signup-token-runbook.md
 docs\runbooks\cardigo_billing_support_runbook.md
+docs\runbooks\docs_blog_seo_og_runbook.md
 
 ## Release sanity gates (SSoT)
 

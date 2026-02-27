@@ -33,9 +33,16 @@ router.get("/og/blog/:slug", async (req, res) => {
     const siteUrl = getSiteUrl();
     const publicUrl = `${siteUrl}/blog/${slug}`;
 
+    // Collapse newlines → single space so meta content="..." stays single-line.
+    const collapseWs = (s) =>
+        String(s || "")
+            .replace(/[\r\n]+/g, " ")
+            .trim();
+
     const title =
-        post.seo?.title || post.title || "\u05D1\u05DC\u05D5\u05D2 | Cardigo";
-    const description = post.seo?.description || post.excerpt || "";
+        collapseWs(post.seo?.title || post.title) ||
+        "\u05D1\u05DC\u05D5\u05D2 | Cardigo";
+    const description = collapseWs(post.seo?.description || post.excerpt || "");
 
     const heroPath =
         post.heroImage?.storagePath ||
