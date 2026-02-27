@@ -30,8 +30,18 @@ function slugFromTitle(title) {
     return String(title || "")
         .trim()
         .toLowerCase()
-        .replace(/[^a-z0-9\u0590-\u05FF]+/g, "-")
+        .replace(/[^a-z0-9]+/g, "-")
         .replace(/^-+|-+$/g, "")
+        .slice(0, 100);
+}
+
+function normalizeSlug(raw) {
+    return String(raw || "")
+        .trim()
+        .toLowerCase()
+        .replace(/[^a-z0-9-]+/g, "-")
+        .replace(/^-+|-+$/g, "")
+        .replace(/-{2,}/g, "-")
         .slice(0, 100);
 }
 
@@ -135,7 +145,7 @@ export default function AdminBlogView() {
     function populateForm(post) {
         setFTitle(safeString(post.title));
         setFSlug(safeString(post.slug));
-        setFSlugTouched(true); // existing post — slug is manual
+        setFSlugTouched(false);
         setFExcerpt(safeString(post.excerpt));
         setFSections(
             (post.sections || []).map((s) => ({
@@ -229,14 +239,15 @@ export default function AdminBlogView() {
         }
         setSelectedBusy(true);
         try {
+            const slug = normalizeSlug(fSlug);
             const body = {
                 title: fTitle.trim(),
-                slug: fSlug.trim(),
                 excerpt: fExcerpt.trim(),
                 sections: fSections,
                 seo: { title: fSeoTitle.trim(), description: fSeoDesc.trim() },
                 authorName: fShowAuthor ? "ולנטין" : "",
             };
+            if (slug) body.slug = slug;
             const res = await createAdminBlogPost(body);
             const post = res.data;
             showFlash("success", "הפוסט נוצר.");
@@ -262,12 +273,15 @@ export default function AdminBlogView() {
         try {
             const body = {
                 title: fTitle.trim(),
-                slug: fSlug.trim(),
                 excerpt: fExcerpt.trim(),
                 sections: fSections,
                 seo: { title: fSeoTitle.trim(), description: fSeoDesc.trim() },
                 authorName: fShowAuthor ? "ולנטין" : "",
             };
+            if (fSlugTouched) {
+                const slug = normalizeSlug(fSlug);
+                if (slug) body.slug = slug;
+            }
             const res = await updateAdminBlogPost(selectedId, body);
             populateForm(res.data);
             showFlash("success", "הפוסט עודכן.");
@@ -527,7 +541,7 @@ export default function AdminBlogView() {
                             value={fSlug}
                             onChange={(e) => {
                                 setFSlugTouched(true);
-                                setFSlug(e.target.value);
+                                setFSlug(normalizeSlug(e.target.value));
                             }}
                             placeholder="ייווצר אוטומטית מהכותרת"
                             meta={
