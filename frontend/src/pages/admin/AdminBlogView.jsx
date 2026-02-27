@@ -231,6 +231,7 @@ export default function AdminBlogView() {
         try {
             const body = {
                 title: fTitle.trim(),
+                slug: fSlug.trim(),
                 excerpt: fExcerpt.trim(),
                 sections: fSections,
                 seo: { title: fSeoTitle.trim(), description: fSeoDesc.trim() },

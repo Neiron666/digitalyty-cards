@@ -205,14 +205,27 @@ export async function createBlogPost(req, res) {
                 .json({ code: "VALIDATION", message: "excerpt is required" });
         }
 
-        // Slug
-        const baseSlug = buildBaseSlug(title);
-        if (!baseSlug) {
-            return res.status(422).json({
-                code: "VALIDATION",
-                message: "Cannot generate slug from title",
-            });
+        // Slug: accept explicit body.slug, auto-generate from title,
+        // or fallback to "post-<shortId>" for non-Latin titles.
+        const requestedSlug =
+            typeof req.body.slug === "string"
+                ? req.body.slug.trim().toLowerCase()
+                : "";
+
+        let baseSlug;
+        if (requestedSlug) {
+            const reqSlugErr = validateSlugFormat(requestedSlug);
+            if (reqSlugErr) {
+                return res
+                    .status(422)
+                    .json({ code: "VALIDATION", message: reqSlugErr });
+            }
+            baseSlug = requestedSlug;
+        } else {
+            baseSlug = buildBaseSlug(title) || `post-${uuidv4().slice(0, 8)}`;
         }
+        baseSlug = baseSlug.slice(0, BLOG_SLUG_MAX);
+
         const slug = await generateUniqueBlogSlug(baseSlug);
         const slugErr = validateSlugFormat(slug);
         if (slugErr) {

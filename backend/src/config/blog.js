@@ -19,6 +19,7 @@ export const BLOG_AUTHOR_IMAGE_ALT_MAX = 200;
 /** Slugs that must never be used as blog post slugs. */
 export const BLOG_RESERVED_SLUGS = new Set([
     "admin",
+    "blog",
     "new",
     "edit",
     "draft",
