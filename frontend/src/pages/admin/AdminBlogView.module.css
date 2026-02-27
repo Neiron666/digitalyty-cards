@@ -364,6 +364,15 @@
     color: var(--text-muted);
 }
 
+/* ── Slug hint ──────────────────────────────────────────────────── */
+
+.slugHint {
+    margin: 2px 0 0;
+    font-size: var(--fs-caption);
+    color: var(--text-muted);
+    line-height: 1.45;
+}
+
 /* ── Action buttons row ────────────────────────────────────────── */
 
 .actionRow {

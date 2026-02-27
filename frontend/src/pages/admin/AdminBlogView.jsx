@@ -56,6 +56,7 @@ function mapBlogApiError(err) {
     if (status === 403) return "אין הרשאות.";
     if (status === 404) return "הפוסט לא נמצא.";
     if (status === 409) return apiMessage || "סלאג כבר תפוס.";
+    if (status === 413) return "הקובץ גדול מדי (מקסימום 2MB).";
     if (status === 422) return apiMessage || "שגיאת ולידציה.";
 
     return "אירעה שגיאה. נסה שוב.";
@@ -551,6 +552,15 @@ export default function AdminBlogView() {
                             }
                             disabled={selectedBusy}
                         />
+                        {/[\u0590-\u05FF]/.test(fTitle) &&
+                            !normalizeSlug(fTitle) && (
+                                <p className={styles.slugHint}>
+                                    שימו לב: כשכותרת בעברית — הסלאג לא נוצר
+                                    אוטומטית. אפשר להשאיר ריק (ייווצר אוטומטית
+                                    כמו post-xxxxxxxx), או להזין סלאג באנגלית
+                                    (a-z, 0-9, מקפים) לטובת SEO.
+                                </p>
+                            )}
                         <label className={styles.fieldLabel}>
                             תקציר *
                             <textarea

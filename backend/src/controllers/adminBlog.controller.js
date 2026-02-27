@@ -258,6 +258,18 @@ export async function createBlogPost(req, res) {
             createdByAdminId: adminId,
         });
 
+        // Best-effort audit (fire-and-forget)
+        void logAdminAction({
+            adminUserId: adminId,
+            action: "create-blog-post",
+            targetType: "blog",
+            targetId: post._id,
+            reason: BLOG_ADMIN_AUDIT_REASON,
+            meta: { slug: post.slug, title: post.title },
+        }).catch((auditErr) =>
+            console.error("[adminBlog] audit create error:", auditErr),
+        );
+
         return res.status(201).json(pickAdminDTO(post));
     } catch (err) {
         // Mongo duplicate key
@@ -367,6 +379,18 @@ export async function updateBlogPost(req, res) {
             id,
             { $set },
             { new: true, runValidators: true },
+        );
+
+        // Best-effort audit (fire-and-forget)
+        void logAdminAction({
+            adminUserId: getAdminId(req),
+            action: "update-blog-post",
+            targetType: "blog",
+            targetId: updated._id,
+            reason: BLOG_ADMIN_AUDIT_REASON,
+            meta: { slug: updated.slug, changedFields: Object.keys($set) },
+        }).catch((auditErr) =>
+            console.error("[adminBlog] audit update error:", auditErr),
         );
 
         return res.json(pickAdminDTO(updated));
@@ -559,6 +583,23 @@ export async function uploadBlogHeroImage(req, res) {
         // Update post
         post.heroImage = { storagePath, alt };
         await post.save();
+
+        // Best-effort audit (fire-and-forget)
+        void logAdminAction({
+            adminUserId: getAdminId(req),
+            action: "upload-blog-hero",
+            targetType: "blog",
+            targetId: post._id,
+            reason: BLOG_ADMIN_AUDIT_REASON,
+            meta: {
+                slug: post.slug,
+                storagePath,
+                alt,
+                replacedPath: oldPath || null,
+            },
+        }).catch((auditErr) =>
+            console.error("[adminBlog] audit upload-hero error:", auditErr),
+        );
 
         const heroImageUrl =
             getPublicUrlForPath({ path: storagePath }) || result?.url || null;

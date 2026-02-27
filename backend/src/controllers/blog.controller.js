@@ -68,6 +68,7 @@ export async function listPublishedPosts(req, res) {
 
         const [items, total] = await Promise.all([
             BlogPost.find(filter)
+                .select("-sections")
                 .sort({ publishedAt: -1 })
                 .skip(skip)
                 .limit(limit)
