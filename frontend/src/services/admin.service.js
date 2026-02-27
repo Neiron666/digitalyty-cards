@@ -217,6 +217,10 @@ export function listAdminBlogPosts(params = {}) {
     return api.get("/admin/blog/posts", { params });
 }
 
+export function getAdminBlogPostById(id) {
+    return api.get(`/admin/blog/posts/${id}`);
+}
+
 export function createAdminBlogPost(body) {
     return api.post("/admin/blog/posts", body);
 }

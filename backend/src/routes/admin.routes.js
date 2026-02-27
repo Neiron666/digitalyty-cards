@@ -44,6 +44,7 @@ import {
     getAdminSiteAnalyticsDiagnostics,
 } from "../controllers/adminSiteAnalytics.controller.js";
 import {
+    getAdminBlogPostById,
     listAdminBlogPosts,
     createBlogPost,
     updateBlogPost,
@@ -108,6 +109,7 @@ router.post("/users/:id/delete", deleteUserPermanently);
 
 // Blog admin CRUD
 router.get("/blog/posts", listAdminBlogPosts);
+router.get("/blog/posts/:id", getAdminBlogPostById);
 router.post("/blog/posts", createBlogPost);
 router.patch("/blog/posts/:id", updateBlogPost);
 router.post("/blog/posts/:id/publish", publishBlogPost);

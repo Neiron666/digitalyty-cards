@@ -157,6 +157,25 @@ function normalizeSeo(raw) {
 
 /* ── CRUD Handlers ────────────────────────────────────────────── */
 
+export async function getAdminBlogPostById(req, res) {
+    try {
+        const { id } = req.params;
+        if (!isValidObjectId(id)) {
+            return res.status(404).json({ message: "Not found" });
+        }
+
+        const post = await BlogPost.findById(id).lean();
+        if (!post) {
+            return res.status(404).json({ message: "Not found" });
+        }
+
+        return res.json(pickAdminDTO(post));
+    } catch (err) {
+        console.error("[adminBlog] getAdminBlogPostById error:", err);
+        return res.status(500).json({ message: "Server error" });
+    }
+}
+
 export async function listAdminBlogPosts(req, res) {
     try {
         const { page, limit, skip } = parsePagination(req);
@@ -165,6 +184,7 @@ export async function listAdminBlogPosts(req, res) {
 
         const [items, total] = await Promise.all([
             BlogPost.find(filter)
+                .select("-sections")
                 .sort({ createdAt: -1 })
                 .skip(skip)
                 .limit(limit)

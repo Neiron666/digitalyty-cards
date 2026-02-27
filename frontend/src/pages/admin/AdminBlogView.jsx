@@ -4,6 +4,7 @@ import Input from "../../components/ui/Input";
 import FlashBanner from "../../components/ui/FlashBanner/FlashBanner";
 import {
     listAdminBlogPosts,
+    getAdminBlogPostById,
     createAdminBlogPost,
     updateAdminBlogPost,
     publishAdminBlogPost,
@@ -118,6 +119,9 @@ export default function AdminBlogView() {
     // Hero file
     const heroFileRef = useRef(null);
 
+    // Race guard: ignore stale fetch-on-select responses
+    const selectRequestRef = useRef(0);
+
     /* ── Fetch list ─────────────────────────────── */
 
     async function fetchList() {
@@ -185,8 +189,24 @@ export default function AdminBlogView() {
     }
 
     function handleSelectPost(post) {
+        const requestId = ++selectRequestRef.current;
         setSelectedId(post.id);
-        populateForm(post);
+        setSelectedBusy(true);
+
+        getAdminBlogPostById(post.id)
+            .then((res) => {
+                // Race guard: only apply if this is still the latest request
+                if (selectRequestRef.current !== requestId) return;
+                populateForm(res.data);
+            })
+            .catch((err) => {
+                if (selectRequestRef.current !== requestId) return;
+                showFlash("error", mapBlogApiError(err));
+            })
+            .finally(() => {
+                if (selectRequestRef.current !== requestId) return;
+                setSelectedBusy(false);
+            });
     }
 
     /* ── Title → slug auto-gen ──────────────────── */
@@ -526,6 +546,10 @@ export default function AdminBlogView() {
                     <h3 className={styles.h3}>
                         {isEditing ? "עריכת פוסט" : "פוסט חדש"}
                     </h3>
+
+                    {selectedBusy && selectedId && (
+                        <p className={styles.muted}>טוען פוסט…</p>
+                    )}
 
                     {/* Content fields */}
                     <div className={styles.form}>
