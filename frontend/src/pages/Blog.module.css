@@ -1,17 +1,32 @@
 /* Blog list — card grid (flex-wrap, mobile-first) */
 
+/* Wrapper: layout only. Do NOT override theme / page background */
+.blogWrap {
+    min-height: 100dvh;
+}
+
+/* Grid */
 .grid {
     display: flex;
     flex-wrap: wrap;
     gap: 24px;
 }
 
+/* Card: local light surface (white card only) */
 .card {
+    /* Local light overrides inside card only */
+    --bg-surface: #ffffff;
+    --text-main: #0f172a;
+    --text-muted: #475569;
+    --border: rgba(0, 0, 0, 0.1);
+    --primary: #2563eb;
+
     flex: 1 1 100%;
     min-width: 0;
     border: 1px solid var(--border);
     border-radius: var(--radius-lg);
     background: var(--bg-surface);
+    color: var(--text-main);
     overflow: hidden;
     display: flex;
     flex-direction: column;
@@ -86,8 +101,10 @@
     border-radius: 2px;
 }
 
-/* States */
-
+/* States
+   If you want status messages to be readable on dark page background,
+   keep them as-is (no overrides). If you prefer a white "note" block,
+   add background/border here. For now: neutral, theme-driven. */
 .status {
     text-align: center;
     font-size: var(--fs-body);
@@ -102,8 +119,10 @@
     padding-block: 40px;
 }
 
-/* Pagination */
-
+/* Pagination
+   Buttons should match card light tokens if you want them light.
+   Since page background stays dark, it's usually better to keep pagination
+   near cards (and inherit card vars only if wrapped). Here we keep as-is. */
 .pagination {
     display: flex;
     justify-content: center;

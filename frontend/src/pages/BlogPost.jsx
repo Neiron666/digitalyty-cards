@@ -123,37 +123,45 @@ export default function BlogPost() {
     /* ── Loading state ──────────────── */
     if (loading) {
         return (
-            <Page title="טוען…">
-                <p className={styles.status}>טוען מאמר…</p>
-            </Page>
+            <div className={styles.blogWrap}>
+                <Page title="טוען…">
+                    <p className={styles.status}>טוען מאמר…</p>
+                </Page>
+            </div>
         );
     }
 
     /* ── Not found ──────────────────── */
     if (notFound) {
         return (
-            <Page title="לא נמצא">
-                <p className={styles.status}>המאמר לא נמצא.</p>
-                <div className={styles.backRow}>
-                    <Link to="/blog" className={styles.backLink}>
-                        חזרה לבלוג
-                    </Link>
-                </div>
-            </Page>
+            <div className={styles.blogWrap}>
+                <Page title="לא נמצא">
+                    <p className={styles.status}>המאמר לא נמצא.</p>
+                    <div className={styles.backRow}>
+                        <Link to="/blog" className={styles.backLink}>
+                            חזרה לבלוג
+                        </Link>
+                    </div>
+                </Page>
+            </div>
         );
     }
 
     /* ── Error state ────────────────── */
     if (error || !post) {
         return (
-            <Page title="שגיאה">
-                <p className={styles.statusError}>{error || "שגיאה בטעינה"}</p>
-                <div className={styles.backRow}>
-                    <Link to="/blog" className={styles.backLink}>
-                        חזרה לבלוג
-                    </Link>
-                </div>
-            </Page>
+            <div className={styles.blogWrap}>
+                <Page title="שגיאה">
+                    <p className={styles.statusError}>
+                        {error || "שגיאה בטעינה"}
+                    </p>
+                    <div className={styles.backRow}>
+                        <Link to="/blog" className={styles.backLink}>
+                            חזרה לבלוג
+                        </Link>
+                    </div>
+                </Page>
+            </div>
         );
     }
 
@@ -168,7 +176,7 @@ export default function BlogPost() {
 
     /* ── Render ──────────────────────── */
     return (
-        <>
+        <div className={styles.blogWrap}>
             <SeoHelmet
                 title={seoTitle}
                 description={seoDescription}
@@ -218,6 +226,6 @@ export default function BlogPost() {
                     ))}
                 </article>
             </Page>
-        </>
+        </div>
     );
 }

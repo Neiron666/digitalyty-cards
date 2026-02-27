@@ -1,10 +1,33 @@
 /* Blog post — article layout, mobile-first */
 
-.article {
-    max-width: 720px;
-    margin-inline: auto;
+/* Wrapper: layout only. Keep page background as-is */
+.blogWrap {
+    min-height: 100dvh;
+    padding: 24px 16px; /* mobile-safe gutters */
 }
 
+/* White paper */
+.article {
+    /* local light theme ONLY inside the paper */
+    --bg-surface: #ffffff;
+    --text-main: #0f172a;
+    --text-muted: #475569;
+    --border: rgba(0, 0, 0, 0.1);
+    --primary: #2563eb;
+
+    /* Mobile-first: 90% width */
+    width: 90%;
+    margin-inline: auto;
+
+    background: var(--bg-surface);
+    color: var(--text-main);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 20px 18px;
+
+    /* Keep it from getting too wide on huge screens */
+    max-width: 72rem; /* ~1152px */
+}
 .backRow {
     margin-block-end: 16px;
 }
@@ -80,4 +103,10 @@
     font-size: var(--fs-body);
     color: #ef4444;
     padding-block: 40px;
+}
+/* Desktop: 80% width */
+@media (min-width: 60rem) {
+    .article {
+        width: 80%;
+    }
 }

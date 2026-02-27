@@ -432,8 +432,29 @@ export default function AdminBlogView() {
                                     onClick={() => handleSelectPost(p)}
                                     disabled={selectedBusy}
                                 >
-                                    <span className={styles.postTitle}>
-                                        {p.title}
+                                    {p.heroImageUrl && (
+                                        <img
+                                            className={styles.postThumb}
+                                            src={p.heroImageUrl}
+                                            alt=""
+                                        />
+                                    )}
+                                    <span className={styles.postInfo}>
+                                        <span className={styles.postTitle}>
+                                            {p.title}
+                                        </span>
+                                        {p.excerpt && (
+                                            <span
+                                                className={styles.postExcerpt}
+                                            >
+                                                {p.excerpt}
+                                            </span>
+                                        )}
+                                        {p.publishedAt && (
+                                            <span className={styles.postDate}>
+                                                {formatDate(p.publishedAt)}
+                                            </span>
+                                        )}
                                     </span>
                                     <span
                                         className={`${styles.badge} ${

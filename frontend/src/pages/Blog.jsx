@@ -62,7 +62,7 @@ export default function Blog() {
     const totalPages = Math.ceil(total / PAGE_LIMIT);
 
     return (
-        <>
+        <div className={styles.blogWrap}>
             <SeoHelmet
                 title="בלוג | Cardigo"
                 description="מאמרים, טיפים ועדכונים בנושא כרטיסי ביקור דיגיטליים ונטוורקינג."
@@ -150,6 +150,6 @@ export default function Blog() {
                     </nav>
                 )}
             </Page>
-        </>
+        </div>
     );
 }
