@@ -1,0 +1,151 @@
+/* Blog list — card grid (flex-wrap, mobile-first) */
+
+.grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 24px;
+}
+
+.card {
+    flex: 1 1 100%;
+    min-width: 0;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    background: var(--bg-surface);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.cardImage {
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    object-fit: cover;
+    display: block;
+}
+
+.cardBody {
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+}
+
+.cardDate {
+    font-size: var(--fs-caption);
+    color: var(--text-muted);
+    margin-block-end: 6px;
+}
+
+.cardTitle {
+    font-size: var(--fs-h6);
+    font-weight: 700;
+    margin: 0 0 8px;
+    line-height: 1.4;
+}
+
+.cardTitle a {
+    color: var(--text-main);
+    text-decoration: none;
+}
+
+.cardTitle a:hover {
+    text-decoration: underline;
+}
+
+.cardTitle a:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
+    border-radius: 2px;
+}
+
+.cardExcerpt {
+    font-size: var(--fs-body);
+    color: var(--text-muted);
+    line-height: 1.6;
+    margin: 0 0 12px;
+    overflow-wrap: break-word;
+    flex: 1;
+}
+
+.cardCta {
+    font-size: var(--fs-ui);
+    color: var(--primary);
+    text-decoration: none;
+    font-weight: 600;
+    align-self: flex-start;
+}
+
+.cardCta:hover {
+    text-decoration: underline;
+}
+
+.cardCta:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
+    border-radius: 2px;
+}
+
+/* States */
+
+.status {
+    text-align: center;
+    font-size: var(--fs-body);
+    color: var(--text-muted);
+    padding-block: 40px;
+}
+
+.statusError {
+    text-align: center;
+    font-size: var(--fs-body);
+    color: #ef4444;
+    padding-block: 40px;
+}
+
+/* Pagination */
+
+.pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 16px;
+    margin-block-start: 32px;
+}
+
+.pageBtn {
+    font-size: var(--fs-ui);
+    color: var(--primary);
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 8px 16px;
+    cursor: pointer;
+}
+
+.pageBtn:hover {
+    background: var(--gold-fade);
+}
+
+.pageBtn:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
+}
+
+.pageInfo {
+    font-size: var(--fs-body-sm);
+    color: var(--text-muted);
+}
+
+/* Responsive — tablet: 2 columns */
+@media (min-width: 40rem) {
+    .card {
+        flex: 0 1 calc(50% - 12px);
+    }
+}
+
+/* Responsive — desktop: 3 columns */
+@media (min-width: 60rem) {
+    .card {
+        flex: 0 1 calc(33.333% - 16px);
+    }
+}

@@ -28,6 +28,7 @@ import Dashboard from "../pages/Dashboard";
 const EditCard = lazy(() => import("../pages/EditCard"));
 const Admin = lazy(() => import("../pages/Admin"));
 const OrgInvites = lazy(() => import("../pages/OrgInvites"));
+const BlogPost = lazy(() => import("../pages/BlogPost"));
 
 // public card
 const PublicCard = lazy(() => import("../pages/PublicCard"));
@@ -57,6 +58,18 @@ const router = createBrowserRouter([
             // marketing pages
             { path: "contact", element: <Contact /> },
             { path: "blog", element: <Blog /> },
+            {
+                path: "blog/:slug",
+                element: (
+                    <ChunkErrorBoundary label="שגיאת טעינה במאמר">
+                        <Suspense
+                            fallback={<RouteFallback label="טוען מאמר…" />}
+                        >
+                            <BlogPost />
+                        </Suspense>
+                    </ChunkErrorBoundary>
+                ),
+            },
             { path: "pricing", element: <Pricing /> },
             { path: "guides", element: <Guides /> },
             { path: "cards", element: <Cards /> },

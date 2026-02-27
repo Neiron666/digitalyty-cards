@@ -211,3 +211,35 @@ export function adminUpdateAllowedHost(id, patch = {}) {
 export function adminDeactivateAllowedHost(id) {
     return api.delete(`/admin/allowed-hosts/${id}`);
 }
+
+// Blog admin CRUD
+export function listAdminBlogPosts(params = {}) {
+    return api.get("/admin/blog/posts", { params });
+}
+
+export function createAdminBlogPost(body) {
+    return api.post("/admin/blog/posts", body);
+}
+
+export function updateAdminBlogPost(id, body) {
+    return api.patch(`/admin/blog/posts/${id}`, body);
+}
+
+export function publishAdminBlogPost(id) {
+    return api.post(`/admin/blog/posts/${id}/publish`);
+}
+
+export function unpublishAdminBlogPost(id) {
+    return api.post(`/admin/blog/posts/${id}/unpublish`);
+}
+
+export function deleteAdminBlogPost(id) {
+    return api.post(`/admin/blog/posts/${id}/delete`);
+}
+
+export function uploadAdminBlogHeroImage(id, file, alt) {
+    const fd = new FormData();
+    fd.append("image", file);
+    fd.append("alt", alt);
+    return api.post(`/admin/blog/posts/${id}/upload-hero`, fd);
+}

@@ -1,0 +1,83 @@
+/* Blog post — article layout, mobile-first */
+
+.article {
+    max-width: 720px;
+    margin-inline: auto;
+}
+
+.backRow {
+    margin-block-end: 16px;
+}
+
+.backLink {
+    font-size: var(--fs-ui);
+    color: var(--primary);
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.backLink:hover {
+    text-decoration: underline;
+}
+
+.backLink:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
+    border-radius: 2px;
+}
+
+.date {
+    display: block;
+    font-size: var(--fs-body-sm);
+    color: var(--text-muted);
+    margin-block-end: 16px;
+}
+
+.heroImage {
+    width: 100%;
+    border-radius: var(--radius-lg);
+    aspect-ratio: 16 / 9;
+    object-fit: cover;
+    display: block;
+    margin-block-end: 24px;
+}
+
+.section {
+    margin-block-end: 24px;
+}
+
+.sectionHeading {
+    font-size: var(--fs-h6);
+    font-weight: 700;
+    margin: 0 0 10px;
+    line-height: 1.4;
+    color: var(--text-main);
+}
+
+.sectionBody {
+    font-size: var(--fs-body);
+    line-height: 1.7;
+    color: var(--text-muted);
+    margin: 0 0 12px;
+    overflow-wrap: break-word;
+}
+
+.sectionBody:last-child {
+    margin-block-end: 0;
+}
+
+/* States */
+
+.status {
+    text-align: center;
+    font-size: var(--fs-body);
+    color: var(--text-muted);
+    padding-block: 40px;
+}
+
+.statusError {
+    text-align: center;
+    font-size: var(--fs-body);
+    color: #ef4444;
+    padding-block: 40px;
+}

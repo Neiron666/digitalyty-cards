@@ -1,0 +1,315 @@
+.wrap {
+    display: block;
+}
+
+/* ── Top row ──────────────────────────────────────────────────── */
+
+.topRow {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.h2 {
+    margin: 0;
+    font-size: var(--fs-h6);
+}
+
+.h3 {
+    margin: 0 0 12px;
+    font-size: var(--fs-body);
+}
+
+.h4 {
+    margin: 0 0 8px;
+    font-size: var(--fs-ui);
+}
+
+/* ── Two-panel grid (flex, mobile-first) ──────────────────────── */
+
+.grid {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+@media (min-width: 1000px) {
+    .grid {
+        flex-direction: row;
+        align-items: flex-start;
+    }
+}
+
+.panel {
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    border-radius: 12px;
+    padding: 16px;
+    flex: 1 1 0;
+    min-width: 0;
+}
+
+@media (min-width: 1000px) {
+    .panel:first-child {
+        flex: 0 0 320px;
+        max-width: 360px;
+    }
+}
+
+/* ── Search row ───────────────────────────────────────────────── */
+
+.searchRow {
+    display: flex;
+    gap: 10px;
+    align-items: flex-end;
+    margin-bottom: 12px;
+}
+
+.muted {
+    color: rgba(0, 0, 0, 0.55);
+    font-size: var(--fs-body-sm);
+}
+
+/* ── Post list ────────────────────────────────────────────────── */
+
+.postList {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.postItem {
+    border-radius: 8px;
+    transition: background 0.15s;
+}
+
+.postItem:hover {
+    background: rgba(0, 0, 0, 0.03);
+}
+
+.postItemActive {
+    background: rgba(0, 100, 200, 0.08);
+}
+
+.postBtn {
+    all: unset;
+    display: flex;
+    width: 100%;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 8px 10px;
+    cursor: pointer;
+    border-radius: 8px;
+    font-size: var(--fs-body-sm);
+    box-sizing: border-box;
+}
+
+.postBtn:focus-visible {
+    outline: 2px solid var(--clr-focus, #2563eb);
+    outline-offset: 2px;
+}
+
+.postTitle {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* ── Badges ───────────────────────────────────────────────────── */
+
+.badge {
+    flex: 0 0 auto;
+    font-size: var(--fs-caption);
+    padding: 2px 8px;
+    border-radius: 9999px;
+    white-space: nowrap;
+}
+
+.badgePublished {
+    background: rgba(34, 197, 94, 0.15);
+    color: #15803d;
+}
+
+.badgeDraft {
+    background: rgba(0, 0, 0, 0.07);
+    color: rgba(0, 0, 0, 0.6);
+}
+
+/* ── Pager ─────────────────────────────────────────────────────── */
+
+.pager {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 12px;
+    flex-wrap: wrap;
+}
+
+.pagerMeta {
+    color: rgba(0, 0, 0, 0.7);
+    font-size: var(--fs-body-sm);
+}
+
+/* ── Form ──────────────────────────────────────────────────────── */
+
+.form {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.fieldLabel {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    font-size: var(--fs-body-sm);
+    color: rgba(0, 0, 0, 0.75);
+}
+
+.textarea {
+    width: 100%;
+    border: 1px solid rgba(0, 0, 0, 0.15);
+    border-radius: 10px;
+    padding: 10px;
+    font: inherit;
+    font-size: var(--fs-body-sm);
+    resize: vertical;
+    box-sizing: border-box;
+    background: #fff;
+}
+
+.textarea:focus-visible {
+    outline: 2px solid var(--clr-focus, #2563eb);
+    outline-offset: 1px;
+}
+
+/* ── Section blocks ────────────────────────────────────────────── */
+
+.sectionBlock {
+    margin-top: 20px;
+}
+
+/* ── Hero preview ──────────────────────────────────────────────── */
+
+.heroPreview {
+    margin-bottom: 10px;
+    max-width: 320px;
+}
+
+.heroImg {
+    display: block;
+    width: 100%;
+    border-radius: 8px;
+    object-fit: cover;
+}
+
+.heroFields {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.fileInput {
+    font-size: var(--fs-body-sm);
+}
+
+/* ── Section cards ─────────────────────────────────────────────── */
+
+.sectionCard {
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    border-radius: 10px;
+    padding: 12px;
+    margin-bottom: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.sectionCardHeader {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.sectionIdx {
+    font-size: var(--fs-caption);
+    color: rgba(0, 0, 0, 0.5);
+    font-weight: 600;
+}
+
+.sectionActions {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+}
+
+.iconBtn {
+    all: unset;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: var(--fs-caption);
+    color: rgba(0, 0, 0, 0.6);
+    transition: background 0.15s;
+}
+
+.iconBtn:hover {
+    background: rgba(0, 0, 0, 0.06);
+}
+
+.iconBtn:focus-visible {
+    outline: 2px solid var(--clr-focus, #2563eb);
+    outline-offset: 1px;
+}
+
+.iconBtn:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+}
+
+.iconBtnDanger {
+    color: #dc2626;
+}
+
+.iconBtnDanger:hover {
+    background: rgba(220, 38, 38, 0.08);
+}
+
+/* ── Timestamps ────────────────────────────────────────────────── */
+
+.timestampsRow {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-top: 16px;
+    padding-block-start: 12px;
+    border-top: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.tsItem {
+    font-size: var(--fs-caption);
+    color: rgba(0, 0, 0, 0.55);
+}
+
+/* ── Action buttons row ────────────────────────────────────────── */
+
+.actionRow {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 16px;
+}
