@@ -1,9 +1,22 @@
 /* Blog post — article layout, mobile-first */
 
-/* Wrapper: layout only. Keep page background as-is */
+/*
+   Layout:  .blogWrap  →  Page (.page → .content)  →  .article (paper)  →  .articleInner (text column)
+   - .blogWrap: removes extra inline padding on mobile so paper reaches edges
+   - .article:  white card, wide on desktop, edge-to-edge on mobile
+   - .articleInner: readable text column (max-width capped), always centered
+*/
+
+/* Wrapper: strip inline padding on mobile so paper is edge-to-edge */
 .blogWrap {
     min-height: 100dvh;
-    padding: 24px 16px; /* mobile-safe gutters */
+    padding: 24px 0; /* no inline padding on mobile */
+}
+
+@media (min-width: 60rem) {
+    .blogWrap {
+        padding: 24px 16px;
+    }
 }
 
 /* White paper */
@@ -13,30 +26,116 @@
     --text-main: #0f172a;
     --text-muted: #475569;
     --border: rgba(0, 0, 0, 0.1);
-    --primary: #2563eb;
+    --primary: var(--gold);
 
-    /* Mobile-first: 90% width */
-    width: 90%;
+    box-sizing: border-box;
+    width: 100%;
     margin-inline: auto;
 
     background: var(--bg-surface);
     color: var(--text-main);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-lg);
-    padding: 20px 18px;
+    padding: 20px 0; /* inline padding handled by .articleInner */
 
-    /* Keep it from getting too wide on huge screens */
-    max-width: 72rem; /* ~1152px */
+    /* Mobile: edge-to-edge (no rounded corners, no side borders) */
+    border: none;
+    border-block: 1px solid var(--border);
+    border-radius: var(--radius-sm);
 }
+
+@media (min-width: 60rem) {
+    .article {
+        /* Desktop: wide card, centered, capped */
+        width: min(80vw, 72rem);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-lg);
+        padding: 32px 0;
+    }
+    .articleInner {
+        padding-inline: 32px;
+    }
+}
+
+/* Inner text column — readable width, always centered */
+.articleInner {
+    max-width: 48rem; /* ~768px — comfortable reading */
+    margin-inline: auto;
+    padding-inline: 18px;
+}
+
+/* ── Article header (inside paper) ────────────────────────────── */
+
+.articleHeader {
+    /* Local token override: article title uses var(--fs-h6) but at a
+       larger value than the global 1.125rem, so it dominates visually. */
+    --fs-h6: 1.75rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    margin-block-end: 24px;
+}
+
+.articleTitle {
+    text-decoration: underline var(--primary) 2px;
+    text-underline-offset: 4px;
+}
+
+@media (min-width: 40rem) {
+    .articleHeader {
+        --fs-h6: 2rem;
+    }
+}
+
+.articleTitle {
+    font-size: var(--fs-h6);
+    font-weight: 900;
+    line-height: 1.25;
+    color: var(--text-main);
+    margin: 0 0 12px;
+    letter-spacing: -0.015em;
+    overflow-wrap: break-word;
+    max-width: 38rem;
+}
+
+@media (min-width: 40rem) {
+    .articleTitle {
+        font-size: var(--fs-h6);
+        line-height: 1.2;
+    }
+}
+
+.articleExcerpt {
+    font-size: var(--fs-body);
+    line-height: 1.6;
+    font-style: italic;
+    color: var(--text-muted);
+    margin: 0 0 16px;
+    max-width: 40rem;
+    text-align: center;
+}
+
+.articleDivider {
+    height: 2px;
+    background: linear-gradient(
+        90deg,
+        transparent,
+        var(--gold-fade, rgba(245, 158, 11, 0.28)),
+        transparent
+    );
+    margin-block-start: 4px;
+}
+
 .backRow {
-    margin-block-end: 16px;
+    margin-block-start: 24px;
+    margin-block-end: 8px;
+    text-align: center;
 }
-
 .backLink {
-    font-size: var(--fs-ui);
+    font-size: var(--fs-body);
     color: var(--primary);
     text-decoration: none;
     font-weight: 600;
+    text-decoration: underline;
 }
 
 .backLink:hover {
@@ -53,7 +152,7 @@
     display: block;
     font-size: var(--fs-body-sm);
     color: var(--text-muted);
-    margin-block-end: 16px;
+    margin-block-end: 10px;
 }
 
 .heroImage {
@@ -73,8 +172,46 @@
     font-size: var(--fs-h6);
     font-weight: 700;
     margin: 0 0 10px;
-    line-height: 1.4;
+    line-height: var(--lh-heading);
     color: var(--text-main);
+    text-align: center;
+    padding-block-end: 8px;
+    border-block-end: 1px solid var(--gold-fade, rgba(245, 158, 11, 0.28));
+    text-decoration: var(--primary) underline 1px;
+    text-underline-offset: 4px;
+}
+
+.sectionHeading::before {
+    content: "";
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--primary);
+    margin-inline-end: 10px;
+    vertical-align: middle;
+    position: relative;
+    flex-shrink: 0;
+    box-shadow: 0 0 0 0 var(--primary);
+    animation: ripple 2s ease-out infinite;
+}
+
+@keyframes ripple {
+    0% {
+        box-shadow:
+            0 0 0 0 rgba(245, 158, 11, 0.5),
+            0 0 0 0 rgba(245, 158, 11, 0.3);
+    }
+    70% {
+        box-shadow:
+            0 0 0 8px rgba(245, 158, 11, 0),
+            0 0 0 14px rgba(245, 158, 11, 0);
+    }
+    100% {
+        box-shadow:
+            0 0 0 8px rgba(245, 158, 11, 0),
+            0 0 0 14px rgba(245, 158, 11, 0);
+    }
 }
 
 .sectionBody {
@@ -87,6 +224,59 @@
 
 .sectionBody:last-child {
     margin-block-end: 0;
+}
+
+/* ── Author card (optional, bottom of article) ────────────────── */
+
+.authorCard {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    margin-block-start: 32px;
+    padding: 20px 16px;
+    border: 1.5px solid var(--gold-fade, rgba(245, 158, 11, 0.28));
+    border-radius: var(--radius-lg);
+    background: rgba(245, 158, 11, 0.04);
+    text-align: center;
+}
+
+@media (min-width: 40rem) {
+    .authorCard {
+        flex-direction: row;
+        text-align: start;
+        padding: 20px 24px;
+        gap: 16px;
+    }
+}
+
+.authorAvatar {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    object-fit: cover;
+    flex-shrink: 0;
+    border: 2px solid var(--gold-fade, rgba(245, 158, 11, 0.28));
+}
+
+.authorInfo {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+
+.authorName {
+    font-size: var(--fs-h6);
+    font-weight: 700;
+    color: var(--text-main);
+    line-height: 1.3;
+}
+
+.authorBio {
+    font-size: var(--fs-body-sm);
+    color: var(--text-muted);
+    line-height: 1.5;
 }
 
 /* States */
@@ -103,10 +293,4 @@
     font-size: var(--fs-body);
     color: #ef4444;
     padding-block: 40px;
-}
-/* Desktop: 80% width */
-@media (min-width: 60rem) {
-    .article {
-        width: 80%;
-    }
 }

@@ -9,6 +9,9 @@ import {
     BLOG_SEO_DESC_MAX,
     BLOG_HERO_ALT_MAX,
     BLOG_SLUG_MAX,
+    BLOG_AUTHOR_NAME_MAX,
+    BLOG_AUTHOR_BIO_MAX,
+    BLOG_AUTHOR_IMAGE_ALT_MAX,
 } from "../config/blog.js";
 
 /* ── Sub-schemas ──────────────────────────────────────────────── */
@@ -104,6 +107,32 @@ const BlogPostSchema = new mongoose.Schema(
             type: BlogSeoSchema,
             default: () => ({}),
         },
+
+        /* Author (all optional — card renders only when authorName is set) */
+        authorName: {
+            type: String,
+            trim: true,
+            maxlength: BLOG_AUTHOR_NAME_MAX,
+            default: "",
+        },
+        authorImageUrl: {
+            type: String,
+            trim: true,
+            default: "",
+        },
+        authorImageAlt: {
+            type: String,
+            trim: true,
+            maxlength: BLOG_AUTHOR_IMAGE_ALT_MAX,
+            default: "",
+        },
+        authorBio: {
+            type: String,
+            trim: true,
+            maxlength: BLOG_AUTHOR_BIO_MAX,
+            default: "",
+        },
+
         status: {
             type: String,
             enum: ["draft", "published"],

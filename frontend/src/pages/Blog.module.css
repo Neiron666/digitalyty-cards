@@ -19,7 +19,7 @@
     --text-main: #0f172a;
     --text-muted: #475569;
     --border: rgba(0, 0, 0, 0.1);
-    --primary: #2563eb;
+    --primary: var(--gold);
 
     flex: 1 1 100%;
     min-width: 0;
@@ -84,11 +84,11 @@
 }
 
 .cardCta {
-    font-size: var(--fs-ui);
+    font-size: var(--fs-16);
     color: var(--primary);
     text-decoration: none;
     font-weight: 600;
-    align-self: flex-start;
+    align-self: center;
 }
 
 .cardCta:hover {

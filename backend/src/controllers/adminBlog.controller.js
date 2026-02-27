@@ -29,6 +29,9 @@ import {
     BLOG_SLUG_MAX,
     BLOG_RESERVED_SLUGS,
     BLOG_ADMIN_AUDIT_REASON,
+    BLOG_AUTHOR_NAME_MAX,
+    BLOG_AUTHOR_BIO_MAX,
+    BLOG_AUTHOR_IMAGE_ALT_MAX,
 } from "../config/blog.js";
 
 /* ── Helpers ──────────────────────────────────────────────────── */
@@ -125,6 +128,12 @@ function pickAdminDTO(post) {
             : null,
         createdAt: obj.createdAt || null,
         updatedAt: obj.updatedAt || null,
+
+        // Author (optional)
+        authorName: obj.authorName || "",
+        authorImageUrl: obj.authorImageUrl || "",
+        authorImageAlt: obj.authorImageAlt || "",
+        authorBio: obj.authorBio || "",
     };
 }
 
@@ -199,12 +208,10 @@ export async function createBlogPost(req, res) {
         // Slug
         const baseSlug = buildBaseSlug(title);
         if (!baseSlug) {
-            return res
-                .status(422)
-                .json({
-                    code: "VALIDATION",
-                    message: "Cannot generate slug from title",
-                });
+            return res.status(422).json({
+                code: "VALIDATION",
+                message: "Cannot generate slug from title",
+            });
         }
         const slug = await generateUniqueBlogSlug(baseSlug);
         const slugErr = validateSlugFormat(slug);
@@ -217,12 +224,23 @@ export async function createBlogPost(req, res) {
         const sections = normalizeSections(req.body.sections);
         const seo = normalizeSeo(req.body.seo);
 
+        // Author (optional)
+        const authorName = truncate(req.body.authorName, BLOG_AUTHOR_NAME_MAX);
+        const authorBio = truncate(req.body.authorBio, BLOG_AUTHOR_BIO_MAX);
+        const authorImageAlt = truncate(
+            req.body.authorImageAlt,
+            BLOG_AUTHOR_IMAGE_ALT_MAX,
+        );
+
         const post = await BlogPost.create({
             slug,
             title,
             excerpt,
             sections,
             seo,
+            authorName,
+            authorBio,
+            authorImageAlt,
             status: "draft",
             createdByAdminId: adminId,
         });
@@ -231,12 +249,10 @@ export async function createBlogPost(req, res) {
     } catch (err) {
         // Mongo duplicate key
         if (err.code === 11000) {
-            return res
-                .status(409)
-                .json({
-                    code: "DUPLICATE_SLUG",
-                    message: "Slug already exists",
-                });
+            return res.status(409).json({
+                code: "DUPLICATE_SLUG",
+                message: "Slug already exists",
+            });
         }
         console.error("[adminBlog] createBlogPost error:", err);
         return res.status(500).json({ message: "Server error" });
@@ -262,24 +278,20 @@ export async function updateBlogPost(req, res) {
         if (Object.prototype.hasOwnProperty.call(body, "title")) {
             const v = truncate(body.title, BLOG_TITLE_MAX);
             if (!v)
-                return res
-                    .status(422)
-                    .json({
-                        code: "VALIDATION",
-                        message: "title cannot be empty",
-                    });
+                return res.status(422).json({
+                    code: "VALIDATION",
+                    message: "title cannot be empty",
+                });
             $set.title = v;
         }
 
         if (Object.prototype.hasOwnProperty.call(body, "excerpt")) {
             const v = truncate(body.excerpt, BLOG_EXCERPT_MAX);
             if (!v)
-                return res
-                    .status(422)
-                    .json({
-                        code: "VALIDATION",
-                        message: "excerpt cannot be empty",
-                    });
+                return res.status(422).json({
+                    code: "VALIDATION",
+                    message: "excerpt cannot be empty",
+                });
             $set.excerpt = v;
         }
 
@@ -303,12 +315,10 @@ export async function updateBlogPost(req, res) {
             if (candidate !== post.slug) {
                 const exists = await BlogPost.exists({ slug: candidate });
                 if (exists) {
-                    return res
-                        .status(409)
-                        .json({
-                            code: "DUPLICATE_SLUG",
-                            message: "Slug already exists",
-                        });
+                    return res.status(409).json({
+                        code: "DUPLICATE_SLUG",
+                        message: "Slug already exists",
+                    });
                 }
             }
             $set.slug = candidate;
@@ -320,6 +330,20 @@ export async function updateBlogPost(req, res) {
 
         if (Object.prototype.hasOwnProperty.call(body, "seo")) {
             $set.seo = normalizeSeo(body.seo);
+        }
+
+        // Author (optional, allowlisted)
+        if (Object.prototype.hasOwnProperty.call(body, "authorName")) {
+            $set.authorName = truncate(body.authorName, BLOG_AUTHOR_NAME_MAX);
+        }
+        if (Object.prototype.hasOwnProperty.call(body, "authorBio")) {
+            $set.authorBio = truncate(body.authorBio, BLOG_AUTHOR_BIO_MAX);
+        }
+        if (Object.prototype.hasOwnProperty.call(body, "authorImageAlt")) {
+            $set.authorImageAlt = truncate(
+                body.authorImageAlt,
+                BLOG_AUTHOR_IMAGE_ALT_MAX,
+            );
         }
 
         if (Object.keys($set).length === 0) {
@@ -335,12 +359,10 @@ export async function updateBlogPost(req, res) {
         return res.json(pickAdminDTO(updated));
     } catch (err) {
         if (err.code === 11000) {
-            return res
-                .status(409)
-                .json({
-                    code: "DUPLICATE_SLUG",
-                    message: "Slug already exists",
-                });
+            return res.status(409).json({
+                code: "DUPLICATE_SLUG",
+                message: "Slug already exists",
+            });
         }
         console.error("[adminBlog] updateBlogPost error:", err);
         return res.status(500).json({ message: "Server error" });
@@ -479,12 +501,10 @@ export async function uploadBlogHeroImage(req, res) {
         }
 
         if (!req.file) {
-            return res
-                .status(422)
-                .json({
-                    code: "VALIDATION",
-                    message: "Image file is required",
-                });
+            return res.status(422).json({
+                code: "VALIDATION",
+                message: "Image file is required",
+            });
         }
 
         // Alt text is required

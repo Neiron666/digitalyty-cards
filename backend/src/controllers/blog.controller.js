@@ -50,6 +50,12 @@ function pickPublicDTO(post) {
         publishedAt: post.publishedAt || null,
         updatedAt: post.updatedAt || null,
         ogPath: `/og/blog/${post.slug}`,
+
+        // Author (optional — empty strings when not set)
+        authorName: post.authorName || "",
+        authorImageUrl: post.authorImageUrl || "",
+        authorImageAlt: post.authorImageAlt || "",
+        authorBio: post.authorBio || "",
     };
 }
 

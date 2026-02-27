@@ -1,5 +1,6 @@
 import { Router } from "express";
 import Card from "../models/Card.model.js";
+import BlogPost from "../models/BlogPost.model.js";
 import Organization from "../models/Organization.model.js";
 import OrganizationMember from "../models/OrganizationMember.model.js";
 import { isEntitled, isTrialExpired } from "../utils/trial.js";
@@ -94,9 +95,26 @@ router.get("/sitemap.xml", async (req, res) => {
         .filter(Boolean)
         .join("");
 
+    /* ── Blog posts (single query, published-only) ─────────────── */
+    const blogPosts = await BlogPost.find({ status: "published" })
+        .select("slug updatedAt")
+        .lean();
+
+    const blogUrls = blogPosts
+        .map((p) => {
+            const s = String(p.slug || "");
+            if (!s) return "";
+            const lastmod = p.updatedAt
+                ? `<lastmod>${p.updatedAt.toISOString()}</lastmod>`
+                : "";
+            return `<url><loc>${siteUrl}/blog/${s}</loc>${lastmod}</url>`;
+        })
+        .filter(Boolean)
+        .join("");
+
     const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-${urls}
+${urls}${blogUrls}
 </urlset>`;
 
     res.header("Content-Type", "application/xml");

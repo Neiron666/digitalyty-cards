@@ -11,6 +11,11 @@ export const BLOG_SEO_DESC_MAX = 300;
 export const BLOG_HERO_ALT_MAX = 200;
 export const BLOG_SLUG_MAX = 100;
 
+// Author (optional)
+export const BLOG_AUTHOR_NAME_MAX = 100;
+export const BLOG_AUTHOR_BIO_MAX = 300;
+export const BLOG_AUTHOR_IMAGE_ALT_MAX = 200;
+
 /** Slugs that must never be used as blog post slugs. */
 export const BLOG_RESERVED_SLUGS = new Set([
     "admin",

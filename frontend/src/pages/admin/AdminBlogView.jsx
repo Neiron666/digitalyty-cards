@@ -96,6 +96,7 @@ export default function AdminBlogView() {
     const [fSections, setFSections] = useState([]);
     const [fSeoTitle, setFSeoTitle] = useState("");
     const [fSeoDesc, setFSeoDesc] = useState("");
+    const [fShowAuthor, setFShowAuthor] = useState(false);
     const [fHeroUrl, setFHeroUrl] = useState(null);
     const [fHeroAlt, setFHeroAlt] = useState("");
     const [fStatus, setFStatus] = useState("draft");
@@ -144,6 +145,7 @@ export default function AdminBlogView() {
         );
         setFSeoTitle(safeString(post.seo?.title));
         setFSeoDesc(safeString(post.seo?.description));
+        setFShowAuthor(Boolean(post.authorName));
         setFHeroUrl(post.heroImageUrl || null);
         setFHeroAlt(safeString(post.heroImageAlt));
         setFStatus(post.status || "draft");
@@ -161,6 +163,7 @@ export default function AdminBlogView() {
         setFSections([]);
         setFSeoTitle("");
         setFSeoDesc("");
+        setFShowAuthor(false);
         setFHeroUrl(null);
         setFHeroAlt("");
         setFStatus("draft");
@@ -231,6 +234,7 @@ export default function AdminBlogView() {
                 excerpt: fExcerpt.trim(),
                 sections: fSections,
                 seo: { title: fSeoTitle.trim(), description: fSeoDesc.trim() },
+                authorName: fShowAuthor ? "ולנטין" : "",
             };
             const res = await createAdminBlogPost(body);
             const post = res.data;
@@ -261,6 +265,7 @@ export default function AdminBlogView() {
                 excerpt: fExcerpt.trim(),
                 sections: fSections,
                 seo: { title: fSeoTitle.trim(), description: fSeoDesc.trim() },
+                authorName: fShowAuthor ? "ולנטין" : "",
             };
             const res = await updateAdminBlogPost(selectedId, body);
             populateForm(res.data);
@@ -687,6 +692,22 @@ export default function AdminBlogView() {
                                 disabled={selectedBusy}
                             />
                         </div>
+                    </div>
+
+                    {/* Author toggle */}
+                    <div className={styles.sectionBlock}>
+                        <h4 className={styles.h4}>מחבר</h4>
+                        <label className={styles.toggleRow}>
+                            <input
+                                type="checkbox"
+                                checked={fShowAuthor}
+                                onChange={(e) =>
+                                    setFShowAuthor(e.target.checked)
+                                }
+                                disabled={selectedBusy}
+                            />
+                            הצג כרטיס מחבר
+                        </label>
                     </div>
 
                     {/* Timestamps */}

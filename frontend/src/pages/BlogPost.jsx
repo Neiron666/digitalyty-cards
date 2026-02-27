@@ -7,6 +7,19 @@ import styles from "./BlogPost.module.css";
 
 const ORIGIN = import.meta.env.VITE_PUBLIC_ORIGIN || "https://cardigo.co.il";
 
+/** Default author avatar — served from public/ (Vite static asset). */
+const DEFAULT_AUTHOR_AVATAR =
+    "/images/blog/author-img/%D7%95%D7%9C%D7%A0%D7%98%D7%99%D7%9F.jpg";
+
+/** SEO-meaningful fallback alt for author avatar. */
+const DEFAULT_AUTHOR_IMG_ALT = "תמונת מחבר המאמר — Cardigo Blog";
+
+/** Hardcoded author name — single-author blog. */
+const DEFAULT_AUTHOR_NAME = "ולנטין";
+
+/** Hardcoded author bio line. */
+const DEFAULT_AUTHOR_BIO = "מייסד Cardigo — כרטיסי ביקור דיגיטליים";
+
 /* ── Helpers ──────────────────────────────────────────────────── */
 
 function formatDate(iso) {
@@ -185,45 +198,96 @@ export default function BlogPost() {
                 image={post.heroImageUrl || undefined}
                 jsonLdItems={jsonLdItems}
             />
-            <Page title={post.title}>
+            <Page title="בלוג">
                 <article className={styles.article}>
-                    <div className={styles.backRow}>
-                        <Link to="/blog" className={styles.backLink}>
-                            חזרה לבלוג
-                        </Link>
-                    </div>
-
-                    {post.publishedAt && (
-                        <time
-                            className={styles.date}
-                            dateTime={post.publishedAt}
-                        >
-                            {formatDate(post.publishedAt)}
-                        </time>
-                    )}
-
-                    {post.heroImageUrl && (
-                        <img
-                            className={styles.heroImage}
-                            src={post.heroImageUrl}
-                            alt={post.heroImageAlt || post.title || ""}
-                        />
-                    )}
-
-                    {(post.sections || []).map((section, i) => (
-                        <section key={i} className={styles.section}>
-                            {section.heading && (
-                                <h2 className={styles.sectionHeading}>
-                                    {section.heading}
-                                </h2>
+                    <div className={styles.articleInner}>
+                        <header className={styles.articleHeader}>
+                            {post.publishedAt && (
+                                <time
+                                    className={styles.date}
+                                    dateTime={post.publishedAt}
+                                >
+                                    {formatDate(post.publishedAt)}
+                                </time>
                             )}
-                            {textToParagraphs(section.body).map((para, j) => (
-                                <p key={j} className={styles.sectionBody}>
-                                    {para}
+
+                            <h2 className={styles.articleTitle}>
+                                {post.title}
+                            </h2>
+
+                            {post.excerpt && (
+                                <p className={styles.articleExcerpt}>
+                                    {post.excerpt}
                                 </p>
-                            ))}
-                        </section>
-                    ))}
+                            )}
+
+                            <div
+                                className={styles.articleDivider}
+                                aria-hidden="true"
+                            />
+                        </header>
+
+                        {post.heroImageUrl && (
+                            <img
+                                className={styles.heroImage}
+                                src={post.heroImageUrl}
+                                alt={post.heroImageAlt || post.title || ""}
+                            />
+                        )}
+
+                        {(post.sections || []).map((section, i) => (
+                            <section key={i} className={styles.section}>
+                                {section.heading && (
+                                    <h2 className={styles.sectionHeading}>
+                                        {section.heading}
+                                    </h2>
+                                )}
+                                {textToParagraphs(section.body).map(
+                                    (para, j) => (
+                                        <p
+                                            key={j}
+                                            className={styles.sectionBody}
+                                        >
+                                            {para}
+                                        </p>
+                                    ),
+                                )}
+                            </section>
+                        ))}
+
+                        {post.authorName && (
+                            <aside
+                                className={styles.authorCard}
+                                aria-label="מחבר הפוסט"
+                            >
+                                <img
+                                    className={styles.authorAvatar}
+                                    src={
+                                        post.authorImageUrl ||
+                                        DEFAULT_AUTHOR_AVATAR
+                                    }
+                                    alt={
+                                        post.authorImageAlt ||
+                                        DEFAULT_AUTHOR_IMG_ALT
+                                    }
+                                />
+                                <div className={styles.authorInfo}>
+                                    <span className={styles.authorName}>
+                                        {DEFAULT_AUTHOR_NAME}
+                                    </span>
+                                    <span className={styles.authorBio}>
+                                        {post.authorBio || DEFAULT_AUTHOR_BIO}
+                                    </span>
+                                </div>
+                            </aside>
+                        )}
+
+                        <div className={styles.backRow}>
+                            <Link to="/blog" className={styles.backLink}>
+                                חזרה לבלוג
+                            </Link>
+                        </div>
+                    </div>
                 </article>
             </Page>
         </div>

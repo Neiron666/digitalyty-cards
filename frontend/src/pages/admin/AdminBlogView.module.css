@@ -265,6 +265,16 @@
     gap: 10px;
 }
 
+/* ── Author toggle ──────────────────────────────────────────────── */
+
+.toggleRow {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: var(--fs-body-sm);
+    cursor: pointer;
+}
+
 .fileInput {
     font-size: var(--fs-body-sm);
     color: var(--text-main);
