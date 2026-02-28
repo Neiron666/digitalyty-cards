@@ -12,7 +12,7 @@ import Button from "../../ui/Button";
 import styles from "./DesignEditor.module.css";
 
 const ALLOWED_MIME = new Set(["image/jpeg", "image/png", "image/webp"]);
-const MAX_BYTES = 2 * 1024 * 1024;
+const MAX_BYTES = 10 * 1024 * 1024;
 
 const COVER_ASPECT = 16 / 9;
 const AVATAR_ASPECT = 1;
@@ -76,7 +76,7 @@ function DesignEditor({
         if (!file) return;
 
         if (!ALLOWED_MIME.has(file.type) || file.size > MAX_BYTES) {
-            alert("אנא העלה/י JPG/PNG/WebP עד 2MB");
+            alert("אנא העלה/י JPG/PNG/WebP עד 10MB");
             return;
         }
 

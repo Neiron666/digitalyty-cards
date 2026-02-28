@@ -17,6 +17,8 @@ import {
     uploadBuffer,
     removeObjects,
 } from "../services/supabaseStorage.js";
+import { processImage } from "../utils/processImage.js";
+import { HttpError } from "../utils/httpError.js";
 import {
     BLOG_TITLE_MAX,
     BLOG_EXCERPT_MAX,
@@ -572,18 +574,23 @@ export async function uploadBlogHeroImage(req, res) {
                 .json({ code: "VALIDATION", message: "alt text is required" });
         }
 
+        // ── Image canonicalization (sharp) ──
+        const processed = await processImage(req.file.buffer, {
+            kind: "blogHero",
+        });
+
         // Build Supabase path: blog/{postId}/hero/{uuid}.{ext}
         const mimeToExt = {
             "image/jpeg": "jpg",
             "image/png": "png",
             "image/webp": "webp",
         };
-        const ext = mimeToExt[req.file.mimetype] || "jpg";
+        const ext = mimeToExt[processed.mime] || "jpg";
         const storagePath = `blog/${id}/hero/${uuidv4()}.${ext}`;
 
         const result = await uploadBuffer({
-            buffer: req.file.buffer,
-            mime: req.file.mimetype,
+            buffer: processed.buffer,
+            mime: processed.mime,
             path: storagePath,
         });
 
@@ -626,6 +633,11 @@ export async function uploadBlogHeroImage(req, res) {
 
         return res.json({ storagePath, heroImageUrl, alt });
     } catch (err) {
+        if (err instanceof HttpError) {
+            return res
+                .status(err.statusCode)
+                .json({ code: err.code, message: err.message });
+        }
         console.error("[adminBlog] uploadBlogHeroImage error:", err);
         return res.status(500).json({ message: "Server error" });
     }

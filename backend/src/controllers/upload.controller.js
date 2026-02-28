@@ -20,6 +20,12 @@ import {
 import { HttpError } from "../utils/httpError.js";
 import { resolveEffectiveTier } from "../utils/tier.js";
 import { computeEntitlements } from "../utils/cardDTO.js";
+import { processImage } from "../utils/processImage.js";
+import {
+    collectSupabasePathsFromCard,
+    normalizeSupabasePaths,
+} from "../utils/supabasePaths.js";
+import { deleteCardCascade } from "../utils/cardDeleteCascade.js";
 
 function extFromMime(mime) {
     if (mime === "image/png") return "png";
@@ -102,23 +108,34 @@ export async function uploadGalleryImage(req, res) {
 
         // If deletion date reached and still not entitled -> delete card and block uploads.
         if (isTrialDeleteDue(card, now) && !isEntitled(card, now)) {
-            // Best-effort media cleanup.
             try {
-                const rawPaths = [];
-                // Reuse existing tracked uploads list as the canonical set.
-                if (Array.isArray(card.uploads)) {
-                    for (const u of card.uploads)
-                        if (u?.path) rawPaths.push(u.path);
-                }
-                const paths = rawPaths.filter(
-                    (p) =>
-                        typeof p === "string" && p.trim().startsWith("cards/"),
-                );
+                const rawPaths = collectSupabasePathsFromCard(card);
+                const paths = normalizeSupabasePaths(rawPaths);
                 if (paths.length) {
                     const buckets = resolveCleanupBucketsForActor(actor);
                     await removeObjects({ paths, buckets });
                 }
-            } catch {}
+            } catch (err) {
+                console.error("[uploadGalleryImage] supabase cleanup failed", {
+                    cardId: String(card._id),
+                    error: err?.message || err,
+                });
+                return res
+                    .status(502)
+                    .json({ message: "Failed to delete media" });
+            }
+
+            try {
+                await deleteCardCascade({ cardId: card._id });
+            } catch (err) {
+                console.error("[uploadGalleryImage] cascade delete failed", {
+                    cardId: String(card._id),
+                    error: err?.message || err,
+                });
+                return res
+                    .status(500)
+                    .json({ message: "Failed to delete related data" });
+            }
 
             await Card.deleteOne({ _id: card._id });
             return res.status(410).json({
@@ -179,11 +196,16 @@ export async function uploadGalleryImage(req, res) {
             });
         }
 
+        // ── Image canonicalization (sharp) ──
+        const processed = await processImage(req.file.buffer, {
+            kind: "gallery",
+        });
+
         const storagePath = buildStoragePath({
             actor,
             cardId,
             kind: "gallery",
-            mime: req.file.mimetype,
+            mime: processed.mime,
         });
 
         const bucket = resolveUploadBucketForActor(actor);
@@ -197,8 +219,8 @@ export async function uploadGalleryImage(req, res) {
             actor?.type === "anonymous" ? getSignedUrlTtlSeconds() : null;
 
         const uploaded = await uploadBuffer({
-            buffer: req.file.buffer,
-            mime: req.file.mimetype,
+            buffer: processed.buffer,
+            mime: processed.mime,
             path: storagePath,
             bucket,
             signedUrlExpiresIn,
@@ -247,6 +269,11 @@ export async function uploadGalleryImage(req, res) {
             limit,
         });
     } catch (err) {
+        if (err instanceof HttpError) {
+            return res
+                .status(err.statusCode)
+                .json({ code: err.code, message: err.message });
+        }
         console.error("[supabase] upload gallery failed", {
             cardId: req?.body?.cardId,
             error: err?.message || err,
@@ -288,20 +315,33 @@ export async function uploadDesignAsset(req, res) {
 
         if (isTrialDeleteDue(card, now) && !isEntitled(card, now)) {
             try {
-                const rawPaths = [];
-                if (Array.isArray(card.uploads)) {
-                    for (const u of card.uploads)
-                        if (u?.path) rawPaths.push(u.path);
-                }
-                const paths = rawPaths.filter(
-                    (p) =>
-                        typeof p === "string" && p.trim().startsWith("cards/"),
-                );
+                const rawPaths = collectSupabasePathsFromCard(card);
+                const paths = normalizeSupabasePaths(rawPaths);
                 if (paths.length) {
                     const buckets = resolveCleanupBucketsForActor(actor);
                     await removeObjects({ paths, buckets });
                 }
-            } catch {}
+            } catch (err) {
+                console.error("[uploadDesignAsset] supabase cleanup failed", {
+                    cardId: String(card._id),
+                    error: err?.message || err,
+                });
+                return res
+                    .status(502)
+                    .json({ message: "Failed to delete media" });
+            }
+
+            try {
+                await deleteCardCascade({ cardId: card._id });
+            } catch (err) {
+                console.error("[uploadDesignAsset] cascade delete failed", {
+                    cardId: String(card._id),
+                    error: err?.message || err,
+                });
+                return res
+                    .status(500)
+                    .json({ message: "Failed to delete related data" });
+            }
 
             await Card.deleteOne({ _id: card._id });
             return res.status(410).json({
@@ -327,11 +367,16 @@ export async function uploadDesignAsset(req, res) {
         const normalizedKind = kind ? String(kind).trim().toLowerCase() : "";
         const kindForStorage = normalizedKind || "design";
 
+        // ── Image canonicalization (sharp) ──
+        const processed = await processImage(req.file.buffer, {
+            kind: normalizedKind || "design",
+        });
+
         const storagePath = buildStoragePath({
             actor,
             cardId,
             kind: kindForStorage,
-            mime: req.file.mimetype,
+            mime: processed.mime,
         });
 
         const bucket = resolveUploadBucketForActor(actor);
@@ -345,8 +390,8 @@ export async function uploadDesignAsset(req, res) {
             actor?.type === "anonymous" ? getSignedUrlTtlSeconds() : null;
 
         const uploaded = await uploadBuffer({
-            buffer: req.file.buffer,
-            mime: req.file.mimetype,
+            buffer: processed.buffer,
+            mime: processed.mime,
             path: storagePath,
             bucket,
             signedUrlExpiresIn,
@@ -515,6 +560,11 @@ export async function uploadDesignAsset(req, res) {
 
         return res.json({ url: uploaded.url, path: uploaded.path });
     } catch (err) {
+        if (err instanceof HttpError) {
+            return res
+                .status(err.statusCode)
+                .json({ code: err.code, message: err.message });
+        }
         console.error("[supabase] upload design failed", {
             cardId: req?.body?.cardId,
             kind: req?.body?.kind,

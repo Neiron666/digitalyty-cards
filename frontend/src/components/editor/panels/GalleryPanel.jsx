@@ -11,7 +11,7 @@ import { getCroppedBlob } from "../../../utils/imageCropper";
 import styles from "./GalleryPanel.module.css";
 
 const ALLOWED_MIME = new Set(["image/jpeg", "image/png", "image/webp"]);
-const MAX_BYTES = 2 * 1024 * 1024;
+const MAX_BYTES = 10 * 1024 * 1024;
 
 export default function GalleryPanel({
     gallery = [],
@@ -139,7 +139,7 @@ export default function GalleryPanel({
         e.target.value = "";
 
         if (!ALLOWED_MIME.has(file.type) || file.size > MAX_BYTES) {
-            alert("אנא העלה/י JPG/PNG/WebP עד 2MB");
+            alert("אנא העלה/י JPG/PNG/WebP עד 10MB");
             return;
         }
 

@@ -10,8 +10,18 @@ import {
 } from "../utils/supabasePaths.js";
 import { deleteCardCascade } from "../utils/cardDeleteCascade.js";
 import { resolveBilling } from "../utils/trial.js";
+import * as Sentry from "@sentry/node";
+
+const MONITOR_SLUG = "trial-cleanup";
+let monitorIntervalMs = 60 * 60 * 1000;
 
 let running = false;
+let lastHeartbeatAt = 0;
+const DEFAULT_HEARTBEAT_MS = 6 * 60 * 60 * 1000;
+const HEARTBEAT_MS = Math.max(
+    DEFAULT_HEARTBEAT_MS,
+    Number(process.env.TRIAL_CLEANUP_HEARTBEAT_MS) || DEFAULT_HEARTBEAT_MS,
+);
 
 async function cleanupOnce() {
     if (running) return;
@@ -23,7 +33,7 @@ async function cleanupOnce() {
     const anonTtlMs = Math.max(1, anonTtlDays) * 24 * 60 * 60 * 1000;
     const anonCutoff = new Date(now.getTime() - anonTtlMs);
 
-    try {
+    const sweep = async () => {
         // Select only what we need.
         const candidates = await Card.find({
             isActive: true,
@@ -111,7 +121,6 @@ async function cleanupOnce() {
             deletedCount += 1;
 
             if (isAnonStale) deletedAnonStaleCount += 1;
-            else deletedAnonStaleCount += 1;
         }
 
         if (candidates.length) {
@@ -124,6 +133,47 @@ async function cleanupOnce() {
                 removedObjectCount,
                 anonTtlDays: Math.max(1, anonTtlDays),
             });
+        } else {
+            const nowMs = Date.now();
+            if (nowMs - lastHeartbeatAt >= HEARTBEAT_MS) {
+                console.log("[trial-cleanup] heartbeat", {
+                    candidates: 0,
+                    anonTtlDays: Math.max(1, anonTtlDays),
+                    heartbeatMs: HEARTBEAT_MS,
+                    sinceLastHeartbeatMs: lastHeartbeatAt
+                        ? nowMs - lastHeartbeatAt
+                        : null,
+                });
+                lastHeartbeatAt = nowMs;
+            }
+        }
+    };
+
+    try {
+        const intervalMinutes = Math.max(
+            1,
+            Math.round(monitorIntervalMs / 60000),
+        );
+        const monitorConfig = {
+            schedule: {
+                type: "interval",
+                value: intervalMinutes,
+                unit: "minute",
+            },
+            checkinMargin: 5,
+            maxRuntime: 10,
+            timezone: "UTC",
+            failureIssueThreshold: 2,
+            recoveryThreshold: 1,
+        };
+
+        const sentryActive =
+            typeof Sentry.getClient === "function" && !!Sentry.getClient();
+
+        if (sentryActive) {
+            await Sentry.withMonitor(MONITOR_SLUG, sweep, monitorConfig);
+        } else {
+            await sweep();
         }
     } catch (err) {
         console.error("[trial-cleanup] failed", err?.message || err);
@@ -133,6 +183,8 @@ async function cleanupOnce() {
 }
 
 export function startTrialCleanupJob({ intervalMs = 60 * 60 * 1000 } = {}) {
+    monitorIntervalMs = intervalMs;
+
     // Run once shortly after boot, then periodically.
     setTimeout(() => {
         cleanupOnce();

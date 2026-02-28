@@ -1,6 +1,7 @@
 import express from "express";
 import cors from "cors";
 import helmet from "helmet";
+import * as Sentry from "@sentry/node";
 import cardRoutes from "./routes/card.routes.js";
 import { errorMiddleware } from "./middlewares/error.middleware.js";
 import uploadRoutes from "./routes/upload.routes.js";
@@ -152,6 +153,21 @@ app.use("/api/blog", blogRoutes);
 app.use("/api", (req, res) => {
     return res.status(404).json({ message: "API route not found" });
 });
+
+// Sentry error capture: must be BEFORE errorMiddleware so errors are reported
+// but still handled by our own response logic. Only captures 5xx to reduce noise.
+// No-op if Sentry was not initialized (no DSN).
+if (typeof Sentry.expressErrorHandler === "function") {
+    app.use(
+        Sentry.expressErrorHandler({
+            shouldHandleError(error) {
+                const status = error?.statusCode || error?.status || 500;
+                return status >= 500;
+            },
+        }),
+    );
+}
+
 app.use(errorMiddleware);
 
 export default app;

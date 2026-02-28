@@ -605,7 +605,7 @@ export async function getMyCard(req, res) {
             const rawPaths = collectSupabasePathsFromCard(card);
             const paths = normalizeSupabasePaths(rawPaths);
 
-            console.debug("[supabase] cleanup", {
+            console.debug("[getMyCard] supabase cleanup", {
                 cardId: String(card._id),
                 pathCount: paths.length,
             });
@@ -615,10 +615,23 @@ export async function getMyCard(req, res) {
                 await removeObjects({ paths, buckets });
             }
         } catch (err) {
-            console.error("[supabase] cleanup failed", {
+            console.error("[getMyCard] supabase cleanup failed", {
                 cardId: String(card._id),
                 error: err?.message || err,
             });
+            return res.status(502).json({ message: "Failed to delete media" });
+        }
+
+        try {
+            await deleteCardCascade({ cardId: card._id });
+        } catch (err) {
+            console.error("[getMyCard] cascade delete failed", {
+                cardId: String(card._id),
+                error: err?.message || err,
+            });
+            return res
+                .status(500)
+                .json({ message: "Failed to delete related data" });
         }
 
         await Card.deleteOne({ _id: card._id, anonymousId: owner.id });
@@ -1200,7 +1213,25 @@ export async function updateCard(req, res) {
                 const buckets = resolveCleanupBucketsForCard(existingCard);
                 await removeObjects({ paths, buckets });
             }
-        } catch {}
+        } catch (err) {
+            console.error("[updateCard] supabase cleanup failed", {
+                cardId: String(existingCard._id),
+                error: err?.message || err,
+            });
+            return res.status(502).json({ message: "Failed to delete media" });
+        }
+
+        try {
+            await deleteCardCascade({ cardId: existingCard._id });
+        } catch (err) {
+            console.error("[updateCard] cascade delete failed", {
+                cardId: String(existingCard._id),
+                error: err?.message || err,
+            });
+            return res
+                .status(500)
+                .json({ message: "Failed to delete related data" });
+        }
 
         await Card.deleteOne({ _id: existingCard._id });
         return res.status(410).json({

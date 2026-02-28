@@ -1,3 +1,7 @@
+import { MAX_UPLOAD_BYTES } from "../utils/imagePolicy.js";
+
+const _maxMB = Math.round(MAX_UPLOAD_BYTES / (1024 * 1024));
+
 export function multerErrorHandler(err, req, res, next) {
     // Helpful logging for Cloudinary/multer issues
     try {
@@ -12,7 +16,7 @@ export function multerErrorHandler(err, req, res, next) {
 
     if (err.code === "LIMIT_FILE_SIZE") {
         return res.status(413).json({
-            message: "File is too large (max 2MB)",
+            message: `File is too large (max ${_maxMB}MB)`,
         });
     }
 
