@@ -137,11 +137,13 @@ export default function GalleryPanel({
             }
 
             if (matches.length > 1) {
-                console.warn("[gallery-thumb] duplicate url matches", {
-                    cardId,
-                    targetUrl,
-                    matches: matches.length,
-                });
+                if (debugEnabled) {
+                    console.warn("[gallery-thumb] duplicate url matches", {
+                        cardId,
+                        targetUrl,
+                        matches: matches.length,
+                    });
+                }
                 return matches[0];
             }
         }
@@ -155,11 +157,6 @@ export default function GalleryPanel({
 
         e.target.value = "";
 
-        console.warn("[gallery] file meta", {
-            name: file?.name,
-            type: file?.type,
-            size: file?.size,
-        });
         pushDebug("file", {
             name: file?.name,
             type: file?.type,
@@ -181,9 +178,6 @@ export default function GalleryPanel({
         try {
             objectUrlRef.current = URL.createObjectURL(file);
         } catch (urlErr) {
-            console.error("[gallery] createObjectURL failed", {
-                message: urlErr?.message || String(urlErr),
-            });
             pushDebug("objurl-fail", {
                 message: urlErr?.message || String(urlErr),
             });
@@ -213,12 +207,6 @@ export default function GalleryPanel({
             setCropImageUrl(objectUrlRef.current);
             setCropOpen(true);
         } catch (err) {
-            console.error("[gallery] upload failed", {
-                code: err?.code,
-                message: err?.message,
-                status: err?.response?.status,
-                data: err?.response?.data,
-            });
             pushDebug("upload-error", {
                 code: err?.code,
                 message: err?.message,

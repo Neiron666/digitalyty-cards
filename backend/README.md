@@ -42,6 +42,7 @@ docs/auth-signup-token-runbook.md
 docs\runbooks\anon-card-cleanup.md
 docs\runbooks\cardigo_billing_support_runbook.md
 docs\runbooks\docs_blog_seo_og_runbook.md
+docs\runbooks\image-upload-incident-runbook.md
 
 ## Release sanity gates (SSoT)
 
