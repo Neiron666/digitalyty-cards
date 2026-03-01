@@ -1,4 +1,5 @@
 import api from "./api";
+import { prepareImageForUpload } from "../utils/prepareImageForUpload";
 
 export function toAbsoluteUrl(url) {
     if (!url) return url;
@@ -18,8 +19,9 @@ export function toAbsoluteUrl(url) {
 }
 
 export async function uploadGalleryImage(cardId, file) {
+    const prepared = await prepareImageForUpload(file, "gallery");
     const formData = new FormData();
-    formData.append("image", file);
+    formData.append("image", prepared, prepared.name ?? undefined);
     formData.append("cardId", cardId);
 
     const res = await api.post("/uploads/image", formData, {
@@ -30,8 +32,9 @@ export async function uploadGalleryImage(cardId, file) {
 }
 
 export async function uploadDesignAsset(cardId, file, kind) {
+    const prepared = await prepareImageForUpload(file, kind || "gallery");
     const formData = new FormData();
-    formData.append("image", file);
+    formData.append("image", prepared, prepared.name ?? undefined);
     formData.append("cardId", cardId);
     if (kind) formData.append("kind", kind);
 
