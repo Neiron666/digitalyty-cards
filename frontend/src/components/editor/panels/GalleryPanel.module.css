@@ -35,7 +35,7 @@
     justify-content: center;
     gap: 8px;
     border-radius: 8px;
-    background: var(--bg-main);
+    background: rgb(var(--bg-main-rgb) / 0.88);
     pointer-events: all;
 }
 
