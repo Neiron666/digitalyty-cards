@@ -36,6 +36,22 @@ export default function GalleryPanel({
     const [cropTarget, setCropTarget] = useState(null);
     const [isApplying, setIsApplying] = useState(false);
 
+    const debugEnabled = useMemo(
+        () =>
+            new URLSearchParams(window.location.search).get("uploadDebug") ===
+            "1",
+        [],
+    );
+    const [debugLog, setDebugLog] = useState([]);
+
+    function pushDebug(tag, payload) {
+        if (!debugEnabled) return;
+        setDebugLog((prev) => [
+            ...prev,
+            { ts: new Date().toISOString(), tag, payload },
+        ]);
+    }
+
     const cropTitle = useMemo(() => "בחר/י חיתוך לתמונה הממוזערת", []);
 
     function cleanupObjectUrl() {
@@ -143,8 +159,18 @@ export default function GalleryPanel({
             type: file?.type,
             size: file?.size,
         });
+        pushDebug("file", {
+            name: file?.name,
+            type: file?.type,
+            size: file?.size,
+        });
 
         if (!ALLOWED_MIME.has(file.type) || file.size > MAX_BYTES) {
+            pushDebug("rejected", {
+                reason: "MIME_OR_SIZE",
+                type: file?.type,
+                size: file?.size,
+            });
             alert("אנא העלה/י JPG/PNG/WebP עד 10MB");
             return;
         }
@@ -155,6 +181,9 @@ export default function GalleryPanel({
             objectUrlRef.current = URL.createObjectURL(file);
         } catch (urlErr) {
             console.error("[gallery] createObjectURL failed", {
+                message: urlErr?.message || String(urlErr),
+            });
+            pushDebug("objurl-fail", {
                 message: urlErr?.message || String(urlErr),
             });
             return;
@@ -183,6 +212,12 @@ export default function GalleryPanel({
             setCropOpen(true);
         } catch (err) {
             console.error("[gallery] upload failed", {
+                code: err?.code,
+                message: err?.message,
+                status: err?.response?.status,
+                data: err?.response?.data,
+            });
+            pushDebug("upload-error", {
                 code: err?.code,
                 message: err?.message,
                 status: err?.response?.status,
@@ -258,6 +293,12 @@ export default function GalleryPanel({
             onChange(nextGallery);
             closeCrop();
         } catch (err) {
+            pushDebug("crop-error", {
+                code: err?.code,
+                message: err?.message,
+                status: err?.response?.status,
+                data: err?.response?.data,
+            });
             alert(
                 err?.response?.data?.message || err?.message || "Crop failed",
             );
@@ -369,6 +410,15 @@ export default function GalleryPanel({
             />
 
             <p className={styles.hint}>מוגבל ל־{limit} תמונות</p>
+
+            {debugEnabled && debugLog.length > 0 && (
+                <div className={styles.uploadDebugBox}>
+                    <p className={styles.uploadDebugTitle}>Upload Debug</p>
+                    <pre className={styles.uploadDebugPre}>
+                        {JSON.stringify(debugLog, null, 2)}
+                    </pre>
+                </div>
+            )}
         </Panel>
     );
 }

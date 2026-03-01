@@ -20,3 +20,33 @@
 .hint {
     margin-top: 8px;
 }
+
+.uploadDebugBox {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-top: 12px;
+    padding: 8px;
+    border: 1px solid #f5c518;
+    border-radius: 6px;
+    background: #fffbe6;
+    max-height: 240px;
+    overflow: auto;
+}
+
+.uploadDebugTitle {
+    margin: 0;
+    font-weight: 600;
+    font-size: var(--fs-xs, 0.75rem);
+    color: #856404;
+}
+
+.uploadDebugPre {
+    margin: 0;
+    white-space: pre-wrap;
+    word-break: break-all;
+    font-size: var(--fs-xs, 0.75rem);
+    color: #333;
+    direction: ltr;
+    text-align: left;
+}
