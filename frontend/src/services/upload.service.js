@@ -22,7 +22,9 @@ export async function uploadGalleryImage(cardId, file) {
     formData.append("image", file);
     formData.append("cardId", cardId);
 
-    const res = await api.post("/uploads/image", formData);
+    const res = await api.post("/uploads/image", formData, {
+        timeout: 120_000,
+    });
 
     return { ...res.data, url: toAbsoluteUrl(res.data?.url) };
 }

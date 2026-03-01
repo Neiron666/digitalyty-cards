@@ -138,13 +138,27 @@ export default function GalleryPanel({
 
         e.target.value = "";
 
+        console.warn("[gallery] file meta", {
+            name: file?.name,
+            type: file?.type,
+            size: file?.size,
+        });
+
         if (!ALLOWED_MIME.has(file.type) || file.size > MAX_BYTES) {
             alert("אנא העלה/י JPG/PNG/WebP עד 10MB");
             return;
         }
 
         cleanupObjectUrl();
-        objectUrlRef.current = URL.createObjectURL(file);
+
+        try {
+            objectUrlRef.current = URL.createObjectURL(file);
+        } catch (urlErr) {
+            console.error("[gallery] createObjectURL failed", {
+                message: urlErr?.message || String(urlErr),
+            });
+            return;
+        }
 
         try {
             const res = await uploadGalleryImage(cardId, file);
@@ -168,6 +182,12 @@ export default function GalleryPanel({
             setCropImageUrl(objectUrlRef.current);
             setCropOpen(true);
         } catch (err) {
+            console.error("[gallery] upload failed", {
+                code: err?.code,
+                message: err?.message,
+                status: err?.response?.status,
+                data: err?.response?.data,
+            });
             cleanupObjectUrl();
             if (err.response?.data?.code === "GALLERY_LIMIT_REACHED") {
                 alert(err?.response?.data?.message || "Gallery limit reached");
