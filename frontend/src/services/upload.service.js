@@ -32,7 +32,7 @@ export async function uploadGalleryImage(cardId, file) {
 }
 
 export async function uploadDesignAsset(cardId, file, kind) {
-    const prepared = await prepareImageForUpload(file, kind || "gallery");
+    const prepared = await prepareImageForUpload(file, kind || "default");
     const formData = new FormData();
     formData.append("image", prepared, prepared.name ?? undefined);
     formData.append("cardId", cardId);

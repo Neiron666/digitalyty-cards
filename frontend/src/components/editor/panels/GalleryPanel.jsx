@@ -35,6 +35,7 @@ export default function GalleryPanel({
     const [cropImageUrl, setCropImageUrl] = useState(null);
     const [cropTarget, setCropTarget] = useState(null);
     const [isApplying, setIsApplying] = useState(false);
+    const [isUploading, setIsUploading] = useState(false);
 
     const debugEnabled = useMemo(
         () =>
@@ -189,6 +190,7 @@ export default function GalleryPanel({
             return;
         }
 
+        setIsUploading(true);
         try {
             const res = await uploadGalleryImage(cardId, file);
             const createdAt = new Date().toISOString();
@@ -229,6 +231,8 @@ export default function GalleryPanel({
             } else {
                 alert(err?.response?.data?.message || "Upload error");
             }
+        } finally {
+            setIsUploading(false);
         }
     }
 
@@ -307,7 +311,7 @@ export default function GalleryPanel({
     }
 
     function removeImage(index) {
-        if (cropOpen || isApplying) return;
+        if (cropOpen || isApplying || isUploading) return;
         onChange(gallery.filter((_, i) => i !== index));
     }
 
@@ -333,83 +337,104 @@ export default function GalleryPanel({
                 onApply={handleApplyCrop}
             />
 
-            <ul className={styles.list}>
-                {(() => {
-                    const seenKeys = new Set();
+            <div className={styles.galleryArea}>
+                {isUploading && (
+                    <div className={styles.uploadOverlay}>
+                        <span className={styles.uploadSpinner} />
+                        <p className={styles.uploadText}>מעלה תמונה…</p>
+                    </div>
+                )}
 
-                    return gallery.map((item, index) => {
-                        const url = galleryItemToUrl(item);
-                        if (!url) return null;
+                <ul className={styles.list}>
+                    {(() => {
+                        const seenKeys = new Set();
 
-                        const baseKey =
-                            item &&
-                            typeof item === "object" &&
-                            typeof item.path === "string" &&
-                            item.path.trim()
-                                ? item.path.trim()
-                                : url
-                                  ? url
-                                  : `gallery-row-${index}`;
+                        return gallery.map((item, index) => {
+                            const url = galleryItemToUrl(item);
+                            if (!url) return null;
 
-                        const createdAtKey =
-                            item &&
-                            typeof item === "object" &&
-                            typeof item.createdAt === "string"
-                                ? item.createdAt.trim()
-                                : "";
+                            const baseKey =
+                                item &&
+                                typeof item === "object" &&
+                                typeof item.path === "string" &&
+                                item.path.trim()
+                                    ? item.path.trim()
+                                    : url
+                                      ? url
+                                      : `gallery-row-${index}`;
 
-                        const key = seenKeys.has(baseKey)
-                            ? `${baseKey}|${createdAtKey || index}`
-                            : baseKey;
-                        seenKeys.add(baseKey);
-                        const thumbUrlRaw =
-                            item && typeof item === "object"
-                                ? typeof item.thumbUrl === "string"
-                                    ? item.thumbUrl
-                                    : typeof item.thumbPath === "string"
-                                      ? item.thumbPath
-                                      : null
-                                : null;
+                            const createdAtKey =
+                                item &&
+                                typeof item === "object" &&
+                                typeof item.createdAt === "string"
+                                    ? item.createdAt.trim()
+                                    : "";
 
-                        const safeThumbTrimmed =
-                            typeof thumbUrlRaw === "string"
-                                ? thumbUrlRaw.trim()
-                                : "";
-                        const previewSrc = isSafeEditorPreviewUrl(thumbUrlRaw)
-                            ? safeThumbTrimmed.startsWith("uploads/")
-                                ? `/${safeThumbTrimmed}`
-                                : safeThumbTrimmed
-                            : url;
+                            const key = seenKeys.has(baseKey)
+                                ? `${baseKey}|${createdAtKey || index}`
+                                : baseKey;
+                            seenKeys.add(baseKey);
+                            const thumbUrlRaw =
+                                item && typeof item === "object"
+                                    ? typeof item.thumbUrl === "string"
+                                        ? item.thumbUrl
+                                        : typeof item.thumbPath === "string"
+                                          ? item.thumbPath
+                                          : null
+                                    : null;
 
-                        return (
-                            <li key={key} className={styles.row}>
-                                <img
-                                    src={previewSrc}
-                                    alt=""
-                                    className={styles.thumb}
-                                />
-                                <Button
-                                    variant="secondary"
-                                    size="small"
-                                    onClick={() => removeImage(index)}
-                                    disabled={cropOpen || isApplying}
-                                >
-                                    הסר
-                                </Button>
-                            </li>
-                        );
-                    });
-                })()}
-            </ul>
+                            const safeThumbTrimmed =
+                                typeof thumbUrlRaw === "string"
+                                    ? thumbUrlRaw.trim()
+                                    : "";
+                            const previewSrc = isSafeEditorPreviewUrl(
+                                thumbUrlRaw,
+                            )
+                                ? safeThumbTrimmed.startsWith("uploads/")
+                                    ? `/${safeThumbTrimmed}`
+                                    : safeThumbTrimmed
+                                : url;
 
-            <input
-                type="file"
-                accept="image/*"
-                onChange={handleUpload}
-                disabled={!cardId || reachedLimit || cropOpen || isApplying}
-            />
+                            return (
+                                <li key={key} className={styles.row}>
+                                    <img
+                                        src={previewSrc}
+                                        alt=""
+                                        className={styles.thumb}
+                                    />
+                                    <Button
+                                        variant="secondary"
+                                        size="small"
+                                        onClick={() => removeImage(index)}
+                                        disabled={
+                                            cropOpen ||
+                                            isApplying ||
+                                            isUploading
+                                        }
+                                    >
+                                        הסר
+                                    </Button>
+                                </li>
+                            );
+                        });
+                    })()}
+                </ul>
 
-            <p className={styles.hint}>מוגבל ל־{limit} תמונות</p>
+                <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleUpload}
+                    disabled={
+                        !cardId ||
+                        reachedLimit ||
+                        cropOpen ||
+                        isApplying ||
+                        isUploading
+                    }
+                />
+
+                <p className={styles.hint}>מוגבל ל־{limit} תמונות</p>
+            </div>
 
             {debugEnabled && debugLog.length > 0 && (
                 <div className={styles.uploadDebugBox}>

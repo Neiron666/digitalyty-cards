@@ -21,6 +21,46 @@
     margin-top: 8px;
 }
 
+.galleryArea {
+    position: relative;
+}
+
+.uploadOverlay {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.88);
+    pointer-events: all;
+}
+
+.uploadSpinner {
+    display: block;
+    width: 28px;
+    height: 28px;
+    border: 3px solid #e0e0e0;
+    border-top-color: #4a90d9;
+    border-radius: 50%;
+    animation: uploadSpin 0.7s linear infinite;
+}
+
+@keyframes uploadSpin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.uploadText {
+    margin: 0;
+    font-size: var(--fs-sm, 0.875rem);
+    color: #555;
+}
+
 .uploadDebugBox {
     display: flex;
     flex-direction: column;
