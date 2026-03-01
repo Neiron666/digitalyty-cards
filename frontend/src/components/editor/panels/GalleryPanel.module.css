@@ -35,7 +35,7 @@
     justify-content: center;
     gap: 8px;
     border-radius: 8px;
-    background: rgba(255, 255, 255, 0.88);
+    background: var(--bg-main);
     pointer-events: all;
 }
 
@@ -43,8 +43,8 @@
     display: block;
     width: 28px;
     height: 28px;
-    border: 3px solid #e0e0e0;
-    border-top-color: #4a90d9;
+    border: 3px solid var(--border-color, #e0e0e0);
+    border-top-color: var(--gold);
     border-radius: 50%;
     animation: uploadSpin 0.7s linear infinite;
 }
@@ -58,7 +58,7 @@
 .uploadText {
     margin: 0;
     font-size: var(--fs-sm, 0.875rem);
-    color: #555;
+    color: var(--gold, #555);
 }
 
 .uploadDebugBox {
@@ -67,9 +67,9 @@
     gap: 4px;
     margin-top: 12px;
     padding: 8px;
-    border: 1px solid #f5c518;
+    border: 1px solid var(--gold, #f5c518);
     border-radius: 6px;
-    background: #fffbe6;
+    background: var(--bg-warning, #fffbe6);
     max-height: 240px;
     overflow: auto;
 }
@@ -78,7 +78,7 @@
     margin: 0;
     font-weight: 600;
     font-size: var(--fs-xs, 0.75rem);
-    color: #856404;
+    color: var(--gold, #856404);
 }
 
 .uploadDebugPre {
@@ -86,7 +86,7 @@
     white-space: pre-wrap;
     word-break: break-all;
     font-size: var(--fs-xs, 0.75rem);
-    color: #333;
+    color: var(--text-color, #333);
     direction: ltr;
     text-align: left;
 }
