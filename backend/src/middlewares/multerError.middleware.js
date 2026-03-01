@@ -1,8 +1,24 @@
 import { MAX_UPLOAD_BYTES } from "../utils/imagePolicy.js";
 
 const _maxMB = Math.round(MAX_UPLOAD_BYTES / (1024 * 1024));
+const _uploadDebug = process.env.CARDIGO_UPLOAD_DEBUG === "1";
 
 export function multerErrorHandler(err, req, res, next) {
+    if (_uploadDebug) {
+        console.info("[upload-debug] multer-error", {
+            rid:
+                req.headers?.["x-request-id"] ||
+                req.headers?.["x-nf-request-id"] ||
+                req.headers?.["rndr-id"] ||
+                null,
+            path: req.path,
+            method: req.method,
+            errCode: err?.code,
+            errName: err?.name,
+            errMessage: err?.message,
+        });
+    }
+
     // Helpful logging for Cloudinary/multer issues
     try {
         console.error("Upload middleware error:", {

@@ -27,6 +27,16 @@ import {
 } from "../utils/supabasePaths.js";
 import { deleteCardCascade } from "../utils/cardDeleteCascade.js";
 
+const _uploadDebug = process.env.CARDIGO_UPLOAD_DEBUG === "1";
+function _rid(req) {
+    return (
+        req.headers?.["x-request-id"] ||
+        req.headers?.["x-nf-request-id"] ||
+        req.headers?.["rndr-id"] ||
+        null
+    );
+}
+
 function extFromMime(mime) {
     if (mime === "image/png") return "png";
     if (mime === "image/webp") return "webp";
@@ -77,6 +87,28 @@ function resolveCleanupBucketsForActor(actor) {
 
 export async function uploadGalleryImage(req, res) {
     try {
+        if (_uploadDebug) {
+            const f = req.file;
+            console.info("[upload-debug] gallery-entry", {
+                rid: _rid(req),
+                path: req.path,
+                actorType: req.userId
+                    ? "user"
+                    : req.anonymousId
+                      ? "anon"
+                      : "none",
+                cardId: req.body?.cardId || null,
+                file: f
+                    ? {
+                          mimetype: f.mimetype,
+                          originalname: f.originalname,
+                          size: f.size,
+                          hasBuffer: Boolean(f.buffer),
+                      }
+                    : null,
+            });
+        }
+
         const { cardId } = req.body;
 
         if (!cardId) {
@@ -269,6 +301,17 @@ export async function uploadGalleryImage(req, res) {
             limit,
         });
     } catch (err) {
+        if (_uploadDebug) {
+            const isHttp = err instanceof HttpError;
+            console.info("[upload-debug] gallery-error", {
+                rid: _rid(req),
+                path: req.path,
+                cardId: req.body?.cardId || null,
+                status: isHttp ? err.statusCode : 500,
+                code: isHttp ? err.code : null,
+                error: err?.message || String(err),
+            });
+        }
         if (err instanceof HttpError) {
             return res
                 .status(err.statusCode)
@@ -284,6 +327,29 @@ export async function uploadGalleryImage(req, res) {
 
 export async function uploadDesignAsset(req, res) {
     try {
+        if (_uploadDebug) {
+            const f = req.file;
+            console.info("[upload-debug] design-entry", {
+                rid: _rid(req),
+                path: req.path,
+                actorType: req.userId
+                    ? "user"
+                    : req.anonymousId
+                      ? "anon"
+                      : "none",
+                cardId: req.body?.cardId || null,
+                kind: req.body?.kind || null,
+                file: f
+                    ? {
+                          mimetype: f.mimetype,
+                          originalname: f.originalname,
+                          size: f.size,
+                          hasBuffer: Boolean(f.buffer),
+                      }
+                    : null,
+            });
+        }
+
         const { cardId, kind } = req.body;
 
         if (!cardId) {
@@ -560,6 +626,18 @@ export async function uploadDesignAsset(req, res) {
 
         return res.json({ url: uploaded.url, path: uploaded.path });
     } catch (err) {
+        if (_uploadDebug) {
+            const isHttp = err instanceof HttpError;
+            console.info("[upload-debug] design-error", {
+                rid: _rid(req),
+                path: req.path,
+                cardId: req.body?.cardId || null,
+                kind: req.body?.kind || null,
+                status: isHttp ? err.statusCode : 500,
+                code: isHttp ? err.code : null,
+                error: err?.message || String(err),
+            });
+        }
         if (err instanceof HttpError) {
             return res
                 .status(err.statusCode)
