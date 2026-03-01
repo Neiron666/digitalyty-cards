@@ -93,69 +93,92 @@ export async function processImage(inputBuffer, { kind }) {
     // ── 3. Process: orient → resize → encode ───────────────────
     let outBuf;
     let chosenQuality;
+    let outW;
+    let outH;
 
-    if (!aggressive) {
-        // Gentle path: single encode at high quality.
-        chosenQuality = GENTLE_QUALITY;
-        outBuf = await sharp(inputBuffer, { limitInputPixels: MAX_PIXELS })
-            .rotate() // EXIF auto-orient
-            .resize({
-                width: maxLongSide,
-                height: maxLongSide,
-                fit: "inside",
-                withoutEnlargement: true,
-            })
-            .webp({ quality: GENTLE_QUALITY })
-            .toBuffer();
-    } else {
-        // Aggressive path: quality ladder.
-        for (const q of AGGRESSIVE_QUALITIES) {
-            chosenQuality = q;
+    try {
+        if (!aggressive) {
+            // Gentle path: single encode at high quality.
+            chosenQuality = GENTLE_QUALITY;
             outBuf = await sharp(inputBuffer, { limitInputPixels: MAX_PIXELS })
-                .rotate()
+                .rotate() // EXIF auto-orient
                 .resize({
                     width: maxLongSide,
                     height: maxLongSide,
                     fit: "inside",
                     withoutEnlargement: true,
                 })
-                .webp({ quality: q })
+                .webp({ quality: GENTLE_QUALITY })
                 .toBuffer();
-
-            if (outBuf.length <= TARGET_BYTES) break;
-        }
-
-        // If still over budget — step-down maxLongSide (15 % per step).
-        const MAX_SHRINK_STEPS = 4;
-        let step = 0;
-        while (
-            outBuf.length > MAX_OUTPUT_BYTES &&
-            step < MAX_SHRINK_STEPS &&
-            maxLongSide > minLongSide
-        ) {
-            step++;
-            maxLongSide = Math.max(minLongSide, Math.round(maxLongSide * 0.85));
-            const lastQ = AGGRESSIVE_QUALITIES[AGGRESSIVE_QUALITIES.length - 1];
-            chosenQuality = lastQ;
-            outBuf = await sharp(inputBuffer, { limitInputPixels: MAX_PIXELS })
-                .rotate()
-                .resize({
-                    width: maxLongSide,
-                    height: maxLongSide,
-                    fit: "inside",
-                    withoutEnlargement: true,
+        } else {
+            // Aggressive path: quality ladder.
+            for (const q of AGGRESSIVE_QUALITIES) {
+                chosenQuality = q;
+                outBuf = await sharp(inputBuffer, {
+                    limitInputPixels: MAX_PIXELS,
                 })
-                .webp({ quality: lastQ })
-                .toBuffer();
+                    .rotate()
+                    .resize({
+                        width: maxLongSide,
+                        height: maxLongSide,
+                        fit: "inside",
+                        withoutEnlargement: true,
+                    })
+                    .webp({ quality: q })
+                    .toBuffer();
 
-            if (outBuf.length <= TARGET_BYTES) break;
+                if (outBuf.length <= TARGET_BYTES) break;
+            }
+
+            // If still over budget — step-down maxLongSide (15 % per step).
+            const MAX_SHRINK_STEPS = 4;
+            let step = 0;
+            while (
+                outBuf.length > MAX_OUTPUT_BYTES &&
+                step < MAX_SHRINK_STEPS &&
+                maxLongSide > minLongSide
+            ) {
+                step++;
+                maxLongSide = Math.max(
+                    minLongSide,
+                    Math.round(maxLongSide * 0.85),
+                );
+                const lastQ =
+                    AGGRESSIVE_QUALITIES[AGGRESSIVE_QUALITIES.length - 1];
+                chosenQuality = lastQ;
+                outBuf = await sharp(inputBuffer, {
+                    limitInputPixels: MAX_PIXELS,
+                })
+                    .rotate()
+                    .resize({
+                        width: maxLongSide,
+                        height: maxLongSide,
+                        fit: "inside",
+                        withoutEnlargement: true,
+                    })
+                    .webp({ quality: lastQ })
+                    .toBuffer();
+
+                if (outBuf.length <= TARGET_BYTES) break;
+            }
         }
+
+        // ── 4. Read final metadata ─────────────────────────────────
+        const outMeta = await sharp(outBuf).metadata();
+        outW = outMeta.width || 0;
+        outH = outMeta.height || 0;
+    } catch (err) {
+        if (err instanceof HttpError) throw err;
+        console.warn("[image-processing] sharp encode error", {
+            kind,
+            error: err?.message || String(err),
+        });
+        throw new HttpError(
+            422,
+            "Could not process image — unsupported or corrupt file",
+            "IMAGE_DECODE_FAILED",
+        );
     }
-
-    // ── 4. Read final metadata ─────────────────────────────────
-    const outMeta = await sharp(outBuf).metadata();
-    const outW = outMeta.width || 0;
-    const outH = outMeta.height || 0;
 
     // ── 5. Structured log ──────────────────────────────────────
     const ms = Date.now() - t0;

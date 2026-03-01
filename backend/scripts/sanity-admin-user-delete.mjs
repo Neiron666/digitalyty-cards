@@ -68,10 +68,10 @@ async function requestFormData({ baseUrl, path, method, headers, formData }) {
     return { status: res.status, body: await readJson(res) };
 }
 
-function tinyPngBuffer() {
-    // 1x1 transparent PNG
+function tinyJpegBuffer() {
+    // 4x4 opaque JPEG — stable across all libvips/libspng builds.
     const base64 =
-        "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMB/6X4l9gAAAAASUVORK5CYII=";
+        "/9j/2wBDAAMCAgMCAgMDAwMEAwMEBQgFBQQEBQoHBwYIDAoMDAsKCwsNDhIQDQ4RDgsLEBYQERMUFRUVDA8XGBYUGBIUFRT/2wBDAQMEBAUEBQkFBQkUDQsNFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBT/wAARCAAEAAQDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAT/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFQEBAQAAAAAAAAAAAAAAAAAABwj/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwCQAHqQf//Z";
     return Buffer.from(base64, "base64");
 }
 
@@ -329,13 +329,13 @@ async function main() {
         report.cardId = created.cardId;
 
         // (4) Upload design asset + gallery image (real upload endpoints)
-        const pngBuffer = tinyPngBuffer();
-        const pngBlob = new Blob([pngBuffer], { type: "image/png" });
+        const jpegBuffer = tinyJpegBuffer();
+        const jpegBlob = new Blob([jpegBuffer], { type: "image/jpeg" });
 
         const assetForm = new FormData();
         assetForm.append("cardId", created.cardId);
         assetForm.append("kind", "avatar");
-        assetForm.append("image", pngBlob, "tiny.png");
+        assetForm.append("image", jpegBlob, "tiny.jpg");
 
         const assetRes = await requestFormData({
             baseUrl,
@@ -351,7 +351,7 @@ async function main() {
 
         const galleryForm = new FormData();
         galleryForm.append("cardId", created.cardId);
-        galleryForm.append("image", pngBlob, "tiny.png");
+        galleryForm.append("image", jpegBlob, "tiny.jpg");
 
         const galleryRes = await requestFormData({
             baseUrl,
