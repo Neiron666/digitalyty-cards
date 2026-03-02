@@ -123,7 +123,7 @@
   :host{
     position:fixed;
     z-index:99999;
-    inset:5rem auto auto 0.5rem;
+    inset:15rem auto auto 0.1rem;
     --accy-surface:#ffffff;
     --accy-surface-alt:#f8f9fb;
     --accy-text:#1a1f2b;
