@@ -3,6 +3,7 @@ import { Link, NavLink, useNavigate } from "react-router-dom";
 import Button from "../ui/Button";
 import { useAuth } from "../../context/AuthContext";
 import { getHasOrgAdmin } from "../../services/orgAdminGate";
+import useUnreadCount from "../../hooks/useUnreadCount";
 import styles from "./Header.module.css";
 
 export default function Header() {
@@ -12,6 +13,7 @@ export default function Header() {
     const navigate = useNavigate();
     const { token, user, logout } = useAuth();
     const isAuth = Boolean(token);
+    const { unreadCount } = useUnreadCount();
 
     useEffect(() => {
         if (!token) {
@@ -217,6 +219,33 @@ export default function Header() {
                                     </Button>
                                 </div>
 
+                                <Link
+                                    to="/inbox"
+                                    className={styles.inboxLink}
+                                    aria-label="הודעות נכנסות"
+                                >
+                                    <svg
+                                        className={styles.inboxIcon}
+                                        viewBox="0 0 24 24"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        strokeWidth="2"
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        aria-hidden="true"
+                                    >
+                                        <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+                                        <polyline points="22,6 12,13 2,6" />
+                                    </svg>
+                                    {unreadCount > 0 && (
+                                        <span className={styles.badge}>
+                                            {unreadCount > 99
+                                                ? "99+"
+                                                : unreadCount}
+                                        </span>
+                                    )}
+                                </Link>
+
                                 {user?.email && (
                                     <span
                                         className={styles.userEmail}
@@ -311,6 +340,20 @@ export default function Header() {
                                     {user.email}
                                 </span>
                             ) : null}
+                            <Button
+                                as={Link}
+                                to="/inbox"
+                                variant="secondary"
+                                fullWidth
+                                onClick={closeMobile}
+                            >
+                                הודעות נכנסות
+                                {unreadCount > 0 && (
+                                    <span className={styles.mobileBadge}>
+                                        {unreadCount > 99 ? "99+" : unreadCount}
+                                    </span>
+                                )}
+                            </Button>
                             <Button
                                 as={Link}
                                 to="/edit"

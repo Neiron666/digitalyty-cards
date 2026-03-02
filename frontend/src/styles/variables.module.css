@@ -26,6 +26,9 @@
     /* Shadows */
     --shadow-soft: 0 10px 30px rgba(0, 0, 0, 0.35);
 
+    /* Semantic */
+    --c-danger: #c62828;
+
     /* Forms inputs */
     --input-bg: rgb(245, 245, 245);
     --input-border: rgb(232, 240, 254);

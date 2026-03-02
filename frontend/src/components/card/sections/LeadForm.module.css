@@ -37,7 +37,37 @@
     margin: 0;
     font-size: var(--fs-14, 0.875rem);
     line-height: var(--lh-normal, 1.5);
-    color: var(--text-main);
     overflow-wrap: anywhere;
     word-break: break-word;
+}
+
+.success {
+    color: var(--text-main);
+}
+
+.error {
+    color: var(--c-danger, #c62828);
+}
+
+.upgradeLink {
+    font-size: var(--fs-14, 0.875rem);
+    color: var(--gold, #d4af37);
+    background: none;
+    border: none;
+    cursor: pointer;
+    text-decoration: underline;
+    font: inherit;
+    padding: 0;
+    margin-inline-start: 6px;
+}
+
+/* Honeypot field: visually hidden, inaccessible to real users. */
+.hp {
+    position: absolute;
+    inset-inline-start: -9999px;
+    opacity: 0;
+    height: 0;
+    width: 0;
+    overflow: hidden;
+    pointer-events: none;
 }
