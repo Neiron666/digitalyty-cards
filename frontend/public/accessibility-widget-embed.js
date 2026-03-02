@@ -14,19 +14,19 @@
 
     /* ---------- GLOBAL CSS ---------- */
     const globalCSS = `
-  /* OpenDyslexic (CDN) */
+  /* OpenDyslexic (local probe → CDN fallback) */
   @font-face{
     font-family:"OpenDyslexic";
-    src:url("https://cdn.jsdelivr.net/gh/antijingoist/open-dyslexic/alternatives/OpenDyslexic-Regular.otf") format("opentype");
+    src:local("OpenDyslexic"),url("https://cdn.jsdelivr.net/gh/antijingoist/open-dyslexic/alternatives/OpenDyslexic-Regular.otf") format("opentype");
     font-weight:400; font-style:normal; font-display:swap;
   }
 
-  /* Readable stacks with Hebrew */
+  /* Readable stacks — system-first so the change is visible over app default Heebo */
   :root.${NS}--readable-font,
   html.${NS}--readable-font,
   body.${NS}--readable-font,
   body.${NS}--readable-font *{
-    font-family:"Heebo","Rubik","Noto Sans Hebrew",system-ui,-apple-system,"Segoe UI",Arial,sans-serif !important;
+    font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Noto Sans Hebrew",Arial,sans-serif !important;
   }
   :root.${NS}--dyslexic,
   html.${NS}--dyslexic,
@@ -41,19 +41,26 @@
     outline-offset:2px;
   }
 
-  /* Underline headings */
-  :root.${NS}--underline-headings h1{  border: 2px solid yellow; text-decoration: underline; outline: 2px dashed red; outline-offset: 4px;}
-  :root.${NS}--underline-headings h2{  border: 2px solid yellow; text-decoration: underline; outline: 2px dashed red; outline-offset: 4px;}
-  :root.${NS}--underline-headings h3{  border: 2px solid yellow; text-decoration: underline; outline: 2px dashed red; outline-offset: 4px;}
-  :root.${NS}--underline-headings h4{  border: 2px solid yellow; text-decoration: underline; outline: 2px dashed red; outline-offset: 4px;}
-  :root.${NS}--underline-headings h5{  border: 2px solid yellow; text-decoration: underline; outline: 2px dashed red; outline-offset: 4px;}
-  :root.${NS}--underline-headings h6{  border: 2px solid yellow; text-decoration: underline; outline: 2px dashed red; outline-offset: 4px;}
+  /* Mark headings — enterprise-safe accent outline + underline */
+  html.${NS}--underline-headings #root :is(h1,h2,h3,h4,h5,h6,[role="heading"]){
+    outline:2px dashed rgba(79,110,247,.9) !important;
+    outline-offset:0.25rem !important;
+    text-decoration:underline !important;
+    text-underline-offset:0.2em !important;
+    text-decoration-thickness:0.12em !important;
+    text-decoration-color:rgba(79,110,247,.9) !important;
+  }
 
-  /* Highlight links/buttons */
+  /* Highlight links/buttons — accent outline, no palette corruption */
   :root.${NS}--highlight-links a,
   :root.${NS}--highlight-links button,
   :root.${NS}--highlight-links [role="button"]{
-    outline:2px dashed #f00 !important; background:#ff0 !important;
+    outline:2px dashed rgba(79,110,247,.9) !important;
+    outline-offset:0.15rem !important;
+    text-decoration:underline !important;
+    text-underline-offset:0.2em !important;
+    text-decoration-thickness:0.12em !important;
+    text-decoration-color:rgba(79,110,247,.9) !important;
   }
 
   /* Current target highlight for page keyboard nav */
