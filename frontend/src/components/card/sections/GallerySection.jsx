@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Section from "./Section";
+import useReveal from "../../../hooks/useReveal";
 import styles from "./GallerySection.module.css";
 import {
     galleryItemToOriginalUrl,
@@ -8,12 +9,15 @@ import {
 
 const BODY_SCROLL_LOCK_CLASS = "digi-lb-open";
 const SWIPE_THRESHOLD_PX = 40;
+const cx = (...classes) => classes.filter(Boolean).join(" ");
 
 function mod(n, m) {
     return ((n % m) + m) % m;
 }
 
-function GallerySection({ card }) {
+const STAGGER = [styles.delay0, styles.delay1, styles.delay2, styles.delay3];
+
+function GallerySection({ card, mode }) {
     const rawGallery = Array.isArray(card?.gallery) ? card.gallery : [];
 
     const items = useMemo(() => {
@@ -199,6 +203,11 @@ function GallerySection({ card }) {
         }
     }, [activeIndex, hasItems, isOpen, items]);
 
+    const revealRef = useReveal({
+        revealClass: styles.isRevealed,
+        skip: mode !== "public",
+    });
+
     if (!hasItems) return null;
 
     return (
@@ -208,7 +217,8 @@ function GallerySection({ card }) {
                     <button
                         key={it.id}
                         type="button"
-                        className={styles.imageWrapper}
+                        ref={revealRef}
+                        className={cx(styles.imageWrapper, STAGGER[index % 4])}
                         onClick={(e) => openLightbox(index, e.currentTarget)}
                         aria-label={`פתח תמונה ${index + 1}`}
                     >

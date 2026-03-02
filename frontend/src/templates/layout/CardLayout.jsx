@@ -9,6 +9,7 @@ import ReviewsSection from "../../components/card/sections/ReviewsSection";
 import FaqSection from "../../components/card/sections/FaqSection";
 import LeadForm from "../../components/card/sections/LeadForm";
 import { toAbsoluteUrl } from "../../services/upload.service";
+import useReveal from "../../hooks/useReveal";
 import styles from "./CardLayout.module.css";
 
 const cx = (...classes) => classes.filter(Boolean).join(" ");
@@ -50,6 +51,10 @@ export default function CardLayout({
             : "";
 
     const hasCover = Boolean(coverUrl);
+    const avatarRevealRef = useReveal({
+        revealClass: styles.isRevealed,
+        skip: mode !== "public",
+    });
     const overlayOpacity = Math.min(0.7, Math.max(0, overlayValue / 100));
     const overlayStep = Math.min(
         70,
@@ -91,6 +96,7 @@ export default function CardLayout({
                     <div className={cx(styles.heroInner, skin?.heroInner)}>
                         {avatar && (
                             <div
+                                ref={avatarRevealRef}
                                 className={cx(styles.avatarWrap, skin?.avatar)}
                             >
                                 <img
@@ -164,7 +170,7 @@ export default function CardLayout({
                     >
                         <AboutSection card={card} />
                         {supports?.gallery !== false && (
-                            <GallerySection card={card} />
+                            <GallerySection card={card} mode={mode} />
                         )}
                         {supports?.video !== false && (
                             <VideoSection card={card} />

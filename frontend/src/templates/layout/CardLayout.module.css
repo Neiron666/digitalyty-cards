@@ -764,3 +764,36 @@
         --card-radius: var(--radius-md);
     }
 }
+
+/* ── Scroll-reveal: avatar fade-up (public only) ── */
+.avatarWrap {
+    opacity: 0;
+    transform: translateY(-2rem);
+    will-change: opacity, transform;
+    transition:
+        opacity 1500ms cubic-bezier(0.22, 1, 0.36, 1),
+        transform 1500ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.avatarWrap.isRevealed {
+    opacity: 1;
+    transform: translateY(0);
+    will-change: auto;
+}
+
+/* Preview: always visible, no animation */
+[data-preview="phone"] .avatarWrap {
+    opacity: 1;
+    transform: none;
+    transition: none;
+    will-change: auto;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .avatarWrap {
+        opacity: 1;
+        transform: none;
+        transition: none;
+        will-change: auto;
+    }
+}

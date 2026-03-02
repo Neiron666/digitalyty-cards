@@ -271,3 +271,87 @@
         max-block-size: 20px;
     }
 }
+
+/* ── Scroll-reveal: gallery fade-in + scale settle-in (public only) ── */
+
+/* A) Wrapper: opacity-only */
+.imageWrapper {
+    opacity: 0;
+    will-change: opacity;
+    transition: opacity 650ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.imageWrapper.isRevealed {
+    opacity: 1;
+    will-change: auto;
+}
+
+/* B) Img: scale settle-in (1.06 → 1.0, overflow:hidden crops excess cleanly) */
+.imageWrapper > img {
+    transform: scale(0.1);
+    transform-origin: center;
+    backface-visibility: hidden;
+    will-change: transform;
+    transition: transform 1200ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.imageWrapper.isRevealed > img {
+    transform: scale(1);
+    will-change: auto;
+}
+
+/* C) Stagger: wrapper opacity */
+.delay0 {
+    transition-delay: 0ms;
+}
+.delay1 {
+    transition-delay: 90ms;
+}
+.delay2 {
+    transition-delay: 180ms;
+}
+.delay3 {
+    transition-delay: 270ms;
+}
+
+/* C) Stagger: img scale (sync with wrapper) */
+.delay0 > img {
+    transition-delay: 0ms;
+}
+.delay1 > img {
+    transition-delay: 90ms;
+}
+.delay2 > img {
+    transition-delay: 180ms;
+}
+.delay3 > img {
+    transition-delay: 270ms;
+}
+
+/* D) Preview: always visible, no animation */
+[data-preview="phone"] .imageWrapper {
+    opacity: 1;
+    transition: none;
+    will-change: auto;
+}
+
+[data-preview="phone"] .imageWrapper > img {
+    transform: none;
+    transition: none;
+    will-change: auto;
+}
+
+/* E) Reduced-motion: instant display, no animation */
+@media (prefers-reduced-motion: reduce) {
+    .imageWrapper {
+        opacity: 1;
+        transition: none;
+        will-change: auto;
+    }
+
+    .imageWrapper > img {
+        transform: none;
+        transition: none;
+        will-change: auto;
+    }
+}
