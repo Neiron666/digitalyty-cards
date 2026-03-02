@@ -176,7 +176,7 @@
   .accy__backdrop.show{display:block;}
 
   .accy__panel{
-    position:absolute;top:3.25rem;left:0;width:26.25rem;max-width:92vw;
+    position:absolute;top:-6rem;left:0;width:26.25rem;max-width:92vw;
     background:var(--accy-surface);color:var(--accy-text);
     border-radius:var(--accy-radius-lg);border:1px solid var(--accy-border);
     box-shadow:var(--accy-shadow);
