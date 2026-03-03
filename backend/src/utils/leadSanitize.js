@@ -75,5 +75,8 @@ export function sanitizeLeadInput(body) {
     const message =
         stripTags(raw.message, { maxLen: 1000, allowNewlines: true }) || null;
 
-    return { cardId: cardIdRaw, name, email, phone, message, hp };
+    // ── consent (required boolean) ──
+    const consent = raw.consent === true;
+
+    return { cardId: cardIdRaw, name, email, phone, message, hp, consent };
 }

@@ -323,9 +323,24 @@ export default function Inbox() {
                                             ★
                                         </span>
                                     )}
-                                    {lead.card?.slug && (
-                                        <span className={styles.cardSlug}>
-                                            כרטיס: {lead.card.slug}
+                                    {(lead.card?.cardLabel ||
+                                        lead.card?.slug) && (
+                                        <span className={styles.cardMeta}>
+                                            <span className={styles.cardLabel}>
+                                                {lead.card.cardLabel ||
+                                                    lead.card.slug}
+                                            </span>
+                                            <span
+                                                className={`${styles.kindPill} ${
+                                                    lead.card.cardKind === "org"
+                                                        ? styles.kindPillOrg
+                                                        : styles.kindPillPersonal
+                                                }`}
+                                            >
+                                                {lead.card.cardKind === "org"
+                                                    ? "עסקי"
+                                                    : "אישי"}
+                                            </span>
                                         </span>
                                     )}
                                     <span className={styles.chevron}>

@@ -6,6 +6,7 @@ import { resolveEffectiveTier } from "../utils/tier.js";
 import { computeEntitlements } from "../utils/cardDTO.js";
 import { sanitizeLeadInput } from "../utils/leadSanitize.js";
 import { isValidObjectId } from "../utils/orgMembership.util.js";
+import { getPersonalOrgId } from "../utils/personalOrg.util.js";
 
 // Fake ObjectId returned to bots (honeypot) — looks valid, never in DB.
 const FAKE_LEAD_ID = "000000000000000000000000";
@@ -30,11 +31,18 @@ export async function createLead(req, res) {
             return res.status(400).json({ message: "Invalid request" });
         }
 
-        // ── Honeypot: fake success, no DB write ──
+        // ── Honeypot: fake success, no DB write (before consent to avoid training bots) ──
         if (input.hp) {
             return res
                 .status(201)
                 .json({ success: true, leadId: FAKE_LEAD_ID });
+        }
+
+        // ── Consent enforcement ──
+        if (input.consent !== true) {
+            return res
+                .status(400)
+                .json({ message: "Invalid request", code: "CONSENT_REQUIRED" });
         }
 
         const { cardId, name, email, phone, message } = input;
@@ -106,9 +114,9 @@ export async function createLead(req, res) {
 
 async function getOwnerCardIds(userId) {
     const cards = await Card.find({ user: userId, isActive: true })
-        .select("_id slug")
+        .select("_id slug orgId business.name business.businessName")
         .lean();
-    return cards; // [{ _id, slug }]
+    return cards;
 }
 
 // ── GET /api/leads/mine — cursor-paginated leads for owner ─────────
@@ -174,23 +182,45 @@ export async function getMyLeads(req, res) {
         const hasMore = docs.length > limit;
         const page = hasMore ? docs.slice(0, limit) : docs;
 
-        // ── Build slug lookup ──
-        const slugMap = new Map(cards.map((c) => [String(c._id), c.slug]));
+        // ── Build card metadata lookup ──
+        const personalOrgId = await getPersonalOrgId();
+        const cardMetaMap = new Map(
+            cards.map((c) => [
+                String(c._id),
+                {
+                    slug: c.slug,
+                    cardLabel:
+                        c.business?.name || c.business?.businessName || c.slug,
+                    cardKind:
+                        !c.orgId || String(c.orgId) === String(personalOrgId)
+                            ? "personal"
+                            : "org",
+                },
+            ]),
+        );
 
         // ── DTO: explicit field pick ──
-        const leads = page.map((d) => ({
-            _id: d._id,
-            card: { _id: d.card, slug: slugMap.get(String(d.card)) || null },
-            senderName: d.name,
-            senderEmail: d.email || null,
-            senderPhone: d.phone || null,
-            message: d.message || null,
-            readAt: d.readAt || null,
-            isImportant: d.isImportant || false,
-            archivedAt: d.archivedAt || null,
-            deletedAt: d.deletedAt || null,
-            createdAt: d.createdAt,
-        }));
+        const leads = page.map((d) => {
+            const meta = cardMetaMap.get(String(d.card)) || {};
+            return {
+                _id: d._id,
+                card: {
+                    _id: d.card,
+                    slug: meta.slug || null,
+                    cardLabel: meta.cardLabel || null,
+                    cardKind: meta.cardKind || "personal",
+                },
+                senderName: d.name,
+                senderEmail: d.email || null,
+                senderPhone: d.phone || null,
+                message: d.message || null,
+                readAt: d.readAt || null,
+                isImportant: d.isImportant || false,
+                archivedAt: d.archivedAt || null,
+                deletedAt: d.deletedAt || null,
+                createdAt: d.createdAt,
+            };
+        });
 
         const nextCursor = hasMore
             ? page[page.length - 1].createdAt.toISOString()

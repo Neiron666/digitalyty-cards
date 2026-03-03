@@ -197,12 +197,46 @@
     font-weight: 600;
 }
 
-.cardSlug {
+.cardMeta {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 0.25rem;
+    margin-inline-start: auto;
+    min-width: 0;
+    flex-shrink: 1;
+}
+
+.cardLabel {
     font-size: var(--fs-body-sm, 0.8125rem);
     color: var(--card-muted, #475569);
-    margin-inline-start: auto;
-    direction: ltr;
     white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 10rem;
+    direction: rtl;
+}
+
+.kindPill {
+    font-size: var(--fs-caption, 0.6875rem);
+    line-height: 1;
+    padding: 0.125rem 0.375rem;
+    border-radius: 999px;
+    white-space: nowrap;
+    flex-shrink: 0;
+    font-weight: 600;
+}
+
+.kindPillOrg {
+    background: rgba(245, 158, 11, 0.12);
+    color: var(--gold, #d4af37);
+    border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+.kindPillPersonal {
+    background: rgba(59, 130, 246, 0.08);
+    color: var(--primary, #3b82f6);
+    border: 1px solid rgba(59, 130, 246, 0.2);
 }
 
 /* ── Chevron ──────────────────────────────────────────── */

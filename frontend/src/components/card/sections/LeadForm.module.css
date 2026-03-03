@@ -32,23 +32,6 @@
     font-size: var(--fs-ui);
 }
 
-.error,
-.success {
-    margin: 0;
-    font-size: var(--fs-14, 0.875rem);
-    line-height: var(--lh-normal, 1.5);
-    overflow-wrap: anywhere;
-    word-break: break-word;
-}
-
-.success {
-    color: var(--text-main);
-}
-
-.error {
-    color: var(--c-danger, #c62828);
-}
-
 .upgradeLink {
     font-size: var(--fs-14, 0.875rem);
     color: var(--gold, #d4af37);
@@ -59,6 +42,85 @@
     font: inherit;
     padding: 0;
     margin-inline-start: 6px;
+}
+
+/* ── Consent checkbox row ── */
+.consentRow {
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start;
+    gap: 0.375rem;
+    cursor: pointer;
+}
+
+.consentRow input[type="checkbox"] {
+    /* Override inherited .form input pill styles for checkbox */
+    width: auto;
+    min-width: 1rem;
+    min-height: 1rem;
+    padding: 0;
+    border-radius: 0.1875rem;
+    background: white;
+    flex-shrink: 0;
+    margin-block-start: 0.25rem;
+    cursor: pointer;
+    accent-color: var(--gold, #d4af37);
+}
+
+.consentText {
+    font-size: var(--fs-11, 0.8125rem);
+    line-height: var(--lh-normal, 1.5);
+    color: var(--card-text);
+}
+
+/* Specificity (0,2,1) beats CardLayout's .sectionWrap :global(a) (0,1,1) */
+.consentRow .consentText :global(a) {
+    display: inline;
+    width: auto;
+    padding: 0;
+    border: none;
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+    font: inherit;
+    font-size: inherit;
+    font-weight: 600;
+    color: var(--gold, #d4af37);
+    text-decoration: underline;
+    text-underline-offset: 0.15em;
+    cursor: pointer;
+    transform: none;
+    transition: opacity 0.15s ease;
+}
+.consentRow .consentText :global(a:hover) {
+    opacity: 0.8;
+    transform: none;
+    filter: none;
+    background: none;
+}
+.consentRow .consentText :global(a:active) {
+    transform: none;
+}
+.consentRow .consentText :global(a:focus-visible) {
+    outline: 2px solid var(--gold, #d4af37);
+    outline-offset: 2px;
+    box-shadow: none;
+}
+
+/* ── "Send another" reset button (success view) ── */
+.resetBtn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--c-success, #16a34a);
+    text-decoration: underline;
+    font: inherit;
+    font-size: var(--fs-14, 0.875rem);
+    padding: 0;
+    margin-block-start: 0.5rem;
+}
+.resetBtn:hover {
+    opacity: 0.8;
 }
 
 /* Honeypot field: visually hidden, inaccessible to real users. */

@@ -1,10 +1,20 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { createLead } from "../../../services/leads.service";
 import Paywall from "../../common/Paywall";
 import Section from "./Section";
 import formStyles from "../../ui/Form.module.css";
 import { trackClick } from "../../../services/analytics.client";
+import Notice from "../../ui/Notice/Notice";
 import styles from "./LeadForm.module.css";
+
+const INITIAL_FORM = {
+    name: "",
+    email: "",
+    phone: "",
+    message: "",
+    website: "",
+    consent: false,
+};
 
 export default function LeadForm({ cardId, slug, entitlements, onUpgrade }) {
     if (!entitlements?.canUseLeads) {
@@ -17,16 +27,23 @@ export default function LeadForm({ cardId, slug, entitlements, onUpgrade }) {
             </Section>
         );
     }
-    const [form, setForm] = useState({
-        name: "",
-        email: "",
-        phone: "",
-        message: "",
-        website: "",
-    });
-
+    const [form, setForm] = useState(INITIAL_FORM);
     const [status, setStatus] = useState("idle");
     const [errorMsg, setErrorMsg] = useState("");
+    const autoResetRef = useRef(null);
+
+    /* Auto-reset success after 9 s (cleanup on unmount / status change) */
+    useEffect(() => {
+        if (status !== "success") return;
+        autoResetRef.current = setTimeout(() => setStatus("idle"), 9_000);
+        return () => clearTimeout(autoResetRef.current);
+    }, [status]);
+
+    function handleReset() {
+        setStatus("idle");
+        setErrorMsg("");
+        setForm(INITIAL_FORM);
+    }
 
     function update(field, value) {
         if (status === "error") {
@@ -38,6 +55,13 @@ export default function LeadForm({ cardId, slug, entitlements, onUpgrade }) {
 
     async function handleSubmit(e) {
         e.preventDefault();
+
+        if (!form.consent) {
+            setErrorMsg("חובה להסכים למדיניות הפרטיות ולתנאי השימוש");
+            setStatus("error");
+            return;
+        }
+
         setStatus("loading");
 
         trackClick(slug, "lead");
@@ -45,13 +69,7 @@ export default function LeadForm({ cardId, slug, entitlements, onUpgrade }) {
         try {
             await createLead({ cardId, ...form });
             setStatus("success");
-            setForm({
-                name: "",
-                email: "",
-                phone: "",
-                message: "",
-                website: "",
-            });
+            setForm(INITIAL_FORM);
         } catch (err) {
             const httpStatus = err.response?.status;
             const code = err.response?.data?.code;
@@ -61,6 +79,8 @@ export default function LeadForm({ cardId, slug, entitlements, onUpgrade }) {
                 msg = "יותר מדי ניסיונות, נסה שוב מאוחר יותר.";
             } else if (httpStatus === 400 && code === "INVALID_EMAIL") {
                 msg = "כתובת אימייל לא תקינה";
+            } else if (httpStatus === 400 && code === "CONSENT_REQUIRED") {
+                msg = "חובה להסכים למדיניות הפרטיות ולתנאי השימוש";
             } else if (httpStatus === 400) {
                 msg = "אנא בדוק את הפרטים ונסה שנית";
             } else if (httpStatus === 403 && code === "TRIAL_EXPIRED") {
@@ -81,7 +101,14 @@ export default function LeadForm({ cardId, slug, entitlements, onUpgrade }) {
     if (status === "success") {
         return (
             <Section title="צרו קשר" contentClassName={styles.content}>
-                <p className={styles.success}>תודה! פנייתך נשלחה בהצלחה</p>
+                <Notice variant="success">תודה! פנייתך נשלחה בהצלחה</Notice>
+                <button
+                    type="button"
+                    className={styles.resetBtn}
+                    onClick={handleReset}
+                >
+                    שלח הודעה נוספת
+                </button>
             </Section>
         );
     }
@@ -135,12 +162,39 @@ export default function LeadForm({ cardId, slug, entitlements, onUpgrade }) {
                     className={formStyles.textarea}
                 />
 
+                <label className={styles.consentRow}>
+                    <input
+                        type="checkbox"
+                        checked={form.consent}
+                        onChange={(e) => update("consent", e.target.checked)}
+                        required
+                    />
+                    <span className={styles.consentText}>
+                        אני מסכים ל
+                        <a
+                            href="/privacy"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                        >
+                            מדיניות הפרטיות
+                        </a>{" "}
+                        וגם ל
+                        <a
+                            href="/terms"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                        >
+                            תנאי השימוש באתר
+                        </a>
+                    </span>
+                </label>
+
                 <button type="submit" disabled={status === "loading"}>
                     שלח
                 </button>
 
                 {status === "error" && errorMsg ? (
-                    <p className={styles.error}>
+                    <Notice variant="error">
                         {errorMsg}
                         {onUpgrade &&
                         (errorMsg.includes("פרימיום") ||
@@ -153,7 +207,7 @@ export default function LeadForm({ cardId, slug, entitlements, onUpgrade }) {
                                 שדרוג
                             </button>
                         ) : null}
-                    </p>
+                    </Notice>
                 ) : null}
             </form>
         </Section>
