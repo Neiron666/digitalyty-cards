@@ -25,14 +25,26 @@ router.post("/create", requireAuth, async (req, res) => {
 
 /**
  * Server-to-server notify (Tranzila)
- * БЕЗ requireAuth
+ * БЕЗ requireAuth — defense-in-depth via x-cardigo-notify-token (MUST-if-set)
  */
 router.post("/notify", async (req, res) => {
     try {
+        // Defense-in-depth: x-cardigo-notify-token (MUST-if-set)
+        const expected = process.env.CARDIGO_NOTIFY_TOKEN?.trim();
+        if (expected) {
+            const provided = req.header("x-cardigo-notify-token")?.trim();
+            if (provided !== expected) {
+                // Anti-oracle: do not leak token mismatch
+                return res.status(200).send("OK");
+            }
+        }
+
         await paymentProvider.handleNotify(req.body);
         res.status(200).send("OK");
     } catch (err) {
-        console.error(err);
+        // Only infra failures (DB down, network) reach here.
+        // Signature/business failures are handled inside handleNotify (no throw).
+        console.error("[notify] infra failure:", err.message);
         res.status(500).send("ERROR");
     }
 });
