@@ -1,5 +1,6 @@
 const BACKEND_ORIGIN = "https://cardigo-backend.onrender.com";
 const MAX_BODY_BYTES = 16 * 1024;
+const FETCH_TIMEOUT_MS = 9000;
 
 function stripBomAndTrim(s) {
     return String(s)
@@ -99,6 +100,9 @@ exports.handler = async function handler(event) {
 
         const url = `${BACKEND_ORIGIN}/api/payments/notify`;
 
+        const ac = new AbortController();
+        const timer = setTimeout(() => ac.abort(), FETCH_TIMEOUT_MS);
+
         const response = await fetch(url, {
             method: "POST",
             headers: {
@@ -107,7 +111,10 @@ exports.handler = async function handler(event) {
                 "x-cardigo-notify-token": expected,
             },
             body: JSON.stringify(parsedBody),
+            signal: ac.signal,
         });
+
+        clearTimeout(timer);
 
         // 6. ACK policy: upstream status code, generic body
         const status = response.status;
