@@ -5,6 +5,8 @@ import AdminAudit from "../models/AdminAudit.model.js";
 import OrganizationMember from "../models/OrganizationMember.model.js";
 import OrgInvite from "../models/OrgInvite.model.js";
 import { logAdminAction } from "../services/adminAudit.service.js";
+import { createHash } from "crypto";
+import PaymentTransaction from "../models/PaymentTransaction.model.js";
 import {
     removeObjects,
     getAnonPrivateBucketName,
@@ -1911,4 +1913,139 @@ export async function adminClearCardAdminOverride(req, res) {
     return res.json(
         toCardDTO(card, dtoNow, { includePrivate: true, user: userTier }),
     );
+}
+
+export async function adminSimulatePayment(req, res) {
+    // Env-guard: never allow in production / when real provider is active.
+    if (
+        process.env.PAYMENT_PROVIDER === "tranzila" ||
+        process.env.NODE_ENV === "production"
+    ) {
+        return res.status(400).json({
+            code: "SIMULATE_DISABLED",
+            message: "Simulate payment is disabled in this environment",
+        });
+    }
+
+    const reason = requireReason(req, res);
+    if (!reason) return;
+
+    const userId = String(req.body?.userId || "");
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+        return res
+            .status(400)
+            .json({ code: "INVALID_ID", message: "Invalid userId" });
+    }
+
+    const plan = typeof req.body?.plan === "string" ? req.body.plan.trim() : "";
+    if (!plan || !["monthly", "yearly"].includes(plan)) {
+        return res.status(400).json({
+            code: "INVALID_PLAN",
+            message: "Plan must be monthly or yearly",
+        });
+    }
+
+    const now = new Date();
+    const expiresAt =
+        plan === "monthly"
+            ? new Date(now.getTime() + 30 * DAY_MS)
+            : new Date(now.getTime() + 365 * DAY_MS);
+
+    // 1) Update User subscription + plan.
+    const user = await User.findByIdAndUpdate(
+        userId,
+        {
+            $set: {
+                plan,
+                subscription: {
+                    status: "active",
+                    provider: "admin",
+                    expiresAt,
+                },
+            },
+        },
+        { new: true, runValidators: true },
+    ).select("plan subscription cardId");
+    if (!user) return res.status(404).json({ message: "Not found" });
+
+    // 2) Update Card billing (dual-update: dot-path + null fallback).
+    const cardId = user.cardId || null;
+    if (cardId) {
+        const paidUntil = expiresAt;
+
+        // Dot-path update for normal cases (billing missing or object).
+        await Card.updateOne(
+            {
+                _id: cardId,
+                $or: [
+                    { billing: { $exists: false } },
+                    { billing: { $type: "object" } },
+                ],
+            },
+            {
+                $set: {
+                    plan,
+                    "billing.status": "active",
+                    "billing.plan": plan,
+                    "billing.paidUntil": paidUntil,
+                },
+            },
+        );
+
+        // Fallback for billing === null (dot-path would fail).
+        await Card.updateOne(
+            { _id: cardId, billing: null },
+            {
+                $set: {
+                    plan,
+                    billing: {
+                        status: "active",
+                        plan,
+                        paidUntil,
+                    },
+                },
+            },
+        );
+    }
+
+    // 3) Append PaymentTransaction ledger entry.
+    const providerTxnId = `admin:simulate:${userId}:${now.getTime()}`;
+    const payloadAllowlisted = {
+        source: "admin-simulate",
+        reason,
+        plan,
+    };
+    const rawPayloadHash = createHash("sha256")
+        .update(JSON.stringify(payloadAllowlisted))
+        .digest("hex");
+
+    await PaymentTransaction.create({
+        providerTxnId,
+        provider: "admin",
+        userId: user._id,
+        cardId: cardId || undefined,
+        plan,
+        amountAgorot: null,
+        status: "paid",
+        payloadAllowlisted,
+        rawPayloadHash,
+        idempotencyNote: "admin_simulate",
+    });
+
+    // 4) Admin audit.
+    await logAdminAction({
+        adminUserId: req.userId,
+        action: "SIMULATE_PAYMENT",
+        targetType: "user",
+        targetId: user._id,
+        reason,
+        meta: { plan, expiresAt: expiresAt.toISOString() },
+    });
+
+    return res.json({
+        ok: true,
+        userId: String(user._id),
+        plan,
+        expiresAt: expiresAt.toISOString(),
+    });
 }

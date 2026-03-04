@@ -18,6 +18,7 @@ import {
     adminRevokeCardBilling,
     adminSyncCardBillingFromUser,
     adminClearCardAdminOverride,
+    adminSimulatePayment,
     setAnalyticsPremium,
     setCardTier,
     setUserTier,
@@ -101,6 +102,7 @@ router.post(
     "/billing/cards/:cardId/billing/sync-from-user",
     adminSyncCardBillingFromUser,
 );
+router.post("/billing/simulate-payment", adminSimulatePayment);
 router.post("/cards/:cardId/admin-override/clear", adminClearCardAdminOverride);
 router.post("/cards/:id/analytics-premium", setAnalyticsPremium);
 router.post("/cards/:id/tier", setCardTier);
