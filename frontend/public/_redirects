@@ -1,3 +1,4 @@
+/api/payments/notify  /.netlify/functions/payment-notify  200
 /api/*        /.netlify/functions/proxy/api/:splat     200
 /sitemap.xml  /.netlify/functions/proxy/sitemap.xml    200
 /og/*         /.netlify/functions/proxy/og/:splat      200
