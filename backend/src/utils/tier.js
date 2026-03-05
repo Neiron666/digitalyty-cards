@@ -14,6 +14,8 @@ function isUntilActive(until, now = new Date()) {
 }
 
 function derivedTierFromEffectiveBilling(effectiveBilling) {
+    // Defense-in-depth: only paid/adminOverride billing yields a non-free tier.
+    if (effectiveBilling?.isPaid !== true) return "free";
     const plan = effectiveBilling?.plan || "free";
     if (plan === "yearly") return "premium";
     if (plan === "monthly") return "basic";

@@ -106,7 +106,7 @@ export function resolveBilling(card, now = new Date()) {
             plan: normalizePlan(admin.plan),
             until: admin.until ? new Date(admin.until).toISOString() : null,
             isEntitled: true,
-            isPaid: false,
+            isPaid: true,
         };
     }
 
@@ -138,7 +138,7 @@ export function resolveBilling(card, now = new Date()) {
     if (isAnonymousOwned(card)) {
         return {
             source: "free",
-            plan: billingPlan,
+            plan: "free",
             until: null,
             isEntitled: true,
             isPaid: false,
@@ -149,7 +149,7 @@ export function resolveBilling(card, now = new Date()) {
     if (card?.user) {
         return {
             source: "free",
-            plan: billingPlan,
+            plan: "free",
             until: null,
             isEntitled: true,
             isPaid: false,
@@ -174,7 +174,7 @@ export function resolveBilling(card, now = new Date()) {
     ) {
         return {
             source: "trial",
-            plan: billingPlan,
+            plan: "free",
             until: trialEndsAtIso,
             isEntitled: true,
             isPaid: false,
@@ -186,7 +186,7 @@ export function resolveBilling(card, now = new Date()) {
     if (legacyPlan === "monthly" || legacyPlan === "yearly") {
         return {
             source: "legacy",
-            plan: legacyPlan,
+            plan: "free",
             until: null,
             isEntitled: true,
             isPaid: false,
