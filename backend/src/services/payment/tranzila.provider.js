@@ -3,14 +3,7 @@ import { TRANZILA_CONFIG } from "../../config/tranzila.js";
 import User from "../../models/User.model.js";
 import Card from "../../models/Card.model.js";
 import PaymentTransaction from "../../models/PaymentTransaction.model.js";
-
-/**
- * Единый источник цен
- */
-const PRICES = {
-    monthly: 29.9,
-    yearly: 299,
-};
+import { PRICES_AGOROT } from "../../config/plans.js";
 
 /**
  * Подпись Tranzila
@@ -101,16 +94,17 @@ export default {
      * Создание платежа (redirect пользователя на Tranzila)
      */
     async createPayment({ userId, plan }) {
-        if (!PRICES[plan]) {
+        const ag = PRICES_AGOROT[plan];
+        if (!ag) {
             throw new Error("Invalid plan");
         }
 
-        const amount = PRICES[plan];
+        const sumStr = `${Math.floor(ag / 100)}.${String(ag % 100).padStart(2, "0")}`;
         const description = `Cardigo – ${plan} plan`;
 
         const payload = [
             `terminal=${TRANZILA_CONFIG.terminal}`,
-            `sum=${amount}`,
+            `sum=${sumStr}`,
             `currency=1`,
             `lang=il`,
             `description=${encodeURIComponent(description)}`,

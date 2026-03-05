@@ -27,10 +27,12 @@ import {
     isTrialDeleteDue,
     isTrialExpired,
     isEntitled,
+    resolveBilling,
 } from "../utils/trial.js";
 import { HttpError } from "../utils/httpError.js";
 import { claimAnonymousCardForUser } from "../services/claimCard.service.js";
-import { toCardDTO } from "../utils/cardDTO.js";
+import { toCardDTO, planFromTier } from "../utils/cardDTO.js";
+import { resolveEffectiveTier } from "../utils/tier.js";
 import { normalizeAboutParagraphs } from "../utils/about.js";
 import { normalizeFaqForWrite } from "../utils/faq.util.js";
 import { normalizeBusinessForWrite } from "../utils/business.util.js";
@@ -334,6 +336,33 @@ function resolveOwnerContext(req) {
         return { type: "anonymous", id: String(req.anonymousId) };
 
     return null;
+}
+
+const ADVANCED_SEO_KEYS = new Set([
+    "canonicalUrl",
+    "robots",
+    "jsonLd",
+    "gtmId",
+    "gaMeasurementId",
+    "metaPixelId",
+    "headSnippets",
+    "googleSiteVerification",
+    "facebookDomainVerification",
+]);
+
+async function resolveFeaturePlanForCard(card, userId, now) {
+    if (!userId) return null;
+    const user = await User.findById(userId)
+        .select("adminTier adminTierUntil")
+        .lean();
+    const effectiveBilling = resolveBilling(card, now);
+    const effectiveTier = resolveEffectiveTier({
+        card,
+        user,
+        effectiveBilling,
+        now,
+    });
+    return planFromTier(effectiveTier?.tier || "free");
 }
 
 function isPlainObject(value) {
@@ -1254,6 +1283,24 @@ export async function updateCard(req, res) {
 
     const patch = sanitizeWritablePatch(req.body);
 
+    // --- Feature gate: resolve once per request (single User DB fetch) ---
+    const featurePlan =
+        owner.type === "user"
+            ? await resolveFeaturePlanForCard(existingCard, owner.id, now)
+            : null;
+
+    // Gate: advanced SEO requires premium.
+    // Auto-computed title/description are NOT advanced — they remain free.
+    if (
+        featurePlan !== null &&
+        patch.seo &&
+        isPlainObject(patch.seo) &&
+        Object.keys(patch.seo).some((k) => ADVANCED_SEO_KEYS.has(k)) &&
+        !hasAccess(featurePlan, "seo")
+    ) {
+        return res.status(403).json({ ok: false, code: "PREMIUM_REQUIRED" });
+    }
+
     const businessTouched = Object.prototype.hasOwnProperty.call(
         patch,
         "business",
@@ -1383,6 +1430,13 @@ export async function updateCard(req, res) {
                 code: "PUBLISH_REQUIRES_AUTH",
                 message: "Must be registered to publish",
             });
+        }
+
+        // Gate: publish requires premium plan.
+        if (featurePlan !== null && !hasAccess(featurePlan, "publish")) {
+            return res
+                .status(403)
+                .json({ ok: false, code: "PREMIUM_REQUIRED" });
         }
 
         const nameCandidate =
@@ -2260,6 +2314,17 @@ export async function updateSlug(req, res) {
         });
     }
 
+    // Gate: slug change requires premium plan.
+    {
+        const now = new Date();
+        const fp = await resolveFeaturePlanForCard(card, actor.id, now);
+        if (fp !== null && !hasAccess(fp, "slugChange")) {
+            return res
+                .status(403)
+                .json({ ok: false, code: "PREMIUM_REQUIRED" });
+        }
+    }
+
     const tenantKey =
         typeof card.tenantKey === "string" && card.tenantKey.trim()
             ? card.tenantKey
@@ -2400,6 +2465,17 @@ export async function updateMyOrgCardSlug(req, res) {
             code: "SLUG_ONLY_DRAFT",
             message: "Slug can be changed only while in draft",
         });
+    }
+
+    // Gate: slug change requires premium plan.
+    {
+        const now = new Date();
+        const fp = await resolveFeaturePlanForCard(card, userId, now);
+        if (fp !== null && !hasAccess(fp, "slugChange")) {
+            return res
+                .status(403)
+                .json({ ok: false, code: "PREMIUM_REQUIRED" });
+        }
     }
 
     const tenantKey =

@@ -5,7 +5,7 @@ import { formatIsrael, toIsrael } from "./time.util.js";
 import { GALLERY_LIMIT } from "../config/galleryLimit.js";
 import { normalizeAboutParagraphs } from "./about.js";
 
-function planFromTier(tier) {
+export function planFromTier(tier) {
     if (tier === "premium") return "yearly";
     if (tier === "basic") return "monthly";
     return "free";
@@ -75,6 +75,10 @@ export function computeEntitlements(
         canUseLeads: hasAccess(featurePlan, "leadForm"),
         canUseVideo: hasAccess(featurePlan, "video"),
         canUseReviews: hasAccess(featurePlan, "reviews"),
+        canPublish: hasAccess(featurePlan, "publish"),
+        canEditSeo: hasAccess(featurePlan, "seo"),
+        canChangeSlug: hasAccess(featurePlan, "slugChange"),
+        canUseAnalyticsPremium: hasAccess(featurePlan, "analytics"),
         analyticsLevel,
         canViewAnalytics,
         analyticsRetentionDays,

@@ -232,8 +232,15 @@ async function main() {
         }
 
         // B) Draft-only: create user+card(draft), change slug once OK, publish, then slug change blocked.
+        // NOTE: adminTier "premium" so feature gates (publish/slugChange) don't block
+        // the slug-policy invariants tested here. Feature gates are tested separately.
         const email = `sanity-slug-policy-${Date.now()}-${randomHex()}@example.com`;
-        const user = await User.create({ email, passwordHash: "sanity" });
+        const user = await User.create({
+            email,
+            passwordHash: "sanity",
+            adminTier: "premium",
+            adminTierUntil: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
+        });
         created.userId = String(user._id);
 
         const token = signToken(String(user._id));

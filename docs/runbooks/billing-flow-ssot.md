@@ -13,8 +13,8 @@ All internal amounts are **integers in agorot** (1/100 of ₪). No floats anywhe
 
 | Plan key  | Agorot | Display (₪) |
 | --------- | ------ | ----------- |
-| `monthly` | 3999   | ₪39.99      |
-| `yearly`  | 39999  | ₪399.99     |
+| `monthly` | 3990   | ₪39.90      |
+| `yearly`  | 39990  | ₪399.90     |
 
 **Canonical location:** `backend/src/config/plans.js` → `PRICES` export.
 
