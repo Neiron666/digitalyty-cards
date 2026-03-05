@@ -1,4 +1,5 @@
 import styles from "./EditorSidebar.module.css";
+import CrownIcon from "../icons/CrownIcon";
 
 import {
     PANEL_TEMPLATES,
@@ -30,10 +31,25 @@ const TABS = [
     { id: PANEL_ANALYTICS, label: "Analytics" },
 ];
 
+function isPremiumTab(tabId, entitlements) {
+    if (!entitlements) return false;
+    if (tabId === "seo") return entitlements.canEditSeo === false;
+    if (tabId === "settings") {
+        return (
+            entitlements.canPublish === false ||
+            entitlements.canChangeSlug === false
+        );
+    }
+    if (tabId === "analytics") {
+        return entitlements.canUseAnalyticsPremium !== true;
+    }
+    return false;
+}
+
 export default function EditorSidebar({
     activeTab,
     onChangeTab,
-    canShowAnalyticsTab,
+    entitlements,
     publicUrl,
     publicPath,
     isPublished,
@@ -43,10 +59,6 @@ export default function EditorSidebar({
     onLoadOrgs,
     showContextBar,
 }) {
-    const items = canShowAnalyticsTab
-        ? TABS
-        : TABS.filter((t) => t.id !== "analytics");
-
     return (
         <aside className={styles.sidebar}>
             {showContextBar ? (
@@ -98,18 +110,29 @@ export default function EditorSidebar({
             <div className={styles.title}>עריכת כרטיס</div>
 
             <nav className={styles.nav}>
-                {items.map((tab) => (
-                    <button
-                        key={tab.id}
-                        type="button"
-                        className={`${styles.tab} ${
-                            activeTab === tab.id ? styles.active : ""
-                        }`}
-                        onClick={() => onChangeTab(tab.id)}
-                    >
-                        {tab.label}
-                    </button>
-                ))}
+                {TABS.map((tab) => {
+                    const premium = isPremiumTab(tab.id, entitlements);
+                    return (
+                        <button
+                            key={tab.id}
+                            type="button"
+                            className={`${styles.tab} ${
+                                activeTab === tab.id ? styles.active : ""
+                            }`}
+                            onClick={() => onChangeTab(tab.id)}
+                        >
+                            <span className={styles.tabLabel}>
+                                {tab.label}
+                                {premium ? (
+                                    <CrownIcon
+                                        className={styles.crown}
+                                        title="רק לפרימיום"
+                                    />
+                                ) : null}
+                            </span>
+                        </button>
+                    );
+                })}
             </nav>
         </aside>
     );

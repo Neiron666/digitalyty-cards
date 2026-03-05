@@ -106,6 +106,72 @@ function sortCampaignRows(rows) {
     return list;
 }
 
+/* ── Hardcoded demo data (mirrors backend buildDemoPremiumPayload) ── */
+const DEMO_SERIES = Array.from({ length: 30 }, (_, i) => ({
+    day: `demo-${i}`,
+    views: 120 + Math.floor(20 * Math.sin(i / 2)),
+    clicksTotal: 18 + Math.floor(5 * Math.cos(i / 3)),
+}));
+
+const DEMO_SUMMARY = {
+    isDemo: true,
+    series: DEMO_SERIES,
+    today: {
+        views: DEMO_SERIES[29].views,
+        clicksTotal: DEMO_SERIES[29].clicksTotal,
+        uniqueVisitors: 320,
+    },
+    kpi: { uniqueVisitorsIsApprox: true },
+};
+
+const DEMO_SOURCES = {
+    socialSources: [
+        { source: "google", views: 180, clicks: 32, conversion: 0.178 },
+        { source: "instagram", views: 140, clicks: 25, conversion: 0.179 },
+        { source: "facebook", views: 80, clicks: 14, conversion: 0.175 },
+        { source: "direct", views: 220, clicks: 40, conversion: 0.182 },
+    ],
+    referrers: {
+        direct: 220,
+        google: 180,
+        instagram: 90,
+        facebook: 60,
+        other: 40,
+    },
+    socialCampaignSources: [
+        {
+            source: "google",
+            views: 180,
+            clicks: 32,
+            conversion: 0.178,
+            campaigns: [
+                { name: "winter_sale", views: 68, clicks: 14 },
+                { name: "qr_store", views: 25, clicks: 5 },
+            ],
+        },
+        {
+            source: "instagram",
+            views: 140,
+            clicks: 25,
+            conversion: 0.179,
+            campaigns: [
+                { name: "winter_sale", views: 50, clicks: 10 },
+                { name: "qr_store", views: 19, clicks: 4 },
+            ],
+        },
+        {
+            source: "facebook",
+            views: 80,
+            clicks: 14,
+            conversion: 0.175,
+            campaigns: [
+                { name: "winter_sale", views: 29, clicks: 6 },
+                { name: "qr_store", views: 11, clicks: 2 },
+            ],
+        },
+    ],
+};
+
 export default function AnalyticsPanel({ card }) {
     const analyticsLevel = card?.entitlements?.analyticsLevel || "none";
     const canViewAnalytics = Boolean(card?.entitlements?.canViewAnalytics);
@@ -129,6 +195,13 @@ export default function AnalyticsPanel({ card }) {
     async function load() {
         if (!card?._id || !canViewAnalytics) return;
 
+        if (analyticsLevel === "demo") {
+            setSummary(DEMO_SUMMARY);
+            setSources(DEMO_SOURCES);
+            setError(null);
+            return;
+        }
+
         setLoading(true);
         setError("");
 
@@ -143,7 +216,7 @@ export default function AnalyticsPanel({ card }) {
             console.error(
                 "analytics load failed",
                 err?.response?.status,
-                err?.response?.data || err
+                err?.response?.data || err,
             );
             setError("שגיאה בטעינת אנליטיקה");
         } finally {
@@ -159,8 +232,17 @@ export default function AnalyticsPanel({ card }) {
     if (!canViewAnalytics || analyticsLevel === "none") {
         return (
             <Panel title="Analytics">
-                <div className={styles.mutedText}>
-                    Analytics זמינה למנויים בלבד.
+                <div className={styles.lockedBlock}>
+                    <div className={styles.lockedTitle}>
+                        סטטיסטיקה זמינה רק בפרימיום
+                    </div>
+                    <div className={styles.lockedText}>
+                        כדי לראות נתוני צפיות, קליקים ומקורות תנועה — צריך מסלול
+                        פרימיום.
+                    </div>
+                    <a href="/pricing" className={styles.lockedCta}>
+                        שדרג לפרימיום
+                    </a>
                 </div>
             </Panel>
         );
@@ -263,7 +345,7 @@ export default function AnalyticsPanel({ card }) {
                             views: Number(c?.views) || 0,
                             clicks: Number(c?.clicks) || 0,
                         }))
-                        .filter((c) => c.name && (c.views > 0 || c.clicks > 0))
+                        .filter((c) => c.name && (c.views > 0 || c.clicks > 0)),
                 );
                 return { source, views, clicks, campaigns };
             })
@@ -292,7 +374,12 @@ export default function AnalyticsPanel({ card }) {
         <Panel title="Analytics">
             <div className={styles.grid}>
                 {Boolean(summary?.isDemo) && (
-                    <div className={styles.banner}>דוגמה של לקוח פרימיום</div>
+                    <div className={styles.banner}>
+                        דוגמה של לקוח פרימיום
+                        <a href="/pricing" className={styles.bannerCta}>
+                            שדרג לפרימיום
+                        </a>
+                    </div>
                 )}
 
                 <div className={styles.headerRow}>
@@ -468,7 +555,7 @@ export default function AnalyticsPanel({ card }) {
                                         checked={showNoClickSources}
                                         onChange={(e) =>
                                             setShowNoClickSources(
-                                                e.target.checked
+                                                e.target.checked,
                                             )
                                         }
                                     />
@@ -536,7 +623,7 @@ export default function AnalyticsPanel({ card }) {
                                                     {isPremiumLike ? (
                                                         <td>
                                                             {formatInt(
-                                                                r.clicks
+                                                                r.clicks,
                                                             )}
                                                         </td>
                                                     ) : null}
@@ -549,7 +636,7 @@ export default function AnalyticsPanel({ card }) {
                                                             null
                                                                 ? "—"
                                                                 : formatPct(
-                                                                      r.conversion
+                                                                      r.conversion,
                                                                   )}
                                                         </td>
                                                     ) : null}
@@ -574,7 +661,7 @@ export default function AnalyticsPanel({ card }) {
                                     <div className={styles.accordion}>
                                         {campaignsByPlatform.map((p) => {
                                             const expanded = Boolean(
-                                                expandedPlatforms?.[p.source]
+                                                expandedPlatforms?.[p.source],
                                             );
                                             return (
                                                 <div
@@ -590,7 +677,7 @@ export default function AnalyticsPanel({ card }) {
                                                         }
                                                         onClick={() =>
                                                             togglePlatform(
-                                                                p.source
+                                                                p.source,
                                                             )
                                                         }
                                                     >
@@ -612,7 +699,7 @@ export default function AnalyticsPanel({ card }) {
                                                                 }
                                                             >
                                                                 {formatInt(
-                                                                    p.clicks
+                                                                    p.clicks,
                                                                 )}{" "}
                                                                 clicks
                                                             </span>
@@ -622,7 +709,7 @@ export default function AnalyticsPanel({ card }) {
                                                                 }
                                                             >
                                                                 {formatInt(
-                                                                    p.views
+                                                                    p.views,
                                                                 )}{" "}
                                                                 views
                                                             </span>
@@ -667,7 +754,7 @@ export default function AnalyticsPanel({ card }) {
                                                                     <tbody>
                                                                         {p.campaigns.map(
                                                                             (
-                                                                                c
+                                                                                c,
                                                                             ) => (
                                                                                 <tr
                                                                                     key={`${p.source}__${c.name}`}
@@ -682,16 +769,16 @@ export default function AnalyticsPanel({ card }) {
                                                                                     </td>
                                                                                     <td>
                                                                                         {formatInt(
-                                                                                            c.clicks
+                                                                                            c.clicks,
                                                                                         )}
                                                                                     </td>
                                                                                     <td>
                                                                                         {formatInt(
-                                                                                            c.views
+                                                                                            c.views,
                                                                                         )}
                                                                                     </td>
                                                                                 </tr>
-                                                                            )
+                                                                            ),
                                                                         )}
                                                                     </tbody>
                                                                 </table>
@@ -767,13 +854,13 @@ export default function AnalyticsPanel({ card }) {
                                             <td>
                                                 {formatInt(
                                                     summary?.compare?.last7
-                                                        ?.views
+                                                        ?.views,
                                                 )}
                                             </td>
                                             <td>
                                                 {formatInt(
                                                     summary?.compare?.last7
-                                                        ?.clicksTotal
+                                                        ?.clicksTotal,
                                                 )}
                                             </td>
                                         </tr>
@@ -782,13 +869,13 @@ export default function AnalyticsPanel({ card }) {
                                             <td>
                                                 {formatInt(
                                                     summary?.compare?.prev7
-                                                        ?.views
+                                                        ?.views,
                                                 )}
                                             </td>
                                             <td>
                                                 {formatInt(
                                                     summary?.compare?.prev7
-                                                        ?.clicksTotal
+                                                        ?.clicksTotal,
                                                 )}
                                             </td>
                                         </tr>

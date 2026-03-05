@@ -40,6 +40,19 @@
     color: var(--gold);
 }
 
+.tabLabel {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.crown {
+    width: 14px;
+    height: 14px;
+    color: var(--gold, #d4a017);
+    flex-shrink: 0;
+}
+
 .active {
     border-color: var(--gold);
     box-shadow: 0 0 0 1px var(--gold-soft);

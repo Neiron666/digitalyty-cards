@@ -52,7 +52,24 @@ export default function SeoPanel({
     displayName,
     disabled,
     onChange,
+    canEditSeo,
 }) {
+    if (canEditSeo === false) {
+        return (
+            <Panel title="SEO וסקריפטים">
+                <div className={styles.lockedBlock}>
+                    <div className={styles.lockedTitle}>SEO וסקריפטים</div>
+                    <div className={styles.lockedText}>
+                        כדי להשתמש ב-SEO וסקריפטים צריך מנוי פרימיום.
+                    </div>
+                    <a href="/pricing" className={styles.lockedCta}>
+                        שדרג לפרימיום
+                    </a>
+                </div>
+            </Panel>
+        );
+    }
+
     const value = seo || {};
     const [jsonLdTemplateType, setJsonLdTemplateType] =
         useState("LocalBusiness");

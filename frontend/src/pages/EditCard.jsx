@@ -2207,10 +2207,6 @@ function EditCard() {
                         dirtyPaths={dirtyPaths}
                         saveState={saveState}
                         saveErrorText={saveErrorText}
-                        canShowAnalyticsTab={
-                            Boolean(token) &&
-                            Boolean(draftCard?.entitlements?.canViewAnalytics)
-                        }
                         // Mobile: compact context bar in topbar
                         activeOrgSlug={activeOrgSlug}
                         myOrgs={myOrgs}

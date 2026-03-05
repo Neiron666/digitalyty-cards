@@ -143,9 +143,9 @@ const STR = {
         section_user_subscription: "מנוי משתמש",
         section_card_billing_crud: "חיוב כרטיס (Runtime SSoT)",
         msg_user_subscription_help:
-            "זהו רישום מנוי למשתמש. כדי להשפיע על ה- runtime בכרטיס יש לבצע סנכרון או להגדיר חיוב לכרטיס.",
+            'טיפ: שינוי מנוי משתמש לא משנה כרטיסים מיד — אחרי זה עושים "סנכרן מהמשתמש".',
         msg_card_billing_help:
-            "זה משפיע מיידית על Card.effectiveBilling ועל חוויית paid בכרטיס.",
+            "טיפ: חיוב כרטיס משפיע מיד. אם יש הטבה ידנית (Override) — היא יכולה להסתיר את החיוב עד שמנקים אותה.",
         label_user_id: "User ID",
         label_card_id_crud: "Card ID",
         label_plan_crud: "מסלול",
@@ -190,6 +190,28 @@ const STR = {
 
         label_analytics_premium: "אנליטיקס פרימיום",
 
+        hint_analytics_premium:
+            "מפעיל/מכבה אנליטיקה מתקדמת בכרטיס הזה בלבד. לא משנה תשלום ולא משנה רמת פיצ׳רים.",
+        hint_extend_trial:
+            "מאריך/מגדיר ניסיון לכרטיס. זה לא תשלום וזה לא פרימיום.",
+        hint_override_plan:
+            'נותן מסלול ידני זמני לכרטיס. כדי לחזור למצב רגיל צריך "נקה Override".',
+        hint_card_tier:
+            "קובע רמת פיצ׳רים לכרטיס הזה. זה גובר על הכל — לזכור להסיר כשמסיימים.",
+        hint_user_tier:
+            "קובע רמת פיצ׳רים לכל הכרטיסים של המשתמש. כרטיס עם Tier ידני עדיין גובר.",
+        hint_enable_subscription:
+            'נותן מנוי למשתמש עד תאריך. כדי שזה ישפיע על כרטיסים — צריך גם ללחוץ "סנכרן מהמשתמש".',
+        hint_revoke_subscription:
+            'מבטל את המנוי של המשתמש ומחזיר לחינם. כדי לעדכן כרטיסים — צריך גם "סנכרן מהמשתמש".',
+        hint_enable_card_billing:
+            "נותן פרימיום לכרטיס הזה עד תאריך. ההשפעה מיידית (פרסום, כתובת קצרה, SEO וסקריפטים, אנליטיקה).",
+        hint_revoke_card_billing: "מבטל פרימיום בכרטיס הזה ומחזיר לחינם מיד.",
+        hint_sync_from_user:
+            "מעתיק את מצב המנוי של המשתמש לכרטיס. אם התשלום שייך לארגון/משלם אחר — סמן Force לפני הסנכרון.",
+        hint_clear_override:
+            "מסיר הטבה ידנית (Override). אחרי הניקוי — הכרטיס חוזר להתנהג לפי החיוב האמיתי שלו.",
+
         label_payer_type: "סוג משלם",
         label_payer_note: "הערת משלם",
         opt_keep_current: "השאר ללא שינוי",
@@ -224,6 +246,13 @@ const STR = {
             "מנוי משתמש — הגדרת plan + תוקף ברמת User.subscription. לא משפיע ישירות על כרטיס עד ביצוע סנכרון.",
         legend_card_billing:
             "חיוב כרטיס (SSoT) — קובע Card.billing ומשפיע מיידית על effectiveBilling. כולל: מסלול, תשלום עד, סוג משלם, הערת משלם, סנכרון מהמשתמש, Force org payer, וניקוי Override.",
+        legend_what_affects_what_title: "מה משפיע על מה?",
+        legend_what_affects_what_tier:
+            "רמת פיצ׳רים: כרטיס (ידני) → משתמש (ידני) → תשלום → חינם",
+        legend_what_affects_what_billing:
+            "מסלול תשלום בפועל: הטבה ידנית (Override) → חיוב כרטיס → סנכרון מהמשתמש",
+        legend_what_affects_what_rules:
+            "כללי אצבע: אחרי שינוי מנוי משתמש מסנכרנים; אם יש Override — מנקים כדי לחזור לרגיל",
         legend_slug_note:
             "סלאג: כתובת קצרה. כרטיסים אישיים: /card/:slug. כרטיסי ארגון: /c/:orgSlug/:slug.",
         legend_ltr_note:
@@ -1460,35 +1489,40 @@ export default function Admin() {
     /* ---- shared analytics premium toggle — used by mobile + desktop ---- */
     function renderAnalyticsPremiumToggle() {
         return (
-            <div className={styles.formRow}>
-                <label className={styles.toggleRow}>
-                    <input
-                        type="checkbox"
-                        checked={Boolean(
-                            selectedCard?.billing?.features?.analyticsPremium,
-                        )}
-                        disabled={
-                            actionLoading.analyticsPremium || !selectedCard?._id
-                        }
-                        onChange={(e) => {
-                            const next = e.target.checked;
-                            runAction("analyticsPremium", async (r) => {
-                                const res = await adminSetAnalyticsPremium(
-                                    selectedCard._id,
-                                    { enabled: next, reason: r },
-                                );
-                                return res.data;
-                            });
-                        }}
-                    />
-                    <span>{t("label_analytics_premium")}</span>
-                </label>
-                {actionError.analyticsPremium ? (
-                    <p className={styles.errorText}>
-                        {actionError.analyticsPremium}
-                    </p>
-                ) : null}
-            </div>
+            <>
+                <p className={styles.muted}>{t("hint_analytics_premium")}</p>
+                <div className={styles.formRow}>
+                    <label className={styles.toggleRow}>
+                        <input
+                            type="checkbox"
+                            checked={Boolean(
+                                selectedCard?.billing?.features
+                                    ?.analyticsPremium,
+                            )}
+                            disabled={
+                                actionLoading.analyticsPremium ||
+                                !selectedCard?._id
+                            }
+                            onChange={(e) => {
+                                const next = e.target.checked;
+                                runAction("analyticsPremium", async (r) => {
+                                    const res = await adminSetAnalyticsPremium(
+                                        selectedCard._id,
+                                        { enabled: next, reason: r },
+                                    );
+                                    return res.data;
+                                });
+                            }}
+                        />
+                        <span>{t("label_analytics_premium")}</span>
+                    </label>
+                    {actionError.analyticsPremium ? (
+                        <p className={styles.errorText}>
+                            {actionError.analyticsPremium}
+                        </p>
+                    ) : null}
+                </div>
+            </>
         );
     }
 
@@ -1726,6 +1760,35 @@ export default function Admin() {
                                                         )}
                                                     </dd>
                                                 </dl>
+                                            </section>
+
+                                            <section
+                                                className={styles.legendGroup}
+                                            >
+                                                <h4
+                                                    className={
+                                                        styles.legendHeading
+                                                    }
+                                                >
+                                                    {t(
+                                                        "legend_what_affects_what_title",
+                                                    )}
+                                                </h4>
+                                                <p>
+                                                    {t(
+                                                        "legend_what_affects_what_tier",
+                                                    )}
+                                                </p>
+                                                <p>
+                                                    {t(
+                                                        "legend_what_affects_what_billing",
+                                                    )}
+                                                </p>
+                                                <p>
+                                                    {t(
+                                                        "legend_what_affects_what_rules",
+                                                    )}
+                                                </p>
                                             </section>
 
                                             <p className={styles.legendNote}>
@@ -2993,6 +3056,9 @@ export default function Admin() {
                                                     />
 
                                                     {renderAnalyticsPremiumToggle()}
+                                                    <p className={styles.muted}>
+                                                        {t("hint_extend_trial")}
+                                                    </p>
                                                     <div
                                                         className={
                                                             styles.actionGroup
@@ -3511,6 +3577,9 @@ export default function Admin() {
                                                 }
                                             />
 
+                                            <p className={styles.muted}>
+                                                {t("hint_enable_subscription")}
+                                            </p>
                                             <Button
                                                 variant="secondary"
                                                 disabled={
@@ -3619,6 +3688,9 @@ export default function Admin() {
                                                 {t("btn_enable_subscription")}
                                             </Button>
 
+                                            <p className={styles.muted}>
+                                                {t("hint_revoke_subscription")}
+                                            </p>
                                             <Button
                                                 variant="secondary"
                                                 disabled={
@@ -3981,6 +4053,9 @@ export default function Admin() {
                                                 placeholder="עד 80 תווים"
                                             />
 
+                                            <p className={styles.muted}>
+                                                {t("hint_enable_card_billing")}
+                                            </p>
                                             <Button
                                                 variant="secondary"
                                                 disabled={
@@ -4096,6 +4171,9 @@ export default function Admin() {
                                                 {t("btn_enable_card_billing")}
                                             </Button>
 
+                                            <p className={styles.muted}>
+                                                {t("hint_revoke_card_billing")}
+                                            </p>
                                             <Button
                                                 variant="secondary"
                                                 disabled={
@@ -4124,6 +4202,9 @@ export default function Admin() {
                                                 {t("btn_revoke_card_billing")}
                                             </Button>
 
+                                            <p className={styles.muted}>
+                                                {t("hint_sync_from_user")}
+                                            </p>
                                             <Button
                                                 variant="secondary"
                                                 disabled={
@@ -4171,6 +4252,9 @@ export default function Admin() {
                                                 </span>
                                             </label>
 
+                                            <p className={styles.muted}>
+                                                {t("hint_clear_override")}
+                                            </p>
                                             <Button
                                                 variant="secondary"
                                                 disabled={
@@ -5353,6 +5437,9 @@ export default function Admin() {
                                                     />
 
                                                     {renderAnalyticsPremiumToggle()}
+                                                    <p className={styles.muted}>
+                                                        {t("hint_extend_trial")}
+                                                    </p>
                                                     <div
                                                         className={
                                                             styles.actionGroup
@@ -5699,6 +5786,11 @@ export default function Admin() {
                                                         ) : null}
                                                     </div>
 
+                                                    <p className={styles.muted}>
+                                                        {t(
+                                                            "hint_override_plan",
+                                                        )}
+                                                    </p>
                                                     <div
                                                         className={
                                                             styles.actionGroup
@@ -5800,6 +5892,9 @@ export default function Admin() {
                                                         ) : null}
                                                     </div>
 
+                                                    <p className={styles.muted}>
+                                                        {t("hint_card_tier")}
+                                                    </p>
                                                     <div
                                                         className={
                                                             styles.actionGroup
@@ -5936,120 +6031,131 @@ export default function Admin() {
 
                                                     {selectedCardOwner ===
                                                     "user" ? (
-                                                        <div
-                                                            className={
-                                                                styles.actionGroup
-                                                            }
-                                                        >
-                                                            <div
+                                                        <>
+                                                            <p
                                                                 className={
-                                                                    styles.formRow
+                                                                    styles.muted
                                                                 }
                                                             >
-                                                                <label
+                                                                {t(
+                                                                    "hint_user_tier",
+                                                                )}
+                                                            </p>
+                                                            <div
+                                                                className={
+                                                                    styles.actionGroup
+                                                                }
+                                                            >
+                                                                <div
                                                                     className={
-                                                                        styles.selectField
+                                                                        styles.formRow
                                                                     }
                                                                 >
-                                                                    <span
+                                                                    <label
                                                                         className={
-                                                                            styles.selectLabel
+                                                                            styles.selectField
                                                                         }
                                                                     >
-                                                                        {t(
-                                                                            "label_user_tier",
+                                                                        <span
+                                                                            className={
+                                                                                styles.selectLabel
+                                                                            }
+                                                                        >
+                                                                            {t(
+                                                                                "label_user_tier",
+                                                                            )}
+                                                                        </span>
+                                                                        <select
+                                                                            className={
+                                                                                styles.select
+                                                                            }
+                                                                            value={
+                                                                                userTier
+                                                                            }
+                                                                            onChange={(
+                                                                                e,
+                                                                            ) =>
+                                                                                setUserTier(
+                                                                                    e
+                                                                                        .target
+                                                                                        .value,
+                                                                                )
+                                                                            }
+                                                                        >
+                                                                            <option value="">
+                                                                                {t(
+                                                                                    "opt_clear",
+                                                                                )}
+                                                                            </option>
+                                                                            <option value="free">
+                                                                                {t(
+                                                                                    "opt_tier_free",
+                                                                                )}
+                                                                            </option>
+                                                                            <option value="basic">
+                                                                                {t(
+                                                                                    "opt_tier_basic",
+                                                                                )}
+                                                                            </option>
+                                                                            <option value="premium">
+                                                                                {t(
+                                                                                    "opt_tier_premium",
+                                                                                )}
+                                                                            </option>
+                                                                        </select>
+                                                                    </label>
+                                                                    <Input
+                                                                        label={t(
+                                                                            "label_user_tier_until",
                                                                         )}
-                                                                    </span>
-                                                                    <select
-                                                                        className={
-                                                                            styles.select
-                                                                        }
+                                                                        type="date"
                                                                         value={
-                                                                            userTier
+                                                                            userTierUntil
                                                                         }
                                                                         onChange={(
                                                                             e,
                                                                         ) =>
-                                                                            setUserTier(
+                                                                            setUserTierUntil(
                                                                                 e
                                                                                     .target
                                                                                     .value,
                                                                             )
                                                                         }
+                                                                        placeholder={t(
+                                                                            "placeholder_date_ymd",
+                                                                        )}
+                                                                    />
+                                                                    <Button
+                                                                        variant="secondary"
+                                                                        disabled={
+                                                                            loading ||
+                                                                            actionLoading.userTier
+                                                                        }
+                                                                        loading={
+                                                                            actionLoading.userTier
+                                                                        }
+                                                                        onClick={
+                                                                            runUserTierAction
+                                                                        }
                                                                     >
-                                                                        <option value="">
-                                                                            {t(
-                                                                                "opt_clear",
-                                                                            )}
-                                                                        </option>
-                                                                        <option value="free">
-                                                                            {t(
-                                                                                "opt_tier_free",
-                                                                            )}
-                                                                        </option>
-                                                                        <option value="basic">
-                                                                            {t(
-                                                                                "opt_tier_basic",
-                                                                            )}
-                                                                        </option>
-                                                                        <option value="premium">
-                                                                            {t(
-                                                                                "opt_tier_premium",
-                                                                            )}
-                                                                        </option>
-                                                                    </select>
-                                                                </label>
-                                                                <Input
-                                                                    label={t(
-                                                                        "label_user_tier_until",
-                                                                    )}
-                                                                    type="date"
-                                                                    value={
-                                                                        userTierUntil
-                                                                    }
-                                                                    onChange={(
-                                                                        e,
-                                                                    ) =>
-                                                                        setUserTierUntil(
-                                                                            e
-                                                                                .target
-                                                                                .value,
-                                                                        )
-                                                                    }
-                                                                    placeholder={t(
-                                                                        "placeholder_date_ymd",
-                                                                    )}
-                                                                />
-                                                                <Button
-                                                                    variant="secondary"
-                                                                    disabled={
-                                                                        loading ||
-                                                                        actionLoading.userTier
-                                                                    }
-                                                                    loading={
-                                                                        actionLoading.userTier
-                                                                    }
-                                                                    onClick={
-                                                                        runUserTierAction
-                                                                    }
-                                                                >
-                                                                    {t(
-                                                                        "btn_apply",
-                                                                    )}
-                                                                </Button>
+                                                                        {t(
+                                                                            "btn_apply",
+                                                                        )}
+                                                                    </Button>
+                                                                </div>
+                                                                {actionError.userTier ? (
+                                                                    <p
+                                                                        className={
+                                                                            styles.errorText
+                                                                        }
+                                                                    >
+                                                                        {
+                                                                            actionError.userTier
+                                                                        }
+                                                                    </p>
+                                                                ) : null}
                                                             </div>
-                                                            {actionError.userTier ? (
-                                                                <p
-                                                                    className={
-                                                                        styles.errorText
-                                                                    }
-                                                                >
-                                                                    {
-                                                                        actionError.userTier
-                                                                    }
-                                                                </p>
-                                                            ) : null}
-                                                        </div>
+                                                        </>
                                                     ) : null}
                                                 </div>
                                             ) : null}

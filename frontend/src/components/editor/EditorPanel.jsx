@@ -149,6 +149,7 @@ export default function EditorPanel({
                     }
                     disabled={editingDisabled}
                     onChange={(patch) => applyPatch("seo", patch)}
+                    canEditSeo={card?.entitlements?.canEditSeo === true}
                 />
             );
 

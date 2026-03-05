@@ -40,18 +40,13 @@ export function computeEntitlements(
     const canEdit = isEntitled;
 
     // Feature truth: derived from effective tier.
-    // Special case: trial shows a demo (fake premium) analytics view.
+    // All free-tier users (anon, registered, trial) see demo analytics.
     let analyticsLevel = "none";
     if (tier === "premium") {
         analyticsLevel = "premium";
     } else if (tier === "basic") {
         analyticsLevel = "basic";
-    } else if (
-        tier === "free" &&
-        effectiveBilling?.source === "trial" &&
-        effectiveBilling?.isEntitled &&
-        !effectiveBilling?.isPaid
-    ) {
+    } else if (tier === "free") {
         analyticsLevel = "demo";
     }
 

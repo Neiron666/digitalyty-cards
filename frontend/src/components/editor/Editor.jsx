@@ -6,11 +6,7 @@ import EditorPanel from "./EditorPanel";
 import EditorPreview from "./EditorPreview";
 import EditorSaveBar from "./EditorSaveBar";
 
-import {
-    EDITOR_CARD_TABS,
-    PANEL_TEMPLATES,
-    PANEL_ANALYTICS,
-} from "./editorTabs";
+import { EDITOR_CARD_TABS, PANEL_TEMPLATES } from "./editorTabs";
 
 const cx = (...classes) => classes.filter(Boolean).join(" ");
 
@@ -29,7 +25,6 @@ export default function Editor({
     onUpdateSlug,
     previewHeader,
     previewFooter,
-    canShowAnalyticsTab,
     commitDraft,
     dirtyPaths,
     saveState,
@@ -147,15 +142,7 @@ export default function Editor({
         };
     }, [drawerOpen, isMobile]);
 
-    const allowedTabs = useMemo(
-        () =>
-            new Set(
-                EDITOR_CARD_TABS.filter(
-                    (t) => canShowAnalyticsTab || t !== PANEL_ANALYTICS,
-                ),
-            ),
-        [canShowAnalyticsTab],
-    );
+    const allowedTabs = useMemo(() => new Set(EDITOR_CARD_TABS), []);
 
     const activeTab = allowedTabs.has(tab) ? tab : PANEL_TEMPLATES;
 
@@ -316,7 +303,7 @@ export default function Editor({
                 <EditorSidebar
                     activeTab={activeTab}
                     onChangeTab={handleChangeTab}
-                    canShowAnalyticsTab={Boolean(canShowAnalyticsTab)}
+                    entitlements={card?.entitlements}
                     publicUrl={publicUrl}
                     publicPath={publicPath}
                     isPublished={isPublished}

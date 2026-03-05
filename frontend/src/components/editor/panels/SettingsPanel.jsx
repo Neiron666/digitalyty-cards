@@ -250,7 +250,13 @@ export default function SettingsPanel({
         accessLine = "אין גישה";
     }
 
-    const canPublish = Boolean(token) && Boolean(card?._id) && !editingDisabled;
+    const entCanPublish = card?.entitlements?.canPublish === true;
+    const entCanChangeSlug = card?.entitlements?.canChangeSlug === true;
+    const canPublish =
+        Boolean(token) &&
+        Boolean(card?._id) &&
+        !editingDisabled &&
+        entCanPublish;
 
     return (
         <Panel title="הגדרות">
@@ -267,24 +273,42 @@ export default function SettingsPanel({
                         <div className={styles.accessLine}>{accessLine}</div>
                     )}
 
-                    {Boolean(token) && card?.status !== "published" && (
-                        <Button
-                            variant="primary"
-                            disabled={!canPublish}
-                            onClick={() => onPublish?.()}
-                        >
-                            פרסום
-                        </Button>
-                    )}
+                    {!entCanPublish ? (
+                        <div className={styles.lockedBlock}>
+                            <div className={styles.lockedTitle}>
+                                פרסום זמין רק בפרימיום
+                            </div>
+                            <div className={styles.lockedText}>
+                                כדי לפרסם את הכרטיס — צריך מסלול פרימיום.
+                            </div>
+                            <a href="/pricing" className={styles.lockedCta}>
+                                שדרג לפרימיום
+                            </a>
+                        </div>
+                    ) : (
+                        <>
+                            {Boolean(token) && card?.status !== "published" && (
+                                <Button
+                                    variant="primary"
+                                    disabled={!canPublish}
+                                    onClick={() => onPublish?.()}
+                                >
+                                    פרסום
+                                </Button>
+                            )}
 
-                    {Boolean(token) && card?.status === "published" && (
-                        <Button
-                            variant="secondary"
-                            disabled={!Boolean(card?._id) || editingDisabled}
-                            onClick={() => onUnpublish?.()}
-                        >
-                            החזרה לטיוטה
-                        </Button>
+                            {Boolean(token) && card?.status === "published" && (
+                                <Button
+                                    variant="secondary"
+                                    disabled={
+                                        !Boolean(card?._id) || editingDisabled
+                                    }
+                                    onClick={() => onUnpublish?.()}
+                                >
+                                    החזרה לטיוטה
+                                </Button>
+                            )}
+                        </>
                     )}
 
                     {publicUrl && isPublicLink && (
@@ -316,61 +340,95 @@ export default function SettingsPanel({
                                 סלאג (כתובת קצרה)
                             </div>
 
-                            <Input
-                                label={`לאחר ‎${publicPathPrefix}/‎`}
-                                value={slugDraft}
-                                onChange={(e) => {
-                                    setSlugDraft(e.target.value);
-                                    setSlugError("");
-                                    setSlugOk("");
-                                }}
-                                placeholder="my-business"
-                                dir="ltr"
-                                autoComplete="off"
-                                spellCheck={false}
-                                className={styles.slugInput}
-                                error={slugError}
-                                disabled={!canEditSlug || slugBusy}
-                            />
-
-                            <div className={styles.slugHelp}>
-                                אפשר לשנות סלאג רק בטיוטה ועד פעמיים בחודש.
-                            </div>
-
-                            <div className={styles.slugRemaining}>
-                                נותרו{" "}
-                                <span className={styles.slugRemainingValue}>
-                                    {slugRemaining === null
-                                        ? `—/${slugLimit}`
-                                        : `${slugRemaining}/${slugLimit}`}
-                                </span>{" "}
-                                שינויים החודש.
-                            </div>
-
-                            {previewUrl ? (
-                                <div className={styles.slugPreview} dir="ltr">
-                                    {previewUrl}
+                            {!entCanChangeSlug ? (
+                                <div className={styles.lockedBlock}>
+                                    <div className={styles.lockedTitle}>
+                                        שינוי כתובת קצרה זמין רק בפרימיום
+                                    </div>
+                                    <div className={styles.lockedText}>
+                                        כדי לשנות את הכתובת הקצרה של הכרטיס —
+                                        צריך מסלול פרימיום.
+                                    </div>
+                                    <a
+                                        href="/pricing"
+                                        className={styles.lockedCta}
+                                    >
+                                        שדרג לפרימיום
+                                    </a>
                                 </div>
-                            ) : null}
+                            ) : (
+                                <>
+                                    <Input
+                                        label={`לאחר ‎${publicPathPrefix}/‎`}
+                                        value={slugDraft}
+                                        onChange={(e) => {
+                                            setSlugDraft(e.target.value);
+                                            setSlugError("");
+                                            setSlugOk("");
+                                        }}
+                                        placeholder="my-business"
+                                        dir="ltr"
+                                        autoComplete="off"
+                                        spellCheck={false}
+                                        className={styles.slugInput}
+                                        error={slugError}
+                                        disabled={!canEditSlug || slugBusy}
+                                    />
 
-                            {slugOk ? (
-                                <div className={styles.slugOk}>{slugOk}</div>
-                            ) : null}
+                                    <div className={styles.slugHelp}>
+                                        אפשר לשנות סלאג רק בטיוטה ועד פעמיים
+                                        בחודש.
+                                    </div>
 
-                            <div className={styles.slugActions}>
-                                <Button
-                                    variant="secondary"
-                                    disabled={
-                                        !canEditSlug ||
-                                        slugBusy ||
-                                        String(slugDraft || "").trim() ===
-                                            String(slug || "").trim()
-                                    }
-                                    onClick={handleSlugSave}
-                                >
-                                    {slugBusy ? "מעדכן..." : "עדכון סלאג"}
-                                </Button>
-                            </div>
+                                    <div className={styles.slugRemaining}>
+                                        נותרו{" "}
+                                        <span
+                                            className={
+                                                styles.slugRemainingValue
+                                            }
+                                        >
+                                            {slugRemaining === null
+                                                ? `—/${slugLimit}`
+                                                : `${slugRemaining}/${slugLimit}`}
+                                        </span>{" "}
+                                        שינויים החודש.
+                                    </div>
+
+                                    {previewUrl ? (
+                                        <div
+                                            className={styles.slugPreview}
+                                            dir="ltr"
+                                        >
+                                            {previewUrl}
+                                        </div>
+                                    ) : null}
+
+                                    {slugOk ? (
+                                        <div className={styles.slugOk}>
+                                            {slugOk}
+                                        </div>
+                                    ) : null}
+
+                                    <div className={styles.slugActions}>
+                                        <Button
+                                            variant="secondary"
+                                            disabled={
+                                                !canEditSlug ||
+                                                slugBusy ||
+                                                String(
+                                                    slugDraft || "",
+                                                ).trim() ===
+                                                    String(slug || "").trim()
+                                            }
+                                            onClick={handleSlugSave}
+                                        >
+                                            {slugBusy
+                                                ? "מעדכן..."
+                                                : "עדכון סלאג"}
+                                        </Button>
+                                    </div>
+                                </>
+                            )}
                         </div>
                     )}
 
