@@ -350,3 +350,11 @@ Ledger (PaymentTransaction) is not exposed to the cabinet directly. Cabinet read
 5. **YeshInvoice document type:** Receipt (קבלה) vs. invoice (חשבונית מס / קבלה). Israeli tax law requirements for digital service subscriptions must be confirmed.
 
 6. **Tranzila `TRANZILA_NOTIFY_URL` value:** Must be updated to `https://cardigo.co.il/api/payments/notify?nt=<token>` (routed through the dedicated Netlify function). Current value in env is unknown.
+
+---
+
+## 13) Go-Live Runbook
+
+Before switching `PAYMENT_PROVIDER=tranzila` in production, complete the operational checklist:
+
+→ [Tranzila Go-Live Checklist](./tranzila-go-live-checklist.md)
