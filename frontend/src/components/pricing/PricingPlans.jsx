@@ -9,9 +9,9 @@ import { SITE_ACTIONS } from "../../services/siteAnalytics.actions";
 export default function PricingPlans() {
     const [billing, setBilling] = useState("yearly");
 
-    const price = billing === "monthly" ? "₪29.99" : "₪299";
+    const price = billing === "monthly" ? "₪39.90" : "₪399.90";
     const note = billing === "monthly" ? "לחודש" : "לשנה";
-    const saving = billing === "yearly" ? "חוסך ₪60 לעומת חודשי" : null;
+    const saving = billing === "yearly" ? "חוסך ₪78.90 לעומת חודשי" : null;
 
     return (
         <section className={styles.wrapper}>
