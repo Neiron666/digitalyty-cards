@@ -521,28 +521,14 @@ export default function SettingsPanel({
                                 subStatus !== "active" ||
                                 isExpired;
 
-                            let ctaLabel = "";
-                            if (showCta) {
-                                if (acPlan === "free") {
-                                    ctaLabel = "שדרג עכשיו";
-                                } else if (
-                                    isExpired ||
-                                    subStatus === "expired"
-                                ) {
-                                    ctaLabel = "חדש מנוי";
-                                } else {
-                                    ctaLabel = "הפעל מנוי";
-                                }
-                            }
-
                             const providerLabel =
                                 provider === "tranzila" ? "Tranzila" : "—";
 
-                            async function handlePayment() {
+                            async function handlePayment(plan) {
                                 setBillingBusy(true);
                                 setBillingMsg("");
                                 try {
-                                    const res = await createPayment("monthly");
+                                    const res = await createPayment(plan);
                                     if (
                                         res?.paymentUrl &&
                                         /^https?:\/\//i.test(res.paymentUrl)
@@ -669,9 +655,31 @@ export default function SettingsPanel({
                                                                 accountError,
                                                             )
                                                         }
-                                                        onClick={handlePayment}
+                                                        onClick={() =>
+                                                            handlePayment(
+                                                                "monthly",
+                                                            )
+                                                        }
                                                     >
-                                                        {ctaLabel}
+                                                        חודשי — ₪39.90/חודש
+                                                    </Button>
+                                                    <Button
+                                                        variant="secondary"
+                                                        loading={billingBusy}
+                                                        disabled={
+                                                            billingBusy ||
+                                                            Boolean(
+                                                                accountError,
+                                                            )
+                                                        }
+                                                        onClick={() =>
+                                                            handlePayment(
+                                                                "yearly",
+                                                            )
+                                                        }
+                                                    >
+                                                        שנתי — ₪399.90/שנה (חוסך
+                                                        ₪78.90)
                                                     </Button>
                                                 </div>
                                             )}
