@@ -147,6 +147,54 @@ a.publicLinkUrl:focus-visible {
     outline-offset: 2px;
 }
 
+.publicLinkRow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 0;
+}
+
+.copyBtn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    margin-block-start: 0.5rem;
+    padding-block: 0.4rem;
+    padding-inline: 0.75rem;
+    border: 1px solid var(--gold-soft);
+    border-radius: var(--radius-md);
+    background: var(--gold-fade);
+    color: var(--gold);
+    font-family: inherit;
+    font-size: var(--fs-body-sm, 0.8125rem);
+    font-weight: 800;
+    cursor: pointer;
+    transition:
+        background 0.15s,
+        border-color 0.15s;
+}
+
+.copyBtn:hover {
+    background: var(--gold-soft);
+    border-color: var(--gold);
+}
+
+.copyBtn:focus-visible {
+    outline: 2px solid var(--gold);
+    outline-offset: 2px;
+}
+
+.copyHint {
+    margin-block-start: 0.375rem;
+    font-size: var(--fs-caption, 0.75rem);
+    font-weight: 600;
+    color: var(--text-main);
+    opacity: 0.55;
+    text-align: center;
+    line-height: 1.4;
+}
+
 /* ── Context (org/personal) selector ── */
 .contextBlock {
     display: flex;

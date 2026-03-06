@@ -2098,9 +2098,8 @@ function EditCard() {
         daysLeft <= 14;
 
     // Pre-compute public link data (used in desktop block + passed to Editor for mobile)
-    const cardPublicPath = draftCard?.slug
-        ? draftCard?.publicPath || `/card/${draftCard.slug}`
-        : null;
+    // SSoT: publicPath comes ONLY from backend DTO — no fallback guessing.
+    const cardPublicPath = draftCard?.publicPath || null;
     const cardPublicUrl = cardPublicPath
         ? `${window.location.origin}${cardPublicPath}`
         : null;

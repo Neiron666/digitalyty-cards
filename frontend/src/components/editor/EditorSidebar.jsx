@@ -1,3 +1,4 @@
+import { useState, useRef, useCallback } from "react";
 import styles from "./EditorSidebar.module.css";
 import CrownIcon from "../icons/CrownIcon";
 
@@ -60,6 +61,34 @@ export default function EditorSidebar({
     onLoadOrgs,
     showContextBar,
 }) {
+    const [copied, setCopied] = useState(false);
+    const copiedTimer = useRef(null);
+
+    const canCopy = isPublished && Boolean(publicUrl);
+
+    const handleCopy = useCallback(async () => {
+        if (!canCopy) return;
+        try {
+            if (navigator.clipboard?.writeText) {
+                await navigator.clipboard.writeText(publicUrl);
+            } else {
+                const ta = document.createElement("textarea");
+                ta.value = publicUrl;
+                ta.setAttribute("readonly", "");
+                ta.setAttribute("style", "position:fixed;left:-9999px");
+                document.body.appendChild(ta);
+                ta.select();
+                document.execCommand("copy");
+                document.body.removeChild(ta);
+            }
+            setCopied(true);
+            if (copiedTimer.current) clearTimeout(copiedTimer.current);
+            copiedTimer.current = setTimeout(() => setCopied(false), 2000);
+        } catch {
+            setCopied(false);
+        }
+    }, [canCopy, publicUrl]);
+
     return (
         <aside className={styles.sidebar}>
             {showContextBar ? (
@@ -91,22 +120,45 @@ export default function EditorSidebar({
                     <div className={styles.publicLinkTitle}>
                         {isPublished ? "קישור ציבורי" : "קישור עתידי"}
                     </div>
-                    {isPublished ? (
-                        <a
-                            href={publicPath}
-                            target="_blank"
-                            rel="noreferrer"
-                            className={styles.publicLinkUrl}
+                    <div className={styles.publicLinkRow}>
+                        {isPublished ? (
+                            <a
+                                href={publicPath}
+                                target="_blank"
+                                rel="noreferrer"
+                                className={styles.publicLinkUrl}
+                            >
+                                {publicUrl}
+                            </a>
+                        ) : (
+                            <span className={styles.publicLinkUrl}>
+                                {publicUrl}
+                            </span>
+                        )}
+                    </div>
+                    {canCopy ? (
+                        <button
+                            type="button"
+                            className={styles.copyBtn}
+                            onClick={handleCopy}
+                            aria-label="העתק קישור"
                         >
-                            {publicUrl}
-                        </a>
+                            {copied ? "הועתק!" : "העתק קישור"}
+                        </button>
                     ) : (
-                        <span className={styles.publicLinkUrl}>
-                            {publicUrl}
-                        </span>
+                        <div className={styles.copyHint}>
+                            אפשר להעתיק קישור רק אחרי פרסום הכרטיס.
+                        </div>
                     )}
                 </div>
-            ) : null}
+            ) : (
+                <div className={styles.publicLink} dir="rtl">
+                    <div className={styles.publicLinkTitle}>קישור ציבורי</div>
+                    <div className={styles.copyHint}>
+                        הקישור יופיע אחרי פרסום הכרטיס.
+                    </div>
+                </div>
+            )}
 
             <div
                 className={`${styles.planBadge} ${isPremium ? styles.planBadgePremium : styles.planBadgeFree}`}
