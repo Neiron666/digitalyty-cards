@@ -304,6 +304,7 @@ export default function Editor({
                     activeTab={activeTab}
                     onChangeTab={handleChangeTab}
                     entitlements={card?.entitlements}
+                    isPremium={card?.effectiveBilling?.isPaid === true}
                     publicUrl={publicUrl}
                     publicPath={publicPath}
                     isPublished={isPublished}

@@ -50,6 +50,7 @@ export default function EditorSidebar({
     activeTab,
     onChangeTab,
     entitlements,
+    isPremium,
     publicUrl,
     publicPath,
     isPublished,
@@ -106,6 +107,24 @@ export default function EditorSidebar({
                     )}
                 </div>
             ) : null}
+
+            <div
+                className={`${styles.planBadge} ${isPremium ? styles.planBadgePremium : styles.planBadgeFree}`}
+                dir="rtl"
+            >
+                {isPremium ? (
+                    <>
+                        <CrownIcon className={styles.planCrown} />
+                        <span className={styles.planLabel}>מסלול:</span>
+                        <span className={styles.planValue}>פרמיום</span>
+                    </>
+                ) : (
+                    <>
+                        <span className={styles.planLabel}>מסלול:</span>
+                        <span className={styles.planValue}>חינם</span>
+                    </>
+                )}
+            </div>
 
             <div className={styles.title}>עריכת כרטיס</div>
 
