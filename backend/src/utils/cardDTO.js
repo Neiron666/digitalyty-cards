@@ -78,8 +78,8 @@ export function computeEntitlements(
         canViewAnalytics,
         analyticsRetentionDays,
         design: {
-            customColors: tier !== "free",
-            customFonts: tier !== "free",
+            customColors: true,
+            customFonts: true,
         },
     };
 }

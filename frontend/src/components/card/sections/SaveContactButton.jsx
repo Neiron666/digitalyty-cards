@@ -51,6 +51,20 @@ function SaveContactButton({ card }) {
     const email = contact?.email || "";
     const website = contact?.website || "";
 
+    // SSoT-only: share URL must come from ogPath/publicPath. No guessing fallbacks.
+    const shareOrigin = getPublicOrigin();
+    const ogPath = typeof card?.ogPath === "string" ? card.ogPath.trim() : "";
+    const publicPathRaw =
+        typeof card?.publicPath === "string" ? card.publicPath.trim() : "";
+    const derivedOgPath = deriveOgPathFromPublicPath(publicPathRaw);
+    const shareUrl = ogPath
+        ? normalizeAbsoluteUrl(shareOrigin, ogPath)
+        : derivedOgPath
+          ? normalizeAbsoluteUrl(shareOrigin, derivedOgPath)
+          : "";
+    const published = card?.status === "published";
+    const canShare = published && Boolean(shareUrl);
+
     function escapeVCardText(value = "") {
         return String(value)
             .replace(/\\/g, "\\\\")
@@ -61,25 +75,8 @@ function SaveContactButton({ card }) {
     }
 
     async function handleShare() {
-        if (card?.status !== "published") return;
+        if (!canShare) return;
         const shareTitle = card?.seo?.title || businessName || "";
-
-        const origin = getPublicOrigin();
-        const ogPath =
-            typeof card?.ogPath === "string" ? card.ogPath.trim() : "";
-        const publicPath =
-            typeof card?.publicPath === "string" ? card.publicPath.trim() : "";
-        const derivedOgPath = deriveOgPathFromPublicPath(publicPath);
-        const fallbackOgPath =
-            derivedOgPath || (card?.slug ? `/og/card/${card.slug}` : "");
-
-        const shareUrl = ogPath
-            ? normalizeAbsoluteUrl(origin, ogPath)
-            : fallbackOgPath
-              ? normalizeAbsoluteUrl(origin, fallbackOgPath)
-              : typeof window !== "undefined"
-                ? window.location.href
-                : "";
 
         try {
             if (navigator.share) {
@@ -135,18 +132,31 @@ function SaveContactButton({ card }) {
 
     return (
         <div className={`${styles.actions}`}>
-            {card?.status === "published" && (
-                <button
-                    type="button"
-                    onClick={handleShare}
-                    className={`${styles.button} ${styles.actionShare}`}
-                >
-                    <span
-                        className={`${styles.icon} ${styles.iconShare}`}
-                        aria-hidden="true"
-                    />
-                    שתף
-                </button>
+            <button
+                type="button"
+                onClick={handleShare}
+                disabled={!canShare}
+                className={`${styles.button} ${styles.actionShare}`}
+                title={
+                    !canShare
+                        ? !published
+                            ? "אפשר לשתף רק אחרי פרסום הכרטיס"
+                            : "קישור לשיתוף לא זמין כרגע"
+                        : undefined
+                }
+            >
+                <span
+                    className={`${styles.icon} ${styles.iconShare}`}
+                    aria-hidden="true"
+                />
+                שתף
+            </button>
+            {!canShare && (
+                <div className={styles.shareHint}>
+                    {!published
+                        ? "אפשר לשתף רק אחרי פרסום הכרטיס."
+                        : "קישור לשיתוף לא זמין כרגע."}
+                </div>
             )}
 
             <button

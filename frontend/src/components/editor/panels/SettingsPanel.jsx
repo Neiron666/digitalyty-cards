@@ -151,8 +151,8 @@ export default function SettingsPanel({
             ? window.location.origin
             : "";
 
-    const fallbackPublicPath = slug ? `/card/${slug}` : "";
-    const publicPath = card?.publicPath || fallbackPublicPath;
+    // SSoT: publicPath comes ONLY from backend DTO — no fallback guessing.
+    const publicPath = card?.publicPath || null;
     const publicUrl = publicPath ? `${origin}${publicPath}` : "";
     const isPublished = card?.status === "published";
     const isPublicLink = Boolean(token) && isPublished;
@@ -184,13 +184,14 @@ export default function SettingsPanel({
     }, [token, card?.status, editingDisabled, onUpdateSlug]);
 
     const publicPathPrefix = useMemo(() => {
-        if (!publicPath) return "/card";
+        if (!publicPath) return null;
         const parts = String(publicPath).split("/").filter(Boolean);
-        if (parts.length < 2) return "/card";
+        if (parts.length < 2) return null;
         return `/${parts.slice(0, -1).join("/")}`;
     }, [publicPath]);
 
     const previewUrl = useMemo(() => {
+        if (!publicPathPrefix) return "";
         const s = String(slugDraft || "").trim();
         return s ? `${origin}${publicPathPrefix}/${s}` : "";
     }, [slugDraft, origin, publicPathPrefix]);
@@ -334,6 +335,15 @@ export default function SettingsPanel({
                         </div>
                     )}
 
+                    {!publicUrl && (
+                        <div className={styles.urlBlock}>
+                            <div className={styles.urlTitle}>קישור ציבורי</div>
+                            <div className={styles.urlNote}>
+                                הקישור יופיע אחרי פרסום הכרטיס.
+                            </div>
+                        </div>
+                    )}
+
                     {Boolean(token) && (
                         <div className={styles.slugBlock}>
                             <div className={styles.urlTitle}>
@@ -359,7 +369,11 @@ export default function SettingsPanel({
                             ) : (
                                 <>
                                     <Input
-                                        label={`לאחר ‎${publicPathPrefix}/‎`}
+                                        label={
+                                            publicPathPrefix
+                                                ? `לאחר ‎${publicPathPrefix}/‎`
+                                                : "סלאג"
+                                        }
                                         value={slugDraft}
                                         onChange={(e) => {
                                             setSlugDraft(e.target.value);

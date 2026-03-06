@@ -10,25 +10,22 @@ function isAbsoluteUrl(value) {
 export default function QRCodeBlock({ slug, publicPath }) {
     const wrapRef = useRef(null);
 
+    // SSoT: URL comes ONLY from backend DTO publicPath — no fallback guessing.
     const url = useMemo(() => {
         if (typeof window === "undefined") return "";
         const origin = window.location.origin;
 
         const raw = typeof publicPath === "string" ? publicPath.trim() : "";
-        if (raw) {
-            if (isAbsoluteUrl(raw)) {
-                if (raw.startsWith(origin)) return raw;
-                // Unsafe: absolute URL to a different origin is ignored.
-                // Fall through to slug-based URL.
-            } else {
-                const normalized = raw.startsWith("/") ? raw : `/${raw}`;
-                return `${origin}${normalized}`;
-            }
+        if (!raw) return "";
+
+        if (isAbsoluteUrl(raw)) {
+            if (raw.startsWith(origin)) return raw;
+            return "";
         }
 
-        if (!slug) return "";
-        return `${origin}/card/${slug}`;
-    }, [slug, publicPath]);
+        const normalized = raw.startsWith("/") ? raw : `/${raw}`;
+        return `${origin}${normalized}`;
+    }, [publicPath]);
 
     function handleDownload() {
         const canvas = wrapRef.current?.querySelector("canvas");
@@ -41,7 +38,7 @@ export default function QRCodeBlock({ slug, publicPath }) {
         a.click();
     }
 
-    if (!slug) return null;
+    if (!url) return null;
 
     return (
         <Section>

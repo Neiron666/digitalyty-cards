@@ -1,6 +1,21 @@
 import { useState, useRef, useCallback } from "react";
 import styles from "./EditorSidebar.module.css";
 import CrownIcon from "../icons/CrownIcon";
+import {
+    TemplatesIcon,
+    SelfDesignIcon,
+    HeadIcon,
+    BusinessIcon,
+    ContactIcon,
+    ContentIcon,
+    GalleryIcon,
+    ReviewsIcon,
+    FaqIcon,
+    SeoIcon,
+    SettingsIcon,
+    AnalyticsIcon,
+    CopyIcon,
+} from "../icons/EditorTabIcons";
 
 import {
     PANEL_TEMPLATES,
@@ -31,6 +46,21 @@ const TABS = [
     { id: PANEL_SETTINGS, label: "הגדרות" },
     { id: PANEL_ANALYTICS, label: "Analytics" },
 ];
+
+const TAB_ICON = {
+    [PANEL_TEMPLATES]: TemplatesIcon,
+    [PANEL_DESIGN]: SelfDesignIcon,
+    [PANEL_HEAD]: HeadIcon,
+    [PANEL_BUSINESS]: BusinessIcon,
+    [PANEL_CONTACT]: ContactIcon,
+    [PANEL_CONTENT]: ContentIcon,
+    [PANEL_GALLERY]: GalleryIcon,
+    [PANEL_REVIEWS]: ReviewsIcon,
+    [PANEL_FAQ]: FaqIcon,
+    [PANEL_SEO]: SeoIcon,
+    [PANEL_SETTINGS]: SettingsIcon,
+    [PANEL_ANALYTICS]: AnalyticsIcon,
+};
 
 function isPremiumTab(tabId, entitlements) {
     if (!entitlements) return false;
@@ -136,16 +166,22 @@ export default function EditorSidebar({
                             </span>
                         )}
                     </div>
-                    {canCopy ? (
-                        <button
-                            type="button"
-                            className={styles.copyBtn}
-                            onClick={handleCopy}
-                            aria-label="העתק קישור"
-                        >
-                            {copied ? "הועתק!" : "העתק קישור"}
-                        </button>
-                    ) : (
+                    <button
+                        type="button"
+                        className={styles.copyBtn}
+                        onClick={handleCopy}
+                        disabled={!canCopy}
+                        aria-label="העתק קישור"
+                        title={
+                            !canCopy
+                                ? "אפשר להעתיק קישור רק אחרי פרסום הכרטיס"
+                                : undefined
+                        }
+                    >
+                        <CopyIcon className={styles.copyIcon} />
+                        {copied ? "הועתק!" : "העתק קישור"}
+                    </button>
+                    {!canCopy && (
                         <div className={styles.copyHint}>
                             אפשר להעתיק קישור רק אחרי פרסום הכרטיס.
                         </div>
@@ -183,6 +219,7 @@ export default function EditorSidebar({
             <nav className={styles.nav}>
                 {TABS.map((tab) => {
                     const premium = isPremiumTab(tab.id, entitlements);
+                    const TabIcon = TAB_ICON[tab.id];
                     return (
                         <button
                             key={tab.id}
@@ -193,6 +230,9 @@ export default function EditorSidebar({
                             onClick={() => onChangeTab(tab.id)}
                         >
                             <span className={styles.tabLabel}>
+                                {TabIcon && (
+                                    <TabIcon className={styles.tabIcon} />
+                                )}
                                 {tab.label}
                                 {premium ? (
                                     <CrownIcon

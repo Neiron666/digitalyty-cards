@@ -94,7 +94,6 @@ function ColorRow({ id, label, hint, value, disabled, onChange, ariaLabel }) {
 export default function SelfThemePanel({
     card,
     plan,
-    selfThemeAllowed,
     disabled,
     onFieldChange,
 }) {
@@ -109,8 +108,7 @@ export default function SelfThemePanel({
     const secondary = normalizeHex(selfTheme?.secondary) || "#C18AA8";
     const onPrimary = normalizeHex(selfTheme?.onPrimary) || "#FFFFFF";
 
-    const isLocked = !Boolean(selfThemeAllowed);
-    const controlsDisabled = Boolean(disabled) || isLocked;
+    const controlsDisabled = Boolean(disabled);
 
     const contrastTextBg = useMemo(() => contrastRatio(text, bg), [text, bg]);
     const contrastOnPrimary = useMemo(
@@ -122,12 +120,10 @@ export default function SelfThemePanel({
     const passOnPrimary = (contrastOnPrimary || 0) >= 4.5;
 
     function write(path, value) {
-        if (!selfThemeAllowed) return;
         onFieldChange?.(path, value);
     }
 
     function writeSelfTheme(path, value) {
-        if (!selfThemeAllowed) return;
         if (disabled) return;
         write(path, value);
         write("design.selfThemeV1.version", 1);
@@ -135,14 +131,7 @@ export default function SelfThemePanel({
 
     return (
         <div className={styles.root} dir="rtl">
-            {isLocked ? (
-                <div className={styles.notice}>
-                    <h2 className={styles.title}>עיצוב עצמי</h2>
-                    <p className={styles.text}>זמין במסלול פרימיום.</p>
-                </div>
-            ) : (
-                <h2 className={styles.title}>עיצוב עצמי</h2>
-            )}
+            <h2 className={styles.title}>עיצוב עצמי</h2>
 
             <div className={styles.grid}>
                 <ColorRow
@@ -205,7 +194,6 @@ export default function SelfThemePanel({
                 className={styles.fixButton}
                 disabled={controlsDisabled}
                 onClick={() => {
-                    if (!selfThemeAllowed) return;
                     if (disabled) return;
                     onFieldChange?.("design.selfThemeV1", null);
                 }}

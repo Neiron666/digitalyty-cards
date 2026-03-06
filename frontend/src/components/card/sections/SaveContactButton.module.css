@@ -52,3 +52,20 @@
     -webkit-mask-image: url("/icons/contact.svg");
     mask-image: url("/icons/contact.svg");
 }
+
+.actions .actionShare:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+.actions .actionShare:disabled:hover {
+    background: none;
+    color: var(--contact-btn-outline, var(--primary));
+}
+
+.shareHint {
+    font-size: var(--fs-caption, 0.75rem);
+    opacity: 0.55;
+    text-align: center;
+    line-height: 1.4;
+}
