@@ -64,6 +64,11 @@ const ALLOWED_SKIN_KEYS = new Set([
     "inbaradama",
     "lavalaguna",
     "zahavtehom",
+    "evennil",
+    "irischatzot",
+    "gacheletargaman",
+    "bronzechol",
+    "hadargachelet",
     "self",
 ]);
 

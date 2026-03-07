@@ -19,19 +19,19 @@
     --rgb-neutral-text: 255, 255, 255;
 
     /* -----------brand-primary рычаг для основного цвета бренда и фона кнопок---------  */
-    --c-brand-primary: #094a56;
+    --c-brand-primary: #a60000;
 
     /* -----------brand-secondary рычаг для второстепенного цвета бренда---------  */
-    --c-brand-secondary: #0c6a7a;
+    --c-brand-secondary: #ff0000;
 
     /* -----------on-primary рычаг для цвета текста на кнопках---------  */
     --c-on-primary: #ffffff;
 
     /* RGB helpers */
     --rgb-neutral-surface: 10, 10, 10;
-    --rgb-brand-secondary: 12, 106, 122;
+    --rgb-brand-secondary: 255, 0, 0;
     --rgb-brand-accent: 200, 167, 92;
-    --rgb-brand-primary: 9, 74, 86;
+    --rgb-brand-primary: 166, 0, 0;
     --rgb-c-section-bg-lighter: 10, 10, 10;
     --rgb-c-section-bg-darker: 10, 10, 10;
 

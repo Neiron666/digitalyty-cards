@@ -39,6 +39,8 @@
     border-radius: 999px;
     /* круг */
     background: var(--contact-btn-bg, var(--contact-btn-color, var(--primary)));
+    border: 3px solid
+        color-mix(in srgb, rgb(var(--rgb-brand-primary)) 70%, black 30%);
 
     /* цвет иконки (mask -> currentColor) */
     color: var(--contact-btn-fg, #fff);

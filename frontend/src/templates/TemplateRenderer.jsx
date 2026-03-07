@@ -20,6 +20,11 @@ import TehomTurkizSkin from "./skins/tehomTurkiz/TehomTurkizSkin.module.css";
 import InbarAdamaSkin from "./skins/inbarAdama/InbarAdamaSkin.module.css";
 import LavaLagunaSkin from "./skins/lavaLaguna/LavaLagunaSkin.module.css";
 import ZahavTehomSkin from "./skins/zahavTehom/ZahavTehomSkin.module.css";
+import EvenNilSkin from "./skins/evenNil/EvenNilSkin.module.css";
+import IrisChatzotSkin from "./skins/irisChatzot/IrisChatzotSkin.module.css";
+import GacheletArgamanSkin from "./skins/gacheletArgaman/GacheletArgamanSkin.module.css";
+import BronzeCholSkin from "./skins/bronzeChol/BronzeCholSkin.module.css";
+import HadarGacheletSkin from "./skins/hadarGachelet/HadarGacheletSkin.module.css";
 import SelfThemeSkin from "./skins/self/SelfThemeSkin.module.css";
 
 function normalizeHexColor(value) {
@@ -111,6 +116,11 @@ export default function TemplateRenderer({ card, onUpgrade, mode }) {
         inbarAdama: InbarAdamaSkin,
         lavaLaguna: LavaLagunaSkin,
         zahavTehom: ZahavTehomSkin,
+        evenNil: EvenNilSkin,
+        irisChatzot: IrisChatzotSkin,
+        gacheletArgaman: GacheletArgamanSkin,
+        bronzeChol: BronzeCholSkin,
+        hadarGachelet: HadarGacheletSkin,
         self: SelfThemeSkin,
     };
 
