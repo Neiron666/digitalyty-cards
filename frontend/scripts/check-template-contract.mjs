@@ -189,6 +189,31 @@ function collectPaletteKeysFromTemplates(templates) {
     return [...all].sort((a, b) => a.localeCompare(b));
 }
 
+const ALLOWED_GROUPS = new Set(["light", "dark"]);
+
+function validateTemplateGroups(templates) {
+    for (const t of templates || []) {
+        if (!t || typeof t.id !== "string") continue;
+        if (t.selfThemeV1) continue;
+
+        const group = t.group;
+        if (typeof group !== "string" || !group.trim()) {
+            violations.push({
+                where: `registry:TEMPLATES:${t.id}`,
+                message: `Template '${t.id}' must define group ("light" or "dark")`,
+            });
+            continue;
+        }
+
+        if (!ALLOWED_GROUPS.has(group)) {
+            violations.push({
+                where: `registry:TEMPLATES:${t.id}`,
+                message: `Template '${t.id}' has invalid group '${group}'. Allowed: ${[...ALLOWED_GROUPS].join(", ")}`,
+            });
+        }
+    }
+}
+
 function validateSkinKeys(templates) {
     for (const t of templates || []) {
         if (!t || typeof t.id !== "string") continue;
@@ -381,6 +406,8 @@ try {
     const templateIds = getTemplateIds(templates);
 
     validateSkinKeys(templates);
+
+    validateTemplateGroups(templates);
 
     const customV1 = Array.isArray(templates)
         ? templates.find((t) => t?.id === "customV1")

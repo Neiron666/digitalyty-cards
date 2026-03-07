@@ -1,9 +1,14 @@
+import { useState } from "react";
 import { TEMPLATES } from "../../templates/templates.config";
 import Button from "../ui/Button";
 import styles from "./TemplateSelector.module.css";
 
 export default function TemplateSelector({ value, onSelect }) {
-    const visibleTemplates = TEMPLATES.filter((tpl) => !tpl?.selfThemeV1);
+    const [activeGroup, setActiveGroup] = useState("light");
+
+    const visibleTemplates = TEMPLATES.filter(
+        (tpl) => !tpl?.selfThemeV1 && tpl.group === activeGroup,
+    );
     return (
         <div className={styles.root}>
             <div className={styles.head}>
@@ -11,6 +16,23 @@ export default function TemplateSelector({ value, onSelect }) {
                 <p className={styles.subtitle}>
                     בחר עיצוב כדי להתחיל לערוך את הכרטיס.
                 </p>
+            </div>
+
+            <div className={styles.groupToggle}>
+                <button
+                    type="button"
+                    className={`${styles.groupBtn} ${activeGroup === "light" ? styles.groupBtnActive : ""}`}
+                    onClick={() => setActiveGroup("light")}
+                >
+                    תבניות רקע לבן
+                </button>
+                <button
+                    type="button"
+                    className={`${styles.groupBtn} ${activeGroup === "dark" ? styles.groupBtnActive : ""}`}
+                    onClick={() => setActiveGroup("dark")}
+                >
+                    תבניות רקע שחור
+                </button>
             </div>
 
             <div className={styles.grid}>

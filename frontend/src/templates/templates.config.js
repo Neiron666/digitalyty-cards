@@ -15,6 +15,7 @@ export const TEMPLATES = [
         label: "Roisman A11y Light",
         name: "מפרץ",
         skinKey: "roismanA11y",
+        group: "light",
         previewImage:
             "/templates/previews/preview-covers/roismana11ylight.webp",
         supports: {
@@ -96,6 +97,7 @@ export const TEMPLATES = [
         label: "Lakmi",
         name: "ורד-זהב",
         skinKey: "lakmi",
+        group: "light",
         previewImage: "/templates/previews/preview-covers/lakmi.webp",
         supports: {
             backgroundImage: true,
@@ -175,6 +177,7 @@ export const TEMPLATES = [
     {
         id: "beauty",
         skinKey: "beauty",
+        group: "light",
         name: "שקד",
         backgroundMode: "photo",
         previewImage: "/templates/previews/preview-covers/beauty.webp",
@@ -234,6 +237,7 @@ export const TEMPLATES = [
         label: "Galit",
         name: "אבן-שמיים",
         skinKey: "galit",
+        group: "light",
         previewImage: "/templates/previews/preview-covers/galit.webp",
         supports: {
             backgroundImage: true,
@@ -387,6 +391,7 @@ export const TEMPLATES = [
         label: "Iris Layla",
         name: "איריס-לילה",
         skinKey: "irisLayla",
+        group: "light",
         previewImage: "/templates/previews/preview-covers/iris-layla.webp",
         supports: {
             backgroundImage: true,
@@ -468,6 +473,7 @@ export const TEMPLATES = [
         label: "Shkiya Laguna",
         name: "שקיעה-לגונה",
         skinKey: "shkiyaLaguna",
+        group: "light",
         previewImage: "/templates/previews/preview-covers/shkiya-laguna.webp",
         supports: {
             backgroundImage: true,
@@ -549,6 +555,7 @@ export const TEMPLATES = [
         label: "Zahav Laguna",
         name: "זהב-לגונה",
         skinKey: "zahavLaguna",
+        group: "light",
         previewImage: "/templates/previews/preview-covers/zahav-laguna.webp",
         supports: {
             backgroundImage: true,
@@ -630,6 +637,7 @@ export const TEMPLATES = [
         label: "Ruby Esh",
         name: "רובי-אש",
         skinKey: "rubyEsh",
+        group: "light",
         previewImage: "/templates/previews/preview-covers/ruby-esh.webp",
         supports: {
             backgroundImage: true,
@@ -711,6 +719,7 @@ export const TEMPLATES = [
         label: "Shachor Graphit",
         name: "שחור-גרפיט",
         skinKey: "shachorGraphit",
+        group: "light",
         previewImage: "/templates/previews/preview-covers/shachor-graphit.webp",
         supports: {
             backgroundImage: true,
@@ -792,6 +801,7 @@ export const TEMPLATES = [
         label: "Pardes Chai",
         name: "פרדס-חי",
         skinKey: "pardesChai",
+        group: "light",
         previewImage: "/templates/previews/preview-covers/pardes-chai.webp",
         supports: {
             backgroundImage: true,
@@ -873,6 +883,7 @@ export const TEMPLATES = [
         label: "Bronze Sachlav",
         name: "ברונזה-סחלב",
         skinKey: "bronzeSachlav",
+        group: "dark",
         previewImage: "/templates/previews/preview-covers/bronze-sachlav.webp",
         supports: {
             backgroundImage: true,
@@ -954,6 +965,7 @@ export const TEMPLATES = [
         label: "Tehom Turkiz",
         name: "תהום-טורקיז",
         skinKey: "tehomTurkiz",
+        group: "dark",
         previewImage: "/templates/previews/preview-covers/tehom-turkiz.webp",
         supports: {
             backgroundImage: true,
@@ -1030,6 +1042,7 @@ export const TEMPLATES = [
         label: "Inbar Adama",
         name: "ענבר-אדמה",
         skinKey: "inbarAdama",
+        group: "dark",
         previewImage: "/templates/previews/preview-covers/inbar-adama.webp",
         supports: {
             backgroundImage: true,
@@ -1106,6 +1119,7 @@ export const TEMPLATES = [
         label: "Lava Laguna",
         name: "לבה-לגונה",
         skinKey: "lavaLaguna",
+        group: "dark",
         previewImage: "/templates/previews/preview-covers/lava-laguna.webp",
         supports: {
             backgroundImage: true,
@@ -1182,6 +1196,7 @@ export const TEMPLATES = [
         label: "Zahav Tehom",
         name: "זהב-תהום",
         skinKey: "zahavTehom",
+        group: "dark",
         previewImage: "/templates/previews/preview-covers/zahav-tehom.webp",
         supports: {
             backgroundImage: true,
@@ -1258,6 +1273,7 @@ export const TEMPLATES = [
         label: "Even Nil",
         name: "אבן-נילוס",
         skinKey: "evenNil",
+        group: "dark",
         previewImage: "/templates/previews/preview-covers/even-nil.webp",
         supports: {
             backgroundImage: true,
@@ -1334,6 +1350,7 @@ export const TEMPLATES = [
         label: "Iris Chatzot",
         name: "איריס-חצות",
         skinKey: "irisChatzot",
+        group: "dark",
         previewImage: "/templates/previews/preview-covers/iris-chatzot.webp",
         supports: {
             backgroundImage: true,
@@ -1410,6 +1427,7 @@ export const TEMPLATES = [
         label: "Gachelet Argaman",
         name: "גחלת-ארגמן",
         skinKey: "gacheletArgaman",
+        group: "dark",
         previewImage:
             "/templates/previews/preview-covers/gachelet-argaman.webp",
         supports: {
@@ -1487,6 +1505,7 @@ export const TEMPLATES = [
         label: "Bronze Chol",
         name: "ברונזה-חול",
         skinKey: "bronzeChol",
+        group: "dark",
         previewImage: "/templates/previews/preview-covers/bronze-chol.webp",
         supports: {
             backgroundImage: true,
@@ -1563,6 +1582,7 @@ export const TEMPLATES = [
         label: "Hadar Gachelet",
         name: "הדר-גחל",
         skinKey: "hadarGachelet",
+        group: "dark",
         previewImage: "/templates/previews/preview-covers/hadar-gachelet.webp",
         supports: {
             backgroundImage: true,
