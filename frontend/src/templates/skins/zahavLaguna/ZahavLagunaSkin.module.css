@@ -3,8 +3,8 @@
        CORE COLORS (SSoT) — универсальные роли
        ========================================================= */
     --c-neutral-bg: white; /* основной фон карточки и страницы */
-    --c-neutral-surface: #fffafa; /* Верх галелреи */
-    --c-neutral-card: #ffffff; /* волна + футер */
+    --c-neutral-surface: #fffafa;
+    --c-neutral-card: #ffffff;
     --c-section-bg: rgba(255, 255, 255, 0.92);
 
     /* ----------- --sections-all-backgronds рычаг для всего бэкграунда---------  */
@@ -19,19 +19,19 @@
     --rgb-neutral-text: 26, 26, 26;
 
     /* -----------brand-primary рычаг для основного цвета бренда и фона кнопок---------  */
-    --c-brand-primary: #a9863e; /* H1, svg bg, text deco underline*/
+    --c-brand-primary: #ffaa00;
 
     /* -----------brand-secondary рычаг для второстепенного цвета бренда---------  */
-    --c-brand-secondary: #c18aa8; /* второстепенный (rose в этой палитре) */
+    --c-brand-secondary: #009999;
 
     /* -----------on-primary рычаг для цвета текста на кнопках---------  */
     --c-on-primary: #ffffff;
 
     /* RGB helpers */
     --rgb-neutral-surface: 255, 249, 249;
-    --rgb-brand-secondary: 193, 138, 168;
     --rgb-brand-accent: 200, 167, 92;
-    --rgb-brand-primary: 169, 134, 62;
+    --rgb-brand-secondary: 0, 153, 153;
+    --rgb-brand-primary: 255, 170, 0;
 
     /* =========================================================
        SEMANTIC TOKENS — ниже только var()/rgba(var(--rgb-*),a)
@@ -128,7 +128,7 @@
 
 @media (max-width: 900px) {
     .theme {
-        /* чтобы shadow тоже был SSoT и не зависел от “чужих” чисел */
+        /* чтобы shadow тоже был SSoT и не зависел от "чужих" чисел */
         --shadow-soft: 0 14px 36px rgba(var(--rgb-neutral-text), 0.12);
     }
 }

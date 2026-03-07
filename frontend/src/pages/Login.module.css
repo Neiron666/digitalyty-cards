@@ -9,3 +9,7 @@
     text-align: center;
     margin-bottom: 10px;
 }
+
+.authSubmit {
+    margin-block-start: 0.75rem;
+}

@@ -2,36 +2,38 @@
     /* =========================================================
        CORE COLORS (SSoT) — универсальные роли
        ========================================================= */
-    --c-neutral-bg: white; /* основной фон карточки и страницы */
-    --c-neutral-surface: #fffafa; /* Верх галелреи */
-    --c-neutral-card: #ffffff; /* волна + футер */
-    --c-section-bg: rgba(255, 255, 255, 0.92);
+    --c-section-bg: rgb(10, 10, 10);
+    --c-neutral-bg: rgb(10, 10, 10); /* основной фон карточки и страницы */
+    --c-neutral-surface: rgb(10, 10, 10); /* Верх галереи */
+    --c-neutral-card: rgb(10, 10, 10); /* волна + футер */
 
     /* ----------- --sections-all-backgronds рычаг для всего бэкграунда---------  */
     --c-sections-all-backgronds: unset; /* Меняет все bg в карточке когда задаеться значение */
     --rgb-sections-all-backgronds: unset; /* Меняет все bg в карточке когда задаеться значение */
 
-    --section-bg-zebra: white; /* fallback for non-supporting browsers */
-    --rgb-section-bg-zebra: 255, 255, 255; /* for rgba() fallback */
+    --section-bg-zebra: white; /* zebra gradient background ; */
+    --rgb-section-bg-zebra: 255, 255, 255; /* zebra gradient background */
 
     /* -----------neutral-text рычаг для цвета текста---------  */
-    --c-neutral-text: #1a1a1a;
-    --rgb-neutral-text: 26, 26, 26;
+    --c-neutral-text: #ffffff;
+    --rgb-neutral-text: 255, 255, 255;
 
     /* -----------brand-primary рычаг для основного цвета бренда и фона кнопок---------  */
-    --c-brand-primary: #a9863e; /* H1, svg bg, text deco underline*/
+    --c-brand-primary: #a9863e;
 
     /* -----------brand-secondary рычаг для второстепенного цвета бренда---------  */
-    --c-brand-secondary: #c18aa8; /* второстепенный (rose в этой палитре) */
+    --c-brand-secondary: #c18aa8;
 
     /* -----------on-primary рычаг для цвета текста на кнопках---------  */
     --c-on-primary: #ffffff;
 
     /* RGB helpers */
-    --rgb-neutral-surface: 255, 249, 249;
+    --rgb-neutral-surface: 10, 10, 10;
     --rgb-brand-secondary: 193, 138, 168;
     --rgb-brand-accent: 200, 167, 92;
     --rgb-brand-primary: 169, 134, 62;
+    --rgb-c-section-bg-lighter: 10, 10, 10;
+    --rgb-c-section-bg-darker: 10, 10, 10;
 
     /* =========================================================
        SEMANTIC TOKENS — ниже только var()/rgba(var(--rgb-*),a)
@@ -50,14 +52,13 @@
 
     /* Primary/secondary system */
     --primary: var(--c-brand-primary);
-    --primary-hover: var(
-        --c-brand-primary
-    ); /* при желании: --c-brand-primary-hover */
+    --primary-hover: var(--c-brand-primary);
     --secondary: var(--c-brand-secondary);
     --secondary-hover: rgba(var(--rgb-brand-secondary), 0.9);
 
     /* hero divider */
     --card-bg: var(--bg-card);
+
     /* Contact button (derived) */
     --contact-btn-color: var(--primary);
     --contact-btn-bg: var(--primary);
@@ -94,14 +95,14 @@
     /* Zebra surfaces (tokens only) */
     --section-surface-odd:
         linear-gradient(
-            rgba(var(--rgb-brand-primary), 0.15),
-            rgba(var(--rgb-brand-secondary), 0)
+            rgba(var(--rgb-c-section-bg-darker), 1),
+            rgba(var(--rgb-c-section-bg-lighter), 0.9)
         ),
         var(--section-bg);
     --section-surface-even:
         linear-gradient(
-            rgba(var(--rgb-brand-secondary), 0.15),
-            rgba(var(--rgb-brand-primary), 0)
+            rgba(var(--rgb-c-section-bg-darker), 1),
+            rgba(var(--rgb-c-section-bg-lighter), 0.9)
         ),
         var(--section-bg);
     --section-border-odd: none;
@@ -128,7 +129,6 @@
 
 @media (max-width: 900px) {
     .theme {
-        /* чтобы shadow тоже был SSoT и не зависел от “чужих” чисел */
         --shadow-soft: 0 14px 36px rgba(var(--rgb-neutral-text), 0.12);
     }
 }

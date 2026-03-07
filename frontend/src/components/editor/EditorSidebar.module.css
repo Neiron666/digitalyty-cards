@@ -54,7 +54,7 @@
     flex-shrink: 0;
     display: block;
     opacity: 0.85;
-    margin-left: 1rem;
+    margin-left: 2rem;
 }
 
 .crown {
@@ -245,21 +245,42 @@ a.publicLinkUrl:focus-visible {
     flex: 0 0 auto;
 }
 
+.selectShell {
+    position: relative;
+    display: flex;
+    align-items: center;
+    flex: 1 1 0;
+    min-width: 0;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border);
+    background: rgba(255, 255, 255, 0.03);
+    box-shadow: 0 0 0 1px var(--gold-soft);
+    cursor: pointer;
+}
+
+.selectShell:focus-within {
+    outline: 2px solid var(--gold);
+    outline-offset: 2px;
+}
+
 .contextSelect {
     appearance: none;
     flex: 1 1 0;
     min-width: 0;
+    border: 0;
+    background: transparent;
     padding-block: 8px;
-    padding-inline: 10px;
-    border-radius: var(--radius-md);
-    border: 1px solid var(--border);
-    background: rgba(255, 255, 255, 0.03);
+    padding-inline-start: 10px;
+    padding-inline-end: 22px;
     color: var(--text-main);
     font-weight: 800;
     font-size: var(--fs-body-sm, 0.8125rem);
     font-family: inherit;
     cursor: pointer;
-    box-shadow: 0 0 0 1px var(--gold-soft);
+}
+
+.contextSelect:focus-visible {
+    outline: none;
 }
 
 .contextSelect option {
@@ -267,7 +288,14 @@ a.publicLinkUrl:focus-visible {
     color: #111;
 }
 
-.contextSelect:focus-visible {
-    outline: 2px solid var(--gold);
-    outline-offset: 2px;
+.contextCaret {
+    position: absolute;
+    inset-inline-end: 6px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: var(--fs-body-sm, 0.8125rem);
+    color: var(--gold);
+    opacity: 0.55;
+    pointer-events: none;
+    line-height: 1;
 }

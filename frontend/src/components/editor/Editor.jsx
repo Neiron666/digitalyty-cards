@@ -220,24 +220,39 @@ export default function Editor({
                 </button>
 
                 {isMobile && showContextBar ? (
-                    <select
-                        className={styles.contextSelect}
-                        value={activeOrgSlug || ""}
-                        onFocus={onLoadOrgs}
-                        onMouseDown={onLoadOrgs}
-                        onChange={(e) => onContextChange(e.target.value)}
-                        aria-label="הקשר כרטיס"
-                    >
-                        <option value="">אישי</option>
-                        {(myOrgs || []).map((o) => (
-                            <option
-                                key={String(o?.id || o?.slug || "")}
-                                value={String(o?.slug || "")}
+                    <div className={styles.contextWrap}>
+                        <span className={styles.contextLabel}>כרטיס</span>
+                        <div className={styles.selectShell}>
+                            <select
+                                className={styles.contextSelect}
+                                value={activeOrgSlug || ""}
+                                onFocus={onLoadOrgs}
+                                onMouseDown={onLoadOrgs}
+                                onChange={(e) =>
+                                    onContextChange(e.target.value)
+                                }
+                                aria-label="הקשר כרטיס"
                             >
-                                {String(o?.name || o?.slug || "")}
-                            </option>
-                        ))}
-                    </select>
+                                <option value="">אישי</option>
+                                {(myOrgs || []).map((o) => (
+                                    <option
+                                        key={String(o?.id || o?.slug || "")}
+                                        value={String(o?.slug || "")}
+                                    >
+                                        {String(o?.name || o?.slug || "")}
+                                    </option>
+                                ))}
+                            </select>
+                            {myOrgs && myOrgs.length > 0 ? (
+                                <span
+                                    className={styles.contextCaret}
+                                    aria-hidden="true"
+                                >
+                                    ▾
+                                </span>
+                            ) : null}
+                        </div>
+                    </div>
                 ) : null}
 
                 <div

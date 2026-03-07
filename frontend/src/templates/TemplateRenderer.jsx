@@ -9,6 +9,17 @@ import BeautySkin from "./skins/beauty/BeautySkin.module.css";
 import RoismanA11ySkin from "./skins/roismanA11y/RoismanA11ySkin.module.css";
 import LakmiSkin from "./skins/lakmi/LakmiSkin.module.css";
 import galitSkin from "./skins/galit/GalitSkin.module.css";
+import IrisLaylaSkin from "./skins/irisLayla/IrisLaylaSkin.module.css";
+import ShkiyaLagunaSkin from "./skins/shkiyaLaguna/ShkiyaLagunaSkin.module.css";
+import ZahavLagunaSkin from "./skins/zahavLaguna/ZahavLagunaSkin.module.css";
+import RubyEshSkin from "./skins/rubyEsh/RubyEshSkin.module.css";
+import ShachorGraphitSkin from "./skins/shachorGraphit/ShachorGraphitSkin.module.css";
+import PardesChaiSkin from "./skins/pardesChai/PardesChaiSkin.module.css";
+import BronzeSachlavSkin from "./skins/bronzeSachlav/BronzeSachlavSkin.module.css";
+import TehomTurkizSkin from "./skins/tehomTurkiz/TehomTurkizSkin.module.css";
+import InbarAdamaSkin from "./skins/inbarAdama/InbarAdamaSkin.module.css";
+import LavaLagunaSkin from "./skins/lavaLaguna/LavaLagunaSkin.module.css";
+import ZahavTehomSkin from "./skins/zahavTehom/ZahavTehomSkin.module.css";
 import SelfThemeSkin from "./skins/self/SelfThemeSkin.module.css";
 
 function normalizeHexColor(value) {
@@ -89,6 +100,17 @@ export default function TemplateRenderer({ card, onUpgrade, mode }) {
         roismanA11y: RoismanA11ySkin,
         lakmi: LakmiSkin,
         galit: galitSkin,
+        irisLayla: IrisLaylaSkin,
+        shkiyaLaguna: ShkiyaLagunaSkin,
+        zahavLaguna: ZahavLagunaSkin,
+        rubyEsh: RubyEshSkin,
+        shachorGraphit: ShachorGraphitSkin,
+        pardesChai: PardesChaiSkin,
+        bronzeSachlav: BronzeSachlavSkin,
+        tehomTurkiz: TehomTurkizSkin,
+        inbarAdama: InbarAdamaSkin,
+        lavaLaguna: LavaLagunaSkin,
+        zahavTehom: ZahavTehomSkin,
         self: SelfThemeSkin,
     };
 

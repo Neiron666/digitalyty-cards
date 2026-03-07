@@ -330,7 +330,7 @@ export default function SettingsPanel({
                             <div className={styles.urlTitle}>קישור עתידי</div>
                             <div>{publicUrl}</div>
                             <div className={styles.urlNote}>
-                                יהפוך לציבורי אחרי הרשמה + פרסום.
+                                יהפוך לציבורי אחרי הרשמה + שדרוג לפרמיום.
                             </div>
                         </div>
                     )}

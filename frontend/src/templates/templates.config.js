@@ -324,6 +324,877 @@ export const TEMPLATES = [
         },
     },
 
+    {
+        id: "irisLayla",
+        label: "Iris Layla",
+        name: "איריס-לילה",
+        skinKey: "irisLayla",
+        previewImage: PREVIEW_PLACEHOLDER_PNG, // temporary cosmetic fallback — replace with dedicated preview
+        supports: {
+            backgroundImage: true,
+            avatar: true,
+            header: true,
+            about: true,
+            services: true,
+            cta: true,
+            socials: true,
+            contact: true,
+        },
+        designDefaults: {
+            backgroundMode: "photo",
+            alignment: "left",
+            socialStyle: "pills",
+            fonts: { heading: "Heebo", body: "Assistant" },
+            overlay: { enabled: true, color: "#000000", opacity: 0.35 },
+        },
+        seededFields: [
+            "name",
+            "headline",
+            "company",
+            "about",
+            "faq",
+            "cta.label",
+            "cta.value",
+            "contact.phone",
+            "contact.email",
+            "contact.website",
+            "socials",
+        ],
+        sampleData: {
+            name: "דניאל כהן",
+            headline: "יועץ עסקי • אסטרטגיה וצמיחה",
+            company: "כהן קונסלטינג",
+            about: "עוזר לעסקים לבנות תהליך מכירה ברור, לשפר רווחיות ולהוציא רעיונות לפועל — בפשטות ובדיוק.",
+            faq: {
+                title: "שאלות ותשובות נפוצות",
+                lead: "כמה תשובות קצרות שיעזרו להבין איך מתחילים ומה קורה בתהליך.",
+                items: [
+                    {
+                        q: "איך מתחילים?",
+                        a: "מתחילים בשיחה קצרה כדי להבין את הצורך, ואז קובעים פגישה ראשונה ומגדירים מטרות ברורות.",
+                    },
+                    {
+                        q: "למי זה מתאים?",
+                        a: "למי שרוצה סדר ובהירות בתהליך, לשפר תוצאות ולקבל החלטות בצורה מדויקת ומבוססת.",
+                    },
+                    {
+                        q: "כמה זמן לוקח לראות תוצאות?",
+                        a: "זה משתנה לפי מצב נקודת הפתיחה, אבל בדרך כלל כבר אחרי הצעדים הראשונים רואים שיפור במדדים ובתחושת שליטה.",
+                    },
+                ],
+            },
+            cta: {
+                label: "שיחה מהירה בוואטסאפ",
+                value: "https://wa.me/972501234567",
+            },
+            contact: {
+                phone: "+972-50-123-4567",
+                email: "daniel@example.com",
+                website: "https://example.com",
+            },
+            socials: [
+                {
+                    platform: "linkedin",
+                    url: "https://www.linkedin.com/in/example",
+                },
+                {
+                    platform: "instagram",
+                    url: "https://www.instagram.com/example",
+                },
+            ],
+        },
+    },
+
+    {
+        id: "shkiyaLaguna",
+        label: "Shkiya Laguna",
+        name: "שקיעה-לגונה",
+        skinKey: "shkiyaLaguna",
+        previewImage: PREVIEW_PLACEHOLDER_PNG, // temporary cosmetic fallback — replace with dedicated preview
+        supports: {
+            backgroundImage: true,
+            avatar: true,
+            header: true,
+            about: true,
+            services: true,
+            cta: true,
+            socials: true,
+            contact: true,
+        },
+        designDefaults: {
+            backgroundMode: "photo",
+            alignment: "left",
+            socialStyle: "pills",
+            fonts: { heading: "Heebo", body: "Assistant" },
+            overlay: { enabled: true, color: "#000000", opacity: 0.35 },
+        },
+        seededFields: [
+            "name",
+            "headline",
+            "company",
+            "about",
+            "faq",
+            "cta.label",
+            "cta.value",
+            "contact.phone",
+            "contact.email",
+            "contact.website",
+            "socials",
+        ],
+        sampleData: {
+            name: "דניאל כהן",
+            headline: "יועץ עסקי • אסטרטגיה וצמיחה",
+            company: "כהן קונסלטינג",
+            about: "עוזר לעסקים לבנות תהליך מכירה ברור, לשפר רווחיות ולהוציא רעיונות לפועל — בפשטות ובדיוק.",
+            faq: {
+                title: "שאלות ותשובות נפוצות",
+                lead: "כמה תשובות קצרות שיעזרו להבין איך מתחילים ומה קורה בתהליך.",
+                items: [
+                    {
+                        q: "איך מתחילים?",
+                        a: "מתחילים בשיחה קצרה כדי להבין את הצורך, ואז קובעים פגישה ראשונה ומגדירים מטרות ברורות.",
+                    },
+                    {
+                        q: "למי זה מתאים?",
+                        a: "למי שרוצה סדר ובהירות בתהליך, לשפר תוצאות ולקבל החלטות בצורה מדויקת ומבוססת.",
+                    },
+                    {
+                        q: "כמה זמן לוקח לראות תוצאות?",
+                        a: "זה משתנה לפי מצב נקודת הפתיחה, אבל בדרך כלל כבר אחרי הצעדים הראשונים רואים שיפור במדדים ובתחושת שליטה.",
+                    },
+                ],
+            },
+            cta: {
+                label: "שיחה מהירה בוואטסאפ",
+                value: "https://wa.me/972501234567",
+            },
+            contact: {
+                phone: "+972-50-123-4567",
+                email: "daniel@example.com",
+                website: "https://example.com",
+            },
+            socials: [
+                {
+                    platform: "linkedin",
+                    url: "https://www.linkedin.com/in/example",
+                },
+                {
+                    platform: "instagram",
+                    url: "https://www.instagram.com/example",
+                },
+            ],
+        },
+    },
+
+    {
+        id: "zahavLaguna",
+        label: "Zahav Laguna",
+        name: "זהב-לגונה",
+        skinKey: "zahavLaguna",
+        previewImage: PREVIEW_PLACEHOLDER_PNG, // temporary cosmetic fallback — replace with dedicated preview
+        supports: {
+            backgroundImage: true,
+            avatar: true,
+            header: true,
+            about: true,
+            services: true,
+            cta: true,
+            socials: true,
+            contact: true,
+        },
+        designDefaults: {
+            backgroundMode: "photo",
+            alignment: "left",
+            socialStyle: "pills",
+            fonts: { heading: "Heebo", body: "Assistant" },
+            overlay: { enabled: true, color: "#000000", opacity: 0.35 },
+        },
+        seededFields: [
+            "name",
+            "headline",
+            "company",
+            "about",
+            "faq",
+            "cta.label",
+            "cta.value",
+            "contact.phone",
+            "contact.email",
+            "contact.website",
+            "socials",
+        ],
+        sampleData: {
+            name: "דניאל כהן",
+            headline: "יועץ עסקי • אסטרטגיה וצמיחה",
+            company: "כהן קונסלטינג",
+            about: "עוזר לעסקים לבנות תהליך מכירה ברור, לשפר רווחיות ולהוציא רעיונות לפועל — בפשטות ובדיוק.",
+            faq: {
+                title: "שאלות ותשובות נפוצות",
+                lead: "כמה תשובות קצרות שיעזרו להבין איך מתחילים ומה קורה בתהליך.",
+                items: [
+                    {
+                        q: "איך מתחילים?",
+                        a: "מתחילים בשיחה קצרה כדי להבין את הצורך, ואז קובעים פגישה ראשונה ומגדירים מטרות ברורות.",
+                    },
+                    {
+                        q: "למי זה מתאים?",
+                        a: "למי שרוצה סדר ובהירות בתהליך, לשפר תוצאות ולקבל החלטות בצורה מדויקת ומבוססת.",
+                    },
+                    {
+                        q: "כמה זמן לוקח לראות תוצאות?",
+                        a: "זה משתנה לפי מצב נקודת הפתיחה, אבל בדרך כלל כבר אחרי הצעדים הראשונים רואים שיפור במדדים ובתחושת שליטה.",
+                    },
+                ],
+            },
+            cta: {
+                label: "שיחה מהירה בוואטסאפ",
+                value: "https://wa.me/972501234567",
+            },
+            contact: {
+                phone: "+972-50-123-4567",
+                email: "daniel@example.com",
+                website: "https://example.com",
+            },
+            socials: [
+                {
+                    platform: "linkedin",
+                    url: "https://www.linkedin.com/in/example",
+                },
+                {
+                    platform: "instagram",
+                    url: "https://www.instagram.com/example",
+                },
+            ],
+        },
+    },
+
+    {
+        id: "rubyEsh",
+        label: "Ruby Esh",
+        name: "רובי-אש",
+        skinKey: "rubyEsh",
+        previewImage: PREVIEW_PLACEHOLDER_PNG, // temporary cosmetic fallback — replace with dedicated preview
+        supports: {
+            backgroundImage: true,
+            avatar: true,
+            header: true,
+            about: true,
+            services: true,
+            cta: true,
+            socials: true,
+            contact: true,
+        },
+        designDefaults: {
+            backgroundMode: "photo",
+            alignment: "left",
+            socialStyle: "pills",
+            fonts: { heading: "Heebo", body: "Assistant" },
+            overlay: { enabled: true, color: "#000000", opacity: 0.35 },
+        },
+        seededFields: [
+            "name",
+            "headline",
+            "company",
+            "about",
+            "faq",
+            "cta.label",
+            "cta.value",
+            "contact.phone",
+            "contact.email",
+            "contact.website",
+            "socials",
+        ],
+        sampleData: {
+            name: "דניאל כהן",
+            headline: "יועץ עסקי • אסטרטגיה וצמיחה",
+            company: "כהן קונסלטינג",
+            about: "עוזר לעסקים לבנות תהליך מכירה ברור, לשפר רווחיות ולהוציא רעיונות לפועל — בפשטות ובדיוק.",
+            faq: {
+                title: "שאלות ותשובות נפוצות",
+                lead: "כמה תשובות קצרות שיעזרו להבין איך מתחילים ומה קורה בתהליך.",
+                items: [
+                    {
+                        q: "איך מתחילים?",
+                        a: "מתחילים בשיחה קצרה כדי להבין את הצורך, ואז קובעים פגישה ראשונה ומגדירים מטרות ברורות.",
+                    },
+                    {
+                        q: "למי זה מתאים?",
+                        a: "למי שרוצה סדר ובהירות בתהליך, לשפר תוצאות ולקבל החלטות בצורה מדויקת ומבוססת.",
+                    },
+                    {
+                        q: "כמה זמן לוקח לראות תוצאות?",
+                        a: "זה משתנה לפי מצב נקודת הפתיחה, אבל בדרך כלל כבר אחרי הצעדים הראשונים רואים שיפור במדדים ובתחושת שליטה.",
+                    },
+                ],
+            },
+            cta: {
+                label: "שיחה מהירה בוואטסאפ",
+                value: "https://wa.me/972501234567",
+            },
+            contact: {
+                phone: "+972-50-123-4567",
+                email: "daniel@example.com",
+                website: "https://example.com",
+            },
+            socials: [
+                {
+                    platform: "linkedin",
+                    url: "https://www.linkedin.com/in/example",
+                },
+                {
+                    platform: "instagram",
+                    url: "https://www.instagram.com/example",
+                },
+            ],
+        },
+    },
+
+    {
+        id: "shachorGraphit",
+        label: "Shachor Graphit",
+        name: "שחור-גרפיט",
+        skinKey: "shachorGraphit",
+        previewImage: PREVIEW_PLACEHOLDER_PNG, // temporary cosmetic fallback — replace with dedicated preview
+        supports: {
+            backgroundImage: true,
+            avatar: true,
+            header: true,
+            about: true,
+            services: true,
+            cta: true,
+            socials: true,
+            contact: true,
+        },
+        designDefaults: {
+            backgroundMode: "photo",
+            alignment: "left",
+            socialStyle: "pills",
+            fonts: { heading: "Heebo", body: "Assistant" },
+            overlay: { enabled: true, color: "#000000", opacity: 0.35 },
+        },
+        seededFields: [
+            "name",
+            "headline",
+            "company",
+            "about",
+            "faq",
+            "cta.label",
+            "cta.value",
+            "contact.phone",
+            "contact.email",
+            "contact.website",
+            "socials",
+        ],
+        sampleData: {
+            name: "דניאל כהן",
+            headline: "יועץ עסקי • אסטרטגיה וצמיחה",
+            company: "כהן קונסלטינג",
+            about: "עוזר לעסקים לבנות תהליך מכירה ברור, לשפר רווחיות ולהוציא רעיונות לפועל — בפשטות ובדיוק.",
+            faq: {
+                title: "שאלות ותשובות נפוצות",
+                lead: "כמה תשובות קצרות שיעזרו להבין איך מתחילים ומה קורה בתהליך.",
+                items: [
+                    {
+                        q: "איך מתחילים?",
+                        a: "מתחילים בשיחה קצרה כדי להבין את הצורך, ואז קובעים פגישה ראשונה ומגדירים מטרות ברורות.",
+                    },
+                    {
+                        q: "למי זה מתאים?",
+                        a: "למי שרוצה סדר ובהירות בתהליך, לשפר תוצאות ולקבל החלטות בצורה מדויקת ומבוססת.",
+                    },
+                    {
+                        q: "כמה זמן לוקח לראות תוצאות?",
+                        a: "זה משתנה לפי מצב נקודת הפתיחה, אבל בדרך כלל כבר אחרי הצעדים הראשונים רואים שיפור במדדים ובתחושת שליטה.",
+                    },
+                ],
+            },
+            cta: {
+                label: "שיחה מהירה בוואטסאפ",
+                value: "https://wa.me/972501234567",
+            },
+            contact: {
+                phone: "+972-50-123-4567",
+                email: "daniel@example.com",
+                website: "https://example.com",
+            },
+            socials: [
+                {
+                    platform: "linkedin",
+                    url: "https://www.linkedin.com/in/example",
+                },
+                {
+                    platform: "instagram",
+                    url: "https://www.instagram.com/example",
+                },
+            ],
+        },
+    },
+
+    {
+        id: "pardesChai",
+        label: "Pardes Chai",
+        name: "פרדס-חי",
+        skinKey: "pardesChai",
+        previewImage: PREVIEW_PLACEHOLDER_PNG, // temporary cosmetic fallback — replace with dedicated preview
+        supports: {
+            backgroundImage: true,
+            avatar: true,
+            header: true,
+            about: true,
+            services: true,
+            cta: true,
+            socials: true,
+            contact: true,
+        },
+        designDefaults: {
+            backgroundMode: "photo",
+            alignment: "left",
+            socialStyle: "pills",
+            fonts: { heading: "Heebo", body: "Assistant" },
+            overlay: { enabled: true, color: "#000000", opacity: 0.35 },
+        },
+        seededFields: [
+            "name",
+            "headline",
+            "company",
+            "about",
+            "faq",
+            "cta.label",
+            "cta.value",
+            "contact.phone",
+            "contact.email",
+            "contact.website",
+            "socials",
+        ],
+        sampleData: {
+            name: "דניאל כהן",
+            headline: "יועץ עסקי • אסטרטגיה וצמיחה",
+            company: "כהן קונסלטינג",
+            about: "עוזר לעסקים לבנות תהליך מכירה ברור, לשפר רווחיות ולהוציא רעיונות לפועל — בפשטות ובדיוק.",
+            faq: {
+                title: "שאלות ותשובות נפוצות",
+                lead: "כמה תשובות קצרות שיעזרו להבין איך מתחילים ומה קורה בתהליך.",
+                items: [
+                    {
+                        q: "איך מתחילים?",
+                        a: "מתחילים בשיחה קצרה כדי להבין את הצורך, ואז קובעים פגישה ראשונה ומגדירים מטרות ברורות.",
+                    },
+                    {
+                        q: "למי זה מתאים?",
+                        a: "למי שרוצה סדר ובהירות בתהליך, לשפר תוצאות ולקבל החלטות בצורה מדויקת ומבוססת.",
+                    },
+                    {
+                        q: "כמה זמן לוקח לראות תוצאות?",
+                        a: "זה משתנה לפי מצב נקודת הפתיחה, אבל בדרך כלל כבר אחרי הצעדים הראשונים רואים שיפור במדדים ובתחושת שליטה.",
+                    },
+                ],
+            },
+            cta: {
+                label: "שיחה מהירה בוואטסאפ",
+                value: "https://wa.me/972501234567",
+            },
+            contact: {
+                phone: "+972-50-123-4567",
+                email: "daniel@example.com",
+                website: "https://example.com",
+            },
+            socials: [
+                {
+                    platform: "linkedin",
+                    url: "https://www.linkedin.com/in/example",
+                },
+                {
+                    platform: "instagram",
+                    url: "https://www.instagram.com/example",
+                },
+            ],
+        },
+    },
+
+    {
+        id: "bronzeSachlav",
+        label: "Bronze Sachlav",
+        name: "ברונזה-סחלב",
+        skinKey: "bronzeSachlav",
+        previewImage: PREVIEW_PLACEHOLDER_PNG, // temporary cosmetic fallback — replace with dedicated preview
+        supports: {
+            backgroundImage: true,
+            avatar: true,
+            header: true,
+            about: true,
+            services: true,
+            cta: true,
+            socials: true,
+            contact: true,
+        },
+        designDefaults: {
+            backgroundMode: "photo",
+            alignment: "left",
+            socialStyle: "pills",
+            fonts: { heading: "Heebo", body: "Assistant" },
+            overlay: { enabled: true, color: "#000000", opacity: 0.35 },
+        },
+        seededFields: [
+            "name",
+            "headline",
+            "company",
+            "about",
+            "faq",
+            "cta.label",
+            "cta.value",
+            "contact.phone",
+            "contact.email",
+            "contact.website",
+            "socials",
+        ],
+        sampleData: {
+            name: "דניאל כהן",
+            headline: "יועץ עסקי • אסטרטגיה וצמיחה",
+            company: "כהן קונסלטינג",
+            about: "עוזר לעסקים לבנות תהליך מכירה ברור, לשפר רווחיות ולהוציא רעיונות לפועל — בפשטות ובדיוק.",
+            faq: {
+                title: "שאלות ותשובות נפוצות",
+                lead: "כמה תשובות קצרות שיעזרו להבין איך מתחילים ומה קורה בתהליך.",
+                items: [
+                    {
+                        q: "איך מתחילים?",
+                        a: "מתחילים בשיחה קצרה כדי להבין את הצורך, ואז קובעים פגישה ראשונה ומגדירים מטרות ברורות.",
+                    },
+                    {
+                        q: "למי זה מתאים?",
+                        a: "למי שרוצה סדר ובהירות בתהליך, לשפר תוצאות ולקבל החלטות בצורה מדויקת ומבוססת.",
+                    },
+                    {
+                        q: "כמה זמן לוקח לראות תוצאות?",
+                        a: "זה משתנה לפי מצב נקודת הפתיחה, אבל בדרך כלל כבר אחרי הצעדים הראשונים רואים שיפור במדדים ובתחושת שליטה.",
+                    },
+                ],
+            },
+            cta: {
+                label: "שיחה מהירה בוואטסאפ",
+                value: "https://wa.me/972501234567",
+            },
+            contact: {
+                phone: "+972-50-123-4567",
+                email: "daniel@example.com",
+                website: "https://example.com",
+            },
+            socials: [
+                {
+                    platform: "linkedin",
+                    url: "https://www.linkedin.com/in/example",
+                },
+                {
+                    platform: "instagram",
+                    url: "https://www.instagram.com/example",
+                },
+            ],
+        },
+    },
+
+    {
+        id: "tehomTurkiz",
+        label: "Tehom Turkiz",
+        name: "תהום-טורקיז",
+        skinKey: "tehomTurkiz",
+        previewImage: PREVIEW_PLACEHOLDER_PNG, // temporary cosmetic fallback — replace with dedicated preview
+        supports: {
+            backgroundImage: true,
+            avatar: true,
+            header: true,
+            about: true,
+            services: true,
+            cta: true,
+            socials: true,
+            contact: true,
+        },
+        designDefaults: {
+            backgroundMode: "photo",
+            alignment: "left",
+            socialStyle: "pills",
+            fonts: { heading: "Heebo", body: "Assistant" },
+            overlay: { enabled: true, color: "#000000", opacity: 0.35 },
+        },
+        seededFields: [
+            "name",
+            "headline",
+            "company",
+            "about",
+            "faq",
+            "cta.label",
+            "cta.value",
+            "contact.phone",
+            "contact.email",
+            "contact.website",
+            "socials",
+        ],
+        sampleData: {
+            name: "דניאל כהן",
+            headline: "יועץ עסקי • אסטרטגיה וצמיחה",
+            company: "כהן קונסלטינג",
+            about: "עוזר לעסקים לבנות תהליך מכירה ברור, לשפר רווחיות ולהוציא רעיונות לפועל — בפשטות ובדיוק.",
+            faq: {
+                title: "שאלות ותשובות נפוצות",
+                lead: "כמה תשובות קצרות שיעזרו להבין איך מתחילים ומה קורה בתהליך.",
+                items: [
+                    {
+                        q: "איך מתחילים?",
+                        a: "מתחילים בשיחה קצרה כדי להבין את הצורך, ואז קובעים פגישה ראשונה ומגדירים מטרות ברורות.",
+                    },
+                    {
+                        q: "למי זה מתאים?",
+                        a: "למי שרוצה סדר ובהירות בתהליך, לשפר תוצאות ולקבל החלטות בצורה מדויקת ומבוססת.",
+                    },
+                    {
+                        q: "כמה זמן לוקח לראות תוצאות?",
+                        a: "זה משתנה לפי מצב נקודת הפתיחה, אבל בדרך כלל כבר אחרי הצעדים הראשונים רואים שיפור במדדים ובתחושת שליטה.",
+                    },
+                ],
+            },
+            cta: { label: "לפרטים נוספים", value: "https://example.com" },
+            contact: {
+                phone: "+972501234567",
+                email: "daniel@example.com",
+                website: "https://example.com",
+            },
+            socials: [
+                { platform: "instagram", url: "https://instagram.com/example" },
+                {
+                    platform: "linkedin",
+                    url: "https://linkedin.com/in/example",
+                },
+                { platform: "facebook", url: "https://facebook.com/example" },
+            ],
+        },
+    },
+
+    {
+        id: "inbarAdama",
+        label: "Inbar Adama",
+        name: "ענבר-אדמה",
+        skinKey: "inbarAdama",
+        previewImage: PREVIEW_PLACEHOLDER_PNG, // temporary cosmetic fallback — replace with dedicated preview
+        supports: {
+            backgroundImage: true,
+            avatar: true,
+            header: true,
+            about: true,
+            services: true,
+            cta: true,
+            socials: true,
+            contact: true,
+        },
+        designDefaults: {
+            backgroundMode: "photo",
+            alignment: "left",
+            socialStyle: "pills",
+            fonts: { heading: "Heebo", body: "Assistant" },
+            overlay: { enabled: true, color: "#000000", opacity: 0.35 },
+        },
+        seededFields: [
+            "name",
+            "headline",
+            "company",
+            "about",
+            "faq",
+            "cta.label",
+            "cta.value",
+            "contact.phone",
+            "contact.email",
+            "contact.website",
+            "socials",
+        ],
+        sampleData: {
+            name: "דניאל כהן",
+            headline: "יועץ עסקי • אסטרטגיה וצמיחה",
+            company: "כהן קונסלטינג",
+            about: "עוזר לעסקים לבנות תהליך מכירה ברור, לשפר רווחיות ולהוציא רעיונות לפועל — בפשטות ובדיוק.",
+            faq: {
+                title: "שאלות ותשובות נפוצות",
+                lead: "כמה תשובות קצרות שיעזרו להבין איך מתחילים ומה קורה בתהליך.",
+                items: [
+                    {
+                        q: "איך מתחילים?",
+                        a: "מתחילים בשיחה קצרה כדי להבין את הצורך, ואז קובעים פגישה ראשונה ומגדירים מטרות ברורות.",
+                    },
+                    {
+                        q: "למי זה מתאים?",
+                        a: "למי שרוצה סדר ובהירות בתהליך, לשפר תוצאות ולקבל החלטות בצורה מדויקת ומבוססת.",
+                    },
+                    {
+                        q: "כמה זמן לוקח לראות תוצאות?",
+                        a: "זה משתנה לפי מצב נקודת הפתיחה, אבל בדרך כלל כבר אחרי הצעדים הראשונים רואים שיפור במדדים ובתחושת שליטה.",
+                    },
+                ],
+            },
+            cta: { label: "לפרטים נוספים", value: "https://example.com" },
+            contact: {
+                phone: "+972501234567",
+                email: "daniel@example.com",
+                website: "https://example.com",
+            },
+            socials: [
+                { platform: "instagram", url: "https://instagram.com/example" },
+                {
+                    platform: "linkedin",
+                    url: "https://linkedin.com/in/example",
+                },
+                { platform: "facebook", url: "https://facebook.com/example" },
+            ],
+        },
+    },
+
+    {
+        id: "lavaLaguna",
+        label: "Lava Laguna",
+        name: "לבה-לגונה",
+        skinKey: "lavaLaguna",
+        previewImage: PREVIEW_PLACEHOLDER_PNG, // temporary cosmetic fallback — replace with dedicated preview
+        supports: {
+            backgroundImage: true,
+            avatar: true,
+            header: true,
+            about: true,
+            services: true,
+            cta: true,
+            socials: true,
+            contact: true,
+        },
+        designDefaults: {
+            backgroundMode: "photo",
+            alignment: "left",
+            socialStyle: "pills",
+            fonts: { heading: "Heebo", body: "Assistant" },
+            overlay: { enabled: true, color: "#000000", opacity: 0.35 },
+        },
+        seededFields: [
+            "name",
+            "headline",
+            "company",
+            "about",
+            "faq",
+            "cta.label",
+            "cta.value",
+            "contact.phone",
+            "contact.email",
+            "contact.website",
+            "socials",
+        ],
+        sampleData: {
+            name: "דניאל כהן",
+            headline: "יועץ עסקי • אסטרטגיה וצמיחה",
+            company: "כהן קונסלטינג",
+            about: "עוזר לעסקים לבנות תהליך מכירה ברור, לשפר רווחיות ולהוציא רעיונות לפועל — בפשטות ובדיוק.",
+            faq: {
+                title: "שאלות ותשובות נפוצות",
+                lead: "כמה תשובות קצרות שיעזרו להבין איך מתחילים ומה קורה בתהליך.",
+                items: [
+                    {
+                        q: "איך מתחילים?",
+                        a: "מתחילים בשיחה קצרה כדי להבין את הצורך, ואז קובעים פגישה ראשונה ומגדירים מטרות ברורות.",
+                    },
+                    {
+                        q: "למי זה מתאים?",
+                        a: "למי שרוצה סדר ובהירות בתהליך, לשפר תוצאות ולקבל החלטות בצורה מדויקת ומבוססת.",
+                    },
+                    {
+                        q: "כמה זמן לוקח לראות תוצאות?",
+                        a: "זה משתנה לפי מצב נקודת הפתיחה, אבל בדרך כלל כבר אחרי הצעדים הראשונים רואים שיפור במדדים ובתחושת שליטה.",
+                    },
+                ],
+            },
+            cta: { label: "לפרטים נוספים", value: "https://example.com" },
+            contact: {
+                phone: "+972501234567",
+                email: "daniel@example.com",
+                website: "https://example.com",
+            },
+            socials: [
+                { platform: "instagram", url: "https://instagram.com/example" },
+                {
+                    platform: "linkedin",
+                    url: "https://linkedin.com/in/example",
+                },
+                { platform: "facebook", url: "https://facebook.com/example" },
+            ],
+        },
+    },
+
+    {
+        id: "zahavTehom",
+        label: "Zahav Tehom",
+        name: "זהב-תהום",
+        skinKey: "zahavTehom",
+        previewImage: PREVIEW_PLACEHOLDER_PNG, // temporary cosmetic fallback — replace with dedicated preview
+        supports: {
+            backgroundImage: true,
+            avatar: true,
+            header: true,
+            about: true,
+            services: true,
+            cta: true,
+            socials: true,
+            contact: true,
+        },
+        designDefaults: {
+            backgroundMode: "photo",
+            alignment: "left",
+            socialStyle: "pills",
+            fonts: { heading: "Heebo", body: "Assistant" },
+            overlay: { enabled: true, color: "#000000", opacity: 0.35 },
+        },
+        seededFields: [
+            "name",
+            "headline",
+            "company",
+            "about",
+            "faq",
+            "cta.label",
+            "cta.value",
+            "contact.phone",
+            "contact.email",
+            "contact.website",
+            "socials",
+        ],
+        sampleData: {
+            name: "דניאל כהן",
+            headline: "יועץ עסקי • אסטרטגיה וצמיחה",
+            company: "כהן קונסלטינג",
+            about: "עוזר לעסקים לבנות תהליך מכירה ברור, לשפר רווחיות ולהוציא רעיונות לפועל — בפשטות ובדיוק.",
+            faq: {
+                title: "שאלות ותשובות נפוצות",
+                lead: "כמה תשובות קצרות שיעזרו להבין איך מתחילים ומה קורה בתהליך.",
+                items: [
+                    {
+                        q: "איך מתחילים?",
+                        a: "מתחילים בשיחה קצרה כדי להבין את הצורך, ואז קובעים פגישה ראשונה ומגדירים מטרות ברורות.",
+                    },
+                    {
+                        q: "למי זה מתאים?",
+                        a: "למי שרוצה סדר ובהירות בתהליך, לשפר תוצאות ולקבל החלטות בצורה מדויקת ומבוססת.",
+                    },
+                    {
+                        q: "כמה זמן לוקח לראות תוצאות?",
+                        a: "זה משתנה לפי מצב נקודת הפתיחה, אבל בדרך כלל כבר אחרי הצעדים הראשונים רואים שיפור במדדים ובתחושת שליטה.",
+                    },
+                ],
+            },
+            cta: { label: "לפרטים נוספים", value: "https://example.com" },
+            contact: {
+                phone: "+972501234567",
+                email: "daniel@example.com",
+                website: "https://example.com",
+            },
+            socials: [
+                { platform: "instagram", url: "https://instagram.com/example" },
+                {
+                    platform: "linkedin",
+                    url: "https://linkedin.com/in/example",
+                },
+                { platform: "facebook", url: "https://facebook.com/example" },
+            ],
+        },
+    },
+
     // Variant A: token-only skin; shared CardLayout skeleton.
     {
         id: "beauty",

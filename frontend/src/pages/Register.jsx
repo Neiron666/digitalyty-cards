@@ -132,7 +132,12 @@ function Register() {
 
                 {error && <p className={styles.error}>{error}</p>}
 
-                <Button type="submit" fullWidth loading={loading}>
+                <Button
+                    type="submit"
+                    fullWidth
+                    loading={loading}
+                    className={styles.authSubmit}
+                >
                     צור חשבון
                 </Button>
             </form>
