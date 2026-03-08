@@ -25,6 +25,10 @@ import IrisChatzotSkin from "./skins/irisChatzot/IrisChatzotSkin.module.css";
 import GacheletArgamanSkin from "./skins/gacheletArgaman/GacheletArgamanSkin.module.css";
 import BronzeCholSkin from "./skins/bronzeChol/BronzeCholSkin.module.css";
 import HadarGacheletSkin from "./skins/hadarGachelet/HadarGacheletSkin.module.css";
+import LagunaShkiyaSkin from "./skins/lagunaShkiya/LagunaShkiyaSkin.module.css";
+import MentaGacheletSkin from "./skins/mentaGachelet/MentaGacheletSkin.module.css";
+import MentaShacharSkin from "./skins/mentaShachar/MentaShacharSkin.module.css";
+import LagunaAfarsekSkin from "./skins/lagunaAfarsek/LagunaAfarsekSkin.module.css";
 import SelfThemeSkin from "./skins/self/SelfThemeSkin.module.css";
 
 function normalizeHexColor(value) {
@@ -121,6 +125,10 @@ export default function TemplateRenderer({ card, onUpgrade, mode }) {
         gacheletArgaman: GacheletArgamanSkin,
         bronzeChol: BronzeCholSkin,
         hadarGachelet: HadarGacheletSkin,
+        lagunaShkiya: LagunaShkiyaSkin,
+        mentaGachelet: MentaGacheletSkin,
+        mentaShachar: MentaShacharSkin,
+        lagunaAfarsek: LagunaAfarsekSkin,
         self: SelfThemeSkin,
     };
 

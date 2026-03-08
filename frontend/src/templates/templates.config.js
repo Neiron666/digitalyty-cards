@@ -1653,6 +1653,318 @@ export const TEMPLATES = [
             ],
         },
     },
+
+    // ── Laguna Shkiya (dark / teal-primary + warm-orange-secondary) ──
+    {
+        id: "lagunaShkiya",
+        label: "Laguna Shkiya",
+        name: "לגונה-שקיעה",
+        skinKey: "lagunaShkiya",
+        group: "dark",
+        previewImage: "/templates/previews/preview-covers/laguna-shkiya.webp",
+        supports: {
+            backgroundImage: true,
+            avatar: true,
+            header: true,
+            about: true,
+            services: true,
+            cta: true,
+            socials: true,
+            contact: true,
+        },
+        designDefaults: {
+            backgroundMode: "photo",
+            alignment: "left",
+            socialStyle: "pills",
+            fonts: { heading: "Heebo", body: "Assistant" },
+            overlay: { enabled: true, color: "#000000", opacity: 0.35 },
+        },
+        seededFields: [
+            "name",
+            "headline",
+            "company",
+            "about",
+            "faq",
+            "cta.label",
+            "cta.value",
+            "contact.phone",
+            "contact.email",
+            "contact.website",
+            "socials",
+        ],
+        sampleData: {
+            name: "דניאל כהן",
+            headline: "יועץ עסקי • אסטרטגיה וצמיחה",
+            company: "כהן קונסלטינג",
+            about: "עוזר לעסקים לבנות תהליך מכירה ברור, לשפר רווחיות ולהוציא רעיונות לפועל — בפשטות ובדיוק.",
+            faq: {
+                title: "שאלות ותשובות נפוצות",
+                lead: "כמה תשובות קצרות שיעזרו להבין איך מתחילים ומה קורה בתהליך.",
+                items: [
+                    {
+                        q: "איך מתחילים?",
+                        a: "מתחילים בשיחה קצרה כדי להבין את הצורך, ואז קובעים פגישה ראשונה ומגדירים מטרות ברורות.",
+                    },
+                    {
+                        q: "למי זה מתאים?",
+                        a: "למי שרוצה סדר ובהירות בתהליך, לשפר תוצאות ולקבל החלטות בצורה מדויקת ומבוססת.",
+                    },
+                    {
+                        q: "כמה זמן לוקח לראות תוצאות?",
+                        a: "זה משתנה לפי מצב נקודת הפתיחה, אבל בדרך כלל כבר אחרי הצעדים הראשונים רואים שיפור במדדים ובתחוסת שליטה.",
+                    },
+                ],
+            },
+            cta: { label: "לפרטים נוספים", value: "https://example.com" },
+            contact: {
+                phone: "+972501234567",
+                email: "daniel@example.com",
+                website: "https://example.com",
+            },
+            socials: [
+                { platform: "instagram", url: "https://instagram.com/example" },
+                {
+                    platform: "linkedin",
+                    url: "https://linkedin.com/in/example",
+                },
+                { platform: "facebook", url: "https://facebook.com/example" },
+            ],
+        },
+    },
+
+    // ── Menta Gachelet (dark / fresh mint-primary + warm-orange-secondary) ──
+    {
+        id: "mentaGachelet",
+        label: "Menta Gachelet",
+        name: "מנטה-גחל",
+        skinKey: "mentaGachelet",
+        group: "dark",
+        previewImage: "/templates/previews/preview-covers/menta-gachelet.webp",
+        supports: {
+            backgroundImage: true,
+            avatar: true,
+            header: true,
+            about: true,
+            services: true,
+            cta: true,
+            socials: true,
+            contact: true,
+        },
+        designDefaults: {
+            backgroundMode: "photo",
+            alignment: "left",
+            socialStyle: "pills",
+            fonts: { heading: "Heebo", body: "Assistant" },
+            overlay: { enabled: true, color: "#000000", opacity: 0.35 },
+        },
+        seededFields: [
+            "name",
+            "headline",
+            "company",
+            "about",
+            "faq",
+            "cta.label",
+            "cta.value",
+            "contact.phone",
+            "contact.email",
+            "contact.website",
+            "socials",
+        ],
+        sampleData: {
+            name: "דניאל כהן",
+            headline: "יועץ עסקי • אסטרטגיה וצמיחה",
+            company: "כהן קונסלטינג",
+            about: "עוזר לעסקים לבנות תהליך מכירה ברור, לשפר רווחיות ולהוציא רעיונות לפועל — בפשטות ובדיוק.",
+            faq: {
+                title: "שאלות ותשובות נפוצות",
+                lead: "כמה תשובות קצרות שיעזרו להבין איך מתחילים ומה קורה בתהליך.",
+                items: [
+                    {
+                        q: "איך מתחילים?",
+                        a: "מתחילים בשיחה קצרה כדי להבין את הצורך, ואז קובעים פגישה ראשונה ומגדירים מטרות ברורות.",
+                    },
+                    {
+                        q: "למי זה מתאים?",
+                        a: "למי שרוצה סדר ובהירות בתהליך, לשפר תוצאות ולקבל החלטות בצורה מדויקת ומבוססת.",
+                    },
+                    {
+                        q: "כמה זמן לוקח לראות תוצאות?",
+                        a: "זה משתנה לפי מצב נקודת הפתיחה, אבל בדרך כלל כבר אחרי הצעדים הראשונים רואים שיפור במדדים ובתחוסת שליטה.",
+                    },
+                ],
+            },
+            cta: { label: "לפרטים נוספים", value: "https://example.com" },
+            contact: {
+                phone: "+972501234567",
+                email: "daniel@example.com",
+                website: "https://example.com",
+            },
+            socials: [
+                { platform: "instagram", url: "https://instagram.com/example" },
+                {
+                    platform: "linkedin",
+                    url: "https://linkedin.com/in/example",
+                },
+                { platform: "facebook", url: "https://facebook.com/example" },
+            ],
+        },
+    },
+
+    // ── Menta Shachar (light / fresh mint-primary + warm-orange-secondary) ──
+    {
+        id: "mentaShachar",
+        label: "Menta Shachar",
+        name: "מנטה-שחר",
+        skinKey: "mentaShachar",
+        group: "light",
+        previewImage: "/templates/previews/preview-covers/menta-shachar.webp",
+        supports: {
+            backgroundImage: true,
+            avatar: true,
+            header: true,
+            about: true,
+            services: true,
+            cta: true,
+            socials: true,
+            contact: true,
+        },
+        designDefaults: {
+            backgroundMode: "photo",
+            alignment: "left",
+            socialStyle: "pills",
+            fonts: { heading: "Heebo", body: "Assistant" },
+            overlay: { enabled: true, color: "#000000", opacity: 0.35 },
+        },
+        seededFields: [
+            "name",
+            "headline",
+            "company",
+            "about",
+            "faq",
+            "cta.label",
+            "cta.value",
+            "contact.phone",
+            "contact.email",
+            "contact.website",
+            "socials",
+        ],
+        sampleData: {
+            name: "דניאל כהן",
+            headline: "יועץ עסקי • אסטרטגיה וצמיחה",
+            company: "כהן קונסלטינג",
+            about: "עוזר לעסקים לבנות תהליך מכירה ברור, לשפר רווחיות ולהוציא רעיונות לפועל — בפשטות ובדיוק.",
+            faq: {
+                title: "שאלות ותשובות נפוצות",
+                lead: "כמה תשובות קצרות שיעזרו להבין איך מתחילים ומה קורה בתהליך.",
+                items: [
+                    {
+                        q: "איך מתחילים?",
+                        a: "מתחילים בשיחה קצרה כדי להבין את הצורך, ואז קובעים פגישה ראשונה ומגדירים מטרות ברורות.",
+                    },
+                    {
+                        q: "למי זה מתאים?",
+                        a: "למי שרוצה סדר ובהירות בתהליך, לשפר תוצאות ולקבל החלטות בצורה מדויקת ומבוססת.",
+                    },
+                    {
+                        q: "כמה זמן לוקח לראות תוצאות?",
+                        a: "זה משתנה לפי מצב נקודת הפתיחה, אבל בדרך כלל כבר אחרי הצעדים הראשונים רואים שיפור במדדים ובתחוסת שליטה.",
+                    },
+                ],
+            },
+            cta: { label: "לפרטים נוספים", value: "https://example.com" },
+            contact: {
+                phone: "+972501234567",
+                email: "daniel@example.com",
+                website: "https://example.com",
+            },
+            socials: [
+                { platform: "instagram", url: "https://instagram.com/example" },
+                {
+                    platform: "linkedin",
+                    url: "https://linkedin.com/in/example",
+                },
+                { platform: "facebook", url: "https://facebook.com/example" },
+            ],
+        },
+    },
+
+    // ── Laguna Afarsek (light / teal-primary + peach-secondary) ──
+    {
+        id: "lagunaAfarsek",
+        label: "Laguna Afarsek",
+        name: "לגונה-אפרסק",
+        skinKey: "lagunaAfarsek",
+        group: "light",
+        previewImage: "/templates/previews/preview-covers/laguna-afarsek.webp",
+        supports: {
+            backgroundImage: true,
+            avatar: true,
+            header: true,
+            about: true,
+            services: true,
+            cta: true,
+            socials: true,
+            contact: true,
+        },
+        designDefaults: {
+            backgroundMode: "photo",
+            alignment: "left",
+            socialStyle: "pills",
+            fonts: { heading: "Heebo", body: "Assistant" },
+            overlay: { enabled: true, color: "#000000", opacity: 0.35 },
+        },
+        seededFields: [
+            "name",
+            "headline",
+            "company",
+            "about",
+            "faq",
+            "cta.label",
+            "cta.value",
+            "contact.phone",
+            "contact.email",
+            "contact.website",
+            "socials",
+        ],
+        sampleData: {
+            name: "דניאל כהן",
+            headline: "יועץ עסקי • אסטרטגיה וצמיחה",
+            company: "כהן קונסלטינג",
+            about: "עוזר לעסקים לבנות תהליך מכירה ברור, לשפר רווחיות ולהוציא רעיונות לפועל — בפשטות ובדיוק.",
+            faq: {
+                title: "שאלות ותשובות נפוצות",
+                lead: "כמה תשובות קצרות שיעזרו להבין איך מתחילים ומה קורה בתהליך.",
+                items: [
+                    {
+                        q: "איך מתחילים?",
+                        a: "מתחילים בשיחה קצרה כדי להבין את הצורך, ואז קובעים פגישה ראשונה ומגדירים מטרות ברורות.",
+                    },
+                    {
+                        q: "למי זה מתאים?",
+                        a: "למי שרוצה סדר ובהירות בתהליך, לשפר תוצאות ולקבל החלטות בצורה מדויקת ומבוססת.",
+                    },
+                    {
+                        q: "כמה זמן לוקח לראות תוצאות?",
+                        a: "זה משתנה לפי מצב נקודת הפתיחה, אבל בדרך כלל כבר אחרי הצעדים הראשונים רואים שיפור במדדים ובתחוסת שליטה.",
+                    },
+                ],
+            },
+            cta: { label: "לפרטים נוספים", value: "https://example.com" },
+            contact: {
+                phone: "+972501234567",
+                email: "daniel@example.com",
+                website: "https://example.com",
+            },
+            socials: [
+                { platform: "instagram", url: "https://instagram.com/example" },
+                {
+                    platform: "linkedin",
+                    url: "https://linkedin.com/in/example",
+                },
+                { platform: "facebook", url: "https://facebook.com/example" },
+            ],
+        },
+    },
 ];
 
 // Keep existing exports, but ensure these work with TEMPLATES above.
