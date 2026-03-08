@@ -186,10 +186,9 @@ export default function AnalyticsPanel({ card }) {
     const [expandedPlatforms, setExpandedPlatforms] = useState({});
 
     const rangeDays = useMemo(() => {
-        if (analyticsLevel === "basic") return 7;
         if (analyticsLevel === "premium") return 30;
         if (analyticsLevel === "demo") return 30;
-        return 7;
+        return 30;
     }, [analyticsLevel]);
 
     async function load() {
@@ -384,7 +383,12 @@ export default function AnalyticsPanel({ card }) {
 
                 <div className={styles.headerRow}>
                     <div className={styles.headerTitle}>
-                        רמת אנליטיקה: {analyticsLevel}
+                        רמת אנליטיקה:{" "}
+                        {analyticsLevel === "premium"
+                            ? "פרימיום"
+                            : analyticsLevel === "demo"
+                              ? "דמו"
+                              : analyticsLevel}
                     </div>
                     <Button
                         variant="secondary"
@@ -396,46 +400,6 @@ export default function AnalyticsPanel({ card }) {
                 </div>
 
                 {error && <div className={styles.errorText}>{error}</div>}
-
-                {/* Basic: only views last 7 days */}
-                {analyticsLevel === "basic" && (
-                    <>
-                        <div className={styles.kpis}>
-                            <div className={styles.kpiCard}>
-                                <div className={styles.kpiLabel}>
-                                    Views (7 ימים)
-                                </div>
-                                <div className={styles.kpiValue}>
-                                    {formatInt(views7)}
-                                </div>
-                                <div className={styles.small}>
-                                    נתונים אמיתיים
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className={styles.chart}>
-                            <div className={styles.chartHeader}>
-                                Views לפי יום (7 ימים)
-                            </div>
-                            <svg
-                                className={styles.svg}
-                                viewBox={`0 0 ${chartWidth} ${chartHeight}`}
-                                preserveAspectRatio="none"
-                            >
-                                {viewPoints && (
-                                    <polyline
-                                        points={viewPoints}
-                                        fill="none"
-                                        stroke="currentColor"
-                                        strokeWidth="3"
-                                        opacity="0.85"
-                                    />
-                                )}
-                            </svg>
-                        </div>
-                    </>
-                )}
 
                 {/* Demo + Premium: full layout */}
                 {(analyticsLevel === "demo" ||

@@ -5946,11 +5946,6 @@ export default function Admin() {
                                                                             "opt_tier_free",
                                                                         )}
                                                                     </option>
-                                                                    <option value="basic">
-                                                                        {t(
-                                                                            "opt_tier_basic",
-                                                                        )}
-                                                                    </option>
                                                                     <option value="premium">
                                                                         {t(
                                                                             "opt_tier_premium",
@@ -6090,11 +6085,6 @@ export default function Admin() {
                                                                             <option value="free">
                                                                                 {t(
                                                                                     "opt_tier_free",
-                                                                                )}
-                                                                            </option>
-                                                                            <option value="basic">
-                                                                                {t(
-                                                                                    "opt_tier_basic",
                                                                                 )}
                                                                             </option>
                                                                             <option value="premium">

@@ -13,12 +13,17 @@ function isUntilActive(until, now = new Date()) {
     return untilMs > nowMs;
 }
 
+// Product decision: "basic" tier is frozen. Any resolved "basic" normalizes to "premium".
+function freezeBasicTier(tier) {
+    return tier === "basic" ? "premium" : tier;
+}
+
 function derivedTierFromEffectiveBilling(effectiveBilling) {
     // Defense-in-depth: only paid/adminOverride billing yields a non-free tier.
     if (effectiveBilling?.isPaid !== true) return "free";
     const plan = effectiveBilling?.plan || "free";
     if (plan === "yearly") return "premium";
-    if (plan === "monthly") return "basic";
+    if (plan === "monthly") return "premium";
     return "free";
 }
 
@@ -27,7 +32,7 @@ function derivedTierFromEffectiveBilling(effectiveBilling) {
  * card.adminTier > user.adminTier > derived from effectiveBilling.plan > default.
  *
  * Returns: { tier, source, until }
- * - tier: "free"|"basic"|"premium"
+ * - tier: "free"|"premium" ("basic" is frozen → normalized to "premium")
  * - source: "cardAdminTier"|"userAdminTier"|"billingDerived"|"default"
  * - until: Date|null (only for admin overrides)
  */
@@ -40,7 +45,7 @@ export function resolveEffectiveTier({
     const cardTier = normalizeTier(card?.adminTier);
     if (cardTier && isUntilActive(card?.adminTierUntil, now)) {
         return {
-            tier: cardTier,
+            tier: freezeBasicTier(cardTier),
             source: "cardAdminTier",
             until: card?.adminTierUntil ? new Date(card.adminTierUntil) : null,
         };
@@ -49,7 +54,7 @@ export function resolveEffectiveTier({
     const userTier = normalizeTier(user?.adminTier);
     if (userTier && isUntilActive(user?.adminTierUntil, now)) {
         return {
-            tier: userTier,
+            tier: freezeBasicTier(userTier),
             source: "userAdminTier",
             until: user?.adminTierUntil ? new Date(user.adminTierUntil) : null,
         };

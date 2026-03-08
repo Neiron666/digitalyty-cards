@@ -41,21 +41,16 @@ export function computeEntitlements(
 
     // Feature truth: derived from effective tier.
     // All free-tier users (anon, registered, trial) see demo analytics.
+    // Defense-in-depth: "basic" tier is frozen → resolves as premium analytics.
     let analyticsLevel = "none";
-    if (tier === "premium") {
+    if (tier === "premium" || tier === "basic") {
         analyticsLevel = "premium";
-    } else if (tier === "basic") {
-        analyticsLevel = "basic";
     } else if (tier === "free") {
         analyticsLevel = "demo";
     }
 
     const analyticsRetentionDays =
-        analyticsLevel === "basic"
-            ? 7
-            : analyticsLevel === "premium" || analyticsLevel === "demo"
-              ? 30
-              : 0;
+        analyticsLevel === "premium" || analyticsLevel === "demo" ? 30 : 0;
 
     const canViewAnalytics = analyticsLevel !== "none";
 
