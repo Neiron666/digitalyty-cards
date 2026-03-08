@@ -927,11 +927,6 @@ function EditCard() {
         if (isDeletingRef.current) return;
         if (!draftCard?._id) return;
 
-        const confirmed = window.confirm(
-            "האם אתה בטוח שברצונך למחוק כרטיס זה?",
-        );
-        if (!confirmed) return;
-
         try {
             setIsDeleting(true);
             const result = await deleteCard(draftCard._id);

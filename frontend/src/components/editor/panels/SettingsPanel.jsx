@@ -49,6 +49,8 @@ export default function SettingsPanel({
     const [billingBusy, setBillingBusy] = useState(false);
     const [billingMsg, setBillingMsg] = useState("");
 
+    const [delCardConfirm, setDelCardConfirm] = useState("");
+
     const [delConfirm, setDelConfirm] = useState("");
     const [delPassword, setDelPassword] = useState("");
     const [delSubmitting, setDelSubmitting] = useState(false);
@@ -259,6 +261,57 @@ export default function SettingsPanel({
         !editingDisabled &&
         entCanPublish;
 
+    const deleteCardBlock = (
+        <details
+            className={`${styles.collapsible} ${styles.collapsibleDanger}`}
+        >
+            <summary className={styles.collapsibleTrigger}>מחיקת כרטיס</summary>
+            <div className={styles.collapsibleContent}>
+                <div className={styles.dangerText}>
+                    מחיקת הכרטיס תמחק לצמיתות את הכרטיס, הקישור הציבורי, תמונות,
+                    לידים ונתוני אנליטיקה.
+                </div>
+                <div className={styles.dangerText}>
+                    הקישור הציבורי של הכרטיס יפסיק לעבוד מיד.
+                </div>
+                <div className={styles.dangerText}>לא ניתן לשחזר.</div>
+
+                <Input
+                    label='הקלד "מחיקה" לאישור'
+                    value={delCardConfirm}
+                    onChange={(e) => setDelCardConfirm(e.target.value)}
+                    placeholder="מחיקה"
+                    autoComplete="off"
+                    disabled={Boolean(isDeleting)}
+                />
+
+                <div className={styles.dangerActions}>
+                    <Button
+                        variant="ghost"
+                        onClick={onDelete}
+                        disabled={
+                            !card?._id ||
+                            Boolean(isDeleting) ||
+                            delCardConfirm.trim() !== "מחיקה"
+                        }
+                    >
+                        {isDeleting ? (
+                            <span className={styles.deleteInline}>
+                                <span
+                                    className={styles.spinner}
+                                    aria-hidden="true"
+                                />
+                                מוחק...
+                            </span>
+                        ) : (
+                            "מחק כרטיס"
+                        )}
+                    </Button>
+                </div>
+            </div>
+        </details>
+    );
+
     return (
         <Panel title="הגדרות">
             <div className={styles.grid}>
@@ -267,7 +320,10 @@ export default function SettingsPanel({
                     <div className={styles.sectionTitle}>כרטיס</div>
 
                     <div className={styles.strong}>
-                        סטטוס: {isPublicLink ? "Public" : "Not public yet"}
+                        סטטוס:{" "}
+                        {isPublicLink
+                            ? "פורסם (הקישור הציבורי פעיל)"
+                            : "עדיין לא פורסם (הקישור הציבורי עדיין לא פעיל) "}
                     </div>
 
                     {accessLine && (
@@ -445,25 +501,11 @@ export default function SettingsPanel({
                             )}
                         </div>
                     )}
-
-                    <Button
-                        variant="ghost"
-                        onClick={onDelete}
-                        disabled={!card?._id || Boolean(isDeleting)}
-                    >
-                        {isDeleting ? (
-                            <span className={styles.deleteInline}>
-                                <span
-                                    className={styles.spinner}
-                                    aria-hidden="true"
-                                />
-                                מוחק...
-                            </span>
-                        ) : (
-                            "מחיקת כרטיס"
-                        )}
-                    </Button>
                 </div>
+
+                {!isAuthenticated && (
+                    <div className={styles.section}>{deleteCardBlock}</div>
+                )}
 
                 {isAuthenticated && (
                     <>
@@ -813,6 +855,8 @@ export default function SettingsPanel({
                                     </div>
                                 </form>
                             </details>
+
+                            {deleteCardBlock}
 
                             <details
                                 className={`${styles.collapsible} ${styles.collapsibleDanger}`}

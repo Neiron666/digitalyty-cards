@@ -41,8 +41,8 @@ function AdminRouteGate() {
     if (user?.role !== "admin") return <NotFound />;
 
     return (
-        <ChunkErrorBoundary label="שגיאת טעינה ב-Admin">
-            <Suspense fallback={<RouteFallback label="טוען Admin…" />}>
+        <ChunkErrorBoundary label="שגיאה בטעינת הדף">
+            <Suspense fallback={<RouteFallback label="הדף נטען…" />}>
                 <Admin />
             </Suspense>
         </ChunkErrorBoundary>
@@ -114,9 +114,9 @@ const router = createBrowserRouter([
             {
                 path: "edit/:section?/:tab?",
                 element: (
-                    <ChunkErrorBoundary label="שגיאת טעינה בעורך">
+                    <ChunkErrorBoundary label="שגיאה בטעינת הדף">
                         <Suspense
-                            fallback={<RouteFallback label="טוען עורך…" />}
+                            fallback={<RouteFallback label="הדף נטען…" />}
                         >
                             <EditCard />
                         </Suspense>
