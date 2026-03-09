@@ -105,6 +105,16 @@
 .drawerOverlayOpen {
 }
 
+.drawerHeader {
+    display: none;
+}
+
+.drawerTitle {
+}
+
+.drawerCloseBtn {
+}
+
 .sidebarSlot {
     /* Tabs rail (right column) — visually separated */
     flex: 0 0 280px;
@@ -345,10 +355,10 @@
 
     .sidebarSlot {
         position: fixed;
-        top: 64px;
+        top: 0;
         inset-inline-start: 0;
-        height: calc(100vh - 64px);
-        height: calc(100dvh - 64px);
+        height: 100vh;
+        height: 100dvh;
         width: min(86vw, 320px);
         z-index: 70;
         transform: translateX(110%);
@@ -356,8 +366,49 @@
         background: var(--bg-surface);
         border-inline-end: 1px solid var(--border);
         padding: 14px;
+        padding-top: calc(14px + env(safe-area-inset-top, 0px));
         overflow-y: auto;
         -webkit-overflow-scrolling: touch;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .drawerHeader {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding-block: 6px 12px;
+        border-bottom: 1px solid var(--border);
+        margin-bottom: 10px;
+        flex: 0 0 auto;
+    }
+
+    .drawerTitle {
+        font-weight: 900;
+        font-size: var(--fs-body, 1rem);
+        color: var(--text-main);
+        letter-spacing: 0.2px;
+    }
+
+    .drawerCloseBtn {
+        width: 44px;
+        height: 44px;
+        border-radius: 999px;
+        border: 1px solid var(--border);
+        background: rgba(255, 255, 255, 0.04);
+        color: var(--gold);
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: var(--fs-body, 1rem);
+        line-height: 1;
+        flex: 0 0 auto;
+    }
+
+    .drawerCloseBtn:focus-visible {
+        outline: 2px solid var(--gold);
+        outline-offset: 2px;
     }
 
     .drawerOpen {

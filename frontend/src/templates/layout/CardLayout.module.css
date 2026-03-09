@@ -121,7 +121,7 @@
 
     /* Hero geometry token (SSoT)
          IMPORTANT: crop aspect must match this aspect to avoid “second crop” via object-fit: cover. */
-    --hero-aspect: 16 / 9;
+    --hero-aspect: 16 / 10;
 
     /* Avatar overlap tokens (skins may set --avatar-size and/or --avatar-overlap) */
     --_avatar-size: var(--avatar-size, 150px);
@@ -137,7 +137,7 @@
 
     /* Deterministic hero box: width-driven height.
        Do NOT use min-height here; it breaks WYSIWYG crop across containers. */
-    aspect-ratio: var(--hero-aspect, 16 / 9);
+    aspect-ratio: var(--hero-aspect, 16 / 10);
 }
 
 /* Gradient layer (skin sets --hero-gradient token) */
@@ -544,7 +544,7 @@
 @media (max-width: 520px) {
     .card {
         /* Mobile keeps the same hero aspect for predictable WYSIWYG */
-        --hero-aspect: 16 / 9;
+        --hero-aspect: 16 / 10;
 
         /* Avatar sizing for mobile */
         --_avatar-overlap: var(--avatar-overlap, calc(var(--_avatar-size) / 2));
@@ -632,7 +632,7 @@
 
         /* Neutralize desktop boost (viewport @media) inside phone preview */
         --_avatar-size: var(--avatar-size, 150px);
-        --hero-aspect: 16 / 9;
+        --hero-aspect: 16 / 10;
 
         /* Keep overlap behavior consistent with mobile layout */
         --_avatar-overlap: var(--avatar-overlap, calc(var(--_avatar-size) / 2));
@@ -745,7 +745,7 @@
     [data-preview="phone"] .card {
         border-radius: var(--radius-md, 20px);
         --_avatar-size: var(--avatar-size, 150px);
-        --hero-aspect: 16 / 9;
+        --hero-aspect: 16 / 10;
         --_avatar-overlap: var(--avatar-overlap, calc(var(--_avatar-size) / 2));
         --contact-btn-size: 52px;
         --contact-btn-size-lg: 52px;

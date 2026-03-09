@@ -1,8 +1,13 @@
 import styles from "./CardFooter.module.css";
 import { trackClick } from "../../../services/analytics.client";
+import ensureHttpUrl from "../../../utils/ensureHttpUrl";
 
 function CardFooter({ card }) {
     const { contact } = card;
+
+    const facebookHref = ensureHttpUrl(contact?.facebook);
+    const instagramHref = ensureHttpUrl(contact?.instagram);
+    const linkedinHref = ensureHttpUrl(contact?.linkedin);
 
     return (
         <footer className={styles.footer}>
@@ -17,14 +22,14 @@ function CardFooter({ card }) {
                 </a>
             </div>
 
-            {(contact?.facebook ||
-                contact?.instagram ||
-                contact?.linkedin ||
+            {(facebookHref ||
+                instagramHref ||
+                linkedinHref ||
                 contact?.email) && (
                 <div className={styles.socials}>
-                    {contact?.facebook && (
+                    {facebookHref && (
                         <a
-                            href={contact.facebook}
+                            href={facebookHref}
                             target="_blank"
                             rel="noreferrer"
                             onClick={() => trackClick(card?.slug, "facebook")}
@@ -32,9 +37,9 @@ function CardFooter({ card }) {
                             Facebook
                         </a>
                     )}
-                    {contact?.instagram && (
+                    {instagramHref && (
                         <a
-                            href={contact.instagram}
+                            href={instagramHref}
                             target="_blank"
                             rel="noreferrer"
                             onClick={() => trackClick(card?.slug, "instagram")}
@@ -42,9 +47,9 @@ function CardFooter({ card }) {
                             Instagram
                         </a>
                     )}
-                    {contact?.linkedin && (
+                    {linkedinHref && (
                         <a
-                            href={contact.linkedin}
+                            href={linkedinHref}
                             target="_blank"
                             rel="noreferrer"
                             onClick={() => trackClick(card?.slug, "linkedin")}

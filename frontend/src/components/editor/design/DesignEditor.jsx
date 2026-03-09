@@ -14,10 +14,10 @@ import styles from "./DesignEditor.module.css";
 const ALLOWED_MIME = new Set(["image/jpeg", "image/png", "image/webp"]);
 const MAX_BYTES = 10 * 1024 * 1024;
 
-const COVER_ASPECT = 16 / 9;
+const COVER_ASPECT = 16 / 10;
 const AVATAR_ASPECT = 1;
 
-const COVER_OUTPUT = { width: 1600, height: 900 };
+const COVER_OUTPUT = { width: 1600, height: 1000 };
 const AVATAR_OUTPUT = { width: 600, height: 600 };
 
 function DesignEditor({
@@ -92,7 +92,7 @@ function DesignEditor({
         setCropKind(kind);
 
         if (kind === "background") {
-            setCropTitle("חיתוך תמונת רקע (16:9)");
+            setCropTitle("חיתוך תמונת רקע (16:10)");
             setCropAspect(COVER_ASPECT);
             setCropShape("rect");
         } else {

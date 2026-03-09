@@ -316,6 +316,22 @@ export default function Editor({
                 id="editor-sections-drawer"
                 aria-hidden={isMobile && !drawerOpen}
             >
+                {isMobile ? (
+                    <div className={styles.drawerHeader}>
+                        <div className={styles.drawerTitle}>תפריט עריכה</div>
+                        <button
+                            type="button"
+                            className={styles.drawerCloseBtn}
+                            aria-label="סגירת תפריט עריכה"
+                            onClick={() => {
+                                closeDrawer();
+                                dismissToast();
+                            }}
+                        >
+                            ✕
+                        </button>
+                    </div>
+                ) : null}
                 <EditorSidebar
                     activeTab={activeTab}
                     onChangeTab={handleChangeTab}

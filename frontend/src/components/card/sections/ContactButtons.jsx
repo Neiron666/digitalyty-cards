@@ -1,5 +1,6 @@
 import styles from "../layout/ContactButtons.module.css";
 import { trackClick } from "../../../services/analytics.client";
+import ensureHttpUrl from "../../../utils/ensureHttpUrl";
 
 const cx = (...classes) => classes.filter(Boolean).join(" ");
 
@@ -28,17 +29,24 @@ function ContactButtons({ card }) {
           ? `https://waze.com/ul?q=${encodeURIComponent(addressQuery)}`
           : "";
 
-    const wazeHref = (contact?.waze && String(contact.waze).trim()) || wazeUrl;
+    const wazeHref =
+        ensureHttpUrl(contact?.waze, { extraSchemes: ["waze"] }) || wazeUrl;
+
+    const facebookHref = ensureHttpUrl(contact?.facebook);
+    const instagramHref = ensureHttpUrl(contact?.instagram);
+    const twitterHref = ensureHttpUrl(contact?.twitter);
+    const tiktokHref = ensureHttpUrl(contact?.tiktok);
+    const websiteHref = ensureHttpUrl(contact?.website);
 
     if (
         !phone &&
         !whatsapp &&
-        !contact?.facebook &&
-        !contact?.instagram &&
-        !contact?.twitter &&
-        !contact?.tiktok &&
+        !facebookHref &&
+        !instagramHref &&
+        !twitterHref &&
+        !tiktokHref &&
         !contact?.email &&
-        !contact?.website &&
+        !websiteHref &&
         !wazeHref
     ) {
         return null;
@@ -101,9 +109,9 @@ function ContactButtons({ card }) {
                 </a>
             )}
 
-            {contact?.facebook && (
+            {facebookHref && (
                 <a
-                    href={contact.facebook}
+                    href={facebookHref}
                     target="_blank"
                     rel="noreferrer"
                     className={styles.item}
@@ -120,9 +128,9 @@ function ContactButtons({ card }) {
                 </a>
             )}
 
-            {contact?.instagram && (
+            {instagramHref && (
                 <a
-                    href={contact.instagram}
+                    href={instagramHref}
                     target="_blank"
                     rel="noreferrer"
                     className={styles.item}
@@ -139,9 +147,9 @@ function ContactButtons({ card }) {
                 </a>
             )}
 
-            {contact?.twitter && (
+            {twitterHref && (
                 <a
-                    href={contact.twitter}
+                    href={twitterHref}
                     target="_blank"
                     rel="noreferrer"
                     className={styles.item}
@@ -158,9 +166,9 @@ function ContactButtons({ card }) {
                 </a>
             )}
 
-            {contact?.tiktok && (
+            {tiktokHref && (
                 <a
-                    href={contact.tiktok}
+                    href={tiktokHref}
                     target="_blank"
                     rel="noreferrer"
                     className={styles.item}
@@ -194,9 +202,9 @@ function ContactButtons({ card }) {
                 </a>
             )}
 
-            {contact?.website && (
+            {websiteHref && (
                 <a
-                    href={contact.website}
+                    href={websiteHref}
                     target="_blank"
                     rel="noreferrer"
                     className={styles.item}
