@@ -59,7 +59,13 @@ function PhoneFrame({ children, className }) {
     );
 }
 
-export default function EditorPreview({ className, card, header, footer }) {
+export default function EditorPreview({
+    className,
+    card,
+    header,
+    footer,
+    isAuthenticated,
+}) {
     const { tab } = useParams();
 
     const isSelfThemeTab = tab === "design";
@@ -109,9 +115,9 @@ export default function EditorPreview({ className, card, header, footer }) {
         <PhoneFrame className={className}>
             <div className={styles.preview}>
                 {header ? <div className={styles.header}>{header}</div> : null}
-                {showDemoNotice && previewHref ? (
+                {showDemoNotice && previewHref && isAuthenticated ? (
                     <div className={styles.demoNotice}>
-                        תוכן "דוגמא" - לא יוצג ציבורית, רק
+                        תוכן "דוגמא" - לא יוצג ציבורית, רק{" "}
                         <a
                             className={styles.demoNoticeLink}
                             href={previewHref}

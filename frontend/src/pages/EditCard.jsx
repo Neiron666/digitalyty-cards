@@ -2207,6 +2207,7 @@ function EditCard() {
                         onContextChange={handleContextChange}
                         onLoadOrgs={loadMyOrgs}
                         showContextBar={Boolean(token)}
+                        isAuthenticated={Boolean(token)}
                         // Mobile: public link in sidebar drawer
                         publicUrl={cardPublicUrl}
                         publicPath={cardPublicPath}

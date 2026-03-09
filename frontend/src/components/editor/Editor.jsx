@@ -35,6 +35,7 @@ export default function Editor({
     onContextChange,
     onLoadOrgs,
     showContextBar,
+    isAuthenticated,
     // Mobile: public link in sidebar drawer
     publicUrl,
     publicPath,
@@ -363,6 +364,7 @@ export default function Editor({
                     card={card}
                     header={previewHeader}
                     footer={previewFooter}
+                    isAuthenticated={isAuthenticated}
                 />
             ) : null}
 
