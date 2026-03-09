@@ -197,7 +197,7 @@
 }
 
 .pagerMeta {
-    color: var(--text-muted);
+    color: var(--text-main-black);
     font-size: var(--fs-body-sm);
 }
 
@@ -214,7 +214,7 @@
     flex-direction: column;
     gap: 4px;
     font-size: var(--fs-body-sm);
-    color: var(--text-muted);
+    color: var(--text-color);
 }
 
 .textarea {
@@ -226,8 +226,8 @@
     font-size: var(--fs-body-sm);
     resize: vertical;
     box-sizing: border-box;
-    background: var(--bg-card);
-    color: var(--text-main);
+    background: var(--card-bg);
+    color: var(--card-text);
 }
 
 .textarea:focus-visible {
@@ -371,6 +371,91 @@
     font-size: var(--fs-caption);
     color: var(--text-muted);
     line-height: 1.45;
+}
+
+/* ── Link hint (per-section) ────────────────────────────────────── */
+
+.linkHint {
+    display: flex;
+    flex-direction: column;
+    margin-block-start: 2px;
+}
+
+.linkHintSummary {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    padding-block: 4px;
+    padding-inline: 2px;
+    font-size: var(--fs-caption);
+    color: var(--text-muted);
+    list-style: none;
+    border-radius: 6px;
+    transition: background 0.15s ease;
+}
+
+.linkHintSummary::-webkit-details-marker {
+    display: none;
+}
+
+.linkHintSummary::before {
+    content: "";
+    display: inline-block;
+    width: 0;
+    height: 0;
+    border-inline-start: 4px solid transparent;
+    border-inline-end: 4px solid transparent;
+    border-block-start: 5px solid currentColor;
+    margin-inline-end: 6px;
+    transition: transform 0.15s ease;
+    flex-shrink: 0;
+}
+
+.linkHint:not([open]) > .linkHintSummary::before {
+    transform: rotate(90deg);
+}
+
+.linkHintSummary:hover {
+    background: rgba(255, 255, 255, 0.04);
+}
+
+.linkHintSummary:focus-visible {
+    outline: 2px solid var(--clr-focus, #2563eb);
+    outline-offset: 2px;
+}
+
+.linkHintBody {
+    padding-block: 6px;
+    padding-inline-start: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    font-size: var(--fs-caption);
+    color: var(--text-muted);
+    line-height: 1.5;
+}
+
+.linkHintBody p {
+    margin: 0;
+}
+
+.linkHintExamples {
+    font-weight: 600;
+    margin-block-start: 2px;
+}
+
+.linkHintCode {
+    display: block;
+    direction: ltr;
+    text-align: end;
+    font-family: monospace;
+    font-size: var(--fs-caption);
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding-block: 2px;
+    padding-inline: 6px;
+    word-break: break-all;
 }
 
 /* ── Action buttons row ────────────────────────────────────────── */

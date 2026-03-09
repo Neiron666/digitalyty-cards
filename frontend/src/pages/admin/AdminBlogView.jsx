@@ -709,6 +709,37 @@ export default function AdminBlogView() {
                                         disabled={selectedBusy}
                                     />
                                 </label>
+                                <details className={styles.linkHint}>
+                                    <summary className={styles.linkHintSummary}>
+                                        איך מוסיפים קישורים בתוך הטקסט?
+                                    </summary>
+                                    <div className={styles.linkHintBody}>
+                                        <p>טקסט לחיץ עם קישור:</p>
+                                        <code className={styles.linkHintCode}>
+                                            [טקסט להצגה](כתובת)
+                                        </code>
+                                        <p>
+                                            אפשר גם להדביק כתובת URL מלאה — היא
+                                            תזוהה אוטומטית.
+                                        </p>
+                                        <p>
+                                            לקישור פנימי בבלוג, עדיף להשתמש
+                                            בנתיב יחסי:
+                                        </p>
+                                        <p className={styles.linkHintExamples}>
+                                            דוגמאות:
+                                        </p>
+                                        <code className={styles.linkHintCode}>
+                                            [קראו עוד](/blog/seo-tips)
+                                        </code>
+                                        <code className={styles.linkHintCode}>
+                                            [לאתר הרשמי](https://example.com)
+                                        </code>
+                                        <code className={styles.linkHintCode}>
+                                            https://cardigo.co.il/blog/digital-card-guide
+                                        </code>
+                                    </div>
+                                </details>
                             </div>
                         ))}
                         <Button

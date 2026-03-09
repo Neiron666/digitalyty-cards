@@ -226,6 +226,28 @@
     margin-block-end: 0;
 }
 
+/* ── Blog body links ──────────────────────────────────────────── */
+
+.sectionBody a {
+    color: var(--primary);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    text-decoration-thickness: 1.5px;
+    font-weight: 600;
+    transition: opacity 0.2s ease;
+    overflow-wrap: break-word;
+}
+
+.sectionBody a:hover {
+    opacity: 0.78;
+}
+
+.sectionBody a:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
+    border-radius: 2px;
+}
+
 /* ── Author card (optional, bottom of article) ────────────────── */
 
 .authorCard {
