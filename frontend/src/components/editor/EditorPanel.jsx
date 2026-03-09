@@ -62,6 +62,7 @@ export default function EditorPanel({
         case "contact":
             return (
                 <ContactPanel
+                    key={card?._id || "new-contact"}
                     contact={card.contact}
                     editingDisabled={editingDisabled}
                     onFieldChange={(sectionName, patch) => {

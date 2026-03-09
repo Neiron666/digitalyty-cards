@@ -17,7 +17,7 @@
 }
 
 .syncLabel {
-    font-size: var(--fs-11, 0.8125rem);
+    font-size: var(--fs-body-sm, 0.8125rem);
     color: var(--text-subtitle, rgba(234, 240, 255, 0.78));
     user-select: none;
 }
