@@ -1,6 +1,7 @@
 import styles from "../layout/ContactButtons.module.css";
 import { trackClick } from "../../../services/analytics.client";
 import ensureHttpUrl from "../../../utils/ensureHttpUrl";
+import { extractWazeUrl } from "../../../utils/ensureHttpUrl";
 
 const cx = (...classes) => classes.filter(Boolean).join(" ");
 
@@ -30,7 +31,9 @@ function ContactButtons({ card }) {
           : "";
 
     const wazeHref =
-        ensureHttpUrl(contact?.waze, { extraSchemes: ["waze"] }) || wazeUrl;
+        ensureHttpUrl(extractWazeUrl(contact?.waze), {
+            extraSchemes: ["waze"],
+        }) || wazeUrl;
 
     const facebookHref = ensureHttpUrl(contact?.facebook);
     const instagramHref = ensureHttpUrl(contact?.instagram);

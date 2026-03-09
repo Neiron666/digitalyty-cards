@@ -60,6 +60,40 @@ export default function ensureHttpUrl(value, opts) {
     return validateHttpUrl(`https://${s}`);
 }
 
+/**
+ * Extracts a Waze URL from share-text that may contain surrounding prose.
+ * Returns the extracted URL string (not yet normalized) or the original value
+ * if no embedded Waze URL is found.
+ *
+ * Supports:
+ *  - https://waze.com/...  /  https://www.waze.com/...
+ *  - http://waze.com/...   /  http://www.waze.com/...
+ *  - waze.com/...          /  www.waze.com/...  (protocol-less, embedded)
+ *  - waze://...
+ *
+ * @param {string} value  Raw user input (may be share-text).
+ * @returns {string}  Extracted URL or original trimmed value.
+ */
+export function extractWazeUrl(value) {
+    if (!value) return "";
+    const s = String(value).trim();
+    if (!s) return "";
+
+    // If the trimmed value contains no whitespace it's already a plain URL candidate.
+    if (!/\s/.test(s)) return s;
+
+    // Try to find an embedded Waze URL in prose text.
+    const m = s.match(
+        /(?:https?:\/\/(?:www\.)?waze\.com\/\S+|(?:www\.)?waze\.com\/\S+|waze:\/\/\S+)/i,
+    );
+    return m ? stripTrailingDelimiters(m[0]) : s;
+}
+
+/** Strips obvious trailing punctuation / quotes that share-text wraps around URLs. */
+function stripTrailingDelimiters(url) {
+    return url.replace(/[\s.,;:!?"')\]\}»״׳]+$/u, "");
+}
+
 /** Returns the URL string if it has a real hostname, otherwise "". */
 function validateHttpUrl(candidate) {
     try {
