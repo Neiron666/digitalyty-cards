@@ -63,6 +63,7 @@
 
 .demoNotice {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
     justify-content: center;
     max-width: 380px;
@@ -72,14 +73,22 @@
     background: rgba(0, 0, 0, 0.57);
     color: rgba(255, 255, 255, 1);
     border: 1px solid var(--gold);
-    font-size: 0.875rem;
+    font-size: var(--fs-sm, 0.875rem);
     line-height: 1.35;
     text-align: center;
 }
 
+@container phone (max-width: 370px) {
+    .demoNotice {
+        font-size: var(--fs-xs, 0.75rem);
+        padding: 0.5rem 0.625rem;
+    }
+}
+
 [data-preview="phone"] .demoNoticeLink {
-    display: none;
-    margin-inline-start: 0.5rem;
+    display: inline-flex;
+    align-items: center;
+    margin-inline-start: 0.25rem;
     background: rgba(0, 0, 0, 0.57);
     color: rgba(255, 255, 255, 1);
     font-weight: 600;
@@ -91,8 +100,7 @@
 
 @media (min-width: 56.25rem) {
     [data-preview="phone"] .demoNoticeLink {
-        display: inline-flex;
-        align-items: center;
+        margin-inline-start: 0.5rem;
     }
 }
 

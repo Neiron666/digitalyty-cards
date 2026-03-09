@@ -109,10 +109,7 @@ export default function EditorPreview({ className, card, header, footer }) {
         <PhoneFrame className={className}>
             <div className={styles.preview}>
                 {header ? <div className={styles.header}>{header}</div> : null}
-                {showDemoNotice &&
-                previewHref &&
-                typeof window !== "undefined" &&
-                window.matchMedia("(min-width: 901px)").matches ? (
+                {showDemoNotice && previewHref ? (
                     <div className={styles.demoNotice}>
                         תוכן "דוגמא" - לא יוצג ציבורית, רק
                         <a

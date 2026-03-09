@@ -31,6 +31,7 @@ export default function GalleryPanel({
     }, [gallery]);
 
     const objectUrlRef = useRef(null);
+    const fileInputRef = useRef(null);
     const [cropOpen, setCropOpen] = useState(false);
     const [cropImageUrl, setCropImageUrl] = useState(null);
     const [cropTarget, setCropTarget] = useState(null);
@@ -408,18 +409,37 @@ export default function GalleryPanel({
                     })()}
                 </ul>
 
-                <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleUpload}
-                    disabled={
-                        !cardId ||
-                        reachedLimit ||
-                        cropOpen ||
-                        isApplying ||
-                        isUploading
-                    }
-                />
+                <div className={styles.uploadRow}>
+                    <Button
+                        variant="secondary"
+                        size="small"
+                        disabled={
+                            !cardId ||
+                            reachedLimit ||
+                            cropOpen ||
+                            isApplying ||
+                            isUploading
+                        }
+                        onClick={() => fileInputRef.current?.click()}
+                    >
+                        הוספת תמונה
+                    </Button>
+                    <input
+                        ref={fileInputRef}
+                        className={styles.hiddenFileInput}
+                        type="file"
+                        accept="image/*"
+                        onChange={handleUpload}
+                        disabled={
+                            !cardId ||
+                            reachedLimit ||
+                            cropOpen ||
+                            isApplying ||
+                            isUploading
+                        }
+                        aria-label="העלאת תמונה לגלריה"
+                    />
+                </div>
 
                 <p className={styles.hint}>מוגבל ל־{limit} תמונות</p>
             </div>

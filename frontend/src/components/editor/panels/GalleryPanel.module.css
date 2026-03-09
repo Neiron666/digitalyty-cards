@@ -17,8 +17,29 @@
     border-radius: 8px;
 }
 
+.uploadRow {
+    display: flex;
+    align-items: center;
+    margin-top: 3rem;
+}
+
+.hiddenFileInput {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    clip-path: inset(50%);
+    white-space: nowrap;
+    border: 0;
+}
+
 .hint {
     margin-top: 8px;
+    font-size: var(--fs-ui, 0.875rem);
+    color: var(--text-muted, #94a3b8);
 }
 
 .galleryArea {
