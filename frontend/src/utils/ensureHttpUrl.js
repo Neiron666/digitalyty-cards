@@ -71,6 +71,8 @@ function validateHttpUrl(candidate) {
         ) {
             return candidate;
         }
-    } catch { /* malformed → fall through */ }
+    } catch {
+        /* malformed → fall through */
+    }
     return "";
 }
