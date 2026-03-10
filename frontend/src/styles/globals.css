@@ -29,6 +29,7 @@
     --fs-hero-title: 2.2rem;
     --fs-display-outlined: 2.1rem;
     --fs-display-step-num: 3.6rem;
+    --fs-hero-accent: 2.4rem;
 }
 
 @media (min-width: 80rem) {
@@ -36,6 +37,14 @@
         --fs-hero-title: 3.2rem;
         --fs-display-outlined: 3rem;
         --fs-display-step-num: 4.8rem;
+        --fs-hero-accent: 3.6rem;
+    }
+}
+
+@media (max-width: 32.5rem) {
+    #root {
+        --fs-hero-title: 2rem;
+        --fs-hero-accent: 2rem;
     }
 }
 

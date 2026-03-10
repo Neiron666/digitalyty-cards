@@ -79,7 +79,7 @@
 .anonCta {
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    justify-content: center;
     gap: 12px;
     padding: 12px 14px;
     border-radius: var(--radius-lg);
@@ -117,6 +117,17 @@
     background: var(--gold);
     color: #111;
     border-color: rgba(212, 175, 55, 0.55);
+}
+.anonCtaPrimary:hover {
+    border-color: var(--gold);
+    box-shadow: 0 0 0 1px var(--gold-soft);
+    color: var(--gold);
+    background: linear-gradient(
+        90deg,
+        transparent,
+        var(--gold-soft),
+        transparent
+    );
 }
 
 .createCta {
@@ -185,12 +196,14 @@
 
 .anonConsentTitle {
     font-weight: 900;
-    font-size: var(--fs-lg, 1.05rem);
+    font-size: var(--fs-h5, 1.05rem);
     margin-bottom: 8px;
+    text-align: center;
+    color: var(--gold);
 }
 
 .anonConsentText {
-    font-weight: 700;
+    font-weight: 600;
     opacity: 0.9;
     line-height: 1.45;
     margin-bottom: 6px;

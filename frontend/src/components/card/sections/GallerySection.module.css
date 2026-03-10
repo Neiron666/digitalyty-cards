@@ -31,6 +31,7 @@
 
     transform: none;
     transition: none;
+    box-shadow: 0 0 5px 1px var(--secondary);
 }
 
 /* .gallery .imageWrapper:hover,

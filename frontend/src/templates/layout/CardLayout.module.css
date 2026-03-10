@@ -99,7 +99,7 @@
 
     --hero-divider-border: rgba(255, 0, 0, 0.9);
     --color-title: #000000;
-
+    --border: rgba(255, 255, 255, 0.06);
     --hero-overlay-bg: linear-gradient(
         180deg,
         rgba(0, 0, 0, 0.45),

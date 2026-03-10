@@ -67,6 +67,9 @@ export default function Home() {
             <section className={styles.hero}>
                 <div className={styles.heroInner}>
                     <div className={styles.heroText}>
+                        <div className={styles.kicker}>
+                            ✦ פלטפורמת כרטיסי הביקור המתקדמת
+                        </div>
                         <Link
                             to="/"
                             className={styles.heroLogoLink}
@@ -86,11 +89,10 @@ export default function Home() {
                                 />
                             </picture>
                         </Link>
-                        {/* <div className={styles.kicker}>
-                            כרטיס ביקור דיגיטלי מתקדם
-                        </div> */}
+
                         <h1 className={styles.h1}>
-                            כרטיס ביקור דיגיטלי הדור החדש
+                            כרטיס ביקור דיגיטלי
+                            <span className={styles.h1Accent}>הדור החדש</span>
                         </h1>
                         <p className={styles.p}>
                             כרטיס ביקור דיגיטלי חכם, מהיר ומעוצב — עם שיתוף
@@ -175,7 +177,7 @@ export default function Home() {
             </section>
 
             {/* FEATURES */}
-            <section className={styles.section} id="features">
+            <section className={styles.digitalCardDark} id="features">
                 <div className={styles.sectionInner}>
                     <div className={styles.centeredTitleandSubtitle}>
                         <h2 className={styles.h2}>מה מקבלים בכרטיס דיגיטלי?</h2>

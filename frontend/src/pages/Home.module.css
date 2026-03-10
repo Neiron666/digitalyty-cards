@@ -37,6 +37,24 @@
     display: flex;
     flex-direction: column;
     align-items: center;
+    position: relative;
+}
+
+.heroText::before {
+    content: "";
+    position: absolute;
+    top: 40%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 500px;
+    height: 280px;
+    background: radial-gradient(
+        ellipse,
+        rgba(212, 175, 55, 0.07) 0%,
+        transparent 70%
+    );
+    pointer-events: none;
+    z-index: -1;
 }
 
 .heroLogoLink {
@@ -53,42 +71,83 @@
 
 .heroLogoImage {
     display: block;
-    block-size: 15rem;
+    block-size: 10rem;
     inline-size: auto;
     max-inline-size: 100%;
 }
 
 .kicker {
-    display: inline-block;
-    margin-bottom: 16px;
-    padding: 6px 14px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 18px;
+    padding: 8px 20px;
     border-radius: 999px;
-    font-size: 0.8rem;
-    letter-spacing: 0.04em;
+    font-size: var(--fs-body-sm);
+    font-weight: 600;
+    letter-spacing: 0.06em;
     color: var(--gold);
-    border: 1px solid var(--gold-fade);
-    background: rgba(212, 175, 55, 0.08);
+    border: 1px solid rgba(212, 175, 55, 0.25);
+    background: rgba(212, 175, 55, 0.06);
+    backdrop-filter: blur(8px);
 }
 
 .h1 {
     font-size: var(--fs-hero-title);
     font-weight: 900;
     line-height: 1.15;
-    margin: 0 0 16px;
+    margin: 0 0 8px;
 }
 
 .h1::after {
     content: "";
     display: block;
-    margin-top: 18px;
-    width: 80px;
+    margin-top: 20px;
+    width: 140px;
     height: 2px;
+    margin-inline: auto;
+    border-radius: 999px;
+    background: linear-gradient(
+        90deg,
+        transparent 0%,
+        rgba(212, 175, 55, 0.3) 15%,
+        var(--gold) 50%,
+        rgba(212, 175, 55, 0.3) 85%,
+        transparent 100%
+    );
+    box-shadow: 0 0 12px rgba(212, 175, 55, 0.25);
+}
 
-    /* justify-self removed; keep centered in normal flow */
-    margin-left: auto;
-    margin-right: auto;
+.h1Accent {
+    display: block;
+    margin-top: 4px;
+    font-size: var(--fs-hero-accent);
+    font-weight: 900;
+    line-height: 1.1;
+    background: linear-gradient(
+        105deg,
+        #d4af37 0%,
+        #d4af37 35%,
+        #ffeaa7 50%,
+        #d4af37 65%,
+        #d4af37 100%
+    );
+    background-size: 300% auto;
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    filter: drop-shadow(0 0 18px rgba(212, 175, 55, 0.2));
+    animation: heroShine 6s ease-in-out infinite;
+}
 
-    background: linear-gradient(90deg, transparent, var(--gold), transparent);
+@keyframes heroShine {
+    0%,
+    100% {
+        background-position: 300% center;
+    }
+    50% {
+        background-position: 0% center;
+    }
 }
 
 .p {
@@ -122,18 +181,17 @@
     display: inline-flex;
     align-items: center;
     gap: 10px;
-    /* border: 1px solid rgba(212, 175, 55, 0.18); */
-    padding: 10px 14px;
-    /* border-radius: 999px;
-    background: linear-gradient(
-        180deg,
-        rgba(255, 255, 255, 0.06),
-        rgba(2, 6, 23, 0.28)
-    ); */
-    /* backdrop-filter: blur(12px); */
-    /* box-shadow: 0 10px 22px rgba(0, 0, 0, 0.22); */
+    padding: 10px 18px;
+    border: 1px solid rgba(212, 175, 55, 0.15);
+    border-radius: 999px;
+    background: rgba(212, 175, 55, 0.04);
+    backdrop-filter: blur(8px);
     letter-spacing: 0.1px;
     font-weight: 700;
+    font-size: var(--fs-ui);
+    transition:
+        border-color 0.25s ease,
+        background 0.25s ease;
 }
 
 .badges span::before {
@@ -147,7 +205,8 @@
 }
 
 .badges span:hover {
-    border-color: rgba(212, 175, 55, 0.35);
+    border-color: rgba(212, 175, 55, 0.4);
+    background: rgba(212, 175, 55, 0.08);
 }
 
 /* mock */
@@ -221,23 +280,15 @@
     padding: 50px 20px 120px;
     color: #020617;
     overflow: hidden;
-    border: inset 2px var(--gold);
+    /* border: inset 2px var(--gold); */
 }
 
 /* Геометрия снизу (как на примере, но мягче) */
-.digitalCardLight::after {
-    content: "";
-    position: absolute;
-    bottom: -1px;
-    left: 0;
-    width: 100%;
-    height: 120px;
-    background: #020617;
-    -webkit-clip-path: polygon(0 0, 50% 78%, 100% 0, 100% 100%, 0 100%);
-    clip-path: polygon(0 0, 50% 78%, 100% 0, 100% 100%, 0 100%);
+.digitalCardLight {
+    position: relative;
+    overflow: hidden;
 }
 
-/* тонкая золотая линия сверху */
 .digitalCardLight::before {
     content: "";
     position: absolute;
@@ -246,7 +297,52 @@
     transform: translateX(-50%);
     width: 140px;
     height: 2px;
-    background: linear-gradient(90deg, transparent, var(--gold), transparent);
+    border-radius: 999px;
+    background: linear-gradient(
+        90deg,
+        transparent 0%,
+        rgba(212, 175, 55, 0.18) 12%,
+        var(--gold) 50%,
+        rgba(212, 175, 55, 0.18) 88%,
+        transparent 100%
+    );
+    box-shadow: 0 0 10px rgba(212, 175, 55, 0.25);
+    z-index: 2;
+    pointer-events: none;
+}
+
+.digitalCardLight::after {
+    content: "";
+    position: absolute;
+    bottom: -1px;
+    left: 0;
+    width: 100%;
+    height: 120px;
+    background: #020617;
+    z-index: 1;
+
+    -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 120' preserveAspectRatio='none'%3E%3Cpath fill='white' d='M0 0 Q50 78 100 0 L100 120 L0 120 Z'/%3E%3C/svg%3E")
+        center / 100% 100% no-repeat;
+    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 120' preserveAspectRatio='none'%3E%3Cpath fill='white' d='M0 0 Q50 78 100 0 L100 120 L0 120 Z'/%3E%3C/svg%3E")
+        center / 100% 100% no-repeat;
+}
+
+.digitalCardLight > * {
+    position: relative;
+    z-index: 3;
+}
+
+.digitalCardDark {
+    background: linear-gradient(
+        180deg,
+        rgba(2, 6, 23, 1) 0%,
+        rgba(2, 6, 23, 0.9) 40%,
+        rgba(2, 6, 23, 0.3) 75%,
+        rgba(2, 6, 23, 0) 100%
+    );
+    color: #f8fafc;
+    padding: 50px 20px 120px;
+    position: relative;
 }
 
 .inner {
@@ -288,13 +384,6 @@
         rgba(212, 175, 55, 0.05)
     );
     border: 1px solid rgba(212, 175, 55, 0.4);
-}
-
-@media (max-width: 900px) {
-    .h1::after {
-        margin-left: auto;
-        margin-right: auto;
-    }
 }
 
 /* sections */
@@ -585,10 +674,6 @@
 }
 
 @media (max-width: 520px) {
-    .h1 {
-        font-size: 2rem;
-    }
-
     /* steps: 1 col */
     .step {
         flex-basis: 100%;
