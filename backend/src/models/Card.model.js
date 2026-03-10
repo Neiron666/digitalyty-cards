@@ -515,6 +515,12 @@ const CardSchema = new mongoose.Schema(
         },
 
         isActive: { type: Boolean, default: true },
+
+        // Anonymous consent evidence (additive, null-safe).
+        // Persisted only for anonymous card creation after explicit consent.
+        anonConsentAcceptedAt: { type: Date, default: null },
+        anonTermsVersion: { type: String, default: null, trim: true },
+        anonPrivacyVersion: { type: String, default: null, trim: true },
     },
     { timestamps: true, runSettersOnQuery: true },
 );

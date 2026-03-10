@@ -182,6 +182,11 @@ function EditCard() {
         isDeletingRef.current = isDeleting;
     }, [isDeleting]);
 
+    // Anonymous pre-create consent gate.
+    const [showAnonConsentGate, setShowAnonConsentGate] = useState(false);
+    const [anonConsentChecked, setAnonConsentChecked] = useState(false);
+    const [anonConsentBusy, setAnonConsentBusy] = useState(false);
+
     const [deleteNotice, setDeleteNotice] = useState(null);
     const deleteNoticeTimerRef = useRef(null);
 
@@ -496,7 +501,7 @@ function EditCard() {
 
             // 2) Try creating.
             try {
-                const created = await api.post("/cards", {});
+                const created = await api.post("/cards", { consent: true });
                 const createdData = created?.data || null;
                 if (createdData && createdData._id) return createdData;
 
@@ -576,13 +581,8 @@ function EditCard() {
                         return;
                     }
 
-                    const createdData = await createCardWithRetry();
-                    if (!isMounted()) return;
-                    const normalized = normalizeCardForEditor(createdData);
-                    setDraftCard(normalized);
-                    setDirtyPaths(new Set());
-                    setSaveState("idle");
-                    setSaveErrorText(null);
+                    // Anonymous: show consent gate before first card creation.
+                    setShowAnonConsentGate(true);
                     setIsInitializing(false);
                     return;
                 }
@@ -623,13 +623,8 @@ function EditCard() {
                             return;
                         }
 
-                        const createdData = await createCardWithRetry();
-                        if (!isMounted()) return;
-                        const normalized = normalizeCardForEditor(createdData);
-                        setDraftCard(normalized);
-                        setDirtyPaths(new Set());
-                        setSaveState("idle");
-                        setSaveErrorText(null);
+                        // Anonymous: show consent gate before first card creation.
+                        setShowAnonConsentGate(true);
                         setIsInitializing(false);
                         return;
                     } catch (retryErr) {
@@ -664,6 +659,12 @@ function EditCard() {
                     }
 
                     try {
+                        // Anonymous: show consent gate before first card creation.
+                        if (!token) {
+                            setShowAnonConsentGate(true);
+                            setIsInitializing(false);
+                            return;
+                        }
                         const createdData = await createCardWithRetry();
                         if (!isMounted()) return;
                         const normalized = normalizeCardForEditor(createdData);
@@ -1967,6 +1968,26 @@ function EditCard() {
         }
     }, [createCardWithRetry]);
 
+    const handleAnonConsentCreate = useCallback(async () => {
+        try {
+            setAnonConsentBusy(true);
+            const createdData = await createCardWithRetry();
+            const normalized = normalizeCardForEditor(createdData);
+            setDraftCard(normalized);
+            setShowAnonConsentGate(false);
+            setDirtyPaths(new Set());
+            setSaveState("idle");
+            setSaveErrorText(null);
+        } catch (err) {
+            console.error(
+                "handleAnonConsentCreate failed",
+                err?.response?.status,
+                err?.response?.data || err,
+            );
+            setAnonConsentBusy(false);
+        }
+    }, [createCardWithRetry]);
+
     const handleUnpublish = useCallback(async () => {
         if (!draftCard?._id) return;
 
@@ -2056,6 +2077,78 @@ function EditCard() {
                                     {createUserCardBusy
                                         ? "יוצר כרטיס..."
                                         : "צור כרטיס"}
+                                </button>
+                            </div>
+                        </section>
+                    </main>
+                </div>
+            );
+        }
+
+        if (showAnonConsentGate) {
+            return (
+                <div className={styles.editCard}>
+                    <main className={styles.main}>
+                        <section
+                            className={styles.anonConsentGate}
+                            dir="rtl"
+                            role="region"
+                            aria-label="הסכמה ליצירת טיוטה"
+                        >
+                            <h2 className={styles.anonConsentTitle}>
+                                יצירת כרטיס ניסיון
+                            </h2>
+                            <p className={styles.anonConsentText}>
+                                המידע שתזין עשוי להישמר כטיוטה זמנית. טיוטה
+                                אנונימית נשמרת עד 14 ימים של חוסר פעילות. אם
+                                הכרטיס יפורסם בעתיד, תוכן שיפורסם עשוי להיות
+                                נגיש לציבור.
+                            </p>
+                            <p className={styles.anonConsentText}>
+                                ההמשך כפוף ל
+                                <Link
+                                    to="/privacy"
+                                    className={styles.anonConsentLink}
+                                >
+                                    מדיניות הפרטיות
+                                </Link>{" "}
+                                ול
+                                <Link
+                                    to="/terms"
+                                    className={styles.anonConsentLink}
+                                >
+                                    תנאי השימוש
+                                </Link>
+                                .
+                            </p>
+                            <label className={styles.anonConsentLabel}>
+                                <input
+                                    type="checkbox"
+                                    className={styles.anonConsentCheckbox}
+                                    checked={anonConsentChecked}
+                                    onChange={(e) =>
+                                        setAnonConsentChecked(e.target.checked)
+                                    }
+                                    disabled={anonConsentBusy}
+                                />
+                                <span className={styles.anonConsentLabelText}>
+                                    אני מסכים/ה למדיניות הפרטיות ולתנאי השימוש,
+                                    ומבין/ה שהמידע שאזין יישמר כטיוטה זמנית
+                                    בהתאם להם
+                                </span>
+                            </label>
+                            <div className={styles.anonConsentActions}>
+                                <button
+                                    type="button"
+                                    className={styles.createCtaButton}
+                                    disabled={
+                                        !anonConsentChecked || anonConsentBusy
+                                    }
+                                    onClick={handleAnonConsentCreate}
+                                >
+                                    {anonConsentBusy
+                                        ? "יוצר כרטיס..."
+                                        : "צור כרטיס ניסיון"}
                                 </button>
                             </div>
                         </section>

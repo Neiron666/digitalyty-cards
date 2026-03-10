@@ -40,6 +40,10 @@ import { toIsrael } from "../utils/time.util.js";
 import { DEFAULT_TENANT_KEY } from "../utils/tenant.util.js";
 import { getPersonalOrgId } from "../utils/personalOrg.util.js";
 import { assertActiveOrgAndMembershipOrNotFound } from "../utils/orgMembership.util.js";
+import {
+    CURRENT_TERMS_VERSION,
+    CURRENT_PRIVACY_VERSION,
+} from "../utils/consentVersions.js";
 
 function resolveCleanupBucketsForCard(card) {
     const isAnonymousOwned = !card?.user && Boolean(card?.anonymousId);
@@ -1128,6 +1132,16 @@ export async function createCard(req, res) {
         return res.status(200).json(toCardDTO(existingAnon, now));
     }
 
+    // Enterprise policy: anonymous card creation requires explicit consent.
+    if (data?.consent !== true) {
+        return res.status(400).json({
+            message: "Consent required",
+            code: "ANON_CONSENT_REQUIRED",
+        });
+    }
+    // Strip consent from data — evidence is persisted via dedicated schema fields.
+    delete data.consent;
+
     // Enterprise policy: anonymous users must never set a custom slug.
     if (data && typeof data === "object") {
         delete data.slug;
@@ -1171,6 +1185,9 @@ export async function createCard(req, res) {
             anonymousId: owner.id,
             billing: { status: "free", plan: "free", paidUntil: null },
             seo,
+            anonConsentAcceptedAt: now,
+            anonTermsVersion: CURRENT_TERMS_VERSION,
+            anonPrivacyVersion: CURRENT_PRIVACY_VERSION,
         });
 
         return res.status(201).json(toCardDTO(card, now));

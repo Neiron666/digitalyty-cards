@@ -13,6 +13,10 @@ import Pricing from "../pages/Pricing";
 import Guides from "../pages/Guides";
 import Cards from "../pages/Cards";
 
+// legal
+import Privacy from "../pages/Privacy";
+import Terms from "../pages/Terms";
+
 // auth
 import Login from "../pages/Login";
 import Register from "../pages/Register";
@@ -74,6 +78,10 @@ const router = createBrowserRouter([
             { path: "pricing", element: <Pricing /> },
             { path: "guides", element: <Guides /> },
             { path: "cards", element: <Cards /> },
+
+            // legal
+            { path: "privacy", element: <Privacy /> },
+            { path: "terms", element: <Terms /> },
 
             // auth
             { path: "login", element: <Login /> },

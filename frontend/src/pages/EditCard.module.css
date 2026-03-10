@@ -170,6 +170,72 @@
     cursor: not-allowed;
 }
 
+/* Anonymous consent gate (pre-create interstitial) */
+
+.anonConsentGate {
+    width: 100%;
+    max-width: 720px;
+    margin-inline: auto;
+    padding: 18px;
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border);
+    background: var(--bg-card);
+    color: var(--text-main);
+}
+
+.anonConsentTitle {
+    font-weight: 900;
+    font-size: var(--fs-lg, 1.05rem);
+    margin-bottom: 8px;
+}
+
+.anonConsentText {
+    font-weight: 700;
+    opacity: 0.9;
+    line-height: 1.45;
+    margin-bottom: 6px;
+}
+
+.anonConsentLink {
+    color: var(--gold);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+}
+
+.anonConsentLink:hover {
+    opacity: 0.85;
+}
+
+.anonConsentLink:focus-visible {
+    outline: 3px solid rgba(212, 175, 55, 0.5);
+    outline-offset: 2px;
+}
+
+.anonConsentLabel {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    margin-top: 14px;
+    cursor: pointer;
+}
+
+.anonConsentCheckbox {
+    flex-shrink: 0;
+    margin-top: 3px;
+    accent-color: var(--gold);
+}
+
+.anonConsentLabelText {
+    font-weight: 700;
+    line-height: 1.4;
+}
+
+.anonConsentActions {
+    margin-top: 14px;
+    display: flex;
+    justify-content: flex-start;
+}
+
 .anonCtaPrimary:hover {
     filter: brightness(0.98);
 }

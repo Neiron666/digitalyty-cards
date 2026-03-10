@@ -12,6 +12,10 @@ import { getSiteUrl } from "../utils/siteUrl.util.js";
 import { sendPasswordResetEmailMailjetBestEffort } from "../services/mailjet.service.js";
 import { sendSignupLinkEmailMailjetBestEffort } from "../services/mailjet.service.js";
 import { sendVerificationEmailMailjetBestEffort } from "../services/mailjet.service.js";
+import {
+    CURRENT_TERMS_VERSION,
+    CURRENT_PRIVACY_VERSION,
+} from "../utils/consentVersions.js";
 
 const router = Router();
 
@@ -182,6 +186,13 @@ router.post("/register", async (req, res) => {
         });
     }
 
+    // ── Consent enforcement (strict boolean) ──
+    if (req.body.consent !== true) {
+        return res
+            .status(400)
+            .json({ message: "Invalid request", code: "CONSENT_REQUIRED" });
+    }
+
     // Prevent casing-duplicates until we can enforce a case-insensitive unique index.
     // 2-step lookup to prefer the default index path; fallback catches legacy casing.
     let existing = await User.findOne({ email });
@@ -199,7 +210,15 @@ router.post("/register", async (req, res) => {
 
     let user;
     try {
-        user = await User.create({ email, passwordHash });
+        const now = new Date();
+        user = await User.create({
+            email,
+            passwordHash,
+            termsAcceptedAt: now,
+            privacyAcceptedAt: now,
+            termsVersion: CURRENT_TERMS_VERSION,
+            privacyVersion: CURRENT_PRIVACY_VERSION,
+        });
     } catch (err) {
         // Preserve current API shape; avoid leaking DB/index details.
         if (err && (err.code === 11000 || err.code === 11001)) {

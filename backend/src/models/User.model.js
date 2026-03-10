@@ -56,6 +56,12 @@ const UserSchema = new mongoose.Schema(
                 default: "mock", // позже "tranzila"
             },
         },
+
+        // Consent / legal acceptance (additive, null-safe for existing users).
+        termsAcceptedAt: { type: Date, default: null },
+        privacyAcceptedAt: { type: Date, default: null },
+        termsVersion: { type: String, default: null },
+        privacyVersion: { type: String, default: null },
     },
     { timestamps: true },
 );

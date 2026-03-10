@@ -63,39 +63,42 @@ All endpoints are mounted under `/api/auth` (see `backend/src/routes/auth.routes
 
 Create a new user account via email + password.
 
-| Field      | Location | Required | Description                    |
-| ---------- | -------- | -------- | ------------------------------ |
-| `email`    | body     | yes      | User email (normalized)        |
-| `password` | body     | yes      | Plaintext password (≥ 8 chars) |
+| Field      | Location | Required | Description                                             |
+| ---------- | -------- | -------- | ------------------------------------------------------- |
+| `email`    | body     | yes      | User email (normalized)                                 |
+| `password` | body     | yes      | Plaintext password (≥ 8 chars)                          |
+| `consent`  | body     | yes      | Boolean `true` — explicit acceptance of Terms & Privacy |
 
 **Rate limit**: 20 requests / 10 min per IP.
 
 **Behaviour**:
 
 1. Validates email format and password length (≥ 8 characters).
-2. Case-insensitive duplicate check (2-step: exact match → collation fallback).
-3. Hashes password with `bcrypt` (salt rounds 10).
-4. Creates user with `isVerified: false`.
-5. Best-effort: claims any anonymous card linked to the session.
-6. Best-effort: generates a verification token (24 h TTL), sends a link via Mailjet.
+2. Enforces `consent === true` (strict boolean); rejects with `CONSENT_REQUIRED` otherwise.
+3. Case-insensitive duplicate check (2-step: exact match → collation fallback).
+4. Hashes password with `bcrypt` (salt rounds 10).
+5. Creates user with `isVerified: false`; persists `termsAcceptedAt`, `privacyAcceptedAt`, `termsVersion`, `privacyVersion` from SSoT version constants.
+6. Best-effort: claims any anonymous card linked to the session.
+7. Best-effort: generates a verification token (24 h TTL), sends a link via Mailjet.
 
 **Responses**:
 
-| Status | Body                                                         | Condition                      |
-| ------ | ------------------------------------------------------------ | ------------------------------ |
-| 200    | `{ "token": "<jwt>", "isVerified": false }`                  | Account created                |
-| 400    | `{ "message": "Invalid email" }`                             | Malformed email                |
-| 400    | `{ "message": "Invalid password" }`                          | Missing or non-string password |
-| 400    | `{ "message": "Password must be at least 8 characters" }`    | Too short                      |
-| 409    | `{ "message": "Unable to register" }`                        | Duplicate email (anti-enum)    |
-| 429    | `{ "code": "RATE_LIMITED", "message": "Too many requests" }` | Rate limit exceeded            |
+| Status | Body                                                           | Condition                      |
+| ------ | -------------------------------------------------------------- | ------------------------------ |
+| 200    | `{ "token": "<jwt>", "isVerified": false }`                    | Account created                |
+| 400    | `{ "message": "Invalid email" }`                               | Malformed email                |
+| 400    | `{ "message": "Invalid password" }`                            | Missing or non-string password |
+| 400    | `{ "message": "Password must be at least 8 characters" }`      | Too short                      |
+| 400    | `{ "message": "Invalid request", "code": "CONSENT_REQUIRED" }` | `consent !== true`             |
+| 409    | `{ "message": "Unable to register" }`                          | Duplicate email (anti-enum)    |
+| 429    | `{ "code": "RATE_LIMITED", "message": "Too many requests" }`   | Rate limit exceeded            |
 
 **Example**:
 
 ```bash
 curl -X POST https://cardigo.co.il/api/auth/register \
   -H "Content-Type: application/json" \
-  -d '{"email":"user@example.com","password":"securePass1"}'
+  -d '{"email":"user@example.com","password":"securePass1","consent":true}'
 # → 200 {"token":"eyJ...","isVerified":false}
 ```
 
@@ -427,6 +430,13 @@ Token consumption uses MongoDB's `findOneAndUpdate` with a `usedAt: null` predic
 - Salt rounds: **10**.
 - Used for all password hashing (registration, reset, magic-link signup).
 
+### Registration consent
+
+- `/register` enforces `consent === true` (strict boolean, same pattern as lead-form consent).
+- Requests with missing, `false`, or string `"true"` consent are rejected with `400 CONSENT_REQUIRED`.
+- On success, `termsAcceptedAt`, `privacyAcceptedAt`, `termsVersion`, and `privacyVersion` are persisted on the User document.
+- Version constants are managed in `backend/src/utils/consentVersions.js`; see `docs/runbooks/auth-registration-consent.md` for operational guidance.
+
 ---
 
-_Last updated: 2025-01_
+_Last updated: 2026-03_

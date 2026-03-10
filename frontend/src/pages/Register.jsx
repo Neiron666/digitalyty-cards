@@ -14,6 +14,7 @@ function Register() {
         email: "",
         password: "",
         confirmPassword: "",
+        consent: false,
     });
     const [error, setError] = useState("");
     const [loading, setLoading] = useState(false);
@@ -37,9 +38,18 @@ function Register() {
             return;
         }
 
+        if (!form.consent) {
+            setError("חובה להסכים למדיניות הפרטיות ולתנאי השימוש");
+            return;
+        }
+
         setLoading(true);
         try {
-            const regRes = await registerUser(form.email, form.password);
+            const regRes = await registerUser(
+                form.email,
+                form.password,
+                form.consent,
+            );
             const jwt = regRes?.data?.token;
 
             // Store token so user has a session (even if not verified yet).
@@ -62,7 +72,12 @@ function Register() {
             // Show "check your email" message.
             setRegistered(true);
         } catch (err) {
-            setError(err.response?.data?.message || "שגיאה בהרשמה");
+            const code = err.response?.data?.code;
+            if (code === "CONSENT_REQUIRED") {
+                setError("חובה להסכים למדיניות הפרטיות ולתנאי השימוש");
+            } else {
+                setError(err.response?.data?.message || "שגיאה בהרשמה");
+            }
         } finally {
             setLoading(false);
         }
@@ -129,6 +144,35 @@ function Register() {
                     onChange={(e) => update("confirmPassword", e.target.value)}
                     required
                 />
+
+                <label className={styles.consentRow}>
+                    <input
+                        type="checkbox"
+                        checked={form.consent}
+                        onChange={(e) => update("consent", e.target.checked)}
+                        required
+                    />
+                    <span className={styles.consentText}>
+                        אני מסכים ל
+                        <a
+                            href="/privacy"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className={styles.consentLink}
+                        >
+                            מדיניות הפרטיות
+                        </a>{" "}
+                        וגם ל
+                        <a
+                            href="/terms"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className={styles.consentLink}
+                        >
+                            תנאי השימוש באתר
+                        </a>
+                    </span>
+                </label>
 
                 {error && <p className={styles.error}>{error}</p>}
 
