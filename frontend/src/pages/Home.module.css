@@ -241,7 +241,7 @@
 
 .heroCardImg {
     display: block;
-    width: clamp(80px, 15vw, 220px);
+    width: clamp(95px, 15vw, 220px);
     height: auto;
     border-radius: clamp(10px, 1.2vw, 18px);
     object-fit: cover;
