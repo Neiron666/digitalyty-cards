@@ -14,10 +14,10 @@
 .heroInner {
     position: relative;
     z-index: 2;
-    width: 100%;
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 30px 20px 64px;
+    width: 80%;
+    /* max-width: 1200px; */
+    margin: 1rem auto;
+    padding: 30px 20px 24px;
 
     /* Grid -> Flex */
     display: flex;
@@ -30,7 +30,6 @@
     border-radius: var(--radius-lg);
     background: rgba(2, 6, 23, 0.35);
     backdrop-filter: blur(14px);
-    margin: 1rem;
 }
 
 .heroText {
@@ -71,7 +70,7 @@
 
 .heroLogoImage {
     display: block;
-    block-size: 10rem;
+    block-size: 8rem;
     inline-size: auto;
     max-inline-size: 100%;
 }
@@ -138,6 +137,7 @@
     -webkit-text-fill-color: transparent;
     filter: drop-shadow(0 0 18px rgba(212, 175, 55, 0.2));
     animation: heroShine 6s ease-in-out infinite;
+    /* box-shadow: #d4af37 0px 0px 2px; */
 }
 
 @keyframes heroShine {
@@ -160,10 +160,145 @@
 
 .heroActions {
     display: flex;
-    gap: 14px;
-    margin-top: 28px;
     justify-content: center;
     flex-wrap: wrap;
+    margin-top: 10px;
+}
+
+/* ── Hero CTA (premium gold) ─────────────────────────── */
+.heroCta {
+    width: auto;
+    padding: 16px 48px;
+    font-size: 1.1rem;
+    letter-spacing: 0.03em;
+    background: linear-gradient(135deg, #d4af37 0%, #c5962c 40%, #e6c44d 100%);
+    color: #0f172a;
+    border: none;
+    /* box-shadow:
+        0 0 0 1px rgba(212, 175, 55, 0.5),
+        0 4px 20px rgba(212, 175, 55, 0.3),
+        0 12px 40px rgba(212, 175, 55, 0.15); */
+    animation: ctaGlow 3s ease-in-out infinite;
+    width: 400px;
+}
+
+.heroCta:hover {
+    transform: translateY(-2px) scale(1.03);
+    box-shadow:
+        0 0 0 1px rgba(212, 175, 55, 0.8),
+        0 6px 30px rgba(212, 175, 55, 0.45),
+        0 16px 50px rgba(212, 175, 55, 0.2);
+    color: var(--global-white-text);
+}
+
+.heroCta:active {
+    transform: translateY(0) scale(0.99);
+}
+
+@keyframes ctaGlow {
+    0%,
+    100% {
+        box-shadow:
+            0 0 0 1px rgba(212, 175, 55, 0.5),
+            0 4px 20px rgba(212, 175, 55, 0.3),
+            0 12px 40px rgba(212, 175, 55, 0.15);
+    }
+    50% {
+        box-shadow:
+            0 0 0 1px rgba(212, 175, 55, 0.7),
+            0 6px 28px rgba(212, 175, 55, 0.4),
+            0 16px 50px rgba(212, 175, 55, 0.25);
+    }
+}
+
+/* ── Hero Cards fan layout ────────────────────────────── */
+.heroCards {
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    width: 100%;
+    padding-block: 12px 20px;
+    position: relative;
+    isolation: isolate;
+}
+
+.heroCards::before {
+    content: "";
+    position: absolute;
+    inset: 5% 5%;
+    border-radius: 50%;
+    background: radial-gradient(
+        ellipse at 50% 50%,
+        var(--accent-cyan-soft) 0%,
+        rgba(34, 254, 254, 0.5) 30%,
+        var(--accent-cyan-fade) 55%,
+        transparent 75%
+    );
+    filter: blur(50px);
+    pointer-events: none;
+    z-index: -1;
+}
+
+.heroCardImg {
+    display: block;
+    width: clamp(80px, 15vw, 220px);
+    height: auto;
+    border-radius: clamp(10px, 1.2vw, 18px);
+    object-fit: cover;
+    flex-shrink: 0;
+    margin-inline: clamp(-20px, -2vw, -6px);
+    position: relative;
+    z-index: 1;
+    box-shadow:
+        0 25px 50px rgba(0, 0, 0, 0.35),
+        0 8px 20px rgba(0, 0, 0, 0.15);
+    animation: levitate 6s ease-in-out infinite;
+    will-change: translate;
+}
+
+/* Fan: outer cards rotated + scaled down, center prominent */
+.heroCardImg:nth-child(1) {
+    transform: rotate(6deg) translateY(16px) scale(0.84);
+    z-index: 1;
+    animation-delay: -1.2s;
+}
+
+.heroCardImg:nth-child(2) {
+    transform: rotate(3deg) translateY(6px) scale(0.92);
+    z-index: 2;
+    animation-delay: -0.6s;
+}
+
+.heroCardImg:nth-child(3) {
+    transform: scale(1);
+    z-index: 3;
+    box-shadow:
+        0 30px 60px rgba(0, 0, 0, 0.4),
+        0 8px 24px rgba(0, 0, 0, 0.2),
+        0 0 40px rgba(212, 175, 55, 0.06);
+    animation-delay: 0s;
+}
+
+.heroCardImg:nth-child(4) {
+    transform: rotate(-3deg) translateY(6px) scale(0.92);
+    z-index: 2;
+    animation-delay: -0.6s;
+}
+
+.heroCardImg:nth-child(5) {
+    transform: rotate(-6deg) translateY(16px) scale(0.84);
+    z-index: 1;
+    animation-delay: -1.2s;
+}
+
+@keyframes levitate {
+    0%,
+    100% {
+        translate: 0 0;
+    }
+    50% {
+        translate: 0 -8px;
+    }
 }
 
 .badges {
@@ -670,6 +805,28 @@
 
     .heroLogoImage {
         block-size: 6rem;
+    }
+}
+
+@media (max-width: 640px) {
+    .heroInner {
+        width: 95%;
+        /* margin-inline: 0;
+        border-radius: 0;
+        border-inline: none; */
+    }
+
+    .heroCta {
+        width: 200px;
+        padding: 10px 15px;
+        font-size: 1.05rem;
+    }
+
+    .heroCardImg {
+        border-radius: clamp(6px, 1vw, 12px);
+    }
+    .heroLogoImage {
+        block-size: 5rem;
     }
 }
 

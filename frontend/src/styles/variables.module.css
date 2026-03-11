@@ -13,6 +13,11 @@
     --gold-fade: rgba(245, 158, 11, 0.28);
     --gold-soft: rgba(245, 158, 11, 0.45);
 
+    /* Secondary accent */
+    --accent-cyan: #22fefe;
+    --accent-cyan-soft: rgba(34, 254, 254, 0.35);
+    --accent-cyan-fade: rgba(34, 254, 254, 0.15);
+
     /* Text */
     --text-main: #f8fafc;
     --text-muted: #94a3b8;

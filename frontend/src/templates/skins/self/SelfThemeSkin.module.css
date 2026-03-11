@@ -26,6 +26,9 @@
     /* Lever: text on primary */
     --c-on-primary: #ffffff;
 
+    /* Social-icon labels inherit brand primary */
+    --main-token-color: var(--c-brand-primary);
+
     /* =========================================================
        SEMANTIC TOKENS (skins are token-only)
        ========================================================= */

@@ -56,6 +56,29 @@ const FEATURES = [
     },
 ];
 
+const HERO_CARDS = [
+    {
+        src: "/images/home-page/hero/\u05DB\u05E8\u05D8\u05D9\u05E1 \u05D1\u05D9\u05E7\u05D5\u05E8 \u05D3\u05D9\u05D2\u05D9\u05D8\u05DC\u05D9 \u05DC\u05D0\u05D3\u05E8\u05D9\u05DB\u05DC\u05D9\u05EA \u05D7\u05D5\u05E5 \u05D5\u05E0\u05D5\u05E3  \u05DB\u05E8\u05D3\u05D9\u05D2\u05D5.webp",
+        alt: "\u05DB\u05E8\u05D8\u05D9\u05E1 \u05D1\u05D9\u05E7\u05D5\u05E8 \u05D3\u05D9\u05D2\u05D9\u05D8\u05DC\u05D9 \u05DC\u05D0\u05D3\u05E8\u05D9\u05DB\u05DC\u05D9\u05EA",
+    },
+    {
+        src: "/images/home-page/hero/\u05DB\u05E8\u05D8\u05D9\u05E1 \u05D1\u05D9\u05E7\u05D5\u05E8 \u05D3\u05D9\u05D2\u05D9\u05D8\u05DC\u05D9 \u05DC\u05D9\u05D5\u05E2\u05E6\u05EA \u05D7\u05D3\u05E9\u05E0\u05D5\u05EA \u05D3\u05D9\u05D2\u05D9\u05D8\u05DC\u05D9\u05EA \u05D5-AI  \u05DB\u05E8\u05D3\u05D9\u05D2\u05D5.webp",
+        alt: "\u05DB\u05E8\u05D8\u05D9\u05E1 \u05D1\u05D9\u05E7\u05D5\u05E8 \u05D3\u05D9\u05D2\u05D9\u05D8\u05DC\u05D9 \u05DC\u05D9\u05D5\u05E2\u05E6\u05EA \u05D7\u05D3\u05E9\u05E0\u05D5\u05EA",
+    },
+    {
+        src: "/images/home-page/hero/\u05DB\u05E8\u05D8\u05D9\u05E1 \u05D1\u05D9\u05E7\u05D5\u05E8 \u05D3\u05D9\u05D2\u05D9\u05D8\u05DC\u05D9 \u05DC\u05DE\u05E4\u05D9\u05E7\u05EA \u05D0\u05D9\u05E8\u05D5\u05E2\u05D9 \u05D1\u05D5\u05D8\u05D9\u05E7  \u05DB\u05E8\u05D3\u05D9\u05D2\u05D5.webp",
+        alt: "\u05DB\u05E8\u05D8\u05D9\u05E1 \u05D1\u05D9\u05E7\u05D5\u05E8 \u05D3\u05D9\u05D2\u05D9\u05D8\u05DC\u05D9 \u05DC\u05DE\u05E4\u05D9\u05E7\u05EA \u05D0\u05D9\u05E8\u05D5\u05E2\u05D9\u05DD",
+    },
+    {
+        src: "/images/home-page/hero/\u05DB\u05E8\u05D8\u05D9\u05E1 \u05D1\u05D9\u05E7\u05D5\u05E8 \u05D3\u05D9\u05D2\u05D9\u05D8\u05DC\u05D9 \u05DC\u05D9\u05D5\u05E2\u05E5 \u05D4\u05D5\u05DF \u05E4\u05E8\u05D8\u05D9  \u05DB\u05E8\u05D3\u05D9\u05D2\u05D5.webp",
+        alt: "\u05DB\u05E8\u05D8\u05D9\u05E1 \u05D1\u05D9\u05E7\u05D5\u05E8 \u05D3\u05D9\u05D2\u05D9\u05D8\u05DC\u05D9 \u05DC\u05D9\u05D5\u05E2\u05E5 \u05D4\u05D5\u05DF",
+    },
+    {
+        src: "/images/home-page/hero/\u05DB\u05E8\u05D8\u05D9\u05E1 \u05D1\u05D9\u05E7\u05D5\u05E8 \u05D3\u05D9\u05D2\u05D9\u05D8\u05DC\u05D9 \u05DC\u05E8\u05D5\u05E4\u05D0\u05EA \u05E9\u05D9\u05E0\u05D9\u05D9\u05DD \u05D0\u05E1\u05EA\u05D8\u05D9\u05EA  \u05DB\u05E8\u05D3\u05D9\u05D2\u05D5.webp",
+        alt: "\u05DB\u05E8\u05D8\u05D9\u05E1 \u05D1\u05D9\u05E7\u05D5\u05E8 \u05D3\u05D9\u05D2\u05D9\u05D8\u05DC\u05D9 \u05DC\u05E8\u05D5\u05E4\u05D0\u05EA \u05E9\u05D9\u05E0\u05D9\u05D9\u05DD",
+    },
+];
+
 export default function Home() {
     useEffect(() => {
         trackSitePageView();
@@ -67,9 +90,6 @@ export default function Home() {
             <section className={styles.hero}>
                 <div className={styles.heroInner}>
                     <div className={styles.heroText}>
-                        <div className={styles.kicker}>
-                            ✦ פלטפורמת כרטיסי הביקור המתקדמת
-                        </div>
                         <Link
                             to="/"
                             className={styles.heroLogoLink}
@@ -94,46 +114,36 @@ export default function Home() {
                             כרטיס ביקור דיגיטלי
                             <span className={styles.h1Accent}>הדור החדש</span>
                         </h1>
-                        <p className={styles.p}>
-                            כרטיס ביקור דיגיטלי חכם, מהיר ומעוצב — עם שיתוף
-                            בקליק, התאמה אישית מלאה ונראות מושלמת במובייל. פתרון
-                            מודרני לעסקים שרוצים להיראות רציניים.
-                        </p>
-
-                        <div className={styles.heroActions}>
-                            <Button
-                                as={Link}
-                                to="/register"
-                                variant="primary"
-                                onClick={() =>
-                                    trackSiteClick({
-                                        action: SITE_ACTIONS.home_hero_primary_register,
-                                        pagePath: "/",
-                                    })
-                                }
-                            >
-                                צור כרטיס חינם
-                            </Button>
-                            <Button
-                                as="a"
-                                href="#templates"
-                                variant="secondary"
-                                onClick={() =>
-                                    trackSiteClick({
-                                        action: SITE_ACTIONS.home_hero_secondary_examples,
-                                        pagePath: "/",
-                                    })
-                                }
-                            >
-                                לצפייה בדוגמאות
-                            </Button>
-                        </div>
-
-                        <div className={styles.badges}>
-                            <span>שיתוף בוואטסאפ, SMS ו-QR</span>
-                            <span>כפתורי יצירת קשר בלחיצה</span>
-                            <span>טופס לידים שמביא פניות</span>
-                        </div>
+                    </div>
+                    <div className={styles.heroActions}>
+                        <Button
+                            as={Link}
+                            to="/register"
+                            variant="primary"
+                            className={styles.heroCta}
+                            onClick={() =>
+                                trackSiteClick({
+                                    action: SITE_ACTIONS.home_hero_primary_register,
+                                    pagePath: "/",
+                                })
+                            }
+                        >
+                            צור כרטיס חינם
+                        </Button>
+                    </div>
+                    <div className={styles.heroCards} aria-hidden="true">
+                        {HERO_CARDS.map((card, i) => (
+                            <img
+                                key={i}
+                                src={encodeURI(card.src)}
+                                alt=""
+                                className={styles.heroCardImg}
+                                width={280}
+                                height={560}
+                                loading={i === 2 ? "eager" : "lazy"}
+                                decoding="async"
+                            />
+                        ))}
                     </div>
                 </div>
             </section>

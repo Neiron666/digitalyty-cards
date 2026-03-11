@@ -13,6 +13,9 @@
     --gold: #d4af37;
     --gold-soft: rgba(212, 175, 55, 0.35);
     --gold-fade: rgba(212, 175, 55, 0.15);
+    --accent-cyan: #22fefe;
+    --accent-cyan-soft: rgba(34, 254, 254, 0.35);
+    --accent-cyan-fade: rgba(34, 254, 254, 0.15);
     --bg-main: #020617;
     --bg-main-rgb: 2 6 23;
 }
