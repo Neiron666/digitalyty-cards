@@ -158,7 +158,15 @@ export default function Home() {
                             פתרון חכם, מודרני ונוח ליצירת קשר עם לקוחות
                         </h3>
                     </div>
-
+                    <img
+                        className={styles.sectionImage}
+                        src="/images/home-page/main-sections/%D7%9B%D7%A8%D7%98%D7%99%D7%A1%20%D7%91%D7%99%D7%A7%D7%95%D7%A8%20%D7%93%D7%99%D7%92%D7%99%D7%98%D7%9C%D7%99%20%20%D7%9E%D7%A2%D7%91%D7%A8%20%D7%9E%D7%9B%D7%A8%D7%98%D7%99%D7%A1%20%D7%A0%D7%99%D7%99%D7%A8%20%D7%9C%D7%9B%D7%A8%D7%98%D7%99%D7%A1%20%D7%91%D7%A1%D7%9E%D7%90%D7%A8%D7%98%D7%A4%D7%95%D7%9F%20%D7%9B%D7%A8%D7%93%D7%99%D7%92%D7%95.webp"
+                        alt="מעבר מכרטיס ביקור נייר לכרטיס דיגיטלי בסמארטפון – כרדיגו"
+                        width={800}
+                        height={450}
+                        loading="lazy"
+                        decoding="async"
+                    />
                     <div className={styles.content}>
                         <p>
                             כרטיס ביקור דיגיטלי הוא כרטיס חכם שמחליף את כרטיסי
