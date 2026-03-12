@@ -107,11 +107,14 @@ For EVERY task you must follow the 2-phase workflow:
 
 - `docs/policies/POLICY_ORGS.md`
 - `docs/security/SECURITY_AUTH_INVITES.md`
+- `docs/policies/frontend-markup-styling.md`
+- `docs/policies/typography-mobile-first.md`
 
 **Tier 2 — Architecture / Ops Contracts**
 
 - `docs/admin.md`
 - `docs/cards-styling-architecture.md`
+- `docs/typography-ssot.md`
 - `docs/upload-supabase-contract.md`
 - `backend/README.md`
 - `.github/workflows/backend-index-governance.yml`

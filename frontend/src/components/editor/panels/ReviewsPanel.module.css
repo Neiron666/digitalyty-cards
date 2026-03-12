@@ -6,7 +6,7 @@
 
 .meta {
     margin-top: -4px;
-    font-size: 0.85rem;
+    font-size: var(--fs-body-sm);
     color: var(--text-muted);
     text-align: end;
 }

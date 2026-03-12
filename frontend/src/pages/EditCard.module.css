@@ -31,7 +31,7 @@
     padding: 6px 10px;
     border-radius: 999px;
     font-weight: 800;
-    font-size: 0.82rem;
+    font-size: var(--fs-body-sm);
     letter-spacing: 0.02em;
     border: 1px solid var(--gold-fade);
     background: var(--bg-surface);
@@ -143,7 +143,7 @@
 
 .createCtaTitle {
     font-weight: 900;
-    font-size: 1.05rem;
+    font-size: var(--fs-body);
     margin-bottom: 6px;
 }
 
@@ -372,7 +372,7 @@
     border: none;
     background: transparent;
     color: var(--text-main);
-    font-size: 1.25rem;
+    font-size: var(--fs-h5);
     cursor: pointer;
     min-width: 44px;
     min-height: 44px;

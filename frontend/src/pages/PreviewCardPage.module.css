@@ -36,7 +36,7 @@
     font-weight: 600;
     border-radius: 14px;
     border: 1px solid var(--gold);
-    font-size: 1.1rem;
+    font-size: var(--fs-h6);
     line-height: var(--lh-normal, 1.4);
     text-align: center;
 }

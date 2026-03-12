@@ -24,6 +24,6 @@
 
 .save {
     margin-right: 6px;
-    font-size: 0.75rem;
+    font-size: var(--fs-caption);
     color: #16a34a;
 }

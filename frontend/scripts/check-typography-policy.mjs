@@ -14,7 +14,7 @@ const SRC_DIR = path.join(BASE_DIR, "src");
 
 const STRICT = String(process.env.TYPO_STRICT || "").trim() === "1";
 
-/** @typedef {'FONT_SIZE_UNIT'|'FONT_SIZE_CLAMP'|'FONT_SIZE_CALC_NON_REM'|'FONT_SIZE_VAR_PX_FALLBACK'|'FS_TOKEN_DISALLOWED'} ViolationType */
+/** @typedef {'FONT_SIZE_UNIT'|'FONT_SIZE_CLAMP'|'FONT_SIZE_CALC_NON_REM'|'FONT_SIZE_VAR_PX_FALLBACK'|'FONT_SIZE_NOT_VAR'|'FS_TOKEN_DISALLOWED'} ViolationType */
 
 function walk(dirPath) {
     /** @type {string[]} */
@@ -117,6 +117,20 @@ for (const rel of files) {
             if (hasVarPxFallback(value))
                 types.push("FONT_SIZE_VAR_PX_FALLBACK");
 
+            // Policy: font-size must consume var(--fs-*).
+            // Literal values (e.g. 0.95rem) are violations even if the unit is rem.
+            if (types.length === 0) {
+                const trimVal = value.trim().toLowerCase();
+                const usesVar = /\bvar\s*\(/.test(trimVal);
+                const isCssKeyword =
+                    /^(inherit|initial|unset|revert|revert-layer)$/.test(
+                        trimVal,
+                    );
+                if (!usesVar && !isCssKeyword) {
+                    types.push("FONT_SIZE_NOT_VAR");
+                }
+            }
+
             for (const type of types) {
                 violations.push({
                     type,
@@ -130,7 +144,7 @@ for (const rel of files) {
 
     // --fs-*: ...;
     {
-        const reFsToken = /\b(--fs-[a-z0-9-]+)\s*:\s*([\s\S]*?);/gi;
+        const reFsToken = /(--fs-[a-z0-9-]+)\s*:\s*([\s\S]*?);/gi;
         let m;
         while ((m = reFsToken.exec(masked)) !== null) {
             const idx = m.index;
@@ -159,6 +173,7 @@ const counts = {
     FONT_SIZE_CLAMP: 0,
     FONT_SIZE_CALC_NON_REM: 0,
     FONT_SIZE_VAR_PX_FALLBACK: 0,
+    FONT_SIZE_NOT_VAR: 0,
     FS_TOKEN_DISALLOWED: 0,
 };
 

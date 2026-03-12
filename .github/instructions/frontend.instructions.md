@@ -151,7 +151,33 @@ Enterprise caution:
 
 ---
 
-## 9) Output Requirements (When implementing frontend changes)
+## 10) Frontend Markup & Styling Governance
+
+### Mandatory pre-read
+
+Before any frontend markup or styling task, read:
+
+1. `docs/policies/frontend-markup-styling.md`
+2. `docs/typography-ssot.md`
+3. `docs/policies/typography-mobile-first.md`
+
+If the task touches cards, also read: `docs/cards-styling-architecture.md`.
+
+### Hard rules (compact)
+
+- One `<main>` per page/route view. No nested `<main>`.
+- Maximum one `<h1>` per rendered page/route state.
+- Semantic landmarks: `<header>`, `<nav>`, `<main>`, `<footer>`. Use `<section>` only with a heading or `aria-labelledby`.
+- Every form control must have an associated `<label>` — placeholder is not a label.
+- Links navigate, buttons act. No `<div>`/`<span>` as fake interactive controls.
+- App-global and card styling are separate boundaries; do not conflate.
+- `font-size` only via `var(--fs-*)` — rem-only; no px/em/%/vw/vh/clamp.
+
+Full policy: `docs/policies/frontend-markup-styling.md`.
+
+---
+
+## 11) Output Requirements (When implementing frontend changes)
 
 - List changed files + rationale.
 - Provide PROOF (file:line ranges) for:

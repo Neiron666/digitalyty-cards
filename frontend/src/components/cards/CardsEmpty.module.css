@@ -14,7 +14,7 @@
 }
 
 .box h3 {
-    font-size: 1.3rem;
+    font-size: var(--fs-h4);
     font-weight: 900;
     margin-bottom: 8px;
 }

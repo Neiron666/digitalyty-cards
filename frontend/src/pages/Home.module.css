@@ -151,7 +151,7 @@
 }
 
 .p {
-    font-size: 1.05rem;
+    font-size: var(--fs-body);
     line-height: 1.8;
     color: #cbd5f5;
     max-width: 720px;
@@ -169,7 +169,7 @@
 .heroCta {
     width: auto;
     padding: 16px 48px;
-    font-size: 1.1rem;
+    font-size: var(--fs-h6);
     letter-spacing: 0.03em;
     background: linear-gradient(135deg, #d4af37 0%, #c5962c 40%, #e6c44d 100%);
     color: #0f172a;
@@ -225,13 +225,16 @@
 .heroCards::before {
     content: "";
     position: absolute;
-    inset: 5% 5%;
+    bottom: -5%;
+    left: 10%;
+    right: 10%;
+    height: 110%;
     border-radius: 50%;
     background: radial-gradient(
-        ellipse at 50% 50%,
+        ellipse at 50% 70%,
         var(--accent-cyan-soft) 0%,
-        rgba(34, 254, 254, 0.5) 30%,
-        var(--accent-cyan-fade) 55%,
+        rgba(34, 254, 254, 0.5) 50%,
+        var(--accent-cyan-fade) 70%,
         transparent 75%
     );
     filter: blur(50px);
@@ -306,7 +309,7 @@
     gap: 12px;
     flex-wrap: wrap;
     color: rgba(226, 232, 240, 0.78);
-    font-size: 0.92rem;
+    font-size: var(--fs-body-lg);
     justify-content: center;
     margin-top: 24px;
 }
@@ -487,7 +490,7 @@
 }
 
 .title {
-    font-size: 2.2rem;
+    font-size: var(--fs-hero-title);
     font-weight: 900;
     margin-bottom: 12px;
     background: linear-gradient(
@@ -506,7 +509,7 @@
 }
 
 .subtitle {
-    font-size: 1.1rem;
+    font-size: var(--fs-h6);
     color: #334155;
     margin-bottom: 32px;
     font-weight: 600;
@@ -574,22 +577,6 @@
     letter-spacing: 0.01em;
 }
 
-.sectionDivider {
-    width: 140px;
-    height: 2px;
-    margin: 60px auto;
-    border-radius: 999px;
-    background: linear-gradient(
-        90deg,
-        transparent 0%,
-        rgba(212, 175, 55, 0.18) 12%,
-        var(--gold) 50%,
-        rgba(212, 175, 55, 0.18) 88%,
-        transparent 100%
-    );
-    box-shadow: 0 0 10px rgba(212, 175, 55, 0.25);
-}
-
 /* sections */
 .section {
     padding: 42px 20px;
@@ -605,7 +592,7 @@
 .h2 {
     align-self: center;
     margin: 0 0 10px;
-    font-size: 1.6rem;
+    font-size: var(--fs-h2);
     font-weight: 900;
 }
 
@@ -633,15 +620,12 @@
 }
 
 .featureCard {
-    background: #ffffff;
+    background: #f8fafc;
     border-radius: 28px;
     padding: 34px 28px 38px;
     text-align: center;
-    border: 1px solid rgba(212, 175, 55, 0.22);
-    box-shadow:
-        0 8px 32px rgba(0, 0, 0, 0.06),
-        0 2px 8px rgba(0, 0, 0, 0.03),
-        inset 0 1px 0 rgba(255, 255, 255, 0.9);
+    border: 2px solid var(--gold-soft);
+    box-shadow: inset 0 0 0 2px rgba(212, 175, 55, 1);
     transition:
         transform 0.2s ease,
         box-shadow 0.2s ease;
@@ -654,9 +638,8 @@
 .featureCard:hover {
     transform: translateY(-4px);
     box-shadow:
-        0 20px 48px rgba(0, 0, 0, 0.1),
-        0 8px 16px rgba(0, 0, 0, 0.04),
-        0 0 0 1px rgba(212, 175, 55, 0.35);
+        0 20px 40px rgba(0, 0, 0, 0.25),
+        0 0 0 1px var(--gold-soft);
 }
 
 .centeredTitleandSubtitle {
@@ -677,9 +660,8 @@
     align-items: center;
     justify-content: center;
 
-    border: 2px solid rgba(212, 175, 55, 0.3);
+    border: 2px solid #0f172a;
     background: #ffffff;
-    box-shadow: 0 4px 12px rgba(212, 175, 55, 0.08);
 }
 
 .iconWrap img {
@@ -689,14 +671,14 @@
 }
 
 .featureTitle {
-    font-size: 1.05rem;
+    font-size: var(--fs-body);
     font-weight: 900;
     margin-bottom: 10px;
     color: var(--gold);
 }
 
 .featureText {
-    font-size: 0.95rem;
+    font-size: var(--fs-body-lg);
     line-height: 1.7;
     color: #1e293b;
 }
@@ -852,7 +834,7 @@
 
 .ctaTitle {
     font-weight: 900;
-    font-size: 1.1rem;
+    font-size: var(--fs-h6);
     margin-bottom: 4px;
 }
 
@@ -904,7 +886,7 @@
     .heroCta {
         width: 200px;
         padding: 10px 15px;
-        font-size: 1.05rem;
+        font-size: var(--fs-body);
     }
 
     .heroCardImg {

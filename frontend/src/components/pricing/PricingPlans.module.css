@@ -21,7 +21,7 @@
 .saving {
     color: #16a34a;
     font-weight: 900;
-    font-size: 0.9rem;
+    font-size: var(--fs-ui);
 }
 
 .grid {
@@ -43,7 +43,9 @@
     display: flex;
     flex-direction: column; /* ВАЖНО */
 
-    transition: transform 0.15s ease, box-shadow 0.15s ease;
+    transition:
+        transform 0.15s ease,
+        box-shadow 0.15s ease;
 }
 
 .plan:hover {
@@ -63,7 +65,7 @@
     right: 16px;
     background: linear-gradient(135deg, #f5e7a3, var(--gold));
     color: #1e293b;
-    font-size: 0.75rem;
+    font-size: var(--fs-caption);
     font-weight: 900;
     padding: 4px 10px;
     border-radius: 999px;
@@ -77,21 +79,21 @@
 }
 
 .header h3 {
-    font-size: 1.3rem;
+    font-size: var(--fs-h4);
     font-weight: 900;
     margin-bottom: 6px;
     color: var(--card-text);
 }
 
 .price {
-    font-size: 2.2rem;
+    font-size: var(--fs-hero-title);
     font-weight: 900;
     color: var(--card-text);
 }
 
 .note {
     color: var(--card-muted);
-    font-size: 0.95rem;
+    font-size: var(--fs-body-lg);
 }
 
 .features {
@@ -124,7 +126,7 @@
     background: rgba(245, 158, 11, 0.15);
     border: 1px solid rgba(245, 158, 11, 0.35);
     color: #f59e0b;
-    font-size: 0.9rem;
+    font-size: var(--fs-ui);
     text-align: center;
 }
 

@@ -27,19 +27,19 @@
 
 .kpiLabel {
     opacity: 0.8;
-    font-size: 0.85rem;
+    font-size: var(--fs-body-sm);
     font-weight: 700;
 }
 
 .kpiValue {
     margin-top: 6px;
-    font-size: 1.2rem;
+    font-size: var(--fs-h5);
     font-weight: 800;
 }
 
 .small {
     opacity: 0.8;
-    font-size: 0.85rem;
+    font-size: var(--fs-body-sm);
 }
 
 .table {
@@ -83,7 +83,7 @@
 .legend {
     display: flex;
     gap: 12px;
-    font-size: 0.85rem;
+    font-size: var(--fs-body-sm);
     opacity: 0.85;
     margin-top: 8px;
 }
@@ -165,7 +165,7 @@
 
 .sectionSubtitle {
     opacity: 0.8;
-    font-size: 0.85rem;
+    font-size: var(--fs-body-sm);
 }
 
 .tooltip,
@@ -178,7 +178,7 @@
     height: 18px;
     border-radius: 999px;
     border: 1px solid var(--border);
-    font-size: 0.75rem;
+    font-size: var(--fs-caption);
     font-weight: 800;
     cursor: help;
     user-select: none;
@@ -220,7 +220,7 @@
     align-items: center;
     gap: 8px;
     margin-bottom: 10px;
-    font-size: 0.9rem;
+    font-size: var(--fs-ui);
     opacity: 0.95;
 }
 
@@ -272,13 +272,13 @@
     border: 1px solid var(--border);
     border-radius: 999px;
     padding: 4px 8px;
-    font-size: 0.8rem;
+    font-size: var(--fs-body-sm);
     opacity: 0.95;
 }
 
 .chevron {
     opacity: 0.8;
-    font-size: 0.9rem;
+    font-size: var(--fs-ui);
 }
 
 .accordionContent {

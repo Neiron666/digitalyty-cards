@@ -17,7 +17,7 @@
 
 .title {
     margin: 0;
-    font-size: 1.25rem;
+    font-size: var(--fs-h5);
     font-weight: 900;
     color: var(--text-main);
     text-decoration: underline var(--gold) 1px;
@@ -160,5 +160,5 @@
 .desc {
     color: var(--text-muted);
     font-weight: 700;
-    font-size: 0.92rem;
+    font-size: var(--fs-body-lg);
 }
