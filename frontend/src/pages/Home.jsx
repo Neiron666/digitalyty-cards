@@ -118,7 +118,7 @@ export default function Home() {
                     <div className={styles.heroActions}>
                         <Button
                             as={Link}
-                            to="/register"
+                            to="/edit"
                             variant="primary"
                             className={styles.heroCta}
                             onClick={() =>

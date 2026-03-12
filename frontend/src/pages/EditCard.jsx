@@ -2132,7 +2132,20 @@ function EditCard() {
                                     disabled={anonConsentBusy}
                                 />
                                 <span className={styles.anonConsentLabelText}>
-                                    אני מסכים/ה למדיניות הפרטיות ולתנאי השימוש,
+                                    אני מסכים/ה ל
+                                    <Link
+                                        to="/privacy"
+                                        className={styles.anonConsentLink}
+                                    >
+                                        מדיניות הפרטיות
+                                    </Link>{" "}
+                                    ול
+                                    <Link
+                                        to="/terms"
+                                        className={styles.anonConsentLink}
+                                    >
+                                        תנאי השימוש
+                                    </Link>{" "}
                                     ומבין/ה שהמידע שאזין יישמר כטיוטה זמנית
                                     בהתאם להם
                                 </span>
