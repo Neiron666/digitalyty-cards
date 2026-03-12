@@ -287,6 +287,25 @@ Skins не таргетят структурные селекторы .card, .he
 
 Token + hook-контракт описан также в frontend/src/templates/skins/\_base/skinTokens.md
 
+Card Typography — High-Blast-Radius Area (Deferred Exception)
+
+`CardLayout.module.css` is the sole SSoT for card-boundary typography tokens.
+
+The primitive card font-size scale (`--fs-10` through `--fs-32`) currently uses fluid token definitions (`clamp` + `vw` + `calc` + `--fs-scale`). This mechanism:
+
+- Powers all card text rendering across all templates and skins.
+- Is consumed by 35+ `font-size: var(--fs-*)` declarations in card components.
+- Affects both public cards and editor preview identically (same render chain).
+- Is intentional — designed for smooth cross-viewport card scaling.
+
+**Do NOT change card typography token definitions casually.** Any modification to `--fs-10`–`--fs-32` or `--fs-scale` interaction constitutes a high-blast-radius change requiring:
+
+- A separate architectural decision.
+- A dedicated card QA cycle with per-template × per-skin visual verification.
+- Preview/public consistency validation.
+
+This is currently a deferred exception from the typography policy. See `docs/typography-ssot.md` §8.2 for full rationale and prerequisites.
+
 4. Реальные tokens, которые читает CardLayout.module.css
 
 Источник: frontend/src/templates/layout/CardLayout.module.css

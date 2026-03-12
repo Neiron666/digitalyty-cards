@@ -225,6 +225,45 @@ Planned (future) typography gate:
 
 ---
 
+## 8.2) Card-Boundary Typography Exception (Deferred)
+
+**Status:** Deferred — acceptable temporary exception.  
+**Scope:** Card-boundary only (`[data-cardigo-scope="card"]`). Does NOT relax app-side typography policy.
+
+### What exists
+
+The primitive card typography scale (`--fs-10` through `--fs-32`) in `CardLayout.module.css` uses a deliberate fluid-scaling mechanism:
+
+```
+--fs-N: calc( clamp(min-rem, preferred-rem + X·vw, max-rem) × var(--fs-scale) )
+```
+
+This uses `clamp`, `vw`, and `calc(non-rem)` — all banned by §2.2 of this policy.
+
+### Why it is deferred
+
+- The mechanism is **intentional**, not accidental. It provides smooth card typography scaling across viewports.
+- It is **fully isolated** in the card-boundary scope and cannot affect app-side typography.
+- All card-side consumers already use `var(--fs-*)` correctly — only the token definitions are non-compliant.
+- Skins interact with this mechanism only through `--fs-scale` overrides (SkinBase.module.css).
+- Changing these definitions affects **every rendered card** (all templates, all skins, public + preview).
+
+### Rules
+
+- **Do NOT modify these 12 token definitions** as part of normal typography cleanup or policy enforcement.
+- **Do NOT treat this as a blanket relaxation** — app-side typography policy remains strict and fully enforced.
+- The typography gate (`check:typography`) will continue to report these 12 as `FS_TOKEN_DISALLOWED`. This is expected.
+
+### Prerequisites for future remediation
+
+1. Architecture decision: confirm whether card-scope should use static rem + rem-breakpoints or retain a controlled exception.
+2. Visual regression tooling or manual QA matrix covering all template × skin combinations.
+3. Dedicated card QA cycle (not part of app-side cleanup).
+4. Staged migration per §7 (M1 step): replace fluid definitions with rem-only values, adjust `--fs-scale` interaction.
+5. Preview/public non-regression verification.
+
+---
+
 ## 9) Definition of Done / QA Checklist
 
 - All card `font-size` declarations consume `var(--fs-*)`.
