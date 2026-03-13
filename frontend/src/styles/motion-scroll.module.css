@@ -1,0 +1,69 @@
+/*
+ * motion-scroll.module.css — Scroll-linked motion presets (v2 layer).
+ *
+ * Driven by --scroll-progress (0..1) written by useScrollProgress hook.
+ * For NEW marketing/app-shell sections only.
+ * Card-boundary and preview wrapper are OUT OF SCOPE.
+ *
+ * Architecture rule — transform conflict:
+ *   v1 reveal presets (fadeUp, scaleIn) use `transform`.
+ *   v2 scroll presets (scrollZoomSoft, scrollParallaxSoft) also use `transform`.
+ *   Do NOT stack v1 and v2 on the SAME DOM node.
+ *   Safe pattern:
+ *     <div className={motion.fadeUp}>              ← v1 reveal on wrapper
+ *       <div className={scroll.scrollZoomSoft}>    ← v2 scroll on inner
+ *
+ * All presets consume --scroll-progress with a ,0 fallback so
+ * elements render statically when the hook is not active.
+ *
+ * Tuneable custom properties (set via consumer CSS Module, NOT inline styles):
+ *   --scroll-zoom-factor       (unitless, default 0.06)
+ *   --scroll-parallax-distance (rem,      default -1.5rem)
+ *   --scroll-drift-distance    (%,        default -12%)
+ */
+
+/* ── Soft zoom (scale grows gently with scroll) ────────────────── */
+
+.scrollZoomSoft {
+    transform: scale(
+        calc(1 + var(--scroll-progress, 0) * var(--scroll-zoom-factor, 0.06))
+    );
+    will-change: transform;
+}
+
+/* ── Soft parallax (subtle vertical shift) ──────────────────────── */
+
+.scrollParallaxSoft {
+    transform: translateY(
+        calc(
+            var(--scroll-progress, 0) * var(--scroll-parallax-distance, -1.5rem)
+        )
+    );
+    will-change: transform;
+}
+
+/* ── Horizontal drift illusion ──────────────────────────────────── */
+
+/* Wrapper: clips the horizontal overflow created by .scrollDriftInline */
+.scrollDriftInlineWrap {
+    overflow: hidden;
+}
+
+/* Inner content row that shifts horizontally */
+.scrollDriftInline {
+    transform: translateX(
+        calc(var(--scroll-progress, 0) * var(--scroll-drift-distance, -12%))
+    );
+    will-change: transform;
+}
+
+/* ── Reduced motion ─────────────────────────────────────────────── */
+
+@media (prefers-reduced-motion: reduce) {
+    .scrollZoomSoft,
+    .scrollParallaxSoft,
+    .scrollDriftInline {
+        transform: none;
+        will-change: auto;
+    }
+}

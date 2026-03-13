@@ -316,3 +316,11 @@
     color: #ef4444;
     padding-block: 40px;
 }
+
+/* ── Reduced-motion: disable decorative infinite animation ── */
+@media (prefers-reduced-motion: reduce) {
+    .sectionHeading::before {
+        animation: none;
+        box-shadow: none;
+    }
+}

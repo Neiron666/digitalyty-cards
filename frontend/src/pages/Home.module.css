@@ -925,3 +925,18 @@
         flex-basis: 100%;
     }
 }
+
+/* ── Reduced-motion: disable decorative infinite animations ── */
+@media (prefers-reduced-motion: reduce) {
+    .h1Accent {
+        animation: none;
+    }
+
+    .heroCta {
+        animation: none;
+    }
+
+    .heroCardImg {
+        animation: none;
+    }
+}

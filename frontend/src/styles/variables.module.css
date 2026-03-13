@@ -41,4 +41,27 @@
     --input-text: var(--card-text);
 
     --contact-btn-fg: #ffffff;
+
+    /* ── Motion tokens ── */
+    --duration-instant: 0ms;
+    --duration-fast: 120ms;
+    --duration-normal: 220ms;
+    --duration-slow: 400ms;
+    --duration-reveal: 650ms;
+    --duration-reveal-slow: 1200ms;
+
+    --ease-default: ease;
+    --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+    --ease-in-out: ease-in-out;
+    --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    :root {
+        --duration-fast: 0ms;
+        --duration-normal: 0ms;
+        --duration-slow: 0ms;
+        --duration-reveal: 0ms;
+        --duration-reveal-slow: 0ms;
+    }
 }

@@ -1,0 +1,207 @@
+/*
+ * motion.module.css — Reusable motion presets for NEW pages/components only.
+ *
+ * Usage:
+ *   import motion from "../../styles/motion.module.css";
+ *   <div className={`${motion.fadeUp} ${isRevealed ? motion.isVisible : ""}`}>
+ *
+ * Architecture rule — transform conflict:
+ *   Reveal presets (fadeUp, scaleIn, etc.) use `transform`.
+ *   Interaction presets (hoverLift, pressDown) also use `transform`.
+ *   Do NOT stack both on the SAME DOM node.
+ *   Safe pattern:
+ *     <div className={motion.fadeUp}>          ← reveal on wrapper
+ *       <button className={motion.hoverLift}>  ← interaction on inner
+ *
+ * All durations/easings consume existing tokens from variables.module.css.
+ * Card-boundary surfaces are OUT OF SCOPE for this module.
+ */
+
+/* ── Reveal presets (hidden → visible on scroll) ────────────────── */
+
+.fadeIn {
+    opacity: 0;
+    transition: opacity var(--duration-reveal) var(--ease-out);
+}
+
+.fadeUp {
+    opacity: 0;
+    transform: translateY(1.5rem);
+    transition:
+        opacity var(--duration-reveal) var(--ease-out),
+        transform var(--duration-reveal) var(--ease-out);
+}
+
+.fadeDown {
+    opacity: 0;
+    transform: translateY(-1.5rem);
+    transition:
+        opacity var(--duration-reveal) var(--ease-out),
+        transform var(--duration-reveal) var(--ease-out);
+}
+
+/* RTL-first: inline-start = right side of viewport */
+.slideInlineStart {
+    opacity: 0;
+    transform: translateX(2rem);
+    transition:
+        opacity var(--duration-reveal) var(--ease-out),
+        transform var(--duration-reveal) var(--ease-out);
+}
+
+/* RTL-first: inline-end = left side of viewport */
+.slideInlineEnd {
+    opacity: 0;
+    transform: translateX(-2rem);
+    transition:
+        opacity var(--duration-reveal) var(--ease-out),
+        transform var(--duration-reveal) var(--ease-out);
+}
+
+.scaleIn {
+    opacity: 0;
+    transform: scale(0.92);
+    transition:
+        opacity var(--duration-reveal) var(--ease-out),
+        transform var(--duration-reveal) var(--ease-out);
+}
+
+/* ── Toggle state (applied when element enters viewport) ────────── */
+
+.isVisible {
+    opacity: 1;
+    transform: none;
+}
+
+/* ── Direction overrides for LTR contexts ───────────────────────── */
+
+:global([dir="ltr"]) .slideInlineStart:not(.isVisible) {
+    transform: translateX(-2rem);
+}
+
+:global([dir="ltr"]) .slideInlineEnd:not(.isVisible) {
+    transform: translateX(2rem);
+}
+
+/* ── Delay helpers ──────────────────────────────────────────────── */
+
+.delay100 {
+    transition-delay: 100ms;
+}
+
+.delay200 {
+    transition-delay: 200ms;
+}
+
+.delay300 {
+    transition-delay: 300ms;
+}
+
+.delay400 {
+    transition-delay: 400ms;
+}
+
+/* ── Duration overrides ─────────────────────────────────────────── */
+
+.fast {
+    transition-duration: var(--duration-fast);
+}
+
+.normal {
+    transition-duration: var(--duration-normal);
+}
+
+.slow {
+    transition-duration: var(--duration-slow);
+}
+
+/* ── Interaction presets (apply on INNER interactive element) ────── */
+
+.hoverLift {
+    transition:
+        transform var(--duration-fast) var(--ease-default),
+        box-shadow var(--duration-fast) var(--ease-default);
+}
+
+.hoverLift:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+}
+
+.hoverGlowSoft {
+    transition: box-shadow var(--duration-fast) var(--ease-default);
+}
+
+.hoverGlowSoft:hover {
+    box-shadow: 0 0 12px var(--gold-fade);
+}
+
+.pressDown {
+    transition: transform var(--duration-fast) var(--ease-default);
+}
+
+.pressDown:active {
+    transform: scale(0.97);
+}
+
+/* ── Reduced motion ─────────────────────────────────────────────── */
+
+@media (prefers-reduced-motion: reduce) {
+    /* Reveal presets: render visible immediately, no animation */
+    .fadeIn,
+    .fadeUp,
+    .fadeDown,
+    .slideInlineStart,
+    .slideInlineEnd,
+    .scaleIn {
+        opacity: 1;
+        transform: none;
+        transition: none;
+    }
+
+    /* Match direction-override specificity so reduced-motion wins */
+    :global([dir="ltr"]) .slideInlineStart:not(.isVisible),
+    :global([dir="ltr"]) .slideInlineEnd:not(.isVisible) {
+        transform: none;
+        transition: none;
+    }
+
+    .isVisible {
+        opacity: 1;
+        transform: none;
+    }
+
+    /* Delays become irrelevant when transitions are removed */
+    .delay100,
+    .delay200,
+    .delay300,
+    .delay400 {
+        transition-delay: 0ms;
+    }
+
+    .fast,
+    .normal,
+    .slow {
+        transition-duration: 0ms;
+    }
+
+    /* hoverLift: remove movement, keep box-shadow as instant feedback */
+    .hoverLift {
+        transition: none;
+    }
+
+    .hoverLift:hover {
+        transform: none;
+    }
+
+    /* hoverGlowSoft: non-motion shadow feedback — remains active */
+
+    /* pressDown: remove scale movement */
+    .pressDown {
+        transition: none;
+    }
+
+    .pressDown:active {
+        transform: none;
+    }
+}
