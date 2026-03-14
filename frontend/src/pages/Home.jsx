@@ -37,23 +37,23 @@ import {
 const CONVERSION_ITEMS = [
     {
         Icon: PhoneIcon,
-        title: "שיחה בלחיצה",
-        text: "הלקוח לוחץ — והטלפון כבר מצלצל אצלכם.",
+        title: "חיוג ישיר",
+        text: "הלקוח לוחץ ומתחיל שיחה מיידית - בדרך הכי קצרה אליכם",
     },
     {
         Icon: ChatIcon,
         title: "וואטסאפ מיידי",
-        text: "שיחה פתוחה בוואטסאפ עם הודעה מוכנה מראש.",
+        text: "פתיחת שיחה מיידית בוואטסאפ עם הודעה מוכנה מראש",
     },
     {
         Icon: ContentIcon,
         title: "טופס פניות",
-        text: "לקוחות משאירים פרטים — ואתם חוזרים בזמן שלכם.",
+        text: "לקוחות משאירים פרטים - ואתם חוזרים בזמן שנוח לכם",
     },
     {
         Icon: LocationIcon,
-        title: "ניווט ופעולה",
-        text: "כפתור ניווט ישיר, אימייל, קישור לאתר — הכל מכפתור אחד.",
+        title: "ניווט ישיר ",
+        text: "הלקוח פותח מסלול לעסק בלחיצה אחת - בלי לשאול איך מגיעים",
     },
 ];
 
@@ -74,7 +74,7 @@ const SHARE_CHANNELS = [
     {
         Icon: LinkIcon,
         title: "קישור ישיר",
-        text: "שתפו בכל מקום — אימייל, ביו ברשתות, חתימה דיגיטלית.",
+        text: "שתפו בכל מקום - אימייל, ביו ברשתות, חתימה דיגיטלית.",
     },
     {
         Icon: QrCodeIcon,
@@ -89,7 +89,7 @@ const SHARE_CHANNELS = [
     {
         Icon: AnalyticsIcon,
         title: "קישור + UTM",
-        text: "צרו קישורים ייעודיים לכל קמפיין — ועקבו אחרי התוצאות.",
+        text: "צרו קישורים ייעודיים לכל קמפיין - ועקבו אחרי התוצאות.",
     },
 ];
 
@@ -157,12 +157,12 @@ const CONTROL_FEATURES = [
     {
         Icon: SelfDesignIcon,
         title: "החלפת עיצוב מיידית",
-        text: "בחרו מ-25 תבניות מקצועיות והחליפו בלחיצה — התוכן נשמר.",
+        text: "בחרו מ-25 תבניות מקצועיות והחליפו בלחיצה - התוכן נשמר.",
     },
     {
         Icon: PencilIcon,
         title: "עריכת תוכן חופשית",
-        text: "טקסטים, תמונות, קישורים, שאלות נפוצות — הכל מתעדכן מיד.",
+        text: "טקסטים, תמונות, קישורים, שאלות נפוצות - הכל מתעדכן מיד.",
     },
     {
         Icon: MobileIcon,
@@ -172,7 +172,7 @@ const CONTROL_FEATURES = [
     {
         Icon: LockIcon,
         title: "פרסום בשליטתכם",
-        text: "פרסמו והסתירו את הכרטיס בכל רגע — אתם מחליטים מתי.",
+        text: "פרסמו והסתירו את הכרטיס בכל רגע - אתם מחליטים מתי.",
     },
 ];
 
@@ -223,9 +223,11 @@ export default function Home() {
     const r8 = useMotionReveal();
     const r9 = useMotionReveal();
 
+    const stageZoom = useScrollProgress();
+
     return (
         <main className={styles.page} data-page="site">
-            {/* HERO — unchanged */}
+            {/* HERO - unchanged */}
             <section className={styles.hero}>
                 <div className={styles.heroInner}>
                     <div className={styles.heroText}>
@@ -289,7 +291,7 @@ export default function Home() {
 
             {/* ── 1. MINI-SITE / BUSINESS PRESENCE ────────────── */}
             <section
-                className={`${styles.sectionLight} ${motion.fadeUp} ${r1.isRevealed ? motion.isVisible : ""}`}
+                className={`${styles.sectionLight} ${motion.fadeUp} ${motion.slow} ${motion.delay300} ${r1.isRevealed ? motion.isVisible : ""}`}
                 ref={r1.ref}
             >
                 <div className={styles.sectionWrap}>
@@ -303,13 +305,17 @@ export default function Home() {
                             Cardigo
                         </strong>{" "}
                         לא נעצר בפרטי קשר. זהו עמוד עסקי קומפקטי עם גלריה,
-                        וידאו, המלצות, שאלות נפוצות וטופס פנייה —{" "}
+                        וידאו, המלצות, שאלות נפוצות וטופס פנייה -{" "}
                         <em className={styles.presenceLeadPunch}>
                             הכל בקישור אחד שנראה מקצועי ונוח לשיתוף.
                         </em>
                     </p>
                     <div className={styles.presenceMedia}>
-                        <div className={styles.phoneStage} aria-hidden="true">
+                        <div
+                            className={`${styles.phoneStage} ${scroll.scrollZoomSoft} ${styles.strongerZoom}`}
+                            aria-hidden="true"
+                            ref={stageZoom.ref}
+                        >
                             <img
                                 className={styles.phoneImage}
                                 src={encodeURI(
@@ -337,7 +343,7 @@ export default function Home() {
                     </div>
 
                     <p className={styles.presenceMore}>
-                        ועוד הרבה פיצרים נוספים&hellip;
+                        ועוד הרבה פיצ'רים נוספים&hellip;
                     </p>
 
                     <div className={styles.highlight}>
@@ -347,18 +353,27 @@ export default function Home() {
                 </div>
             </section>
 
-            {/* ── 2. CONVERSION — FROM VIEW TO CONTACT ────────── */}
+            {/* ── 2. CONVERSION - FROM VIEW TO CONTACT ────────── */}
             <section
-                className={`${styles.sectionDark} ${motion.fadeUp} ${r2.isRevealed ? motion.isVisible : ""}`}
+                className={`${styles.sectionDark} ${motion.fadeUp} ${motion.slow} ${motion.delay300} ${r2.isRevealed ? motion.isVisible : ""}`}
                 ref={r2.ref}
                 id="features"
             >
                 <div className={styles.sectionWrap}>
                     <h2 className={styles.h2White}>
-                        מצפייה ללקוח — בלחיצה אחת
+                        מכל צפייה לפנייה -{" "}
+                        <span className={styles.goldHilight}>בקליק אחד</span>
                     </h2>
-                    <p className={styles.sectionLeadLight}>
-                        כל כפתור בכרטיס הוא הזדמנות ליצירת קשר אמיתית.
+                    <p
+                        className={`${styles.sectionLeadLight} ${styles.goldUnderline}`}
+                    >
+                        כל כפתור בכרטיס מקרב הזדמנות ליצירת קשר
+                        <span
+                            className={`${styles.sectionLeadLight} ${styles.boldTxt}`}
+                        >
+                            {" "}
+                            אמיתית.
+                        </span>{" "}
                     </p>
 
                     <div className={styles.conversionRow}>
@@ -379,13 +394,13 @@ export default function Home() {
 
             {/* ── 3. ANALYTICS / KNOW WHAT WORKS ─────────────── */}
             <section
-                className={`${styles.sectionLight} ${styles.analyticsSection} ${motion.fadeUp} ${r3.isRevealed ? motion.isVisible : ""}`}
+                className={`${styles.sectionLight} ${styles.analyticsSection} ${motion.fadeUp} ${motion.slow} ${motion.delay300} ${r3.isRevealed ? motion.isVisible : ""}`}
                 ref={r3.ref}
             >
                 <div className={styles.sectionWrap}>
                     <h2 className={styles.h2Gold}>תדעו מה באמת עובד</h2>
                     <p className={styles.sectionLead}>
-                        כרדיגו עוקב אחרי כל צפייה, כל לחיצה וכל מקור הגעה — כך
+                        כרדיגו עוקב אחרי כל צפייה, כל לחיצה וכל מקור הגעה - כך
                         שתוכלו לראות מאיפה מגיעים הלקוחות ומה גורם להם ליצור
                         קשר.
                     </p>
@@ -446,12 +461,12 @@ export default function Home() {
 
             {/* ── 4. SHARE EVERYWHERE ─────────────────────────── */}
             <section
-                className={`${styles.sectionDark} ${motion.fadeUp} ${r4.isRevealed ? motion.isVisible : ""}`}
+                className={`${styles.sectionDark} ${motion.fadeUp} ${motion.delay300} ${motion.slow} ${r4.isRevealed ? motion.isVisible : ""}`}
                 ref={r4.ref}
             >
                 <div className={styles.sectionWrap}>
                     <h2 className={styles.h2White}>
-                        שתפו בכל מקום — ותדעו מאיפה הגיעו
+                        שתפו בכל מקום - ותדעו מאיפה הגיעו
                     </h2>
                     <p className={styles.sectionLeadLight}>
                         כל שיתוף הוא הזדמנות עסקית. כרדיגו עוזר לכם להפיץ את
@@ -474,13 +489,13 @@ export default function Home() {
 
             {/* ── 5. EDITABILITY / CONTROL 24/7 ──────────────── */}
             <section
-                className={`${styles.sectionLight} ${motion.fadeUp} ${r5.isRevealed ? motion.isVisible : ""}`}
+                className={`${styles.sectionLight} ${motion.fadeUp} ${motion.delay300} ${motion.slow} ${r5.isRevealed ? motion.isVisible : ""}`}
                 ref={r5.ref}
             >
                 <div className={styles.sectionWrap}>
-                    <h2 className={styles.h2Gold}>תעדכנו בעצמכם — בכל רגע</h2>
+                    <h2 className={styles.h2Gold}>תעדכנו בעצמכם - בכל רגע</h2>
                     <p className={styles.sectionLead}>
-                        שנו טלפון, החליפו עיצוב, עדכנו תמונות — הכל דרך העורך
+                        שנו טלפון, החליפו עיצוב, עדכנו תמונות - הכל דרך העורך
                         הפשוט שלנו, מכל מכשיר, בלי לחכות לאף אחד.
                     </p>
 
@@ -502,13 +517,13 @@ export default function Home() {
 
             {/* ── 6. TEMPLATES / DESIGN ──────────────────────── */}
             <section
-                className={`${styles.sectionDark} ${motion.fadeUp} ${r6.isRevealed ? motion.isVisible : ""}`}
+                className={`${styles.sectionDark} ${motion.fadeUp} ${motion.delay300} ${motion.slow} ${r6.isRevealed ? motion.isVisible : ""}`}
                 ref={r6.ref}
                 id="templates"
             >
                 <div className={styles.sectionWrap}>
                     <h2 className={styles.h2White}>
-                        25 תבניות מקצועיות — מוכנות לשימוש
+                        25 תבניות מקצועיות - מוכנות לשימוש
                     </h2>
                     <p className={styles.sectionLeadLight}>
                         כל עיצוב בנוי RTL, מותאם למובייל, ומוכן לעברית. בחרו
@@ -563,12 +578,12 @@ export default function Home() {
 
             {/* ── 7. HOW IT WORKS (3 steps) ──────────────────── */}
             <section
-                className={`${styles.sectionLight} ${motion.fadeUp} ${r7.isRevealed ? motion.isVisible : ""}`}
+                className={`${styles.sectionLight} ${motion.fadeUp} ${motion.delay300} ${motion.slow} ${r7.isRevealed ? motion.isVisible : ""}`}
                 ref={r7.ref}
                 id="how"
             >
                 <div className={styles.sectionWrap}>
-                    <h2 className={styles.h2Gold}>שלושה צעדים — וזה עובד</h2>
+                    <h2 className={styles.h2Gold}>שלושה צעדים - וזה עובד</h2>
 
                     <div className={styles.steps}>
                         <div className={styles.step}>
@@ -591,7 +606,7 @@ export default function Home() {
                                 משתפים ומודדים
                             </div>
                             <div className={styles.stepText}>
-                                מפיצים בקישור, QR או וואטסאפ — ועוקבים אחרי
+                                מפיצים בקישור, QR או וואטסאפ - ועוקבים אחרי
                                 התוצאות.
                             </div>
                         </div>
@@ -616,8 +631,8 @@ export default function Home() {
                         <details className={styles.qa}>
                             <summary>אפשר לעדכן פרטים אחרי שפרסמתי?</summary>
                             <div className={styles.answer}>
-                                כן. אתם יכולים לשנות כל פרט בכרטיס בכל רגע —
-                                טלפון, תמונות, עיצוב, טקסטים — והעדכון מופיע מיד
+                                כן. אתם יכולים לשנות כל פרט בכרטיס בכל רגע -
+                                טלפון, תמונות, עיצוב, טקסטים - והעדכון מופיע מיד
                                 בקישור הקיים.
                             </div>
                         </details>
@@ -642,7 +657,7 @@ export default function Home() {
                         <details className={styles.qa}>
                             <summary>אפשר להחליף תבנית בלי לאבד תוכן?</summary>
                             <div className={styles.answer}>
-                                כן. כל התוכן שלכם נשמר — רק העיצוב משתנה. תוכלו
+                                כן. כל התוכן שלכם נשמר - רק העיצוב משתנה. תוכלו
                                 להתנסות בכמה תבניות עד שתמצאו את המתאימה.
                             </div>
                         </details>
@@ -663,7 +678,7 @@ export default function Home() {
                             <summary>הכרטיס מופיע בתוצאות חיפוש בגוגל?</summary>
                             <div className={styles.answer}>
                                 כן. הכרטיס הוא עמוד אינטרנט אמיתי עם כתובת
-                                ייחודית, תגיות SEO, ו-JSON-LD — ונכלל באופן
+                                ייחודית, תגיות SEO, ו-JSON-LD - ונכלל באופן
                                 אוטומטי ב-sitemap.
                             </div>
                         </details>
@@ -683,7 +698,7 @@ export default function Home() {
                             </summary>
                             <div className={styles.answer}>
                                 כרטיס דיגיטלי של כרדיגו הוא למעשה עמוד תדמית
-                                ממוקד — מיני סייט — שמוכן תוך דקות, קל לעדכון,
+                                ממוקד - מיני סייט - שמוכן תוך דקות, קל לעדכון,
                                 ובנוי לשיתוף ולמדידה. הוא לא מחליף אתר מלא אבל
                                 נותן נוכחות מקצועית באינטרנט בלי צורך במפתחים.
                             </div>
@@ -694,7 +709,7 @@ export default function Home() {
 
             {/* ── 9. FINAL CTA ───────────────────────────────── */}
             <section
-                className={`${styles.ctaSection} ${motion.fadeUp} ${r9.isRevealed ? motion.isVisible : ""}`}
+                className={`${styles.ctaSection} ${motion.fadeUp} ${motion.delay300} ${motion.slow} ${r9.isRevealed ? motion.isVisible : ""}`}
                 ref={r9.ref}
             >
                 <div className={styles.sectionWrap}>
@@ -703,7 +718,7 @@ export default function Home() {
                             הנוכחות הדיגיטלית שלכם מתחילה כאן
                         </h2>
                         <p className={styles.ctaText}>
-                            כרטיס מקצועי, שיתוף חכם, ותובנות עסקיות — בחינם
+                            כרטיס מקצועי, שיתוף חכם, ותובנות עסקיות - בחינם
                             להתחלה.
                         </p>
                         <Button

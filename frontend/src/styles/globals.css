@@ -94,6 +94,7 @@ body {
     color: var(--text-main);
     font-family: "Heebo", system-ui, sans-serif;
     direction: rtl;
+    scroll-behavior: smooth;
 }
 
 a {
