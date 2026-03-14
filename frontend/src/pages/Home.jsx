@@ -34,26 +34,36 @@ import {
 
 /* ── Data ────────────────────────────────────────────── */
 
+const SECTION_2_IMG = "/images/home-page/main-sections/Section-2";
+
 const CONVERSION_ITEMS = [
     {
         Icon: PhoneIcon,
         title: "חיוג ישיר",
         text: "הלקוח לוחץ ומתחיל שיחה מיידית - בדרך הכי קצרה אליכם",
+        src: `${SECTION_2_IMG}/phone-call.webp`,
+        alt: "חיוג ישיר מכרטיס ביקור דיגיטלי",
     },
     {
         Icon: ChatIcon,
         title: "וואטסאפ מיידי",
         text: "פתיחת שיחה מיידית בוואטסאפ עם הודעה מוכנה מראש",
+        src: `${SECTION_2_IMG}/watsapp.webp`,
+        alt: "שליחת וואטסאפ מכרטיס ביקור דיגיטלי",
     },
     {
         Icon: ContentIcon,
         title: "טופס פניות",
         text: "לקוחות משאירים פרטים - ואתם חוזרים בזמן שנוח לכם",
+        src: `${SECTION_2_IMG}/lead.webp`,
+        alt: "טופס פניות בכרטיס ביקור דיגיטלי",
     },
     {
         Icon: LocationIcon,
         title: "ניווט ישיר ",
-        text: "הלקוח פותח מסלול לעסק בלחיצה אחת - בלי לשאול איך מגיעים",
+        text: "  מסלול לעסק בלחיצה אחת - בלי לשאול איך מגיעים",
+        src: `${SECTION_2_IMG}/waze.webp`,
+        alt: "ניווט ישיר מכרטיס ביקור דיגיטלי",
     },
 ];
 
@@ -347,8 +357,10 @@ export default function Home() {
                     </p>
 
                     <div className={styles.highlight}>
-                        כרטיס ביקור דיגיטלי של כרדיגו - זה נוכחות עסקית מלאה
-                        שעובדת 24/7
+                        {" "}
+                        כרטיס ביקור דיגיטלי של{" "}
+                        <span className={styles.goldUnderline}> כרדיגו</span> -
+                        זה נוכחות עסקית מלאה שעובדת 24/7
                     </div>
                 </div>
             </section>
@@ -379,13 +391,29 @@ export default function Home() {
                     <div className={styles.conversionRow}>
                         {CONVERSION_ITEMS.map((item, i) => (
                             <div key={i} className={styles.conversionCard}>
-                                <item.Icon className={styles.conversionIcon} />
-                                <h3 className={styles.conversionTitle}>
-                                    {item.title}
-                                </h3>
-                                <p className={styles.conversionText}>
-                                    {item.text}
-                                </p>
+                                <div className={styles.conversionMedia}>
+                                    <img
+                                        className={styles.conversionImg}
+                                        src={item.src}
+                                        alt={item.alt}
+                                        width={400}
+                                        height={400}
+                                        loading="lazy"
+                                        decoding="async"
+                                    />
+                                </div>
+                                <div className={styles.conversionHeader}>
+                                    <item.Icon
+                                        className={styles.conversionIcon}
+                                    />
+                                    <h3 className={styles.conversionTitle}>
+                                        {item.title}
+                                    </h3>
+
+                                    <p className={styles.conversionText}>
+                                        {item.text}
+                                    </p>
+                                </div>
                             </div>
                         ))}
                     </div>
