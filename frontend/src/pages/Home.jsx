@@ -124,9 +124,9 @@ const PRESENCE_PROOF_CARDS = [
         posClass: "proofTopEnd",
     },
     {
-        title: "QR Code",
-        src: `${SECTION_1_IMG}/QR-code.webp`,
-        alt: "קוד QR לשיתוף כרטיס ביקור דיגיטלי",
+        title: "גלרית תמונות",
+        src: `${SECTION_1_IMG}/gallery.webp`,
+        alt: "גלרית תמונות בכרטיס ביקור דיגיטלי",
         posClass: "proofBottomEnd",
     },
 ];
