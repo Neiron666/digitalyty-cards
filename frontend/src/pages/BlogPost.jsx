@@ -371,7 +371,7 @@ export default function BlogPost() {
 
     /* ── Render ──────────────────────── */
     return (
-        <div className={styles.blogWrap}>
+        <div className={styles.blogWrap} data-page="site">
             <SeoHelmet
                 title={seoTitle}
                 description={seoDescription}

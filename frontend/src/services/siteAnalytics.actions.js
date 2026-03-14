@@ -2,6 +2,9 @@ export const SITE_ACTIONS = Object.freeze({
     home_hero_primary_register: "home_hero_primary_register",
     home_hero_secondary_examples: "home_hero_secondary_examples",
 
+    home_templates_cta: "home_templates_cta",
+    home_bottom_cta: "home_bottom_cta",
+
     pricing_trial_start: "pricing_trial_start",
     pricing_premium_upgrade: "pricing_premium_upgrade",
 

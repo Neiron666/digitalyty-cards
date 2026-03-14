@@ -6,7 +6,7 @@ function Guides() {
         trackSitePageView();
     }, []);
 
-    return <h1>מדריכים</h1>;
+    return <h1 data-page="site">מדריכים</h1>;
 }
 
 export default Guides;

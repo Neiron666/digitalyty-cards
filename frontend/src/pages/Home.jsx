@@ -6,54 +6,183 @@ import {
     trackSitePageView,
 } from "../services/siteAnalytics.client";
 import { SITE_ACTIONS } from "../services/siteAnalytics.actions";
+import motion from "../styles/motion.module.css";
+import scroll from "../styles/motion-scroll.module.css";
+import useMotionReveal from "../hooks/useMotionReveal";
+import useScrollProgress from "../hooks/useScrollProgress";
 import styles from "./Home.module.css";
+import {
+    GalleryIcon,
+    ContentIcon,
+    SeoIcon,
+    AnalyticsIcon,
+    SelfDesignIcon,
+} from "../components/icons/EditorTabIcons";
+import {
+    PhoneIcon,
+    ChatIcon,
+    LocationIcon,
+    VideoIcon,
+    StarIcon,
+    QuestionIcon,
+    LinkIcon,
+    QrCodeIcon,
+    PencilIcon,
+    MobileIcon,
+    LockIcon,
+} from "../components/icons/HomeIcons";
 
-const FEATURES = [
+/* ── Data ────────────────────────────────────────────── */
+
+const CONVERSION_ITEMS = [
     {
-        title: "חיוג ישיר",
-        text: "בלחיצה אחת הלקוח מתקשר אליכם — בלי להעתיק מספרים ובלי לחפש.",
-        icon: "/icons/phone.svg",
+        Icon: PhoneIcon,
+        title: "שיחה בלחיצה",
+        text: "הלקוח לוחץ — והטלפון כבר מצלצל אצלכם.",
     },
     {
-        title: "וואטסאפ בקליק",
-        text: "הלקוח פותח שיחה מיידית בוואטסאפ עם הודעה מוכנה מראש.",
-        icon: "/icons/whatsapp.svg",
+        Icon: ChatIcon,
+        title: "וואטסאפ מיידי",
+        text: "שיחה פתוחה בוואטסאפ עם הודעה מוכנה מראש.",
     },
     {
-        title: "ניווט לעסק",
-        text: "כפתור ניווט שמוביל את הלקוחות אליכם בקלות ובמהירות.",
-        icon: "/icons/navigation.svg",
+        Icon: ContentIcon,
+        title: "טופס פניות",
+        text: "לקוחות משאירים פרטים — ואתם חוזרים בזמן שלכם.",
     },
     {
-        title: "קישור לאתר",
-        text: "קישור ישיר לאתר שלכם או לקטלוג מוצרים — תמיד זמין לשיתוף.",
-        icon: "/icons/link.svg",
+        Icon: LocationIcon,
+        title: "ניווט ופעולה",
+        text: "כפתור ניווט ישיר, אימייל, קישור לאתר — הכל מכפתור אחד.",
+    },
+];
+
+const ANALYTICS_METRICS = [
+    { value: "312", label: "צפיות השבוע" },
+    { value: "47", label: "לחיצות פעולה" },
+    { value: "15.1%", label: "שיעור המרה" },
+];
+
+const ANALYTICS_SOURCES = [
+    { name: "Instagram", pct: 42 },
+    { name: "WhatsApp", pct: 28 },
+    { name: "Google", pct: 18 },
+    { name: "ישיר", pct: 12 },
+];
+
+const SHARE_CHANNELS = [
+    {
+        Icon: LinkIcon,
+        title: "קישור ישיר",
+        text: "שתפו בכל מקום — אימייל, ביו ברשתות, חתימה דיגיטלית.",
     },
     {
-        title: "אתר One Page",
-        text: "עמוד תדמית ממוקד שמוכן לשיתוף ויכול להופיע בתוצאות החיפוש בגוגל.",
-        icon: "/icons/onepage.svg",
+        Icon: QrCodeIcon,
+        title: "QR Code",
+        text: "קוד QR להדפסה, שילוט, אריזות, ואירועים.",
     },
     {
-        title: "רשתות חברתיות",
-        text: "הלקוחות נחשפים לכל המדיות החברתיות שלכם בלחיצה אחת.",
-        icon: "/icons/social.svg",
+        Icon: ChatIcon,
+        title: "WhatsApp",
+        text: "שליחה ישירה ללקוחות עם תצוגה מקדימה אוטומטית.",
     },
     {
-        title: "גלריה ותמונות",
-        text: "הצגת עבודות, מוצרים או פרויקטים בצורה ויזואלית.",
-        icon: "/icons/gallery.svg",
+        Icon: AnalyticsIcon,
+        title: "קישור + UTM",
+        text: "צרו קישורים ייעודיים לכל קמפיין — ועקבו אחרי התוצאות.",
+    },
+];
+
+const PRESENCE_FEATURES = [
+    { Icon: GalleryIcon, label: "גלריית עבודות" },
+    { Icon: VideoIcon, label: "סרטון YouTube" },
+    { Icon: StarIcon, label: "המלצות לקוחות" },
+    { Icon: QuestionIcon, label: "שאלות נפוצות" },
+    { Icon: ContentIcon, label: "טופס פניות" },
+    { Icon: SeoIcon, label: "מופיע בגוגל" },
+];
+
+const SECTION_1_IMG = "/images/home-page/main-sections/Section-1";
+
+const PRESENCE_PROOF_CARDS = [
+    {
+        title: "המלצות",
+        src: `${SECTION_1_IMG}/review.webp`,
+        alt: "המלצות לקוחות בכרטיס ביקור דיגיטלי",
+        posClass: "proofTopStart",
     },
     {
-        title: "וידאו והמלצות",
-        text: "בניית אמון עם סרטון קצר והמלצות מלקוחות.",
-        icon: "/icons/video.svg",
+        title: "כפתורי פעולה",
+        src: `${SECTION_1_IMG}/social-buttons.webp`,
+        alt: "כפתורי שיתוף ופעולה בכרטיס ביקור דיגיטלי",
+        posClass: "proofBottomStart",
     },
     {
         title: "טופס לידים",
-        text: "לקוחות משאירים פרטים – ואתם חוזרים אליהם.",
-        icon: "/icons/form.svg",
+        src: `${SECTION_1_IMG}/lead.webp`,
+        alt: "טופס יצירת קשר בכרטיס ביקור דיגיטלי",
+        posClass: "proofTopEnd",
     },
+    {
+        title: "QR Code",
+        src: `${SECTION_1_IMG}/QR-code.webp`,
+        alt: "קוד QR לשיתוף כרטיס ביקור דיגיטלי",
+        posClass: "proofBottomEnd",
+    },
+];
+
+/* ── Local helper: single scroll-driven proof card ────── */
+
+function ProofCard({ title, src, alt, posClass }) {
+    const { ref } = useScrollProgress();
+    return (
+        <div className={`${styles.proofCard} ${styles[posClass]}`}>
+            <div className={scroll.scrollDriftInline} ref={ref}>
+                {/* <span className={styles.proofCardTitle}>{title}</span> */}
+                <img
+                    className={styles.proofCardImage}
+                    src={src}
+                    alt={alt}
+                    width={200}
+                    height={160}
+                    loading="lazy"
+                    decoding="async"
+                />
+            </div>
+        </div>
+    );
+}
+
+const CONTROL_FEATURES = [
+    {
+        Icon: SelfDesignIcon,
+        title: "החלפת עיצוב מיידית",
+        text: "בחרו מ-25 תבניות מקצועיות והחליפו בלחיצה — התוכן נשמר.",
+    },
+    {
+        Icon: PencilIcon,
+        title: "עריכת תוכן חופשית",
+        text: "טקסטים, תמונות, קישורים, שאלות נפוצות — הכל מתעדכן מיד.",
+    },
+    {
+        Icon: MobileIcon,
+        title: "מכל מכשיר",
+        text: "העורך עובד גם מהנייד. עדכון מהיר בדרך לפגישה.",
+    },
+    {
+        Icon: LockIcon,
+        title: "פרסום בשליטתכם",
+        text: "פרסמו והסתירו את הכרטיס בכל רגע — אתם מחליטים מתי.",
+    },
+];
+
+const TEMPLATE_SKINS = [
+    { name: "Lakmi", color: "#f5ebe0", accent: "#d4af37" },
+    { name: "Tehom Turkiz", color: "#0f172a", accent: "#2dd4bf" },
+    { name: "Ruby Esh", color: "#1c0a0a", accent: "#ef4444" },
+    { name: "Iris Layla", color: "#1a1035", accent: "#a78bfa" },
+    { name: "Bronze Sachlav", color: "#1c1410", accent: "#cd7f32" },
+    { name: "Pardes Chai", color: "#f0fdf4", accent: "#22c55e" },
 ];
 
 const HERO_CARDS = [
@@ -84,9 +213,19 @@ export default function Home() {
         trackSitePageView();
     }, []);
 
+    const r1 = useMotionReveal();
+    const r2 = useMotionReveal();
+    const r3 = useMotionReveal();
+    const r4 = useMotionReveal();
+    const r5 = useMotionReveal();
+    const r6 = useMotionReveal();
+    const r7 = useMotionReveal();
+    const r8 = useMotionReveal();
+    const r9 = useMotionReveal();
+
     return (
-        <main className={styles.page}>
-            {/* HERO */}
+        <main className={styles.page} data-page="site">
+            {/* HERO — unchanged */}
             <section className={styles.hero}>
                 <div className={styles.heroInner}>
                     <div className={styles.heroText}>
@@ -148,74 +287,88 @@ export default function Home() {
                 </div>
             </section>
 
-            <section className={styles.digitalCardLight}>
-                <div className={styles.inner}>
-                    <div className={styles.centeredTitleandSubtitle}>
-                        <h2 className={styles.title}>
-                            מה זה כרטיס ביקור דיגיטלי?
-                        </h2>
-                        <h3 className={styles.subtitle}>
-                            פתרון חכם, מודרני ונוח ליצירת קשר עם לקוחות
-                        </h3>
+            {/* ── 1. MINI-SITE / BUSINESS PRESENCE ────────────── */}
+            <section
+                className={`${styles.sectionLight} ${motion.fadeUp} ${r1.isRevealed ? motion.isVisible : ""}`}
+                ref={r1.ref}
+            >
+                <div className={styles.sectionWrap}>
+                    <h2 className={styles.h2Gold}>
+                        יותר מכרטיס ביקור
+                        <span> העמוד העסקי שלכם שמוכן לשיתוף</span>
+                    </h2>
+                    <p className={styles.presenceLead}>
+                        כרטיס ביקור דיגיטלי של{" "}
+                        <strong className={styles.presenceLeadBrand}>
+                            Cardigo
+                        </strong>{" "}
+                        לא נעצר בפרטי קשר. זהו עמוד עסקי קומפקטי עם גלריה,
+                        וידאו, המלצות, שאלות נפוצות וטופס פנייה —{" "}
+                        <em className={styles.presenceLeadPunch}>
+                            הכל בקישור אחד שנראה מקצועי ונוח לשיתוף.
+                        </em>
+                    </p>
+                    <div className={styles.presenceMedia}>
+                        <div className={styles.phoneStage} aria-hidden="true">
+                            <img
+                                className={styles.phoneImage}
+                                src={encodeURI(
+                                    `${SECTION_1_IMG}/יותר-מכרטיס-ביקור-טלפון עצמו.webp`,
+                                )}
+                                alt="כרטיס ביקור דיגיטלי בנייד"
+                                width={340}
+                                height={600}
+                                loading="lazy"
+                                decoding="async"
+                            />
+                            {PRESENCE_PROOF_CARDS.map((card) => (
+                                <ProofCard key={card.posClass} {...card} />
+                            ))}
+                        </div>
                     </div>
-                    <img
-                        className={styles.sectionImage}
-                        src="/images/home-page/main-sections/%D7%9B%D7%A8%D7%98%D7%99%D7%A1%20%D7%91%D7%99%D7%A7%D7%95%D7%A8%20%D7%93%D7%99%D7%92%D7%99%D7%98%D7%9C%D7%99%20%20%D7%9E%D7%A2%D7%91%D7%A8%20%D7%9E%D7%9B%D7%A8%D7%98%D7%99%D7%A1%20%D7%A0%D7%99%D7%99%D7%A8%20%D7%9C%D7%9B%D7%A8%D7%98%D7%99%D7%A1%20%D7%91%D7%A1%D7%9E%D7%90%D7%A8%D7%98%D7%A4%D7%95%D7%9F%20%D7%9B%D7%A8%D7%93%D7%99%D7%92%D7%95.webp"
-                        alt="מעבר מכרטיס ביקור נייר לכרטיס דיגיטלי בסמארטפון – כרדיגו"
-                        width={800}
-                        height={450}
-                        loading="lazy"
-                        decoding="async"
-                    />
-                    <div className={styles.content}>
-                        <p>
-                            כרטיס ביקור דיגיטלי הוא כרטיס חכם שמחליף את כרטיסי
-                            הנייר המסורתיים, ומאפשר לכם לשתף את כל פרטי ההתקשרות
-                            שלכם בקישור אחד פשוט.
-                        </p>
 
-                        <p>
-                            במקום להדפיס, לשמור ולחפש כרטיסי נייר — הכרטיס
-                            הדיגיטלי זמין תמיד, מתעדכן בזמן אמת ונראה מצוין בכל
-                            מכשיר.
-                        </p>
-
-                        <p>
-                            הכרטיס כולל פרטי קשר, כפתורי יצירת קשר מיידיים,
-                            קישורים לרשתות חברתיות, תוכן ויזואלי וטופס פניות —
-                            והופך כל מפגש להזדמנות עסקית.
-                        </p>
+                    <div className={styles.presenceFeatures}>
+                        {PRESENCE_FEATURES.map((f, i) => (
+                            <div key={i} className={styles.presenceChip}>
+                                <f.Icon className={styles.presenceIcon} />
+                                <span>{f.label}</span>
+                            </div>
+                        ))}
                     </div>
+
+                    <p className={styles.presenceMore}>
+                        ועוד הרבה פיצרים נוספים&hellip;
+                    </p>
 
                     <div className={styles.highlight}>
-                        כרטיס ביקור דיגיטלי לא הולך לאיבוד, לא נגמר – והוא תמיד
-                        איתכם
+                        כרטיס ביקור דיגיטלי של כרדיגו - זה נוכחות עסקית מלאה
+                        שעובדת 24/7
                     </div>
                 </div>
             </section>
 
-            {/* FEATURES */}
-            <section className={styles.digitalCardDark} id="features">
-                <div className={styles.sectionInner}>
-                    <div className={styles.centeredTitleandSubtitle}>
-                        <h2 className={styles.h2}>מה מקבלים בכרטיס דיגיטלי?</h2>
-                        <p className={styles.pMuted}>
-                            כל הכלים במקום אחד – כדי שהלקוח יבין מי אתם ויצור
-                            קשר מיד.
-                        </p>
-                    </div>
+            {/* ── 2. CONVERSION — FROM VIEW TO CONTACT ────────── */}
+            <section
+                className={`${styles.sectionDark} ${motion.fadeUp} ${r2.isRevealed ? motion.isVisible : ""}`}
+                ref={r2.ref}
+                id="features"
+            >
+                <div className={styles.sectionWrap}>
+                    <h2 className={styles.h2White}>
+                        מצפייה ללקוח — בלחיצה אחת
+                    </h2>
+                    <p className={styles.sectionLeadLight}>
+                        כל כפתור בכרטיס הוא הזדמנות ליצירת קשר אמיתית.
+                    </p>
 
-                    <div className={styles.featuresGrid}>
-                        {FEATURES.map((item, i) => (
-                            <div key={i} className={styles.featureCard}>
-                                <div className={styles.iconWrap}>
-                                    <img src={item.icon} alt="" />
-                                </div>
-
-                                <h3 className={styles.featureTitle}>
+                    <div className={styles.conversionRow}>
+                        {CONVERSION_ITEMS.map((item, i) => (
+                            <div key={i} className={styles.conversionCard}>
+                                <item.Icon className={styles.conversionIcon} />
+                                <h3 className={styles.conversionTitle}>
                                     {item.title}
                                 </h3>
-                                <p className={styles.featureText}>
+                                <p className={styles.conversionText}>
                                     {item.text}
                                 </p>
                             </div>
@@ -224,73 +377,232 @@ export default function Home() {
                 </div>
             </section>
 
-            {/* HOW IT WORKS */}
-            <section className={styles.section} id="how">
-                <div className={styles.sectionInner}>
-                    <h2 className={`${styles.h2} ${styles.h2Outlined}`}>
-                        איך זה עובד?
-                    </h2>
+            {/* ── 3. ANALYTICS / KNOW WHAT WORKS ─────────────── */}
+            <section
+                className={`${styles.sectionLight} ${styles.analyticsSection} ${motion.fadeUp} ${r3.isRevealed ? motion.isVisible : ""}`}
+                ref={r3.ref}
+            >
+                <div className={styles.sectionWrap}>
+                    <h2 className={styles.h2Gold}>תדעו מה באמת עובד</h2>
+                    <p className={styles.sectionLead}>
+                        כרדיגו עוקב אחרי כל צפייה, כל לחיצה וכל מקור הגעה — כך
+                        שתוכלו לראות מאיפה מגיעים הלקוחות ומה גורם להם ליצור
+                        קשר.
+                    </p>
 
-                    <div className={styles.steps}>
-                        <div className={styles.step}>
-                            <div className={styles.stepNum}>1</div>
-                            <div className={styles.stepTitle}>נרשמים</div>
-                            <div className={styles.stepText}>
-                                יוצרים חשבון ומתחילים בחינם.
-                            </div>
+                    {/* DOM-built analytics dashboard mockup */}
+                    <div className={styles.analyticsMock}>
+                        <div className={styles.analyticsMockHeader}>
+                            <span className={styles.analyticsMockDot} />
+                            <span className={styles.analyticsMockDot} />
+                            <span className={styles.analyticsMockDot} />
+                            <span className={styles.analyticsMockTitle}>
+                                סטטיסטיקות הכרטיס שלי
+                            </span>
                         </div>
-                        <div className={styles.step}>
-                            <div className={styles.stepNum}>2</div>
-                            <div className={styles.stepTitle}>בוחרים תבנית</div>
-                            <div className={styles.stepText}>
-                                בחרו עיצוב שמתאים לעסק שלכם.
-                            </div>
+
+                        <div className={styles.analyticsKpis}>
+                            {ANALYTICS_METRICS.map((m, i) => (
+                                <div key={i} className={styles.kpiCard}>
+                                    <div className={styles.kpiValue}>
+                                        {m.value}
+                                    </div>
+                                    <div className={styles.kpiLabel}>
+                                        {m.label}
+                                    </div>
+                                </div>
+                            ))}
                         </div>
-                        <div className={styles.step}>
-                            <div className={styles.stepNum}>3</div>
-                            <div className={styles.stepTitle}>ממלאים פרטים</div>
-                            <div className={styles.stepText}>
-                                מוסיפים טקסט, תמונות וקישורים.
+
+                        <div className={styles.analyticsSources}>
+                            <div className={styles.sourcesTitle}>
+                                מקורות הגעה
                             </div>
+                            {ANALYTICS_SOURCES.map((s, i) => (
+                                <div key={i} className={styles.sourceRow}>
+                                    <span className={styles.sourceName}>
+                                        {s.name}
+                                    </span>
+                                    <div className={styles.sourceBar}>
+                                        <div
+                                            className={styles.sourceBarFill}
+                                            data-pct={s.pct}
+                                        />
+                                    </div>
+                                    <span className={styles.sourcePct}>
+                                        {s.pct}%
+                                    </span>
+                                </div>
+                            ))}
                         </div>
-                        <div className={styles.step}>
-                            <div className={styles.stepNum}>4</div>
-                            <div className={styles.stepTitle}>משתפים</div>
-                            <div className={styles.stepText}>
-                                קישור, QR, וואטסאפ — וזה עובד.
+                    </div>
+
+                    <p className={styles.analyticsCaveat}>
+                        * ניתוח נתונים מלא זמין במסלול פרימיום. במסלול חינמי
+                        ניתן לצפות בתצוגה לדוגמה.
+                    </p>
+                </div>
+            </section>
+
+            {/* ── 4. SHARE EVERYWHERE ─────────────────────────── */}
+            <section
+                className={`${styles.sectionDark} ${motion.fadeUp} ${r4.isRevealed ? motion.isVisible : ""}`}
+                ref={r4.ref}
+            >
+                <div className={styles.sectionWrap}>
+                    <h2 className={styles.h2White}>
+                        שתפו בכל מקום — ותדעו מאיפה הגיעו
+                    </h2>
+                    <p className={styles.sectionLeadLight}>
+                        כל שיתוף הוא הזדמנות עסקית. כרדיגו עוזר לכם להפיץ את
+                        הכרטיס ולעקוב אחרי התוצאות.
+                    </p>
+
+                    <div className={styles.shareRow}>
+                        {SHARE_CHANNELS.map((ch, i) => (
+                            <div key={i} className={styles.shareCard}>
+                                <ch.Icon className={styles.shareIcon} />
+                                <h3 className={styles.shareTitle}>
+                                    {ch.title}
+                                </h3>
+                                <p className={styles.shareText}>{ch.text}</p>
                             </div>
-                        </div>
+                        ))}
                     </div>
                 </div>
             </section>
 
-            {/* TEMPLATES PREVIEW */}
-            <section className={styles.section} id="templates">
-                <div className={styles.sectionInner}>
-                    <h2 className={styles.h2}>דוגמאות ותבניות</h2>
-                    <p className={styles.pMuted}>
-                        כאן נציג גלריית תבניות אמיתית (בשלב הבא).
+            {/* ── 5. EDITABILITY / CONTROL 24/7 ──────────────── */}
+            <section
+                className={`${styles.sectionLight} ${motion.fadeUp} ${r5.isRevealed ? motion.isVisible : ""}`}
+                ref={r5.ref}
+            >
+                <div className={styles.sectionWrap}>
+                    <h2 className={styles.h2Gold}>תעדכנו בעצמכם — בכל רגע</h2>
+                    <p className={styles.sectionLead}>
+                        שנו טלפון, החליפו עיצוב, עדכנו תמונות — הכל דרך העורך
+                        הפשוט שלנו, מכל מכשיר, בלי לחכות לאף אחד.
                     </p>
 
-                    <div className={styles.templatesRow}>
-                        <div className={styles.templateCard} />
-                        <div className={styles.templateCard} />
-                        <div className={styles.templateCard} />
-                        <div className={styles.templateCard} />
+                    <div className={styles.controlGrid}>
+                        {CONTROL_FEATURES.map((item, i) => (
+                            <div key={i} className={styles.controlCard}>
+                                <item.Icon className={styles.controlCardIcon} />
+                                <h3 className={styles.controlCardTitle}>
+                                    {item.title}
+                                </h3>
+                                <p className={styles.controlCardText}>
+                                    {item.text}
+                                </p>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </section>
+
+            {/* ── 6. TEMPLATES / DESIGN ──────────────────────── */}
+            <section
+                className={`${styles.sectionDark} ${motion.fadeUp} ${r6.isRevealed ? motion.isVisible : ""}`}
+                ref={r6.ref}
+                id="templates"
+            >
+                <div className={styles.sectionWrap}>
+                    <h2 className={styles.h2White}>
+                        25 תבניות מקצועיות — מוכנות לשימוש
+                    </h2>
+                    <p className={styles.sectionLeadLight}>
+                        כל עיצוב בנוי RTL, מותאם למובייל, ומוכן לעברית. בחרו
+                        סגנון שמתאים לעסק שלכם.
+                    </p>
+
+                    <div className={styles.templatesShowcase}>
+                        {TEMPLATE_SKINS.map((skin, i) => (
+                            <div key={i} className={styles.templateMock}>
+                                <div
+                                    className={styles.templateMockScreen}
+                                    data-bg={skin.color}
+                                    data-accent={skin.accent}
+                                >
+                                    <div className={styles.tmHeader} />
+                                    <div className={styles.tmLine} />
+                                    <div className={styles.tmLine} />
+                                    <div className={styles.tmBtnRow}>
+                                        <div className={styles.tmBtn} />
+                                        <div className={styles.tmBtn} />
+                                    </div>
+                                    <div className={styles.tmGalleryRow}>
+                                        <div className={styles.tmThumb} />
+                                        <div className={styles.tmThumb} />
+                                        <div className={styles.tmThumb} />
+                                    </div>
+                                </div>
+                                <div className={styles.templateMockLabel}>
+                                    {skin.name}
+                                </div>
+                            </div>
+                        ))}
                     </div>
 
                     <div className={styles.center}>
-                        <Button as={Link} to="/register" variant="secondary">
-                            צור כרטיס חינם עכשיו
+                        <Button
+                            as={Link}
+                            to="/register"
+                            variant="secondary"
+                            onClick={() =>
+                                trackSiteClick({
+                                    action: SITE_ACTIONS.home_templates_cta,
+                                    pagePath: "/",
+                                })
+                            }
+                        >
+                            בחרו תבנית והתחילו חינם
                         </Button>
                     </div>
                 </div>
             </section>
 
-            {/* FAQ */}
-            <section className={styles.section} id="faq">
-                <div className={styles.sectionInner}>
-                    <h2 className={styles.h2}>שאלות נפוצות</h2>
+            {/* ── 7. HOW IT WORKS (3 steps) ──────────────────── */}
+            <section
+                className={`${styles.sectionLight} ${motion.fadeUp} ${r7.isRevealed ? motion.isVisible : ""}`}
+                ref={r7.ref}
+                id="how"
+            >
+                <div className={styles.sectionWrap}>
+                    <h2 className={styles.h2Gold}>שלושה צעדים — וזה עובד</h2>
+
+                    <div className={styles.steps}>
+                        <div className={styles.step}>
+                            <div className={styles.stepNum}>1</div>
+                            <div className={styles.stepTitle}>בחרו עיצוב</div>
+                            <div className={styles.stepText}>
+                                נרשמים בחינם ובוחרים תבנית שמתאימה לעסק.
+                            </div>
+                        </div>
+                        <div className={styles.step}>
+                            <div className={styles.stepNum}>2</div>
+                            <div className={styles.stepTitle}>מוסיפים תוכן</div>
+                            <div className={styles.stepText}>
+                                ממלאים פרטי קשר, תמונות, טקסט וקישורים.
+                            </div>
+                        </div>
+                        <div className={styles.step}>
+                            <div className={styles.stepNum}>3</div>
+                            <div className={styles.stepTitle}>
+                                משתפים ומודדים
+                            </div>
+                            <div className={styles.stepText}>
+                                מפיצים בקישור, QR או וואטסאפ — ועוקבים אחרי
+                                התוצאות.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            {/* ── 8. FAQ (expanded) ──────────────────────────── */}
+            <section className={styles.sectionDark} id="faq">
+                <div className={styles.sectionWrap}>
+                    <h2 className={styles.h2White}>שאלות נפוצות</h2>
 
                     <div className={styles.faq}>
                         <details className={styles.qa}>
@@ -304,40 +616,111 @@ export default function Home() {
                         <details className={styles.qa}>
                             <summary>אפשר לעדכן פרטים אחרי שפרסמתי?</summary>
                             <div className={styles.answer}>
-                                כן. מעדכנים בעורך והכרטיס מתעדכן מיד בקישור.
+                                כן. אתם יכולים לשנות כל פרט בכרטיס בכל רגע —
+                                טלפון, תמונות, עיצוב, טקסטים — והעדכון מופיע מיד
+                                בקישור הקיים.
                             </div>
                         </details>
 
                         <details className={styles.qa}>
                             <summary>הכרטיס מתאים למובייל?</summary>
                             <div className={styles.answer}>
-                                כן. העיצוב הוא mobile-first ומתאים לעברית (RTL).
+                                כן. כל העיצובים בנויים mobile-first עם תמיכה
+                                מלאה בעברית ו-RTL.
                             </div>
                         </details>
 
                         <details className={styles.qa}>
                             <summary>יש תכנית חינמית?</summary>
                             <div className={styles.answer}>
-                                כן. אפשר להתחיל בחינם ולשדרג כשצריך יותר יכולות.
+                                כן. אפשר ליצור כרטיס בחינם ולשדרג למסלול פרימיום
+                                כשצריך יכולות נוספות כמו אנליטיקס, טופס לידים,
+                                סרטון והמלצות.
+                            </div>
+                        </details>
+
+                        <details className={styles.qa}>
+                            <summary>אפשר להחליף תבנית בלי לאבד תוכן?</summary>
+                            <div className={styles.answer}>
+                                כן. כל התוכן שלכם נשמר — רק העיצוב משתנה. תוכלו
+                                להתנסות בכמה תבניות עד שתמצאו את המתאימה.
+                            </div>
+                        </details>
+
+                        <details className={styles.qa}>
+                            <summary>
+                                איך אני יודע מאיפה מגיעים הלקוחות?
+                            </summary>
+                            <div className={styles.answer}>
+                                במסלול הפרימיום תקבלו נתוני אנליטיקס אמיתיים:
+                                מקורות הגעה (אינסטגרם, גוגל, וואטסאפ ועוד), כמות
+                                צפיות ולחיצות, ושיעורי המרה לפי פלטפורמה
+                                וקמפיין. במסלול חינמי תוכלו לצפות בתצוגה לדוגמה.
+                            </div>
+                        </details>
+
+                        <details className={styles.qa}>
+                            <summary>הכרטיס מופיע בתוצאות חיפוש בגוגל?</summary>
+                            <div className={styles.answer}>
+                                כן. הכרטיס הוא עמוד אינטרנט אמיתי עם כתובת
+                                ייחודית, תגיות SEO, ו-JSON-LD — ונכלל באופן
+                                אוטומטי ב-sitemap.
+                            </div>
+                        </details>
+
+                        <details className={styles.qa}>
+                            <summary>איך משתפים את הכרטיס?</summary>
+                            <div className={styles.answer}>
+                                בכמה דרכים: קישור ישיר, קוד QR להורדה, שיתוף
+                                בוואטסאפ, וקישורים עם UTM למדידת קמפיינים
+                                ספציפיים.
+                            </div>
+                        </details>
+
+                        <details className={styles.qa}>
+                            <summary>
+                                מה ההבדל בין כרטיס דיגיטלי לאתר אינטרנט?
+                            </summary>
+                            <div className={styles.answer}>
+                                כרטיס דיגיטלי של כרדיגו הוא למעשה עמוד תדמית
+                                ממוקד — מיני סייט — שמוכן תוך דקות, קל לעדכון,
+                                ובנוי לשיתוף ולמדידה. הוא לא מחליף אתר מלא אבל
+                                נותן נוכחות מקצועית באינטרנט בלי צורך במפתחים.
                             </div>
                         </details>
                     </div>
                 </div>
             </section>
 
-            {/* CTA */}
-            <section className={styles.cta}>
-                <div className={styles.ctaInner}>
-                    <div>
-                        <div className={styles.ctaTitle}>מוכנים להתחיל?</div>
-                        <div className={styles.ctaText}>
-                            צרו כרטיס ביקור דיגיטלי מקצועי ותתחילו לשתף עוד
-                            היום.
-                        </div>
+            {/* ── 9. FINAL CTA ───────────────────────────────── */}
+            <section
+                className={`${styles.ctaSection} ${motion.fadeUp} ${r9.isRevealed ? motion.isVisible : ""}`}
+                ref={r9.ref}
+            >
+                <div className={styles.sectionWrap}>
+                    <div className={styles.ctaInner}>
+                        <h2 className={styles.ctaTitle}>
+                            הנוכחות הדיגיטלית שלכם מתחילה כאן
+                        </h2>
+                        <p className={styles.ctaText}>
+                            כרטיס מקצועי, שיתוף חכם, ותובנות עסקיות — בחינם
+                            להתחלה.
+                        </p>
+                        <Button
+                            as={Link}
+                            to="/register"
+                            variant="primary"
+                            className={styles.ctaBtn}
+                            onClick={() =>
+                                trackSiteClick({
+                                    action: SITE_ACTIONS.home_bottom_cta,
+                                    pagePath: "/",
+                                })
+                            }
+                        >
+                            צור כרטיס חינם
+                        </Button>
                     </div>
-                    <Button as={Link} to="/register" variant="primary">
-                        צור כרטיס חינם
-                    </Button>
                 </div>
             </section>
         </main>

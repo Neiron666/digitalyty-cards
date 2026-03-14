@@ -192,7 +192,7 @@ export default function Editor({
     }, [dirtyCount, saveState, isMobile, mobileView]);
 
     return (
-        <div className={styles.editor}>
+        <div className={styles.editor} data-shell="editor">
             <div className={styles.topbar} dir="rtl">
                 <button
                     type="button"

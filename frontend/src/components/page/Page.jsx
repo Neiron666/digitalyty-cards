@@ -2,7 +2,7 @@ import styles from "./Page.module.css";
 
 export default function Page({ title, subtitle, children }) {
     return (
-        <main className={styles.page}>
+        <main className={styles.page} data-page="site">
             <header className={styles.hero}>
                 <h1>{title}</h1>
                 {subtitle && <p>{subtitle}</p>}
