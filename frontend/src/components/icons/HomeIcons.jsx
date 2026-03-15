@@ -142,3 +142,13 @@ export function LockIcon({ className, title }) {
         </svg>
     );
 }
+
+export function ClickIcon({ className, title }) {
+    return (
+        <svg {...svgProps(className, title)}>
+            {title ? <title>{title}</title> : null}
+            <path d="M3 3l7.07 16.97 2.51-7.39 7.39-2.51L3 3z" />
+            <path d="M13 13l6 6" />
+        </svg>
+    );
+}

@@ -30,6 +30,7 @@ import {
     PencilIcon,
     MobileIcon,
     LockIcon,
+    ClickIcon,
 } from "../components/icons/HomeIcons";
 
 /* ── Data ────────────────────────────────────────────── */
@@ -71,6 +72,39 @@ const ANALYTICS_METRICS = [
     { value: "312", label: "צפיות השבוע" },
     { value: "47", label: "לחיצות פעולה" },
     { value: "15.1%", label: "שיעור המרה" },
+];
+
+const SECTION_3_IMG = "/images/home-page/main-sections/Section-3";
+
+const ANALYTICS_INSIGHTS = [
+    {
+        Icon: SeoIcon,
+        title: "מקורות הגעה",
+        text: "זהו את הפלטפורמות שמביאות הכי הרבה תנועה לכרטיס.",
+        src: `${SECTION_3_IMG}/digital_business_card-marketing-distribution-channels.webp`,
+        alt: "מקורות הגעה לכרטיס ביקור דיגיטלי",
+    },
+    {
+        Icon: AnalyticsIcon,
+        title: "ביצועי קמפיינים",
+        text: "השוו תוצאות בין קמפיינים וגלו איפה כדאי להשקיע.",
+        src: `${SECTION_3_IMG}/digital_business_card-marketing-campaign-performance.webp`,
+        alt: "ביצועי קמפיינים בכרטיס ביקור דיגיטלי",
+    },
+    {
+        Icon: ClickIcon,
+        title: "פעולות גולשים",
+        text: "דעו אילו פעולות הלקוחות מבצעים ומאיזה מקור.",
+        src: `${SECTION_3_IMG}/digital_business_card-customer-click-behavior.webp`,
+        alt: "התנהגות לקוחות בכרטיס ביקור דיגיטלי",
+    },
+    {
+        Icon: LinkIcon,
+        title: "ערוצי הפצה",
+        text: "מדדו ביצועים לפי ערוץ וקישור — ותכוונו את השיווק.",
+        src: `${SECTION_3_IMG}/digital_business_card-campaign-performance-robot.webp`,
+        alt: "ערוצי הפצה בכרטיס ביקור דיגיטלי",
+    },
 ];
 
 const ANALYTICS_SOURCES = [
@@ -234,6 +268,8 @@ export default function Home() {
     const r9 = useMotionReveal();
 
     const stageZoom = useScrollProgress();
+    const dashZoom = useScrollProgress();
+    const insightScroll = useScrollProgress();
 
     return (
         <main className={styles.page} data-page="site">
@@ -301,7 +337,7 @@ export default function Home() {
 
             {/* ── 1. MINI-SITE / BUSINESS PRESENCE ────────────── */}
             <section
-                className={`${styles.sectionLight} ${motion.fadeUp} ${motion.slow} ${motion.delay300} ${r1.isRevealed ? motion.isVisible : ""}`}
+                className={`${styles.sectionLight} ${motion.fadeUp} ${motion.slow}  ${r1.isRevealed ? motion.isVisible : ""}`}
                 ref={r1.ref}
             >
                 <div className={styles.sectionWrap}>
@@ -367,7 +403,7 @@ export default function Home() {
 
             {/* ── 2. CONVERSION - FROM VIEW TO CONTACT ────────── */}
             <section
-                className={`${styles.sectionDark} ${motion.fadeUp} ${motion.slow} ${motion.delay300} ${r2.isRevealed ? motion.isVisible : ""}`}
+                className={`${styles.sectionDark} ${motion.fadeUp} ${motion.slow}  ${r2.isRevealed ? motion.isVisible : ""}`}
                 ref={r2.ref}
                 id="features"
             >
@@ -422,24 +458,34 @@ export default function Home() {
 
             {/* ── 3. ANALYTICS / KNOW WHAT WORKS ─────────────── */}
             <section
-                className={`${styles.sectionLight} ${styles.analyticsSection} ${motion.fadeUp} ${motion.slow} ${motion.delay300} ${r3.isRevealed ? motion.isVisible : ""}`}
+                className={`${styles.sectionLight} ${styles.analyticsSection} ${motion.fadeUp} ${motion.slow}  ${r3.isRevealed ? motion.isVisible : ""}`}
                 ref={r3.ref}
             >
                 <div className={styles.sectionWrap}>
-                    <h2 className={styles.h2Gold}>תדעו מה באמת עובד</h2>
+                    <h2 className={styles.h2Gold}>תדעו מה באמת מביא תוצאות</h2>
+
                     <p className={styles.sectionLead}>
-                        כרדיגו עוקב אחרי כל צפייה, כל לחיצה וכל מקור הגעה - כך
-                        שתוכלו לראות מאיפה מגיעים הלקוחות ומה גורם להם ליצור
-                        קשר.
+                        {" "}
+                        <strong className={styles.analyticsLeadBrand}>
+                            Cardigo -
+                        </strong>{" "}
+                        זה לא רק כרטיס ביקור דיגיטלי. <br /> כל צפייה, כל לחיצה,
+                        כל מקור הגעה — הופך את הנתונים לתובנות שנותנות לכם{" "}
+                        <em className={styles.analyticsLeadPunch}>
+                            שליטה אמיתית על התוצאות.
+                        </em>
                     </p>
 
                     {/* DOM-built analytics dashboard mockup */}
-                    <div className={styles.analyticsMock}>
+                    <div
+                        className={`${styles.analyticsMock} ${scroll.scrollZoomSoft} ${styles.dashboardZoom}`}
+                        ref={dashZoom.ref}
+                    >
                         <div className={styles.analyticsMockHeader}>
                             <span className={styles.analyticsMockDot} />
                             <span className={styles.analyticsMockDot} />
                             <span className={styles.analyticsMockDot} />
-                            <span className={styles.analyticsMockTitle}>
+                            <span className={`${styles.analyticsMockTitle} `}>
                                 סטטיסטיקות הכרטיס שלי
                             </span>
                         </div>
@@ -458,7 +504,9 @@ export default function Home() {
                         </div>
 
                         <div className={styles.analyticsSources}>
-                            <div className={styles.sourcesTitle}>
+                            <div
+                                className={`${styles.sourcesTitle} ${styles.goldUnderline}`}
+                            >
                                 מקורות הגעה
                             </div>
                             {ANALYTICS_SOURCES.map((s, i) => (
@@ -480,6 +528,36 @@ export default function Home() {
                         </div>
                     </div>
 
+                    <div
+                        className={styles.analyticsInsights}
+                        ref={insightScroll.ref}
+                    >
+                        {ANALYTICS_INSIGHTS.map((item, i) => (
+                            <div key={i} className={styles.insightBullet}>
+                                <div className={styles.insightMedia}>
+                                    <img
+                                        className={styles.insightImg}
+                                        src={item.src}
+                                        alt={item.alt}
+                                        width={400}
+                                        height={400}
+                                        loading="lazy"
+                                        decoding="async"
+                                    />
+                                </div>
+                                <div className={styles.insightBody}>
+                                    <item.Icon className={styles.insightIcon} />
+                                    <div className={styles.insightTitle}>
+                                        {item.title}
+                                    </div>
+                                    <div className={styles.insightText}>
+                                        {item.text}
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+
                     <p className={styles.analyticsCaveat}>
                         * ניתוח נתונים מלא זמין במסלול פרימיום. במסלול חינמי
                         ניתן לצפות בתצוגה לדוגמה.
@@ -489,7 +567,7 @@ export default function Home() {
 
             {/* ── 4. SHARE EVERYWHERE ─────────────────────────── */}
             <section
-                className={`${styles.sectionDark} ${motion.fadeUp} ${motion.delay300} ${motion.slow} ${r4.isRevealed ? motion.isVisible : ""}`}
+                className={`${styles.sectionDark} ${motion.fadeUp}  ${motion.slow} ${r4.isRevealed ? motion.isVisible : ""}`}
                 ref={r4.ref}
             >
                 <div className={styles.sectionWrap}>
@@ -517,7 +595,7 @@ export default function Home() {
 
             {/* ── 5. EDITABILITY / CONTROL 24/7 ──────────────── */}
             <section
-                className={`${styles.sectionLight} ${motion.fadeUp} ${motion.delay300} ${motion.slow} ${r5.isRevealed ? motion.isVisible : ""}`}
+                className={`${styles.sectionLight} ${motion.fadeUp}  ${motion.slow} ${r5.isRevealed ? motion.isVisible : ""}`}
                 ref={r5.ref}
             >
                 <div className={styles.sectionWrap}>
@@ -545,7 +623,7 @@ export default function Home() {
 
             {/* ── 6. TEMPLATES / DESIGN ──────────────────────── */}
             <section
-                className={`${styles.sectionDark} ${motion.fadeUp} ${motion.delay300} ${motion.slow} ${r6.isRevealed ? motion.isVisible : ""}`}
+                className={`${styles.sectionDark} ${motion.fadeUp}  ${motion.slow} ${r6.isRevealed ? motion.isVisible : ""}`}
                 ref={r6.ref}
                 id="templates"
             >
@@ -606,7 +684,7 @@ export default function Home() {
 
             {/* ── 7. HOW IT WORKS (3 steps) ──────────────────── */}
             <section
-                className={`${styles.sectionLight} ${motion.fadeUp} ${motion.delay300} ${motion.slow} ${r7.isRevealed ? motion.isVisible : ""}`}
+                className={`${styles.sectionLight} ${motion.fadeUp}  ${motion.slow} ${r7.isRevealed ? motion.isVisible : ""}`}
                 ref={r7.ref}
                 id="how"
             >
@@ -737,7 +815,7 @@ export default function Home() {
 
             {/* ── 9. FINAL CTA ───────────────────────────────── */}
             <section
-                className={`${styles.ctaSection} ${motion.fadeUp} ${motion.delay300} ${motion.slow} ${r9.isRevealed ? motion.isVisible : ""}`}
+                className={`${styles.ctaSection} ${motion.fadeUp}  ${motion.slow} ${r9.isRevealed ? motion.isVisible : ""}`}
                 ref={r9.ref}
             >
                 <div className={styles.sectionWrap}>
