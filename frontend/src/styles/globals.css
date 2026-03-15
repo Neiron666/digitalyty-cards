@@ -21,22 +21,21 @@
 }
 
 #root {
-    /* APP TYPOGRAPHY TOKENS (SSoT) — rem-only */
-    --fs-caption: 0.75rem; /* 12px */
-    --fs-body-sm: 0.8125rem; /* 13px */
-    --fs-ui: 0.875rem; /* 14px */
-    --fs-body-lg: 0.9375rem; /* 15px */
-    --fs-body: 1rem; /* 16px */
-    --fs-h6: 1.125rem; /* 18px */
-    --fs-h5: 1.25rem; /* 20px */
-    --fs-h4: 1.3125rem; /* 21px */
-    --fs-h3: 1.5rem; /* 24px */
-    --fs-h2: 1.625rem; /* 26px */
+    --fs-caption: 0.9231rem; /* было 0.75rem */
+    --fs-body-sm: 1rem; /* было 0.8125rem */
+    --fs-ui: 1.0769rem; /* было 0.875rem */
+    --fs-body-lg: 1.1538rem; /* было 0.9375rem */
+    --fs-body: 1.2308rem; /* было 1rem */
+    --fs-h6: 1.3846rem; /* было 1.125rem */
+    --fs-h5: 1.5385rem; /* было 1.25rem */
+    --fs-h4: 1.6154rem; /* было 1.3125rem */
+    --fs-h3: 1.8462rem; /* было 1.5rem */
+    --fs-h2: 2rem; /* было 1.625rem */
 
-    --fs-hero-title: 2.2rem;
-    --fs-display-outlined: 2.1rem;
-    --fs-display-step-num: 3.6rem;
-    --fs-hero-accent: 2.4rem;
+    --fs-hero-title: 2.7077rem; /* было 2.2rem */
+    --fs-display-outlined: 2.5846rem; /* было 2.1rem */
+    --fs-display-step-num: 4.4308rem; /* было 3.6rem */
+    --fs-hero-accent: 2.9538rem; /* было 2.4rem */
 }
 
 @media (min-width: 80rem) {

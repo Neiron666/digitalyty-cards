@@ -314,7 +314,7 @@ export default function Home() {
                         <strong className={styles.presenceLeadBrand}>
                             Cardigo
                         </strong>{" "}
-                        לא נעצר בפרטי קשר. זהו עמוד עסקי קומפקטי עם גלריה,
+                        זה לא רק פרטי קשר. זהו עמוד עסקי קומפקטי עם גלריה,
                         וידאו, המלצות, שאלות נפוצות וטופס פנייה -{" "}
                         <em className={styles.presenceLeadPunch}>
                             הכל בקישור אחד שנראה מקצועי ונוח לשיתוף.

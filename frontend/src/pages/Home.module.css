@@ -593,7 +593,7 @@
 }
 
 .presenceMore {
-    font-size: var(--fs-body-lg);
+    font-size: var(--fs-h6);
     font-weight: 700;
     color: var(--gold);
     letter-spacing: 0.04em;
