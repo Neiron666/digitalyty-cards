@@ -469,8 +469,13 @@ export default function Home() {
                         <strong className={styles.analyticsLeadBrand}>
                             Cardigo -
                         </strong>{" "}
-                        זה לא רק כרטיס ביקור דיגיטלי. <br /> כל צפייה, כל לחיצה,
-                        כל מקור הגעה — הופך את הנתונים לתובנות שנותנות לכם{" "}
+                        זה לא רק כרטיס ביקור דיגיטלי,אלא{" "}
+                        <em className={styles.analyticsLeadPunch}>
+                            פלטפורמה חכמה עם אנליטיקה{" "}
+                        </em>
+                        ומעקב.
+                        <br /> כל צפייה, כל לחיצה, כל מקור הגעה — הופך את
+                        הנתונים לתובנות שנותנות לכם{" "}
                         <em className={styles.analyticsLeadPunch}>
                             שליטה אמיתית על התוצאות.
                         </em>
