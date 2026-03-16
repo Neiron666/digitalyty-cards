@@ -256,8 +256,23 @@
 }
 
 .drawerTitle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.drawerLogoImg {
+    block-size: 1.5rem;
+    inline-size: auto;
+    max-inline-size: 100%;
+    display: block;
+}
+
+.drawerTitleText {
     font-weight: 900;
     letter-spacing: 0.2px;
+    color: var(--text-main);
+    margin-right: 2.7rem;
 }
 
 .drawerClose {

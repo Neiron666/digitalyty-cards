@@ -140,6 +140,7 @@ const PRESENCE_FEATURES = [
     { Icon: StarIcon, label: "המלצות לקוחות" },
     { Icon: QuestionIcon, label: "שאלות נפוצות" },
     { Icon: ContentIcon, label: "טופס פניות" },
+    { Icon: AnalyticsIcon, label: "אנליטיקה" },
     { Icon: SeoIcon, label: "מופיע בגוגל" },
 ];
 

@@ -283,7 +283,22 @@ export default function Header() {
                 onClick={(e) => e.stopPropagation()}
             >
                 <div className={styles.drawerHeader}>
-                    <div className={styles.drawerTitle}>תפריט</div>
+                    <div className={styles.drawerTitle}>
+                        <picture>
+                            <source
+                                type="image/webp"
+                                srcSet="/images/brand-logo/cardigo-logo.webp"
+                            />
+                            <img
+                                src="/images/brand-logo/cardigo-logo.png"
+                                alt="כרדיגו"
+                                className={styles.drawerLogoImg}
+                                loading="eager"
+                                decoding="async"
+                            />
+                        </picture>
+                        <span className={styles.drawerTitleText}>תפריט</span>
+                    </div>
                     <button
                         type="button"
                         className={styles.drawerClose}
