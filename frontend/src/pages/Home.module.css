@@ -1463,11 +1463,16 @@
 }
 
 .qa {
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    border: 1px solid var(--gold-fade);
     border-radius: var(--radius-md);
     background: rgba(255, 255, 255, 0.03);
     color: #f8fafc;
     padding: 0.875rem 1rem;
+    transition: background 0.25s ease;
+}
+
+.qa[open] {
+    background: rgba(255, 255, 255, 0.055);
 }
 
 .qa summary {
@@ -1475,13 +1480,48 @@
     font-weight: 900;
     color: #f8fafc;
     font-size: var(--fs-body-sm);
+    list-style: none;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+}
+
+.qa summary::-webkit-details-marker {
+    display: none;
+}
+
+.qa summary::after {
+    content: "+";
+    font-size: var(--fs-body);
+    font-weight: 400;
+    color: rgba(212, 175, 55, 0.8);
+    transition: transform 0.3s ease;
+    flex-shrink: 0;
+}
+
+.qa[open] > summary::after {
+    transform: rotate(45deg);
 }
 
 .answer {
-    margin-top: 0.625rem;
-    color: rgba(255, 255, 255, 0.65);
+    overflow: hidden;
+    max-height: 0;
+    opacity: 0;
+    transition:
+        max-height 0.35s ease,
+        opacity 0.3s ease,
+        margin-top 0.3s ease;
+    margin-top: 0;
+    color: var(--gold);
     line-height: 1.8;
     font-size: var(--fs-body-sm);
+}
+
+.qa[open] > .answer {
+    max-height: 20rem;
+    opacity: 1;
+    margin-top: 0.625rem;
 }
 
 /* ── 9. Final CTA ───────────────────────────────────────── */
