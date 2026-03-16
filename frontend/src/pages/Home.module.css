@@ -1508,10 +1508,12 @@
     overflow: hidden;
     max-height: 0;
     opacity: 0;
+    transform: translateY(-0.5rem);
     transition:
-        max-height 0.35s ease,
-        opacity 0.3s ease,
-        margin-top 0.3s ease;
+        max-height 0.45s cubic-bezier(0.4, 0, 0.2, 1),
+        opacity 0.4s ease,
+        transform 0.4s ease,
+        margin-top 0.35s ease;
     margin-top: 0;
     color: var(--gold);
     line-height: 1.8;
@@ -1521,6 +1523,7 @@
 .qa[open] > .answer {
     max-height: 20rem;
     opacity: 1;
+    transform: translateY(0);
     margin-top: 0.625rem;
 }
 
