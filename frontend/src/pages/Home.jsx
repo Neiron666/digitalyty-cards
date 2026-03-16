@@ -68,12 +68,6 @@ const CONVERSION_ITEMS = [
     },
 ];
 
-const ANALYTICS_METRICS = [
-    { value: "312", label: "צפיות השבוע" },
-    { value: "47", label: "לחיצות פעולה" },
-    { value: "15.1%", label: "שיעור המרה" },
-];
-
 const SECTION_3_IMG = "/images/home-page/main-sections/Section-3";
 
 const ANALYTICS_INSIGHTS = [
@@ -105,13 +99,6 @@ const ANALYTICS_INSIGHTS = [
         src: `${SECTION_3_IMG}/digital_business_card-campaign-performance-robot.webp`,
         alt: "ערוצי הפצה בכרטיס ביקור דיגיטלי",
     },
-];
-
-const ANALYTICS_SOURCES = [
-    { name: "Instagram", pct: 42 },
-    { name: "WhatsApp", pct: 28 },
-    { name: "Google", pct: 18 },
-    { name: "ישיר", pct: 12 },
 ];
 
 const SECTION_4_IMG = "/images/home-page/main-sections/Section-4";
@@ -207,26 +194,36 @@ function ProofCard({ title, src, alt, posClass }) {
     );
 }
 
+const SECTION_5_IMG = "/images/home-page/main-sections/Section-5";
+
 const CONTROL_FEATURES = [
     {
         Icon: SelfDesignIcon,
         title: "החלפת עיצוב מיידית",
         text: "בחרו מ-25 תבניות מקצועיות והחליפו בלחיצה - התוכן נשמר.",
+        src: `${SECTION_5_IMG}/cardigo-digital-business-card-design-templates.webp`,
+        alt: "החלפת עיצוב כרטיס ביקור דיגיטלי",
     },
     {
         Icon: PencilIcon,
         title: "עריכת תוכן חופשית",
         text: "טקסטים, תמונות, קישורים, שאלות נפוצות - הכל מתעדכן מיד.",
+        src: `${SECTION_5_IMG}/cardigo-digital-business-card-content-editor.webp`,
+        alt: "עריכת תוכן בכרטיס ביקור דיגיטלי",
     },
     {
         Icon: MobileIcon,
         title: "מכל מכשיר",
         text: "העורך עובד גם מהנייד. עדכון מהיר בדרך לפגישה.",
+        src: `${SECTION_5_IMG}/cardigo-edit-digital-business-card-from-any-device.webp`,
+        alt: "עריכת כרטיס ביקור דיגיטלי מכל מכשיר",
     },
     {
         Icon: LockIcon,
         title: "פרסום בשליטתכם",
         text: "פרסמו והסתירו את הכרטיס בכל רגע - אתם מחליטים מתי.",
+        src: `${SECTION_5_IMG}/cardigo-publish-digital-business-card-control.webp`,
+        alt: "שליטה בפרסום כרטיס ביקור דיגיטלי",
     },
 ];
 
@@ -279,7 +276,9 @@ export default function Home() {
 
     const stageZoom = useScrollProgress();
     const dashZoom = useScrollProgress();
+    const editorZoom = useScrollProgress();
     const insightScroll = useScrollProgress();
+    const controlScroll = useScrollProgress();
     const shareScroll = useScrollProgress();
 
     return (
@@ -493,57 +492,16 @@ export default function Home() {
                         </em>
                         ומעקב.
                     </p>
-                    {/* DOM-built analytics dashboard mockup */}
-                    <div
-                        className={`${styles.analyticsMock} ${scroll.scrollZoomSoft} ${styles.dashboardZoom}`}
+                    {/* Analytics dashboard image */}
+                    <img
+                        className={`${styles.analyticsDashImg} ${scroll.scrollZoomSoft} ${styles.dashboardZoom}`}
                         ref={dashZoom.ref}
-                    >
-                        <div className={styles.analyticsMockHeader}>
-                            <span className={styles.analyticsMockDot} />
-                            <span className={styles.analyticsMockDot} />
-                            <span className={styles.analyticsMockDot} />
-                            <span className={`${styles.analyticsMockTitle} `}>
-                                סטטיסטיקות הכרטיס שלי
-                            </span>
-                        </div>
-
-                        <div className={styles.analyticsKpis}>
-                            {ANALYTICS_METRICS.map((m, i) => (
-                                <div key={i} className={styles.kpiCard}>
-                                    <div className={styles.kpiValue}>
-                                        {m.value}
-                                    </div>
-                                    <div className={styles.kpiLabel}>
-                                        {m.label}
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-
-                        <div className={styles.analyticsSources}>
-                            <div
-                                className={`${styles.sourcesTitle} ${styles.goldUnderline}`}
-                            >
-                                מקורות הגעה
-                            </div>
-                            {ANALYTICS_SOURCES.map((s, i) => (
-                                <div key={i} className={styles.sourceRow}>
-                                    <span className={styles.sourceName}>
-                                        {s.name}
-                                    </span>
-                                    <div className={styles.sourceBar}>
-                                        <div
-                                            className={styles.sourceBarFill}
-                                            data-pct={s.pct}
-                                        />
-                                    </div>
-                                    <span className={styles.sourcePct}>
-                                        {s.pct}%
-                                    </span>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
+                        src={`${SECTION_3_IMG}/digital_business_card-analytics-dashboard-cardigo-platform.jpg`}
+                        alt="דשבורד אנליטיקה לכרטיס ביקור דיגיטלי - Cardigo"
+                        width={800}
+                        height={600}
+                        loading="lazy"
+                    />
                     <div
                         className={styles.analyticsInsights}
                         ref={insightScroll.ref}
@@ -671,135 +629,90 @@ export default function Home() {
                 ref={r5.ref}
             >
                 <div className={styles.sectionWrap}>
-                    <h2 className={styles.h2Gold}>תעדכנו בעצמכם - בכל רגע</h2>
-                    <p className={styles.sectionLead}>
-                        שנו טלפון, החליפו עיצוב, עדכנו תמונות - הכל דרך האזור
-                        האישי , מכל מכשיר, בלי לחכות לאף אחד.
-                    </p>
+                    <h2 className={styles.h2Gold}>תעדכנו בעצמכם - 24/7</h2>
 
-                    {/* DOM-built editor mockup */}
-                    <div className={styles.editorMock} aria-hidden="true">
-                        <div className={styles.editorHeader}>
-                            <span className={styles.editorDot} />
-                            <span className={styles.editorDot} />
-                            <span className={styles.editorDot} />
-                            <span className={styles.editorHeaderTitle}>
-                                עורך הכרטיס
-                            </span>
-                        </div>
-
-                        <div className={styles.editorBody}>
-                            {/* sidebar / field list */}
-                            <div className={styles.editorSidebar}>
-                                <div className={styles.editorField}>
-                                    <span className={styles.editorFieldLabel}>
-                                        שם העסק
-                                    </span>
-                                    <div className={styles.editorFieldInput}>
-                                        <span
-                                            className={
-                                                styles.editorFieldPlaceholder
-                                            }
-                                        >
-                                            איתן שגב{" "}
-                                        </span>
-                                        <span
-                                            className={styles.editorFieldCursor}
-                                        />
-                                    </div>
-                                </div>
-                                <div className={styles.editorField}>
-                                    <span className={styles.editorFieldLabel}>
-                                        טלפון
-                                    </span>
-                                    <div className={styles.editorFieldInput}>
-                                        <span
-                                            className={
-                                                styles.editorFieldPlaceholder
-                                            }
-                                        >
-                                            050-1234567
-                                        </span>
-                                    </div>
-                                </div>
-                                <div className={styles.editorField}>
-                                    <span className={styles.editorFieldLabel}>
-                                        תמונת פרופיל
-                                    </span>
-                                    <div
-                                        className={styles.editorImgPlaceholder}
-                                    >
-                                        <span className={styles.editorImgIcon}>
-                                            🖼
-                                        </span>
-                                    </div>
-                                </div>
-                                <div className={styles.editorField}>
-                                    <span className={styles.editorFieldLabel}>
-                                        עיצוב
-                                    </span>
-                                    <div className={styles.editorSwatches}>
-                                        <span
-                                            className={styles.editorSwatch}
-                                            data-color="gold"
-                                        />
-                                        <span
-                                            className={styles.editorSwatch}
-                                            data-color="teal"
-                                        />
-                                        <span
-                                            className={styles.editorSwatch}
-                                            data-color="ruby"
-                                        />
-                                        <span
-                                            className={styles.editorSwatch}
-                                            data-color="iris"
-                                        />
-                                    </div>
-                                </div>
-                                <div className={styles.editorActions}>
-                                    <div className={styles.editorBtnSave}>
-                                        שמור
-                                    </div>
-                                    <div className={styles.editorBtnPublish}>
-                                        פרסם
-                                    </div>
-                                </div>
+                    <ul className={styles.editChecklist}>
+                        <li className={styles.editCheckItem}>
+                            <div className={styles.editCheckText}>
+                                <span className={styles.editCheckBold}>
+                                    עדכון תוכן מיידי
+                                </span>
+                                <span className={styles.editCheckDesc}>
+                                    שנו טלפון, תמונות, טקסטים וקישורים — הכל
+                                    מתעדכן ברגע
+                                </span>
                             </div>
-
-                            {/* mini preview */}
-                            <div className={styles.editorPreview}>
-                                <img
-                                    className={styles.editorPreviewImg}
-                                    src={encodeURI(
-                                        "/images/home-page/hero/כרטיס ביקור דיגיטלי ליועץ הון פרטי  כרדיגו.webp",
-                                    )}
-                                    alt="תצוגה מקדימה של כרטיס ביקור דיגיטלי"
-                                    width={280}
-                                    height={560}
-                                    loading="lazy"
-                                    decoding="async"
-                                />
+                        </li>
+                        <li className={styles.editCheckItem}>
+                            <div className={styles.editCheckText}>
+                                <span className={styles.editCheckBold}>
+                                    החלפת עיצוב בלחיצה
+                                </span>
+                                <span className={styles.editCheckDesc}>
+                                    בחרו תבנית חדשה בכל רגע — התוכן נשמר
+                                </span>
                             </div>
-                        </div>
-                    </div>
+                        </li>
+                        <li className={styles.editCheckItem}>
+                            <div className={styles.editCheckText}>
+                                <span className={styles.editCheckBold}>
+                                    מכל מכשיר, בלי לחכות
+                                </span>
+                                <span className={styles.editCheckDesc}>
+                                    האזור האישי עובד גם מהנייד — בלי צורך במפתח
+                                </span>
+                            </div>
+                        </li>
+                    </ul>
+                    <br />
+                    {/* Editor dashboard image */}
+                    <img
+                        className={`${styles.editorDashImg} ${scroll.scrollZoomSoft} ${styles.dashboardZoom}`}
+                        ref={editorZoom.ref}
+                        src="/images/home-page/main-sections/Section-5/cardigo-digital-business-card-editor-dashboard.jpg"
+                        alt="עורך כרטיס ביקור דיגיטלי - Cardigo"
+                        width={800}
+                        height={600}
+                        loading="lazy"
+                        decoding="async"
+                    />
 
-                    {/* compact benefit items */}
-                    <div className={styles.controlItems}>
+                    {/* image-top control cards */}
+                    <div
+                        className={styles.controlItems}
+                        ref={controlScroll.ref}
+                    >
                         {CONTROL_FEATURES.map((item, i) => (
                             <div key={i} className={styles.controlItem}>
-                                <item.Icon className={styles.controlItemIcon} />
-                                <div className={styles.controlItemText}>
-                                    <span className={styles.controlItemTitle}>
+                                <div className={styles.controlMedia}>
+                                    <img
+                                        className={styles.controlImg}
+                                        src={item.src}
+                                        alt={item.alt}
+                                        width={400}
+                                        height={400}
+                                        loading="lazy"
+                                        decoding="async"
+                                    />
+                                </div>
+                                <div className={styles.controlBody}>
+                                    <item.Icon
+                                        className={styles.controlItemIcon}
+                                    />
+                                    <div className={styles.controlItemTitle}>
                                         {item.title}
-                                    </span>
-                                    <span className={styles.controlItemDesc}>
+                                    </div>
+                                    <div className={styles.controlItemDesc}>
                                         {item.text}
-                                    </span>
+                                    </div>
                                 </div>
                             </div>
                         ))}
                     </div>
+                    <p className={styles.highlight}>
+                        שנו מספר טלפון, החליפו עיצוב, עדכנו תמונות - הכל דרך
+                        האזור האישי , מכל מכשיר, בלי לחכות לאף אחד.
+                    </p>
                 </div>
             </section>
 

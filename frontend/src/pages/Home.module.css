@@ -857,156 +857,25 @@
     margin-bottom: auto;
 }
 
-/* ── 3. Analytics section + mock dashboard ──────────────── */
+/* ── 3. Analytics section + dashboard image ─────────────── */
 
 .analyticsSection {
     padding-bottom: 2rem;
 }
 
-.analyticsMock {
-    position: relative;
-    z-index: 1;
+.analyticsDashImg {
     width: 100%;
     max-width: 50rem;
     border-radius: 1rem;
-    overflow: hidden;
-    border: 1px solid rgba(212, 175, 55, 0.15);
-    background: #0f172a;
+    object-fit: cover;
+    margin-bottom: 3rem;
     box-shadow:
         5px 5px 7px rgba(0, 0, 0, 0.5),
         0 0 0 1px rgba(212, 175, 55, 0.2);
-    margin-bottom: 3rem;
     transition:
         transform 0.3s ease,
         box-shadow 0.3s ease;
-}
-
-.analyticsMockHeader {
-    display: flex;
-    align-items: center;
-    gap: 0.375rem;
-    padding: 0.625rem 1rem;
-    background: rgba(255, 255, 255, 0.04);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-}
-
-.analyticsMockDot {
-    width: 0.5rem;
-    height: 0.5rem;
-    border-radius: 50%;
-    background: rgba(255, 255, 255, 0.15);
-}
-
-.analyticsMockDot:first-child {
-    background: #ef4444;
-}
-
-.analyticsMockDot:nth-child(2) {
-    background: #eab308;
-}
-
-.analyticsMockDot:nth-child(3) {
-    background: #22c55e;
-}
-
-.analyticsMockTitle {
-    margin-inline-start: auto;
-    font-size: var(--fs-body-sm);
-    color: var(--gold);
-    font-weight: 600;
-}
-
-.analyticsKpis {
-    display: flex;
-    gap: 0.75rem;
-    padding: 1.25rem 1rem;
-}
-
-.kpiCard {
-    flex: 1;
-    padding: 0.875rem 0.5rem;
-    border-radius: 0.75rem;
-    background: rgba(212, 175, 55, 0.06);
-    border: 1px solid rgba(212, 175, 55, 0.12);
-    text-align: center;
-}
-
-.kpiValue {
-    font-size: var(--fs-h4);
-    font-weight: 900;
-    color: var(--gold);
-    margin-bottom: 0.25rem;
-}
-
-.kpiLabel {
-    font-size: var(--fs-caption);
-    color: rgba(255, 255, 255, 0.9);
-    font-weight: 500;
-}
-
-.analyticsSources {
-    padding: 0 1rem 1.25rem;
-}
-
-.sourcesTitle {
-    font-size: var(--fs-body-sm);
-    font-weight: 700;
-    color: var(--gold);
-    margin-bottom: 0.75rem;
-    text-align: center;
-}
-
-.sourceRow {
-    display: flex;
-    align-items: center;
-    gap: 0.625rem;
-    margin-bottom: 0.5rem;
-}
-
-.sourceName {
-    flex: 0 0 5rem;
-    font-size: var(--fs-caption);
-    color: rgba(255, 255, 255, 0.9);
-    text-align: start;
-    font-weight: 600;
-    text-decoration: underline var(--gold) 1px dashed;
-    text-underline-offset: 4px;
-}
-
-.sourceBar {
-    flex: 1;
-    height: 0.375rem;
-    border-radius: 999px;
-    background: rgba(255, 255, 255, 0.06);
-    overflow: hidden;
-}
-
-.sourceBarFill {
-    height: 100%;
-    border-radius: 999px;
-    background: linear-gradient(90deg, var(--gold), #e6c44d);
-    transition: width 0.6s ease;
-}
-
-.sourceBarFill[data-pct="42"] {
-    width: 42%;
-}
-.sourceBarFill[data-pct="28"] {
-    width: 28%;
-}
-.sourceBarFill[data-pct="18"] {
-    width: 18%;
-}
-.sourceBarFill[data-pct="12"] {
-    width: 12%;
-}
-
-.sourcePct {
-    flex: 0 0 2.5rem;
-    font-size: var(--fs-caption);
-    color: var(--gold);
-    font-weight: 700;
-    text-align: end;
+    height: auto;
 }
 
 /* ── 3b. Analytics insight cards (image-top premium) ───── */
@@ -1258,263 +1127,163 @@
     line-height: 1.4;
 }
 
-/* ── 5. Editability / Control — editor mockup ──────────── */
+/* ── 5. Editability / Control — checklist + editor image ── */
 
-.editorMock {
-    width: 100%;
-    max-width: 55rem;
-    border-radius: 1rem;
-    overflow: hidden;
-    border: 1px solid rgba(212, 175, 55, 0.18);
-    background: #0f172a;
-    box-shadow:
-        5px 5px 7px rgba(0, 0, 0, 0.35),
-        0 0 0 1px rgba(212, 175, 55, 0.15);
-    margin-bottom: 2rem;
-}
-
-.editorHeader {
-    display: flex;
-    align-items: center;
-    gap: 0.375rem;
-    padding: 0.625rem 1rem;
-    background: rgba(255, 255, 255, 0.04);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-}
-
-.editorDot {
-    width: 0.5rem;
-    height: 0.5rem;
-    border-radius: 50%;
-    background: rgba(255, 255, 255, 0.15);
-}
-
-.editorDot:first-child {
-    background: #ef4444;
-}
-
-.editorDot:nth-child(2) {
-    background: #eab308;
-}
-
-.editorDot:nth-child(3) {
-    background: #22c55e;
-}
-
-.editorHeaderTitle {
-    margin-inline-start: auto;
-    font-size: var(--fs-body-sm);
-    color: var(--gold);
-    font-weight: 600;
-}
-
-.editorBody {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-    padding: 1rem;
-}
-
-.editorSidebar {
+.editChecklist {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 2rem;
     display: flex;
     flex-direction: column;
     gap: 0.75rem;
+    align-self: center;
+    padding: 1.5rem 2rem;
+    border-radius: var(--radius-lg);
+    box-shadow: 0 6px 24px rgba(212, 175, 55, 0.15);
 }
 
-.editorField {
-    display: flex;
-    flex-direction: column;
-    gap: 0.25rem;
-}
-
-.editorFieldLabel {
-    font-size: var(--fs-caption);
-    color: rgba(255, 255, 255, 0.5);
-    font-weight: 600;
-    text-align: start;
-}
-
-.editorFieldInput {
-    display: flex;
-    align-items: center;
-    padding: 0.5rem 0.75rem;
-    border-radius: 0.5rem;
-    background: rgba(255, 255, 255, 0.06);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-}
-
-.editorFieldPlaceholder {
-    font-size: var(--fs-body-sm);
-    color: rgba(255, 255, 255, 0.7);
-    font-weight: 500;
-}
-
-.editorFieldCursor {
-    width: 1.5px;
-    height: 1rem;
-    background: var(--gold);
-    margin-inline-start: 0.125rem;
-    border-radius: 1px;
-    animation: cursorBlink 1s step-end infinite;
-}
-
-@keyframes cursorBlink {
-    0%,
-    100% {
-        opacity: 1;
-    }
-    50% {
-        opacity: 0;
-    }
-}
-
-.editorImgPlaceholder {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    height: 8rem;
-    width: 50%;
-
-    border-radius: 0.5rem;
-    background: rgba(255, 255, 255, 0.04);
-    border: 1px dashed rgba(212, 175, 55, 0.25);
-}
-
-.editorImgIcon {
-    font-size: var(--fs-body-lg);
-    opacity: 0.5;
-    color: var(--gold);
-}
-
-.editorSwatches {
-    display: flex;
-    gap: 0.5rem;
-    padding: 0.375rem 0;
-}
-
-.editorSwatch {
-    width: 1.5rem;
-    height: 1.5rem;
-    border-radius: 50%;
-    border: 2px solid transparent;
-    transition: border-color 0.2s ease;
-}
-
-.editorSwatch[data-color="gold"] {
-    background: #d4af37;
-    border-color: rgba(212, 175, 55, 0.6);
-}
-
-.editorSwatch[data-color="teal"] {
-    background: #2dd4bf;
-}
-
-.editorSwatch[data-color="ruby"] {
-    background: #ef4444;
-}
-
-.editorSwatch[data-color="iris"] {
-    background: #a78bfa;
-}
-
-.editorActions {
-    display: flex;
-    gap: 0.625rem;
-    margin-top: 0.25rem;
-}
-
-.editorBtnSave,
-.editorBtnPublish {
-    flex: 1;
-    padding: 0.5rem;
-    border-radius: 0.5rem;
-    font-size: var(--fs-body-sm);
-    font-weight: 700;
-    text-align: center;
-}
-
-.editorBtnSave {
-    background: rgba(255, 255, 255, 0.08);
-    color: rgba(255, 255, 255, 0.7);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.editorBtnPublish {
-    background: linear-gradient(135deg, #d4af37 0%, #c5962c 40%, #e6c44d 100%);
-    color: #0f172a;
-    border: none;
-}
-
-.editorPreview {
-    display: none;
-
-    align-items: center;
-    justify-content: center;
-    border-radius: 0.75rem;
-    overflow: hidden;
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.06);
-}
-
-.editorPreviewImg {
-    display: block;
-    width: 100%;
-    height: auto;
-    object-fit: cover;
-    border-radius: 0.75rem;
-}
-
-/* ── 5b. Compact control benefit items ──────────────────── */
-
-.controlItems {
-    display: flex;
-    flex-direction: column;
-    gap: 0.75rem;
-    width: 100%;
-    max-width: 55rem;
-}
-
-.controlItem {
+.editCheckItem {
     display: flex;
     align-items: flex-start;
-    gap: 0.75rem;
-    padding: 0.75rem 1rem;
-    border-radius: 0.75rem;
-    background: rgba(212, 175, 55, 0.04);
-    border: 1px solid rgba(212, 175, 55, 0.1);
+    gap: 0.5rem;
     text-align: start;
-    transition: border-color 0.2s ease;
 }
 
-.controlItem:hover {
-    border-color: rgba(212, 175, 55, 0.3);
-}
-
-.controlItemIcon {
-    display: block;
+.editCheckItem::before {
+    content: "✓";
     flex-shrink: 0;
-    width: var(--fs-body-lg);
-    height: var(--fs-body-lg);
+    font-weight: 900;
     color: var(--gold);
-    margin-top: 0.125rem;
+    font-size: var(--fs-body-lg);
+    line-height: 1.6;
 }
 
-.controlItemText {
+.editCheckText {
     display: flex;
     flex-direction: column;
     gap: 0.1rem;
 }
 
-.controlItemTitle {
-    font-size: var(--fs-body);
+.editCheckBold {
     font-weight: 800;
     color: #0f172a;
+    font-size: var(--fs-body);
+    line-height: 1.6;
+}
+
+.editCheckDesc {
+    font-size: var(--fs-body-sm);
+    color: #64748b;
+    line-height: 1.5;
+}
+
+.editorDashImg {
+    width: 100%;
+    height: auto;
+    max-width: 55rem;
+    border-radius: 1rem;
+    object-fit: cover;
+    margin-bottom: 2rem;
+    box-shadow:
+        5px 5px 7px rgba(0, 0, 0, 0.35),
+        0 0 0 1px rgba(212, 175, 55, 0.15);
+    transition:
+        transform 0.3s ease,
+        box-shadow 0.3s ease;
+}
+
+/* ── 5b. Control benefit cards (image-top, matches insight cards) ── */
+
+.controlItems {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    width: 100%;
+    margin-bottom: 1.25rem;
+}
+
+.controlItem {
+    flex: 1 1 calc((100% - 1rem) / 2);
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    border-radius: 1rem;
+    background: #0f172a;
+    border: 1px solid rgba(212, 175, 55, 0.12);
+    overflow: hidden;
+    --_p: clamp(0, (var(--scroll-progress, 1) - var(--_delay, 0)) * 5, 1);
+    opacity: var(--_p);
+    transform: scale(calc(0.25 + var(--_p) * 0.75))
+        translateY(calc((1 - var(--_p)) * -28rem));
+    will-change: transform, opacity;
+    transition:
+        border-color 0.2s ease,
+        transform 0.2s ease,
+        box-shadow 0.2s ease;
+}
+
+.controlItem:nth-child(1) {
+    --_delay: 0;
+}
+
+.controlItem:nth-child(2) {
+    --_delay: 0.04;
+}
+
+.controlItem:nth-child(3) {
+    --_delay: 0.08;
+}
+
+.controlItem:nth-child(4) {
+    --_delay: 0.12;
+}
+
+.controlItem:hover {
+    border-color: rgba(212, 175, 55, 0.35);
+    box-shadow: 0 8px 32px rgba(212, 175, 55, 0.08);
+}
+
+.controlMedia {
+    aspect-ratio: 1 / 1;
+    overflow: hidden;
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.controlImg {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.controlBody {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 1rem;
+    padding: 0.625rem 0.5rem 0.75rem;
+}
+
+.controlItemIcon {
+    width: 1.6rem;
+    height: 1.6rem;
+    color: var(--gold);
+    margin-bottom: 0.25rem;
+    flex-shrink: 0;
+}
+
+.controlItemTitle {
+    font-size: var(--fs-body);
+    font-weight: 700;
+    color: var(--gold);
+    margin-bottom: 0.125rem;
 }
 
 .controlItemDesc {
     font-size: var(--fs-body-sm);
-    line-height: 1.55;
-    color: #64748b;
+    color: rgba(255, 255, 255, 0.72);
+    line-height: 1.4;
 }
 
 /* ── 6. Template showcase ───────────────────────────────── */
@@ -1814,31 +1583,31 @@
         margin-inline-end: 0.35rem;
     }
 
+    .editChecklist {
+        align-self: center;
+    }
+
+    .editCheckText {
+        flex-direction: row;
+        gap: 0.35rem;
+        align-items: baseline;
+    }
+
+    .editCheckDesc::before {
+        content: "–";
+        margin-inline-end: 0.35rem;
+    }
+
     .shareCard {
         flex: 1 1 calc((100% - 0.75rem) / 2);
     }
 
-    .editorBody {
-        flex-direction: row;
-    }
-
-    .editorSidebar {
-        flex: 1;
-    }
-
-    .editorPreview {
-        display: flex;
-        flex: 0 0 12rem;
-    }
-
     .controlItems {
-        flex-direction: row;
-        flex-wrap: wrap;
         gap: 0.75rem;
     }
 
     .controlItem {
-        flex: 1 1 calc((100% - 0.75rem) / 2);
+        flex: 1 1 calc((100% - 2.25rem) / 4);
     }
 
     .insightBullet {
@@ -1885,6 +1654,9 @@
         bottom: 15%;
         inset-inline-end: 2%;
         --scroll-drift-distance: -90%;
+    }
+    .editorDashImg {
+        margin-bottom: 3rem;
     }
 }
 
@@ -1966,10 +1738,6 @@
         justify-content: center;
         white-space: nowrap;
     }
-    .analyticsMock {
-        width: 90%;
-        aspect-ratio: 8 / 9;
-    }
 }
 
 /* ── Reduced-motion: disable decorative infinite animations ── */
@@ -1987,6 +1755,12 @@
     }
 
     .insightBullet {
+        opacity: 1;
+        transform: none;
+        will-change: auto;
+    }
+
+    .controlItem {
         opacity: 1;
         transform: none;
         will-change: auto;
