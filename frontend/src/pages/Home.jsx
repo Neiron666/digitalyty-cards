@@ -227,13 +227,14 @@ const CONTROL_FEATURES = [
     },
 ];
 
+const TEMPLATE_COVERS = "/templates/previews/preview-covers";
 const TEMPLATE_SKINS = [
-    { name: "Lakmi", color: "#f5ebe0", accent: "#d4af37" },
-    { name: "Tehom Turkiz", color: "#0f172a", accent: "#2dd4bf" },
-    { name: "Ruby Esh", color: "#1c0a0a", accent: "#ef4444" },
-    { name: "Iris Layla", color: "#1a1035", accent: "#a78bfa" },
-    { name: "Bronze Sachlav", color: "#1c1410", accent: "#cd7f32" },
-    { name: "Pardes Chai", color: "#f0fdf4", accent: "#22c55e" },
+    { name: "Lakmi", src: `${TEMPLATE_COVERS}/lakmi.webp` },
+    { name: "Tehom Turkiz", src: `${TEMPLATE_COVERS}/tehom-turkiz.webp` },
+    { name: "Laguna Afarsek", src: `${TEMPLATE_COVERS}/laguna-afarsek.webp` },
+    { name: "Iris Layla", src: `${TEMPLATE_COVERS}/iris-layla.webp` },
+    { name: "Bronze Sachlav", src: `${TEMPLATE_COVERS}/bronze-sachlav.webp` },
+    { name: "Zahav Laguna", src: `${TEMPLATE_COVERS}/zahav-laguna.webp` },
 ];
 
 const HERO_CARDS = [
@@ -724,35 +725,31 @@ export default function Home() {
             >
                 <div className={styles.sectionWrap}>
                     <h2 className={styles.h2White}>
-                        25 תבניות מקצועיות - מוכנות לשימוש
+                        בחרו עיצוב שמתאים{" "}
+                        <span
+                            className={`${styles.h2Gold} ${styles.goldUnderline}`}
+                        >
+                            לעסק שלכם
+                        </span>
                     </h2>
                     <p className={styles.sectionLeadLight}>
-                        כל עיצוב בנוי RTL, מותאם למובייל, ומוכן לעברית. בחרו
-                        סגנון שמתאים לעסק שלכם.
+                        יש לכם מבחר תבניות מוכנות, שנראות טוב מההתחלה ועובדות
+                        מצוין גם בטלפון. פשוט בוחרים סגנון שמרגיש נכון לעסק
+                        שלכם.
                     </p>
 
                     <div className={styles.templatesShowcase}>
                         {TEMPLATE_SKINS.map((skin, i) => (
-                            <div key={i} className={styles.templateMock}>
-                                <div
-                                    className={styles.templateMockScreen}
-                                    data-bg={skin.color}
-                                    data-accent={skin.accent}
-                                >
-                                    <div className={styles.tmHeader} />
-                                    <div className={styles.tmLine} />
-                                    <div className={styles.tmLine} />
-                                    <div className={styles.tmBtnRow}>
-                                        <div className={styles.tmBtn} />
-                                        <div className={styles.tmBtn} />
-                                    </div>
-                                    <div className={styles.tmGalleryRow}>
-                                        <div className={styles.tmThumb} />
-                                        <div className={styles.tmThumb} />
-                                        <div className={styles.tmThumb} />
-                                    </div>
-                                </div>
-                                <div className={styles.templateMockLabel}>
+                            <div key={i} className={styles.templateCard}>
+                                <img
+                                    className={styles.templateCardImg}
+                                    src={skin.src}
+                                    alt={`תבנית ${skin.name}`}
+                                    loading="lazy"
+                                    width="300"
+                                    height="520"
+                                />
+                                <div className={styles.templateCardName}>
                                     {skin.name}
                                 </div>
                             </div>
@@ -762,7 +759,7 @@ export default function Home() {
                     <div className={styles.center}>
                         <Button
                             as={Link}
-                            to="/register"
+                            to="edit/card/templates"
                             variant="secondary"
                             onClick={() =>
                                 trackSiteClick({
