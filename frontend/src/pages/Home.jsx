@@ -114,26 +114,36 @@ const ANALYTICS_SOURCES = [
     { name: "ישיר", pct: 12 },
 ];
 
+const SECTION_4_IMG = "/images/home-page/main-sections/Section-4";
+
 const SHARE_CHANNELS = [
     {
         Icon: LinkIcon,
         title: "קישור ישיר",
-        text: "שתפו בכל מקום - אימייל, ביו ברשתות, חתימה דיגיטלית.",
+        text: "הכרטיס שלכם מוכן לשיתוף בכל מקום — מאימייל וחתימה דיגיטלית ועד ביו ברשתות וקישורים באתר.",
+        src: `${SECTION_4_IMG}/digital_business_card-direct-link-online-sharing.webp`,
+        alt: "שיתוף כרטיס ביקור דיגיטלי בקישור ישיר",
     },
     {
         Icon: QrCodeIcon,
         title: "QR Code",
-        text: "קוד QR להדפסה, שילוט, אריזות, ואירועים.",
+        text: "הפכו כל שילוט, אריזה, פלייר או דלפק לנקודת מעבר ישירה אל הכרטיס הדיגיטלי שלכם.",
+        src: `${SECTION_4_IMG}/digital_business_card-qr-code-scan-from-coffee-cup.webp`,
+        alt: "סריקת QR לכרטיס ביקור דיגיטלי",
     },
     {
         Icon: ChatIcon,
         title: "WhatsApp",
-        text: "שליחה ישירה ללקוחות עם תצוגה מקדימה אוטומטית.",
+        text: "שלחו את הכרטיס בוואטסאפ כלינק מסודר עם תצוגה מקדימה, כך שקל לשתף אותו גם בשיחה אישית וגם כהמלצה הלאה.",
+        src: `${SECTION_4_IMG}/digital_business_card-whatsapp-business-card-sharing.webp`,
+        alt: "שיתוף כרטיס ביקור דיגיטלי בוואטסאפ",
     },
     {
-        Icon: AnalyticsIcon,
-        title: "קישור + UTM",
-        text: "צרו קישורים ייעודיים לכל קמפיין - ועקבו אחרי התוצאות.",
+        Icon: SeoIcon,
+        title: "קישורי קמפיין",
+        text: "צרו קישורים ייעודיים לכל קמפיין, מודעה או פלטפורמה — כדי להפיץ נכון יותר ולזהות אילו ערוצים מביאים תנועה טובה יותר.",
+        src: `${SECTION_4_IMG}/digital_business_card-marketing-campaign-tracking-links.webp`,
+        alt: "קישורי קמפיין לכרטיס ביקור דיגיטלי",
     },
 ];
 
@@ -270,6 +280,7 @@ export default function Home() {
     const stageZoom = useScrollProgress();
     const dashZoom = useScrollProgress();
     const insightScroll = useScrollProgress();
+    const shareScroll = useScrollProgress();
 
     return (
         <main className={styles.page} data-page="site">
@@ -463,24 +474,17 @@ export default function Home() {
             >
                 <div className={styles.sectionWrap}>
                     <h2 className={styles.h2Gold}>תדעו מה באמת מביא תוצאות</h2>
-
                     <p className={styles.sectionLead}>
                         {" "}
                         <strong className={styles.analyticsLeadBrand}>
                             Cardigo -
                         </strong>{" "}
-                        זה לא רק כרטיס ביקור דיגיטלי,אלא{" "}
+                        זאת{" "}
                         <em className={styles.analyticsLeadPunch}>
                             פלטפורמה חכמה עם אנליטיקה{" "}
                         </em>
                         ומעקב.
-                        <br /> כל צפייה, כל לחיצה, כל מקור הגעה — הופך את
-                        הנתונים לתובנות שנותנות לכם{" "}
-                        <em className={styles.analyticsLeadPunch}>
-                            שליטה אמיתית על התוצאות.
-                        </em>
                     </p>
-
                     {/* DOM-built analytics dashboard mockup */}
                     <div
                         className={`${styles.analyticsMock} ${scroll.scrollZoomSoft} ${styles.dashboardZoom}`}
@@ -532,7 +536,6 @@ export default function Home() {
                             ))}
                         </div>
                     </div>
-
                     <div
                         className={styles.analyticsInsights}
                         ref={insightScroll.ref}
@@ -563,6 +566,13 @@ export default function Home() {
                         ))}
                     </div>
 
+                    <p className={styles.highlight}>
+                        כל צפייה, כל לחיצה, כל מקור הגעה — הופך את הנתונים
+                        לתובנות שנותנות לכם{" "}
+                        <em className={styles.analyticsLeadPunch}>
+                            שליטה אמיתית על התוצאות.
+                        </em>
+                    </p>
                     <p className={styles.analyticsCaveat}>
                         * ניתוח נתונים מלא זמין במסלול פרימיום. במסלול חינמי
                         ניתן לצפות בתצוגה לדוגמה.
@@ -576,22 +586,37 @@ export default function Home() {
                 ref={r4.ref}
             >
                 <div className={styles.sectionWrap}>
-                    <h2 className={styles.h2White}>
-                        שתפו בכל מקום - ותדעו מאיפה הגיעו
-                    </h2>
+                    <h2 className={styles.h2White}>שתפו בכל מקום</h2>
                     <p className={styles.sectionLeadLight}>
-                        כל שיתוף הוא הזדמנות עסקית. כרדיגו עוזר לכם להפיץ את
-                        הכרטיס ולעקוב אחרי התוצאות.
+                        כרטיס ביקור דיגיטלי של Cardigo לא נשאר רק בקישור — הוא
+                        משתלב באימייל, בוואטסאפ, ב-QR ובקישורי קמפיין, כדי
+                        שתוכלו להפיץ את העסק שלכם בכל מקום שבו הלקוחות כבר
+                        פוגשים אתכם.
                     </p>
 
-                    <div className={styles.shareRow}>
+                    <div className={styles.shareRow} ref={shareScroll.ref}>
                         {SHARE_CHANNELS.map((ch, i) => (
                             <div key={i} className={styles.shareCard}>
-                                <ch.Icon className={styles.shareIcon} />
-                                <h3 className={styles.shareTitle}>
-                                    {ch.title}
-                                </h3>
-                                <p className={styles.shareText}>{ch.text}</p>
+                                <div className={styles.shareMedia}>
+                                    <img
+                                        className={styles.shareImg}
+                                        src={ch.src}
+                                        alt={ch.alt}
+                                        width={400}
+                                        height={400}
+                                        loading="lazy"
+                                        decoding="async"
+                                    />
+                                </div>
+                                <div className={styles.shareBody}>
+                                    <ch.Icon className={styles.shareIcon} />
+                                    <h3 className={styles.shareTitle}>
+                                        {ch.title}
+                                    </h3>
+                                    <p className={styles.shareText}>
+                                        {ch.text}
+                                    </p>
+                                </div>
                             </div>
                         ))}
                     </div>
