@@ -214,7 +214,7 @@ const CONTROL_FEATURES = [
     {
         Icon: MobileIcon,
         title: "מכל מכשיר",
-        text: "העורך עובד גם מהנייד. עדכון מהיר בדרך לפגישה.",
+        text: "ניתן לערוך גם מהנייד. עדכון מהיר מכל מכשיר.",
         src: `${SECTION_5_IMG}/cardigo-edit-digital-business-card-from-any-device.webp`,
         alt: "עריכת כרטיס ביקור דיגיטלי מכל מכשיר",
     },
