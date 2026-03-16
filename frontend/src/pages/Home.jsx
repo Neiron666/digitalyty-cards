@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { Link } from "react-router-dom";
 import Button from "../components/ui/Button";
+import SeoHelmet from "../components/seo/SeoHelmet";
 import {
     trackSiteClick,
     trackSitePageView,
@@ -263,6 +264,89 @@ const STEPS = [
     },
 ];
 
+const ORIGIN = import.meta.env.VITE_PUBLIC_ORIGIN || "https://cardigo.co.il";
+
+const HOME_FAQ = [
+    {
+        q: "כמה זמן לוקח ליצור כרטיס ביקור דיגיטלי?",
+        a: "בדרך כלל כמה דקות. בוחרים תבנית, מוסיפים פרטים ומתחילים לשתף את כרטיס הביקור הדיגיטלי שלכם.",
+    },
+    {
+        q: "צריך ידע טכני כדי לנהל את כרטיס הביקור הדיגיטלי?",
+        a: "לא. העורך של Cardigo בנוי כך שתוכלו לעדכן טקסטים, תמונות, קישורים ופרטי קשר בעצמכם \u2014 בלי מפתח ובלי ידע טכני.",
+    },
+    {
+        q: "אפשר לעדכן פרטים אחרי שפרסמתי?",
+        a: "כן. אתם יכולים לשנות כל פרט בכרטיס הביקור הדיגיטלי בכל רגע \u2014 טלפון, תמונות, עיצוב וטקסטים \u2014 והעדכון מופיע בקישור הקיים.",
+    },
+    {
+        q: "יש תכנית חינמית?",
+        a: "כן. אפשר ליצור כרטיס ביקור דיגיטלי בחינם ולהתחיל להשתמש בו מיד. כשתצטרכו יכולות מתקדמות יותר, אפשר לשדרג למסלול פרימיום.",
+    },
+    {
+        q: "אפשר להחליף תבנית בלי לאבד תוכן?",
+        a: "כן. כל התוכן שלכם נשמר, ורק העיצוב משתנה. כך אפשר לנסות כמה סגנונות עד שמוצאים את התבנית שמתאימה לעסק.",
+    },
+    {
+        q: "איך רואים מאיפה מגיעות הצפיות והפניות?",
+        a: "במסלול הפרימיום תוכלו לראות מאילו מקורות מגיעה התנועה, על מה לוחצים, ואילו קישורים או פלטפורמות מביאים יותר תגובות. במסלול החינמי מוצגת תצוגה לדוגמה.",
+    },
+    {
+        q: "האם כרטיס הביקור הדיגיטלי יכול להופיע בגוגל?",
+        a: "כן, הכרטיס הוא עמוד אינטרנט עם כתובת ייחודית, כך שהוא יכול להופיע בתוצאות חיפוש. אנחנו דואגים למבנה נכון שעוזר לגוגל להבין את העמוד, אבל כמו בכל אתר \u2014 ההופעה בתוצאות תלויה גם בגוגל עצמו.",
+    },
+    {
+        q: "איך משתפים את כרטיס הביקור הדיגיטלי?",
+        a: "אפשר לשתף את הכרטיס בקישור ישיר, ב-QR, בוואטסאפ, ובקישורים ייעודיים לקמפיינים \u2014 כך שקל להפיץ אותו בכל מקום שבו הלקוחות כבר פוגשים אתכם.",
+    },
+    {
+        q: "מה ההבדל בין כרטיס ביקור דיגיטלי לאתר אינטרנט?",
+        a: "כרטיס ביקור דיגיטלי של Cardigo הוא עמוד עסקי ממוקד שמוכן תוך דקות, קל לעדכון, ונוח מאוד לשיתוף. הוא לא מחליף אתר מלא, אבל כן נותן לעסק נוכחות מקצועית ומהירה באינטרנט.",
+    },
+    {
+        q: "אפשר להוסיף תמונות, סרטון והמלצות לכרטיס?",
+        a: "כן. בכרטיס הביקור הדיגיטלי של Cardigo אפשר להציג תמונות, סרטון, המלצות ותוכן נוסף שיעזור לעסק להיראות מקצועי ואמין יותר.",
+    },
+    {
+        q: "אפשר לקבל פניות ישירות מתוך הכרטיס?",
+        a: "כן. אפשר להוסיף לכרטיס הדיגיטלי דרכי יצירת קשר כמו טלפון, וואטסאפ, קישורים וטופס פנייה \u2014 כדי שללקוחות יהיה קל לפנות אליכם.",
+    },
+    {
+        q: "יש לכל כרטיס קישור אישי משלו?",
+        a: "כן. לכל כרטיס ביקור דיגיטלי יש קישור ייחודי שאפשר לשלוח, לשתף, להוסיף לביו, לחתימה במייל או לכל מקום אחר שבו העסק שלכם מופיע.",
+    },
+    {
+        q: "אפשר להשתמש ב-QR כדי להפנות לכרטיס?",
+        a: "כן. אפשר להוריד קוד QR ולהשתמש בו על כרטיסים מודפסים, שלטים, אריזות, דלפקים ואירועים \u2014 כדי להעביר אנשים ישר לכרטיס הדיגיטלי.",
+    },
+    {
+        q: "אפשר לנהל את הכרטיס גם מהטלפון?",
+        a: "כן. אפשר לערוך ולעדכן את כרטיס הביקור הדיגיטלי גם מהטלפון, כך שקל לבצע שינויים מהירים גם כשאתם לא מול מחשב.",
+    },
+    {
+        q: "כרטיס ביקור דיגיטלי מתאים גם לעסק קטן או לעצמאי?",
+        a: "בהחלט. Cardigo מתאים לעצמאים, לעסקים קטנים ולנותני שירות שרוצים עמוד עסקי מקצועי, נוח לשיתוף וקל לניהול \u2014 בלי להסתבך עם אתר מלא.",
+    },
+];
+
+function buildHomeFaqJsonLd() {
+    return {
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        "@id": `${ORIGIN}/#faq`,
+        url: `${ORIGIN}/`,
+        inLanguage: "he",
+        mainEntity: HOME_FAQ.map((item) => ({
+            "@type": "Question",
+            name: item.q,
+            acceptedAnswer: {
+                "@type": "Answer",
+                text: item.a,
+            },
+        })),
+    };
+}
+
 const HERO_CARDS = [
     {
         src: "/images/home-page/hero/\u05DB\u05E8\u05D8\u05D9\u05E1 \u05D1\u05D9\u05E7\u05D5\u05E8 \u05D3\u05D9\u05D2\u05D9\u05D8\u05DC\u05D9 \u05DC\u05D0\u05D3\u05E8\u05D9\u05DB\u05DC\u05D9\u05EA \u05D7\u05D5\u05E5 \u05D5\u05E0\u05D5\u05E3  \u05DB\u05E8\u05D3\u05D9\u05D2\u05D5.webp",
@@ -309,8 +393,17 @@ export default function Home() {
     const shareScroll = useScrollProgress();
     const stepsScroll = useScrollProgress();
 
+    const homeFaqJsonLd = buildHomeFaqJsonLd();
+
     return (
         <main className={styles.page} data-page="site">
+            <SeoHelmet
+                title="כרטיס ביקור דיגיטלי לעסקים | Cardigo"
+                description="כרטיס ביקור דיגיטלי של Cardigo מאפשר ליצור עמוד עסקי מקצועי, לשתף ב-QR, בוואטסאפ ובקישורים ייעודיים, ולעדכן הכול בקלות — עם תבניות, אנליטיקה וכלי שיתוף לעסק שלכם."
+                canonicalUrl={`${ORIGIN}/`}
+                url={`${ORIGIN}/`}
+                jsonLdItems={[homeFaqJsonLd]}
+            />
             {/* HERO - unchanged */}
             <section className={styles.hero}>
                 <div className={styles.heroInner}>
@@ -437,8 +530,11 @@ export default function Home() {
                     <div className={styles.highlight}>
                         {" "}
                         כרטיס ביקור דיגיטלי של{" "}
-                        <span className={styles.goldUnderline}> כרדיגו</span> -
-                        זה נוכחות עסקית מלאה שעובדת 24/7
+                        <span className={styles.presenceLeadBrand}>
+                            {" "}
+                            כרדיגו
+                        </span>{" "}
+                        - זה נוכחות עסקית מלאה שעובדת 24/7
                     </div>
                 </div>
             </section>
@@ -843,100 +939,7 @@ export default function Home() {
                 </div>
             </section>
 
-            {/* ── 8. FAQ (expanded) ──────────────────────────── */}
-            <section className={styles.sectionDark} id="faq">
-                <div className={styles.sectionWrap}>
-                    <h2 className={styles.h2White}>שאלות נפוצות</h2>
-
-                    <div className={styles.faq}>
-                        <details className={styles.qa}>
-                            <summary>כמה זמן לוקח ליצור כרטיס?</summary>
-                            <div className={styles.answer}>
-                                בדרך כלל כמה דקות. בוחרים תבנית, מוסיפים פרטים
-                                ומתחילים לשתף.
-                            </div>
-                        </details>
-
-                        <details className={styles.qa}>
-                            <summary>אפשר לעדכן פרטים אחרי שפרסמתי?</summary>
-                            <div className={styles.answer}>
-                                כן. אתם יכולים לשנות כל פרט בכרטיס בכל רגע -
-                                טלפון, תמונות, עיצוב, טקסטים - והעדכון מופיע מיד
-                                בקישור הקיים.
-                            </div>
-                        </details>
-
-                        <details className={styles.qa}>
-                            <summary>הכרטיס מתאים למובייל?</summary>
-                            <div className={styles.answer}>
-                                כן. כל העיצובים בנויים mobile-first עם תמיכה
-                                מלאה בעברית ו-RTL.
-                            </div>
-                        </details>
-
-                        <details className={styles.qa}>
-                            <summary>יש תכנית חינמית?</summary>
-                            <div className={styles.answer}>
-                                כן. אפשר ליצור כרטיס בחינם ולשדרג למסלול פרימיום
-                                כשצריך יכולות נוספות כמו אנליטיקס, טופס לידים,
-                                סרטון והמלצות.
-                            </div>
-                        </details>
-
-                        <details className={styles.qa}>
-                            <summary>אפשר להחליף תבנית בלי לאבד תוכן?</summary>
-                            <div className={styles.answer}>
-                                כן. כל התוכן שלכם נשמר - רק העיצוב משתנה. תוכלו
-                                להתנסות בכמה תבניות עד שתמצאו את המתאימה.
-                            </div>
-                        </details>
-
-                        <details className={styles.qa}>
-                            <summary>
-                                איך אני יודע מאיפה מגיעים הלקוחות?
-                            </summary>
-                            <div className={styles.answer}>
-                                במסלול הפרימיום תקבלו נתוני אנליטיקס אמיתיים:
-                                מקורות הגעה (אינסטגרם, גוגל, וואטסאפ ועוד), כמות
-                                צפיות ולחיצות, ושיעורי המרה לפי פלטפורמה
-                                וקמפיין. במסלול חינמי תוכלו לצפות בתצוגה לדוגמה.
-                            </div>
-                        </details>
-
-                        <details className={styles.qa}>
-                            <summary>הכרטיס מופיע בתוצאות חיפוש בגוגל?</summary>
-                            <div className={styles.answer}>
-                                כן. הכרטיס הוא עמוד אינטרנט אמיתי עם כתובת
-                                ייחודית, תגיות SEO, ו-JSON-LD - ונכלל באופן
-                                אוטומטי ב-sitemap.
-                            </div>
-                        </details>
-
-                        <details className={styles.qa}>
-                            <summary>איך משתפים את הכרטיס?</summary>
-                            <div className={styles.answer}>
-                                בכמה דרכים: קישור ישיר, קוד QR להורדה, שיתוף
-                                בוואטסאפ, וקישורים עם UTM למדידת קמפיינים
-                                ספציפיים.
-                            </div>
-                        </details>
-
-                        <details className={styles.qa}>
-                            <summary>
-                                מה ההבדל בין כרטיס דיגיטלי לאתר אינטרנט?
-                            </summary>
-                            <div className={styles.answer}>
-                                כרטיס דיגיטלי של כרדיגו הוא למעשה עמוד תדמית
-                                ממוקד - מיני סייט - שמוכן תוך דקות, קל לעדכון,
-                                ובנוי לשיתוף ולמדידה. הוא לא מחליף אתר מלא אבל
-                                נותן נוכחות מקצועית באינטרנט בלי צורך במפתחים.
-                            </div>
-                        </details>
-                    </div>
-                </div>
-            </section>
-
-            {/* ── 9. FINAL CTA ───────────────────────────────── */}
+            {/* ── 8. FINAL CTA ───────────────────────────────── */}
             <section
                 className={`${styles.ctaSection} ${motion.fadeUp}  ${motion.slow} ${r9.isRevealed ? motion.isVisible : ""}`}
                 ref={r9.ref}
@@ -944,15 +947,35 @@ export default function Home() {
                 <div className={styles.sectionWrap}>
                     <div className={styles.ctaInner}>
                         <h2 className={styles.ctaTitle}>
-                            הנוכחות הדיגיטלית שלכם מתחילה כאן
+                            {" "}
+                            צור כרטיס ביקור דיגיטלי{" "}
+                            <span
+                                className={`${styles.goldHilight} ${styles.goldUnderline}`}
+                            >
+                                שמביא יותר לקוחות!{" "}
+                            </span>
                         </h2>
                         <p className={styles.ctaText}>
-                            כרטיס מקצועי, שיתוף חכם, ותובנות עסקיות - בחינם
-                            להתחלה.
+                            יוצרים, משתפים ומעדכנים בקלות — עם{" "}
+                            <span
+                                className={`${styles.goldHilight} ${styles.goldUnderline} ${styles.boldTxt}`}
+                            >
+                                Cardigo
+                            </span>
+                            .
                         </p>
+                        <img
+                            className={styles.ctaImg}
+                            src="/images/home-page/main-sections/Section-8/cardigo-digital-business-card-israel-brand-illustration.webp"
+                            alt="כרטיס ביקור דיגיטלי לעסקים - Cardigo"
+                            width={800}
+                            height={450}
+                            loading="lazy"
+                            decoding="async"
+                        />
                         <Button
                             as={Link}
-                            to="/register"
+                            to="/edit/card/templates"
                             variant="primary"
                             className={styles.ctaBtn}
                             onClick={() =>
@@ -964,6 +987,22 @@ export default function Home() {
                         >
                             צור כרטיס חינם
                         </Button>
+                    </div>
+                </div>
+            </section>
+
+            {/* ── 9. FAQ (expanded) ──────────────────────────── */}
+            <section className={styles.sectionDark} id="faq">
+                <div className={styles.sectionWrap}>
+                    <h2 className={styles.h2Gold}>שאלות נפוצות</h2>
+
+                    <div className={styles.faq}>
+                        {HOME_FAQ.map((item, i) => (
+                            <details key={i} className={styles.qa}>
+                                <summary>{item.q}</summary>
+                                <div className={styles.answer}>{item.a}</div>
+                            </details>
+                        ))}
                     </div>
                 </div>
             </section>
