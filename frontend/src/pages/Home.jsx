@@ -238,6 +238,31 @@ const TEMPLATE_SKINS = [
     { name: "Zahav Laguna", src: `${TEMPLATE_COVERS}/zahav-laguna.webp` },
 ];
 
+const STEPS_IMG = "/images/home-page/main-sections/Section-6";
+const STEPS = [
+    {
+        num: "1",
+        title: "בחרו עיצוב",
+        text: "נרשמים בחינם ובוחרים תבנית שמתאימה לעסק.",
+        src: `${STEPS_IMG}/cardigo-digital-business-card-template-selection.png.webp`,
+        alt: "בחירת תבנית לכרטיס ביקור דיגיטלי",
+    },
+    {
+        num: "2",
+        title: "תוסיפו תוכן",
+        text: "ממלאים פרטי קשר, תמונות, טקסט וקישורים.",
+        src: `${STEPS_IMG}/cardigo-digital-business-card-content-editing.webp`,
+        alt: "עריכת תוכן בכרטיס ביקור דיגיטלי",
+    },
+    {
+        num: "3",
+        title: "משתפים ומודדים",
+        text: "מפיצים בקישור, QR או וואטסאפ \u2013 ועוקבים אחרי התוצאות.",
+        src: `${STEPS_IMG}/cardigo-digital-business-card-sharing-and-analytics.png.webp`,
+        alt: "שיתוף כרטיס ביקור דיגיטלי ומעקב אנליטיקס",
+    },
+];
+
 const HERO_CARDS = [
     {
         src: "/images/home-page/hero/\u05DB\u05E8\u05D8\u05D9\u05E1 \u05D1\u05D9\u05E7\u05D5\u05E8 \u05D3\u05D9\u05D2\u05D9\u05D8\u05DC\u05D9 \u05DC\u05D0\u05D3\u05E8\u05D9\u05DB\u05DC\u05D9\u05EA \u05D7\u05D5\u05E5 \u05D5\u05E0\u05D5\u05E3  \u05DB\u05E8\u05D3\u05D9\u05D2\u05D5.webp",
@@ -282,6 +307,7 @@ export default function Home() {
     const insightScroll = useScrollProgress();
     const controlScroll = useScrollProgress();
     const shareScroll = useScrollProgress();
+    const stepsScroll = useScrollProgress();
 
     return (
         <main className={styles.page} data-page="site">
@@ -784,31 +810,35 @@ export default function Home() {
                 <div className={styles.sectionWrap}>
                     <h2 className={styles.h2Gold}>שלושה צעדים - וזה עובד</h2>
 
-                    <div className={styles.steps}>
-                        <div className={styles.step}>
-                            <div className={styles.stepNum}>1</div>
-                            <div className={styles.stepTitle}>בחרו עיצוב</div>
-                            <div className={styles.stepText}>
-                                נרשמים בחינם ובוחרים תבנית שמתאימה לעסק.
+                    <div className={styles.steps} ref={stepsScroll.ref}>
+                        {STEPS.map((s) => (
+                            <div
+                                key={s.num}
+                                className={`${styles.step} ${s.num === "3" ? styles.stepWide : ""}`}
+                            >
+                                <div className={styles.stepMedia}>
+                                    <img
+                                        className={styles.stepImg}
+                                        src={s.src}
+                                        alt={s.alt}
+                                        loading="lazy"
+                                        width="600"
+                                        height="400"
+                                    />
+                                </div>
+                                <div className={styles.stepBody}>
+                                    <div className={styles.stepNum}>
+                                        {s.num}
+                                    </div>
+                                    <div className={styles.stepTitle}>
+                                        {s.title}
+                                    </div>
+                                    <div className={styles.stepText}>
+                                        {s.text}
+                                    </div>
+                                </div>
                             </div>
-                        </div>
-                        <div className={styles.step}>
-                            <div className={styles.stepNum}>2</div>
-                            <div className={styles.stepTitle}>מוסיפים תוכן</div>
-                            <div className={styles.stepText}>
-                                ממלאים פרטי קשר, תמונות, טקסט וקישורים.
-                            </div>
-                        </div>
-                        <div className={styles.step}>
-                            <div className={styles.stepNum}>3</div>
-                            <div className={styles.stepTitle}>
-                                משתפים ומודדים
-                            </div>
-                            <div className={styles.stepText}>
-                                מפיצים בקישור, QR או וואטסאפ - ועוקבים אחרי
-                                התוצאות.
-                            </div>
-                        </div>
+                        ))}
                     </div>
                 </div>
             </section>
