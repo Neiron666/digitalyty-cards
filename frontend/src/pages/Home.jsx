@@ -310,7 +310,11 @@ export default function Home() {
 
                         <h1 className={styles.h1}>
                             כרטיס ביקור דיגיטלי
-                            <span className={styles.h1Accent}>הדור החדש</span>
+                            <span
+                                className={`${styles.h1Accent} ${styles.goldUnderline}`}
+                            >
+                                הדור החדש
+                            </span>
                         </h1>
                     </div>
                     <div className={styles.heroActions}>
@@ -421,7 +425,11 @@ export default function Home() {
                 <div className={styles.sectionWrap}>
                     <h2 className={styles.h2White}>
                         מכל צפייה לפנייה -{" "}
-                        <span className={styles.goldHilight}>בקליק אחד</span>
+                        <span
+                            className={`${styles.goldHilight} ${styles.goldUnderline}`}
+                        >
+                            בקליק אחד
+                        </span>
                     </h2>
                     <p
                         className={`${styles.sectionLeadLight} ${styles.goldUnderline}`}
@@ -586,13 +594,47 @@ export default function Home() {
                 ref={r4.ref}
             >
                 <div className={styles.sectionWrap}>
-                    <h2 className={styles.h2White}>שתפו בכל מקום</h2>
-                    <p className={styles.sectionLeadLight}>
-                        כרטיס ביקור דיגיטלי של Cardigo לא נשאר רק בקישור — הוא
-                        משתלב באימייל, בוואטסאפ, ב-QR ובקישורי קמפיין, כדי
-                        שתוכלו להפיץ את העסק שלכם בכל מקום שבו הלקוחות כבר
-                        פוגשים אתכם.
-                    </p>
+                    <h2 className={styles.h2White}>
+                        {" "}
+                        שתפו בכל מקום{" "}
+                        <span
+                            className={`${styles.h2Gold} ${styles.goldUnderline} ${styles.strongerUnderline}`}
+                        >
+                            בקלות
+                        </span>
+                    </h2>
+                    <ul className={styles.shareChecklist}>
+                        <li className={styles.shareCheckItem}>
+                            <div className={styles.shareCheckText}>
+                                <span className={styles.shareCheckBold}>
+                                    משתלב בכל ערוץ
+                                </span>
+                                <span className={styles.shareCheckDesc}>
+                                    אימייל, וואטסאפ, QR וקישורי קמפיין
+                                </span>
+                            </div>
+                        </li>
+                        <li className={styles.shareCheckItem}>
+                            <div className={styles.shareCheckText}>
+                                <span className={styles.shareCheckBold}>
+                                    לא נשאר רק בקישור
+                                </span>
+                                <span className={styles.shareCheckDesc}>
+                                    הכרטיס חי בכל מקום שבו העסק שלכם כבר נמצא
+                                </span>
+                            </div>
+                        </li>
+                        <li className={styles.shareCheckItem}>
+                            <div className={styles.shareCheckText}>
+                                <span className={styles.shareCheckBold}>
+                                    הפצה חכמה יותר
+                                </span>
+                                <span className={styles.shareCheckDesc}>
+                                    כל שיתוף הוא הזדמנות להגיע ללקוחות חדשים
+                                </span>
+                            </div>
+                        </li>
+                    </ul>
 
                     <div className={styles.shareRow} ref={shareScroll.ref}>
                         {SHARE_CHANNELS.map((ch, i) => (
@@ -631,20 +673,130 @@ export default function Home() {
                 <div className={styles.sectionWrap}>
                     <h2 className={styles.h2Gold}>תעדכנו בעצמכם - בכל רגע</h2>
                     <p className={styles.sectionLead}>
-                        שנו טלפון, החליפו עיצוב, עדכנו תמונות - הכל דרך העורך
-                        הפשוט שלנו, מכל מכשיר, בלי לחכות לאף אחד.
+                        שנו טלפון, החליפו עיצוב, עדכנו תמונות - הכל דרך האזור
+                        האישי , מכל מכשיר, בלי לחכות לאף אחד.
                     </p>
 
-                    <div className={styles.controlGrid}>
+                    {/* DOM-built editor mockup */}
+                    <div className={styles.editorMock} aria-hidden="true">
+                        <div className={styles.editorHeader}>
+                            <span className={styles.editorDot} />
+                            <span className={styles.editorDot} />
+                            <span className={styles.editorDot} />
+                            <span className={styles.editorHeaderTitle}>
+                                עורך הכרטיס
+                            </span>
+                        </div>
+
+                        <div className={styles.editorBody}>
+                            {/* sidebar / field list */}
+                            <div className={styles.editorSidebar}>
+                                <div className={styles.editorField}>
+                                    <span className={styles.editorFieldLabel}>
+                                        שם העסק
+                                    </span>
+                                    <div className={styles.editorFieldInput}>
+                                        <span
+                                            className={
+                                                styles.editorFieldPlaceholder
+                                            }
+                                        >
+                                            איתן שגב{" "}
+                                        </span>
+                                        <span
+                                            className={styles.editorFieldCursor}
+                                        />
+                                    </div>
+                                </div>
+                                <div className={styles.editorField}>
+                                    <span className={styles.editorFieldLabel}>
+                                        טלפון
+                                    </span>
+                                    <div className={styles.editorFieldInput}>
+                                        <span
+                                            className={
+                                                styles.editorFieldPlaceholder
+                                            }
+                                        >
+                                            050-1234567
+                                        </span>
+                                    </div>
+                                </div>
+                                <div className={styles.editorField}>
+                                    <span className={styles.editorFieldLabel}>
+                                        תמונת פרופיל
+                                    </span>
+                                    <div
+                                        className={styles.editorImgPlaceholder}
+                                    >
+                                        <span className={styles.editorImgIcon}>
+                                            🖼
+                                        </span>
+                                    </div>
+                                </div>
+                                <div className={styles.editorField}>
+                                    <span className={styles.editorFieldLabel}>
+                                        עיצוב
+                                    </span>
+                                    <div className={styles.editorSwatches}>
+                                        <span
+                                            className={styles.editorSwatch}
+                                            data-color="gold"
+                                        />
+                                        <span
+                                            className={styles.editorSwatch}
+                                            data-color="teal"
+                                        />
+                                        <span
+                                            className={styles.editorSwatch}
+                                            data-color="ruby"
+                                        />
+                                        <span
+                                            className={styles.editorSwatch}
+                                            data-color="iris"
+                                        />
+                                    </div>
+                                </div>
+                                <div className={styles.editorActions}>
+                                    <div className={styles.editorBtnSave}>
+                                        שמור
+                                    </div>
+                                    <div className={styles.editorBtnPublish}>
+                                        פרסם
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* mini preview */}
+                            <div className={styles.editorPreview}>
+                                <img
+                                    className={styles.editorPreviewImg}
+                                    src={encodeURI(
+                                        "/images/home-page/hero/כרטיס ביקור דיגיטלי ליועץ הון פרטי  כרדיגו.webp",
+                                    )}
+                                    alt="תצוגה מקדימה של כרטיס ביקור דיגיטלי"
+                                    width={280}
+                                    height={560}
+                                    loading="lazy"
+                                    decoding="async"
+                                />
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* compact benefit items */}
+                    <div className={styles.controlItems}>
                         {CONTROL_FEATURES.map((item, i) => (
-                            <div key={i} className={styles.controlCard}>
-                                <item.Icon className={styles.controlCardIcon} />
-                                <h3 className={styles.controlCardTitle}>
-                                    {item.title}
-                                </h3>
-                                <p className={styles.controlCardText}>
-                                    {item.text}
-                                </p>
+                            <div key={i} className={styles.controlItem}>
+                                <item.Icon className={styles.controlItemIcon} />
+                                <div className={styles.controlItemText}>
+                                    <span className={styles.controlItemTitle}>
+                                        {item.title}
+                                    </span>
+                                    <span className={styles.controlItemDesc}>
+                                        {item.text}
+                                    </span>
+                                </div>
                             </div>
                         ))}
                     </div>
