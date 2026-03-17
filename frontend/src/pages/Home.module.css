@@ -176,26 +176,21 @@
 /* ── Hero CTA (premium gold) ─────────────────────────── */
 .heroCta {
     width: auto;
-    padding: 16px 48px;
     font-size: var(--fs-h6);
     letter-spacing: 0.03em;
     background: linear-gradient(135deg, #d4af37 0%, #c5962c 40%, #e6c44d 100%);
     color: #0f172a;
     border: none;
-    /* box-shadow:
-        0 0 0 1px rgba(212, 175, 55, 0.5),
-        0 4px 20px rgba(212, 175, 55, 0.3),
-        0 12px 40px rgba(212, 175, 55, 0.15); */
-    /* animation: ctaGlow 3s ease-in-out infinite; */
     width: 400px;
+    white-space: nowrap;
 }
 
 .heroCta:hover {
     transform: translateY(-2px) scale(1.03);
-    box-shadow:
+    /* box-shadow:
         0 0 0 1px rgba(212, 175, 55, 0.8),
         0 6px 30px rgba(212, 175, 55, 0.45),
-        0 16px 50px rgba(212, 175, 55, 0.2);
+        0 16px 50px rgba(212, 175, 55, 0.2); */
     color: var(--global-white-text);
 }
 
@@ -1804,9 +1799,9 @@
     }
 
     .heroCta {
-        width: 200px;
+        width: 250px;
         padding: 10px 15px;
-        font-size: var(--fs-body);
+        font-size: var(--fs-body-sm);
     }
 
     .heroCardImg {
@@ -1827,6 +1822,10 @@
         flex: 1 1 calc(50% - 0.75rem);
         justify-content: center;
         white-space: nowrap;
+    }
+    .ctaBtn {
+        padding: 0.75rem 2rem;
+        font-size: var(--fs-body-sm);
     }
 }
 

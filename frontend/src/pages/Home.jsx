@@ -452,7 +452,7 @@ export default function Home() {
                             <span
                                 className={`${styles.h1Accent} ${styles.goldUnderline}`}
                             >
-                                הדור החדש
+                                שמביא יותר לקוחות
                             </span>
                         </h1>
                     </div>
@@ -461,7 +461,7 @@ export default function Home() {
                             as={Link}
                             to="/edit"
                             variant="primary"
-                            className={styles.heroCta}
+                            className={`${styles.heroCta}  `}
                             onClick={() =>
                                 trackSiteClick({
                                     action: SITE_ACTIONS.home_hero_primary_register,
@@ -469,7 +469,7 @@ export default function Home() {
                                 })
                             }
                         >
-                            צור כרטיס חינם
+                            צרו כרטיס ביקור דיגיטלי
                         </Button>
                     </div>
                     <div className={styles.heroCards} aria-hidden="true">
@@ -1022,7 +1022,7 @@ export default function Home() {
                                 })
                             }
                         >
-                            צור כרטיס חינם
+                            צרו כרטיס ביקור דיגיטלי
                         </Button>
                     </div>
                 </div>
