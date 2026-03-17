@@ -96,7 +96,7 @@ const ANALYTICS_INSIGHTS = [
     {
         Icon: LinkIcon,
         title: "ערוצי הפצה",
-        text: "מדדו ביצועים לפי ערוץ וקישור — ותכוונו את השיווק.",
+        text: "מדדו ביצועים לפי ערוץ וקישור - ותכוונו את השיווק.",
         src: `${SECTION_3_IMG}/digital_business_card-campaign-performance-robot.webp`,
         alt: "ערוצי הפצה בכרטיס ביקור דיגיטלי",
     },
@@ -108,7 +108,7 @@ const SHARE_CHANNELS = [
     {
         Icon: LinkIcon,
         title: "קישור ישיר",
-        text: "הכרטיס שלכם מוכן לשיתוף בכל מקום — מאימייל וחתימה דיגיטלית ועד ביו ברשתות וקישורים באתר.",
+        text: "הכרטיס שלכם מוכן לשיתוף בכל מקום - מאימייל וחתימה דיגיטלית ועד ביו ברשתות וקישורים באתר.",
         src: `${SECTION_4_IMG}/digital_business_card-direct-link-online-sharing.webp`,
         alt: "שיתוף כרטיס ביקור דיגיטלי בקישור ישיר",
     },
@@ -129,7 +129,7 @@ const SHARE_CHANNELS = [
     {
         Icon: SeoIcon,
         title: "קישורי קמפיין",
-        text: "צרו קישורים ייעודיים לכל קמפיין, מודעה או פלטפורמה — כדי להפיץ נכון יותר ולזהות אילו ערוצים מביאים תנועה טובה יותר.",
+        text: "צרו קישורים ייעודיים לכל קמפיין, מודעה או פלטפורמה - כדי להפיץ נכון יותר ולזהות אילו ערוצים מביאים תנועה טובה יותר.",
         src: `${SECTION_4_IMG}/digital_business_card-marketing-campaign-tracking-links.webp`,
         alt: "קישורי קמפיין לכרטיס ביקור דיגיטלי",
     },
@@ -229,28 +229,46 @@ const CONTROL_FEATURES = [
     },
 ];
 
-const TEMPLATE_COVERS = "/templates/previews/preview-covers";
+const TEMPLATE_COVERS = "/images/home-page/main-sections/Section-6";
 const TEMPLATE_SKINS = [
-    { name: "Lakmi", src: `${TEMPLATE_COVERS}/lakmi.webp` },
-    { name: "Tehom Turkiz", src: `${TEMPLATE_COVERS}/tehom-turkiz.webp` },
-    { name: "Laguna Afarsek", src: `${TEMPLATE_COVERS}/laguna-afarsek.webp` },
-    { name: "Iris Layla", src: `${TEMPLATE_COVERS}/iris-layla.webp` },
-    { name: "Bronze Sachlav", src: `${TEMPLATE_COVERS}/bronze-sachlav.webp` },
-    { name: "Zahav Laguna", src: `${TEMPLATE_COVERS}/zahav-laguna.webp` },
+    {
+        name: "Lakmi",
+        src: `${TEMPLATE_COVERS}/כרטיס ביקור דיגיטלי לאדריכלית חוץ ונוף  כרדיגו.webp`,
+    },
+    {
+        name: "Laguna Afarsek",
+        src: `${TEMPLATE_COVERS}/כרטיס ביקור דיגיטלי ליועצת חדשנות דיגיטלית ו-AI  כרדיגו.webp`,
+    },
+    {
+        name: "Iris Layla",
+        src: `${TEMPLATE_COVERS}/כרטיס ביקור דיגיטלי למפיקת אירועי בוטיק  כרדיגו.webp`,
+    },
+    {
+        name: "Tehom Turkiz",
+        src: `${TEMPLATE_COVERS}/כרטיס ביקור דיגיטלי ליועץ הון פרטי  כרדיגו.webp`,
+    },
+    {
+        name: "Bronze Sachlav",
+        src: `${TEMPLATE_COVERS}/כרטיס ביקור דיגיטלי לרופאת שיניים אסתטית  כרדיגו.webp`,
+    },
+    {
+        name: "Zahav Laguna",
+        src: `${TEMPLATE_COVERS}/כרטיס ביקור דיגיטלי קליניקה לאסטטיקה  כרדיגו.webp`,
+    },
 ];
 
-const STEPS_IMG = "/images/home-page/main-sections/Section-6";
+const STEPS_IMG = "/images/home-page/main-sections/Section-7";
 const STEPS = [
     {
         num: "1",
-        title: "בחרו עיצוב",
+        title: "בוחרים עיצוב",
         text: "נרשמים בחינם ובוחרים תבנית שמתאימה לעסק.",
         src: `${STEPS_IMG}/cardigo-digital-business-card-template-selection.png.webp`,
         alt: "בחירת תבנית לכרטיס ביקור דיגיטלי",
     },
     {
         num: "2",
-        title: "תוסיפו תוכן",
+        title: "מוסיפים תוכן",
         text: "ממלאים פרטי קשר, תמונות, טקסט וקישורים.",
         src: `${STEPS_IMG}/cardigo-digital-business-card-content-editing.webp`,
         alt: "עריכת תוכן בכרטיס ביקור דיגיטלי",
@@ -390,6 +408,7 @@ export default function Home() {
     const editorZoom = useScrollProgress();
     const insightScroll = useScrollProgress();
     const controlScroll = useScrollProgress();
+    const conversionScroll = useScrollProgress();
     const shareScroll = useScrollProgress();
     const stepsScroll = useScrollProgress();
 
@@ -399,7 +418,7 @@ export default function Home() {
         <main className={styles.page} data-page="site">
             <SeoHelmet
                 title="כרטיס ביקור דיגיטלי לעסקים | Cardigo"
-                description="כרטיס ביקור דיגיטלי של Cardigo מאפשר ליצור עמוד עסקי מקצועי, לשתף ב-QR, בוואטסאפ ובקישורים ייעודיים, ולעדכן הכול בקלות — עם תבניות, אנליטיקה וכלי שיתוף לעסק שלכם."
+                description="כרטיס ביקור דיגיטלי של Cardigo מאפשר ליצור עמוד עסקי מקצועי, לשתף ב-QR, בוואטסאפ ובקישורים ייעודיים, ולעדכן הכול בקלות - עם תבניות, אנליטיקה וכלי שיתוף לעסק שלכם."
                 canonicalUrl={`${ORIGIN}/`}
                 url={`${ORIGIN}/`}
                 jsonLdItems={[homeFaqJsonLd]}
@@ -559,14 +578,17 @@ export default function Home() {
                     >
                         כל כפתור בכרטיס מקרב הזדמנות ליצירת קשר
                         <span
-                            className={`${styles.sectionLeadLight} ${styles.boldTxt}`}
+                            className={`${styles.goldHilight} ${styles.boldTxt}`}
                         >
                             {" "}
                             אמיתית.
                         </span>{" "}
                     </p>
 
-                    <div className={styles.conversionRow}>
+                    <div
+                        className={styles.conversionRow}
+                        ref={conversionScroll.ref}
+                    >
                         {CONVERSION_ITEMS.map((item, i) => (
                             <div key={i} className={styles.conversionCard}>
                                 <div className={styles.conversionMedia}>
@@ -657,7 +679,7 @@ export default function Home() {
                     </div>
 
                     <p className={styles.highlight}>
-                        כל צפייה, כל לחיצה, כל מקור הגעה — הופך את הנתונים
+                        כל צפייה, כל לחיצה, כל מקור הגעה - הופך את הנתונים
                         לתובנות שנותנות לכם{" "}
                         <em className={styles.analyticsLeadPunch}>
                             שליטה אמיתית על התוצאות.
@@ -759,11 +781,11 @@ export default function Home() {
                         <li className={styles.editCheckItem}>
                             <div className={styles.editCheckText}>
                                 <span className={styles.editCheckBold}>
-                                    עדכון תוכן מיידי
+                                    עדכון תוכן עצמאי
                                 </span>
                                 <span className={styles.editCheckDesc}>
-                                    שנו טלפון, תמונות, טקסטים וקישורים — הכל
-                                    מתעדכן ברגע
+                                    שנו מספר טלפון, תמונות, טקסטים וקישורים -
+                                    הכל מתעדכן ברגע
                                 </span>
                             </div>
                         </li>
@@ -773,7 +795,7 @@ export default function Home() {
                                     החלפת עיצוב בלחיצה
                                 </span>
                                 <span className={styles.editCheckDesc}>
-                                    בחרו תבנית חדשה בכל רגע — התוכן נשמר
+                                    בחרו תבנית חדשה בכל רגע - התוכן נשמר
                                 </span>
                             </div>
                         </li>
@@ -783,7 +805,18 @@ export default function Home() {
                                     מכל מכשיר, בלי לחכות
                                 </span>
                                 <span className={styles.editCheckDesc}>
-                                    האזור האישי עובד גם מהנייד — בלי צורך במפתח
+                                    האזור האישי עובד גם מהנייד - בלי צורך במפתח
+                                </span>
+                            </div>
+                        </li>
+                        <li className={styles.editCheckItem}>
+                            <div className={styles.editCheckText}>
+                                <span className={styles.editCheckBold}>
+                                    תמיכה מלאה
+                                </span>
+                                <span className={styles.editCheckDesc}>
+                                    לא מסתדרים? יש שאלה? צריכים עזרה עם הכרטיס?
+                                    אנחנו כאן בשבילכם, עם תמיכה אישית וזמינה.
                                 </span>
                             </div>
                         </li>
@@ -860,7 +893,11 @@ export default function Home() {
                         מצוין גם בטלפון. פשוט בוחרים סגנון שמרגיש נכון לעסק
                         שלכם.
                     </p>
-
+                    <p
+                        className={`${styles.sectionLeadLight} ${styles.goldHilight} ${styles.boldTxt}`}
+                    >
+                        הנה כמה מהתבניות לדוגמא&hellip;
+                    </p>
                     <div className={styles.templatesShowcase}>
                         {TEMPLATE_SKINS.map((skin, i) => (
                             <div key={i} className={styles.templateCard}>
@@ -873,7 +910,7 @@ export default function Home() {
                                     height="520"
                                 />
                                 <div className={styles.templateCardName}>
-                                    {skin.name}
+                                    {/* {skin.name} */}
                                 </div>
                             </div>
                         ))}
@@ -948,7 +985,7 @@ export default function Home() {
                     <div className={styles.ctaInner}>
                         <h2 className={styles.ctaTitle}>
                             {" "}
-                            צור כרטיס ביקור דיגיטלי{" "}
+                            צרו כרטיס ביקור דיגיטלי{" "}
                             <span
                                 className={`${styles.goldHilight} ${styles.goldUnderline}`}
                             >
@@ -956,7 +993,7 @@ export default function Home() {
                             </span>
                         </h2>
                         <p className={styles.ctaText}>
-                            יוצרים, משתפים ומעדכנים בקלות — עם{" "}
+                            יוצרים, משתפים ומעדכנים בקלות - עם{" "}
                             <span
                                 className={`${styles.goldHilight} ${styles.goldUnderline} ${styles.boldTxt}`}
                             >

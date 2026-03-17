@@ -784,6 +784,7 @@
     flex-wrap: wrap;
     gap: 0.75rem;
     width: 100%;
+    overflow: hidden;
 }
 
 .conversionCard {
@@ -797,14 +798,40 @@
     border: 1px solid rgba(212, 175, 55, 0.12);
     text-align: center;
     overflow: hidden;
+
+    /* scroll-driven slide-in */
+    --_p: clamp(0, (var(--scroll-progress, 1) - var(--_delay, 0)) * 4, 1);
+    opacity: var(--_p);
+    transform: translateX(calc((1 - var(--_p)) * var(--_dx, 0rem)));
+    will-change: transform, opacity;
     transition:
-        transform 0.2s ease,
         border-color 0.2s ease,
         box-shadow 0.2s ease;
 }
 
+.conversionCard:nth-child(odd) {
+    --_dx: 15rem;
+}
+
+.conversionCard:nth-child(even) {
+    --_dx: -15rem;
+}
+
+.conversionCard:nth-child(1) {
+    --_delay: 0;
+}
+.conversionCard:nth-child(2) {
+    --_delay: 0.05;
+}
+.conversionCard:nth-child(3) {
+    --_delay: 0.1;
+}
+.conversionCard:nth-child(4) {
+    --_delay: 0.15;
+}
+
 .conversionCard:hover {
-    transform: translateY(-3px);
+    transform: translateX(0) translateY(-3px);
     border-color: rgba(212, 175, 55, 0.35);
     box-shadow: 0 8px 32px rgba(212, 175, 55, 0.08);
 }
@@ -1313,7 +1340,7 @@
 .templateCardImg {
     width: 100%;
     height: auto;
-    aspect-ratio: 300 / 520;
+    /* aspect-ratio: 300 / 520; */
     object-fit: cover;
     border-radius: 0.875rem;
     box-shadow:
@@ -1824,6 +1851,12 @@
     }
 
     .controlItem {
+        opacity: 1;
+        transform: none;
+        will-change: auto;
+    }
+
+    .conversionCard {
         opacity: 1;
         transform: none;
         will-change: auto;
