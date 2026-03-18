@@ -33,10 +33,10 @@
        SEMANTIC TOKENS (skins are token-only)
        ========================================================= */
     --bg-main: var(--c-neutral-bg);
-    --bg-surface: var(--c-neutral-surface);
-    --bg-card: var(--c-sections-all-backgronds, var(--c-neutral-card));
+    --bg-surface: var(--c-sections-all-backgronds);
+    --bg-card: var(--rgb-sections-all-backgronds, var(--c-neutral-card));
     --bg-section: var(--c-section-bg);
-
+    --review-border: rgba(var(--rgb-brand-primary), 0.5);
     /* Legacy alias used by some layout parts */
     --background-color: var(--c-sections-all-backgronds, var(--c-neutral-bg));
 

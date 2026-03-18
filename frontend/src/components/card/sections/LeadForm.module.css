@@ -5,7 +5,7 @@
 
 .form {
     /* Token binding for Form.module.css (no hardcoded colors). */
-    /* --card-text: var(--text-main); */
+    --card-text: var(--text-main);
     /* --input-bg: var(--section-bg, var(--bg-surface)); */
     /* --border: var(--section-border, var(--border)); */
     --gold: var(--action-bg);
@@ -19,7 +19,7 @@
     min-width: 0;
     border: 1px solid var(--border);
     border-radius: var(--radius-md, 18px);
-    background: var(--input-bg);
+    background: var(--section-bg, var(--bg-surface));
     padding: 12px;
 }
 .form input,

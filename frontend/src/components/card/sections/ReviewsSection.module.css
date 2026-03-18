@@ -40,8 +40,9 @@
     margin-inline: auto;
     position: relative;
     overflow: hidden;
+
+    border: 1px solid var(--review-border);
     border-radius: var(--radius-lg, 22px);
-    border: var(--_reviews-border);
     background: var(--_reviews-surface);
     box-shadow: var(--_reviews-shadow);
     block-size: var(--_reviews-h);

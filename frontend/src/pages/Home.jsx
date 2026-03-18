@@ -419,8 +419,10 @@ export default function Home() {
             <SeoHelmet
                 title="כרטיס ביקור דיגיטלי לעסקים | Cardigo"
                 description="כרטיס ביקור דיגיטלי של Cardigo מאפשר ליצור עמוד עסקי מקצועי, לשתף ב-QR, בוואטסאפ ובקישורים ייעודיים, ולעדכן הכול בקלות - עם תבניות, אנליטיקה וכלי שיתוף לעסק שלכם."
+                robots="noindex, nofollow"
                 canonicalUrl={`${ORIGIN}/`}
                 url={`${ORIGIN}/`}
+                image={`${ORIGIN}/images/og/cardigo-home-og-1200x630.jpg`}
                 jsonLdItems={[homeFaqJsonLd]}
             />
             {/* HERO - unchanged */}
