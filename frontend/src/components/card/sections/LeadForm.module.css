@@ -6,6 +6,7 @@
 .form {
     /* Token binding for Form.module.css (no hardcoded colors). */
     --card-text: var(--text-main);
+    --c-lead-card-text: var(--lead-text-form-color);
     /* --input-bg: var(--section-bg, var(--bg-surface)); */
     /* --border: var(--section-border, var(--border)); */
     --gold: var(--action-bg);
@@ -26,7 +27,7 @@
 .form textarea {
     border-radius: var(--radius-sm, 14px);
     background: white;
-    color: var(--card-text);
+    color: var(--c-lead-card-text, #000000);
     padding: 8px 12px;
     border: 1px solid rgba(0, 0, 0, 0.2);
     font-size: var(--fs-ui);
