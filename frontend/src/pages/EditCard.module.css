@@ -87,6 +87,7 @@
     background: var(--bg-card);
     color: var(--text-main);
     margin-block: 10px;
+    font-size: var(--fs-caption);
 }
 
 .anonCtaText {
@@ -105,12 +106,13 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    padding: 10px 14px;
+    padding: 4px 10px;
     border-radius: var(--radius-md);
     border: 1px solid var(--border);
     font-weight: 800;
     text-decoration: none;
     white-space: nowrap;
+    font-size: var(--fs-caption);
 }
 
 .anonCtaPrimary {

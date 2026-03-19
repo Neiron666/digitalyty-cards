@@ -24,6 +24,7 @@
     "license": "ISC",
     "description": "",
     "dependencies": {
+        "@google/generative-ai": "^0.24.1",
         "@sentry/node": "^10.40.0",
         "@supabase/supabase-js": "^2.89.0",
         "bcrypt": "^6.0.0",

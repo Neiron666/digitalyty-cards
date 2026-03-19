@@ -23,6 +23,7 @@ import orgInvitesRoutes from "./routes/orgInvites.routes.js";
 import previewRoutes from "./routes/preview.routes.js";
 import accountRoutes from "./routes/account.routes.js";
 import blogRoutes from "./routes/blog.routes.js";
+import aiRoutes from "./routes/ai.routes.js";
 import path from "path";
 
 const app = express();
@@ -130,6 +131,9 @@ app.use("/api/leads", leadRoutes);
 app.use(multerErrorHandler);
 // Cards API
 app.use("/api/cards", cardRoutes);
+
+// AI card-scoped endpoints (About suggestion V1)
+app.use("/api/cards", aiRoutes);
 
 // User org API
 app.use("/api/orgs", orgRoutes);

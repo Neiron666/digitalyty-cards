@@ -76,6 +76,7 @@ export default function EditorPanel({
             return (
                 <ContentPanel
                     content={card.content}
+                    cardId={card._id}
                     disabled={editingDisabled}
                     onChange={(patch) => applyPatch("content", patch)}
                 />
