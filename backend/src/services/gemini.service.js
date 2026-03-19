@@ -32,9 +32,9 @@ function getClient() {
     return _genAI;
 }
 
-// --- Structured output schema -----------------------------------------------
+// --- Structured output schemas ----------------------------------------------
 
-const aboutResponseSchema = {
+const aboutFullSchema = {
     type: SchemaType.OBJECT,
     properties: {
         aboutTitle: {
@@ -52,9 +52,33 @@ const aboutResponseSchema = {
     required: ["aboutTitle", "aboutParagraphs"],
 };
 
-// --- System instruction -----------------------------------------------------
+const aboutTitleOnlySchema = {
+    type: SchemaType.OBJECT,
+    properties: {
+        aboutTitle: {
+            type: SchemaType.STRING,
+            description:
+                "A short, compelling title for the About section. Plain text only.",
+        },
+    },
+    required: ["aboutTitle"],
+};
 
-const SYSTEM_INSTRUCTION = `You are a professional Hebrew-first copywriter specializing in digital business cards.
+const aboutParagraphOnlySchema = {
+    type: SchemaType.OBJECT,
+    properties: {
+        aboutParagraph: {
+            type: SchemaType.STRING,
+            description:
+                "A single paragraph of plain text for the About section. No markdown, no HTML.",
+        },
+    },
+    required: ["aboutParagraph"],
+};
+
+// --- System instructions (target-specific) ----------------------------------
+
+const SYSTEM_INSTRUCTION_FULL = `You are a professional Hebrew-first copywriter specializing in digital business cards.
 
 TASK: Generate the "About" section for a digital business card.
 
@@ -70,9 +94,47 @@ RULES — follow strictly:
 - If existing content is provided for improvement, preserve factual accuracy while improving style and clarity.
 - If information is minimal, write a brief but professional placeholder text.`;
 
-// --- Prompt builder ---------------------------------------------------------
+const SYSTEM_INSTRUCTION_TITLE = `You are a professional Hebrew-first copywriter specializing in digital business cards.
 
-function buildUserPrompt({
+TASK: Generate ONLY the title/headline for the "About" section of a digital business card.
+
+RULES — follow strictly:
+- Write in the requested language (default: Hebrew).
+- Output ONLY plain text. No markdown, no HTML.
+- aboutTitle: one short, compelling headline (max ${ABOUT_TITLE_MAX_LENGTH} chars).
+- Be concise, professional, and business-appropriate.
+- Do NOT exaggerate, invent credentials, or make unverifiable claims.
+- Do NOT include contact details, phone numbers, or URLs.
+- If existing content is provided for improvement, preserve factual accuracy while improving style and clarity.
+- If information is minimal, write a brief but professional placeholder title.`;
+
+const SYSTEM_INSTRUCTION_PARAGRAPH = `You are a professional Hebrew-first copywriter specializing in digital business cards.
+
+TASK: Generate ONLY a single paragraph for the "About" section of a digital business card.
+
+RULES — follow strictly:
+- Write in the requested language (default: Hebrew).
+- Output ONLY plain text. No markdown, no HTML, no bullet points, no lists, no formatting.
+- aboutParagraph: one concise, flowing paragraph (max ${ABOUT_PARAGRAPH_MAX_LENGTH} chars).
+- The paragraph should be one to three sentences, flowing naturally.
+- Be concise, professional, and business-appropriate.
+- Do NOT exaggerate, invent credentials, or make unverifiable claims.
+- Do NOT include contact details, phone numbers, or URLs.
+- If existing content is provided for improvement, preserve factual accuracy while improving style and clarity.
+- If information is minimal, write a brief but professional placeholder text.`;
+
+// --- Prompt builders (target-specific) ---------------------------------------
+
+function buildBusinessContext({ businessName, category, slogan, language }) {
+    const lang = language === "en" ? "English" : "Hebrew";
+    const parts = [`Language: ${lang}`];
+    if (businessName) parts.push(`Business name: ${businessName}`);
+    if (category) parts.push(`Category/field: ${category}`);
+    if (slogan) parts.push(`Slogan: ${slogan}`);
+    return parts;
+}
+
+function buildFullPrompt({
     businessName,
     category,
     slogan,
@@ -80,12 +142,12 @@ function buildUserPrompt({
     mode,
     existingAbout,
 }) {
-    const lang = language === "en" ? "English" : "Hebrew";
-    const parts = [`Language: ${lang}`];
-
-    if (businessName) parts.push(`Business name: ${businessName}`);
-    if (category) parts.push(`Category/field: ${category}`);
-    if (slogan) parts.push(`Slogan: ${slogan}`);
+    const parts = buildBusinessContext({
+        businessName,
+        category,
+        slogan,
+        language,
+    });
 
     if (mode === "improve" && existingAbout) {
         parts.push("");
@@ -111,9 +173,93 @@ function buildUserPrompt({
     return parts.join("\n");
 }
 
-// --- Normalize output -------------------------------------------------------
+function buildTitlePrompt({
+    businessName,
+    category,
+    slogan,
+    language,
+    mode,
+    existingAbout,
+}) {
+    const parts = buildBusinessContext({
+        businessName,
+        category,
+        slogan,
+        language,
+    });
 
-function normalizeAboutSuggestion(raw) {
+    if (mode === "improve" && existingAbout?.title) {
+        parts.push("");
+        parts.push("EXISTING TITLE TO IMPROVE:");
+        parts.push(existingAbout.title);
+        parts.push("");
+        parts.push(
+            "Rewrite the title to be more compelling and professional. Keep the same factual content.",
+        );
+    } else {
+        parts.push("");
+        parts.push(
+            "Create a compelling About section title based on the business information above.",
+        );
+    }
+
+    return parts.join("\n");
+}
+
+function buildParagraphPrompt({
+    businessName,
+    category,
+    slogan,
+    language,
+    mode,
+    existingAbout,
+    paragraphIndex,
+}) {
+    const parts = buildBusinessContext({
+        businessName,
+        category,
+        slogan,
+        language,
+    });
+
+    if (existingAbout?.title) {
+        parts.push(`About section title: ${existingAbout.title}`);
+    }
+
+    if (mode === "improve" && existingAbout?.paragraphs?.[paragraphIndex]) {
+        parts.push("");
+        parts.push(
+            `EXISTING PARAGRAPH (paragraph ${paragraphIndex + 1}) TO IMPROVE:`,
+        );
+        parts.push(existingAbout.paragraphs[paragraphIndex]);
+        parts.push("");
+        parts.push(
+            "Rewrite this single paragraph to be more compelling and professional. Keep the same factual content.",
+        );
+    } else {
+        if (existingAbout?.paragraphs?.length) {
+            parts.push("");
+            parts.push(
+                "EXISTING PARAGRAPHS FOR CONTEXT (do not repeat these):",
+            );
+            existingAbout.paragraphs.forEach((p, i) => {
+                if (i !== paragraphIndex && p) {
+                    parts.push(`Paragraph ${i + 1}: ${p}`);
+                }
+            });
+        }
+        parts.push("");
+        parts.push(
+            `Create a new paragraph (paragraph ${paragraphIndex + 1} of the About section) based on the business information above.`,
+        );
+    }
+
+    return parts.join("\n");
+}
+
+// --- Normalizers (target-specific) ------------------------------------------
+
+function normalizeFullSuggestion(raw) {
     if (!raw || typeof raw !== "object") return null;
 
     let title = typeof raw.aboutTitle === "string" ? raw.aboutTitle.trim() : "";
@@ -139,6 +285,58 @@ function normalizeAboutSuggestion(raw) {
     return { aboutTitle: title, aboutParagraphs: paragraphs };
 }
 
+function normalizeTitleSuggestion(raw) {
+    if (!raw || typeof raw !== "object") return null;
+    let title = typeof raw.aboutTitle === "string" ? raw.aboutTitle.trim() : "";
+    if (title.length > ABOUT_TITLE_MAX_LENGTH) {
+        title = title.slice(0, ABOUT_TITLE_MAX_LENGTH);
+    }
+    if (!title) return null;
+    return { aboutTitle: title };
+}
+
+function normalizeParagraphSuggestion(raw) {
+    if (!raw || typeof raw !== "object") return null;
+    let paragraph =
+        typeof raw.aboutParagraph === "string" ? raw.aboutParagraph.trim() : "";
+    if (paragraph.length > ABOUT_PARAGRAPH_MAX_LENGTH) {
+        paragraph = paragraph.slice(0, ABOUT_PARAGRAPH_MAX_LENGTH);
+    }
+    if (!paragraph) return null;
+    return { aboutParagraph: paragraph };
+}
+
+// --- Target dispatch --------------------------------------------------------
+
+function getTargetConfig(target) {
+    switch (target) {
+        case "title":
+            return {
+                systemInstruction: SYSTEM_INSTRUCTION_TITLE,
+                schema: aboutTitleOnlySchema,
+                buildPrompt: buildTitlePrompt,
+                normalize: normalizeTitleSuggestion,
+                maxOutputTokens: 256,
+            };
+        case "paragraph":
+            return {
+                systemInstruction: SYSTEM_INSTRUCTION_PARAGRAPH,
+                schema: aboutParagraphOnlySchema,
+                buildPrompt: buildParagraphPrompt,
+                normalize: normalizeParagraphSuggestion,
+                maxOutputTokens: 512,
+            };
+        default: // "full"
+            return {
+                systemInstruction: SYSTEM_INSTRUCTION_FULL,
+                schema: aboutFullSchema,
+                buildPrompt: buildFullPrompt,
+                normalize: normalizeFullSuggestion,
+                maxOutputTokens: 1024,
+            };
+    }
+}
+
 // --- Public API -------------------------------------------------------------
 
 /**
@@ -151,7 +349,9 @@ function normalizeAboutSuggestion(raw) {
  * @param {"he"|"en"} [params.language="he"]
  * @param {"create"|"improve"} [params.mode="create"]
  * @param {{ title?: string, paragraphs?: string[] }} [params.existingAbout]
- * @returns {Promise<{ aboutTitle: string, aboutParagraphs: string[] }>}
+ * @param {"full"|"title"|"paragraph"} [params.target="full"]
+ * @param {number} [params.paragraphIndex] — required when target === "paragraph"
+ * @returns {Promise<object>} Shape depends on target.
  */
 export async function generateAboutSuggestion({
     businessName,
@@ -160,28 +360,39 @@ export async function generateAboutSuggestion({
     language = "he",
     mode = "create",
     existingAbout,
+    target = "full",
+    paragraphIndex,
 } = {}) {
     const client = getClient();
     const modelName = resolveModel();
 
+    const {
+        systemInstruction,
+        schema,
+        buildPrompt,
+        normalize,
+        maxOutputTokens,
+    } = getTargetConfig(target);
+
     const model = client.getGenerativeModel({
         model: modelName,
-        systemInstruction: SYSTEM_INSTRUCTION,
+        systemInstruction,
         generationConfig: {
             responseMimeType: "application/json",
-            responseSchema: aboutResponseSchema,
+            responseSchema: schema,
             temperature: 0.7,
-            maxOutputTokens: 1024,
+            maxOutputTokens,
         },
     });
 
-    const prompt = buildUserPrompt({
+    const prompt = buildPrompt({
         businessName,
         category,
         slogan,
         language,
         mode,
         existingAbout,
+        paragraphIndex,
     });
 
     // Hard timeout via AbortController.
@@ -199,6 +410,17 @@ export async function generateAboutSuggestion({
             throw Object.assign(new Error("Gemini request timed out"), {
                 code: "AI_UNAVAILABLE",
             });
+        }
+        // Detect upstream provider quota / rate-limit (HTTP 429)
+        const errStatus =
+            err?.status ?? err?.httpStatusCode ?? err?.response?.status;
+        if (errStatus === 429) {
+            throw Object.assign(
+                new Error(
+                    `Gemini provider quota exhausted: ${err?.message || "429"}`,
+                ),
+                { code: "AI_PROVIDER_QUOTA" },
+            );
         }
         throw Object.assign(
             new Error(`Gemini API error: ${err?.message || "unknown"}`),
@@ -224,7 +446,7 @@ export async function generateAboutSuggestion({
         });
     }
 
-    const suggestion = normalizeAboutSuggestion(parsed);
+    const suggestion = normalize(parsed);
     if (!suggestion) {
         throw Object.assign(new Error("Gemini returned unusable suggestion"), {
             code: "INVALID_SUGGESTION",

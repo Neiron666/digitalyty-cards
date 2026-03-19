@@ -4,7 +4,7 @@ import Input from "../../ui/Input";
 import Button from "../../ui/Button";
 import formStyles from "../../ui/Form.module.css";
 import styles from "./ContentPanel.module.css";
-import { suggestAbout } from "../../../services/ai.service";
+import { suggestAbout, fetchAiQuota } from "../../../services/ai.service";
 
 // --- localStorage consent key ------------------------------------------------
 const AI_ABOUT_CONSENT_KEY = "cardigo_ai_about_consent";
@@ -32,10 +32,16 @@ function mapAiError(err) {
 
     if (status === 401) return "יש להתחבר מחדש כדי להשתמש בשירות זה.";
     if (code === "RATE_LIMITED")
-        return "הגעת למגבלת ההצעות היומית. נסה שוב מחר.";
+        return "יותר מדי בקשות כרגע. נסה שוב בעוד מספר דקות.";
+    if (code === "AI_PROVIDER_QUOTA")
+        return "מכסת שירות ה-AI החיצוני מוצתה זמנית. נסה שוב מאוחר יותר.";
+    if (code === "AI_MONTHLY_LIMIT_REACHED")
+        return "מכסת ה-AI החודשית מוצתה. נסה שוב בחודש הבא.";
     if (code === "AI_DISABLED") return "שירות ה-AI אינו פעיל כרגע.";
     if (code === "AI_UNAVAILABLE")
         return "שירות ה-AI אינו זמין זמנית. נסה שוב.";
+    if (code === "INVALID_TARGET" || code === "INVALID_PARAGRAPH_INDEX")
+        return "בקשה שגויה. נסה שוב.";
     return "משהו השתבש. נסה שוב מאוחר יותר.";
 }
 
@@ -107,6 +113,16 @@ function AiConsentModal({ open, onConfirm, onCancel }) {
     );
 }
 
+// --- Compact quota hint component -------------------------------------------
+function QuotaHint({ quota }) {
+    if (!quota) return null;
+    return (
+        <span className={styles.quotaHint}>
+            נותרו {quota.remaining}/{quota.limit} הצעות החודש
+        </span>
+    );
+}
+
 export default function ContentPanel({ content = {}, cardId, onChange }) {
     const aboutParagraphsRaw =
         Array.isArray(content.aboutParagraphs) && content.aboutParagraphs.length
@@ -131,12 +147,33 @@ export default function ContentPanel({ content = {}, cardId, onChange }) {
         });
     }
 
-    // --- AI suggestion state -------------------------------------------------
-    // "idle" | "loading" | "preview" | "error"
+    // --- Shared AI quota state -----------------------------------------------
+    const [aiQuota, setAiQuota] = useState(null);
+
+    useEffect(() => {
+        if (!cardId) return;
+        let cancelled = false;
+        fetchAiQuota(cardId)
+            .then((q) => {
+                if (!cancelled) setAiQuota(q);
+            })
+            .catch(() => {});
+        return () => {
+            cancelled = true;
+        };
+    }, [cardId]);
+
+    // --- Unified AI state machine --------------------------------------------
+    // aiState: "idle" | "loading" | "preview" | "error"
+    // aiTarget: "full" | "title" | "paragraph" | null
     const [aiState, setAiState] = useState("idle");
+    const [aiTarget, setAiTarget] = useState(null);
+    const [aiParagraphIndex, setAiParagraphIndex] = useState(null);
     const [aiSuggestion, setAiSuggestion] = useState(null);
     const [aiError, setAiError] = useState("");
     const [showConsent, setShowConsent] = useState(false);
+    const [pendingTarget, setPendingTarget] = useState(null);
+    const [pendingParagraphIndex, setPendingParagraphIndex] = useState(null);
 
     const hasExistingAbout =
         Boolean(content.aboutTitle?.trim()) ||
@@ -145,88 +182,286 @@ export default function ContentPanel({ content = {}, cardId, onChange }) {
                 (p) => typeof p === "string" && p.trim(),
             ));
 
-    const requestSuggestion = useCallback(async () => {
-        if (!cardId) return;
-        setAiState("loading");
-        setAiError("");
-        setAiSuggestion(null);
+    const quotaExhausted = aiQuota && aiQuota.remaining <= 0;
 
-        try {
-            const mode = hasExistingAbout ? "improve" : "create";
-            const suggestion = await suggestAbout(cardId, {
-                mode,
-                language: "he",
-            });
-            setAiSuggestion(suggestion);
-            setAiState("preview");
-        } catch (err) {
-            setAiError(mapAiError(err));
-            setAiState("error");
-        }
-    }, [cardId, hasExistingAbout]);
+    const requestSuggestion = useCallback(
+        async (target, paragraphIndex) => {
+            if (!cardId) return;
+            setAiState("loading");
+            setAiTarget(target);
+            setAiParagraphIndex(target === "paragraph" ? paragraphIndex : null);
+            setAiError("");
+            setAiSuggestion(null);
 
-    const handleAiClick = useCallback(() => {
-        if (hasAiAboutConsent()) {
-            requestSuggestion();
-        } else {
-            setShowConsent(true);
-        }
-    }, [requestSuggestion]);
+            try {
+                const mode = hasExistingAbout ? "improve" : "create";
+                const payload = { mode, language: "he", target };
+                if (target === "paragraph") {
+                    payload.paragraphIndex = paragraphIndex;
+                }
+                const { suggestion, quota } = await suggestAbout(
+                    cardId,
+                    payload,
+                );
+                setAiSuggestion(suggestion);
+                setAiState("preview");
+                if (quota) setAiQuota(quota);
+            } catch (err) {
+                setAiError(mapAiError(err));
+                setAiState("error");
+                // Update quota from error response if available
+                const errQuota = err?.response?.data?.quota;
+                if (errQuota) setAiQuota(errQuota);
+            }
+        },
+        [cardId, hasExistingAbout],
+    );
+
+    const handleAiClick = useCallback(
+        (target, paragraphIndex) => {
+            if (hasAiAboutConsent()) {
+                requestSuggestion(target, paragraphIndex);
+            } else {
+                setPendingTarget(target);
+                setPendingParagraphIndex(paragraphIndex);
+                setShowConsent(true);
+            }
+        },
+        [requestSuggestion],
+    );
 
     const handleConsentConfirm = useCallback(() => {
         saveAiAboutConsent();
         setShowConsent(false);
-        requestSuggestion();
-    }, [requestSuggestion]);
+        requestSuggestion(pendingTarget ?? "full", pendingParagraphIndex);
+    }, [requestSuggestion, pendingTarget, pendingParagraphIndex]);
 
     const handleConsentCancel = useCallback(() => {
         setShowConsent(false);
+        setPendingTarget(null);
+        setPendingParagraphIndex(null);
     }, []);
 
+    // --- Apply per target ----------------------------------------------------
     const handleApply = useCallback(() => {
         if (!aiSuggestion) return;
-        const title = aiSuggestion.aboutTitle || "";
-        const paras = Array.isArray(aiSuggestion.aboutParagraphs)
-            ? aiSuggestion.aboutParagraphs.slice(0, 3)
-            : [];
 
-        onChange({ aboutTitle: title });
-        commitAboutParagraphs(paras.length ? paras : [""]);
+        if (aiTarget === "title") {
+            onChange({ aboutTitle: aiSuggestion.aboutTitle || "" });
+        } else if (aiTarget === "paragraph" && aiParagraphIndex != null) {
+            const next = aboutParagraphs.slice();
+            next[aiParagraphIndex] = aiSuggestion.aboutParagraph || "";
+            commitAboutParagraphs(next);
+        } else {
+            // full
+            const title = aiSuggestion.aboutTitle || "";
+            const paras = Array.isArray(aiSuggestion.aboutParagraphs)
+                ? aiSuggestion.aboutParagraphs.slice(0, 3)
+                : [];
+            onChange({ aboutTitle: title });
+            commitAboutParagraphs(paras.length ? paras : [""]);
+        }
 
         setAiSuggestion(null);
+        setAiTarget(null);
+        setAiParagraphIndex(null);
         setAiState("idle");
-    }, [aiSuggestion, onChange]);
+    }, [aiSuggestion, aiTarget, aiParagraphIndex, aboutParagraphs, onChange]);
 
     const handleDismiss = useCallback(() => {
         setAiSuggestion(null);
+        setAiTarget(null);
+        setAiParagraphIndex(null);
         setAiState("idle");
         setAiError("");
     }, []);
 
+    // --- Delete paragraph ----------------------------------------------------
+    const handleDeleteParagraph = useCallback(
+        (index) => {
+            const next = aboutParagraphs.filter((_, i) => i !== index);
+            commitAboutParagraphs(next.length ? next : [""]);
+
+            // Clear preview if it was for the deleted paragraph
+            if (aiTarget === "paragraph" && aiParagraphIndex === index) {
+                handleDismiss();
+            } else if (
+                aiTarget === "paragraph" &&
+                aiParagraphIndex != null &&
+                aiParagraphIndex > index
+            ) {
+                // Shift paragraph index down
+                setAiParagraphIndex(aiParagraphIndex - 1);
+            }
+        },
+        [aboutParagraphs, aiTarget, aiParagraphIndex, handleDismiss],
+    );
+
+    // --- Preview rendering helpers -------------------------------------------
+    function renderPreviewContent() {
+        if (!aiSuggestion) return null;
+        if (aiTarget === "title") {
+            return <strong>{aiSuggestion.aboutTitle}</strong>;
+        }
+        if (aiTarget === "paragraph") {
+            return <p>{aiSuggestion.aboutParagraph}</p>;
+        }
+        // full
+        return (
+            <>
+                {aiSuggestion.aboutTitle && (
+                    <strong>{aiSuggestion.aboutTitle}</strong>
+                )}
+                {Array.isArray(aiSuggestion.aboutParagraphs) &&
+                    aiSuggestion.aboutParagraphs.map((p, i) => (
+                        <p key={i}>{p}</p>
+                    ))}
+            </>
+        );
+    }
+
+    function renderPreviewLabel() {
+        if (aiTarget === "title") return "הצעת AI — כותרת";
+        if (aiTarget === "paragraph")
+            return `הצעת AI — פסקה ${(aiParagraphIndex ?? 0) + 1}`;
+        return "הצעת AI — בלוק מלא";
+    }
+
+    // --- Shared inline preview block -----------------------------------------
+    function renderAiPreview() {
+        if (aiState !== "preview" || !aiSuggestion) return null;
+        return (
+            <div className={styles.aiPreview}>
+                <div className={styles.aiPreviewTitle}>
+                    {renderPreviewLabel()}
+                </div>
+                <div className={styles.aiPreviewContent}>
+                    {renderPreviewContent()}
+                </div>
+                <div className={styles.aiActions}>
+                    <Button variant="primary" onClick={handleApply}>
+                        החל הצעה
+                    </Button>
+                    <Button variant="secondary" onClick={handleDismiss}>
+                        דחה
+                    </Button>
+                </div>
+            </div>
+        );
+    }
+
+    // --- Loading/error state (shared) ----------------------------------------
+    function renderAiStatus() {
+        if (aiState === "loading") {
+            return (
+                <div className={styles.aiStatusRow}>
+                    <Button variant="secondary" loading disabled>
+                        יוצר הצעה…
+                    </Button>
+                </div>
+            );
+        }
+        if (aiState === "error") {
+            return (
+                <div className={styles.aiError}>
+                    {aiError}
+                    <Button
+                        variant="secondary"
+                        onClick={() =>
+                            handleAiClick(aiTarget ?? "full", aiParagraphIndex)
+                        }
+                    >
+                        נסה שוב
+                    </Button>
+                </div>
+            );
+        }
+        return null;
+    }
+
     return (
         <Panel title="תוכן">
+            {/* --- About Title ----------------------------------------------- */}
             <Input
                 label="כותרת אודות"
                 value={content.aboutTitle || ""}
                 onChange={(e) => onChange({ aboutTitle: e.target.value })}
             />
 
+            {cardId && (
+                <div className={styles.fieldAiRow}>
+                    <button
+                        type="button"
+                        className={styles.fieldAiButton}
+                        disabled={quotaExhausted || aiState === "loading"}
+                        onClick={() => handleAiClick("title")}
+                    >
+                        ✦ הצע כותרת עם AI
+                    </button>
+                    <QuotaHint quota={aiQuota} />
+                </div>
+            )}
+
+            {/* Title preview shown inline */}
+            {aiTarget === "title" && renderAiStatus()}
+            {aiTarget === "title" && renderAiPreview()}
+
+            {/* --- About Paragraphs ------------------------------------------ */}
             <div className={styles.aboutBlock}>
                 <div className={styles.aboutLabelTitle}>טקסט אודות</div>
 
                 {aboutParagraphs.map((value, index) => (
-                    <label key={index} className={styles.aboutParagraph}>
-                        <textarea
-                            rows={5}
-                            value={value}
-                            onChange={(e) => {
-                                const next = aboutParagraphs.slice();
-                                next[index] = e.target.value;
-                                commitAboutParagraphs(next);
-                            }}
-                            className={formStyles.textarea}
-                        />
-                    </label>
+                    <div key={index} className={styles.paragraphBlock}>
+                        <label className={styles.aboutParagraph}>
+                            <textarea
+                                rows={5}
+                                value={value}
+                                onChange={(e) => {
+                                    const next = aboutParagraphs.slice();
+                                    next[index] = e.target.value;
+                                    commitAboutParagraphs(next);
+                                }}
+                                className={formStyles.textarea}
+                            />
+                        </label>
+
+                        {cardId && (
+                            <div className={styles.paragraphActionRow}>
+                                <button
+                                    type="button"
+                                    className={styles.fieldAiButton}
+                                    disabled={
+                                        quotaExhausted || aiState === "loading"
+                                    }
+                                    onClick={() =>
+                                        handleAiClick("paragraph", index)
+                                    }
+                                >
+                                    ✦ הצע פסקה עם AI
+                                </button>
+                                {aboutParagraphs.length > 1 && (
+                                    <button
+                                        type="button"
+                                        className={styles.deleteParagraphButton}
+                                        onClick={() =>
+                                            handleDeleteParagraph(index)
+                                        }
+                                    >
+                                        מחק פסקה
+                                    </button>
+                                )}
+                                <QuotaHint quota={aiQuota} />
+                            </div>
+                        )}
+
+                        {/* Paragraph-specific preview shown inline */}
+                        {aiTarget === "paragraph" &&
+                            aiParagraphIndex === index &&
+                            renderAiStatus()}
+                        {aiTarget === "paragraph" &&
+                            aiParagraphIndex === index &&
+                            renderAiPreview()}
+                    </div>
                 ))}
 
                 <button
@@ -242,61 +477,29 @@ export default function ContentPanel({ content = {}, cardId, onChange }) {
                 </button>
             </div>
 
-            {/* --- AI Suggestion Block ---------------------------------------- */}
+            {/* --- Full block AI action -------------------------------------- */}
             {cardId && (
                 <div className={styles.aiBlock}>
                     <div className={styles.aiDisclosure}>
-                        ✦ ניתן לקבל הצעת טקסט אודות באמצעות בינה מלאכותית
+                        ✦ ניתן לייצר את כל בלוק האודות בבת אחת
                     </div>
 
                     {aiState === "idle" && (
-                        <Button variant="secondary" onClick={handleAiClick}>
-                            הצע טקסט עם AI
-                        </Button>
-                    )}
-
-                    {aiState === "loading" && (
-                        <Button variant="secondary" loading disabled>
-                            יוצר הצעה…
-                        </Button>
-                    )}
-
-                    {aiState === "error" && (
-                        <div className={styles.aiError}>
-                            {aiError}
-                            <Button variant="secondary" onClick={handleAiClick}>
-                                נסה שוב
+                        <div className={styles.fieldAiRow}>
+                            <Button
+                                variant="secondary"
+                                disabled={quotaExhausted}
+                                onClick={() => handleAiClick("full")}
+                            >
+                                הצע בלוק אודות מלא עם AI
                             </Button>
+                            <QuotaHint quota={aiQuota} />
                         </div>
                     )}
 
-                    {aiState === "preview" && aiSuggestion && (
-                        <div className={styles.aiPreview}>
-                            <div className={styles.aiPreviewTitle}>
-                                הצעת AI — תצוגה מקדימה
-                            </div>
-                            <div className={styles.aiPreviewContent}>
-                                {aiSuggestion.aboutTitle && (
-                                    <strong>{aiSuggestion.aboutTitle}</strong>
-                                )}
-                                {Array.isArray(aiSuggestion.aboutParagraphs) &&
-                                    aiSuggestion.aboutParagraphs.map((p, i) => (
-                                        <p key={i}>{p}</p>
-                                    ))}
-                            </div>
-                            <div className={styles.aiActions}>
-                                <Button variant="primary" onClick={handleApply}>
-                                    החל הצעה
-                                </Button>
-                                <Button
-                                    variant="secondary"
-                                    onClick={handleDismiss}
-                                >
-                                    דחה
-                                </Button>
-                            </div>
-                        </div>
-                    )}
+                    {/* Full-block loading/error/preview shown here */}
+                    {aiTarget === "full" && renderAiStatus()}
+                    {aiTarget === "full" && renderAiPreview()}
                 </div>
             )}
 

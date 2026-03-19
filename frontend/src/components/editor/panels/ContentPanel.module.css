@@ -12,6 +12,81 @@
     display: block;
 }
 
+.paragraphBlock {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.paragraphActionRow {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+}
+
+.fieldAiRow {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+}
+
+.fieldAiButton {
+    appearance: none;
+    border: 1px solid var(--border);
+    background: var(--bg-surface);
+    color: var(--gold, #f59e0b);
+    padding: 6px 12px;
+    border-radius: var(--radius-sm, 10px);
+    cursor: pointer;
+    font-family: inherit;
+    font-size: var(--fs-sm);
+    font-weight: 700;
+    line-height: 1.4;
+}
+
+.fieldAiButton:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+.fieldAiButton:focus-visible {
+    outline: 2px solid rgba(255, 215, 0, 0.65);
+    outline-offset: 2px;
+}
+
+.deleteParagraphButton {
+    appearance: none;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--danger, #ef4444);
+    padding: 6px 12px;
+    border-radius: var(--radius-sm, 10px);
+    cursor: pointer;
+    font-family: inherit;
+    font-size: var(--fs-sm);
+    font-weight: 700;
+    line-height: 1.4;
+}
+
+.deleteParagraphButton:focus-visible {
+    outline: 2px solid rgba(239, 68, 68, 0.65);
+    outline-offset: 2px;
+}
+
+.quotaHint {
+    color: var(--text-muted, #8b95a8);
+    font-size: var(--fs-xs);
+    line-height: 1.4;
+    white-space: nowrap;
+}
+
+.aiStatusRow {
+    display: flex;
+    align-items: center;
+}
+
 .addParagraphButton {
     align-self: flex-start;
     width: fit-content;

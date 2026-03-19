@@ -1,5 +1,6 @@
 import Card from "../models/Card.model.js";
 import User from "../models/User.model.js";
+import AiUsageMonthly from "../models/AiUsageMonthly.model.js";
 import { generateAboutSuggestion } from "../services/gemini.service.js";
 import { hasAccess } from "../utils/planAccess.js";
 import { resolveBilling } from "../utils/trial.js";
@@ -22,8 +23,8 @@ function isAiAboutEnabled() {
 // --- Rate limiting (in-memory, keyed by userId) -----------------------------
 
 const RATE_WINDOW_MS = 24 * 60 * 60 * 1000; // 24 hours
-const RATE_LIMIT_FREE = 3;
-const RATE_LIMIT_PREMIUM = 10;
+const RATE_LIMIT_FREE = 15;
+const RATE_LIMIT_PREMIUM = 75;
 const RATE_SWEEP_EVERY = 200;
 
 const inMemoryRate = new Map();
@@ -80,16 +81,67 @@ async function resolveFeaturePlan(card, userId, now) {
     return planFromTier(effectiveTier?.tier || "free");
 }
 
+// --- Monthly quota (persistent, success-only) ------------------------------
+
+const FEATURE_AI_ABOUT = "ai_about_generation";
+const MONTHLY_QUOTA_FREE = 10;
+const MONTHLY_QUOTA_PREMIUM = 50;
+
+function currentPeriodKey() {
+    const d = new Date();
+    return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}`;
+}
+
+async function readMonthlyUsage(userId, feature, periodKey) {
+    const doc = await AiUsageMonthly.findOne({
+        userId,
+        feature,
+        periodKey,
+    }).lean();
+    return doc?.count ?? 0;
+}
+
+function buildQuotaDTO(feature, periodKey, used, limit) {
+    return {
+        feature,
+        periodKey,
+        used,
+        limit,
+        remaining: Math.max(0, limit - used),
+    };
+}
+
+async function incrementMonthlyUsage(userId, feature, periodKey) {
+    const doc = await AiUsageMonthly.findOneAndUpdate(
+        { userId, feature, periodKey },
+        { $inc: { count: 1 } },
+        { upsert: true, new: true },
+    );
+    return doc?.count ?? 1;
+}
+
 // --- Request validation -----------------------------------------------------
 
 const ALLOWED_MODES = new Set(["create", "improve"]);
 const ALLOWED_LANGUAGES = new Set(["he", "en"]);
+const ALLOWED_TARGETS = new Set(["full", "title", "paragraph"]);
 
 function parseRequestBody(body) {
     const raw = body && typeof body === "object" ? body : {};
     const mode = ALLOWED_MODES.has(raw.mode) ? raw.mode : "create";
     const language = ALLOWED_LANGUAGES.has(raw.language) ? raw.language : "he";
-    return { mode, language };
+
+    // target: absent → "full" (backward compat); present but invalid → null (triggers error)
+    const rawTarget = typeof raw.target === "string" ? raw.target.trim() : "";
+    const target = !rawTarget
+        ? "full"
+        : ALLOWED_TARGETS.has(rawTarget)
+          ? rawTarget
+          : null;
+
+    const paragraphIndex = raw.paragraphIndex;
+
+    return { mode, language, target, paragraphIndex };
 }
 
 // --- Controller handler -----------------------------------------------------
@@ -151,13 +203,11 @@ export async function suggestAbout(req, res) {
                 });
             } catch (err) {
                 if (err instanceof HttpError || err?.statusCode === 404) {
-                    return res
-                        .status(404)
-                        .json({
-                            ok: false,
-                            code: "NOT_FOUND",
-                            message: "Not found",
-                        });
+                    return res.status(404).json({
+                        ok: false,
+                        code: "NOT_FOUND",
+                        message: "Not found",
+                    });
                 }
                 throw err;
             }
@@ -174,12 +224,63 @@ export async function suggestAbout(req, res) {
         return res.status(429).json({
             ok: false,
             code: "RATE_LIMITED",
-            message: "Daily AI suggestion limit reached",
+            message: "Too many requests — please try again later",
+        });
+    }
+
+    // 6b. Monthly quota check (persistent, success-only)
+    const periodKey = currentPeriodKey();
+    const monthlyLimit = isPremium ? MONTHLY_QUOTA_PREMIUM : MONTHLY_QUOTA_FREE;
+    const monthlyUsed = await readMonthlyUsage(
+        userId,
+        FEATURE_AI_ABOUT,
+        periodKey,
+    );
+    if (monthlyUsed >= monthlyLimit) {
+        return res.status(429).json({
+            ok: false,
+            code: "AI_MONTHLY_LIMIT_REACHED",
+            message: "Monthly AI suggestion limit reached",
+            quota: buildQuotaDTO(
+                FEATURE_AI_ABOUT,
+                periodKey,
+                monthlyUsed,
+                monthlyLimit,
+            ),
         });
     }
 
     // 7. Parse request
-    const { mode, language } = parseRequestBody(req.body);
+    const {
+        mode,
+        language,
+        target,
+        paragraphIndex: rawParagraphIndex,
+    } = parseRequestBody(req.body);
+
+    // 7b. Validate target
+    if (target === null) {
+        return res.status(400).json({
+            ok: false,
+            code: "INVALID_TARGET",
+            message: 'target must be "full", "title", or "paragraph"',
+        });
+    }
+
+    // 7c. Validate paragraphIndex when target === "paragraph"
+    let paragraphIndex = null;
+    if (target === "paragraph") {
+        const pi = Number(rawParagraphIndex);
+        if (!Number.isInteger(pi) || pi < 0 || pi > 2) {
+            return res.status(400).json({
+                ok: false,
+                code: "INVALID_PARAGRAPH_INDEX",
+                message:
+                    'paragraphIndex must be 0, 1, or 2 when target is "paragraph"',
+            });
+        }
+        paragraphIndex = pi;
+    }
 
     // 8. Derive trusted card context (server-side only)
     const businessName =
@@ -220,6 +321,8 @@ export async function suggestAbout(req, res) {
             language,
             mode,
             existingAbout,
+            target,
+            paragraphIndex,
         });
     } catch (err) {
         const code = err?.code || "AI_UNAVAILABLE";
@@ -243,19 +346,138 @@ export async function suggestAbout(req, res) {
         });
     }
 
-    // 10. Metadata-only log (never prompt body or AI response body)
+    // 10. Increment monthly usage (success only, atomic)
+    let newUsedCount = monthlyUsed + 1;
+    try {
+        newUsedCount = await incrementMonthlyUsage(
+            userId,
+            FEATURE_AI_ABOUT,
+            periodKey,
+        );
+    } catch (incErr) {
+        // Accounting failure must not block user from receiving the suggestion.
+        console.error("[ai:suggestAbout] quota increment failed", {
+            userId: String(userId),
+            periodKey,
+            error: incErr?.message,
+        });
+    }
+
+    // 11. Metadata-only log (never prompt body or AI response body)
     console.log("[ai:suggestAbout] OK", {
         cardId: String(card._id),
         userId: String(userId),
         model: process.env.GEMINI_MODEL || "gemini-2.5-flash-lite",
         mode,
         language,
+        target,
         latencyMs: Date.now() - startMs,
     });
 
-    // 11. Return suggestion (no DB writes)
+    // 12. Return suggestion + fresh quota (shape per target)
+    const responseSuggestion =
+        target === "paragraph" ? { ...suggestion, paragraphIndex } : suggestion;
+
     return res.status(200).json({
         ok: true,
-        suggestion,
+        suggestion: responseSuggestion,
+        quota: buildQuotaDTO(
+            FEATURE_AI_ABOUT,
+            periodKey,
+            newUsedCount,
+            monthlyLimit,
+        ),
+    });
+}
+
+// --- GET quota handler ------------------------------------------------------
+
+const ALLOWED_QUOTA_FEATURES = new Set([FEATURE_AI_ABOUT]);
+
+export async function getAiQuota(req, res) {
+    const userId = req.userId || req.user?.id || null;
+
+    // 1. Auth
+    if (!userId) {
+        return res.status(401).json({
+            ok: false,
+            code: "UNAUTHORIZED",
+            message: "Authentication required",
+        });
+    }
+
+    // 2. Feature param (default to ai_about_generation)
+    const featureRaw =
+        typeof req.query?.feature === "string"
+            ? req.query.feature.trim()
+            : FEATURE_AI_ABOUT;
+    const feature = ALLOWED_QUOTA_FEATURES.has(featureRaw) ? featureRaw : null;
+
+    if (!feature) {
+        return res.status(400).json({
+            ok: false,
+            code: "INVALID_FEATURE",
+            message: "Unsupported feature",
+        });
+    }
+
+    // 3. Card lookup + ownership (same posture as suggest)
+    const card = await Card.findById(req.params.id);
+    if (!card) {
+        return res.status(404).json({
+            ok: false,
+            code: "NOT_FOUND",
+            message: "Not found",
+        });
+    }
+
+    const ownsCard = String(card.user || "") === String(userId);
+    if (!ownsCard) {
+        return res.status(404).json({
+            ok: false,
+            code: "NOT_FOUND",
+            message: "Not found",
+        });
+    }
+
+    // 4. Org membership gate (same posture as suggest)
+    if (card.orgId) {
+        const personalOrgId = await getPersonalOrgId();
+        const cardOrgId = String(card.orgId);
+        const isNonPersonalOrg =
+            Boolean(cardOrgId) && cardOrgId !== String(personalOrgId);
+
+        if (isNonPersonalOrg) {
+            try {
+                await assertActiveOrgAndMembershipOrNotFound({
+                    orgId: card.orgId,
+                    userId,
+                });
+            } catch (err) {
+                if (err instanceof HttpError || err?.statusCode === 404) {
+                    return res.status(404).json({
+                        ok: false,
+                        code: "NOT_FOUND",
+                        message: "Not found",
+                    });
+                }
+                throw err;
+            }
+        }
+    }
+
+    // 5. Resolve tier → monthly limit
+    const now = new Date();
+    const featurePlan = await resolveFeaturePlan(card, userId, now);
+    const isPremium = hasAccess(featurePlan, "seo");
+    const monthlyLimit = isPremium ? MONTHLY_QUOTA_PREMIUM : MONTHLY_QUOTA_FREE;
+
+    // 6. Read usage
+    const periodKey = currentPeriodKey();
+    const used = await readMonthlyUsage(userId, feature, periodKey);
+
+    return res.status(200).json({
+        ok: true,
+        quota: buildQuotaDTO(feature, periodKey, used, monthlyLimit),
     });
 }
