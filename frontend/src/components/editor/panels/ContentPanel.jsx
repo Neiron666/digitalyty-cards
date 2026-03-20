@@ -40,8 +40,12 @@ function mapAiError(err) {
     if (code === "AI_DISABLED") return "שירות ה-AI אינו פעיל כרגע.";
     if (code === "AI_UNAVAILABLE")
         return "שירות ה-AI אינו זמין זמנית. נסה שוב.";
+    if (code === "INVALID_SUGGESTION")
+        return "ה-AI החזיר תוכן לא שמיש. נסה שוב.";
     if (code === "INVALID_TARGET" || code === "INVALID_PARAGRAPH_INDEX")
         return "בקשה שגויה. נסה שוב.";
+    if (code === "AI_INSUFFICIENT_BUSINESS_CONTEXT")
+        return "יש למלא שם עסק ותחום עיסוק לפני יצירת תוכן עם AI.";
     return "משהו השתבש. נסה שוב מאוחר יותר.";
 }
 
@@ -123,7 +127,13 @@ function QuotaHint({ quota }) {
     );
 }
 
-export default function ContentPanel({ content = {}, cardId, onChange }) {
+export default function ContentPanel({
+    content = {},
+    cardId,
+    onChange,
+    business = {},
+    onNavigateTab,
+}) {
     const aboutParagraphsRaw =
         Array.isArray(content.aboutParagraphs) && content.aboutParagraphs.length
             ? content.aboutParagraphs
@@ -183,6 +193,16 @@ export default function ContentPanel({ content = {}, cardId, onChange }) {
             ));
 
     const quotaExhausted = aiQuota && aiQuota.remaining <= 0;
+
+    const aiReady =
+        Boolean(business?.name?.trim()) && Boolean(business?.category?.trim());
+
+    // Bulk CTA is only eligible when the About block is completely empty.
+    const hasTitleFilled = Boolean(content.aboutTitle?.trim());
+    const hasParagraphsFilled =
+        Array.isArray(content.aboutParagraphs) &&
+        content.aboutParagraphs.some((p) => typeof p === "string" && p.trim());
+    const bulkEligible = !hasTitleFilled && !hasParagraphsFilled;
 
     const requestSuggestion = useCallback(
         async (target, paragraphIndex) => {
@@ -388,12 +408,31 @@ export default function ContentPanel({ content = {}, cardId, onChange }) {
                 onChange={(e) => onChange({ aboutTitle: e.target.value })}
             />
 
+            {cardId && !aiReady && (
+                <span className={styles.aiReadinessHint}>
+                    כדי לקבל הצעת תוכן מדויקת,{" "}
+                    {onNavigateTab ? (
+                        <button
+                            type="button"
+                            className={styles.aiReadinessLink}
+                            onClick={() => onNavigateTab("business")}
+                        >
+                            מלאו קודם את שם העסק ותחום העיסוק
+                        </button>
+                    ) : (
+                        <>מלאו קודם את שם העסק ותחום העיסוק</>
+                    )}
+                </span>
+            )}
+
             {cardId && (
                 <div className={styles.fieldAiRow}>
                     <button
                         type="button"
                         className={styles.fieldAiButton}
-                        disabled={quotaExhausted || aiState === "loading"}
+                        disabled={
+                            !aiReady || quotaExhausted || aiState === "loading"
+                        }
                         onClick={() => handleAiClick("title")}
                     >
                         ✦ הצע כותרת עם AI
@@ -431,7 +470,9 @@ export default function ContentPanel({ content = {}, cardId, onChange }) {
                                     type="button"
                                     className={styles.fieldAiButton}
                                     disabled={
-                                        quotaExhausted || aiState === "loading"
+                                        !aiReady ||
+                                        quotaExhausted ||
+                                        aiState === "loading"
                                     }
                                     onClick={() =>
                                         handleAiClick("paragraph", index)
@@ -477,27 +518,33 @@ export default function ContentPanel({ content = {}, cardId, onChange }) {
                 </button>
             </div>
 
-            {/* --- Full block AI action -------------------------------------- */}
-            {cardId && (
+            {/* --- Full block AI action (create-only, shown when About is empty) */}
+            {cardId && (bulkEligible || aiTarget === "full") && (
                 <div className={styles.aiBlock}>
-                    <div className={styles.aiDisclosure}>
-                        ✦ ניתן לייצר את כל בלוק האודות בבת אחת
-                    </div>
-
-                    {aiState === "idle" && (
-                        <div className={styles.fieldAiRow}>
-                            <Button
-                                variant="secondary"
-                                disabled={quotaExhausted}
-                                onClick={() => handleAiClick("full")}
-                            >
-                                הצע בלוק אודות מלא עם AI
-                            </Button>
-                            <QuotaHint quota={aiQuota} />
-                        </div>
+                    {/* Idle CTA — only when both fields are empty */}
+                    {bulkEligible && aiTarget !== "full" && (
+                        <>
+                            <div className={styles.aiDisclosure}>
+                                ✦ ניתן לייצר את כל בלוק האודות בבת אחת
+                            </div>
+                            <div className={styles.fieldAiRow}>
+                                <Button
+                                    variant="secondary"
+                                    disabled={
+                                        !aiReady ||
+                                        quotaExhausted ||
+                                        aiState === "loading"
+                                    }
+                                    onClick={() => handleAiClick("full")}
+                                >
+                                    הצע בלוק אודות מלא עם AI
+                                </Button>
+                                <QuotaHint quota={aiQuota} />
+                            </div>
+                        </>
                     )}
 
-                    {/* Full-block loading/error/preview shown here */}
+                    {/* Full-block loading/error/preview — stays visible while flow is active */}
                     {aiTarget === "full" && renderAiStatus()}
                     {aiTarget === "full" && renderAiPreview()}
                 </div>

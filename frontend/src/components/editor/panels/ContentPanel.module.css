@@ -82,6 +82,41 @@
     white-space: nowrap;
 }
 
+.aiReadinessHint {
+    color: var(--text-main);
+    font-size: var(--fs-xs);
+    line-height: 1.4;
+}
+
+.aiReadinessLink {
+    appearance: none;
+    border: none;
+    background: none;
+    padding: 0;
+    font: inherit;
+    color: var(--gold, #f59e0b);
+    font-weight: 700;
+    text-decoration: underline;
+    cursor: pointer;
+}
+
+.aiReadinessLink:focus-visible {
+    outline: 2px solid rgba(255, 215, 0, 0.65);
+    outline-offset: 2px;
+}
+
+.goldUnderline {
+    text-decoration: underline 1px var(--gold, #f59e0b);
+}
+.goldHilight {
+    color: var(--gold, #f59e0b);
+    font-weight: 700;
+}
+
+.boldTxt {
+    font-weight: 700;
+}
+
 .aiStatusRow {
     display: flex;
     align-items: center;

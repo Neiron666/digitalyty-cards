@@ -17,6 +17,7 @@ export default function EditorPanel({
     card,
     onFieldChange,
     editingDisabled,
+    onNavigateTab,
     onDeleteCard,
     onDeleteDesignAsset,
     deleteDesignAssetBusyKind,
@@ -77,7 +78,9 @@ export default function EditorPanel({
                 <ContentPanel
                     content={card.content}
                     cardId={card._id}
+                    business={card.business}
                     disabled={editingDisabled}
+                    onNavigateTab={onNavigateTab}
                     onChange={(patch) => applyPatch("content", patch)}
                 />
             );

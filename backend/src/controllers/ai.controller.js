@@ -214,7 +214,39 @@ export async function suggestAbout(req, res) {
         }
     }
 
-    // 6. Rate limit (tier-aware)
+    // 6. Parse + validate request (before rate-limit so invalid requests don't consume daily slots)
+    const {
+        mode,
+        language,
+        target,
+        paragraphIndex: rawParagraphIndex,
+    } = parseRequestBody(req.body);
+
+    // 6b. Validate target
+    if (target === null) {
+        return res.status(400).json({
+            ok: false,
+            code: "INVALID_TARGET",
+            message: 'target must be "full", "title", or "paragraph"',
+        });
+    }
+
+    // 6c. Validate paragraphIndex when target === "paragraph"
+    let paragraphIndex = null;
+    if (target === "paragraph") {
+        const pi = Number(rawParagraphIndex);
+        if (!Number.isInteger(pi) || pi < 0 || pi > 2) {
+            return res.status(400).json({
+                ok: false,
+                code: "INVALID_PARAGRAPH_INDEX",
+                message:
+                    'paragraphIndex must be 0, 1, or 2 when target is "paragraph"',
+            });
+        }
+        paragraphIndex = pi;
+    }
+
+    // 7. Rate limit (tier-aware)
     const now = new Date();
     const featurePlan = await resolveFeaturePlan(card, userId, now);
     const isPremium = hasAccess(featurePlan, "seo"); // premium plans unlock seo → proxy for "premium"
@@ -228,7 +260,7 @@ export async function suggestAbout(req, res) {
         });
     }
 
-    // 6b. Monthly quota check (persistent, success-only)
+    // 7b. Monthly quota check (persistent, success-only)
     const periodKey = currentPeriodKey();
     const monthlyLimit = isPremium ? MONTHLY_QUOTA_PREMIUM : MONTHLY_QUOTA_FREE;
     const monthlyUsed = await readMonthlyUsage(
@@ -250,38 +282,6 @@ export async function suggestAbout(req, res) {
         });
     }
 
-    // 7. Parse request
-    const {
-        mode,
-        language,
-        target,
-        paragraphIndex: rawParagraphIndex,
-    } = parseRequestBody(req.body);
-
-    // 7b. Validate target
-    if (target === null) {
-        return res.status(400).json({
-            ok: false,
-            code: "INVALID_TARGET",
-            message: 'target must be "full", "title", or "paragraph"',
-        });
-    }
-
-    // 7c. Validate paragraphIndex when target === "paragraph"
-    let paragraphIndex = null;
-    if (target === "paragraph") {
-        const pi = Number(rawParagraphIndex);
-        if (!Number.isInteger(pi) || pi < 0 || pi > 2) {
-            return res.status(400).json({
-                ok: false,
-                code: "INVALID_PARAGRAPH_INDEX",
-                message:
-                    'paragraphIndex must be 0, 1, or 2 when target is "paragraph"',
-            });
-        }
-        paragraphIndex = pi;
-    }
-
     // 8. Derive trusted card context (server-side only)
     const businessName =
         typeof card.business?.name === "string"
@@ -296,14 +296,37 @@ export async function suggestAbout(req, res) {
             ? card.business.slogan.trim()
             : "";
 
-    const existingTitle =
+    // 8b. Business-context readiness gate (server-side enforcement)
+    if (!businessName || !category) {
+        return res.status(400).json({
+            ok: false,
+            code: "AI_INSUFFICIENT_BUSINESS_CONTEXT",
+            message:
+                "Business name and category are required before AI generation",
+        });
+    }
+
+    // 8c. Derive existing about with outbound caps (prompt-only, not DB)
+    const OUTBOUND_TITLE_CAP = 500;
+    const OUTBOUND_PARAGRAPH_CAP = 2000;
+
+    let existingTitle =
         typeof card.content?.aboutTitle === "string"
             ? card.content.aboutTitle.trim()
             : "";
+    if (existingTitle.length > OUTBOUND_TITLE_CAP) {
+        existingTitle = existingTitle.slice(0, OUTBOUND_TITLE_CAP);
+    }
+
     const existingParagraphs = Array.isArray(card.content?.aboutParagraphs)
         ? card.content.aboutParagraphs
               .map((p) => (typeof p === "string" ? p.trim() : ""))
               .filter(Boolean)
+              .map((p) =>
+                  p.length > OUTBOUND_PARAGRAPH_CAP
+                      ? p.slice(0, OUTBOUND_PARAGRAPH_CAP)
+                      : p,
+              )
         : [];
 
     const existingAbout =
@@ -326,7 +349,12 @@ export async function suggestAbout(req, res) {
         });
     } catch (err) {
         const code = err?.code || "AI_UNAVAILABLE";
-        const status = code === "INVALID_SUGGESTION" ? 502 : 503;
+        const status =
+            code === "INVALID_SUGGESTION"
+                ? 502
+                : code === "AI_PROVIDER_QUOTA"
+                  ? 429
+                  : 503;
 
         console.error("[ai:suggestAbout] Gemini error", {
             cardId: String(card._id),
@@ -342,7 +370,9 @@ export async function suggestAbout(req, res) {
             message:
                 code === "INVALID_SUGGESTION"
                     ? "AI returned an unusable suggestion"
-                    : "AI service is temporarily unavailable",
+                    : code === "AI_PROVIDER_QUOTA"
+                      ? "AI provider quota temporarily exhausted"
+                      : "AI service is temporarily unavailable",
         });
     }
 

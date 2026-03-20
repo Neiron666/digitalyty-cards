@@ -47,6 +47,7 @@ const aboutFullSchema = {
             description:
                 "Up to 3 paragraphs of plain text describing the business or professional. No markdown, no HTML.",
             items: { type: SchemaType.STRING },
+            maxItems: ABOUT_PARAGRAPHS_MAX,
         },
     },
     required: ["aboutTitle", "aboutParagraphs"],
@@ -316,7 +317,7 @@ function getTargetConfig(target) {
                 schema: aboutTitleOnlySchema,
                 buildPrompt: buildTitlePrompt,
                 normalize: normalizeTitleSuggestion,
-                maxOutputTokens: 256,
+                maxOutputTokens: 100,
             };
         case "paragraph":
             return {

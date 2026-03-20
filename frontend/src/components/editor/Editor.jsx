@@ -355,6 +355,7 @@ export default function Editor({
                         card={card}
                         onFieldChange={onFieldChange}
                         editingDisabled={editingDisabled}
+                        onNavigateTab={handleChangeTab}
                         onDeleteCard={onDeleteCard}
                         onDeleteDesignAsset={onDeleteDesignAsset}
                         deleteDesignAssetBusyKind={deleteDesignAssetBusyKind}
