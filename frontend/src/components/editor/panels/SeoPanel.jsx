@@ -120,6 +120,73 @@ function SeoAiConsentModal({ open, onConfirm, onCancel }) {
     );
 }
 
+// --- JSON-LD overwrite confirm modal (reuses consent pattern + CSS) ----------
+function JsonLdOverwriteConfirmModal({ open, onConfirm, onCancel }) {
+    const titleId = useId();
+    const bodyId = useId();
+    const confirmRef = useRef(null);
+
+    useEffect(() => {
+        if (!open) return;
+        const t = setTimeout(() => confirmRef.current?.focus?.(), 0);
+        return () => clearTimeout(t);
+    }, [open]);
+
+    useEffect(() => {
+        if (!open) return;
+        const onKey = (e) => {
+            if (e.key === "Escape") {
+                e.preventDefault();
+                onCancel?.();
+            }
+        };
+        window.addEventListener("keydown", onKey);
+        return () => window.removeEventListener("keydown", onKey);
+    }, [open, onCancel]);
+
+    if (!open) return null;
+
+    return (
+        <div
+            className={styles.consentOverlay}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby={titleId}
+            aria-describedby={bodyId}
+            onMouseDown={(e) => {
+                if (e.target === e.currentTarget) onCancel?.();
+            }}
+        >
+            <div className={styles.consentDialog} dir="rtl">
+                <h2 id={titleId} className={styles.consentTitle}>
+                    להחליף את המידע המובנה?
+                </h2>
+                <p id={bodyId} className={styles.consentBody}>
+                    כבר קיים כאן מידע מובנה. יצירת תבנית חדשה תחליף את התוכן
+                    הקיים.
+                </p>
+                <div className={styles.consentActions}>
+                    <button
+                        ref={confirmRef}
+                        type="button"
+                        className={styles.consentConfirm}
+                        onClick={onConfirm}
+                    >
+                        החלף
+                    </button>
+                    <button
+                        type="button"
+                        className={styles.consentCancel}
+                        onClick={onCancel}
+                    >
+                        ביטול
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+}
+
 // --- Quota hint -------------------------------------------------------------
 function SeoQuotaHint({ quota }) {
     if (!quota) return null;
@@ -172,6 +239,80 @@ function normalizePathLeadingSlash(value) {
     return `/${raw}`;
 }
 
+// --- JSON-LD template helpers ------------------------------------------------
+function trimStr(value) {
+    return typeof value === "string" ? value.trim() : "";
+}
+
+function collectSameAs(contact) {
+    if (!contact || typeof contact !== "object") return [];
+    const keys = ["facebook", "instagram", "twitter", "tiktok", "linkedin"];
+    const seen = new Set();
+    const result = [];
+    for (const key of keys) {
+        const raw = trimStr(contact[key]);
+        if (!raw) continue;
+        if (!isValidAbsoluteHttpUrl(raw)) continue;
+        if (seen.has(raw)) continue;
+        seen.add(raw);
+        result.push(raw);
+    }
+    return result;
+}
+
+function buildJsonLdTemplate(
+    type,
+    { name, baseUrl, business, contact, design },
+) {
+    const obj = {
+        "@context": "https://schema.org",
+        "@type": type,
+    };
+
+    if (name) obj.name = name;
+    if (baseUrl) {
+        obj.url = baseUrl;
+        obj["@id"] = baseUrl;
+    }
+
+    const slogan = trimStr(business?.slogan);
+    if (slogan) obj.description = slogan;
+
+    const logoUrl = trimStr(design?.logo);
+
+    if (type === "Person") {
+        const category = trimStr(business?.category);
+        if (category) obj.jobTitle = category;
+        if (logoUrl && isValidAbsoluteHttpUrl(logoUrl)) obj.image = logoUrl;
+        const phone = trimStr(contact?.phone);
+        if (phone) obj.telephone = phone;
+        const email = trimStr(contact?.email);
+        if (email) obj.email = email;
+    }
+
+    if (type === "Organization") {
+        if (logoUrl && isValidAbsoluteHttpUrl(logoUrl)) obj.logo = logoUrl;
+    }
+
+    if (type === "LocalBusiness") {
+        if (logoUrl && isValidAbsoluteHttpUrl(logoUrl)) obj.image = logoUrl;
+        const phone = trimStr(contact?.phone);
+        if (phone) obj.telephone = phone;
+        const email = trimStr(contact?.email);
+        if (email) obj.email = email;
+
+        const city = trimStr(business?.city);
+        const address = { "@type": "PostalAddress", addressCountry: "IL" };
+        if (city) address.addressLocality = city;
+        obj.address = address;
+    }
+
+    const sameAs = collectSameAs(contact);
+    if (sameAs.length) obj.sameAs = sameAs;
+
+    return obj;
+}
+
 export default function SeoPanel({
     seo,
     publicPath,
@@ -182,6 +323,8 @@ export default function SeoPanel({
     canEditSeo,
     cardId,
     business,
+    contact,
+    design,
 }) {
     if (canEditSeo === false) {
         return (
@@ -202,6 +345,25 @@ export default function SeoPanel({
     const value = seo || {};
     const [jsonLdTemplateType, setJsonLdTemplateType] =
         useState("LocalBusiness");
+    const [showOverwriteConfirm, setShowOverwriteConfirm] = useState(false);
+
+    // --- Track whether JSON-LD existed when card was loaded (not generated
+    //     in this session), so we only auto-open advanced for pre-existing content.
+    const [hadJsonLdOnEntry, setHadJsonLdOnEntry] = useState(() =>
+        Boolean(typeof seo?.jsonLd === "string" && seo.jsonLd.trim()),
+    );
+    const jsonLdEntryCardIdRef = useRef(cardId);
+
+    useEffect(() => {
+        if (cardId !== jsonLdEntryCardIdRef.current) {
+            jsonLdEntryCardIdRef.current = cardId;
+            setHadJsonLdOnEntry(
+                Boolean(
+                    typeof value.jsonLd === "string" && value.jsonLd.trim(),
+                ),
+            );
+        }
+    }, [cardId, value.jsonLd]);
 
     // --- Robots curated 3-state: local UI flag for explicit manual mode ------
     const storedRobots = (value.robots || "").trim();
@@ -403,18 +565,36 @@ export default function SeoPanel({
         return "";
     }
 
-    function handleInsertJsonLdTemplate() {
+    function executeJsonLdInsert() {
         const baseUrl = resolveJsonLdBaseUrl();
         const name = resolveJsonLdName();
 
-        const obj = {
-            "@context": "https://schema.org",
-            "@type": jsonLdTemplateType,
-            ...(name ? { name } : {}),
-            ...(baseUrl ? { url: baseUrl, "@id": baseUrl } : {}),
-        };
+        const obj = buildJsonLdTemplate(jsonLdTemplateType, {
+            name,
+            baseUrl,
+            business,
+            contact,
+            design,
+        });
 
         update("jsonLd", JSON.stringify(obj, null, 2));
+    }
+
+    function handleInsertJsonLdTemplate() {
+        if (hasJsonLdContent) {
+            setShowOverwriteConfirm(true);
+            return;
+        }
+        executeJsonLdInsert();
+    }
+
+    function handleOverwriteConfirm() {
+        setShowOverwriteConfirm(false);
+        executeJsonLdInsert();
+    }
+
+    function handleOverwriteCancel() {
+        setShowOverwriteConfirm(false);
     }
 
     function handleSyncJsonLdFromCanonical() {
@@ -848,15 +1028,16 @@ export default function SeoPanel({
                     open={hasJsonLdContent || undefined}
                 >
                     <summary className={styles.collapsibleTrigger}>
-                        נתונים מובנים (JSON-LD)
+                        מידע מובנה לגוגל
                     </summary>
                     <div className={styles.collapsibleContent}>
                         <div className={styles.sectionHint}>
-                            רוב המשתמשים לא צריכים לערוך שדה זה ידנית. התבניות
-                            המוכנות יכולות לעזור לכם להתחיל.
+                            המערכת יכולה ליצור מידע מובנה בסיסי שיעזור לגוגל
+                            להבין ולהציג את העסק בצורה מדויקת יותר. בחרו את סוג
+                            העסק ולחצו כדי ליצור תבנית התחלתית.
                         </div>
                         <div className={styles.row}>
-                            <label className={styles.fieldFull}>
+                            <div className={styles.fieldFull}>
                                 <div className={styles.jsonLdHelperRow}>
                                     <div className={styles.selectWrap}>
                                         <select
@@ -868,7 +1049,7 @@ export default function SeoPanel({
                                                 )
                                             }
                                             disabled={disabled}
-                                            aria-label="סוג תבנית JSON-LD"
+                                            aria-label="סוג העסק"
                                         >
                                             <option value="Person">
                                                 אדם (Person)
@@ -889,8 +1070,24 @@ export default function SeoPanel({
                                             onClick={handleInsertJsonLdTemplate}
                                             disabled={disabled}
                                         >
-                                            הוסף/החלף תבנית
+                                            צור מידע מובנה
                                         </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* ── Advanced: manual JSON-LD editing ── */}
+                        <details
+                            className={styles.collapsible}
+                            open={hadJsonLdOnEntry || undefined}
+                        >
+                            <summary className={styles.collapsibleTrigger}>
+                                מתקדם — עריכה ידנית
+                            </summary>
+                            <div className={styles.collapsibleContent}>
+                                <div className={styles.row}>
+                                    <label className={styles.fieldFull}>
                                         <button
                                             type="button"
                                             className={styles.helperButton}
@@ -904,37 +1101,37 @@ export default function SeoPanel({
                                                 !resolveJsonLdBaseUrl()
                                             }
                                         >
-                                            סנכרן כתובות מהכתובת URL המועדפת
+                                            עדכן כתובות מהכתובת הראשית
                                         </button>
-                                    </div>
+
+                                        {jsonLdStatus?.hasValue ? (
+                                            <div
+                                                className={
+                                                    jsonLdStatus.valid
+                                                        ? styles.jsonOkText
+                                                        : styles.jsonBadText
+                                                }
+                                            >
+                                                {jsonLdStatus.valid
+                                                    ? "הקוד תקין"
+                                                    : "יש שגיאה בקוד"}
+                                            </div>
+                                        ) : null}
+
+                                        <textarea
+                                            className={formStyles.textarea}
+                                            rows={6}
+                                            value={value.jsonLd || ""}
+                                            onChange={(e) =>
+                                                update("jsonLd", e.target.value)
+                                            }
+                                            disabled={disabled}
+                                            placeholder='{"@context":"https://schema.org","@type":"LocalBusiness","name":"שם העסק"}'
+                                        />
+                                    </label>
                                 </div>
-
-                                {jsonLdStatus?.hasValue ? (
-                                    <div
-                                        className={
-                                            jsonLdStatus.valid
-                                                ? styles.jsonOkText
-                                                : styles.jsonBadText
-                                        }
-                                    >
-                                        {jsonLdStatus.valid
-                                            ? "JSON תקין"
-                                            : "JSON לא תקין"}
-                                    </div>
-                                ) : null}
-
-                                <textarea
-                                    className={formStyles.textarea}
-                                    rows={6}
-                                    value={value.jsonLd || ""}
-                                    onChange={(e) =>
-                                        update("jsonLd", e.target.value)
-                                    }
-                                    disabled={disabled}
-                                    placeholder='{"@context":"https://schema.org","@type":"LocalBusiness","name":"שם העסק"}'
-                                />
-                            </label>
-                        </div>
+                            </div>
+                        </details>
                     </div>
                 </details>
             </div>
@@ -943,6 +1140,11 @@ export default function SeoPanel({
                 open={showConsent}
                 onConfirm={handleConsentConfirm}
                 onCancel={handleConsentCancel}
+            />
+            <JsonLdOverwriteConfirmModal
+                open={showOverwriteConfirm}
+                onConfirm={handleOverwriteConfirm}
+                onCancel={handleOverwriteCancel}
             />
         </Panel>
     );

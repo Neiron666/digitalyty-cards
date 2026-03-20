@@ -155,6 +155,8 @@ export default function EditorPanel({
                     canEditSeo={card?.entitlements?.canEditSeo === true}
                     cardId={card?._id}
                     business={card?.business}
+                    contact={card?.contact}
+                    design={card?.design}
                 />
             );
 
