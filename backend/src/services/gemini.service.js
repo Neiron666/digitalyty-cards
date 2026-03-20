@@ -9,6 +9,9 @@ const REQUEST_TIMEOUT_MS = 15_000;
 const ABOUT_TITLE_MAX_LENGTH = 120;
 const ABOUT_PARAGRAPH_MAX_LENGTH = 2000;
 
+const SEO_TITLE_MAX_LENGTH = 70;
+const SEO_DESCRIPTION_MAX_LENGTH = 170;
+
 function resolveModel() {
     const raw = String(process.env.GEMINI_MODEL ?? "").trim();
     return ALLOWED_MODELS.has(raw) ? raw : DEFAULT_MODEL;
@@ -448,6 +451,214 @@ export async function generateAboutSuggestion({
     }
 
     const suggestion = normalize(parsed);
+    if (!suggestion) {
+        throw Object.assign(new Error("Gemini returned unusable suggestion"), {
+            code: "INVALID_SUGGESTION",
+        });
+    }
+
+    return suggestion;
+}
+
+// ============================================================================
+// SEO title + description generation
+// ============================================================================
+
+const seoSchema = {
+    type: SchemaType.OBJECT,
+    properties: {
+        seoTitle: {
+            type: SchemaType.STRING,
+            description:
+                "A concise, keyword-rich SEO meta title for a digital business card page. Plain text only.",
+        },
+        seoDescription: {
+            type: SchemaType.STRING,
+            description:
+                "A concise SEO meta description for a digital business card page. Plain text only.",
+        },
+    },
+    required: ["seoTitle", "seoDescription"],
+};
+
+const SYSTEM_INSTRUCTION_SEO = `You are an expert SEO copywriter specializing in meta tags for digital business card pages.
+
+TASK: Generate the meta title and meta description tags for a digital business card page.
+
+RULES — follow strictly:
+- Write in the requested language (default: Hebrew).
+- Output ONLY plain text. No markdown, no HTML, no special characters beyond basic punctuation.
+- seoTitle: max ${SEO_TITLE_MAX_LENGTH} characters. Must include the business name and be compelling for search results.
+- seoDescription: max ${SEO_DESCRIPTION_MAX_LENGTH} characters. Summarize what the business does and encourage clicks.
+- Be concise, professional, and accurate.
+- Do NOT exaggerate, invent credentials, or make unverifiable claims.
+- Do NOT include phone numbers, email addresses, or URLs in the text.
+- If existing title/description are provided for improvement, preserve factual accuracy while improving SEO effectiveness.
+- If information is minimal, write brief but professional meta tags based on available data.
+- Include the city name in the description when provided (local SEO).`;
+
+function buildSeoPrompt({
+    businessName,
+    category,
+    slogan,
+    city,
+    aboutTitle,
+    language,
+    mode,
+    existingSeoTitle,
+    existingSeoDescription,
+}) {
+    const parts = buildBusinessContext({
+        businessName,
+        category,
+        slogan,
+        language,
+    });
+
+    if (city) parts.push(`City: ${city}`);
+    if (aboutTitle) parts.push(`About section title: ${aboutTitle}`);
+
+    if (mode === "improve" && (existingSeoTitle || existingSeoDescription)) {
+        parts.push("");
+        parts.push("EXISTING META TAGS TO IMPROVE:");
+        if (existingSeoTitle) parts.push(`Title: ${existingSeoTitle}`);
+        if (existingSeoDescription)
+            parts.push(`Description: ${existingSeoDescription}`);
+        parts.push("");
+        parts.push(
+            "Rewrite the meta tags to be more SEO-effective and compelling. Keep factual content accurate.",
+        );
+    } else {
+        parts.push("");
+        parts.push(
+            "Create new SEO meta title and description from scratch based on the business information above.",
+        );
+    }
+
+    return parts.join("\n");
+}
+
+function normalizeSeoSuggestion(raw) {
+    if (!raw || typeof raw !== "object") return null;
+
+    let title = typeof raw.seoTitle === "string" ? raw.seoTitle.trim() : "";
+    if (title.length > SEO_TITLE_MAX_LENGTH) {
+        title = title.slice(0, SEO_TITLE_MAX_LENGTH);
+    }
+
+    let description =
+        typeof raw.seoDescription === "string" ? raw.seoDescription.trim() : "";
+    if (description.length > SEO_DESCRIPTION_MAX_LENGTH) {
+        description = description.slice(0, SEO_DESCRIPTION_MAX_LENGTH);
+    }
+
+    if (!title && !description) return null;
+
+    return { seoTitle: title, seoDescription: description };
+}
+
+/**
+ * Generate SEO title + description suggestion via Gemini.
+ *
+ * @param {object} params
+ * @param {string} [params.businessName]
+ * @param {string} [params.category]
+ * @param {string} [params.slogan]
+ * @param {string} [params.city]
+ * @param {string} [params.aboutTitle]
+ * @param {"he"|"en"} [params.language="he"]
+ * @param {"create"|"improve"} [params.mode="create"]
+ * @param {string} [params.existingSeoTitle]
+ * @param {string} [params.existingSeoDescription]
+ * @returns {Promise<{ seoTitle: string, seoDescription: string }>}
+ */
+export async function generateSeoSuggestion({
+    businessName,
+    category,
+    slogan,
+    city,
+    aboutTitle,
+    language = "he",
+    mode = "create",
+    existingSeoTitle,
+    existingSeoDescription,
+} = {}) {
+    const client = getClient();
+    const modelName = resolveModel();
+
+    const model = client.getGenerativeModel({
+        model: modelName,
+        systemInstruction: SYSTEM_INSTRUCTION_SEO,
+        generationConfig: {
+            responseMimeType: "application/json",
+            responseSchema: seoSchema,
+            temperature: 0.7,
+            maxOutputTokens: 256,
+        },
+    });
+
+    const prompt = buildSeoPrompt({
+        businessName,
+        category,
+        slogan,
+        city,
+        aboutTitle,
+        language,
+        mode,
+        existingSeoTitle,
+        existingSeoDescription,
+    });
+
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+
+    let result;
+    try {
+        result = await model.generateContent(
+            { contents: [{ role: "user", parts: [{ text: prompt }] }] },
+            { signal: controller.signal },
+        );
+    } catch (err) {
+        if (err?.name === "AbortError" || err?.code === "ABORT_ERR") {
+            throw Object.assign(new Error("Gemini request timed out"), {
+                code: "AI_UNAVAILABLE",
+            });
+        }
+        const errStatus =
+            err?.status ?? err?.httpStatusCode ?? err?.response?.status;
+        if (errStatus === 429) {
+            throw Object.assign(
+                new Error(
+                    `Gemini provider quota exhausted: ${err?.message || "429"}`,
+                ),
+                { code: "AI_PROVIDER_QUOTA" },
+            );
+        }
+        throw Object.assign(
+            new Error(`Gemini API error: ${err?.message || "unknown"}`),
+            { code: "AI_UNAVAILABLE" },
+        );
+    } finally {
+        clearTimeout(timer);
+    }
+
+    const text = result?.response?.text?.();
+    if (!text) {
+        throw Object.assign(new Error("Empty response from Gemini"), {
+            code: "INVALID_SUGGESTION",
+        });
+    }
+
+    let parsed;
+    try {
+        parsed = JSON.parse(text);
+    } catch {
+        throw Object.assign(new Error("Gemini returned invalid JSON"), {
+            code: "INVALID_SUGGESTION",
+        });
+    }
+
+    const suggestion = normalizeSeoSuggestion(parsed);
     if (!suggestion) {
         throw Object.assign(new Error("Gemini returned unusable suggestion"), {
             code: "INVALID_SUGGESTION",

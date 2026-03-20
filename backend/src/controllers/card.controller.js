@@ -199,26 +199,93 @@ function getBusinessName(data) {
     );
 }
 
-function buildSeo(data) {
-    const name = getBusinessName(data);
-    const category =
-        data?.business?.category || data?.business?.occupation || "";
-    const city = data?.business?.city || "";
+const SEO_TITLE_CAP = 65;
+const SEO_DESC_CAP = 160;
 
-    const title = name
-        ? `${name} – כרטיס ביקור דיגיטלי`
-        : "כרטיס ביקור דיגיטלי";
-    const descriptionParts = [
-        name || "כרטיס ביקור דיגיטלי",
-        category ? `| ${category}` : "",
-        city ? `ב${city}.` : ".",
-        " פרטי קשר, ניווט, וואטסאפ ולידים.",
-    ].join(" ");
+function buildSeo(data) {
+    const name = (getBusinessName(data) || "").trim();
+    const category = (
+        data?.business?.category ||
+        data?.business?.occupation ||
+        ""
+    ).trim();
+    const city = (data?.business?.city || "").trim();
+
+    // Title: degradation chain (approved patterns)
+    let title;
+    if (name && category && city) {
+        title = `${name} – ${category} ב${city}`;
+    } else if (name && category) {
+        title = `${name} – ${category}`;
+    } else if (category && city) {
+        title = `כרטיס ביקור דיגיטלי ל${category} ב${city}`;
+    } else if (name && city) {
+        title = `${name} ב${city} – כרטיס ביקור דיגיטלי`;
+    } else if (name) {
+        title = `${name} – כרטיס ביקור דיגיטלי`;
+    } else if (category) {
+        title = `כרטיס ביקור דיגיטלי ל${category}`;
+    } else if (city) {
+        title = `כרטיס ביקור דיגיטלי ב${city}`;
+    } else {
+        title = "כרטיס ביקור דיגיטלי – Cardigo";
+    }
+
+    // Description: degradation chain (approved patterns)
+    const CTA = "פרטי קשר, ניווט, וואטסאפ ולידים";
+    const CTA_VIA = `${CTA} דרך הכרטיס הדיגיטלי.`;
+    const CTA_DOT = `${CTA}.`;
+    let description;
+    if (name && category && city) {
+        description = `${name} – ${category} ב${city}. ${CTA_VIA}`;
+    } else if (name && category) {
+        description = `${name} – ${category}. ${CTA_VIA}`;
+    } else if (category && city) {
+        description = `${category} ב${city}. ${CTA_VIA}`;
+    } else if (name && city) {
+        description = `${name} ב${city}. ${CTA_VIA}`;
+    } else if (name) {
+        description = `${name}. ${CTA_VIA}`;
+    } else if (category) {
+        description = `כרטיס ביקור דיגיטלי ל${category}. ${CTA_DOT}`;
+    } else if (city) {
+        description = `כרטיס ביקור דיגיטלי ב${city}. ${CTA_DOT}`;
+    } else {
+        description = `כרטיס ביקור דיגיטלי עם ${CTA_DOT}`;
+    }
 
     return {
-        title,
-        description: descriptionParts.replace(/\s+/g, " ").trim(),
+        title: title.slice(0, SEO_TITLE_CAP),
+        description: description.slice(0, SEO_DESC_CAP),
     };
+}
+
+// --- System-generated SEO detection helpers (private) ---
+// Used by PATCH merge to decide whether stored SEO should be recomputed.
+
+function isSystemGeneratedTitle(value, card) {
+    if (typeof value !== "string" || !value.trim()) return true;
+    const v = value.trim();
+    // Exact match against current computed title
+    if (v === buildSeo(card).title) return true;
+    // Legacy v0 generic fallback
+    if (v === "כרטיס ביקור דיגיטלי") return true;
+    // Legacy v0 pattern: "{name} – כרטיס ביקור דיגיטלי"
+    if (v.endsWith(" – כרטיס ביקור דיגיטלי")) return true;
+    return false;
+}
+
+function isSystemGeneratedDescription(value, card) {
+    if (typeof value !== "string" || !value.trim()) return true;
+    const v = value.trim();
+    // Exact match against current computed description
+    if (v === buildSeo(card).description) return true;
+    // Legacy v0 pattern with extra space / pipe artifacts
+    if (v === "כרטיס ביקור דיגיטלי . פרטי קשר, ניווט, וואטסאפ ולידים.")
+        return true;
+    // Legacy v0 tail pattern
+    if (v.endsWith("פרטי קשר, ניווט, וואטסאפ ולידים.")) return true;
+    return false;
 }
 
 async function generateUniqueSlug(
@@ -1515,14 +1582,46 @@ export async function updateCard(req, res) {
             ? existingCard.seo
             : {};
 
+    // Resolve title: incoming non-empty wins; empty means "recompute";
+    // else recompute if stored value is system-generated.
+    const incomingTitle =
+        typeof incomingSeo.title === "string"
+            ? incomingSeo.title.trim()
+            : undefined;
+    const incomingDesc =
+        typeof incomingSeo.description === "string"
+            ? incomingSeo.description.trim()
+            : undefined;
+
+    let resolvedTitle;
+    if (incomingTitle !== undefined && incomingTitle !== "") {
+        resolvedTitle = incomingTitle;
+    } else if (incomingTitle === "") {
+        resolvedTitle = computedSeo.title;
+    } else if (isSystemGeneratedTitle(existingSeo.title, mergedForSeo)) {
+        resolvedTitle = computedSeo.title;
+    } else {
+        resolvedTitle = existingSeo.title;
+    }
+
+    let resolvedDescription;
+    if (incomingDesc !== undefined && incomingDesc !== "") {
+        resolvedDescription = incomingDesc;
+    } else if (incomingDesc === "") {
+        resolvedDescription = computedSeo.description;
+    } else if (
+        isSystemGeneratedDescription(existingSeo.description, mergedForSeo)
+    ) {
+        resolvedDescription = computedSeo.description;
+    } else {
+        resolvedDescription = existingSeo.description;
+    }
+
     patch.seo = {
         ...existingSeo,
         ...incomingSeo,
-        title: incomingSeo.title || existingSeo.title || computedSeo.title,
-        description:
-            incomingSeo.description ||
-            existingSeo.description ||
-            computedSeo.description,
+        title: resolvedTitle || computedSeo.title,
+        description: resolvedDescription || computedSeo.description,
     };
 
     // Gallery delete reconciliation: if gallery was provided, delete orphaned gallery uploads

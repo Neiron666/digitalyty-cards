@@ -3,6 +3,7 @@ import Input from "../../ui/Input";
 
 const BUSINESS_NAME_MAX = 60;
 const BUSINESS_SUBTITLE_MAX = 80;
+const BUSINESS_CITY_MAX = 40;
 const BUSINESS_SLOGAN_MAX = 120;
 
 function remaining(max, value) {
@@ -40,6 +41,17 @@ export default function BusinessPanel({
                 onBlur={(e) => emit({ category: e.target.value.trim() })}
                 maxLength={BUSINESS_SUBTITLE_MAX}
                 meta={`נשארו ${remaining(BUSINESS_SUBTITLE_MAX, business.category || "")} תווים`}
+            />
+
+            <Input
+                label="עיר הפעילות"
+                value={business.city || ""}
+                disabled={editingDisabled}
+                onChange={(e) => emit({ city: e.target.value })}
+                onBlur={(e) => emit({ city: e.target.value.trim() })}
+                maxLength={BUSINESS_CITY_MAX}
+                placeholder="לדוגמה: תל אביב, חיפה, ירושלים"
+                meta={`יעזור להציג את העסק בצורה מדויקת יותר בגוגל ובכרטיס. נשארו ${remaining(BUSINESS_CITY_MAX, business.city || "")} תווים`}
             />
 
             <Input

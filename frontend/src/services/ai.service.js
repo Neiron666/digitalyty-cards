@@ -25,3 +25,15 @@ export async function fetchAiQuota(cardId, feature = "ai_about_generation") {
     });
     return res.data?.quota;
 }
+
+/**
+ * Request an AI-generated SEO title + description suggestion for a card.
+ *
+ * @param {string} cardId  Mongo _id of the card
+ * @param {{ mode?: "create"|"improve", language?: "he"|"en" }} payload
+ * @returns {Promise<{ suggestion: { seoTitle: string, seoDescription: string }, quota: object|undefined }>}
+ */
+export async function suggestSeo(cardId, payload) {
+    const res = await api.post(`/cards/${cardId}/ai/seo-suggestion`, payload);
+    return { suggestion: res.data?.suggestion, quota: res.data?.quota };
+}

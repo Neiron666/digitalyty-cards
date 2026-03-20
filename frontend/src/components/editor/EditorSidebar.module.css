@@ -7,8 +7,11 @@
 
 .title {
     font-weight: 800;
-    font-size: var(--fs-h6);
+    font-size: var(--fs-lg, 1.125rem);
     margin-bottom: 8px;
+    text-align: center;
+    text-decoration: underline var(--gold);
+    text-underline-offset: 4px;
 }
 
 .nav {

@@ -52,5 +52,5 @@
     margin-top: 2px;
     font-size: var(--fs-body-sm);
     color: var(--text-subtitle, rgba(234, 240, 255, 0.78));
-    text-align: end;
+    text-align: start;
 }

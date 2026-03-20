@@ -1,5 +1,6 @@
 export const BUSINESS_NAME_MAX = 60;
 export const BUSINESS_SUBTITLE_MAX = 80;
+export const BUSINESS_CITY_MAX = 40;
 export const BUSINESS_SLOGAN_MAX = 120;
 
 const ALLOWED_BUSINESS_KEYS = [
@@ -69,6 +70,11 @@ export function normalizeBusinessForWrite(business) {
             BUSINESS_SUBTITLE_MAX,
         );
         if (v !== undefined) next.occupation = v;
+    }
+
+    if (Object.prototype.hasOwnProperty.call(next, "city")) {
+        const v = normalizeBoundedString(next.city, BUSINESS_CITY_MAX);
+        if (v !== undefined) next.city = v;
     }
 
     if (Object.prototype.hasOwnProperty.call(next, "slogan")) {
