@@ -14,7 +14,7 @@ const SRC_DIR = path.join(BASE_DIR, "src");
 
 const STRICT = String(process.env.TYPO_STRICT || "").trim() === "1";
 
-/** @typedef {'FONT_SIZE_UNIT'|'FONT_SIZE_CLAMP'|'FONT_SIZE_CALC_NON_REM'|'FONT_SIZE_VAR_PX_FALLBACK'|'FONT_SIZE_NOT_VAR'|'FS_TOKEN_DISALLOWED'} ViolationType */
+/** @typedef {'FONT_SIZE_UNIT'|'FONT_SIZE_CLAMP'|'FONT_SIZE_CALC_NON_REM'|'FONT_SIZE_VAR_PX_FALLBACK'|'FONT_SIZE_NOT_VAR'|'FS_TOKEN_DISALLOWED'|'FS_TOKEN_SCOPE_LEAK'|'FS_TOKEN_UNDEFINED'|'FS_DEFINITION_INVENTED'} ViolationType */
 
 function walk(dirPath) {
     /** @type {string[]} */
@@ -64,6 +64,41 @@ function maskBlockComments(text) {
             .join(""),
     );
 }
+
+/* ── Semantic token governance ──────────────────────────── */
+
+function parseTokenDefs(filePath) {
+    const tokens = new Set();
+    if (!fs.existsSync(filePath)) {
+        console.error(`WARN: token SSoT file not found: ${filePath}`);
+        return tokens;
+    }
+    const raw = maskBlockComments(fs.readFileSync(filePath, "utf8"));
+    const re = /(--fs-[a-z0-9-]+)\s*:/gi;
+    let m;
+    while ((m = re.exec(raw)) !== null) tokens.add(m[1].toLowerCase());
+    return tokens;
+}
+
+function isCardScope(relPath) {
+    const p = relPath.replace(/\\/g, "/");
+    return (
+        p.startsWith("src/templates/") || p.startsWith("src/components/card/")
+    );
+}
+
+function isSSoTSource(relPath) {
+    const p = relPath.replace(/\\/g, "/");
+    return (
+        p === "src/styles/globals.css" ||
+        p === "src/templates/layout/CardLayout.module.css"
+    );
+}
+
+const appTokens = parseTokenDefs(path.join(SRC_DIR, "styles", "globals.css"));
+const cardTokens = parseTokenDefs(
+    path.join(SRC_DIR, "templates", "layout", "CardLayout.module.css"),
+);
 
 function hasDisallowedUnit(value) {
     const v = value.toLowerCase();
@@ -131,6 +166,21 @@ for (const rel of files) {
                 }
             }
 
+            // Semantic: validate token name against scope allowlist
+            if (!isCardScope(rel) && !isSSoTSource(rel)) {
+                const tokenMatch = value.match(/var\(\s*(--fs-[a-z0-9-]+)/i);
+                if (tokenMatch) {
+                    const name = tokenMatch[1].toLowerCase();
+                    if (!appTokens.has(name)) {
+                        types.push(
+                            cardTokens.has(name)
+                                ? "FS_TOKEN_SCOPE_LEAK"
+                                : "FS_TOKEN_UNDEFINED",
+                        );
+                    }
+                }
+            }
+
             for (const type of types) {
                 violations.push({
                     type,
@@ -163,6 +213,19 @@ for (const rel of files) {
                     excerpt: `${tokenName}: ${lineExcerpt(original, idx)}`,
                 });
             }
+
+            // Semantic: detect invented token definitions
+            if (!isSSoTSource(rel)) {
+                const name = tokenName.toLowerCase();
+                if (!appTokens.has(name) && !cardTokens.has(name)) {
+                    violations.push({
+                        type: "FS_DEFINITION_INVENTED",
+                        file: rel,
+                        line: lineOfIndex(original, idx),
+                        excerpt: `${tokenName}: ${lineExcerpt(original, idx)}`,
+                    });
+                }
+            }
         }
     }
 }
@@ -175,6 +238,9 @@ const counts = {
     FONT_SIZE_VAR_PX_FALLBACK: 0,
     FONT_SIZE_NOT_VAR: 0,
     FS_TOKEN_DISALLOWED: 0,
+    FS_TOKEN_SCOPE_LEAK: 0,
+    FS_TOKEN_UNDEFINED: 0,
+    FS_DEFINITION_INVENTED: 0,
 };
 
 for (const v of violations) counts[v.type]++;

@@ -57,6 +57,15 @@ We use **one shared token schema** (same token names everywhere) but we have **t
 - Prevents accidental global typography changes (admin/editor/marketing) from changing public cards.
 - Makes the card renderer stable and tenant-safe across product evolution.
 
+### 2.2 Governance: scope & naming
+
+- **App typography SSoT:** `frontend/src/styles/globals.css` `#root {}` — canonical source of approved app tokens.
+- **Card typography SSoT:** `frontend/src/templates/layout/CardLayout.module.css` `.root {}` — canonical source of approved card tokens.
+- **Cross-scope leakage forbidden:** app-context CSS must not consume card-only tokens (e.g. `--fs-14`, `--fs-h1`). Card-context CSS must not depend on app-only tokens (e.g. `--fs-hero-title`).
+- **Invented token names forbidden:** only SSoT source files may introduce new `--fs-*` names. Page-local and shared CSS consume tokens; they do not create new ones. Local override of an existing approved token name (same name, different value) is permitted.
+- **Approved token source matters as much as token format:** a correctly formatted `var(--fs-*)` usage is still a violation if the token name does not exist in the relevant scope's SSoT.
+- **Enforcement:** `check:typography` validates both format compliance and semantic/scope validity (report-only by default).
+
 ---
 
 ## 3) Card Typography Boundary Contract

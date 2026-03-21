@@ -419,128 +419,11 @@
    SECTIONS — Post-hero page body
    ══════════════════════════════════════════════════════════ */
 
-/* ── Shared section shells ──────────────────────────────── */
+/* ── Section shells + text helpers + headings:
+   Extracted to styles/public-sections.module.css ──────── */
 
-.sectionLight {
-    position: relative;
-    background: #f8fafc;
-    color: #020617;
-    padding: 3.5rem 0;
-    overflow: hidden;
-}
-
-.sectionLight::before {
-    content: "";
-    position: absolute;
-    top: 0;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 140px;
-    height: 2px;
-    border-radius: 999px;
-    background: linear-gradient(
-        90deg,
-        transparent 0%,
-        rgba(212, 175, 55, 0.18) 12%,
-        var(--gold) 50%,
-        rgba(212, 175, 55, 0.18) 88%,
-        transparent 100%
-    );
-    box-shadow: 0 0 10px rgba(212, 175, 55, 0.25);
-    z-index: 2;
-    pointer-events: none;
-}
-
-.sectionDark {
-    background: #020617;
-    color: #f8fafc;
-    padding: 3.5rem 0;
-    position: relative;
-}
-
-.sectionWrap {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    width: 95%;
-    max-width: 65rem;
-    margin: 0 auto;
-    text-align: center;
-    border: 1px solid var(--gold);
-    border-radius: var(--radius-lg);
-    padding: 30px 20px 24px;
-}
-
-/* ── Headings ───────────────────────────────────────────── */
-
-.goldHilight {
-    background: linear-gradient(
-        105deg,
-        #d4af37 0%,
-        #d4af37 35%,
-        #ffeaa7 50%,
-        #d4af37 65%,
-        #d4af37 100%
-    );
-    background-size: 300% auto;
-    -webkit-background-clip: text;
-    background-clip: text;
-    -webkit-text-fill-color: transparent;
-    filter: drop-shadow(0 1px 2px rgba(212, 175, 55, 0.18));
-}
-
-.goldUnderline {
-    text-decoration: underline var(--gold) 1px;
-    text-underline-offset: 6px;
-}
-
-.boldTxt {
-    font-weight: 700;
-}
-
-.h2Gold {
-    align-self: center;
-    font-size: var(--fs-h2);
-    font-weight: 900;
-    margin: 0 0 0.75rem;
-    background: linear-gradient(
-        105deg,
-        #8b6914 0%,
-        #d4af37 35%,
-        #ffeaa7 50%,
-        #d4af37 65%,
-        #8b6914 100%
-    );
-    background-size: 300% auto;
-    -webkit-background-clip: text;
-    background-clip: text;
-    -webkit-text-fill-color: transparent;
-    filter: drop-shadow(0 1px 2px rgba(139, 105, 20, 0.18));
-}
-
-.h2Gold span {
-    display: block;
-    font-size: var(--fs-h4);
-    background: none;
-    -webkit-text-fill-color: var(--card-text); /* ← сброс наследования */
-    text-decoration: underline var(--gold) 2px;
-    text-underline-offset: 6px;
-}
-
-.h2White {
-    font-size: var(--fs-h2);
-    font-weight: 900;
-    margin: 0 0 0.75rem;
-    color: #ffffff;
-}
-
-.sectionLead {
-    font-size: var(--fs-body-lg);
-    line-height: 1.8;
-    color: #334155;
-    /* max-width: 40rem; */
-    margin-bottom: 2.5rem;
-}
+/* h2Gold, h2Gold span, h2White, sectionLead:
+   Extracted to styles/public-sections.module.css */
 
 .analyticsLeadBrand {
     font-weight: 900;
@@ -556,13 +439,7 @@
     text-underline-offset: 4px;
 }
 
-.sectionLeadLight {
-    font-size: var(--fs-body-lg);
-    line-height: 1.8;
-    color: rgba(255, 255, 255, 0.72);
-    max-width: 40rem;
-    margin-bottom: 2.5rem;
-}
+/* sectionLeadLight: Extracted to styles/public-sections.module.css */
 
 /* ── 1. Mini-site / Presence ────────────────────────────── */
 
@@ -643,29 +520,7 @@
     color: var(--gold);
 }
 
-.highlight {
-    margin-top: 0.5rem;
-    padding: 1.5rem 2rem;
-    border-radius: 1rem;
-    font-weight: 800;
-    color: #0f172a;
-    font-size: var(--fs-body-sm);
-    line-height: 1.7;
-    background: linear-gradient(
-        135deg,
-        rgba(212, 175, 55, 0.14) 0%,
-        rgba(212, 175, 55, 0.05) 100%
-    );
-    border-inline-start: 3px solid var(--gold);
-    border-top: 1px solid rgba(212, 175, 55, 0.2);
-    border-bottom: 1px solid rgba(212, 175, 55, 0.2);
-    border-inline-end: 1px solid rgba(212, 175, 55, 0.2);
-    box-shadow:
-        0 6px 24px rgba(212, 175, 55, 0.06),
-        inset 0 1px 0 rgba(255, 255, 255, 0.6);
-    letter-spacing: 0.01em;
-    /* max-width: 40rem; */
-}
+/* highlight: Extracted to styles/public-sections.module.css */
 
 /* ── 1b. Phone-stage media composition ──────────────────── */
 
@@ -1338,9 +1193,6 @@
     /* aspect-ratio: 300 / 520; */
     object-fit: cover;
     border-radius: 0.875rem;
-    box-shadow:
-        0 12px 32px rgba(0, 0, 0, 0.3),
-        0 0 0 1px rgba(255, 255, 255, 0.06);
 }
 
 .templateCardName {
@@ -1475,79 +1327,7 @@
 
 /* ── 8. FAQ ─────────────────────────────────────────────── */
 
-.faq {
-    display: flex;
-    flex-direction: column;
-    gap: 0.625rem;
-    width: 100%;
-    max-width: 48rem;
-    text-align: start;
-}
-
-.qa {
-    border: 1px solid var(--gold-fade);
-    border-radius: var(--radius-md);
-    background: rgba(255, 255, 255, 0.03);
-    color: #f8fafc;
-    padding: 0.875rem 1rem;
-    transition: background 0.25s ease;
-}
-
-.qa[open] {
-    background: rgba(255, 255, 255, 0.055);
-}
-
-.qa summary {
-    cursor: pointer;
-    font-weight: 900;
-    color: #f8fafc;
-    font-size: var(--fs-body-sm);
-    list-style: none;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 0.75rem;
-}
-
-.qa summary::-webkit-details-marker {
-    display: none;
-}
-
-.qa summary::after {
-    content: "+";
-    font-size: var(--fs-body);
-    font-weight: 400;
-    color: rgba(212, 175, 55, 0.8);
-    transition: transform 0.3s ease;
-    flex-shrink: 0;
-}
-
-.qa[open] > summary::after {
-    transform: rotate(45deg);
-}
-
-.answer {
-    overflow: hidden;
-    max-height: 0;
-    opacity: 0;
-    transform: translateY(-0.5rem);
-    transition:
-        max-height 0.45s cubic-bezier(0.4, 0, 0.2, 1),
-        opacity 0.4s ease,
-        transform 0.4s ease,
-        margin-top 0.35s ease;
-    margin-top: 0;
-    color: var(--gold);
-    line-height: 1.8;
-    font-size: var(--fs-body-sm);
-}
-
-.qa[open] > .answer {
-    max-height: 20rem;
-    opacity: 1;
-    transform: translateY(0);
-    margin-top: 0.625rem;
-}
+/* faq, qa, answer: Extracted to styles/public-sections.module.css */
 
 /* ── 9. Final CTA ───────────────────────────────────────── */
 
@@ -1615,15 +1395,6 @@
    ══════════════════════════════════════════════════════════ */
 
 @media (min-width: 48rem) {
-    .sectionLight,
-    .sectionDark {
-        padding: 4.5rem 0;
-    }
-
-    .sectionWrap {
-        width: 88%;
-    }
-
     .conversionCard {
         flex: 1 1 calc((100% - 1.25rem) / 2);
     }
@@ -1746,11 +1517,6 @@
 }
 
 @media (min-width: 80rem) {
-    .sectionWrap {
-        width: 80%;
-        max-width: 95rem;
-    }
-
     .conversionCard {
         flex: 1 1 calc((100% - 3.75rem) / 4);
     }

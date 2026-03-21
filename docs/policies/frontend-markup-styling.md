@@ -94,6 +94,51 @@ If the task touches cards, also read:
 
 ---
 
+## 7A. Shared Public Marketing Styling Layer
+
+### What it is
+
+A shared CSS Module (`frontend/src/styles/public-sections.module.css`) that contains proven reusable section primitives for public marketing / SEO pages. It was introduced to reduce CSS duplication when multiple public pages (Home, `/cards`, future public pages) need the same structural patterns.
+
+### Layering model for public marketing pages
+
+| Layer                          | Source                                     | Purpose                                                                                          |
+| ------------------------------ | ------------------------------------------ | ------------------------------------------------------------------------------------------------ |
+| 1. Global token layer          | `globals.css`, `variables.module.css`      | Colors, radius, shadows, typography tokens (`--fs-*`, `--gold`, `--radius-*`, etc.)              |
+| 2. Shared public styling layer | `public-sections.module.css`               | Section shells, shared headings, lead text, callout/FAQ helpers — reusable across public pages   |
+| 3. Page-local CSS Module       | e.g. `Home.module.css`, `Cards.module.css` | Page-unique compositions, hero sections, motion-coupled layouts, page-specific showcase patterns |
+
+When working on a public marketing page, resolve styling in this order: global tokens → shared public module → page-local classes.
+
+### What belongs in the shared public layer
+
+- Section shell classes (light/dark background sections, section wrappers)
+- Shared section headings (gold/white heading styles)
+- Shared lead text classes
+- Lightweight text helpers (highlight callouts, bold/underline helpers)
+- FAQ accordion primitives
+- Only patterns that are **proven reusable** across two or more public pages
+
+### What does NOT belong in the shared public layer
+
+- Hero-specific composition (page-unique, stays page-local)
+- Motion-coupled layout patterns (tied to specific scroll/reveal hooks)
+- Page-unique showcase/gallery compositions
+- Editor-shell, preview wrapper, or card-boundary styles
+- Skins or token definitions
+- Admin/auth surface styles
+- Speculative "might be useful later" patterns
+
+### Governance rules
+
+- The shared public module **consumes** global tokens — it must not define new `--fs-*` or other design tokens.
+- Do not copy section primitives from `Home.module.css` if they already live in the shared module.
+- Adding a new class to the shared module requires proof that at least two public pages need it.
+- Do not turn this layer into a broad utility dump or pseudo design-system.
+- Boundary: public marketing pages only. Not for editor, preview, cards, admin, or auth.
+
+---
+
 ## 8. App vs Card Styling Boundary
 
 - App shell and public/admin/auth/marketing surfaces use app-global styling doctrine (this document).

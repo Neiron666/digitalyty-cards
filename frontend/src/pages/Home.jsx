@@ -11,6 +11,7 @@ import motion from "../styles/motion.module.css";
 import scroll from "../styles/motion-scroll.module.css";
 import useMotionReveal from "../hooks/useMotionReveal";
 import useScrollProgress from "../hooks/useScrollProgress";
+import pub from "../styles/public-sections.module.css";
 import styles from "./Home.module.css";
 import {
     GalleryIcon,
@@ -452,7 +453,7 @@ export default function Home() {
                         <h1 className={styles.h1}>
                             כרטיס ביקור דיגיטלי
                             <span
-                                className={`${styles.h1Accent} ${styles.goldUnderline}`}
+                                className={`${styles.h1Accent} ${pub.goldUnderline}`}
                             >
                                 שמביא יותר לקוחות
                             </span>
@@ -493,11 +494,11 @@ export default function Home() {
 
             {/* ── 1. MINI-SITE / BUSINESS PRESENCE ────────────── */}
             <section
-                className={`${styles.sectionLight} ${motion.fadeUp} ${motion.slow}  ${r1.isRevealed ? motion.isVisible : ""}`}
+                className={`${pub.sectionLight} ${motion.fadeUp} ${motion.slow}  ${r1.isRevealed ? motion.isVisible : ""}`}
                 ref={r1.ref}
             >
-                <div className={styles.sectionWrap}>
-                    <h2 className={styles.h2Gold}>
+                <div className={pub.sectionWrap}>
+                    <h2 className={pub.h2Gold}>
                         יותר מכרטיס ביקור
                         <span> העמוד העסקי שלכם שמוכן לשיתוף</span>
                     </h2>
@@ -548,7 +549,7 @@ export default function Home() {
                         ועוד הרבה פיצ'רים נוספים&hellip;
                     </p>
 
-                    <div className={styles.highlight}>
+                    <div className={pub.highlight}>
                         {" "}
                         כרטיס ביקור דיגיטלי של{" "}
                         <span className={styles.presenceLeadBrand}>
@@ -562,26 +563,24 @@ export default function Home() {
 
             {/* ── 2. CONVERSION - FROM VIEW TO CONTACT ────────── */}
             <section
-                className={`${styles.sectionDark} ${motion.fadeUp} ${motion.slow}  ${r2.isRevealed ? motion.isVisible : ""}`}
+                className={`${pub.sectionDark} ${motion.fadeUp} ${motion.slow}  ${r2.isRevealed ? motion.isVisible : ""}`}
                 ref={r2.ref}
                 id="features"
             >
-                <div className={styles.sectionWrap}>
-                    <h2 className={styles.h2White}>
+                <div className={pub.sectionWrap}>
+                    <h2 className={pub.h2White}>
                         מכל צפייה לפנייה -{" "}
                         <span
-                            className={`${styles.goldHilight} ${styles.goldUnderline}`}
+                            className={`${pub.goldHilight} ${pub.goldUnderline}`}
                         >
                             בקליק אחד
                         </span>
                     </h2>
                     <p
-                        className={`${styles.sectionLeadLight} ${styles.goldUnderline}`}
+                        className={`${pub.sectionLeadLight} ${pub.goldUnderline}`}
                     >
                         כל כפתור בכרטיס מקרב הזדמנות ליצירת קשר
-                        <span
-                            className={`${styles.goldHilight} ${styles.boldTxt}`}
-                        >
+                        <span className={`${pub.goldHilight} ${pub.boldTxt}`}>
                             {" "}
                             אמיתית.
                         </span>{" "}
@@ -624,12 +623,12 @@ export default function Home() {
 
             {/* ── 3. ANALYTICS / KNOW WHAT WORKS ─────────────── */}
             <section
-                className={`${styles.sectionLight} ${styles.analyticsSection} ${motion.fadeUp} ${motion.slow}  ${r3.isRevealed ? motion.isVisible : ""}`}
+                className={`${pub.sectionLight} ${styles.analyticsSection} ${motion.fadeUp} ${motion.slow}  ${r3.isRevealed ? motion.isVisible : ""}`}
                 ref={r3.ref}
             >
-                <div className={styles.sectionWrap}>
-                    <h2 className={styles.h2Gold}>תדעו מה באמת מביא תוצאות</h2>
-                    <p className={styles.sectionLead}>
+                <div className={pub.sectionWrap}>
+                    <h2 className={pub.h2Gold}>תדעו מה באמת מביא תוצאות</h2>
+                    <p className={pub.sectionLead}>
                         {" "}
                         <strong className={styles.analyticsLeadBrand}>
                             Cardigo -
@@ -680,7 +679,7 @@ export default function Home() {
                         ))}
                     </div>
 
-                    <p className={styles.highlight}>
+                    <p className={pub.highlight}>
                         כל צפייה, כל לחיצה, כל מקור הגעה - הופך את הנתונים
                         לתובנות שנותנות לכם{" "}
                         <em className={styles.analyticsLeadPunch}>
@@ -696,15 +695,15 @@ export default function Home() {
 
             {/* ── 4. SHARE EVERYWHERE ─────────────────────────── */}
             <section
-                className={`${styles.sectionDark} ${motion.fadeUp}  ${motion.slow} ${r4.isRevealed ? motion.isVisible : ""}`}
+                className={`${pub.sectionDark} ${motion.fadeUp}  ${motion.slow} ${r4.isRevealed ? motion.isVisible : ""}`}
                 ref={r4.ref}
             >
-                <div className={styles.sectionWrap}>
-                    <h2 className={styles.h2White}>
+                <div className={pub.sectionWrap}>
+                    <h2 className={pub.h2White}>
                         {" "}
                         שתפו בכל מקום{" "}
                         <span
-                            className={`${styles.h2Gold} ${styles.goldUnderline} ${styles.strongerUnderline}`}
+                            className={`${pub.h2Gold} ${pub.goldUnderline} ${styles.strongerUnderline}`}
                         >
                             בקלות
                         </span>
@@ -773,11 +772,11 @@ export default function Home() {
 
             {/* ── 5. EDITABILITY / CONTROL 24/7 ──────────────── */}
             <section
-                className={`${styles.sectionLight} ${motion.fadeUp}  ${motion.slow} ${r5.isRevealed ? motion.isVisible : ""}`}
+                className={`${pub.sectionLight} ${motion.fadeUp}  ${motion.slow} ${r5.isRevealed ? motion.isVisible : ""}`}
                 ref={r5.ref}
             >
-                <div className={styles.sectionWrap}>
-                    <h2 className={styles.h2Gold}>תעדכנו בעצמכם - 24/7</h2>
+                <div className={pub.sectionWrap}>
+                    <h2 className={pub.h2Gold}>תעדכנו בעצמכם - 24/7</h2>
 
                     <ul className={styles.editChecklist}>
                         <li className={styles.editCheckItem}>
@@ -868,7 +867,7 @@ export default function Home() {
                             </div>
                         ))}
                     </div>
-                    <p className={styles.highlight}>
+                    <p className={pub.highlight}>
                         שנו מספר טלפון, החליפו עיצוב, עדכנו תמונות - הכל דרך
                         האזור האישי , מכל מכשיר, בלי לחכות לאף אחד.
                     </p>
@@ -877,26 +876,24 @@ export default function Home() {
 
             {/* ── 6. TEMPLATES / DESIGN ──────────────────────── */}
             <section
-                className={`${styles.sectionDark} ${motion.fadeUp}  ${motion.slow} ${r6.isRevealed ? motion.isVisible : ""}`}
+                className={`${pub.sectionDark} ${motion.fadeUp}  ${motion.slow} ${r6.isRevealed ? motion.isVisible : ""}`}
                 ref={r6.ref}
                 id="templates"
             >
-                <div className={styles.sectionWrap}>
-                    <h2 className={styles.h2White}>
+                <div className={pub.sectionWrap}>
+                    <h2 className={pub.h2White}>
                         בחרו עיצוב שמתאים{" "}
-                        <span
-                            className={`${styles.h2Gold} ${styles.goldUnderline}`}
-                        >
+                        <span className={`${pub.h2Gold} ${pub.goldUnderline}`}>
                             לעסק שלכם
                         </span>
                     </h2>
-                    <p className={styles.sectionLeadLight}>
+                    <p className={pub.sectionLeadLight}>
                         יש לכם מבחר תבניות מוכנות, שנראות טוב מההתחלה ועובדות
                         מצוין גם בטלפון. פשוט בוחרים סגנון שמרגיש נכון לעסק
                         שלכם.
                     </p>
                     <p
-                        className={`${styles.sectionLeadLight} ${styles.goldHilight} ${styles.boldTxt}`}
+                        className={`${pub.sectionLeadLight} ${pub.goldHilight} ${pub.boldTxt}`}
                     >
                         הנה כמה מהתבניות לדוגמא&hellip;
                     </p>
@@ -938,12 +935,12 @@ export default function Home() {
 
             {/* ── 7. HOW IT WORKS (3 steps) ──────────────────── */}
             <section
-                className={`${styles.sectionLight} ${motion.fadeUp}  ${motion.slow} ${r7.isRevealed ? motion.isVisible : ""}`}
+                className={`${pub.sectionLight} ${motion.fadeUp}  ${motion.slow} ${r7.isRevealed ? motion.isVisible : ""}`}
                 ref={r7.ref}
                 id="how"
             >
-                <div className={styles.sectionWrap}>
-                    <h2 className={styles.h2Gold}>שלושה צעדים - וזה עובד</h2>
+                <div className={pub.sectionWrap}>
+                    <h2 className={pub.h2Gold}>שלושה צעדים - וזה עובד</h2>
 
                     <div className={styles.steps} ref={stepsScroll.ref}>
                         {STEPS.map((s) => (
@@ -983,13 +980,13 @@ export default function Home() {
                 className={`${styles.ctaSection} ${motion.fadeUp}  ${motion.slow} ${r9.isRevealed ? motion.isVisible : ""}`}
                 ref={r9.ref}
             >
-                <div className={styles.sectionWrap}>
+                <div className={pub.sectionWrap}>
                     <div className={styles.ctaInner}>
                         <h2 className={styles.ctaTitle}>
                             {" "}
                             צרו כרטיס ביקור דיגיטלי{" "}
                             <span
-                                className={`${styles.goldHilight} ${styles.goldUnderline}`}
+                                className={`${pub.goldHilight} ${pub.goldUnderline}`}
                             >
                                 שמביא יותר לקוחות!{" "}
                             </span>
@@ -997,7 +994,7 @@ export default function Home() {
                         <p className={styles.ctaText}>
                             יוצרים, משתפים ומעדכנים בקלות - עם{" "}
                             <span
-                                className={`${styles.goldHilight} ${styles.goldUnderline} ${styles.boldTxt}`}
+                                className={`${pub.goldHilight} ${pub.goldUnderline} ${pub.boldTxt}`}
                             >
                                 Cardigo
                             </span>
@@ -1031,15 +1028,15 @@ export default function Home() {
             </section>
 
             {/* ── 9. FAQ (expanded) ──────────────────────────── */}
-            <section className={styles.sectionDark} id="faq">
-                <div className={styles.sectionWrap}>
-                    <h2 className={styles.h2Gold}>שאלות נפוצות</h2>
+            <section className={pub.sectionDark} id="faq">
+                <div className={pub.sectionWrap}>
+                    <h2 className={pub.h2Gold}>שאלות נפוצות</h2>
 
-                    <div className={styles.faq}>
+                    <div className={pub.faq}>
                         {HOME_FAQ.map((item, i) => (
-                            <details key={i} className={styles.qa}>
+                            <details key={i} className={pub.qa}>
                                 <summary>{item.q}</summary>
-                                <div className={styles.answer}>{item.a}</div>
+                                <div className={pub.answer}>{item.a}</div>
                             </details>
                         ))}
                     </div>

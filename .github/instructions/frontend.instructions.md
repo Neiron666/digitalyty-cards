@@ -376,6 +376,15 @@ no calc() using non-rem font-size composition
 
 Do not introduce literal font sizes into component styles.
 
+Approved token scope rule:
+
+- `var(--fs-*)` means only **approved existing** tokens from the relevant canonical SSoT scope
+- app / public / auth / admin / site-shell surfaces: only tokens defined in `frontend/src/styles/globals.css` `#root {}`
+- card-boundary surfaces (`src/templates/`): only tokens from `frontend/src/templates/layout/CardLayout.module.css`
+- page-local and shared CSS **consume** tokens — they must not invent new `--fs-*` names
+- card-scope tokens (e.g. `--fs-14`, `--fs-16`, `--fs-h1`) must not leak into app-context CSS
+- `check:typography` enforces both format and semantic/scope validity
+
 4.5 App typography and card typography are different scopes
 
 Typography for app-shell and card-boundary must stay isolated.
@@ -387,6 +396,22 @@ do not solve app typography by touching card-boundary tokens
 do not casually modify card typography architecture in shared layout files
 
 Card-boundary typography is sensitive and high-blast-radius.
+
+4.6 Shared public styling layer
+
+Public marketing / SEO pages (Home, /cards, future public pages) share a common styling layer:
+
+`frontend/src/styles/public-sections.module.css`
+
+Rules:
+
+when building or modifying a public marketing page, check the shared public module first for reusable section primitives before creating page-local classes
+global token layer (`globals.css`, `variables.module.css`) remains SSoT for colors, radius, shadows, and typography tokens — the shared public module consumes tokens, it does not define them
+page-local CSS is allowed only after confirming no suitable class exists in global tokens + shared public module
+do not copy public section primitives from `Home.module.css` if they already exist in the shared module
+the shared public module is NOT for editor-shell, preview wrapper, card-boundary, admin, or auth surfaces
+do not turn the shared public module into a broad utility dump or pseudo design-system
+if a new reusable pattern is genuinely needed by two or more public pages, first prove boundary and reuse value in audit, then add to the shared module
 
 5) Mandatory Pre-Read Before Frontend Markup / Styling Work
 

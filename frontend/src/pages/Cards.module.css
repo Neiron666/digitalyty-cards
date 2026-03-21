@@ -1,16 +1,198 @@
-.seo {
-    border-top: 1px solid var(--border);
-    padding-top: 26px;
+/* ══════════════════════════════════════════════════════════
+   Cards page — /cards (demo showcase)
+   Hero composition + preserved SEO text block.
+   Shared layer: pub.sectionDark, pub.sectionWrap,
+                 pub.sectionLeadLight, pub.sectionLight
+   ══════════════════════════════════════════════════════════ */
+
+/* ── Hero composition (extends pub.sectionWrap) ──────── */
+
+.heroWrap {
+    background: rgba(2, 6, 23, 0.35);
+    backdrop-filter: blur(14px);
+    gap: 1.5rem;
 }
 
-.seo h2 {
+.heroCopy {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+}
+
+.kicker {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.5rem 1.25rem;
+    border-radius: 999px;
+    font-size: var(--fs-body-sm);
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    color: var(--gold);
+    border: 1px solid rgba(212, 175, 55, 0.25);
+    background: rgba(212, 175, 55, 0.06);
+}
+
+.h1 {
+    font-size: var(--fs-hero-title);
+    font-weight: 900;
+    line-height: 1.2;
+    color: #ffffff;
+    margin: 0;
+}
+
+.h1::after {
+    content: "";
+    display: block;
+    margin-top: 1rem;
+    width: 100px;
+    height: 2px;
+    margin-inline: auto;
+    border-radius: 999px;
+    background: linear-gradient(
+        90deg,
+        transparent 0%,
+        rgba(212, 175, 55, 0.3) 15%,
+        var(--gold) 50%,
+        rgba(212, 175, 55, 0.3) 85%,
+        transparent 100%
+    );
+    box-shadow: 0 0 10px rgba(212, 175, 55, 0.2);
+}
+
+/* ── Hero actions ───────────────────────────────────── */
+
+.heroActions {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    width: 100%;
+    max-width: 22rem;
+}
+
+.heroCta {
+    background: linear-gradient(135deg, #d4af37 0%, #c5962c 40%, #e6c44d 100%);
+    color: #0f172a;
+    border: none;
+}
+
+.heroCta:hover {
+    transform: translateY(-2px) scale(1.03);
+    color: var(--global-white-text);
+}
+
+.heroCta:active {
+    transform: translateY(0) scale(0.99);
+}
+
+/* ── Hero visual cluster ─────────────────────────────── */
+
+.heroVisual {
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    gap: 0.75rem;
+    width: 100%;
+    padding-block: 0.5rem 0;
+}
+
+.previewCard {
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.375rem;
+    flex-shrink: 0;
+}
+
+.previewMain {
+    z-index: 2;
+}
+
+.previewMain .previewImg {
+    width: clamp(110px, 24vw, 220px);
+    box-shadow:
+        0 20px 40px rgba(0, 0, 0, 0.3),
+        0 6px 16px rgba(0, 0, 0, 0.15);
+}
+
+.previewSide {
+    z-index: 1;
+}
+
+.previewSide .previewImg {
+    width: clamp(80px, 17vw, 170px);
+    opacity: 0.85;
+}
+
+.previewSide:first-child {
+    transform: rotate(3deg) translateY(0.5rem);
+}
+
+.previewSide:last-child {
+    transform: rotate(-3deg) translateY(0.5rem);
+}
+
+.previewImg {
+    display: block;
+    height: auto;
+    border-radius: clamp(8px, 1vw, 14px);
+    object-fit: cover;
+    box-shadow:
+        0 12px 32px rgba(0, 0, 0, 0.2),
+        0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.previewNiche {
+    font-size: var(--fs-ui);
+    color: rgba(212, 175, 55, 0.85);
+    font-weight: 600;
+}
+
+/* ── Hero note ──────────────────────────────────────── */
+
+.heroNote {
+    font-size: var(--fs-body-sm);
+    color: rgba(255, 255, 255, 0.45);
+    margin: 0;
+}
+
+/* ── SEO text block (temporary, preserved from MVP) ─── */
+
+.seoWrap {
+    width: 95%;
+    max-width: 65rem;
+    margin: 0 auto;
+    padding: 0 1.25rem;
+}
+
+.seoHeading {
     font-size: var(--fs-h4);
     font-weight: 900;
-    margin-bottom: 8px;
+    margin-bottom: 0.5rem;
 }
 
-.seo p {
+.seoText {
     color: var(--text-muted);
     line-height: 1.8;
-    margin-bottom: 10px;
+    margin-bottom: 0.625rem;
+}
+
+/* ── Responsive ─────────────────────────────────────── */
+
+@media (min-width: 48rem) {
+    .heroWrap {
+        gap: 2rem;
+    }
+
+    .heroActions {
+        flex-direction: row;
+        justify-content: center;
+        max-width: none;
+    }
+
+    .heroCta,
+    .heroSecondary {
+        width: auto;
+    }
 }
