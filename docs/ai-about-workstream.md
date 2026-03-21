@@ -1,6 +1,6 @@
-# About AI — Workstream Technical Handoff
+# AI Workstream — Technical Handoff
 
-> Internal engineering/product handoff for the AI-powered About section feature in Cardigo.
+> Internal engineering/product handoff for AI-powered content generation features in Cardigo.
 
 ---
 
@@ -8,22 +8,27 @@
 
 ### What exists
 
-Cardigo now includes an AI-powered content generation feature for the **About section** of digital business cards. Authenticated card owners can request AI-generated suggestions for their card's About block — either as a full block, title-only, or single-paragraph — directly from the card editor.
+Cardigo includes AI-powered content generation across three editor surfaces:
+
+| Surface | Feature key | Endpoint | Status |
+| ------- | ----------- | -------- | ------ |
+| **About / Content AI** | `ai_about_generation` | `POST /api/cards/:id/ai/about-suggestion` | Shipped |
+| **FAQ AI (V1)** | `ai_faq_generation` | `POST /api/cards/:id/ai/faq-suggestion` | Shipped |
+| **SEO / Scripts AI** | `ai_seo_generation` | `POST /api/cards/:id/ai/seo-suggestion` | Shipped |
+
+All three surfaces share a **single monthly AI generation budget** per user (see §5 Quota Policy). Each surface has its own feature flag, endpoint, and telemetry bucket, but the user-facing quota counter is unified.
 
 ### What it does for the user
 
-- Generates professional About section content in Hebrew (default) or English.
-- Supports **create** (from scratch) and **improve** (rewrite existing content) modes at the API level. The current frontend exposes the full-block CTA as create-only (visible only when the About section is empty); improve mode is user-facing through per-field point-actions (title, paragraph).
-- Offers **granular targeting**: generate the entire About block, just the title, or a specific paragraph.
-- Shows a preview of the AI suggestion before the user applies it.
-- Tracks and displays monthly usage quota so users know how many generations remain.
-- Requires business name and category to be filled before AI generation is available (frontend readiness + server-side enforcement).
+- **About AI**: Generates professional About section content (full block, title-only, or single paragraph) in Hebrew or English. Supports create and improve modes.
+- **FAQ AI (V1)**: Generates FAQ question-and-answer pairs for business cards. V1 is full generation only, available only when FAQ items are empty.
+- **SEO AI**: Generates SEO title and description for the card.
+- All surfaces show a read-only preview before the user applies or dismisses.
+- A shared monthly usage counter is displayed so users know how many AI generations remain across all surfaces.
+- All surfaces require business name and category to be filled before AI generation is available (frontend readiness + server-side enforcement).
 
 ### Intentionally out of scope
 
-- FAQ generation (future workstream).
-- SEO meta/description generation (future workstream).
-- Non-About content AI features.
 - Anonymous/unauthenticated AI generation.
 - Admin-facing AI analytics dashboard.
 - Multi-language beyond Hebrew and English.
@@ -78,9 +83,11 @@ When a paragraph is deleted from the editor:
 
 ### 2.6 Quota visibility
 
-- On component mount, the frontend fetches the current quota via `GET /api/cards/:id/ai/quota`.
+- On component mount, each AI panel fetches the current quota via `GET /api/cards/:id/ai/quota?feature=<feature_key>`.
+- The returned quota DTO reflects the **shared budget** across all surfaces (`quotaScope: "shared_generation"`). The `featureEnabled` field is specific to the requested feature.
 - After every successful generation or quota-related error, the returned `quota` DTO is used to update the displayed usage.
-- When `remaining <= 0`, generation buttons are disabled.
+- When `remaining <= 0`, generation buttons are disabled across all AI panels.
+- The shared `AiQuotaHint` component displays: "נותרו X/Y הצעות AI החודש".
 
 ### 2.7 Consent / Disclosure
 
@@ -94,12 +101,16 @@ When a paragraph is deleted from the editor:
 
 ### 3.1 Endpoints
 
-| Method | Path                                                  | Auth          | Handler        |
-| ------ | ----------------------------------------------------- | ------------- | -------------- |
-| POST   | `/api/cards/:id/ai/about-suggestion`                  | `requireAuth` | `suggestAbout` |
-| GET    | `/api/cards/:id/ai/quota?feature=ai_about_generation` | `requireAuth` | `getAiQuota`   |
+| Method | Path                                              | Auth          | Handler        | Surface |
+| ------ | ------------------------------------------------- | ------------- | -------------- | ------- |
+| POST   | `/api/cards/:id/ai/about-suggestion`              | `requireAuth` | `suggestAbout` | About   |
+| POST   | `/api/cards/:id/ai/seo-suggestion`                | `requireAuth` | `suggestSeo`   | SEO     |
+| POST   | `/api/cards/:id/ai/faq-suggestion`                | `requireAuth` | `suggestFaq`   | FAQ     |
+| GET    | `/api/cards/:id/ai/quota?feature=<feature_key>`   | `requireAuth` | `getAiQuota`   | Shared  |
 
 Routes are defined in `backend/src/routes/ai.routes.js` and mounted on the `/api/cards` router in `backend/src/app.js`.
+
+The quota endpoint accepts any of the three feature keys (`ai_about_generation`, `ai_seo_generation`, `ai_faq_generation`) in the `feature` query parameter. The returned quota DTO always reflects the **shared budget** (all surfaces combined) via `quotaScope: "shared_generation"`; `featureEnabled` is specific to the requested feature.
 
 ### 3.2 Request contract (POST suggest)
 
@@ -193,15 +204,20 @@ The `suggestAbout` handler follows this exact sequence:
 - **Sweep**: Every 200 requests, expired entries are cleaned up. If map exceeds 5,000 entries, oldest 1,000 are evicted.
 - **Not persisted**: Resets on server restart. This is intentional — the daily limiter is a safety rail, not a product feature. The monthly quota is the product-visible limit.
 
-### 3.7 Monthly product quota
+### 3.7 Monthly product quota (shared budget)
+
+All three AI generation surfaces (About, FAQ, SEO) share a **single monthly AI budget** per user. This is the canonical product policy.
 
 - **Type**: Persistent in MongoDB via `AiUsageMonthly` model.
-- **Feature key**: `ai_about_generation`.
+- **Scope**: Shared across all generation features. Constants: `AI_GENERATION_FEATURES = [ai_about_generation, ai_seo_generation, ai_faq_generation]`.
+- **Enforcement**: `readTotalMonthlyUsage(userId, periodKey)` aggregates `$sum` of `count` across all feature rows for the user's current month.
 - **Period**: UTC month in `YYYY-MM` format.
-- **Limits**: Free = 10/month, Premium = 50/month.
+- **Limits**: Free = **10**/month, Premium = **30**/month — shared across all AI surfaces.
 - **Counting**: Success-only — only incremented after a successful Gemini response (step 10). Failed requests, validation errors, and rate-limit hits do not consume quota.
+- **Per-feature telemetry**: Each successful generation increments the feature-specific `AiUsageMonthly` row (`incrementMonthlyUsage(userId, feature, periodKey)`). This preserves per-surface telemetry while the user-facing budget is shared.
 - **Atomic increment**: Uses `findOneAndUpdate` with `$inc` and `upsert: true`.
 - **Accounting failure tolerance**: If the increment operation fails, the user still receives their suggestion. A console error is logged but the response is not blocked.
+- **DTO**: The quota response includes `quotaScope: "shared_generation"` so the frontend knows this is a unified counter.
 
 ### 3.8 Provider quota distinction
 
@@ -256,11 +272,15 @@ The Gemini integration uses target-specific output budgets, structured JSON sche
 
 ### 4.1 Key files
 
-| File                                                            | Responsibility                                                                         |
-| --------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
-| `frontend/src/services/ai.service.js`                           | HTTP client: `suggestAbout(cardId, payload)` and `fetchAiQuota(cardId, feature)`       |
-| `frontend/src/components/editor/panels/ContentPanel.jsx`        | Editor panel: AI state machine, consent modal, preview/apply/dismiss UX, error mapping |
-| `frontend/src/components/editor/panels/ContentPanel.module.css` | CSS Module styles for AI preview, buttons, consent modal                               |
+| File                                                            | Responsibility                                                                              |
+| --------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| `frontend/src/services/ai.service.js`                           | HTTP client: `suggestAbout`, `suggestSeo`, `suggestFaq`, `fetchAiQuota`                     |
+| `frontend/src/components/editor/panels/ContentPanel.jsx`        | About AI: state machine, consent, preview/apply/dismiss, error mapping                      |
+| `frontend/src/components/editor/panels/ContentPanel.module.css` | CSS Module styles for About AI preview, buttons, consent modal                              |
+| `frontend/src/components/editor/panels/SeoPanel.jsx`            | SEO AI: generation trigger, preview/apply/dismiss                                           |
+| `frontend/src/components/editor/panels/FaqPanel.jsx`            | FAQ AI: empty-state CTA, generation, preview/apply/dismiss                                  |
+| `frontend/src/components/editor/panels/AiQuotaHint.jsx`         | **Shared** AI quota hint component used by all three panels                                 |
+| `frontend/src/components/editor/panels/AiQuotaHint.module.css`  | CSS Module for the shared quota hint                                                        |
 
 ### 4.2 ContentPanel flow
 
@@ -279,9 +299,13 @@ The Gemini integration uses target-specific output budgets, structured JSON sche
 - `fetchAiQuota(cardId, feature)` — GET to `/cards/:id/ai/quota`, returns quota DTO.
 - Both use the shared `api` Axios instance which handles auth headers and base URL.
 
-### 4.4 Shared aiQuota state
+### 4.4 Shared AI quota display
 
-The `aiQuota` state is shared across the panel:
+The `AiQuotaHint` component is a shared React component imported by `ContentPanel`, `FaqPanel`, and `SeoPanel`. It renders a unified quota hint:
+
+> נותרו X/Y הצעות AI החודש
+
+The `aiQuota` state is shared across each panel:
 
 - Initialized on mount via `fetchAiQuota`.
 - Updated after every successful generation (from the response `quota` field).
@@ -362,16 +386,19 @@ This means: if a user starts a full-block AI flow and then types content into a 
 
 ## 5. Quota and Limiter Policy
 
-### 5.1 Monthly product quota
+### 5.1 Shared monthly AI budget
 
-| Tier    | Limit                | Period             |
-| ------- | -------------------- | ------------------ |
-| Free    | 10 generations/month | UTC calendar month |
-| Premium | 50 generations/month | UTC calendar month |
+All editor AI generation surfaces share one monthly budget per user.
 
-- Counts successful generations only.
-- Displayed to the user in real time.
+| Tier    | Shared limit         | Scope                          | Period             |
+| ------- | -------------------- | ------------------------------ | ------------------ |
+| Free    | 10 generations/month | About + FAQ + SEO combined     | UTC calendar month |
+| Premium | 30 generations/month | About + FAQ + SEO combined     | UTC calendar month |
+
+- Counts successful generations only (across all surfaces).
+- Displayed to the user in real time via a unified `AiQuotaHint` component.
 - Resets automatically at the start of each UTC month (new `periodKey`).
+- Per-feature `AiUsageMonthly` rows are preserved for internal telemetry; the user-facing counter is the shared total.
 
 ### 5.2 Daily anti-abuse rail
 
@@ -386,7 +413,7 @@ This means: if a user starts a full-block AI flow and then types content into a 
 
 ### 5.3 Why these are separate layers
 
-The **monthly quota** is the product-visible consumption limit — it protects against cost overrun and provides a clear UX contract ("you have N generations remaining").
+The **shared monthly budget** is the product-visible consumption limit — it protects against cost overrun and provides a clear UX contract (“you have N AI generations remaining this month”). The budget is shared across About, FAQ, and SEO surfaces so the user sees one simple counter.
 
 The **daily anti-abuse rail** is a defense-in-depth mechanism — it prevents a single user from exhausting their entire monthly quota in a burst or from scripting rapid-fire requests. It is intentionally set higher than the monthly quota to avoid interfering with normal usage.
 
@@ -438,9 +465,13 @@ The unique compound index `userId_1_feature_1_periodKey_1` is **live in producti
 
 | Variable           | Required                  | Default                 | Description                                                                    |
 | ------------------ | ------------------------- | ----------------------- | ------------------------------------------------------------------------------ |
-| `AI_ABOUT_ENABLED` | Yes (for feature to work) | `false`                 | Feature flag. Accepts `1`, `true`, `on`, `yes` (case-insensitive).             |
+| `AI_ABOUT_ENABLED` | Yes (for About AI)        | `false`                 | Feature flag for About AI. Accepts `1`, `true`, `on`, `yes` (case-insensitive). |
+| `AI_FAQ_ENABLED`   | Yes (for FAQ AI)          | `false`                 | Feature flag for FAQ AI. Same accepted values as above.                         |
+| `AI_SEO_ENABLED`   | Yes (for SEO AI)          | `false`                 | Feature flag for SEO AI. Same accepted values as above.                         |
 | `GEMINI_API_KEY`   | Yes (for generation)      | —                       | Google AI API key for Gemini access. Missing key → `AI_UNAVAILABLE`.           |
 | `GEMINI_MODEL`     | No                        | `gemini-2.5-flash-lite` | Model name. Must be in allowlist: `gemini-2.5-flash-lite`, `gemini-2.5-flash`. |
+
+Each AI surface is independently toggleable. Disabling a flag returns 503 `AI_DISABLED` for that surface only; the other surfaces remain unaffected.
 
 ### 7.2 Backend runtime assumptions
 
@@ -496,19 +527,71 @@ The unique compound index `userId_1_feature_1_periodKey_1` is **live in producti
 
 ---
 
-## 10. Future Work
+## 10. FAQ AI V1
+
+Shipped as a separate bounded workstream with its own endpoint, feature flag, and telemetry bucket.
+
+### 10.1 Scope (V1)
+
+- **Target**: `full` only — generates the entire FAQ block. No single-item or per-field targeting.
+- **Empty-state only**: Generation is available only when the card has no valid FAQ items (both `q` and `a` must be non-empty for an item to count). If valid items exist, the backend returns 409 `AI_FAQ_NOT_EMPTY`.
+- **`faq.items` only**: AI generates only the `items` array (question/answer pairs). The card's `faq.title` and `faq.lead` are preserved and never overwritten by AI.
+- **Bounded output**: The Gemini schema constrains output to a maximum of **3** Q&A items (`maxItems: 3`). Each question is capped at **120** chars, each answer at **700** chars — enforced both in the system instruction and by a post-Gemini normalizer (`q.slice(0, 120)`, `a.slice(0, 700)`). Items where either `q` or `a` is empty after trim are discarded.
+- **Anti-duplication**: Two layers — (1) the Gemini system instruction explicitly prohibits duplicate or near-identical questions ("Questions must be distinct from each other — no repeated or near-repeated questions"); (2) a programmatic post-Gemini deduplication pass via `normalizeQuestionKey(q)` (trim → collapse whitespace → lowercase) drops items whose normalized question key was already seen.
+
+### 10.2 UX flow
+
+1. FAQ section is empty → the editor panel shows an AI generation CTA.
+2. User clicks “Generate FAQ with AI” → loading state.
+3. On success → read-only preview of generated FAQ items.
+4. User can **Apply** (writes items into the card form) or **Dismiss** (discards).
+5. Apply resets the AI state machine to idle.
+
+### 10.3 Feature flag
+
+- `AI_FAQ_ENABLED` (env). When off → 503 `AI_DISABLED` for the FAQ endpoint only.
+
+### 10.4 Telemetry
+
+- Feature key: `ai_faq_generation`.
+- Per-feature `AiUsageMonthly` row is incremented on success.
+- User-facing budget is the shared monthly total (see §5.1).
+
+---
+
+## 11. SEO AI
+
+Shipped as a separate bounded workstream. Generates SEO title and description for the card.
+
+### 11.1 Scope
+
+- Generates `seoTitle` and `seoDescription`.
+- Available to authenticated card owners.
+- Same auth / ownership / org-gate posture as About AI.
+
+### 11.2 Feature flag
+
+- `AI_SEO_ENABLED` (env). When off → 503 `AI_DISABLED` for the SEO endpoint only.
+
+### 11.3 Telemetry
+
+- Feature key: `ai_seo_generation`.
+- Per-feature `AiUsageMonthly` row is incremented on success.
+- User-facing budget is the shared monthly total (see §5.1).
+
+---
+
+## 12. Future Work
 
 These are logical next steps. No design or implementation work has been started.
 
-- **FAQ AI generation**: Extend the same pattern to generate FAQ sections for business cards. Would reuse the quota model (new `feature` key), similar prompt architecture, and similar frontend state machine.
-
-- **SEO AI generation**: AI-assisted meta descriptions and SEO content, likely as a separate endpoint but sharing the same governance infrastructure.
-
 - **Broader AI runbook**: Operational documentation covering monitoring, cost tracking, API key rotation, and incident response for AI features.
+
+- **FAQ AI V2**: Incremental features such as single-item regeneration, improve mode for existing items, and per-item point-actions.
 
 - **Strict validation evolution**: The current `mode`/`language` defaulting may be tightened to strict rejection if new API consumers (CLI, third-party integrations) are introduced. This would be a backend change with minimal frontend impact since the current frontend always sends valid values.
 
-### 10.1 Optional low-priority refinements (not currently planned)
+### 12.1 Optional low-priority refinements (not currently planned)
 
 Identified during token economy audit. Not required for current operational posture:
 
@@ -517,4 +600,4 @@ Identified during token economy audit. Not required for current operational post
 
 ---
 
-_Document created as part of the About AI workstream closure. Updated to reflect current implementation state including readiness gate, outbound caps, bulk CTA semantics, and token economy posture. March 2026._
+_Document created as part of the About AI workstream closure. Updated to reflect current implementation state including all three AI surfaces (About, FAQ V1, SEO), shared monthly AI budget (free=10, premium=30), unified AiQuotaHint component, and feature flags. March 2026._

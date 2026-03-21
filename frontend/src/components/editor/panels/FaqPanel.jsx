@@ -371,7 +371,7 @@ export default function FaqPanel({
                                     }
                                     onClick={handleAiClick}
                                 >
-                                    הצע שאלות ותשובות עם AI
+                                    הצע 3 שאלות ותשובות עם AI
                                 </Button>
                                 <AiQuotaHint quota={aiQuota} />
                             </div>

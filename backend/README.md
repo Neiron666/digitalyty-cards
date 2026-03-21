@@ -17,6 +17,18 @@
 - `TRIAL_CLEANUP_INTERVAL_MS`: cleanup job schedule interval in ms (default: `3600000` = 1h).
 - `ANON_CARD_TTL_DAYS`: anonymous draft TTL by inactivity, based on `Card.updatedAt` (default: `14`).
 
+## AI Feature Flags
+
+Three independent feature flags control AI generation surfaces:
+
+| Variable           | Surface    | Default |
+| ------------------ | ---------- | ------- |
+| `AI_ABOUT_ENABLED` | About AI   | `false` |
+| `AI_FAQ_ENABLED`   | FAQ AI     | `false` |
+| `AI_SEO_ENABLED`   | SEO AI     | `false` |
+
+Each accepts `1`, `true`, `on`, `yes` (case-insensitive). When disabled, the respective endpoint returns 503 `AI_DISABLED`; other surfaces remain unaffected. Also requires `GEMINI_API_KEY` (and optionally `GEMINI_MODEL`). See `docs/ai-about-workstream.md` §7 for full details.
+
 ## Index Governance
 
 Runtime ≠ Sanity ≠ Migration:
