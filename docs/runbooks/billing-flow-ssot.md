@@ -39,17 +39,17 @@ All internal amounts are **integers in agorot** (1/100 of ₪). No floats anywhe
 
 ### Gated features (must-ship with payments)
 
-| Feature key    | Free  | Monthly | Yearly  | Org     |
-| -------------- | ----- | ------- | ------- | ------- |
-| `publish`      | ✗     | ✓       | ✓       | ✓       |
-| `seo`          | ✗     | ✓       | ✓       | ✓       |
-| `analytics`    | ✗     | ✓       | ✓       | ✓       |
-| `slugChange`   | ✗     | ✓       | ✓       | ✓       |
-| `leadForm`     | ✗     | ✓       | ✓       | ✓       |
-| `video`        | ✗     | ✓       | ✓       | ✓       |
-| `reviews`      | ✗     | ✓       | ✓       | ✓       |
-| `templates`    | `[1]` | `"all"` | `"all"` | `"all"` |
-| `galleryLimit` | 5     | 10      | 10      | 50      |
+| Feature key    | Free           | Monthly        | Yearly         | Org            |
+| -------------- | -------------- | -------------- | -------------- | -------------- |
+| `publish`      | ✗              | ✓              | ✓              | ✓              |
+| `seo`          | ✗              | ✓              | ✓              | ✓              |
+| `analytics`    | ✗              | ✓              | ✓              | ✓              |
+| `slugChange`   | ✗              | ✓              | ✓              | ✓              |
+| `leadForm`     | ✗              | ✓              | ✓              | ✓              |
+| `video`        | ✗              | ✓              | ✓              | ✓              |
+| `reviews`      | ✗              | ✓              | ✓              | ✓              |
+| `templates`    | `[1]`          | `"all"`        | `"all"`        | `"all"`        |
+| `galleryLimit` | 5              | 10             | 10             | 50             |
 | `aiGeneration` | 10/mo (shared) | 30/mo (shared) | 30/mo (shared) | 30/mo (shared) |
 
 > **AI quota note:** `aiGeneration` is a **shared monthly budget** across all AI surfaces (About, FAQ, SEO). The numbers above are the total per-user monthly limit, not per-surface. Enforcement: `backend/src/controllers/ai.controller.js` → `readTotalMonthlyUsage`. See `docs/ai-about-workstream.md` §5.1 for details.

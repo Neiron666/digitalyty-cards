@@ -10,11 +10,11 @@
 
 Cardigo includes AI-powered content generation across three editor surfaces:
 
-| Surface | Feature key | Endpoint | Status |
-| ------- | ----------- | -------- | ------ |
+| Surface                | Feature key           | Endpoint                                  | Status  |
+| ---------------------- | --------------------- | ----------------------------------------- | ------- |
 | **About / Content AI** | `ai_about_generation` | `POST /api/cards/:id/ai/about-suggestion` | Shipped |
-| **FAQ AI (V1)** | `ai_faq_generation` | `POST /api/cards/:id/ai/faq-suggestion` | Shipped |
-| **SEO / Scripts AI** | `ai_seo_generation` | `POST /api/cards/:id/ai/seo-suggestion` | Shipped |
+| **FAQ AI (V1)**        | `ai_faq_generation`   | `POST /api/cards/:id/ai/faq-suggestion`   | Shipped |
+| **SEO / Scripts AI**   | `ai_seo_generation`   | `POST /api/cards/:id/ai/seo-suggestion`   | Shipped |
 
 All three surfaces share a **single monthly AI generation budget** per user (see §5 Quota Policy). Each surface has its own feature flag, endpoint, and telemetry bucket, but the user-facing quota counter is unified.
 
@@ -101,12 +101,12 @@ When a paragraph is deleted from the editor:
 
 ### 3.1 Endpoints
 
-| Method | Path                                              | Auth          | Handler        | Surface |
-| ------ | ------------------------------------------------- | ------------- | -------------- | ------- |
-| POST   | `/api/cards/:id/ai/about-suggestion`              | `requireAuth` | `suggestAbout` | About   |
-| POST   | `/api/cards/:id/ai/seo-suggestion`                | `requireAuth` | `suggestSeo`   | SEO     |
-| POST   | `/api/cards/:id/ai/faq-suggestion`                | `requireAuth` | `suggestFaq`   | FAQ     |
-| GET    | `/api/cards/:id/ai/quota?feature=<feature_key>`   | `requireAuth` | `getAiQuota`   | Shared  |
+| Method | Path                                            | Auth          | Handler        | Surface |
+| ------ | ----------------------------------------------- | ------------- | -------------- | ------- |
+| POST   | `/api/cards/:id/ai/about-suggestion`            | `requireAuth` | `suggestAbout` | About   |
+| POST   | `/api/cards/:id/ai/seo-suggestion`              | `requireAuth` | `suggestSeo`   | SEO     |
+| POST   | `/api/cards/:id/ai/faq-suggestion`              | `requireAuth` | `suggestFaq`   | FAQ     |
+| GET    | `/api/cards/:id/ai/quota?feature=<feature_key>` | `requireAuth` | `getAiQuota`   | Shared  |
 
 Routes are defined in `backend/src/routes/ai.routes.js` and mounted on the `/api/cards` router in `backend/src/app.js`.
 
@@ -272,15 +272,15 @@ The Gemini integration uses target-specific output budgets, structured JSON sche
 
 ### 4.1 Key files
 
-| File                                                            | Responsibility                                                                              |
-| --------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
-| `frontend/src/services/ai.service.js`                           | HTTP client: `suggestAbout`, `suggestSeo`, `suggestFaq`, `fetchAiQuota`                     |
-| `frontend/src/components/editor/panels/ContentPanel.jsx`        | About AI: state machine, consent, preview/apply/dismiss, error mapping                      |
-| `frontend/src/components/editor/panels/ContentPanel.module.css` | CSS Module styles for About AI preview, buttons, consent modal                              |
-| `frontend/src/components/editor/panels/SeoPanel.jsx`            | SEO AI: generation trigger, preview/apply/dismiss                                           |
-| `frontend/src/components/editor/panels/FaqPanel.jsx`            | FAQ AI: empty-state CTA, generation, preview/apply/dismiss                                  |
-| `frontend/src/components/editor/panels/AiQuotaHint.jsx`         | **Shared** AI quota hint component used by all three panels                                 |
-| `frontend/src/components/editor/panels/AiQuotaHint.module.css`  | CSS Module for the shared quota hint                                                        |
+| File                                                            | Responsibility                                                          |
+| --------------------------------------------------------------- | ----------------------------------------------------------------------- |
+| `frontend/src/services/ai.service.js`                           | HTTP client: `suggestAbout`, `suggestSeo`, `suggestFaq`, `fetchAiQuota` |
+| `frontend/src/components/editor/panels/ContentPanel.jsx`        | About AI: state machine, consent, preview/apply/dismiss, error mapping  |
+| `frontend/src/components/editor/panels/ContentPanel.module.css` | CSS Module styles for About AI preview, buttons, consent modal          |
+| `frontend/src/components/editor/panels/SeoPanel.jsx`            | SEO AI: generation trigger, preview/apply/dismiss                       |
+| `frontend/src/components/editor/panels/FaqPanel.jsx`            | FAQ AI: empty-state CTA, generation, preview/apply/dismiss              |
+| `frontend/src/components/editor/panels/AiQuotaHint.jsx`         | **Shared** AI quota hint component used by all three panels             |
+| `frontend/src/components/editor/panels/AiQuotaHint.module.css`  | CSS Module for the shared quota hint                                    |
 
 ### 4.2 ContentPanel flow
 
@@ -390,10 +390,10 @@ This means: if a user starts a full-block AI flow and then types content into a 
 
 All editor AI generation surfaces share one monthly budget per user.
 
-| Tier    | Shared limit         | Scope                          | Period             |
-| ------- | -------------------- | ------------------------------ | ------------------ |
-| Free    | 10 generations/month | About + FAQ + SEO combined     | UTC calendar month |
-| Premium | 30 generations/month | About + FAQ + SEO combined     | UTC calendar month |
+| Tier    | Shared limit         | Scope                      | Period             |
+| ------- | -------------------- | -------------------------- | ------------------ |
+| Free    | 10 generations/month | About + FAQ + SEO combined | UTC calendar month |
+| Premium | 30 generations/month | About + FAQ + SEO combined | UTC calendar month |
 
 - Counts successful generations only (across all surfaces).
 - Displayed to the user in real time via a unified `AiQuotaHint` component.
@@ -463,13 +463,13 @@ The unique compound index `userId_1_feature_1_periodKey_1` is **live in producti
 
 ### 7.1 Required environment variables
 
-| Variable           | Required                  | Default                 | Description                                                                    |
-| ------------------ | ------------------------- | ----------------------- | ------------------------------------------------------------------------------ |
-| `AI_ABOUT_ENABLED` | Yes (for About AI)        | `false`                 | Feature flag for About AI. Accepts `1`, `true`, `on`, `yes` (case-insensitive). |
-| `AI_FAQ_ENABLED`   | Yes (for FAQ AI)          | `false`                 | Feature flag for FAQ AI. Same accepted values as above.                         |
-| `AI_SEO_ENABLED`   | Yes (for SEO AI)          | `false`                 | Feature flag for SEO AI. Same accepted values as above.                         |
-| `GEMINI_API_KEY`   | Yes (for generation)      | —                       | Google AI API key for Gemini access. Missing key → `AI_UNAVAILABLE`.           |
-| `GEMINI_MODEL`     | No                        | `gemini-2.5-flash-lite` | Model name. Must be in allowlist: `gemini-2.5-flash-lite`, `gemini-2.5-flash`. |
+| Variable           | Required             | Default                 | Description                                                                     |
+| ------------------ | -------------------- | ----------------------- | ------------------------------------------------------------------------------- |
+| `AI_ABOUT_ENABLED` | Yes (for About AI)   | `false`                 | Feature flag for About AI. Accepts `1`, `true`, `on`, `yes` (case-insensitive). |
+| `AI_FAQ_ENABLED`   | Yes (for FAQ AI)     | `false`                 | Feature flag for FAQ AI. Same accepted values as above.                         |
+| `AI_SEO_ENABLED`   | Yes (for SEO AI)     | `false`                 | Feature flag for SEO AI. Same accepted values as above.                         |
+| `GEMINI_API_KEY`   | Yes (for generation) | —                       | Google AI API key for Gemini access. Missing key → `AI_UNAVAILABLE`.            |
+| `GEMINI_MODEL`     | No                   | `gemini-2.5-flash-lite` | Model name. Must be in allowlist: `gemini-2.5-flash-lite`, `gemini-2.5-flash`.  |
 
 Each AI surface is independently toggleable. Disabling a flag returns 503 `AI_DISABLED` for that surface only; the other surfaces remain unaffected.
 
