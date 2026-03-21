@@ -37,3 +37,15 @@ export async function suggestSeo(cardId, payload) {
     const res = await api.post(`/cards/${cardId}/ai/seo-suggestion`, payload);
     return { suggestion: res.data?.suggestion, quota: res.data?.quota };
 }
+
+/**
+ * Request AI-generated FAQ items for a card.
+ *
+ * @param {string} cardId  Mongo _id of the card
+ * @param {{ target: "full" }} payload
+ * @returns {Promise<{ suggestion: { items: Array<{ q: string, a: string }> }, quota: object|undefined }>}
+ */
+export async function suggestFaq(cardId, payload) {
+    const res = await api.post(`/cards/${cardId}/ai/faq-suggestion`, payload);
+    return { suggestion: res.data?.suggestion, quota: res.data?.quota };
+}

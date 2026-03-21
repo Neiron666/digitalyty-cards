@@ -1,0 +1,6 @@
+.quotaHint {
+    color: var(--text-muted, #8b95a8);
+    font-size: var(--fs-xs);
+    line-height: 1.4;
+    white-space: nowrap;
+}

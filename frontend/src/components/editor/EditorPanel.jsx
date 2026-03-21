@@ -135,6 +135,9 @@ export default function EditorPanel({
                     faq={card.faq}
                     disabled={editingDisabled}
                     onChange={(faq) => onFieldChange?.("faq", faq)}
+                    cardId={card._id}
+                    business={card.business}
+                    onNavigateTab={onNavigateTab}
                 />
             );
 

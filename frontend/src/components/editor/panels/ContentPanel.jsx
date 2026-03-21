@@ -5,6 +5,7 @@ import Button from "../../ui/Button";
 import formStyles from "../../ui/Form.module.css";
 import styles from "./ContentPanel.module.css";
 import { suggestAbout, fetchAiQuota } from "../../../services/ai.service";
+import AiQuotaHint from "./AiQuotaHint";
 
 // --- localStorage consent key ------------------------------------------------
 const AI_ABOUT_CONSENT_KEY = "cardigo_ai_about_consent";
@@ -114,16 +115,6 @@ function AiConsentModal({ open, onConfirm, onCancel }) {
                 </div>
             </div>
         </div>
-    );
-}
-
-// --- Compact quota hint component -------------------------------------------
-function QuotaHint({ quota }) {
-    if (!quota) return null;
-    return (
-        <span className={styles.quotaHint}>
-            נותרו {quota.remaining}/{quota.limit} הצעות החודש
-        </span>
     );
 }
 
@@ -437,7 +428,7 @@ export default function ContentPanel({
                     >
                         ✦ הצע כותרת עם AI
                     </button>
-                    <QuotaHint quota={aiQuota} />
+                    <AiQuotaHint quota={aiQuota} />
                 </div>
             )}
 
@@ -491,7 +482,7 @@ export default function ContentPanel({
                                         מחק פסקה
                                     </button>
                                 )}
-                                <QuotaHint quota={aiQuota} />
+                                <AiQuotaHint quota={aiQuota} />
                             </div>
                         )}
 
@@ -539,7 +530,7 @@ export default function ContentPanel({
                                 >
                                     הצע בלוק אודות מלא עם AI
                                 </Button>
-                                <QuotaHint quota={aiQuota} />
+                                <AiQuotaHint quota={aiQuota} />
                             </div>
                         </>
                     )}

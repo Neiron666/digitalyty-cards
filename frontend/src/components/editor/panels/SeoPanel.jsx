@@ -10,6 +10,7 @@ import Panel from "./Panel";
 import formStyles from "../../ui/Form.module.css";
 import styles from "./SeoPanel.module.css";
 import { suggestSeo, fetchAiQuota } from "../../../services/ai.service";
+import AiQuotaHint from "./AiQuotaHint";
 
 // --- localStorage consent (shared with About AI) ----------------------------
 const AI_CONSENT_KEY = "cardigo_ai_about_consent";
@@ -184,16 +185,6 @@ function JsonLdOverwriteConfirmModal({ open, onConfirm, onCancel }) {
                 </div>
             </div>
         </div>
-    );
-}
-
-// --- Quota hint -------------------------------------------------------------
-function SeoQuotaHint({ quota }) {
-    if (!quota) return null;
-    return (
-        <span className={styles.quotaHint}>
-            נותרו {quota.remaining}/{quota.limit} הצעות SEO החודש
-        </span>
     );
 }
 
@@ -640,10 +631,10 @@ export default function SeoPanel({
                                     {aiState === "loading"
                                         ? "יוצר הצעה…"
                                         : hasExistingSeo
-                                          ? "שפר עם AI ✨"
-                                          : "צור עם AI ✨"}
+                                          ? "שפר כותרת ותיאור עם AI ✨"
+                                          : "צור כותרת ותיאור עם AI ✨"}
                                 </button>
-                                <SeoQuotaHint quota={aiQuota} />
+                                <AiQuotaHint quota={aiQuota} />
                             </div>
 
                             {!aiReady && (
@@ -906,7 +897,7 @@ export default function SeoPanel({
                     open={hasVerificationContent || undefined}
                 >
                     <summary className={styles.collapsibleTrigger}>
-                        אימות בעלות
+                        אימות בעלות (גוגל, פייסבוק)
                     </summary>
                     <div className={styles.collapsibleContent}>
                         <div className={styles.sectionHint}>
@@ -961,7 +952,7 @@ export default function SeoPanel({
                     open={hasTrackingContent || undefined}
                 >
                     <summary className={styles.collapsibleTrigger}>
-                        מדידה ומעקב
+                        מדידה ומעקב (גוגל, פייסבוק)
                     </summary>
                     <div className={styles.collapsibleContent}>
                         <div className={styles.sectionHint}>
