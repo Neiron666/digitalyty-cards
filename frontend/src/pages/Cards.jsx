@@ -119,6 +119,69 @@ const HERO_PREVIEWS = [
     },
 ];
 
+const CARDS_FAQ = [
+    {
+        q: "הדוגמאות בעמוד הזה הן של לקוחות אמיתיים?",
+        a: "הדוגמאות בעמוד נועדו להמחשה בלבד, כדי להראות איך כרטיס ביקור דיגיטלי יכול להיראות בתחומים שונים.",
+    },
+    {
+        q: "אפשר ליצור כרטיס בסגנון דומה לעסק שלי?",
+        a: "כן. אפשר לבחור תבנית, להתאים טקסטים, כפתורים, תמונות ותוכן כך שהכרטיס יתאים לעסק שלכם.",
+    },
+    {
+        q: "הכרטיס נראה טוב גם בנייד וגם על מסכים גדולים?",
+        a: "כן. הכרטיסים מותאמים לצפייה נוחה בנייד, ונראים מקצועיים גם כאשר פותחים אותם על מסך גדול יותר.",
+    },
+    {
+        q: "אפשר לבחור תבנית מתוך הדוגמאות שמוצגות כאן?",
+        a: "הדוגמאות מציגות סגנונות אפשריים. כשנכנסים לעורך אפשר לבחור תבנית מתוך מגוון עיצובים ולהתאים אותה לצרכים שלכם.",
+    },
+    {
+        q: "האם העיצוב של הכרטיס קבוע או שאפשר לשנות אותו?",
+        a: "אפשר לשנות צבעים, גופנים, תמונות ומבנה. התבנית היא נקודת התחלה — התוצאה הסופית תלויה בתוכן ובסגנון שתבחרו.",
+    },
+    {
+        q: "מה קורה אחרי שלוחצים על ׳צרו כרטיס׳?",
+        a: "מגיעים לעורך שבו בוחרים תבנית, מוסיפים תוכן ומפרסמים את הכרטיס. אין צורך בידע טכני.",
+    },
+    {
+        q: "הכרטיסים בדוגמאות מתאימים גם לתחום שלי?",
+        a: "הדוגמאות מייצגות תחומים שונים, אבל כל כרטיס ניתן להתאמה. גם אם התחום שלכם לא מופיע כאן — אפשר ליצור כרטיס מותאם.",
+    },
+    {
+        q: "אפשר להוסיף לכרטיס תוכן שלא מופיע בדוגמאות?",
+        a: "כן. הדוגמאות מציגות חלק מהאפשרויות. בעורך אפשר להוסיף סקציות נוספות כמו גלריה, טופס לידים, המלצות, שאלות ותשובות ועוד.",
+    },
+    {
+        q: "האם אפשר לראות איך הכרטיס ייראה לפני שמפרסמים?",
+        a: "כן. בתוך העורך יש תצוגה מקדימה שמראה בזמן אמת איך הכרטיס ייראה למי שיקבל את הקישור.",
+    },
+    {
+        q: "איך הדוגמאות בעמוד הזה שונות מכרטיס אמיתי?",
+        a: "מבחינת מבנה ועיצוב — הן זהות. ההבדל היחיד הוא שהתוכן כאן להמחשה, ובכרטיס אמיתי תוסיפו את הפרטים שלכם.",
+    },
+];
+
+function buildCardsFaqJsonLd() {
+    return {
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        "@id": `${ORIGIN}/cards#faq`,
+        url: `${ORIGIN}/cards`,
+        inLanguage: "he",
+        mainEntity: CARDS_FAQ.map((item) => ({
+            "@type": "Question",
+            name: item.q,
+            acceptedAnswer: {
+                "@type": "Answer",
+                text: item.a,
+            },
+        })),
+    };
+}
+
+const cardsFaqJsonLd = buildCardsFaqJsonLd();
+
 export default function Cards() {
     useEffect(() => {
         trackSitePageView();
@@ -132,6 +195,7 @@ export default function Cards() {
                 canonicalUrl={`${ORIGIN}/cards`}
                 url={`${ORIGIN}/cards`}
                 image={`${ORIGIN}/images/og/cardigo-home-og-1200x630.jpg`}
+                jsonLdItems={[cardsFaqJsonLd]}
             />
 
             {/* ─── Hero ─── */}
@@ -366,11 +430,9 @@ export default function Cards() {
                 <div className={pub.sectionWrap}>
                     <div className={styles.ctaLayout}>
                         <h2 className={`${styles.ctaHeading}`}>
-                            הפכו את העסק שלכם למכונת לידים <br />{" "}
-                            <span className={pub.h2Gold}>
-                                עם כרטיס ביקור דיגיטלי חכם!{" "}
-                            </span>
-                        </h2>{" "}
+                            הפכו את כרטיס הביקור שלכם{" "}
+                            <span className={pub.h2Gold}>למכונת לידים! </span>
+                        </h2>
                         <div className={styles.ctaCopy}>
                             {" "}
                             <p className={styles.ctaText}>
@@ -407,24 +469,27 @@ export default function Cards() {
                             />
                         </div>
                     </div>
+                </div>
+            </section>
 
-                    {/* ── SEO appendix (temporary, preserved from MVP) ── */}
-                    <div className={styles.seoAppendix}>
-                        <h3 className={styles.seoHeading}>
-                            כרטיס ביקור דיגיטלי – למה זה עובד?
-                        </h3>
-                        <p className={styles.seoText}>
-                            כרטיס ביקור דיגיטלי מאפשר להציג את העסק בצורה
-                            מקצועית, מעודכנת ונגישה. במקום כרטיס נייר שנעלם או
-                            מתיישן, כרטיס דיגיטלי תמיד זמין בקישור אחד, ניתן
-                            לשיתוף בוואטסאפ, SMS, QR או אימייל, ומתאים במיוחד
-                            למובייל.
-                        </p>
-                        <p className={styles.seoText}>
-                            Cardigo מאפשרת ליצור כרטיס ביקור דיגיטלי לעסקים תוך
-                            דקות, עם עיצוב מודרני, כפתורי יצירת קשר, גלריית
-                            תמונות, וידאו, המלצות וטופס לידים.
-                        </p>
+            {/* ─── FAQ ─── */}
+            <section className={pub.sectionDark} id="faq">
+                <div className={pub.sectionWrap}>
+                    <h2 className={pub.h2Gold}>
+                        שאלות נפוצות על כרטיסי ביקור דיגיטליים
+                    </h2>
+                    <p className={pub.sectionLeadLight}>
+                        תשובות לשאלות שעולות בדרך כלל הקשורות לכרטיסי ביקור
+                        דיגיטליים, תכונות, התאמה אישית ויתרונות.
+                    </p>
+
+                    <div className={pub.faq}>
+                        {CARDS_FAQ.map((item, i) => (
+                            <details key={i} className={pub.qa}>
+                                <summary>{item.q}</summary>
+                                <div className={pub.answer}>{item.a}</div>
+                            </details>
+                        ))}
                     </div>
                 </div>
             </section>
