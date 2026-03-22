@@ -316,6 +316,8 @@
     letter-spacing: 0.06em;
     color: var(--gold);
     margin-block-start: 0.25rem;
+    text-decoration: underline;
+    text-underline-offset: 0.25rem;
 }
 
 .showcaseDesc {
@@ -338,6 +340,9 @@
     text-decoration: none;
     margin-block-start: auto;
     padding-block-start: 0.25rem;
+    border: 1px solid var(--gold);
+    border-radius: 999px;
+    padding: 0.25rem 1rem;
 }
 
 .showcaseLink:hover {
@@ -350,6 +355,7 @@
     display: flex;
     justify-content: center;
     padding-block-start: 1rem;
+    width: 80%;
 }
 
 /* ── Section 4: Final CTA ────────────────────────────── */
@@ -502,6 +508,7 @@
         padding-block: 0;
         overscroll-behavior-inline: auto;
         gap: 2.5rem 2rem;
+        margin: 3rem 0;
     }
 
     .showcaseCard {

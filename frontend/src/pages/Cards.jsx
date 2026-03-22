@@ -396,9 +396,21 @@ export default function Cards() {
                         חלק קטן מהתכונות של הכרטיס הביקור הדיגיטלי{" "}
                     </h2>
                     <p className={pub.sectionLeadLight}>
-                        כל כרטיס ביקור דיגיטלי של Cardigo מגיע עם כלים מעשיים
-                        להצגת העסק, יצירת קשר עם לקוחות, איסוף לידים, בניית אמון
-                        ומעקב אחרי ביצועים.
+                        <span
+                            className={`${pub.goldHilight} ${pub.goldUnderline}`}
+                        >
+                            מה שנראה לעין הוא רק חלק מהתמונה
+                        </span>{" "}
+                        - מאחורי כל כרטיס ביקור דיגיטלי של{" "}
+                        <Link
+                            to="/"
+                            className={`${pub.goldHilight} ${pub.goldUnderline}`}
+                        >
+                            Cardigo
+                        </Link>{" "}
+                        פועלת מערכת
+                        חכמה שעוזרת לעסק להיראות מקצועי, לאסוף לידים ולהתחזק גם
+                        מאחורי הקלעים בגוגל.
                     </p>
 
                     <div className={styles.featuresRail}>
