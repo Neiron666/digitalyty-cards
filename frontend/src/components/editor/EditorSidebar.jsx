@@ -44,7 +44,7 @@ const TABS = [
     { id: PANEL_FAQ, label: "שאלות ותשובות" },
     { id: PANEL_SEO, label: "SEO וסקריפטים" },
     { id: PANEL_SETTINGS, label: "הגדרות" },
-    { id: PANEL_ANALYTICS, label: "Analytics" },
+    { id: PANEL_ANALYTICS, label: "אנליטיקה" },
 ];
 
 const TAB_ICON = {

@@ -446,3 +446,105 @@
         max-width: 20rem;
     }
 }
+
+/* ── Section 3: Product capabilities / features ──────── */
+
+.featuresRail {
+    align-self: stretch;
+    margin-block: 0.5rem 0;
+}
+
+.featuresGrid {
+    display: flex;
+    gap: 1rem;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scroll-snap-type: x mandatory;
+    scroll-padding-inline: 1.25rem;
+    padding-inline: 1.25rem;
+    padding-block: 0.25rem 0.75rem;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-inline: contain;
+    touch-action: pan-x pan-y;
+}
+
+.featuresGrid::-webkit-scrollbar {
+    display: none;
+}
+
+.featureCard {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1.25rem 1rem;
+    border-radius: var(--radius-lg);
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(212, 175, 55, 0.12);
+    flex-shrink: 0;
+    width: 16.5rem;
+    scroll-snap-align: start;
+}
+
+.featureImg {
+    display: block;
+    width: 100%;
+    height: auto;
+    border-radius: var(--radius-md);
+    object-fit: cover;
+    border: 1px solid rgba(212, 175, 55, 0.3);
+}
+
+.featureTitle {
+    font-size: var(--fs-body);
+    font-weight: 700;
+    color: var(--gold);
+    margin: 0;
+}
+
+.featureText {
+    font-size: var(--fs-body-sm);
+    color: rgba(255, 255, 255, 0.72);
+    line-height: 1.6;
+    margin: 0;
+    text-align: center;
+}
+
+/* ── Features responsive ─────────────────────────────── */
+
+@media (min-width: 48rem) {
+    .featuresRail {
+        align-self: auto;
+        margin-block: 0;
+    }
+
+    .featuresGrid {
+        flex-wrap: wrap;
+        justify-content: center;
+        overflow-x: visible;
+        scroll-snap-type: none;
+        scroll-padding-inline: 0;
+        padding-inline: 0;
+        padding-block: 0;
+        overscroll-behavior-inline: auto;
+        gap: 1.5rem;
+    }
+
+    .featureCard {
+        flex-shrink: 1;
+        scroll-snap-align: unset;
+        width: calc(50% - 0.75rem);
+    }
+
+    .featureCard:hover {
+        border-color: rgba(212, 175, 55, 0.35);
+        box-shadow: 0 4px 20px rgba(212, 175, 55, 0.08);
+    }
+}
+
+@media (min-width: 80rem) {
+    .featureCard {
+        width: calc(33.333% - 1rem);
+    }
+}

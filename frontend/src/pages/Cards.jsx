@@ -10,6 +10,46 @@ const ORIGIN = import.meta.env.VITE_PUBLIC_ORIGIN || "https://cardigo.co.il";
 
 const SAMPLE_IMG = "/images/sample-card-page";
 const SECTION6_IMG = "/images/home-page/main-sections/Section-6";
+const FEATURES_IMG = "/images/sample-card-page/cards-features";
+
+const CARD_FEATURES = [
+    {
+        src: `${FEATURES_IMG}/contact-actions.webp`,
+        alt: "לחצני יצירת קשר בכרטיס ביקור דיגיטלי — Cardigo",
+        title: "לחצני יצירת קשר",
+        text: "חיוג, וואטסאפ, ניווט ורשתות חברתיות — הלקוח בוחר איך לפנות.",
+    },
+    {
+        src: `${FEATURES_IMG}/lead-form-preview.webp`,
+        alt: "טופס לידים בכרטיס ביקור דיגיטלי — Cardigo",
+        title: "טופס לידים",
+        text: "לקוחות משאירים פרטים — ואתם חוזרים בזמן שנוח לכם.",
+    },
+    {
+        src: `${FEATURES_IMG}/gallery-preview.webp`,
+        alt: "גלריית תמונות בכרטיס ביקור דיגיטלי — Cardigo",
+        title: "גלריית תמונות",
+        text: "הציגו עבודות, פרויקטים ותמונות מקצועיות בצורה ויזואלית.",
+    },
+    {
+        src: `${FEATURES_IMG}/faq-preview.webp`,
+        alt: "שאלות ותשובות בכרטיס ביקור דיגיטלי — Cardigo",
+        title: "שאלות ותשובות",
+        text: "מענה מיידי ללקוחות בלי טלפון — חוסך זמן לשני הצדדים.",
+    },
+    {
+        src: `${FEATURES_IMG}/reviews-preview.webp`,
+        alt: "המלצות לקוחות בכרטיס ביקור דיגיטלי — Cardigo",
+        title: "המלצות לקוחות",
+        text: "חוות דעת אמיתיות שמחזקות אמון ומעודדות פנייה.",
+    },
+    {
+        src: `${FEATURES_IMG}/analytics-preview.webp`,
+        alt: "אנליטיקה ונתונים בכרטיס ביקור דיגיטלי — Cardigo",
+        title: "אנליטיקה ונתונים",
+        text: "צפיות, לחיצות ומקורות תנועה — כדי שתדעו מה באמת עובד.",
+    },
+];
 
 const FEATURED = {
     desktop: {
@@ -276,6 +316,42 @@ export default function Cards() {
                         >
                             ראו את כל התבניות
                         </Button>
+                    </div>
+                </div>
+            </section>
+
+            {/* ─── Section 3: What the card includes ─── */}
+            <section className={pub.sectionDark}>
+                <div className={pub.sectionWrap}>
+                    <h2 className={pub.h2White}>
+                        חלק קטן מהתכונות של הכרטיס הביקור הדיגיטלי{" "}
+                    </h2>
+                    <p className={pub.sectionLeadLight}>
+                        כל כרטיס ביקור דיגיטלי של Cardigo מגיע עם כלים מעשיים
+                        להצגת העסק, יצירת קשר עם לקוחות, איסוף לידים, בניית אמון
+                        ומעקב אחרי ביצועים.
+                    </p>
+
+                    <div className={styles.featuresRail}>
+                        <div className={styles.featuresGrid}>
+                            {CARD_FEATURES.map((f, i) => (
+                                <article key={i} className={styles.featureCard}>
+                                    <img
+                                        src={f.src}
+                                        alt={f.alt}
+                                        className={styles.featureImg}
+                                        loading="lazy"
+                                        decoding="async"
+                                    />
+                                    <h3 className={styles.featureTitle}>
+                                        {f.title}
+                                    </h3>
+                                    <p className={styles.featureText}>
+                                        {f.text}
+                                    </p>
+                                </article>
+                            ))}
+                        </div>
                     </div>
                 </div>
             </section>

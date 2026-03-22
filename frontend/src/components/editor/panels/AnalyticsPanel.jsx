@@ -24,6 +24,19 @@ const SECTION_COPY = {
     },
 };
 
+const REFERRER_LABEL = {
+    direct: "ישיר (direct)",
+    google: "גוגל (Google)",
+    instagram: "אינסטגרם (Instagram)",
+    facebook: "פייסבוק (Facebook)",
+    tiktok: "טיקטוק (TikTok)",
+    other: "אחר",
+};
+
+function sourceLabel(key) {
+    return REFERRER_LABEL[key] || key;
+}
+
 function SectionHeader({ title, subtitle, tooltip }) {
     return (
         <div className={styles.sectionHeader}>
@@ -230,10 +243,10 @@ export default function AnalyticsPanel({ card }) {
 
     if (!canViewAnalytics || analyticsLevel === "none") {
         return (
-            <Panel title="Analytics">
+            <Panel title="אנליטיקה">
                 <div className={styles.lockedBlock}>
                     <div className={styles.lockedTitle}>
-                        סטטיסטיקה זמינה רק בפרימיום
+                        אנליטיקה זמינה רק בפרימיום
                     </div>
                     <div className={styles.lockedText}>
                         כדי לראות נתוני צפיות, קליקים ומקורות תנועה — צריך מסלול
@@ -370,7 +383,7 @@ export default function AnalyticsPanel({ card }) {
     }
 
     return (
-        <Panel title="Analytics">
+        <Panel title="אנליטיקה">
             <div className={styles.grid}>
                 {Boolean(summary?.isDemo) && (
                     <div className={styles.banner}>
@@ -407,38 +420,38 @@ export default function AnalyticsPanel({ card }) {
                     <>
                         <div className={styles.kpis}>
                             <div className={styles.kpiCard}>
-                                <div className={styles.kpiLabel}>Today</div>
+                                <div className={styles.kpiLabel}>היום</div>
                                 <div className={styles.kpiValue}>
                                     {formatInt(today?.views)}
                                 </div>
-                                <div className={styles.small}>Views</div>
+                                <div className={styles.small}>צפיות</div>
                             </div>
                             <div className={styles.kpiCard}>
-                                <div className={styles.kpiLabel}>Today</div>
+                                <div className={styles.kpiLabel}>היום</div>
                                 <div className={styles.kpiValue}>
                                     {analyticsLevel === "premium"
                                         ? formatInt(today?.clicksTotal)
                                         : formatInt(today?.clicksTotal)}
                                 </div>
-                                <div className={styles.small}>Clicks</div>
+                                <div className={styles.small}>לחיצות</div>
                             </div>
                             <div className={styles.kpiCard}>
                                 <div className={styles.kpiLabel}>7 ימים</div>
                                 <div className={styles.kpiValue}>
                                     {formatInt(views7)}
                                 </div>
-                                <div className={styles.small}>Views</div>
+                                <div className={styles.small}>צפיות</div>
                             </div>
                             <div className={styles.kpiCard}>
                                 <div className={styles.kpiLabel}>30 ימים</div>
                                 <div className={styles.kpiValue}>
                                     {formatInt(views30)}
                                 </div>
-                                <div className={styles.small}>Views</div>
+                                <div className={styles.small}>צפיות</div>
                             </div>
                             <div className={styles.kpiCard}>
                                 <div className={styles.kpiLabel}>
-                                    Unique (Today)
+                                    מבקרים ייחודיים (היום)
                                 </div>
                                 <div className={styles.kpiValue}>
                                     {uniqueToday === null ||
@@ -448,26 +461,26 @@ export default function AnalyticsPanel({ card }) {
                                 </div>
                                 <div className={styles.small}>
                                     {summary?.kpi?.uniqueVisitorsIsApprox
-                                        ? "Approx"
+                                        ? "בקירוב"
                                         : ""}
                                 </div>
                             </div>
                             <div className={styles.kpiCard}>
                                 <div className={styles.kpiLabel}>
-                                    Conversion (30 ימים)
+                                    המרה (30 ימים)
                                 </div>
                                 <div className={styles.kpiValue}>
                                     {formatPct(conversion30)}
                                 </div>
                                 <div className={styles.small}>
-                                    Clicks / Views
+                                    לחיצות / צפיות
                                 </div>
                             </div>
                         </div>
 
                         <div className={styles.chart}>
                             <div className={styles.chartHeader}>
-                                Activity (Views + Clicks)
+                                פעילות (צפיות + לחיצות)
                             </div>
                             <svg
                                 className={styles.svg}
@@ -499,13 +512,13 @@ export default function AnalyticsPanel({ card }) {
                                     <span
                                         className={`${styles.dot} ${styles.dotViews}`}
                                     />{" "}
-                                    Views
+                                    צפיות
                                 </span>
                                 <span>
                                     <span
                                         className={`${styles.dot} ${styles.dotClicks}`}
                                     />{" "}
-                                    Clicks
+                                    לחיצות
                                 </span>
                             </div>
                         </div>
@@ -561,7 +574,9 @@ export default function AnalyticsPanel({ card }) {
                                                                 styles.rowKey
                                                             }
                                                         >
-                                                            {r.source}
+                                                            {sourceLabel(
+                                                                r.source,
+                                                            )}
                                                         </span>
                                                         {isMuted ? (
                                                             <span
@@ -650,7 +665,9 @@ export default function AnalyticsPanel({ card }) {
                                                                 styles.accordionTitle
                                                             }
                                                         >
-                                                            {p.source}
+                                                            {sourceLabel(
+                                                                p.source,
+                                                            )}
                                                         </span>
                                                         <span
                                                             className={
@@ -665,7 +682,7 @@ export default function AnalyticsPanel({ card }) {
                                                                 {formatInt(
                                                                     p.clicks,
                                                                 )}{" "}
-                                                                clicks
+                                                                לחיצות
                                                             </span>
                                                             <span
                                                                 className={
@@ -675,7 +692,7 @@ export default function AnalyticsPanel({ card }) {
                                                                 {formatInt(
                                                                     p.views,
                                                                 )}{" "}
-                                                                views
+                                                                צפיות
                                                             </span>
                                                             <span
                                                                 className={
@@ -786,7 +803,7 @@ export default function AnalyticsPanel({ card }) {
                                     <tbody>
                                         {transitionRows.map((r) => (
                                             <tr key={r.key}>
-                                                <td>{r.key}</td>
+                                                <td>{sourceLabel(r.key)}</td>
                                                 <td>{formatInt(r.count)}</td>
                                             </tr>
                                         ))}
@@ -802,19 +819,19 @@ export default function AnalyticsPanel({ card }) {
                         {analyticsLevel === "premium" && summary?.compare && (
                             <div>
                                 <div className={styles.sectionTitlePlain}>
-                                    Comparison
+                                    השוואה
                                 </div>
                                 <table className={styles.table}>
                                     <thead>
                                         <tr>
-                                            <th>Period</th>
-                                            <th>Views</th>
-                                            <th>Clicks</th>
+                                            <th>תקופה</th>
+                                            <th>צפיות</th>
+                                            <th>לחיצות</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         <tr>
-                                            <td>Last 7</td>
+                                            <td>7 ימים אחרונים</td>
                                             <td>
                                                 {formatInt(
                                                     summary?.compare?.last7
@@ -829,7 +846,7 @@ export default function AnalyticsPanel({ card }) {
                                             </td>
                                         </tr>
                                         <tr>
-                                            <td>Prev 7</td>
+                                            <td>7 ימים לפני כן</td>
                                             <td>
                                                 {formatInt(
                                                     summary?.compare?.prev7
