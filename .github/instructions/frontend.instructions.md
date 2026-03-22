@@ -522,6 +522,12 @@ future direction prefers curated/manual control over raw AI generation
 
 Do not introduce AI-assisted robots filling.
 
+Inheritance model (pre-launch):
+- A global `<meta name="robots" content="noindex, nofollow">` in `index.html` is the centralized pre-launch kill switch for all SPA routes.
+- Ordinary pages (Home, /cards, and other normal public pages) must NOT pass a `robots` prop to `SeoHelmet` — they inherit the global policy by default.
+- Page-level `robots` via `SeoHelmet` is reserved for intentional overrides only (e.g. dynamic public-card SEO policy from backend, or stricter preview `noindex,noarchive`).
+- When the project goes live: remove the global meta from `index.html`; only explicit per-page overrides should remain where actually needed.
+
 9) Editor / State / Payload Safety
 9.1 Preserve editor behavior unless explicitly changing it
 

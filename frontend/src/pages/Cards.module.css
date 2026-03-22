@@ -68,6 +68,7 @@
     gap: 0.75rem;
     width: 100%;
     max-width: 22rem;
+    margin-block-start: 2rem;
 }
 
 .heroCta {
@@ -235,7 +236,7 @@
     flex-direction: column;
     gap: 0.5rem;
     font-size: var(--fs-body-sm);
-    color: var(--text-muted);
+    color: var(--text-color);
     line-height: 1.6;
 }
 
@@ -322,7 +323,7 @@
 
 .showcaseDesc {
     font-size: var(--fs-body-sm);
-    color: var(--text-muted);
+    color: var(--text-main-black);
     text-align: center;
     line-height: 1.6;
     margin: 0;
@@ -385,7 +386,7 @@
 
 .ctaText {
     font-size: var(--fs-body);
-    color: #334155;
+    color: var(--text-main-black);
     line-height: 1.7;
     max-width: 30rem;
     margin: 0;
@@ -446,7 +447,7 @@
 
 .seoText {
     font-size: var(--fs-body-sm);
-    color: var(--text-muted);
+    color: var(--text-main-black);
     line-height: 1.8;
     margin-bottom: 0.5rem;
 }
