@@ -138,19 +138,50 @@ export default function Cards() {
             <section className={pub.sectionDark}>
                 <div className={`${pub.sectionWrap} ${styles.heroWrap}`}>
                     <div className={styles.heroCopy}>
-                        <span className={styles.kicker}>
-                            דוגמאות לכרטיסי ביקור דיגיטליים
-                        </span>
-
                         <h1 className={styles.h1}>
-                            כך יכול להיראות כרטיס הביקור הדיגיטלי של העסק שלך
+                            {" "}
+                            דוגמאות לכרטיסי ביקור דיגיטליים{" "}
+                            <span
+                                className={`${pub.goldHilight} ${pub.goldUnderline}`}
+                            >
+                                {" "}
+                                לעסקים
+                            </span>
                         </h1>
-
-                        <p className={pub.sectionLeadLight}>
-                            דוגמאות ויזואליות בסגנונות שונים כדי לראות איך
-                            Cardigo מציג את העסק, הקישורים ודרכי יצירת הקשר —
-                            לפני שיוצרים כרטיס משלכם.
+                        <p
+                            className={`${pub.goldHilight} ${pub.sectionLeadLight}`}
+                        >
+                            כך יכול להיראות כרטיס שמייצג את העסק שלך -{" "}
+                            <span className={pub.goldUnderline}>
+                                ומביא תוצאות
+                            </span>
+                            .
                         </p>
+                        <div className={styles.heroVisual} aria-hidden="true">
+                            {HERO_PREVIEWS.map((p, i) => (
+                                <figure
+                                    key={i}
+                                    className={`${styles.previewCard} ${
+                                        i === 1
+                                            ? styles.previewMain
+                                            : styles.previewSide
+                                    }`}
+                                >
+                                    <img
+                                        src={encodeURI(p.src)}
+                                        alt=""
+                                        className={styles.previewImg}
+                                        width={280}
+                                        height={560}
+                                        loading={i === 1 ? "eager" : "lazy"}
+                                        decoding="async"
+                                    />
+                                    <figcaption className={styles.previewNiche}>
+                                        {p.niche}
+                                    </figcaption>
+                                </figure>
+                            ))}
+                        </div>
 
                         <div className={styles.heroActions}>
                             <Button
@@ -171,32 +202,6 @@ export default function Cards() {
                                 מסלולים ומחירים
                             </Button>
                         </div>
-                    </div>
-
-                    <div className={styles.heroVisual} aria-hidden="true">
-                        {HERO_PREVIEWS.map((p, i) => (
-                            <figure
-                                key={i}
-                                className={`${styles.previewCard} ${
-                                    i === 1
-                                        ? styles.previewMain
-                                        : styles.previewSide
-                                }`}
-                            >
-                                <img
-                                    src={encodeURI(p.src)}
-                                    alt=""
-                                    className={styles.previewImg}
-                                    width={280}
-                                    height={560}
-                                    loading={i === 1 ? "eager" : "lazy"}
-                                    decoding="async"
-                                />
-                                <figcaption className={styles.previewNiche}>
-                                    {p.niche}
-                                </figcaption>
-                            </figure>
-                        ))}
                     </div>
 
                     <p className={styles.heroNote}>
@@ -356,23 +361,71 @@ export default function Cards() {
                 </div>
             </section>
 
-            {/* ─── SEO text (temporary, preserved from MVP) ─── */}
+            {/* ─── Section 4: Final CTA + SEO appendix ─── */}
             <section className={pub.sectionLight}>
-                <div className={styles.seoWrap}>
-                    <h2 className={styles.seoHeading}>
-                        כרטיס ביקור דיגיטלי – למה זה עובד?
-                    </h2>
-                    <p className={styles.seoText}>
-                        כרטיס ביקור דיגיטלי מאפשר להציג את העסק בצורה מקצועית,
-                        מעודכנת ונגישה. במקום כרטיס נייר שנעלם או מתיישן, כרטיס
-                        דיגיטלי תמיד זמין בקישור אחד, ניתן לשיתוף בוואטסאפ, SMS,
-                        QR או אימייל, ומתאים במיוחד למובייל.
-                    </p>
-                    <p className={styles.seoText}>
-                        Cardigo מאפשרת ליצור כרטיס ביקור דיגיטלי לעסקים תוך
-                        דקות, עם עיצוב מודרני, כפתורי יצירת קשר, גלריית תמונות,
-                        וידאו, המלצות וטופס לידים.
-                    </p>
+                <div className={pub.sectionWrap}>
+                    <div className={styles.ctaLayout}>
+                        <h2 className={`${styles.ctaHeading}`}>
+                            הפכו את העסק שלכם למכונת לידים <br />{" "}
+                            <span className={pub.h2Gold}>
+                                עם כרטיס ביקור דיגיטלי חכם!{" "}
+                            </span>
+                        </h2>{" "}
+                        <div className={styles.ctaCopy}>
+                            {" "}
+                            <p className={styles.ctaText}>
+                                תוך כמה דקות תוכלו לבחור תבנית, להוסיף תוכן
+                                ולשתף כרטיס שנראה מקצועי בכל מסך.
+                            </p>
+                            <div className={styles.ctaActions}>
+                                <Button
+                                    as={Link}
+                                    to="/edit"
+                                    variant="primary"
+                                    className={styles.ctaPrimary}
+                                >
+                                    צרו כרטיס ביקור דיגיטלי
+                                </Button>
+                                <Button
+                                    as={Link}
+                                    to="/pricing"
+                                    variant="secondary"
+                                >
+                                    מסלולים ומחירים
+                                </Button>
+                            </div>
+                        </div>
+                        <div className={styles.ctaVisual}>
+                            <img
+                                src="/images/sample-card-page/cards-cta/cards-cta.webp"
+                                alt="כרטיס ביקור דיגיטלי לעסקים — Cardigo"
+                                className={styles.ctaImage}
+                                width={800}
+                                height={450}
+                                loading="lazy"
+                                decoding="async"
+                            />
+                        </div>
+                    </div>
+
+                    {/* ── SEO appendix (temporary, preserved from MVP) ── */}
+                    <div className={styles.seoAppendix}>
+                        <h3 className={styles.seoHeading}>
+                            כרטיס ביקור דיגיטלי – למה זה עובד?
+                        </h3>
+                        <p className={styles.seoText}>
+                            כרטיס ביקור דיגיטלי מאפשר להציג את העסק בצורה
+                            מקצועית, מעודכנת ונגישה. במקום כרטיס נייר שנעלם או
+                            מתיישן, כרטיס דיגיטלי תמיד זמין בקישור אחד, ניתן
+                            לשיתוף בוואטסאפ, SMS, QR או אימייל, ומתאים במיוחד
+                            למובייל.
+                        </p>
+                        <p className={styles.seoText}>
+                            Cardigo מאפשרת ליצור כרטיס ביקור דיגיטלי לעסקים תוך
+                            דקות, עם עיצוב מודרני, כפתורי יצירת קשר, גלריית
+                            תמונות, וידאו, המלצות וטופס לידים.
+                        </p>
+                    </div>
                 </div>
             </section>
         </main>

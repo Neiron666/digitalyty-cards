@@ -352,25 +352,97 @@
     padding-block-start: 1rem;
 }
 
-/* ── SEO text block (temporary, preserved from MVP) ─── */
+/* ── Section 4: Final CTA ────────────────────────────── */
 
-.seoWrap {
-    width: 95%;
-    max-width: 65rem;
-    margin: 0 auto;
-    padding: 0 1.25rem;
+.ctaLayout {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2rem;
+    margin-block-end: 2.5rem;
+}
+
+.ctaCopy {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 1rem;
+    order: 1;
+}
+
+.ctaHeading {
+    font-size: var(--fs-h3);
+    font-weight: 900;
+    margin: 0;
+}
+
+.ctaText {
+    font-size: var(--fs-body);
+    color: #334155;
+    line-height: 1.7;
+    max-width: 30rem;
+    margin: 0;
+}
+
+.ctaActions {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    width: 100%;
+    max-width: 22rem;
+    margin-block-start: 0.5rem;
+}
+
+.ctaPrimary {
+    background: linear-gradient(135deg, #d4af37 0%, #c5962c 40%, #e6c44d 100%);
+    color: #0f172a;
+    border: none;
+}
+
+.ctaPrimary:hover {
+    transform: translateY(-2px) scale(1.03);
+    color: var(--global-white-text);
+}
+
+.ctaPrimary:active {
+    transform: translateY(0) scale(0.99);
+}
+
+.ctaVisual {
+    width: 100%;
+    max-width: 26rem;
+}
+
+.ctaImage {
+    display: block;
+    width: 100%;
+    height: auto;
+    border-radius: var(--radius-lg);
+    object-fit: cover;
+    border: 1px solid rgba(212, 175, 55, 0.25);
+}
+
+/* ── SEO appendix (temporary, subordinate) ───────────── */
+
+.seoAppendix {
+    width: 100%;
+    border-top: 1px solid rgba(212, 175, 55, 0.12);
+    padding-block-start: 1.5rem;
 }
 
 .seoHeading {
-    font-size: var(--fs-h4);
-    font-weight: 900;
-    margin-bottom: 0.5rem;
+    font-size: var(--fs-body);
+    font-weight: 700;
+    color: #475569;
+    margin: 0 0 0.5rem;
 }
 
 .seoText {
+    font-size: var(--fs-body-sm);
     color: var(--text-muted);
     line-height: 1.8;
-    margin-bottom: 0.625rem;
+    margin-bottom: 0.5rem;
 }
 
 /* ── Responsive ─────────────────────────────────────── */
@@ -444,6 +516,7 @@
     .showcaseCard {
         width: calc(33.333% - 1.34rem);
         max-width: 20rem;
+        margin-top: 2rem;
     }
 }
 
@@ -546,5 +619,44 @@
 @media (min-width: 80rem) {
     .featureCard {
         width: calc(33.333% - 1rem);
+    }
+}
+
+/* ── CTA responsive ──────────────────────────────────── */
+
+@media (min-width: 48rem) {
+    .ctaLayout {
+        flex-direction: column;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 2rem 3rem;
+    }
+
+    .ctaHeading {
+        width: 100%;
+        text-align: center;
+        font-size: var(--fs-h2);
+    }
+
+    .ctaCopy {
+        flex: 1;
+        order: 2;
+        /* align-items: flex-start; */
+        text-align: center;
+        white-space: nowrap;
+        /* width: 100%; */
+    }
+
+    .ctaActions {
+        flex-direction: column;
+        max-width: none;
+    }
+    .ctaText {
+        max-width: none;
+    }
+
+    .ctaVisual {
+        flex: 1;
+        max-width: 70%;
     }
 }
