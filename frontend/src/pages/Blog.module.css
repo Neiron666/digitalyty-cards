@@ -84,7 +84,7 @@
 }
 
 .cardCta {
-    font-size: var(--fs-16);
+    font-size: var(--fs-body);
     color: var(--primary);
     text-decoration: none;
     font-weight: 600;

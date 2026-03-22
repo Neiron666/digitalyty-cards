@@ -133,7 +133,7 @@
     border-radius: 999px;
     background: var(--gold, #d4af37);
     color: #000;
-    font-size: var(--fs-xs, 0.65rem);
+    font-size: var(--fs-caption);
     font-weight: 700;
     line-height: 1;
     pointer-events: none;
@@ -149,7 +149,7 @@
     border-radius: 999px;
     background: var(--gold, #d4af37);
     color: #000;
-    font-size: var(--fs-xs, 0.65rem);
+    font-size: var(--fs-caption);
     font-weight: 700;
     line-height: 1;
     margin-inline-start: 6px;

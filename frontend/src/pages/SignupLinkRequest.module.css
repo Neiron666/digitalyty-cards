@@ -6,7 +6,7 @@
 
 .error {
     color: var(--c-danger);
-    font-size: var(--fs-14);
+    font-size: var(--fs-ui);
 }
 
 .messageBox {
@@ -17,16 +17,16 @@
 
 .message {
     color: var(--c-text);
-    font-size: var(--fs-14);
+    font-size: var(--fs-ui);
 }
 
 .hint {
     color: var(--c-text-muted);
-    font-size: var(--fs-12);
+    font-size: var(--fs-caption);
 }
 
 .sep {
     padding-inline: 8px;
     color: var(--c-text-muted);
-    font-size: var(--fs-14);
+    font-size: var(--fs-ui);
 }

@@ -79,14 +79,14 @@
     background: rgba(0, 0, 0, 0.493);
     color: rgba(255, 255, 255, 1);
     border: 1px solid var(--gold);
-    font-size: var(--fs-sm, 0.875rem);
+    font-size: var(--fs-ui);
     line-height: 1.35;
     text-align: center;
 }
 
 @container phone (max-width: 370px) {
     .demoNotice {
-        font-size: var(--fs-xs, 0.75rem);
+        font-size: var(--fs-caption);
         padding: 0.5rem 0.625rem;
     }
 }

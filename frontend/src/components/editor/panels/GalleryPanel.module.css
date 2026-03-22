@@ -78,7 +78,7 @@
 
 .uploadText {
     margin: 0;
-    font-size: var(--fs-sm, 0.875rem);
+    font-size: var(--fs-ui);
     color: var(--gold, #555);
 }
 
@@ -98,7 +98,7 @@
 .uploadDebugTitle {
     margin: 0;
     font-weight: 600;
-    font-size: var(--fs-xs, 0.75rem);
+    font-size: var(--fs-caption);
     color: var(--gold, #856404);
 }
 
@@ -106,7 +106,7 @@
     margin: 0;
     white-space: pre-wrap;
     word-break: break-all;
-    font-size: var(--fs-xs, 0.75rem);
+    font-size: var(--fs-caption);
     color: var(--text-color, #333);
     direction: ltr;
     text-align: left;

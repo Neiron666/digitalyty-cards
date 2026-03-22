@@ -341,7 +341,7 @@
 
 .aiReadinessHint {
     color: var(--text-main);
-    font-size: var(--fs-xs);
+    font-size: var(--fs-caption);
     line-height: 1.4;
 }
 
@@ -351,7 +351,7 @@
     align-items: center;
     gap: 8px;
     color: var(--danger, #ef4444);
-    font-size: var(--fs-sm);
+    font-size: var(--fs-ui);
     line-height: 1.5;
 }
 
@@ -361,7 +361,7 @@
     background: none;
     padding: 0;
     font: inherit;
-    font-size: var(--fs-xs);
+    font-size: var(--fs-caption);
     color: var(--text-muted);
     text-decoration: underline;
     cursor: pointer;
@@ -384,12 +384,12 @@
 
 .aiPreviewLabel {
     font-weight: 700;
-    font-size: var(--fs-sm);
+    font-size: var(--fs-ui);
     color: var(--gold, #f59e0b);
 }
 
 .aiPreviewField {
-    font-size: var(--fs-sm);
+    font-size: var(--fs-ui);
     line-height: 1.55;
     color: var(--text-main);
     overflow-wrap: anywhere;
@@ -469,7 +469,7 @@
 .consentBody {
     margin: 0;
     color: var(--text-muted, #c8d2ea);
-    font-size: var(--fs-sm);
+    font-size: var(--fs-ui);
     font-weight: 700;
     line-height: 1.55;
 }
@@ -489,7 +489,7 @@
     font-weight: 800;
     cursor: pointer;
     font-family: inherit;
-    font-size: var(--fs-base);
+    font-size: var(--fs-body);
     border: 1px solid var(--border, rgba(255, 255, 255, 0.14));
     background: rgba(255, 255, 255, 0.06);
     color: var(--text-main, #eaf0ff);

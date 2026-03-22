@@ -94,7 +94,7 @@
 }
 
 .consentText {
-    font-size: var(--fs-11, 0.8125rem);
+    font-size: var(--fs-caption);
     line-height: var(--lh-normal, 1.5);
     color: var(--text-main);
 }

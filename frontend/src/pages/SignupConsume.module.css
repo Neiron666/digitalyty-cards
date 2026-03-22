@@ -6,10 +6,10 @@
 
 .error {
     color: var(--c-danger);
-    font-size: var(--fs-14);
+    font-size: var(--fs-ui);
 }
 
 .message {
     color: var(--c-text);
-    font-size: var(--fs-14);
+    font-size: var(--fs-ui);
 }
