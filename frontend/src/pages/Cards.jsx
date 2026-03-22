@@ -8,6 +8,59 @@ import styles from "./Cards.module.css";
 
 const ORIGIN = import.meta.env.VITE_PUBLIC_ORIGIN || "https://cardigo.co.il";
 
+const SAMPLE_IMG = "/images/sample-card-page";
+const SECTION6_IMG = "/images/home-page/main-sections/Section-6";
+
+const FEATURED = {
+    desktop: {
+        src: `${SAMPLE_IMG}/Cardigo-bussines-digital-card-desktop-view.webp`,
+        alt: "כרטיס ביקור דיגיטלי בתצוגת מחשב — Cardigo",
+    },
+    phone: {
+        src: `${SAMPLE_IMG}/Cardigo-bussines-digital-card-mobile-view.webp`,
+        alt: "כרטיס ביקור דיגיטלי בתצוגת נייד — Cardigo",
+    },
+};
+
+const SHOWCASE_CARDS = [
+    {
+        src: `${SECTION6_IMG}/כרטיס ביקור דיגיטלי ליועץ הון פרטי  כרדיגו.webp`,
+        alt: "דוגמה לכרטיס ביקור דיגיטלי — ייעוץ פיננסי",
+        niche: "פיננסים",
+        desc: "נוכחות עסקית מקצועית עם קישורים, פרטי קשר ויצירת אמון — בקליק אחד.",
+    },
+    {
+        src: `${SECTION6_IMG}/כרטיס ביקור דיגיטלי לאדריכלית חוץ ונוף  כרדיגו.webp`,
+        alt: "דוגמה לכרטיס ביקור דיגיטלי — אדריכלות",
+        niche: "אדריכלות",
+        desc: "הצגת פרויקטים, גלריה ודרכי יצירת קשר בצורה ויזואלית ומרשימה.",
+    },
+    {
+        src: `${SECTION6_IMG}/כרטיס ביקור דיגיטלי לרופאת שיניים אסתטית  כרדיגו.webp`,
+        alt: "דוגמה לכרטיס ביקור דיגיטלי — רפואת שיניים",
+        niche: "רפואה",
+        desc: "כרטיס שמחבר בין מטופלים לקליניקה — ניווט, שעות פעילות ותיאום תור.",
+    },
+    {
+        src: `${SECTION6_IMG}/כרטיס ביקור דיגיטלי ליועצת חדשנות דיגיטלית ו-AI  כרדיגו.webp`,
+        alt: "דוגמה לכרטיס ביקור דיגיטלי — חדשנות ו-AI",
+        niche: "טכנולוגיה",
+        desc: "כרטיס שמציג מומחיות, קישור לפודקאסט, אתר ורשתות חברתיות.",
+    },
+    {
+        src: `${SECTION6_IMG}/כרטיס ביקור דיגיטלי למפיקת אירועי בוטיק  כרדיגו.webp`,
+        alt: "דוגמה לכרטיס ביקור דיגיטלי — הפקת אירועים",
+        niche: "אירועים",
+        desc: "גלריית אירועים, סרטונים, המלצות ולחצן וואטסאפ ישיר ללקוחות.",
+    },
+    {
+        src: `${SECTION6_IMG}/כרטיס ביקור דיגיטלי קליניקה לאסטטיקה  כרדיגו.webp`,
+        alt: "דוגמה לכרטיס ביקור דיגיטלי — קליניקה אסתטית",
+        niche: "בריאות ויופי",
+        desc: "כרטיס שמקרין מקצועיות ואמינות — עם טופס לידים, גלריה ופרטי קשר.",
+    },
+];
+
 const HERO_PREVIEWS = [
     {
         src: "/images/home-page/main-sections/Section-6/כרטיס ביקור דיגיטלי ליועץ הון פרטי  כרדיגו.webp",
@@ -109,6 +162,121 @@ export default function Cards() {
                     <p className={styles.heroNote}>
                         הדוגמאות בעמוד זה מיועדות להמחשה בלבד.
                     </p>
+                </div>
+            </section>
+
+            {/* ─── Showcase ─── */}
+            <section className={pub.sectionLight}>
+                <div className={pub.sectionWrap}>
+                    <h2 className={pub.h2Gold}>
+                        כרטיסי ביקור דיגיטליים למגוון תחומים
+                    </h2>
+                    <p className={pub.sectionLead}>
+                        כל עסק, כל מקצוע — כרטיס שנראה מקצועי ומותאם בדיוק לתחום
+                        שלכם. הנה כמה דוגמאות ויזואליות שממחישות איך זה נראה
+                        בפועל.
+                    </p>
+
+                    {/* ── Featured dual-device spotlight ── */}
+                    <div className={styles.featured}>
+                        <div className={styles.featuredDevices}>
+                            <div className={styles.featuredDesktop}>
+                                <img
+                                    src={FEATURED.desktop.src}
+                                    alt={FEATURED.desktop.alt}
+                                    className={styles.featuredDesktopImg}
+                                    width={720}
+                                    height={450}
+                                    loading="lazy"
+                                    decoding="async"
+                                />
+                            </div>
+                            <div className={styles.featuredPhone}>
+                                <img
+                                    src={FEATURED.phone.src}
+                                    alt={FEATURED.phone.alt}
+                                    className={styles.featuredPhoneImg}
+                                    width={280}
+                                    height={560}
+                                    loading="lazy"
+                                    decoding="async"
+                                />
+                            </div>
+                        </div>
+
+                        <div className={styles.featuredCopy}>
+                            <span className={styles.featuredLabel}>
+                                נוכחות דיגיטלית מקצועית
+                            </span>
+                            <h3 className={styles.featuredTitle}>
+                                נראה מדהים בכל מסך — פלאפון, מחשב או טאבלט
+                            </h3>
+                            <ul className={styles.featuredBullets}>
+                                <li>הצגת העסק בעיצוב מקצועי עם מידע עדכני</li>
+                                <li>
+                                    קישורים, לחצני יצירת קשר ורשתות חברתיות
+                                    במקום אחד
+                                </li>
+                                <li>
+                                    שיתוף בוואטסאפ, QR, SMS או אימייל — בקליק
+                                    אחד
+                                </li>
+                            </ul>
+                            <Button
+                                as={Link}
+                                to="/edit/card/templates"
+                                variant="secondary"
+                                className={styles.featuredCta}
+                            >
+                                בחרו תבנית והתחילו
+                            </Button>
+                        </div>
+                    </div>
+
+                    {/* ── Curated showcase rail ── */}
+                    <div className={styles.showcaseRail}>
+                        <div className={styles.showcaseGrid}>
+                            {SHOWCASE_CARDS.map((card, i) => (
+                                <article
+                                    key={i}
+                                    className={styles.showcaseCard}
+                                >
+                                    <img
+                                        src={encodeURI(card.src)}
+                                        alt={card.alt}
+                                        className={styles.showcaseImg}
+                                        width={280}
+                                        height={560}
+                                        loading="lazy"
+                                        decoding="async"
+                                    />
+                                    <span className={styles.showcaseNiche}>
+                                        {card.niche}
+                                    </span>
+                                    <p className={styles.showcaseDesc}>
+                                        {card.desc}
+                                    </p>
+                                    <Link
+                                        to="/edit/card/templates"
+                                        className={styles.showcaseLink}
+                                    >
+                                        התחילו ליצור כרטיס &larr;
+                                    </Link>
+                                </article>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* ── Section-bottom CTA ── */}
+                    <div className={styles.showcaseBottom}>
+                        <Button
+                            as={Link}
+                            to="/edit/card/templates"
+                            variant="secondary"
+                        >
+                            ראו את כל התבניות
+                        </Button>
+                    </div>
                 </div>
             </section>
 
