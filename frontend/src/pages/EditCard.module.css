@@ -198,7 +198,7 @@
 
 .anonConsentTitle {
     font-weight: 900;
-    font-size: var(--fs-h5, 1.05rem);
+    font-size: var(--fs-h5);
     margin-bottom: 8px;
     text-align: center;
     color: var(--gold);

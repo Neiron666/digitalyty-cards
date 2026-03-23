@@ -38,7 +38,7 @@
 
 .hint {
     margin-top: 8px;
-    font-size: var(--fs-ui, 0.875rem);
+    font-size: var(--fs-ui);
     color: var(--text-muted, #94a3b8);
 }
 

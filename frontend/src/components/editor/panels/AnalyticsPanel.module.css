@@ -304,13 +304,13 @@
 
 .lockedTitle {
     font-weight: 700;
-    font-size: var(--fs-body-sm, 0.875rem);
+    font-size: var(--fs-body-sm);
     color: var(--gold, #d4a017);
 }
 
 .lockedText {
     opacity: 0.85;
-    font-size: var(--fs-ui, 0.8125rem);
+    font-size: var(--fs-ui);
     line-height: 1.5;
 }
 
@@ -318,7 +318,7 @@
     display: inline-flex;
     align-items: center;
     font-weight: 700;
-    font-size: var(--fs-body-sm, 0.875rem);
+    font-size: var(--fs-body-sm);
     color: var(--gold, #d4a017);
     text-decoration: underline;
     text-underline-offset: 3px;

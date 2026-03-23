@@ -84,11 +84,11 @@
 ```css
 /* frontend/src/styles/globals.css */
 #root {
-  --fs-caption: 0.75rem;     /* 12px */
-  --fs-body-sm: 0.8125rem;   /* 13px */
-  --fs-ui: 0.875rem;         /* 14px */
-  --fs-body: 1rem;           /* 16px */
-  --fs-h6: 1.125rem;         /* 18px */
+  --fs-caption: 0.9231rem;   /* ~12px @ 13px base */
+  --fs-body-sm: 1rem;        /* ~13px @ 13px base */
+  --fs-ui: 1.0769rem;        /* ~14px @ 13px base */
+  --fs-body: 1.2308rem;      /* ~16px @ 13px base */
+  --fs-h6: 1.3846rem;        /* ~18px @ 13px base */
 }
 3.2 Card typography tokens (публичная карточка)
 Определяются внутри: [data-cardigo-scope="card"] { ... }

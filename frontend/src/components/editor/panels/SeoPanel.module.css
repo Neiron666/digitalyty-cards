@@ -210,7 +210,7 @@
 
 .sectionHeader {
     font-weight: 700;
-    font-size: var(--fs-body, 1.2308rem);
+    font-size: var(--fs-body);
 }
 
 .sectionHint {
@@ -241,7 +241,7 @@
     padding-block: 10px;
     padding-inline: 14px;
     font-weight: 700;
-    font-size: var(--fs-body, 1.2308rem);
+    font-size: var(--fs-body);
     list-style: none;
     border-radius: var(--radius-md);
 }
@@ -309,7 +309,7 @@
     font-weight: 800;
     cursor: pointer;
     font-family: inherit;
-    font-size: var(--fs-body-sm, 0.875rem);
+    font-size: var(--fs-body-sm);
     border: 1px solid rgba(255, 255, 255, 0.14);
     background: rgba(255, 255, 255, 0.06);
     color: inherit;
@@ -414,7 +414,7 @@
     font-weight: 700;
     cursor: pointer;
     font-family: inherit;
-    font-size: var(--fs-body-sm, 0.875rem);
+    font-size: var(--fs-body-sm);
     border: 1px solid var(--border, rgba(255, 255, 255, 0.14));
     background: rgba(255, 255, 255, 0.06);
     color: var(--text-main, #eaf0ff);
@@ -558,13 +558,13 @@
 
 .lockedTitle {
     font-weight: 700;
-    font-size: var(--fs-body-sm, 0.875rem);
+    font-size: var(--fs-body-sm);
     color: var(--gold, #d4a017);
 }
 
 .lockedText {
     opacity: 0.85;
-    font-size: var(--fs-ui, 0.8125rem);
+    font-size: var(--fs-ui);
     line-height: 1.5;
 }
 
@@ -572,7 +572,7 @@
     display: inline-flex;
     align-items: center;
     font-weight: 700;
-    font-size: var(--fs-body-sm, 0.875rem);
+    font-size: var(--fs-body-sm);
     color: var(--gold, #d4a017);
     text-decoration: underline;
     text-underline-offset: 3px;

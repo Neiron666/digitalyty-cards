@@ -242,7 +242,7 @@
 
     .contextLabel {
         font-weight: 900;
-        font-size: var(--fs-body-sm, 0.8125rem);
+        font-size: var(--fs-body-sm);
         color: var(--text-main);
         white-space: nowrap;
         flex: 0 0 auto;
@@ -273,7 +273,7 @@
         background: transparent;
         color: var(--text-main);
         font-weight: 800;
-        font-size: var(--fs-body-sm, 0.8125rem);
+        font-size: var(--fs-body-sm);
         font-family: inherit;
         padding-block: 8px;
         padding-inline-start: 10px;
@@ -297,7 +297,7 @@
         inset-inline-end: 6px;
         top: 50%;
         transform: translateY(-50%);
-        font-size: var(--fs-body-sm, 0.8125rem);
+        font-size: var(--fs-body-sm);
         color: var(--gold);
         opacity: 0.55;
         pointer-events: none;
@@ -385,7 +385,7 @@
 
     .drawerTitle {
         font-weight: 900;
-        font-size: var(--fs-body, 1rem);
+        font-size: var(--fs-body);
         color: var(--text-main);
         letter-spacing: 0.2px;
     }
@@ -401,7 +401,7 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: var(--fs-body, 1rem);
+        font-size: var(--fs-body);
         line-height: 1;
         flex: 0 0 auto;
     }

@@ -12,7 +12,7 @@
 }
 
 .heading {
-    font-size: var(--fs-h2, 1.5rem);
+    font-size: var(--fs-h2);
     margin-block-end: 12px;
 }
 
@@ -32,7 +32,7 @@
     background: transparent;
     color: var(--card-muted, #475569);
     font: inherit;
-    font-size: var(--fs-body-sm, 0.8125rem);
+    font-size: var(--fs-body-sm);
     cursor: pointer;
     transition:
         background 0.15s ease,
@@ -168,7 +168,7 @@
 }
 
 .label {
-    font-size: var(--fs-body-sm, 0.8125rem);
+    font-size: var(--fs-body-sm);
     color: var(--card-muted, #475569);
     flex-shrink: 0;
 }
@@ -181,7 +181,7 @@
 /* ── Status pill ──────────────────────────────────────── */
 
 .statusPill {
-    font-size: var(--fs-caption, 0.75rem);
+    font-size: var(--fs-caption);
     line-height: 1;
     padding: 3px 8px;
     border-radius: 999px;
@@ -208,7 +208,7 @@
 }
 
 .cardLabel {
-    font-size: var(--fs-body-sm, 0.8125rem);
+    font-size: var(--fs-body-sm);
     color: var(--card-muted, #475569);
     white-space: nowrap;
     overflow: hidden;
@@ -218,7 +218,7 @@
 }
 
 .kindPill {
-    font-size: var(--fs-caption, 0.6875rem);
+    font-size: var(--fs-caption);
     line-height: 1;
     padding: 0.125rem 0.375rem;
     border-radius: 999px;
@@ -242,7 +242,7 @@
 /* ── Chevron ──────────────────────────────────────────── */
 
 .chevron {
-    font-size: var(--fs-body-sm, 0.8125rem);
+    font-size: var(--fs-body-sm);
     color: var(--card-muted, #475569);
     flex-shrink: 0;
     margin-inline-start: 4px;
@@ -259,7 +259,7 @@
 }
 
 .date {
-    font-size: var(--fs-body-sm, 0.8125rem);
+    font-size: var(--fs-body-sm);
     color: var(--card-muted, #475569);
 }
 
@@ -330,7 +330,7 @@
     background: transparent;
     color: inherit;
     font: inherit;
-    font-size: var(--fs-body-sm, 0.8125rem);
+    font-size: var(--fs-body-sm);
     cursor: pointer;
     transition: background 0.15s ease;
 }
