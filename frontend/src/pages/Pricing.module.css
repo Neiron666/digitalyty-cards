@@ -115,6 +115,8 @@
 .heroStage {
     width: 100%;
     max-width: 38rem;
+    border: 1px solid var(--gold-soft);
+    padding: 0 1rem;
     border-radius: var(--radius-md);
     overflow: hidden;
 }
@@ -136,6 +138,171 @@
     line-height: 1.7;
 }
 
+/* ── Pricing plans section ───────────────────────────── */
+
+.plansRow {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.25rem;
+    width: 100%;
+}
+
+.planCard {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 0.5rem;
+    width: 100%;
+    max-width: 22rem;
+    padding: 2rem 1.5rem;
+    border: 1px solid var(--gold-soft) offset-5px;
+    border-radius: var(--radius-md);
+    background: #0f172a;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.2);
+    transition:
+        box-shadow 0.2s ease,
+        transform 0.2s ease;
+}
+
+.planCard:hover {
+    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.3);
+    transform: translateY(-2px);
+}
+
+.planCardFeatured {
+    border-color: rgba(212, 175, 55, 0.35);
+    box-shadow:
+        0 4px 20px rgba(212, 175, 55, 0.1),
+        0 0 0 1px rgba(212, 175, 55, 0.15);
+}
+
+.planCardFeatured:hover {
+    box-shadow:
+        0 8px 32px rgba(212, 175, 55, 0.15),
+        0 0 0 1px rgba(212, 175, 55, 0.25);
+}
+
+.planBadge {
+    font-size: var(--fs-caption);
+    font-weight: 700;
+    color: #0f172a;
+    background: linear-gradient(135deg, #d4af37 0%, #e6c44d 100%);
+    padding: 0.25rem 0.875rem;
+    border-radius: 999px;
+    margin-block-end: 0.25rem;
+}
+
+.planTitle {
+    font-size: var(--fs-h5);
+    font-weight: 800;
+    color: #f8fafc;
+}
+
+.planPrice {
+    font-size: var(--fs-h2);
+    font-weight: 900;
+    color: #ffffff;
+    line-height: 1.1;
+}
+
+.planCadence {
+    font-size: var(--fs-body-sm);
+    color: var(--gold);
+}
+
+.planNote {
+    font-size: var(--fs-body-sm);
+    color: rgba(255, 255, 255, 0.65);
+    line-height: 1.7;
+    margin: 0.25rem 0 0.5rem;
+    max-width: 18rem;
+}
+
+.planCta {
+    width: 100%;
+    margin-block-start: auto;
+}
+
+.planCtaFeatured {
+    width: 100%;
+    margin-block-start: auto;
+    background: linear-gradient(135deg, #d4af37 0%, #c5962c 40%, #e6c44d 100%);
+    color: #0f172a;
+    border: none;
+}
+
+.planCtaFeatured:hover {
+    transform: translateY(-2px) scale(1.03);
+    color: var(--global-white-text);
+}
+
+/* ── Plan card accordion (page-local) ────────────────── */
+
+.planFeatures {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    margin-block: 0.75rem 1rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.featureRow {
+    border-bottom: 1px solid var(--gold-soft);
+}
+
+.featureSummary {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    padding: 0.625rem 0;
+    font-size: var(--fs-body-sm);
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.82);
+    cursor: pointer;
+    list-style: none;
+    gap: 1rem;
+}
+
+.featureSummary::-webkit-details-marker {
+    display: none;
+}
+
+.featureSummary::before {
+    content: "+";
+    flex-shrink: 0;
+    margin-inline-start: 0.5rem;
+    font-size: var(--fs-body-sm);
+    font-weight: 700;
+    color: var(--gold);
+    transition: transform 0.2s ease;
+}
+
+.featureRow[open] > .featureSummary::before {
+    content: "−";
+    color: rgba(212, 175, 55, 0.7);
+}
+
+.featureDetail {
+    font-size: var(--fs-caption);
+    color: var(--gold);
+    line-height: 1.6;
+    margin: 0 0 0.5rem;
+    padding-inline-end: 1.25rem;
+}
+
+.featureGroupLabel {
+    display: block;
+    font-size: var(--fs-caption);
+    font-weight: 700;
+    color: rgba(212, 175, 55, 0.6);
+    letter-spacing: 0.02em;
+    padding-block: 0.5rem 0.125rem;
+    margin-block-start: 0.25rem;
+    border-top: 1px solid rgba(212, 175, 55, 0.15);
+}
+
 /* ── Responsive — Desktop enhancements ──────────────── */
 
 @media (min-width: 48rem) {
@@ -152,5 +319,24 @@
 
     .heroStage {
         max-width: 52rem;
+    }
+
+    .plansRow {
+        flex-direction: row;
+        align-items: stretch;
+        justify-content: center;
+    }
+
+    .planCard {
+        flex: 1 1 0;
+        max-width: 25rem;
+    }
+
+    .planCardFeatured {
+        transform: translateY(-0.5rem);
+    }
+
+    .planCardFeatured:hover {
+        transform: translateY(-0.75rem);
     }
 }
