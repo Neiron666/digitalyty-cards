@@ -1,15 +1,15 @@
 import { useEffect } from "react";
-import { useSearchParams } from "react-router-dom";
-import Page from "../components/page/Page";
-import PricingPlans from "../components/pricing/PricingPlans";
+import { Link, useSearchParams } from "react-router-dom";
+import Button from "../components/ui/Button";
+import SeoHelmet from "../components/seo/SeoHelmet";
 import FlashBanner from "../components/ui/FlashBanner/FlashBanner";
-import styles from "./Pricing.module.css";
-import motion from "../styles/motion.module.css";
-import scroll from "../styles/motion-scroll.module.css";
-import PricingFAQ from "../components/pricing/PricingFAQ";
 import { trackSitePageView } from "../services/siteAnalytics.client";
-import useMotionReveal from "../hooks/useMotionReveal";
-import useScrollProgress from "../hooks/useScrollProgress";
+import { trackSiteClick } from "../services/siteAnalytics.client";
+import { SITE_ACTIONS } from "../services/siteAnalytics.actions";
+import pub from "../styles/public-sections.module.css";
+import styles from "./Pricing.module.css";
+
+const ORIGIN = import.meta.env.VITE_PUBLIC_ORIGIN || "https://cardigo.co.il";
 
 const PAYMENT_FLASH = {
     success: {
@@ -27,11 +27,6 @@ export default function Pricing() {
     const [searchParams, setSearchParams] = useSearchParams();
     const payment = searchParams.get("payment");
     const flash = PAYMENT_FLASH[payment] || null;
-    const valueReveal = useMotionReveal();
-    const seoReveal = useMotionReveal();
-    const zoomScroll = useScrollProgress();
-    const parallaxScroll = useScrollProgress();
-    const driftScroll = useScrollProgress();
 
     useEffect(() => {
         trackSitePageView();
@@ -49,10 +44,16 @@ export default function Pricing() {
     }
 
     return (
-        <Page
-            title="מחירים"
-            subtitle="בחרו את התכנית שמתאימה לכם והתחילו ליצור כרטיס ביקור דיגיטלי מקצועי"
-        >
+        <main data-page="site">
+            <SeoHelmet
+                title="מחירים לכרטיס ביקור דיגיטלי | Cardigo"
+                description="המחירים של Cardigo לכרטיס ביקור דיגיטלי מקצועי: ניסיון חינמי ל־7 ימים, מסלול פרימיום חודשי ומסלול שנתי משתלם לעסקים שרוצים נוכחות דיגיטלית ברורה ומקצועית."
+                canonicalUrl={`${ORIGIN}/pricing`}
+                url={`${ORIGIN}/pricing`}
+                image={`${ORIGIN}/images/og/cardigo-home-og-1200x630.jpg`}
+            />
+
+            {/* ── Payment flash banner (preserved) ──────────── */}
             {flash && (
                 <div className={styles.paymentBanner}>
                     <FlashBanner
@@ -64,92 +65,104 @@ export default function Pricing() {
                 </div>
             )}
 
-            <PricingPlans />
+            {/* ── Hero ──────────────────────────────────────── */}
+            <section className={pub.sectionDark}>
+                <div className={`${pub.sectionWrap} ${styles.heroWrap}`}>
+                    <div className={styles.heroCopy}>
+                        <h1 className={styles.h1}>
+                            בחרו את הדרך הנכונה
+                            <span
+                                className={`${styles.h1Accent} ${pub.goldUnderline}`}
+                            >
+                                להתחיל עם Cardigo
+                            </span>
+                        </h1>
 
-            <section
-                ref={valueReveal.ref}
-                className={`${styles.value} ${motion.fadeUp} ${valueReveal.isRevealed ? motion.isVisible : ""}`}
-            >
-                <p className={styles.valueTitle}>
-                    כל התכניות כוללות כרטיס מקצועי, מותאם למובייל ושיתוף בלחיצה.
-                </p>
-                <p className={styles.valueText}>
-                    התחילו בחינם, ושדרגו כשאתם צריכים פיצ׳רים מתקדמים.
-                </p>
-            </section>
-
-            <PricingFAQ />
-            {/* SEO */}
-            <section
-                ref={seoReveal.ref}
-                className={`${styles.seo} ${motion.fadeUp} ${motion.delay200} ${seoReveal.isRevealed ? motion.isVisible : ""}`}
-            >
-                <h2>כמה עולה כרטיס ביקור דיגיטלי?</h2>
-                <p>
-                    כרטיס ביקור דיגיטלי הוא פתרון חכם וחסכוני לעסקים. במקום
-                    להדפיס כרטיסים שוב ושוב, משלמים פעם אחת או במנוי ונהנים
-                    מכרטיס שמתעדכן בזמן אמת, נראה מקצועי ומתאים למובייל.
-                </p>
-                <p>
-                    ב-Cardigo ניתן להתחיל בחינם ולשדרג לתכנית פרימיום הכוללת
-                    אפשרויות מתקדמות כמו גלריה מורחבת, המלצות, וידאו וטופס
-                    לידים.
-                </p>
-                <p>
-                    בעמוד זה תוכלו למצוא מחירים, תכניות ותשובות לשאלות נפוצות
-                    לגבי כרטיס ביקור דיגיטלי, כולל מידע על ניסיון חינמי, מנוי
-                    חודשי ומנוי שנתי.
-                </p>
-            </section>
-
-            {/* V2 scroll-linked demos */}
-            <section className={styles.demoSection}>
-                <h3 className={styles.demoTitle}>זום עדין בגלילה</h3>
-                <p className={styles.demoText}>
-                    אלמנט ויזואלי שגדל בעדינות ככל שגוללים — תחושת עומק פרימיום.
-                </p>
-                <div
-                    ref={zoomScroll.ref}
-                    className={`${styles.demoVisual} ${scroll.scrollZoomSoft}`}
-                >
-                    <span className={styles.demoIcon}>🔍</span>
-                </div>
-            </section>
-
-            <section className={styles.demoSection}>
-                <h3 className={styles.demoTitle}>פרלקס רך</h3>
-                <p className={styles.demoText}>
-                    תנועה עדינה כלפי מעלה שמייצרת שכבות עומק בין הסקשנים.
-                </p>
-                <div
-                    ref={parallaxScroll.ref}
-                    className={`${styles.demoVisual} ${scroll.scrollParallaxSoft}`}
-                >
-                    <span className={styles.demoIcon}>✨</span>
-                </div>
-            </section>
-
-            <section className={styles.demoSection}>
-                <h3 className={styles.demoTitle}>סחף אופקי</h3>
-                <p className={styles.demoText}>
-                    שורת פריטים שנעה לאט הצידה עם הגלילה — אשליית תנועה אופקית.
-                </p>
-                <div className={scroll.scrollDriftInlineWrap}>
-                    <div
-                        ref={driftScroll.ref}
-                        className={`${styles.demoDriftRow} ${scroll.scrollDriftInline}`}
-                    >
-                        <div className={styles.demoDriftItem}>
-                            כרטיס דיגיטלי
+                        <p className={pub.sectionLeadLight}>
+                            הכרטיס הדיגיטלי שמציג את העסק שלכם בצורה מקצועית,
+                            מדויקת ומעוצבת — בכל מכשיר, בכל רגע, עם כל מה שצריך
+                            בעמוד אחד.
+                        </p>
+                        {/* ── Product visual stage ──────────────── */}
+                        <div className={styles.heroStage}>
+                            <img
+                                src="/images/Pricing/Cardigo-bussines-digital-card-bussiness-growth.webp"
+                                alt="כרטיס ביקור דיגיטלי לעסקים — Cardigo"
+                                className={styles.stageImg}
+                                width={960}
+                                height={540}
+                                loading="eager"
+                                decoding="async"
+                            />
                         </div>
-                        <div className={styles.demoDriftItem}>שיתוף בלחיצה</div>
-                        <div className={styles.demoDriftItem}>עיצוב מותאם</div>
-                        <div className={styles.demoDriftItem}>טופס לידים</div>
-                        <div className={styles.demoDriftItem}>גלריה מורחבת</div>
-                        <div className={styles.demoDriftItem}>וידאו מוטמע</div>
+                        <div className={styles.heroActions}>
+                            <Button
+                                as={Link}
+                                to="/register"
+                                variant="primary"
+                                className={styles.heroCta}
+                                onClick={() =>
+                                    trackSiteClick({
+                                        action: SITE_ACTIONS.pricing_trial_start,
+                                        pagePath: "/pricing",
+                                    })
+                                }
+                            >
+                                להתחיל ניסיון חינמי
+                            </Button>
+
+                            <Button
+                                as="a"
+                                href="#plans"
+                                variant="secondary"
+                                className={styles.heroSecondary}
+                            >
+                                לראות את המסלולים
+                            </Button>
+                        </div>
                     </div>
+
+                    <p className={styles.trustLine}>
+                        בלי סיבוך, בלי עומס — לעסק שרוצה להיראות מקצועי כבר
+                        מהיום הראשון.
+                    </p>
                 </div>
             </section>
-        </Page>
+
+            {/* ── Future: Pricing plans (full) ──────────────── */}
+            <section id="plans" className={pub.sectionLight}>
+                <div className={pub.sectionWrap}>
+                    <h2 className={pub.h2Gold}>המסלולים שלנו</h2>
+                </div>
+            </section>
+
+            {/* ── Future: Value / decision logic ────────────── */}
+            <section className={pub.sectionDark}>
+                <div className={pub.sectionWrap}>
+                    <h2 className={pub.h2White}>למה Cardigo?</h2>
+                </div>
+            </section>
+
+            {/* ── Future: Annual recommendation ─────────────── */}
+            <section className={pub.sectionLight}>
+                <div className={pub.sectionWrap}>
+                    <h2 className={pub.h2Gold}>מסלול שנתי משתלם יותר</h2>
+                </div>
+            </section>
+
+            {/* ── Future: FAQ ───────────────────────────────── */}
+            <section className={pub.sectionDark}>
+                <div className={pub.sectionWrap}>
+                    <h2 className={pub.h2White}>שאלות נפוצות</h2>
+                </div>
+            </section>
+
+            {/* ── Future: Final CTA ─────────────────────────── */}
+            <section className={pub.sectionLight}>
+                <div className={pub.sectionWrap}>
+                    <h2 className={pub.h2Gold}>מוכנים להתחיל?</h2>
+                </div>
+            </section>
+        </main>
     );
 }
