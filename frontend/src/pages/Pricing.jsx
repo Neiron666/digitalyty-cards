@@ -349,6 +349,62 @@ export default function Pricing() {
                             </Button>
                         </div>
                     </div>
+
+                    {/* ── B2B: חברות וארגונים ─────────── */}
+                    <div className={styles.b2bBlock}>
+                        <div className={styles.b2bHeader}>
+                            <span className={styles.b2bKicker}>
+                                לחברות וארגונים
+                            </span>
+                            <h3 className={styles.b2bHeadline}>
+                                פתרון מרוכז לצוותים, חברות וארגונים
+                            </h3>
+                        </div>
+                        <div className={styles.b2bBody}>
+                            <p className={styles.b2bLead}>
+                                כרטיס דיגיטלי לכל עובד, ניהול גישה לצוות וכתובת
+                                ארגונית תחת המותג שלכם — עם תהליך חיבור מסודר
+                                שמתאים לארגון.
+                            </p>
+                            <ul className={styles.b2bList}>
+                                <li className={styles.b2bItem}>
+                                    כרטיס לכל עובד תחת המותג שלכם
+                                </li>
+                                <li className={styles.b2bItem}>
+                                    הזמנת עובדים וניהול גישה
+                                </li>
+                                <li className={styles.b2bItem}>
+                                    ניהול מרכזי של הצוות
+                                </li>
+                                <li className={styles.b2bItem}>
+                                    כתובת ארגונית לכל כרטיס
+                                </li>
+                                <li className={styles.b2bItem}>
+                                    חיוב מרוכז לארגון
+                                </li>
+                            </ul>
+                        </div>
+                        <div className={styles.b2bFooter}>
+                            <Button
+                                as={Link}
+                                to="/contact"
+                                variant="secondary"
+                                className={styles.b2bCta}
+                                onClick={() =>
+                                    trackSiteClick({
+                                        action: SITE_ACTIONS.contact_email_click,
+                                        pagePath: "/pricing",
+                                    })
+                                }
+                            >
+                                לקבלת הצעה לארגון
+                            </Button>
+                            <p className={styles.b2bSupport}>
+                                נחזור אליכם עם פתרון שמתאים לגודל הצוות ולצרכים
+                                של הארגון.
+                            </p>
+                        </div>
+                    </div>
                 </div>
             </section>
 
