@@ -142,10 +142,25 @@
 
 .plansRow {
     display: flex;
-    flex-direction: column;
-    align-items: center;
+    flex-direction: row;
     gap: 1.25rem;
     width: 100%;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-x: contain;
+    padding-block: 0.5rem;
+    scrollbar-width: none;
+}
+
+.plansRow::-webkit-scrollbar {
+    display: none;
+}
+
+.plansRow::after {
+    content: "";
+    flex-shrink: 0;
+    min-width: 0.01rem;
 }
 
 .planCard {
@@ -154,10 +169,12 @@
     align-items: center;
     text-align: center;
     gap: 0.5rem;
-    width: 100%;
+    width: 68vw;
     max-width: 22rem;
+    flex-shrink: 0;
+    scroll-snap-align: start;
     padding: 2rem 1.5rem;
-    border: 1px solid var(--gold-soft) offset-5px;
+    border: 1px solid var(--gold-soft);
     border-radius: var(--radius-md);
     background: #0f172a;
     box-shadow: 0 2px 12px rgba(0, 0, 0, 0.2);
@@ -238,69 +255,91 @@
     color: var(--global-white-text);
 }
 
-/* ── Plan card accordion (page-local) ────────────────── */
+/* ── Grouped accordion blocks (page-local) ──────────── */
 
-.planFeatures {
+.accordionStack {
     display: flex;
     flex-direction: column;
     width: 100%;
+    gap: 0.5rem;
     margin-block: 0.75rem 1rem;
-    border-top: 1px solid rgba(255, 255, 255, 0.08);
 }
 
-.featureRow {
-    border-bottom: 1px solid var(--gold-soft);
+.accordionBlock {
+    border: 1px solid rgba(212, 175, 55, 0.12);
+    border-radius: 0.5rem;
+    overflow: hidden;
+    transition: border-color 0.2s ease;
 }
 
-.featureSummary {
+.accordionBlock[open] {
+    border-color: rgba(212, 175, 55, 0.3);
+}
+
+.accordionTitle {
     display: flex;
     align-items: center;
-    justify-content: flex-start;
-    padding: 0.625rem 0;
+    gap: 0.5rem;
+    padding: 0.75rem 1rem;
     font-size: var(--fs-body-sm);
-    font-weight: 600;
-    color: rgba(255, 255, 255, 0.82);
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.88);
     cursor: pointer;
     list-style: none;
-    gap: 1rem;
+    background: rgba(255, 255, 255, 0.03);
+    transition: background 0.15s ease;
 }
 
-.featureSummary::-webkit-details-marker {
+.accordionTitle:hover {
+    background: rgba(255, 255, 255, 0.06);
+}
+
+.accordionTitle::-webkit-details-marker {
     display: none;
 }
 
-.featureSummary::before {
+.accordionTitle::after {
     content: "+";
-    flex-shrink: 0;
-    margin-inline-start: 0.5rem;
+    margin-inline-start: auto;
     font-size: var(--fs-body-sm);
     font-weight: 700;
     color: var(--gold);
     transition: transform 0.2s ease;
 }
 
-.featureRow[open] > .featureSummary::before {
+.accordionBlock[open] > .accordionTitle::after {
     content: "−";
     color: rgba(212, 175, 55, 0.7);
 }
 
-.featureDetail {
-    font-size: var(--fs-caption);
-    color: var(--gold);
-    line-height: 1.6;
-    margin: 0 0 0.5rem;
-    padding-inline-end: 1.25rem;
+.accordionTitle:focus-visible {
+    outline: 2px solid var(--gold);
+    outline-offset: -2px;
 }
 
-.featureGroupLabel {
-    display: block;
+.accordionList {
+    display: flex;
+    flex-direction: column;
+    gap: 0.375rem;
+    padding: 0 1rem 0.75rem;
+    margin: 0;
+    list-style: none;
+}
+
+.accordionItem {
+    display: flex;
+    align-items: baseline;
+    gap: 0.5rem;
     font-size: var(--fs-caption);
+    color: rgba(255, 255, 255, 0.68);
+    line-height: 1.6;
+}
+
+.accordionItem::before {
+    content: "\2713";
+    flex-shrink: 0;
+    color: var(--gold);
     font-weight: 700;
-    color: rgba(212, 175, 55, 0.6);
-    letter-spacing: 0.02em;
-    padding-block: 0.5rem 0.125rem;
-    margin-block-start: 0.25rem;
-    border-top: 1px solid rgba(212, 175, 55, 0.15);
 }
 
 /* ── Responsive — Desktop enhancements ──────────────── */
@@ -325,10 +364,18 @@
         flex-direction: row;
         align-items: stretch;
         justify-content: center;
+        overflow-x: visible;
+        scroll-snap-type: none;
+    }
+
+    .plansRow::after {
+        display: none;
     }
 
     .planCard {
+        width: auto;
         flex: 1 1 0;
+        min-width: 0;
         max-width: 25rem;
     }
 

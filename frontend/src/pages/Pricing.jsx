@@ -1,4 +1,4 @@
-import { Fragment, useEffect } from "react";
+import { useEffect } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import Button from "../components/ui/Button";
 import SeoHelmet from "../components/seo/SeoHelmet";
@@ -11,116 +11,120 @@ import styles from "./Pricing.module.css";
 
 const ORIGIN = import.meta.env.VITE_PUBLIC_ORIGIN || "https://cardigo.co.il";
 
-/* ── Cumulative feature data ─────────────────────────── */
+/* ── Grouped accordion data per plan ─────────────────── */
 
-const BASE_FEATURES = [
+const FREE_ACCORDIONS = [
     {
-        headline: "כרטיס ביקור דיגיטלי מקצועי",
-        detail: "עמוד מקצועי עם פרטי העסק ודרכי יצירת קשר ברורות.",
+        title: "מה כלול במסלול",
+        items: [
+            "כרטיס ביקור דיגיטלי מקצועי",
+            "עריכה עצמית פשוטה",
+            "עוזר AI להתחלה מהירה",
+            "שיתוף בוואטסאפ וברשתות",
+            "קוד QR מוכן לשיתוף",
+            "שמירת איש קשר בלחיצה",
+            "עיצוב מוכן להתחלה מהירה",
+        ],
     },
     {
-        headline: "עריכה עצמית פשוטה",
-        detail: "אפשר לעדכן את הכרטיס לבד ובכל זמן.",
-    },
-    {
-        headline: "עוזר AI להתחלה מהירה",
-        detail: "עוזר ביצירת תוכן התחלתי בצורה מהירה ופשוטה.",
-    },
-    {
-        headline: "שיתוף בוואטסאפ וברשתות",
-        detail: "שולחים את הכרטיס בקלות לכל לקוח או קשר.",
-    },
-    {
-        headline: "קוד QR מוכן לשיתוף",
-        detail: "קוד מוכן לסריקה, להדפסה ולהפצה.",
-    },
-    {
-        headline: "שמירת איש קשר בלחיצה",
-        detail: "המבקר יכול לשמור את הפרטים ישירות לטלפון.",
-    },
-    {
-        headline: "עיצוב מוכן להתחלה מהירה",
-        detail: "מתחילים עם מראה מקצועי בלי להסתבך.",
+        title: "למי זה מתאים",
+        items: [
+            "7 ימי ניסיון מלאים",
+            "מתאים לבדיקה ראשונה בלי התחייבות",
+            "דרך פשוטה לראות איך Cardigo עובד בפועל",
+        ],
     },
 ];
 
-const TRIAL_FEATURE = {
-    headline: "7 ימי ניסיון מלאים",
-    detail: "בודקים את Cardigo בפועל לפני שבוחרים מסלול.",
-};
-
-const PREMIUM_FEATURES = [
+const MONTHLY_ACCORDIONS = [
     {
-        headline: "גלריית תמונות מורחבת",
-        detail: "עד 10 תמונות להצגת עבודות, מוצרים או צוות.",
+        title: "פיצ׳רים בסיסיים",
+        items: [
+            "כרטיס ביקור דיגיטלי מקצועי",
+            "עריכה עצמית פשוטה",
+            "עוזר AI להתחלה מהירה",
+            "שיתוף בוואטסאפ וברשתות",
+            "קוד QR מוכן לשיתוף",
+            "שמירת איש קשר בלחיצה",
+            "עיצוב מוכן להתחלה מהירה",
+        ],
     },
     {
-        headline: "סרטון YouTube בכרטיס",
-        detail: "מוסיפים סרטון שמסביר, מציג או מחזק אמון.",
+        title: "פיצ׳רי פרימיום",
+        items: [
+            "גלריית תמונות מורחבת",
+            "סרטון YouTube בכרטיס",
+            "המלצות לקוחות",
+            "טופס לידים ואיסוף פניות",
+            "מעקב פעילות ואנליטיקה",
+            "SEO ונוכחות דיגיטלית מתקדמת",
+            "עיצוב מתקדם וכתובת אישית",
+        ],
     },
     {
-        headline: "המלצות לקוחות",
-        detail: "מציגים חוות דעת שמחזקות את הרושם המקצועי.",
-    },
-    {
-        headline: "טופס לידים ואיסוף פניות",
-        detail: "לקוחות משאירים פרטים ישירות מתוך הכרטיס.",
-    },
-    {
-        headline: "מעקב פעילות ואנליטיקה",
-        detail: "רואים ביקורים, מקורות כניסה ומבקרים ייחודיים.",
-    },
-    {
-        headline: "SEO ונוכחות דיגיטלית מתקדמת",
-        detail: "יותר שליטה בנראות הדיגיטלית של העסק.",
-    },
-    {
-        headline: "עיצוב מתקדם וכתובת אישית",
-        detail: "יותר שליטה במראה הכרטיס ובכתובת שלו.",
-    },
-];
-
-const YEARLY_FEATURES = [
-    {
-        headline: "חיסכון של ₪78.90 בשנה",
-        detail: "משלמים פחות לעומת תשלום חודשי מצטבר.",
-    },
-    {
-        headline: "יציבות לעסק לאורך שנה",
-        detail: "הכרטיס נשאר פעיל ורציף בלי לחשוב על חידוש חודשי.",
+        title: "למי זה מתאים",
+        items: [
+            "לעסק שרוצה גמישות מלאה",
+            "למי שרוצה להתחיל, להפסיק ולחדש לפי הצורך",
+            "מתאים לעבודה שוטפת בלי התחייבות לשנה",
+        ],
     },
 ];
 
-/* Grouped feature sets per card */
-const FREE_GROUPS = [{ features: [...BASE_FEATURES, TRIAL_FEATURE] }];
-
-const MONTHLY_GROUPS = [
-    { label: "כלול במסלול", features: BASE_FEATURES },
-    { label: "בנוסף בפרימיום", features: PREMIUM_FEATURES },
+const ANNUAL_ACCORDIONS = [
+    {
+        title: "פיצ׳רים בסיסיים",
+        items: [
+            "כרטיס ביקור דיגיטלי מקצועי",
+            "עריכה עצמית פשוטה",
+            "עוזר AI להתחלה מהירה",
+            "שיתוף בוואטסאפ וברשתות",
+            "קוד QR מוכן לשיתוף",
+            "שמירת איש קשר בלחיצה",
+            "עיצוב מוכן להתחלה מהירה",
+        ],
+    },
+    {
+        title: "פיצ׳רי פרימיום",
+        items: [
+            "גלריית תמונות מורחבת",
+            "סרטון YouTube בכרטיס",
+            "המלצות לקוחות",
+            "טופס לידים ואיסוף פניות",
+            "מעקב פעילות ואנליטיקה",
+            "SEO ונוכחות דיגיטלית מתקדמת",
+            "עיצוב מתקדם וכתובת אישית",
+        ],
+    },
+    {
+        title: "יתרונות המסלול השנתי",
+        items: [
+            "חיסכון של ₪78.90 בשנה",
+            "יציבות לעסק לאורך שנה",
+            "שקט בלי חידוש חודשי מתמשך",
+        ],
+    },
 ];
 
-const ANNUAL_GROUPS = [
-    { label: "כלול במסלול", features: BASE_FEATURES },
-    { label: "בנוסף בפרימיום", features: PREMIUM_FEATURES },
-    { label: "בנוסף בשנתי", features: YEARLY_FEATURES },
-];
-
-function FeatureGroups({ groups }) {
-    return groups.map((g, gi) => (
-        <Fragment key={gi}>
-            {g.label && (
-                <span className={styles.featureGroupLabel}>{g.label}</span>
-            )}
-            {g.features.map((f) => (
-                <details key={f.headline} className={styles.featureRow}>
-                    <summary className={styles.featureSummary}>
-                        {f.headline}
+function GroupedAccordions({ groups }) {
+    return (
+        <div className={styles.accordionStack}>
+            {groups.map((g) => (
+                <details key={g.title} className={styles.accordionBlock}>
+                    <summary className={styles.accordionTitle}>
+                        {g.title}
                     </summary>
-                    <p className={styles.featureDetail}>{f.detail}</p>
+                    <ul className={styles.accordionList}>
+                        {g.items.map((item) => (
+                            <li key={item} className={styles.accordionItem}>
+                                {item}
+                            </li>
+                        ))}
+                    </ul>
                 </details>
             ))}
-        </Fragment>
-    ));
+        </div>
+    );
 }
 
 const PAYMENT_FLASH = {
@@ -265,9 +269,7 @@ export default function Pricing() {
                                 התחלה פשוטה בלי התחייבות — כדי לראות איך הכרטיס
                                 עובד בפועל.
                             </p>
-                            <div className={styles.planFeatures}>
-                                <FeatureGroups groups={FREE_GROUPS} />
-                            </div>
+                            <GroupedAccordions groups={FREE_ACCORDIONS} />
                             <Button
                                 as={Link}
                                 to="/register"
@@ -296,9 +298,7 @@ export default function Pricing() {
                             <p className={styles.planNote}>
                                 גמישות מלאה — אפשר להתחיל, להפסיק ולחדש בכל רגע.
                             </p>
-                            <div className={styles.planFeatures}>
-                                <FeatureGroups groups={MONTHLY_GROUPS} />
-                            </div>
+                            <GroupedAccordions groups={MONTHLY_ACCORDIONS} />
                             <Button
                                 as={Link}
                                 to="/register"
@@ -332,9 +332,7 @@ export default function Pricing() {
                             <p className={styles.planNote}>
                                 חיסכון של ₪78.90 לעומת חודשי
                             </p>
-                            <div className={styles.planFeatures}>
-                                <FeatureGroups groups={ANNUAL_GROUPS} />
-                            </div>
+                            <GroupedAccordions groups={ANNUAL_ACCORDIONS} />
                             <Button
                                 as={Link}
                                 to="/register"
