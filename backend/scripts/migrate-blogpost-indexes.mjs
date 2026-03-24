@@ -1,4 +1,5 @@
 import "dotenv/config";
+import mongoose from "mongoose";
 
 import BlogPost from "../src/models/BlogPost.model.js";
 import { connectDB } from "../src/config/db.js";
@@ -16,6 +17,33 @@ function parseArgs(argv) {
     }
 
     return args;
+}
+
+async function checkDuplicateSlugs(verbose) {
+    const pipeline = [
+        { $match: { slug: { $exists: true } } },
+        { $group: { _id: "$slug", count: { $sum: 1 } } },
+        { $match: { count: { $gt: 1 } } },
+        { $limit: 5 },
+    ];
+
+    const dupes = await BlogPost.aggregate(pipeline);
+
+    if (dupes.length > 0) {
+        console.log(
+            "DUPLICATES FOUND — unique slug index cannot be created safely:",
+        );
+        for (const d of dupes) {
+            console.log(`  slug="${d._id}"  count=${d.count}`);
+        }
+        return true;
+    }
+
+    if (verbose) {
+        console.log("no duplicate slug values found");
+    }
+
+    return false;
 }
 
 async function ensureIndexes({ dryRun, verbose }) {
@@ -42,28 +70,94 @@ async function ensureIndexes({ dryRun, verbose }) {
         }
     }
 
-    const wantName = "previousSlugs_1";
+    /* ── slug_1 (unique) ─────────────────────────────────────── */
 
-    if (byName.has(wantName)) {
-        console.log(`${wantName} already exists — no-op`);
-        return;
+    const wantSlug = "slug_1";
+
+    if (byName.has(wantSlug)) {
+        console.log(`${wantSlug} already exists — no-op`);
+    } else {
+        const hasDuplicates = await checkDuplicateSlugs(verbose);
+
+        if (hasDuplicates) {
+            if (dryRun) {
+                console.log(
+                    `[dry-run] duplicates detected — apply would be BLOCKED until duplicates are resolved`,
+                );
+            } else {
+                console.error(
+                    `BLOCKED: cannot create unique index ${wantSlug} — resolve duplicate slug values first`,
+                );
+                process.exitCode = 2;
+                return;
+            }
+        } else {
+            if (dryRun || verbose) {
+                console.log(
+                    dryRun
+                        ? `[dry-run] would create unique index ${wantSlug} on { slug: 1 }`
+                        : `creating unique index ${wantSlug}`,
+                );
+            }
+            if (!dryRun) {
+                await BlogPost.collection.createIndex(
+                    { slug: 1 },
+                    { unique: true, name: wantSlug },
+                );
+                console.log(`created unique index ${wantSlug}`);
+            }
+        }
     }
 
-    if (dryRun || verbose) {
-        console.log(
-            dryRun
-                ? `[dry-run] would create index ${wantName} on { previousSlugs: 1 }`
-                : `creating index ${wantName}`,
-        );
+    /* ── status_1_publishedAt_-1 ─────────────────────────────── */
+
+    const wantCompound = "status_1_publishedAt_-1";
+
+    if (byName.has(wantCompound)) {
+        console.log(`${wantCompound} already exists — no-op`);
+    } else {
+        if (dryRun || verbose) {
+            console.log(
+                dryRun
+                    ? `[dry-run] would create index ${wantCompound} on { status: 1, publishedAt: -1 }`
+                    : `creating index ${wantCompound}`,
+            );
+        }
+        if (!dryRun) {
+            await BlogPost.collection.createIndex(
+                { status: 1, publishedAt: -1 },
+                { name: wantCompound },
+            );
+            console.log(`created index ${wantCompound}`);
+        }
     }
+
+    /* ── previousSlugs_1 ─────────────────────────────────────── */
+
+    const wantPrevSlugs = "previousSlugs_1";
+
+    if (byName.has(wantPrevSlugs)) {
+        console.log(`${wantPrevSlugs} already exists — no-op`);
+    } else {
+        if (dryRun || verbose) {
+            console.log(
+                dryRun
+                    ? `[dry-run] would create index ${wantPrevSlugs} on { previousSlugs: 1 }`
+                    : `creating index ${wantPrevSlugs}`,
+            );
+        }
+        if (!dryRun) {
+            await BlogPost.collection.createIndex(
+                { previousSlugs: 1 },
+                { name: wantPrevSlugs },
+            );
+            console.log(`created index ${wantPrevSlugs}`);
+        }
+    }
+
+    /* ── final state ─────────────────────────────────────────── */
 
     if (!dryRun) {
-        await BlogPost.collection.createIndex(
-            { previousSlugs: 1 },
-            { name: wantName },
-        );
-        console.log(`created index ${wantName}`);
-
         const after = await BlogPost.collection.indexes();
         console.log("resulting indexes:");
         for (const i of after) {
@@ -84,9 +178,12 @@ async function main() {
 
     await connectDB(mongoUri);
 
-    await ensureIndexes(args);
-
-    console.log("done", { dryRun: args.dryRun });
+    try {
+        await ensureIndexes(args);
+        console.log("done", { dryRun: args.dryRun });
+    } finally {
+        await mongoose.disconnect();
+    }
 }
 
 main().catch((err) => {
