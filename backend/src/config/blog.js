@@ -12,6 +12,9 @@ export const BLOG_HERO_ALT_MAX = 200;
 export const BLOG_SECTION_IMAGE_ALT_MAX = 200;
 export const BLOG_SLUG_MAX = 100;
 
+/** Max number of historical slug aliases preserved per blog post. */
+export const BLOG_PREVIOUS_SLUGS_MAX = 10;
+
 // Author (optional)
 export const BLOG_AUTHOR_NAME_MAX = 100;
 export const BLOG_AUTHOR_BIO_MAX = 300;

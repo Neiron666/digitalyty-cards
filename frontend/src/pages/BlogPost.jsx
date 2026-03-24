@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import SeoHelmet from "../components/seo/SeoHelmet";
 import { trackSitePageView } from "../services/siteAnalytics.client";
 import styles from "./BlogPost.module.css";
@@ -287,6 +287,7 @@ export default function BlogPost() {
     const [notFound, setNotFound] = useState(false);
     const [error, setError] = useState(null);
     const [related, setRelated] = useState([]);
+    const navigate = useNavigate();
 
     useEffect(() => {
         trackSitePageView();
@@ -343,6 +344,12 @@ export default function BlogPost() {
         };
     }, [slug]);
 
+    /* ── Alias redirect: normalize URL to canonical slug ── */
+    useEffect(() => {
+        if (post && post.slug && post.slug !== slug) {
+            navigate(`/blog/${post.slug}`, { replace: true });
+        }
+    }, [post, slug, navigate]);
     /* ── Loading state ──────────────── */
     if (loading) {
         return (

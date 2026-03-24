@@ -100,8 +100,10 @@ export async function getPublishedPost(req, res) {
             return res.status(404).json({ message: "Not found" });
         }
 
+        const normalized = slug.toLowerCase().trim();
+
         const post = await BlogPost.findOne({
-            slug: slug.toLowerCase().trim(),
+            $or: [{ slug: normalized }, { previousSlugs: normalized }],
             status: "published",
         }).lean();
 

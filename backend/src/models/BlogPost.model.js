@@ -10,6 +10,7 @@ import {
     BLOG_HERO_ALT_MAX,
     BLOG_SECTION_IMAGE_ALT_MAX,
     BLOG_SLUG_MAX,
+    BLOG_PREVIOUS_SLUGS_MAX,
     BLOG_AUTHOR_NAME_MAX,
     BLOG_AUTHOR_BIO_MAX,
     BLOG_AUTHOR_IMAGE_ALT_MAX,
@@ -95,6 +96,23 @@ const BlogPostSchema = new mongoose.Schema(
             lowercase: true,
             maxlength: BLOG_SLUG_MAX,
         },
+        previousSlugs: {
+            type: [
+                {
+                    type: String,
+                    trim: true,
+                    lowercase: true,
+                    maxlength: BLOG_SLUG_MAX,
+                },
+            ],
+            default: [],
+            validate: {
+                validator(arr) {
+                    return arr.length <= BLOG_PREVIOUS_SLUGS_MAX;
+                },
+                message: `previousSlugs cannot exceed ${BLOG_PREVIOUS_SLUGS_MAX} items`,
+            },
+        },
         title: {
             type: String,
             required: true,
@@ -157,6 +175,7 @@ const BlogPostSchema = new mongoose.Schema(
             default: "draft",
         },
         publishedAt: { type: Date, default: null },
+        firstPublishedAt: { type: Date, default: null },
         createdByAdminId: {
             type: mongoose.Schema.Types.ObjectId,
             ref: "User",
@@ -170,5 +189,7 @@ const BlogPostSchema = new mongoose.Schema(
 // slug is already unique (implicit unique index).
 // Compound index for public listing: published posts sorted by publishedAt desc.
 BlogPostSchema.index({ status: 1, publishedAt: -1 });
+// Multikey index for alias resolution on public endpoint.
+BlogPostSchema.index({ previousSlugs: 1 });
 
 export default mongoose.model("BlogPost", BlogPostSchema);

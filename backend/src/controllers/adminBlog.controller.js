@@ -30,6 +30,7 @@ import {
     BLOG_HERO_ALT_MAX,
     BLOG_SECTION_IMAGE_ALT_MAX,
     BLOG_SLUG_MAX,
+    BLOG_PREVIOUS_SLUGS_MAX,
     BLOG_RESERVED_SLUGS,
     BLOG_ADMIN_AUDIT_REASON,
     BLOG_AUTHOR_NAME_MAX,
@@ -86,7 +87,7 @@ async function generateUniqueBlogSlug(baseSlug) {
     let candidate = baseSlug;
     let counter = 2;
 
-    while (await BlogPost.exists({ slug: candidate })) {
+    while (await isSlugTaken(candidate)) {
         candidate = `${baseSlug}-${counter}`;
         counter += 1;
     }
@@ -101,6 +102,21 @@ function validateSlugFormat(slug) {
         return "Slug must be lowercase alphanumeric with hyphens";
     if (BLOG_RESERVED_SLUGS.has(slug)) return `Slug "${slug}" is reserved`;
     return null;
+}
+
+/**
+ * Check if a slug is already taken — either as a current slug or as a
+ * historical alias (previousSlugs) on any post.
+ * @param {string} candidate
+ * @param {import('mongoose').Types.ObjectId|string} [excludePostId] — skip this post's current slug from the check (used during update)
+ */
+async function isSlugTaken(candidate, excludePostId) {
+    const currentSlugFilter = excludePostId
+        ? { slug: candidate, _id: { $ne: excludePostId } }
+        : { slug: candidate };
+    return BlogPost.exists({
+        $or: [currentSlugFilter, { previousSlugs: candidate }],
+    });
 }
 
 /* ── DTO ──────────────────────────────────────────────────────── */
@@ -346,6 +362,8 @@ export async function updateBlogPost(req, res) {
 
         const body = req.body || {};
         const $set = {};
+        let slugChanged = false;
+        let oldSlug = null;
 
         // Allowlisted fields only
         if (Object.prototype.hasOwnProperty.call(body, "title")) {
@@ -384,14 +402,28 @@ export async function updateBlogPost(req, res) {
                     .status(422)
                     .json({ code: "VALIDATION", message: slugErr });
 
-            // If slug changed, check uniqueness
+            // If slug changed, check uniqueness across current + historical
             if (candidate !== post.slug) {
-                const exists = await BlogPost.exists({ slug: candidate });
-                if (exists) {
+                const taken = await isSlugTaken(candidate, post._id);
+                if (taken) {
                     return res.status(409).json({
                         code: "DUPLICATE_SLUG",
-                        message: "Slug already exists",
+                        message: "Slug already exists or is a reserved alias",
                     });
+                }
+                slugChanged = true;
+                oldSlug = post.slug;
+
+                // Alias cap: only if post has ever been public
+                const everPublished = Boolean(post.firstPublishedAt);
+                if (everPublished) {
+                    const currentCount = post.previousSlugs?.length || 0;
+                    if (currentCount >= BLOG_PREVIOUS_SLUGS_MAX) {
+                        return res.status(422).json({
+                            code: "SLUG_ALIAS_LIMIT",
+                            message: `Cannot change slug — alias history limit (${BLOG_PREVIOUS_SLUGS_MAX}) reached`,
+                        });
+                    }
                 }
             }
             $set.slug = candidate;
@@ -423,20 +455,33 @@ export async function updateBlogPost(req, res) {
             return res.json(pickAdminDTO(post));
         }
 
-        const updated = await BlogPost.findByIdAndUpdate(
-            id,
-            { $set },
-            { new: true, runValidators: true },
-        );
+        // Build atomic update ops — preserve alias if ever-published
+        const updateOps = { $set };
+        const everPublished = Boolean(post.firstPublishedAt);
+        if (slugChanged && oldSlug && everPublished) {
+            updateOps.$push = { previousSlugs: oldSlug };
+        }
+
+        const updated = await BlogPost.findByIdAndUpdate(id, updateOps, {
+            new: true,
+            runValidators: true,
+        });
 
         // Best-effort audit (fire-and-forget)
+        const auditMeta = {
+            slug: updated.slug,
+            changedFields: Object.keys($set),
+        };
+        if (slugChanged && oldSlug && everPublished) {
+            auditMeta.aliasPreserved = oldSlug;
+        }
         void logAdminAction({
             adminUserId: getAdminId(req),
             action: "update-blog-post",
             targetType: "blog",
             targetId: updated._id,
             reason: BLOG_ADMIN_AUDIT_REASON,
-            meta: { slug: updated.slug, changedFields: Object.keys($set) },
+            meta: auditMeta,
         }).catch((auditErr) =>
             console.error("[adminBlog] audit update error:", auditErr),
         );
@@ -461,9 +506,21 @@ export async function publishBlogPost(req, res) {
             return res.status(404).json({ message: "Not found" });
         }
 
+        const now = new Date();
+        const existing = await BlogPost.findById(id);
+        if (!existing) {
+            return res.status(404).json({ message: "Not found" });
+        }
+
+        const $setFields = { status: "published", publishedAt: now };
+        // Immutable lifecycle marker: set firstPublishedAt only on first publication
+        if (!existing.firstPublishedAt) {
+            $setFields.firstPublishedAt = now;
+        }
+
         const post = await BlogPost.findByIdAndUpdate(
             id,
-            { $set: { status: "published", publishedAt: new Date() } },
+            { $set: $setFields },
             { new: true, runValidators: true },
         );
         if (!post) {
@@ -695,12 +752,10 @@ export async function uploadBlogSectionImage(req, res) {
         }
 
         if (idx >= (post.sections || []).length) {
-            return res
-                .status(422)
-                .json({
-                    code: "VALIDATION",
-                    message: "Section index out of range",
-                });
+            return res.status(422).json({
+                code: "VALIDATION",
+                message: "Section index out of range",
+            });
         }
 
         if (!req.file) {
@@ -801,12 +856,10 @@ export async function removeBlogSectionImage(req, res) {
         }
 
         if (idx >= (post.sections || []).length) {
-            return res
-                .status(422)
-                .json({
-                    code: "VALIDATION",
-                    message: "Section index out of range",
-                });
+            return res.status(422).json({
+                code: "VALIDATION",
+                message: "Section index out of range",
+            });
         }
 
         const oldPath = post.sections[idx].image?.storagePath;
