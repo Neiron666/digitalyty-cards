@@ -44,6 +44,10 @@ Runtime ≠ Sanity ≠ Migration:
         - `npm.cmd run migrate:card-user-index -- --apply --i-understand-index-downtime`
         - Alternative unlock: `set ALLOW_INDEX_MIGRATION=1` (and `--force` is required when `NODE_ENV=production`).
     - DoD: after apply, `npm.cmd run sanity:card-index-drift` must return `EXIT:0`.
+- Migration (`migrate:blogpost-indexes`): governs BlogPost indexes (`slug_1`, `status_1_publishedAt_-1`, `previousSlugs_1`).
+    - Dry-run by default. Apply: `npm.cmd run migrate:blogpost-indexes -- --apply`
+    - Includes duplicate-slug safety check before creating unique index.
+    - Details: `docs/runbooks/docs_blog_seo_og_runbook.md` §10.
 
 Do NOT run `--apply` automatically in CI.
 

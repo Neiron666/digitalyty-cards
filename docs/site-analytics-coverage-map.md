@@ -4,14 +4,15 @@ Scope: marketing site pages only (not `/card/*`, not `/admin`, not `/edit`).
 
 ## Page Views (trackSitePageView)
 
-| Page    | File                           | trackSitePageView() | Notes                |
-| ------- | ------------------------------ | ------------------: | -------------------- |
-| Home    | frontend/src/pages/Home.jsx    |                  ✅ | Called once on mount |
-| Pricing | frontend/src/pages/Pricing.jsx |                  ✅ | Called once on mount |
-| Guides  | frontend/src/pages/Guides.jsx  |                  ✅ | Called once on mount |
-| Cards   | frontend/src/pages/Cards.jsx   |                  ✅ | Called once on mount |
-| Blog    | frontend/src/pages/Blog.jsx    |                  ✅ | Called once on mount |
-| Contact | frontend/src/pages/Contact.jsx |                  ✅ | Called once on mount |
+| Page     | File                            | trackSitePageView() | Notes                |
+| -------- | ------------------------------- | ------------------: | -------------------- |
+| Home     | frontend/src/pages/Home.jsx     |                  ✅ | Called once on mount |
+| Pricing  | frontend/src/pages/Pricing.jsx  |                  ✅ | Called once on mount |
+| Guides   | frontend/src/pages/Guides.jsx   |                  ✅ | Called once on mount |
+| Cards    | frontend/src/pages/Cards.jsx    |                  ✅ | Called once on mount |
+| Blog     | frontend/src/pages/Blog.jsx     |                  ✅ | Called once on mount |
+| BlogPost | frontend/src/pages/BlogPost.jsx |                  ✅ | Called once on mount |
+| Contact  | frontend/src/pages/Contact.jsx  |                  ✅ | Called once on mount |
 
 ## Click Intents (trackSiteClick)
 
