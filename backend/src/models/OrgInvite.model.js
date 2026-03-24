@@ -45,4 +45,16 @@ const OrgInviteSchema = new mongoose.Schema(
     { timestamps: true },
 );
 
+// Runtime-shaped compound indexes (managed by migrate-orginvites-indexes.mjs).
+OrgInviteSchema.index({ orgId: 1, createdAt: -1 });
+OrgInviteSchema.index({ orgId: 1, revokedAt: 1, usedAt: 1, expiresAt: 1 });
+OrgInviteSchema.index({
+    orgId: 1,
+    email: 1,
+    revokedAt: 1,
+    usedAt: 1,
+    expiresAt: 1,
+});
+OrgInviteSchema.index({ createdByUserId: 1, revokedAt: 1, usedAt: 1 });
+
 export default mongoose.model("OrgInvite", OrgInviteSchema);

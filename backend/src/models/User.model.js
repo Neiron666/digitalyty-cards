@@ -2,7 +2,13 @@ import mongoose from "mongoose";
 
 const UserSchema = new mongoose.Schema(
     {
-        email: { type: String, unique: true, index: true },
+        email: {
+            type: String,
+            unique: true,
+            index: true,
+            trim: true,
+            lowercase: true,
+        },
         passwordHash: String,
 
         // Email verification status: false until user clicks verification link.
