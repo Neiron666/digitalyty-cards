@@ -28,6 +28,7 @@ import {
     BLOG_SEO_TITLE_MAX,
     BLOG_SEO_DESC_MAX,
     BLOG_HERO_ALT_MAX,
+    BLOG_SECTION_IMAGE_ALT_MAX,
     BLOG_SLUG_MAX,
     BLOG_RESERVED_SLUGS,
     BLOG_ADMIN_AUDIT_REASON,
@@ -115,10 +116,15 @@ function pickAdminDTO(post) {
         excerpt: obj.excerpt || "",
         heroImageUrl: getPublicUrlForPath({ path: heroPath }) || null,
         heroImageAlt: obj.heroImage?.alt || "",
-        sections: (obj.sections || []).map((s) => ({
-            heading: s.heading || "",
-            body: s.body || "",
-        })),
+        sections: (obj.sections || []).map((s) => {
+            const imgPath = s.image?.storagePath || "";
+            return {
+                heading: s.heading || "",
+                body: s.body || "",
+                imageUrl: getPublicUrlForPath({ path: imgPath }) || null,
+                imageAlt: s.image?.alt || "",
+            };
+        }),
         seo: {
             title: obj.seo?.title || "",
             description: obj.seo?.description || "",
@@ -141,12 +147,32 @@ function pickAdminDTO(post) {
 
 /* ── Normalize sections (defensive) ──────────────────────────── */
 
-function normalizeSections(raw) {
+function normalizeSections(raw, existingSections) {
     if (!Array.isArray(raw)) return [];
-    return raw.slice(0, BLOG_SECTIONS_MAX).map((s) => ({
-        heading: truncate(s?.heading, BLOG_SECTION_HEADING_MAX),
-        body: truncate(s?.body, BLOG_SECTION_BODY_MAX),
-    }));
+    const existing = Array.isArray(existingSections) ? existingSections : [];
+    return raw.slice(0, BLOG_SECTIONS_MAX).map((s, i) => {
+        const section = {
+            heading: truncate(s?.heading, BLOG_SECTION_HEADING_MAX),
+            body: truncate(s?.body, BLOG_SECTION_BODY_MAX),
+        };
+        // Preserve existing image data (upload is a separate endpoint)
+        if (s?.image && typeof s.image === "object" && s.image.storagePath) {
+            section.image = {
+                storagePath: String(s.image.storagePath).trim(),
+                alt: truncate(s.image.alt, BLOG_SECTION_IMAGE_ALT_MAX),
+            };
+        } else if (existing[i]?.image?.storagePath) {
+            // Frontend payload lacks storagePath — preserve DB image
+            section.image = {
+                storagePath: existing[i].image.storagePath,
+                alt: truncate(
+                    existing[i].image.alt,
+                    BLOG_SECTION_IMAGE_ALT_MAX,
+                ),
+            };
+        }
+        return section;
+    });
 }
 
 function normalizeSeo(raw) {
@@ -372,7 +398,7 @@ export async function updateBlogPost(req, res) {
         }
 
         if (Object.prototype.hasOwnProperty.call(body, "sections")) {
-            $set.sections = normalizeSections(body.sections);
+            $set.sections = normalizeSections(body.sections, post.sections);
         }
 
         if (Object.prototype.hasOwnProperty.call(body, "seo")) {
@@ -515,11 +541,15 @@ export async function deleteBlogPost(req, res) {
 
         // Best-effort hero cleanup
         const heroPath = post.heroImage?.storagePath;
-        if (heroPath) {
+        const sectionImagePaths = (post.sections || [])
+            .map((s) => s.image?.storagePath)
+            .filter(Boolean);
+        const allImagePaths = [heroPath, ...sectionImagePaths].filter(Boolean);
+        if (allImagePaths.length) {
             try {
-                await removeObjects({ paths: [heroPath] });
+                await removeObjects({ paths: allImagePaths });
             } catch (cleanupErr) {
-                console.error("[adminBlog] hero cleanup error:", cleanupErr);
+                console.error("[adminBlog] image cleanup error:", cleanupErr);
             }
         }
 
@@ -639,6 +669,183 @@ export async function uploadBlogHeroImage(req, res) {
                 .json({ code: err.code, message: err.message });
         }
         console.error("[adminBlog] uploadBlogHeroImage error:", err);
+        return res.status(500).json({ message: "Server error" });
+    }
+}
+
+/* ── Section image upload ─────────────────────────────────────── */
+
+export async function uploadBlogSectionImage(req, res) {
+    try {
+        const { id, sectionIdx } = req.params;
+        if (!isValidObjectId(id)) {
+            return res.status(404).json({ message: "Not found" });
+        }
+
+        const idx = parseInt(sectionIdx, 10);
+        if (!Number.isFinite(idx) || idx < 0 || idx >= BLOG_SECTIONS_MAX) {
+            return res
+                .status(422)
+                .json({ code: "VALIDATION", message: "Invalid section index" });
+        }
+
+        const post = await BlogPost.findById(id);
+        if (!post) {
+            return res.status(404).json({ message: "Not found" });
+        }
+
+        if (idx >= (post.sections || []).length) {
+            return res
+                .status(422)
+                .json({
+                    code: "VALIDATION",
+                    message: "Section index out of range",
+                });
+        }
+
+        if (!req.file) {
+            return res.status(422).json({
+                code: "VALIDATION",
+                message: "Image file is required",
+            });
+        }
+
+        const alt = truncate(req.body?.alt, BLOG_SECTION_IMAGE_ALT_MAX);
+        if (!alt) {
+            return res
+                .status(422)
+                .json({ code: "VALIDATION", message: "alt text is required" });
+        }
+
+        const processed = await processImage(req.file.buffer, {
+            kind: "blogSectionImage",
+        });
+
+        const mimeToExt = {
+            "image/jpeg": "jpg",
+            "image/png": "png",
+            "image/webp": "webp",
+        };
+        const ext = mimeToExt[processed.mime] || "jpg";
+        const storagePath = `blog/${id}/sections/${uuidv4()}.${ext}`;
+
+        await uploadBuffer({
+            buffer: processed.buffer,
+            mime: processed.mime,
+            path: storagePath,
+        });
+
+        // Best-effort delete old section image if exists
+        const oldPath = post.sections[idx].image?.storagePath;
+        if (oldPath && oldPath !== storagePath) {
+            try {
+                await removeObjects({ paths: [oldPath] });
+            } catch (cleanupErr) {
+                console.error(
+                    "[adminBlog] old section image cleanup error:",
+                    cleanupErr,
+                );
+            }
+        }
+
+        post.sections[idx].image = { storagePath, alt };
+        post.markModified("sections");
+        await post.save();
+
+        void logAdminAction({
+            adminUserId: getAdminId(req),
+            action: "upload-blog-section-image",
+            targetType: "blog",
+            targetId: post._id,
+            reason: BLOG_ADMIN_AUDIT_REASON,
+            meta: { slug: post.slug, sectionIdx: idx, storagePath, alt },
+        }).catch((auditErr) =>
+            console.error(
+                "[adminBlog] audit upload-section-image error:",
+                auditErr,
+            ),
+        );
+
+        const imageUrl = getPublicUrlForPath({ path: storagePath }) || null;
+        return res.json({ imageUrl, imageAlt: alt });
+    } catch (err) {
+        if (err instanceof HttpError) {
+            return res
+                .status(err.statusCode)
+                .json({ code: err.code, message: err.message });
+        }
+        console.error("[adminBlog] uploadBlogSectionImage error:", err);
+        return res.status(500).json({ message: "Server error" });
+    }
+}
+
+/* ── Section image remove ─────────────────────────────────────── */
+
+export async function removeBlogSectionImage(req, res) {
+    try {
+        const { id, sectionIdx } = req.params;
+        if (!isValidObjectId(id)) {
+            return res.status(404).json({ message: "Not found" });
+        }
+
+        const idx = parseInt(sectionIdx, 10);
+        if (!Number.isFinite(idx) || idx < 0 || idx >= BLOG_SECTIONS_MAX) {
+            return res
+                .status(422)
+                .json({ code: "VALIDATION", message: "Invalid section index" });
+        }
+
+        const post = await BlogPost.findById(id);
+        if (!post) {
+            return res.status(404).json({ message: "Not found" });
+        }
+
+        if (idx >= (post.sections || []).length) {
+            return res
+                .status(422)
+                .json({
+                    code: "VALIDATION",
+                    message: "Section index out of range",
+                });
+        }
+
+        const oldPath = post.sections[idx].image?.storagePath;
+        if (oldPath) {
+            try {
+                await removeObjects({ paths: [oldPath] });
+            } catch (cleanupErr) {
+                console.error(
+                    "[adminBlog] section image remove cleanup error:",
+                    cleanupErr,
+                );
+            }
+        }
+
+        post.sections[idx].image = { storagePath: "", alt: "" };
+        post.markModified("sections");
+        await post.save();
+
+        void logAdminAction({
+            adminUserId: getAdminId(req),
+            action: "remove-blog-section-image",
+            targetType: "blog",
+            targetId: post._id,
+            reason: BLOG_ADMIN_AUDIT_REASON,
+            meta: {
+                slug: post.slug,
+                sectionIdx: idx,
+                removedPath: oldPath || null,
+            },
+        }).catch((auditErr) =>
+            console.error(
+                "[adminBlog] audit remove-section-image error:",
+                auditErr,
+            ),
+        );
+
+        return res.json({ ok: true });
+    } catch (err) {
+        console.error("[adminBlog] removeBlogSectionImage error:", err);
         return res.status(500).json({ message: "Server error" });
     }
 }

@@ -63,6 +63,7 @@ const router = createBrowserRouter([
             // marketing pages
             { path: "contact", element: <Contact /> },
             { path: "blog", element: <Blog /> },
+            { path: "blog/page/:pageNum", element: <Blog /> },
             {
                 path: "blog/:slug",
                 element: (

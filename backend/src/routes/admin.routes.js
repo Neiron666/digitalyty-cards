@@ -53,6 +53,8 @@ import {
     unpublishBlogPost,
     deleteBlogPost,
     uploadBlogHeroImage,
+    uploadBlogSectionImage,
+    removeBlogSectionImage,
 } from "../controllers/adminBlog.controller.js";
 import { upload } from "../middlewares/upload.middleware.js";
 
@@ -120,6 +122,15 @@ router.post(
     "/blog/posts/:id/upload-hero",
     upload.single("image"),
     uploadBlogHeroImage,
+);
+router.post(
+    "/blog/posts/:id/sections/:sectionIdx/upload-image",
+    upload.single("image"),
+    uploadBlogSectionImage,
+);
+router.post(
+    "/blog/posts/:id/sections/:sectionIdx/remove-image",
+    removeBlogSectionImage,
 );
 router.post("/blog/posts/:id/delete", deleteBlogPost);
 

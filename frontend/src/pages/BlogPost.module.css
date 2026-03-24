@@ -11,6 +11,7 @@
 .blogWrap {
     min-height: 100dvh;
     padding: 24px 0; /* no inline padding on mobile */
+    background: #ffffff;
 }
 
 @media (min-width: 60rem) {
@@ -220,6 +221,15 @@
     color: var(--text-muted);
     margin: 0 0 12px;
     overflow-wrap: break-word;
+}
+
+.sectionImage {
+    display: block;
+    width: 100%;
+    max-width: 720px;
+    margin: 0 auto 16px;
+    border-radius: 10px;
+    object-fit: cover;
 }
 
 .sectionBody:last-child {

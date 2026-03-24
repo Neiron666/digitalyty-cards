@@ -39,10 +39,15 @@ function pickPublicDTO(post) {
         excerpt: post.excerpt || "",
         heroImageUrl: getPublicUrlForPath({ path: heroPath }) || null,
         heroImageAlt: post.heroImage?.alt || "",
-        sections: (post.sections || []).map((s) => ({
-            heading: s.heading || "",
-            body: s.body || "",
-        })),
+        sections: (post.sections || []).map((s) => {
+            const imgPath = s.image?.storagePath || "";
+            return {
+                heading: s.heading || "",
+                body: s.body || "",
+                imageUrl: getPublicUrlForPath({ path: imgPath }) || null,
+                imageAlt: s.image?.alt || "",
+            };
+        }),
         seo: {
             title: post.seo?.title || "",
             description: post.seo?.description || "",

@@ -11,6 +11,8 @@ import {
     unpublishAdminBlogPost,
     deleteAdminBlogPost,
     uploadAdminBlogHeroImage,
+    uploadAdminBlogSectionImage,
+    removeAdminBlogSectionImage,
 } from "../../services/admin.service";
 import styles from "./AdminBlogView.module.css";
 
@@ -18,7 +20,12 @@ import styles from "./AdminBlogView.module.css";
 
 const MAX_SECTIONS = 20;
 
-const EMPTY_SECTION = () => ({ heading: "", body: "" });
+const EMPTY_SECTION = () => ({
+    heading: "",
+    body: "",
+    imageUrl: null,
+    imageAlt: "",
+});
 
 /* ── Helpers ──────────────────────────────────────────────────── */
 
@@ -156,6 +163,8 @@ export default function AdminBlogView() {
             (post.sections || []).map((s) => ({
                 heading: safeString(s.heading),
                 body: safeString(s.body),
+                imageUrl: s.imageUrl || null,
+                imageAlt: safeString(s.imageAlt),
             })),
         );
         setFSeoTitle(safeString(post.seo?.title));
@@ -390,6 +399,71 @@ export default function AdminBlogView() {
             setFHeroUrl(res.data.heroImageUrl || null);
             showFlash("success", "התמונה הועלתה.");
             if (heroFileRef.current) heroFileRef.current.value = "";
+        } catch (err) {
+            showFlash("error", mapBlogApiError(err));
+        } finally {
+            setSelectedBusy(false);
+        }
+    }
+
+    /* ── Section image upload / remove ──────────── */
+
+    async function handleSectionImageUpload(idx) {
+        if (!selectedId) {
+            showFlash("error", "יש לשמור את הפוסט לפני העלאת תמונה.");
+            return;
+        }
+        const fileInput = document.getElementById(`sec-img-input-${idx}`);
+        const file = fileInput?.files?.[0];
+        if (!file) {
+            showFlash("error", "יש לבחור קובץ תמונה.");
+            return;
+        }
+        const alt = (fSections[idx]?.imageAlt || "").trim();
+        if (!alt) {
+            showFlash("error", "טקסט חלופי (alt) הוא שדה חובה לתמונת קטע.");
+            return;
+        }
+        setSelectedBusy(true);
+        try {
+            const res = await uploadAdminBlogSectionImage(
+                selectedId,
+                idx,
+                file,
+                alt,
+            );
+            setFSections((prev) => {
+                const next = [...prev];
+                next[idx] = {
+                    ...next[idx],
+                    imageUrl: res.data.imageUrl || null,
+                    imageAlt: res.data.imageAlt || alt,
+                };
+                return next;
+            });
+            showFlash("success", "תמונת הקטע הועלתה.");
+            if (fileInput) fileInput.value = "";
+        } catch (err) {
+            showFlash("error", mapBlogApiError(err));
+        } finally {
+            setSelectedBusy(false);
+        }
+    }
+
+    async function handleSectionImageRemove(idx) {
+        if (!selectedId) return;
+        if (!window.confirm("להסיר את תמונת הקטע?")) return;
+        setSelectedBusy(true);
+        try {
+            await removeAdminBlogSectionImage(selectedId, idx);
+            setFSections((prev) => {
+                const next = [...prev];
+                next[idx] = { ...next[idx], imageUrl: null, imageAlt: "" };
+                return next;
+            });
+            showFlash("success", "תמונת הקטע הוסרה.");
+            const fileInput = document.getElementById(`sec-img-input-${idx}`);
+            if (fileInput) fileInput.value = "";
         } catch (err) {
             showFlash("error", mapBlogApiError(err));
         } finally {
@@ -709,6 +783,65 @@ export default function AdminBlogView() {
                                         disabled={selectedBusy}
                                     />
                                 </label>
+
+                                {/* Section image */}
+                                <div className={styles.secImgBlock}>
+                                    {sec.imageUrl && (
+                                        <div className={styles.secImgPreview}>
+                                            <img
+                                                className={styles.secImgThumb}
+                                                src={sec.imageUrl}
+                                                alt={sec.imageAlt || "section"}
+                                            />
+                                        </div>
+                                    )}
+                                    <input
+                                        type="file"
+                                        accept="image/jpeg,image/png,image/webp"
+                                        id={`sec-img-input-${idx}`}
+                                        className={styles.fileInput}
+                                        disabled={selectedBusy}
+                                    />
+                                    <Input
+                                        label="טקסט חלופי לתמונה (alt)"
+                                        value={sec.imageAlt}
+                                        onChange={(e) =>
+                                            handleSectionField(
+                                                idx,
+                                                "imageAlt",
+                                                e.target.value,
+                                            )
+                                        }
+                                        disabled={selectedBusy}
+                                    />
+                                    <div className={styles.secImgActions}>
+                                        <Button
+                                            onClick={() =>
+                                                handleSectionImageUpload(idx)
+                                            }
+                                            disabled={
+                                                selectedBusy || !selectedId
+                                            }
+                                            variant="secondary"
+                                        >
+                                            העלה תמונת קטע
+                                        </Button>
+                                        {sec.imageUrl && (
+                                            <Button
+                                                onClick={() =>
+                                                    handleSectionImageRemove(
+                                                        idx,
+                                                    )
+                                                }
+                                                disabled={selectedBusy}
+                                                variant="danger"
+                                            >
+                                                הסר תמונה
+                                            </Button>
+                                        )}
+                                    </div>
+                                </div>
+
                                 <details className={styles.linkHint}>
                                     <summary className={styles.linkHintSummary}>
                                         איך מוסיפים קישורים בתוך הטקסט?
@@ -786,7 +919,8 @@ export default function AdminBlogView() {
                                 }
                                 disabled={selectedBusy}
                             />
-                            הצג כרטיס מחבר
+                            הצג מחבר של הכרטיס בפוסט (יציג "ולנטין" בתחתית
+                            הפוסט)
                         </label>
                     </div>
 

@@ -9,6 +9,7 @@ export const BLOG_SECTIONS_MAX = 20;
 export const BLOG_SEO_TITLE_MAX = 120;
 export const BLOG_SEO_DESC_MAX = 300;
 export const BLOG_HERO_ALT_MAX = 200;
+export const BLOG_SECTION_IMAGE_ALT_MAX = 200;
 export const BLOG_SLUG_MAX = 100;
 
 // Author (optional)

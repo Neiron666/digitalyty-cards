@@ -399,13 +399,11 @@ export default function BlogPost() {
                         />
                     </header>
 
-                    {post.heroImageUrl && (
-                        <img
-                            className={styles.heroImage}
-                            src={post.heroImageUrl}
-                            alt={post.heroImageAlt || post.title || ""}
-                        />
-                    )}
+                    <img
+                        className={styles.heroImage}
+                        src={post.heroImageUrl || BLOG_OG_FALLBACK}
+                        alt={post.heroImageAlt || post.title || ""}
+                    />
 
                     {(post.sections || []).map((section, i) => (
                         <section key={i} className={styles.section}>
@@ -413,6 +411,14 @@ export default function BlogPost() {
                                 <h2 className={styles.sectionHeading}>
                                     {section.heading}
                                 </h2>
+                            )}
+                            {section.imageUrl && (
+                                <img
+                                    className={styles.sectionImage}
+                                    src={section.imageUrl}
+                                    alt={section.imageAlt || ""}
+                                    loading="lazy"
+                                />
                             )}
                             {textToParagraphs(section.body).map((para, j) => (
                                 <p key={j} className={styles.sectionBody}>

@@ -8,6 +8,7 @@ import {
     BLOG_SEO_TITLE_MAX,
     BLOG_SEO_DESC_MAX,
     BLOG_HERO_ALT_MAX,
+    BLOG_SECTION_IMAGE_ALT_MAX,
     BLOG_SLUG_MAX,
     BLOG_AUTHOR_NAME_MAX,
     BLOG_AUTHOR_BIO_MAX,
@@ -15,6 +16,19 @@ import {
 } from "../config/blog.js";
 
 /* ── Sub-schemas ──────────────────────────────────────────────── */
+
+const BlogSectionImageSchema = new mongoose.Schema(
+    {
+        storagePath: { type: String, trim: true, default: "" },
+        alt: {
+            type: String,
+            trim: true,
+            maxlength: BLOG_SECTION_IMAGE_ALT_MAX,
+            default: "",
+        },
+    },
+    { _id: false },
+);
 
 const BlogSectionSchema = new mongoose.Schema(
     {
@@ -29,6 +43,10 @@ const BlogSectionSchema = new mongoose.Schema(
             trim: true,
             maxlength: BLOG_SECTION_BODY_MAX,
             default: "",
+        },
+        image: {
+            type: BlogSectionImageSchema,
+            default: () => ({}),
         },
     },
     { _id: false },

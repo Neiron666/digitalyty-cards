@@ -348,6 +348,32 @@
     background: rgba(220, 38, 38, 0.12);
 }
 
+/* ── Section image controls ────────────────────────────────────── */
+
+.secImgBlock {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding-block-start: 6px;
+}
+
+.secImgPreview {
+    max-width: 240px;
+}
+
+.secImgThumb {
+    display: block;
+    width: 100%;
+    border-radius: 6px;
+    object-fit: cover;
+}
+
+.secImgActions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
 /* ── Timestamps ────────────────────────────────────────────────── */
 
 .timestampsRow {

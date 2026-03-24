@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useParams, useNavigate } from "react-router-dom";
 import SeoHelmet from "../components/seo/SeoHelmet";
 import { trackSitePageView } from "../services/siteAnalytics.client";
 import pub from "../styles/public-sections.module.css";
@@ -7,6 +7,9 @@ import styles from "./Blog.module.css";
 
 const ORIGIN = import.meta.env.VITE_PUBLIC_ORIGIN || "https://cardigo.co.il";
 const PAGE_LIMIT = 12;
+
+/** Blog cover fallback — same asset used for OG in BlogPost. */
+const BLOG_COVER_FALLBACK = `${ORIGIN}/images/blog/fallback/blog-cardigo-bussines-img-fallback.webp`;
 
 /* ── FAQ ──────────────────────────────────────────────────────── */
 
@@ -83,11 +86,27 @@ function formatDate(iso) {
 /* ── Component ────────────────────────────────────────────────── */
 
 export default function Blog() {
+    const { pageNum } = useParams();
+    const navigate = useNavigate();
+
+    /* ── Derive page from URL ── */
+    const parsed = pageNum != null ? Number(pageNum) : 1;
+    const page =
+        Number.isFinite(parsed) && parsed >= 1 ? Math.floor(parsed) : 0;
+
+    /* Normalize invalid or page-1 via /blog/page/1 → /blog */
+    useEffect(() => {
+        if (pageNum != null && page <= 1) {
+            navigate("/blog", { replace: true });
+        }
+    }, [pageNum, page, navigate]);
+
     const [posts, setPosts] = useState([]);
     const [total, setTotal] = useState(0);
-    const [page, setPage] = useState(1);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+
+    const effectivePage = page >= 1 ? page : 1;
 
     useEffect(() => {
         trackSitePageView();
@@ -100,7 +119,7 @@ export default function Blog() {
             setError(null);
             try {
                 const res = await fetch(
-                    `/api/blog?page=${page}&limit=${PAGE_LIMIT}`,
+                    `/api/blog?page=${effectivePage}&limit=${PAGE_LIMIT}`,
                 );
                 if (!res.ok) throw new Error("שגיאה בטעינת הבלוג");
                 const data = await res.json();
@@ -118,17 +137,32 @@ export default function Blog() {
         return () => {
             cancelled = true;
         };
-    }, [page]);
+    }, [effectivePage]);
 
     const totalPages = Math.ceil(total / PAGE_LIMIT);
+
+    /* Normalize out-of-range page → last valid archive page */
+    useEffect(() => {
+        if (loading || totalPages === 0) return;
+        if (effectivePage > totalPages) {
+            navigate(totalPages <= 1 ? "/blog" : `/blog/page/${totalPages}`, {
+                replace: true,
+            });
+        }
+    }, [loading, effectivePage, totalPages, navigate]);
+
+    const canonicalUrl =
+        effectivePage <= 1
+            ? `${ORIGIN}/blog`
+            : `${ORIGIN}/blog/page/${effectivePage}`;
 
     return (
         <main data-page="site">
             <SeoHelmet
                 title="בלוג | Cardigo"
                 description="מאמרים, מדריכים ותובנות בנושא כרטיסי ביקור דיגיטליים, נוכחות עסקית, SEO ותקשורת חכמה עם לקוחות."
-                canonicalUrl={`${ORIGIN}/blog`}
-                url={`${ORIGIN}/blog`}
+                canonicalUrl={canonicalUrl}
+                url={canonicalUrl}
                 image={`${ORIGIN}/images/og/cardigo-home-og-1200x630.jpg`}
                 jsonLdItems={[blogFaqJsonLd]}
             />
@@ -189,18 +223,19 @@ export default function Blog() {
                         <div className={styles.grid}>
                             {posts.map((post) => (
                                 <article key={post.id} className={styles.card}>
-                                    {post.heroImageUrl && (
-                                        <img
-                                            className={styles.cardImage}
-                                            src={post.heroImageUrl}
-                                            alt={
-                                                post.heroImageAlt ||
-                                                post.title ||
-                                                ""
-                                            }
-                                            loading="lazy"
-                                        />
-                                    )}
+                                    <img
+                                        className={styles.cardImage}
+                                        src={
+                                            post.heroImageUrl ||
+                                            BLOG_COVER_FALLBACK
+                                        }
+                                        alt={
+                                            post.heroImageAlt ||
+                                            post.title ||
+                                            ""
+                                        }
+                                        loading="lazy"
+                                    />
                                     <div className={styles.cardBody}>
                                         {post.publishedAt && (
                                             <time
@@ -236,24 +271,28 @@ export default function Blog() {
                             className={styles.pagination}
                             aria-label="ניווט עמודים"
                         >
-                            {page > 1 && (
-                                <button
+                            {effectivePage > 1 && (
+                                <Link
                                     className={styles.pageBtn}
-                                    onClick={() => setPage((p) => p - 1)}
+                                    to={
+                                        effectivePage === 2
+                                            ? "/blog"
+                                            : `/blog/page/${effectivePage - 1}`
+                                    }
                                 >
                                     הקודם
-                                </button>
+                                </Link>
                             )}
                             <span className={styles.pageInfo}>
-                                {page} / {totalPages}
+                                {effectivePage} / {totalPages}
                             </span>
-                            {page < totalPages && (
-                                <button
+                            {effectivePage < totalPages && (
+                                <Link
                                     className={styles.pageBtn}
-                                    onClick={() => setPage((p) => p + 1)}
+                                    to={`/blog/page/${effectivePage + 1}`}
                                 >
                                     הבא
-                                </button>
+                                </Link>
                             )}
                         </nav>
                     )}

@@ -27,6 +27,7 @@ export const AGGRESSIVE_QUALITIES = [82, 78, 74];
 const PROFILES = {
     gallery: { maxLongSide: 2048, minLongSide: 1024 },
     blogHero: { maxLongSide: 2048, minLongSide: 1024 },
+    blogSectionImage: { maxLongSide: 1600, minLongSide: 800 },
     background: { maxLongSide: 1920, minLongSide: 800 },
     avatar: { maxLongSide: 800, minLongSide: 400 },
     galleryThumb: { maxLongSide: 600, minLongSide: 400 },

@@ -247,3 +247,19 @@ export function uploadAdminBlogHeroImage(id, file, alt) {
     fd.append("alt", alt);
     return api.post(`/admin/blog/posts/${id}/upload-hero`, fd);
 }
+
+export function uploadAdminBlogSectionImage(id, sectionIdx, file, alt) {
+    const fd = new FormData();
+    fd.append("image", file);
+    fd.append("alt", alt);
+    return api.post(
+        `/admin/blog/posts/${id}/sections/${sectionIdx}/upload-image`,
+        fd,
+    );
+}
+
+export function removeAdminBlogSectionImage(id, sectionIdx) {
+    return api.post(
+        `/admin/blog/posts/${id}/sections/${sectionIdx}/remove-image`,
+    );
+}
