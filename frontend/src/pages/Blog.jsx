@@ -1,12 +1,71 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import Page from "../components/page/Page";
 import SeoHelmet from "../components/seo/SeoHelmet";
 import { trackSitePageView } from "../services/siteAnalytics.client";
+import pub from "../styles/public-sections.module.css";
 import styles from "./Blog.module.css";
 
 const ORIGIN = import.meta.env.VITE_PUBLIC_ORIGIN || "https://cardigo.co.il";
 const PAGE_LIMIT = 12;
+
+/* ── FAQ ──────────────────────────────────────────────────────── */
+
+const BLOG_FAQ = [
+    {
+        q: "מה אפשר למצוא בבלוג של Cardigo?",
+        a: "בבלוג של Cardigo תמצאו מאמרים, מדריכים ותובנות מעשיות על כרטיסי ביקור דיגיטליים, נראות עסקית, SEO, יצירת קשר עם לקוחות, לידים, מיתוג דיגיטלי ושימוש נכון בכלים שהעסק צריך כדי להיראות מקצועי יותר אונליין.",
+    },
+    {
+        q: "למי התוכן בבלוג מתאים?",
+        a: "התוכן מתאים לבעלי עסקים, עצמאיים, נותני שירות, אנשי מכירות, יועצים, אנשי מקצוע וחברות שרוצים להבין איך לשפר נוכחות דיגיטלית, להציג את העסק בצורה חכמה יותר ולתקשר טוב יותר עם לקוחות.",
+    },
+    {
+        q: "האם הבלוג מתאים גם לעסקים קטנים או בתחילת הדרך?",
+        a: "כן. חלק גדול מהתוכן בבלוג נכתב בדיוק עבור עסקים קטנים, עצמאיים ועסקים שנמצאים בתחילת הדרך, ורוצים לקבל החלטות טובות יותר בלי להסתבך עם פתרונות טכניים מיותרים.",
+    },
+    {
+        q: "למה כרטיס ביקור דיגיטלי חשוב גם מבחינת נוכחות בגוגל?",
+        a: "כרטיס ביקור דיגיטלי יכול לעזור לעסק להיראות מקצועי יותר, לרכז מידע חשוב במקום אחד, לחזק אמון ולתמוך בנראות הדיגיטלית של העסק. כשעושים זאת נכון, הוא יכול לתרום גם להצגת פרטי העסק, קישורים, תוכן ואלמנטים שמחזקים את הנוכחות אונליין.",
+    },
+    {
+        q: "האם צריך ידע טכני כדי להבין וליישם את מה שמופיע בבלוג?",
+        a: "לא. הבלוג נכתב בשפה ברורה ומעשית, כדי שגם מי שאין לו רקע טכני יוכל להבין את הרעיונות, ליישם צעדים חשובים ולקבל החלטות טובות יותר לגבי הנוכחות הדיגיטלית של העסק.",
+    },
+    {
+        q: "איך לבחור מאיזה מאמר להתחיל?",
+        a: "הדרך הטובה ביותר היא להתחיל מהנושא שהכי רלוונטי לעסק שלכם כרגע — נראות דיגיטלית, יצירת קשר עם לקוחות, SEO, כרטיס ביקור דיגיטלי או שיפור הצגת השירותים. משם אפשר להמשיך לתכנים משלימים לפי הצורך.",
+    },
+    {
+        q: "האם הבלוג עוסק רק בכרטיסי ביקור דיגיטליים?",
+        a: "לא. כרטיס ביקור דיגיטלי הוא מרכז חשוב, אבל הבלוג עוסק גם בתמונה הרחבה יותר: נוכחות עסקית, אמון, חוויית לקוח, קידום אורגני, תקשורת עסקית, תוכן, מיתוג והדרך שבה עסק מציג את עצמו בעולם הדיגיטלי.",
+    },
+    {
+        q: "איפה מתחילים אם עדיין אין לי כרטיס ביקור דיגיטלי?",
+        a: "אם עדיין אין לכם כרטיס ביקור דיגיטלי, אפשר להתחיל קודם מלקרוא את המאמרים הרלוונטיים בבלוג, להבין מה חשוב באמת לעסק, ורק אחר כך לבנות כרטיס שמציג אתכם בצורה מקצועית, ברורה ונכונה יותר.",
+    },
+];
+
+function buildBlogFaqJsonLd() {
+    return {
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        "@id": `${ORIGIN}/blog#faq`,
+        url: `${ORIGIN}/blog`,
+        inLanguage: "he",
+        mainEntity: BLOG_FAQ.map((item) => ({
+            "@type": "Question",
+            name: item.q,
+            acceptedAnswer: {
+                "@type": "Answer",
+                text: item.a,
+            },
+        })),
+    };
+}
+
+const blogFaqJsonLd = buildBlogFaqJsonLd();
+
+/* ── Helpers ──────────────────────────────────────────────────── */
 
 function formatDate(iso) {
     if (!iso) return "";
@@ -20,6 +79,8 @@ function formatDate(iso) {
         return "";
     }
 }
+
+/* ── Component ────────────────────────────────────────────────── */
 
 export default function Blog() {
     const [posts, setPosts] = useState([]);
@@ -62,94 +123,160 @@ export default function Blog() {
     const totalPages = Math.ceil(total / PAGE_LIMIT);
 
     return (
-        <div className={styles.blogWrap} data-page="site">
+        <main data-page="site">
             <SeoHelmet
                 title="בלוג | Cardigo"
-                description="מאמרים, טיפים ועדכונים בנושא כרטיסי ביקור דיגיטליים ונטוורקינג."
+                description="מאמרים, מדריכים ותובנות בנושא כרטיסי ביקור דיגיטליים, נוכחות עסקית, SEO ותקשורת חכמה עם לקוחות."
                 canonicalUrl={`${ORIGIN}/blog`}
                 url={`${ORIGIN}/blog`}
+                image={`${ORIGIN}/images/og/cardigo-home-og-1200x630.jpg`}
+                jsonLdItems={[blogFaqJsonLd]}
             />
-            <Page title="בלוג" subtitle="מאמרים, טיפים ועדכונים">
-                {loading && posts.length === 0 && (
-                    <p className={styles.status}>טוען…</p>
-                )}
-                {error && <p className={styles.statusError}>{error}</p>}
-                {!loading && !error && posts.length === 0 && (
-                    <p className={styles.status}>אין מאמרים עדיין.</p>
-                )}
-                {posts.length > 0 && (
-                    <div className={styles.grid}>
-                        {posts.map((post) => (
-                            <article key={post.id} className={styles.card}>
-                                {post.heroImageUrl && (
-                                    <img
-                                        className={styles.cardImage}
-                                        src={post.heroImageUrl}
-                                        alt={
-                                            post.heroImageAlt ||
-                                            post.title ||
-                                            ""
-                                        }
-                                        loading="lazy"
-                                    />
-                                )}
-                                <div className={styles.cardBody}>
-                                    {post.publishedAt && (
-                                        <time
-                                            className={styles.cardDate}
-                                            dateTime={post.publishedAt}
+
+            {/* ── Hero ─────────────────────────────────────── */}
+            <section className={pub.sectionDark}>
+                <div className={`${pub.sectionWrap} ${styles.heroWrap}`}>
+                    <div className={styles.heroCopy}>
+                        <span className={styles.kicker}>
+                            תובנות, מדריכים ורעיונות לצמיחה דיגיטלית
+                        </span>
+
+                        <h1 className={styles.h1}>
+                            הבלוג של Cardigo
+                            <span
+                                className={`${styles.h1Accent} ${pub.goldUnderline}`}
+                            >
+                                כרטיס ביקור דיגיטלי שעובד נכון
+                            </span>
+                        </h1>
+
+                        <img
+                            className={styles.heroImg}
+                            src="/images/blog/hero/blog-cardigo-digital-bussines-card.webp"
+                            alt="כרטיס ביקור דיגיטלי של Cardigo — דוגמה חיה לכרטיס עסקי מעוצב"
+                            width="600"
+                            height="400"
+                            loading="eager"
+                        />
+
+                        <p className={pub.sectionLeadLight}>
+                            מאמרים, מדריכים ותובנות פרקטיות על כרטיסי ביקור
+                            דיגיטליים, נוכחות עסקית, לידים, SEO ותקשורת עסקית
+                            חכמה לעסקים בישראל.
+                        </p>
+                    </div>
+                </div>
+            </section>
+
+            {/* ── Listing ──────────────────────────────────── */}
+            <section className={pub.sectionLight}>
+                <div className={`${pub.sectionWrap} ${styles.listingWrap}`}>
+                    <h2 className={pub.h2Gold}>מאמרים אחרונים</h2>
+                    <p className={pub.sectionLead}>
+                        כאן תמצאו תוכן מעשי שיעזור לכם להבין איך להציג את העסק
+                        טוב יותר, לחזק נוכחות דיגיטלית, לשפר תקשורת עם לקוחות
+                        ולהפיק יותר ערך מכרטיס ביקור דיגיטלי.
+                    </p>
+
+                    {loading && posts.length === 0 && (
+                        <p className={styles.status}>טוען…</p>
+                    )}
+                    {error && <p className={styles.statusError}>{error}</p>}
+                    {!loading && !error && posts.length === 0 && (
+                        <p className={styles.status}>אין מאמרים עדיין.</p>
+                    )}
+                    {posts.length > 0 && (
+                        <div className={styles.grid}>
+                            {posts.map((post) => (
+                                <article key={post.id} className={styles.card}>
+                                    {post.heroImageUrl && (
+                                        <img
+                                            className={styles.cardImage}
+                                            src={post.heroImageUrl}
+                                            alt={
+                                                post.heroImageAlt ||
+                                                post.title ||
+                                                ""
+                                            }
+                                            loading="lazy"
+                                        />
+                                    )}
+                                    <div className={styles.cardBody}>
+                                        {post.publishedAt && (
+                                            <time
+                                                className={styles.cardDate}
+                                                dateTime={post.publishedAt}
+                                            >
+                                                {formatDate(post.publishedAt)}
+                                            </time>
+                                        )}
+                                        <h3 className={styles.cardTitle}>
+                                            <Link to={`/blog/${post.slug}`}>
+                                                {post.title}
+                                            </Link>
+                                        </h3>
+                                        {post.excerpt && (
+                                            <p className={styles.cardExcerpt}>
+                                                {post.excerpt}
+                                            </p>
+                                        )}
+                                        <Link
+                                            to={`/blog/${post.slug}`}
+                                            className={styles.cardCta}
                                         >
-                                            {formatDate(post.publishedAt)}
-                                        </time>
-                                    )}
-                                    <h2 className={styles.cardTitle}>
-                                        <Link to={`/blog/${post.slug}`}>
-                                            {post.title}
+                                            קרא עוד
                                         </Link>
-                                    </h2>
-                                    {post.excerpt && (
-                                        <p className={styles.cardExcerpt}>
-                                            {post.excerpt}
-                                        </p>
-                                    )}
-                                    <Link
-                                        to={`/blog/${post.slug}`}
-                                        className={styles.cardCta}
-                                    >
-                                        קרא עוד
-                                    </Link>
-                                </div>
-                            </article>
+                                    </div>
+                                </article>
+                            ))}
+                        </div>
+                    )}
+                    {totalPages > 1 && (
+                        <nav
+                            className={styles.pagination}
+                            aria-label="ניווט עמודים"
+                        >
+                            {page > 1 && (
+                                <button
+                                    className={styles.pageBtn}
+                                    onClick={() => setPage((p) => p - 1)}
+                                >
+                                    הקודם
+                                </button>
+                            )}
+                            <span className={styles.pageInfo}>
+                                {page} / {totalPages}
+                            </span>
+                            {page < totalPages && (
+                                <button
+                                    className={styles.pageBtn}
+                                    onClick={() => setPage((p) => p + 1)}
+                                >
+                                    הבא
+                                </button>
+                            )}
+                        </nav>
+                    )}
+                </div>
+            </section>
+
+            {/* ── FAQ ──────────────────────────────────────── */}
+            <section className={pub.sectionDark} id="faq">
+                <div className={pub.sectionWrap}>
+                    <h2 className={pub.h2Gold}>
+                        שאלות נפוצות על הבלוג של Cardigo
+                    </h2>
+
+                    <div className={pub.faq}>
+                        {BLOG_FAQ.map((item, i) => (
+                            <details key={i} className={pub.qa}>
+                                <summary>{item.q}</summary>
+                                <div className={pub.answer}>{item.a}</div>
+                            </details>
                         ))}
                     </div>
-                )}
-                {totalPages > 1 && (
-                    <nav
-                        className={styles.pagination}
-                        aria-label="ניווט עמודים"
-                    >
-                        {page > 1 && (
-                            <button
-                                className={styles.pageBtn}
-                                onClick={() => setPage((p) => p - 1)}
-                            >
-                                הקודם
-                            </button>
-                        )}
-                        <span className={styles.pageInfo}>
-                            {page} / {totalPages}
-                        </span>
-                        {page < totalPages && (
-                            <button
-                                className={styles.pageBtn}
-                                onClick={() => setPage((p) => p + 1)}
-                            >
-                                הבא
-                            </button>
-                        )}
-                    </nav>
-                )}
-            </Page>
-        </div>
+                </div>
+            </section>
+        </main>
     );
 }

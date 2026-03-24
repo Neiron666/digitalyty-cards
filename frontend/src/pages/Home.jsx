@@ -7,9 +7,7 @@ import {
     trackSitePageView,
 } from "../services/siteAnalytics.client";
 import { SITE_ACTIONS } from "../services/siteAnalytics.actions";
-import motion from "../styles/motion.module.css";
 import scroll from "../styles/motion-scroll.module.css";
-import useMotionReveal from "../hooks/useMotionReveal";
 import useScrollProgress from "../hooks/useScrollProgress";
 import pub from "../styles/public-sections.module.css";
 import styles from "./Home.module.css";
@@ -394,16 +392,6 @@ export default function Home() {
         trackSitePageView();
     }, []);
 
-    const r1 = useMotionReveal();
-    const r2 = useMotionReveal();
-    const r3 = useMotionReveal();
-    const r4 = useMotionReveal();
-    const r5 = useMotionReveal();
-    const r6 = useMotionReveal();
-    const r7 = useMotionReveal();
-    const r8 = useMotionReveal();
-    const r9 = useMotionReveal();
-
     const stageZoom = useScrollProgress();
     const dashZoom = useScrollProgress();
     const editorZoom = useScrollProgress();
@@ -493,10 +481,7 @@ export default function Home() {
             </section>
 
             {/* ── 1. MINI-SITE / BUSINESS PRESENCE ────────────── */}
-            <section
-                className={`${pub.sectionLight} ${motion.fadeUp} ${motion.slow}  ${r1.isRevealed ? motion.isVisible : ""}`}
-                ref={r1.ref}
-            >
+            <section className={pub.sectionLight}>
                 <div className={pub.sectionWrap}>
                     <h2 className={pub.h2Gold}>
                         יותר מכרטיס ביקור
@@ -562,11 +547,7 @@ export default function Home() {
             </section>
 
             {/* ── 2. CONVERSION - FROM VIEW TO CONTACT ────────── */}
-            <section
-                className={`${pub.sectionDark} ${motion.fadeUp} ${motion.slow}  ${r2.isRevealed ? motion.isVisible : ""}`}
-                ref={r2.ref}
-                id="features"
-            >
+            <section className={pub.sectionDark} id="features">
                 <div className={pub.sectionWrap}>
                     <h2 className={pub.h2White}>
                         מכל צפייה לפנייה -{" "}
@@ -623,8 +604,7 @@ export default function Home() {
 
             {/* ── 3. ANALYTICS / KNOW WHAT WORKS ─────────────── */}
             <section
-                className={`${pub.sectionLight} ${styles.analyticsSection} ${motion.fadeUp} ${motion.slow}  ${r3.isRevealed ? motion.isVisible : ""}`}
-                ref={r3.ref}
+                className={`${pub.sectionLight} ${styles.analyticsSection}`}
             >
                 <div className={pub.sectionWrap}>
                     <h2 className={pub.h2Gold}>תדעו מה באמת מביא תוצאות</h2>
@@ -694,10 +674,7 @@ export default function Home() {
             </section>
 
             {/* ── 4. SHARE EVERYWHERE ─────────────────────────── */}
-            <section
-                className={`${pub.sectionDark} ${motion.fadeUp}  ${motion.slow} ${r4.isRevealed ? motion.isVisible : ""}`}
-                ref={r4.ref}
-            >
+            <section className={pub.sectionDark}>
                 <div className={pub.sectionWrap}>
                     <h2 className={pub.h2White}>
                         {" "}
@@ -771,10 +748,7 @@ export default function Home() {
             </section>
 
             {/* ── 5. EDITABILITY / CONTROL 24/7 ──────────────── */}
-            <section
-                className={`${pub.sectionLight} ${motion.fadeUp}  ${motion.slow} ${r5.isRevealed ? motion.isVisible : ""}`}
-                ref={r5.ref}
-            >
+            <section className={pub.sectionLight}>
                 <div className={pub.sectionWrap}>
                     <h2 className={pub.h2Gold}>תעדכנו בעצמכם - 24/7</h2>
 
@@ -875,11 +849,7 @@ export default function Home() {
             </section>
 
             {/* ── 6. TEMPLATES / DESIGN ──────────────────────── */}
-            <section
-                className={`${pub.sectionDark} ${motion.fadeUp}  ${motion.slow} ${r6.isRevealed ? motion.isVisible : ""}`}
-                ref={r6.ref}
-                id="templates"
-            >
+            <section className={pub.sectionDark} id="templates">
                 <div className={pub.sectionWrap}>
                     <h2 className={pub.h2White}>
                         בחרו עיצוב שמתאים{" "}
@@ -934,11 +904,7 @@ export default function Home() {
             </section>
 
             {/* ── 7. HOW IT WORKS (3 steps) ──────────────────── */}
-            <section
-                className={`${pub.sectionLight} ${motion.fadeUp}  ${motion.slow} ${r7.isRevealed ? motion.isVisible : ""}`}
-                ref={r7.ref}
-                id="how"
-            >
+            <section className={pub.sectionLight} id="how">
                 <div className={pub.sectionWrap}>
                     <h2 className={pub.h2Gold}>שלושה צעדים - וזה עובד</h2>
 
@@ -976,10 +942,7 @@ export default function Home() {
             </section>
 
             {/* ── 8. FINAL CTA ───────────────────────────────── */}
-            <section
-                className={`${styles.ctaSection} ${motion.fadeUp}  ${motion.slow} ${r9.isRevealed ? motion.isVisible : ""}`}
-                ref={r9.ref}
-            >
+            <section className={styles.ctaSection}>
                 <div className={pub.sectionWrap}>
                     <div className={styles.ctaInner}>
                         <h2 className={styles.ctaTitle}>

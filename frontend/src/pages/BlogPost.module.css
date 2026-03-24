@@ -1,8 +1,8 @@
 /* Blog post — article layout, mobile-first */
 
 /*
-   Layout:  .blogWrap  →  Page (.page → .content)  →  .article (paper)  →  .articleInner (text column)
-   - .blogWrap: removes extra inline padding on mobile so paper reaches edges
+   Layout:  <main .blogWrap data-page="site">  →  .article (paper)  →  .articleInner (text column)
+   - .blogWrap: page root, removes extra inline padding on mobile so paper reaches edges
    - .article:  white card, wide on desktop, edge-to-edge on mobile
    - .articleInner: readable text column (max-width capped), always centered
 */

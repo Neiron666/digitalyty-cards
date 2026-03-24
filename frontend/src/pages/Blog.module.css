@@ -1,15 +1,113 @@
-/* Blog list — card grid (flex-wrap, mobile-first) */
+/* ══════════════════════════════════════════════════════════
+   Blog list — /blog (premium public marketing surface)
+   Hero composition + card grid (flex-wrap, mobile-first).
+   Shared layer: pub.sectionDark, pub.sectionWrap,
+                 pub.sectionLight, pub.sectionLeadLight,
+                 pub.h2Gold, pub.faq
+   ══════════════════════════════════════════════════════════ */
 
-/* Wrapper: layout only. Do NOT override theme / page background */
-.blogWrap {
-    min-height: 100dvh;
+/* ── Hero composition (extends pub.sectionWrap) ──────── */
+
+.heroWrap {
+    gap: 1.5rem;
 }
 
-/* Grid */
+.heroCopy {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+}
+
+.kicker {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.5rem 1.25rem;
+    border-radius: 999px;
+    font-size: var(--fs-body-sm);
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    color: var(--gold);
+    border: 1px solid rgba(212, 175, 55, 0.25);
+    background: rgba(212, 175, 55, 0.06);
+}
+
+.h1 {
+    font-size: var(--fs-hero-title);
+    font-weight: 900;
+    line-height: 1.2;
+    color: #ffffff;
+    margin: 0;
+}
+
+.h1::after {
+    content: "";
+    display: block;
+    margin-top: 1rem;
+    width: 100px;
+    height: 2px;
+    margin-inline: auto;
+    border-radius: 999px;
+    background: linear-gradient(
+        90deg,
+        transparent 0%,
+        rgba(212, 175, 55, 0.3) 15%,
+        var(--gold) 50%,
+        rgba(212, 175, 55, 0.3) 85%,
+        transparent 100%
+    );
+    box-shadow: 0 0 10px rgba(212, 175, 55, 0.2);
+}
+
+.h1Accent {
+    display: block;
+    margin-top: 0.25rem;
+    font-size: var(--fs-hero-accent);
+    font-weight: 900;
+    line-height: 1.1;
+    background: linear-gradient(
+        105deg,
+        #d4af37 0%,
+        #d4af37 35%,
+        #ffeaa7 50%,
+        #d4af37 65%,
+        #d4af37 100%
+    );
+    background-size: 300% auto;
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    filter: drop-shadow(0 0 18px rgba(212, 175, 55, 0.2));
+}
+
+.heroImg {
+    width: 100%;
+    max-width: 28rem;
+    height: auto;
+    border-radius: var(--radius-lg);
+    object-fit: contain;
+}
+
+@media (min-width: 48rem) {
+    .heroImg {
+        max-width: 34rem;
+    }
+}
+
+/* ── Listing wrapper (extends pub.sectionWrap for card density) ── */
+
+.listingWrap {
+    border: none;
+    max-width: 70rem;
+}
+
+/* ── Listing grid ────────────────────────────────────── */
+
 .grid {
     display: flex;
     flex-wrap: wrap;
     gap: 24px;
+    width: 100%;
 }
 
 /* Card: local light surface (white card only) */

@@ -132,6 +132,7 @@ export default function SeoHelmet({
     canonicalUrl,
     url,
     image,
+    ogType = "website",
     jsonLd,
     jsonLdItems,
     gtmId,
@@ -189,7 +190,7 @@ export default function SeoHelmet({
             ) : null}
 
             {/* OpenGraph */}
-            <meta property="og:type" content="website" />
+            <meta property="og:type" content={ogType} />
             {title ? <meta property="og:title" content={title} /> : null}
             {description ? (
                 <meta property="og:description" content={description} />
