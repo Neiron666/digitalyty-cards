@@ -11,6 +11,82 @@ import styles from "./Pricing.module.css";
 
 const ORIGIN = import.meta.env.VITE_PUBLIC_ORIGIN || "https://cardigo.co.il";
 
+/* ── Pricing FAQ data ────────────────────────────── */
+
+/* Items where `a` is JSX are rendered inside pub.answer (a <div>),
+   so both string and element children work identically. */
+
+const PRICING_FAQ = [
+    {
+        q: "מה כולל הניסיון החינמי של Cardigo?",
+        a: (
+            <>
+                הניסיון החינמי של{" "}
+                <Link to="/" className={styles.faqLink}>
+                    Cardigo
+                </Link>{" "}
+                מאפשר להתחיל בלי התחייבות, להכיר את המערכת ולראות איך כרטיס
+                ביקור דיגיטלי נראה ומתפקד עבור העסק שלכם בפועל. זו הדרך הפשוטה
+                ביותר לבדוק התאמה לפני בחירת מסלול בתשלום.
+            </>
+        ),
+    },
+    {
+        q: "מה ההבדל בין המסלול החודשי למסלול השנתי?",
+        a: "המסלול החודשי מתאים לעסקים שרוצים גמישות מלאה בלי להתחייב לשנה, בעוד שהמסלול השנתי מתאים לעסקים שמחפשים יציבות, רצף וחיסכון לעומת תשלום חודשי מצטבר.",
+    },
+    {
+        q: "למי מתאים המסלול השנתי של כרטיס ביקור דיגיטלי?",
+        a: "המסלול השנתי מתאים לעסק שרואה בכרטיס הדיגיטלי חלק קבוע מהנוכחות שלו מול לקוחות, ורוצה ליהנות גם מחיסכון וגם מראש שקט לאורך זמן.",
+    },
+    {
+        q: "האם אפשר להתחיל ב־Cardigo בלי ידע טכני?",
+        a: "כן. Cardigo בנויה כך שגם עסקים בלי רקע טכני יוכלו להקים, לערוך ולשתף כרטיס ביקור דיגיטלי בצורה פשוטה וברורה.",
+    },
+    {
+        q: "איך Cardigo עוזרת לעסק להיראות מקצועי יותר?",
+        a: (
+            <>
+                <Link to="/" className={styles.faqLink}>
+                    Cardigo
+                </Link>{" "}
+                עוזרת לעסק להציג פרטי קשר, תוכן, עיצוב ושיתוף במקום אחד, בצורה
+                מסודרת ונוחה לנייד. כך הלקוח רואה עסק ברור, נגיש ומקצועי יותר.
+            </>
+        ),
+    },
+    {
+        q: "האם Cardigo מתאימה גם לעסקים קטנים ולעצמאים?",
+        a: "כן. Cardigo מתאימה לעצמאים, לבעלי מקצוע ולעסקים קטנים שרוצים דרך פשוטה להיראות טוב יותר אונליין, לשתף את העסק בקלות ולרכז את כל המידע החשוב במקום אחד.",
+    },
+    {
+        q: "מה העסק מקבל מעבר לכרטיס ביקור דיגיטלי בסיסי?",
+        a: "מעבר למראה מקצועי, Cardigo נותנת לעסק דרך נוחה לשתף, לעדכן, לאסוף פניות ולעקוב אחרי פעילות — בהתאם למסלול שנבחר. לכן היא לא רק כרטיס, אלא גם כלי עבודה עסקי.",
+    },
+    {
+        q: "האם אפשר לשנות מסלול בהמשך?",
+        a: "כן. אפשר להתחיל בצורה שמתאימה לעסק עכשיו, ובהמשך לעבור למסלול אחר לפי הצורך, קצב העבודה והשלב שבו העסק נמצא.",
+    },
+    {
+        q: "האם Cardigo מתאימה גם לחברות וארגונים?",
+        a: (
+            <>
+                כן. לחברות וארגונים{" "}
+                <Link to="/" className={styles.faqLink}>
+                    Cardigo
+                </Link>{" "}
+                מציעה פתרון מסודר יותר, עם אפשרות לחשוב במונחים של צוות, ניהול
+                מרכזי וכתובת ארגונית תחת המותג. אם מדובר בארגון, עדיף לדבר איתנו
+                כדי להתאים פתרון נכון.
+            </>
+        ),
+    },
+    {
+        q: "איך לבחור את המסלול הנכון לעסק שלי?",
+        a: "אם אתם רוצים להתחיל בלי סיכון — התחילו בניסיון חינמי. אם חשוב לכם לעבוד בגמישות — המסלול החודשי יתאים לכם. אם אתם מחפשים רצף וחיסכון — המסלול השנתי הוא הבחירה הנכונה. ואם מדובר בצוות או חברה, כדאי לפנות אלינו לפתרון ארגוני.",
+    },
+];
+
 /* ── Grouped accordion data per plan ─────────────────── */
 
 const FREE_ACCORDIONS = [
@@ -408,31 +484,148 @@ export default function Pricing() {
                 </div>
             </section>
 
-            {/* ── Future: Value / decision logic ────────────── */}
+            {/* ── Annual value: why businesses choose yearly ── */}
             <section className={pub.sectionDark}>
                 <div className={pub.sectionWrap}>
-                    <h2 className={pub.h2White}>למה Cardigo?</h2>
+                    <h2 className={pub.h2White}>
+                        למה עסקים בוחרים במסלול השנתי
+                    </h2>
+
+                    <div className={styles.annualStage}>
+                        <img
+                            src="/images/Pricing/anual-section/כרטיס ביקור דיגיטלי שנתי.webp"
+                            alt="כרטיס ביקור דיגיטלי במסלול שנתי לעסקים של Cardigo"
+                            className={styles.annualImg}
+                            width={960}
+                            height={540}
+                            loading="lazy"
+                            decoding="async"
+                        />
+                    </div>
+
+                    <div className={styles.annualCopy}>
+                        <p className={styles.annualParagraph}>
+                            עסקים שבוחרים ב־
+                            <Link to="/" className={styles.annualLink}>
+                                Cardigo
+                            </Link>{" "}
+                            לטווח ארוך לא מחפשים רק כרטיס ביקור דיגיטלי יפה, אלא
+                            פתרון יציב שממשיך לעבוד בשביל העסק גם לאורך זמן.
+                            כאשר הכרטיס הוא חלק מהנוכחות הדיגיטלית, מהשיתוף עם
+                            לקוחות ומהדרך שבה העסק נראה אונליין — מסלול שנתי
+                            הופך לבחירה חכמה יותר.
+                        </p>
+                        <p className={styles.annualParagraph}>
+                            המסלול השנתי מתאים לעסקים שרוצים פחות התעסקות, יותר
+                            רצף וחיסכון אמיתי לעומת תשלום חודשי מצטבר. במקום
+                            לחשוב כל חודש מחדש, אפשר לבחור פעם אחת ולהמשיך קדימה
+                            עם נוכחות מקצועית, מסודרת ויציבה.
+                        </p>
+                    </div>
+
+                    <Button
+                        as={Link}
+                        to="/register"
+                        variant="primary"
+                        className={styles.annualCta}
+                        onClick={() =>
+                            trackSiteClick({
+                                action: SITE_ACTIONS.pricing_trial_start,
+                                pagePath: "/pricing",
+                            })
+                        }
+                    >
+                        להתחיל ניסיון חינם
+                    </Button>
                 </div>
             </section>
 
-            {/* ── Future: Annual recommendation ─────────────── */}
+            {/* ── Final CTA: what your business gets ────── */}
             <section className={pub.sectionLight}>
                 <div className={pub.sectionWrap}>
-                    <h2 className={pub.h2Gold}>מסלול שנתי משתלם יותר</h2>
+                    <h2 className={pub.h2Gold}>מה העסק שלכם מקבל עם Cardigo</h2>
+
+                    <div className={styles.ctaStage}>
+                        <img
+                            src="/images/Pricing/cta-section/כרטיס ביקור דיגיטלי כרדיגו.webp"
+                            alt="כרטיס ביקור דיגיטלי של Cardigo לעסק"
+                            className={styles.ctaImg}
+                            width={960}
+                            height={540}
+                            loading="lazy"
+                            decoding="async"
+                        />
+                    </div>
+
+                    <div className={styles.ctaCopy}>
+                        <p className={styles.ctaIntro}>
+                            עם{" "}
+                            <Link to="/" className={styles.ctaLink}>
+                                Cardigo
+                            </Link>{" "}
+                            העסק שלכם מקבל נוכחות דיגיטלית מסודרת, דרך פשוטה
+                            לשיתוף עם לקוחות וכלי עבודה שעוזרים להיראות מקצועי
+                            כבר מהיום הראשון.
+                        </p>
+
+                        <ul className={styles.ctaList}>
+                            <li className={styles.ctaItem}>
+                                כרטיס ביקור דיגיטלי שנראה מקצועי ועובד היטב
+                                בנייד
+                            </li>
+                            <li className={styles.ctaItem}>
+                                שיתוף מהיר עם לקוחות בוואטסאפ, בלינק וב־QR
+                            </li>
+                            <li className={styles.ctaItem}>
+                                שליטה פשוטה בתוכן, בעיצוב ובנראות של העסק
+                            </li>
+                            <li className={styles.ctaItem}>
+                                כלים שעוזרים לבנות אמון, לאסוף פניות ולעקוב אחרי
+                                פעילות
+                            </li>
+                            <li className={styles.ctaItem}>
+                                פתרון שיכול להתחיל בקטן ולגדול יחד עם העסק
+                            </li>
+                        </ul>
+                    </div>
+
+                    <Button
+                        as={Link}
+                        to="/register"
+                        variant="primary"
+                        className={styles.ctaButton}
+                        onClick={() =>
+                            trackSiteClick({
+                                action: SITE_ACTIONS.pricing_trial_start,
+                                pagePath: "/pricing",
+                            })
+                        }
+                    >
+                        להתחיל ניסיון חינם
+                    </Button>
                 </div>
             </section>
 
-            {/* ── Future: FAQ ───────────────────────────────── */}
-            <section className={pub.sectionDark}>
+            {/* ── FAQ ─────────────────────────────────────── */}
+            <section className={pub.sectionDark} id="faq">
                 <div className={pub.sectionWrap}>
-                    <h2 className={pub.h2White}>שאלות נפוצות</h2>
-                </div>
-            </section>
+                    <h2 className={pub.h2White}>
+                        שאלות נפוצות על מחירים ועל בחירת מסלול ב־Cardigo
+                    </h2>
+                    <p className={pub.sectionLeadLight}>
+                        אם אתם מתלבטים בין ניסיון חינמי, מסלול חודשי, מסלול שנתי
+                        או פתרון לחברה — הנה התשובות לשאלות שעולות הכי הרבה לפני
+                        שמתחילים.
+                    </p>
 
-            {/* ── Future: Final CTA ─────────────────────────── */}
-            <section className={pub.sectionLight}>
-                <div className={pub.sectionWrap}>
-                    <h2 className={pub.h2Gold}>מוכנים להתחיל?</h2>
+                    <div className={pub.faq}>
+                        {PRICING_FAQ.map((item, i) => (
+                            <details key={i} className={pub.qa}>
+                                <summary>{item.q}</summary>
+                                <div className={pub.answer}>{item.a}</div>
+                            </details>
+                        ))}
+                    </div>
                 </div>
             </section>
         </main>

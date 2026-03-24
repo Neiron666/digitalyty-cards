@@ -458,6 +458,21 @@ export default function Home() {
                             </span>
                         </h1>
                     </div>
+
+                    <div className={styles.heroCards} aria-hidden="true">
+                        {HERO_CARDS.map((card, i) => (
+                            <img
+                                key={i}
+                                src={encodeURI(card.src)}
+                                alt=""
+                                className={styles.heroCardImg}
+                                width={280}
+                                height={560}
+                                loading={i === 2 ? "eager" : "lazy"}
+                                decoding="async"
+                            />
+                        ))}
+                    </div>
                     <div className={styles.heroActions}>
                         <Button
                             as={Link}
@@ -473,20 +488,6 @@ export default function Home() {
                         >
                             צרו כרטיס ביקור דיגיטלי
                         </Button>
-                    </div>
-                    <div className={styles.heroCards} aria-hidden="true">
-                        {HERO_CARDS.map((card, i) => (
-                            <img
-                                key={i}
-                                src={encodeURI(card.src)}
-                                alt=""
-                                className={styles.heroCardImg}
-                                width={280}
-                                height={560}
-                                loading={i === 2 ? "eager" : "lazy"}
-                                decoding="async"
-                            />
-                        ))}
                     </div>
                 </div>
             </section>

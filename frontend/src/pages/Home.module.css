@@ -1514,6 +1514,9 @@
     .editorDashImg {
         margin-bottom: 3rem;
     }
+    .heroCta {
+        width: 600px;
+    }
 }
 
 @media (min-width: 80rem) {
