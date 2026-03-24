@@ -45,6 +45,9 @@ export default function Footer() {
                     <a href="#faq" className={styles.link}>
                         שאלות נפוצות
                     </a>
+                    <Link to="/blog" className={styles.link}>
+                        בלוג
+                    </Link>
                 </div>
 
                 <div className={styles.col}>

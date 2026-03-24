@@ -9,6 +9,10 @@ const ORIGIN = import.meta.env.VITE_PUBLIC_ORIGIN || "https://cardigo.co.il";
 /** Dedicated blog fallback OG image — served from public/. */
 const BLOG_OG_FALLBACK = `${ORIGIN}/images/blog/fallback/blog-cardigo-bussines-img-fallback.webp`;
 
+/** Local fallback for related-post thumbnails (no ORIGIN prefix — relative). */
+const BLOG_THUMB_FALLBACK =
+    "/images/blog/fallback/blog-cardigo-bussines-img-fallback.webp";
+
 /** Default author avatar — served from public/ (Vite static asset). */
 const DEFAULT_AUTHOR_AVATAR =
     "/images/blog/author-img/%D7%95%D7%9C%D7%A0%D7%98%D7%99%D7%9F.jpg";
@@ -19,8 +23,12 @@ const DEFAULT_AUTHOR_IMG_ALT = "תמונת מחבר המאמר — Cardigo Blog"
 /** Hardcoded author name — single-author blog. */
 const DEFAULT_AUTHOR_NAME = "ולנטין";
 
-/** Hardcoded author bio line. */
-const DEFAULT_AUTHOR_BIO = "מייסד Cardigo — כרטיסי ביקור דיגיטליים";
+/** Hardcoded author bio line (JSX — Link to homepage via brand name). */
+const DEFAULT_AUTHOR_BIO = (
+    <>
+        מייסד <Link to="/">Cardigo</Link> — כרטיסי ביקור דיגיטליים
+    </>
+);
 
 /* ── Helpers ──────────────────────────────────────────────────── */
 
@@ -278,6 +286,7 @@ export default function BlogPost() {
     const [loading, setLoading] = useState(true);
     const [notFound, setNotFound] = useState(false);
     const [error, setError] = useState(null);
+    const [related, setRelated] = useState([]);
 
     useEffect(() => {
         trackSitePageView();
@@ -312,6 +321,25 @@ export default function BlogPost() {
         load();
         return () => {
             cancelled = true;
+        };
+    }, [slug]);
+
+    /* ── Related posts (latest excluding current) ── */
+    useEffect(() => {
+        if (!slug) return;
+        let dead = false;
+        fetch("/api/blog?page=1&limit=4")
+            .then((r) => (r.ok ? r.json() : null))
+            .then((data) => {
+                if (dead || !data) return;
+                const others = (data.items || [])
+                    .filter((p) => p.slug !== slug)
+                    .slice(0, 3);
+                setRelated(others);
+            })
+            .catch(() => {});
+        return () => {
+            dead = true;
         };
     }, [slug]);
 
@@ -452,6 +480,39 @@ export default function BlogPost() {
                                 </span>
                             </div>
                         </aside>
+                    )}
+
+                    {related.length > 0 && (
+                        <nav
+                            className={styles.relatedWrap}
+                            aria-label="מאמרים נוספים"
+                        >
+                            <h2 className={styles.relatedTitle}>עוד מאמרים</h2>
+                            <div className={styles.relatedList}>
+                                {related.map((r) => (
+                                    <Link
+                                        key={r.id}
+                                        to={`/blog/${r.slug}`}
+                                        className={styles.relatedItem}
+                                    >
+                                        <img
+                                            className={styles.relatedThumb}
+                                            src={
+                                                r.heroImageUrl ||
+                                                BLOG_THUMB_FALLBACK
+                                            }
+                                            alt={
+                                                r.heroImageAlt || r.title || ""
+                                            }
+                                            loading="lazy"
+                                        />
+                                        <span className={styles.relatedName}>
+                                            {r.title}
+                                        </span>
+                                    </Link>
+                                ))}
+                            </div>
+                        </nav>
                     )}
 
                     <div className={styles.backRow}>

@@ -311,6 +311,23 @@
     line-height: 1.5;
 }
 
+.authorBio a {
+    color: var(--primary);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    font-weight: 600;
+}
+
+.authorBio a:hover {
+    opacity: 0.78;
+}
+
+.authorBio a:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
+    border-radius: 2px;
+}
+
 /* States */
 
 .status {
@@ -325,6 +342,81 @@
     font-size: var(--fs-body);
     color: #ef4444;
     padding-block: 40px;
+}
+
+/* ── Related posts (compact teasers, end of article) ──────────── */
+
+.relatedWrap {
+    margin-block-start: 32px;
+    padding-block-start: 24px;
+    border-block-start: 1px solid var(--gold-fade, rgba(245, 158, 11, 0.28));
+}
+
+.relatedTitle {
+    font-size: var(--fs-body);
+    font-weight: 700;
+    color: var(--text-main);
+    text-align: center;
+    margin: 0 0 16px;
+}
+
+.relatedList {
+    display: flex;
+    flex-direction: row;
+    gap: 12px;
+}
+
+@media (min-width: 40rem) {
+    .relatedList {
+        gap: 16px;
+    }
+}
+
+.relatedItem {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    flex: 1 1 0;
+    min-width: 0;
+    text-decoration: none;
+    color: var(--text-main);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    border: 1px solid var(--border);
+    background: var(--bg-surface);
+}
+
+.relatedItem:hover .relatedName {
+    text-decoration: underline;
+}
+
+.relatedItem:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
+    border-radius: var(--radius-lg);
+}
+
+.relatedThumb {
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    object-fit: cover;
+    display: block;
+}
+
+.relatedName {
+    font-size: var(--fs-body-sm);
+    font-weight: 600;
+    line-height: 1.4;
+    padding: 8px 12px;
+    text-align: center;
+    overflow-wrap: break-word;
+}
+@media (max-width: 39.99rem) {
+    .relatedName {
+        font-size: var(--fs-caption-sm);
+        padding: 0 8px 3px;
+    }
 }
 
 /* ── Reduced-motion: disable decorative infinite animation ── */

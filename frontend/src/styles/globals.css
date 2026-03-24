@@ -22,6 +22,7 @@
 
 #root {
     --fs-caption: 0.9231rem; /* было 0.75rem */
+    --fs-caption-sm: 0.7rem; /* новый token для мелкого текста, 8px */
     --fs-body-sm: 1rem; /* было 0.8125rem */
     --fs-ui: 1.0769rem; /* было 0.875rem */
     --fs-body-lg: 1.1538rem; /* было 0.9375rem */
@@ -49,6 +50,7 @@
         --fs-hero-accent: 3.6rem;
 
         --fs-caption: 0.875rem; /* 14px */
+        --fs-caption-sm: 0.75rem; /* 12px */
         --fs-body-sm: 1.15rem; /* 16px */
         --fs-ui: 1rem; /* 16px */
         --fs-body-lg: 1.4rem; /* 18px */
