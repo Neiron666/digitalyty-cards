@@ -2,7 +2,11 @@ import { useEffect } from "react";
 import { Link } from "react-router-dom";
 import Button from "../components/ui/Button";
 import SeoHelmet from "../components/seo/SeoHelmet";
-import { trackSitePageView } from "../services/siteAnalytics.client";
+import {
+    trackSitePageView,
+    trackSiteClick,
+} from "../services/siteAnalytics.client";
+import { SITE_ACTIONS } from "../services/siteAnalytics.actions";
 import pub from "../styles/public-sections.module.css";
 import styles from "./Cards.module.css";
 
@@ -253,6 +257,12 @@ export default function Cards() {
                                 to="/edit"
                                 variant="primary"
                                 className={styles.heroCta}
+                                onClick={() =>
+                                    trackSiteClick({
+                                        action: SITE_ACTIONS.cards_hero_cta,
+                                        pagePath: "/cards",
+                                    })
+                                }
                             >
                                 צרו כרטיס ביקור דיגיטלי
                             </Button>
@@ -336,6 +346,12 @@ export default function Cards() {
                                 to="/edit/card/templates"
                                 variant="secondary"
                                 className={styles.featuredCta}
+                                onClick={() =>
+                                    trackSiteClick({
+                                        action: SITE_ACTIONS.cards_templates_cta,
+                                        pagePath: "/cards",
+                                    })
+                                }
                             >
                                 בחרו תבנית והתחילו
                             </Button>
@@ -456,6 +472,12 @@ export default function Cards() {
                                     to="/edit"
                                     variant="primary"
                                     className={styles.ctaPrimary}
+                                    onClick={() =>
+                                        trackSiteClick({
+                                            action: SITE_ACTIONS.cards_bottom_cta,
+                                            pagePath: "/cards",
+                                        })
+                                    }
                                 >
                                     צרו כרטיס ביקור דיגיטלי
                                 </Button>

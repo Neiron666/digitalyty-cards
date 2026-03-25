@@ -109,6 +109,10 @@ export default function Contact() {
                 }).toString(),
             });
             setSent(true);
+            trackSiteClick({
+                action: SITE_ACTIONS.contact_form_submit,
+                pagePath: "/contact",
+            });
         } catch {
             /* best-effort — Netlify handles the rest */
         } finally {
@@ -465,6 +469,12 @@ export default function Contact() {
                                         target="_blank"
                                         rel="noopener noreferrer"
                                         className={styles.infoLink}
+                                        onClick={() =>
+                                            trackSiteClick({
+                                                action: SITE_ACTIONS.contact_whatsapp_click,
+                                                pagePath: "/contact",
+                                            })
+                                        }
                                     >
                                         WhatsApp
                                     </a>
@@ -523,6 +533,12 @@ export default function Contact() {
                                     rel="noopener noreferrer"
                                     variant="secondary"
                                     className={styles.infoCta}
+                                    onClick={() =>
+                                        trackSiteClick({
+                                            action: SITE_ACTIONS.contact_whatsapp_click,
+                                            pagePath: "/contact",
+                                        })
+                                    }
                                 >
                                     <span
                                         className={styles.ctaIconWhatsapp}
@@ -576,6 +592,12 @@ export default function Contact() {
                             as="a"
                             href={`mailto:${EMAIL}`}
                             variant="primary"
+                            onClick={() =>
+                                trackSiteClick({
+                                    action: SITE_ACTIONS.contact_email_click,
+                                    pagePath: "/contact",
+                                })
+                            }
                         >
                             שלחו לנו מייל
                         </Button>

@@ -7,8 +7,16 @@ export const SITE_ACTIONS = Object.freeze({
 
     pricing_trial_start: "pricing_trial_start",
     pricing_premium_upgrade: "pricing_premium_upgrade",
+    pricing_monthly_start: "pricing_monthly_start",
+    pricing_annual_start: "pricing_annual_start",
+
+    cards_hero_cta: "cards_hero_cta",
+    cards_templates_cta: "cards_templates_cta",
+    cards_bottom_cta: "cards_bottom_cta",
 
     contact_email_click: "contact_email_click",
+    contact_form_submit: "contact_form_submit",
+    contact_whatsapp_click: "contact_whatsapp_click",
 });
 
 const VALUES = Object.freeze(Object.values(SITE_ACTIONS));
