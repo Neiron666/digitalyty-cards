@@ -8,6 +8,26 @@ import styles from "./AdminAnalyticsView.module.css";
 const RANGE_OPTIONS = [7, 30, 90];
 const OPT_OUT_KEY = "siteAnalyticsOptOut";
 
+/** Local human-readable Hebrew labels for analytics action keys. */
+const ACTION_LABELS = {
+    home_hero_primary_register: "לחיצה על הכפתור הראשי בכותרת הבית",
+    home_hero_secondary_examples: "לחיצה על כפתור הדוגמאות בכותרת הבית",
+    home_templates_cta: "לחיצה על בחירת תבנית בעמוד הבית",
+    home_bottom_cta: "לחיצה על הכפתור התחתון בעמוד הבית",
+    pricing_trial_start: "לחיצה על התחלת ניסיון בעמוד המחירים",
+    pricing_premium_upgrade: "לחיצה על שדרוג לפרימיום",
+    pricing_monthly_start: "לחיצה על בחירת מסלול חודשי",
+    pricing_annual_start: "לחיצה על בחירת מסלול שנתי",
+    contact_email_click: "לחיצה על קישור אימייל",
+    contact_form_submit: "שליחת טופס יצירת קשר",
+    contact_whatsapp_click: "לחיצה על קישור WhatsApp",
+    cards_hero_cta: "לחיצה על הכפתור הראשי בכותרת עמוד הדוגמאות",
+    cards_templates_cta: "לחיצה על בחירת תבנית בעמוד הדוגמאות",
+    cards_showcase_card_cta: "לחיצה על התחלה מכרטיס תבנית",
+    cards_showcase_view_all_cta: "לחיצה על צפייה בכל התבניות",
+    cards_bottom_cta: "לחיצה על הכפתור התחתון בעמוד הדוגמאות",
+};
+
 function readOptOut() {
     try {
         if (typeof window === "undefined") return false;
@@ -60,7 +80,7 @@ export default function AdminAnalyticsView({ refreshKey = 0 } = {}) {
                 const msg =
                     typeof e?.response?.data?.message === "string"
                         ? e.response.data.message
-                        : "Failed to load analytics";
+                        : "לא הצלחנו לטעון את נתוני האנליטיקה";
                 setError(msg);
                 setSummary(null);
                 setSources(null);
@@ -131,8 +151,8 @@ export default function AdminAnalyticsView({ refreshKey = 0 } = {}) {
                 <div className={styles.titleWrap}>
                     <h2 className={styles.title}>אנליטיקת אתר (שיווק)</h2>
                     <p className={styles.subtitle}>
-                        כולל את כל הדפים הציבוריים (Marketing) · לא כולל
-                        /card/:slug · לא כולל admin/auth/internal
+                        מציג נתונים מכל הדפים הציבוריים השיווקיים · לא כולל דפי
+                        כרטיסים, ניהול, הרשמה ואימות
                     </p>
                 </div>
 
@@ -173,8 +193,8 @@ export default function AdminAnalyticsView({ refreshKey = 0 } = {}) {
 
             <p className={styles.optOutHint}>
                 {optOut
-                    ? "Opt-out פעיל: הטרקר לא ישלח אירועים מהמכשיר הזה."
-                    : "Opt-out כבוי: הטרקר ישלח אירועי צפייה בדפים ציבוריים."}
+                    ? "איסוף נתונים מושבת: הביקורים שלך מהמכשיר הזה לא נספרים."
+                    : "איסוף נתונים פעיל: הביקורים שלך בדפים הציבוריים נספרים."}
             </p>
 
             {loading ? (
@@ -187,7 +207,7 @@ export default function AdminAnalyticsView({ refreshKey = 0 } = {}) {
 
             <div className={styles.blocks}>
                 <div className={styles.block}>
-                    <div className={styles.blockTitle}>KPIs</div>
+                    <div className={styles.blockTitle}>מדדי מפתח</div>
                     <div className={styles.kpis}>
                         <div className={styles.kpiCard}>
                             <div className={styles.kpiLabel}>צפיות</div>
@@ -226,7 +246,9 @@ export default function AdminAnalyticsView({ refreshKey = 0 } = {}) {
                     <div className={styles.blockTitle}>מקורות</div>
                     <div className={styles.sourcesGrid}>
                         <div className={styles.sourceCard}>
-                            <div className={styles.sourceTitle}>Channels</div>
+                            <div className={styles.sourceTitle}>
+                                ערוצי תנועה
+                            </div>
                             {channelsRows.length ? (
                                 <div className={styles.rows}>
                                     {channelsRows.map((r) => (
@@ -246,7 +268,9 @@ export default function AdminAnalyticsView({ refreshKey = 0 } = {}) {
                         </div>
 
                         <div className={styles.sourceCard}>
-                            <div className={styles.sourceTitle}>Referrers</div>
+                            <div className={styles.sourceTitle}>
+                                מקורות הפניה
+                            </div>
                             {referrersTop.length ? (
                                 <div className={styles.rows}>
                                     {referrersTop.map((r) => (
@@ -292,7 +316,9 @@ export default function AdminAnalyticsView({ refreshKey = 0 } = {}) {
                         </div>
 
                         <div className={styles.sourceCard}>
-                            <div className={styles.sourceTitle}>AI Sources</div>
+                            <div className={styles.sourceTitle}>
+                                מקורות בינה מלאכותית
+                            </div>
                             {aiSourcesTop.length ? (
                                 <div className={styles.rows}>
                                     {aiSourcesTop.map((r) => (
@@ -321,7 +347,7 @@ export default function AdminAnalyticsView({ refreshKey = 0 } = {}) {
                     <div className={styles.campaignsGrid}>
                         <div className={styles.campaignCard}>
                             <div className={styles.campaignTitle}>
-                                Top Pages
+                                עמודים מובילים
                             </div>
                             {topPages.length ? (
                                 <div className={styles.rows}>
@@ -346,17 +372,18 @@ export default function AdminAnalyticsView({ refreshKey = 0 } = {}) {
 
                         <div className={styles.campaignCard}>
                             <div className={styles.campaignTitle}>
-                                Top Actions
+                                פעולות מובילות
                             </div>
                             {topActions.length ? (
                                 <div className={styles.rows}>
-                                    {topActions.slice(0, 10).map((a) => (
+                                    {topActions.map((a) => (
                                         <div
                                             key={a.action}
                                             className={styles.row}
                                         >
                                             <span className={styles.rowKey}>
-                                                {a.action}
+                                                {ACTION_LABELS[a.action] ||
+                                                    a.action}
                                             </span>
                                             <span className={styles.rowVal}>
                                                 {Number(a.count) || 0}
@@ -371,7 +398,7 @@ export default function AdminAnalyticsView({ refreshKey = 0 } = {}) {
 
                         <div className={styles.campaignCard}>
                             <div className={styles.campaignTitle}>
-                                Campaigns (UTM)
+                                קמפיינים (UTM)
                             </div>
                             {campaignsTop.length ? (
                                 <div className={styles.rows}>

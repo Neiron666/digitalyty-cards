@@ -158,7 +158,7 @@ export async function getAdminSiteAnalyticsSources(req, res) {
         count: x.count,
     }));
 
-    const topActions = topN(actionCounts, 10).map((x) => ({
+    const topActions = topN(actionCounts, 25).map((x) => ({
         action: x.key,
         count: x.count,
     }));

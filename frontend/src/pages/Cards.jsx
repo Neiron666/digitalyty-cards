@@ -384,6 +384,12 @@ export default function Cards() {
                                     <Link
                                         to="/edit/card/templates"
                                         className={styles.showcaseLink}
+                                        onClick={() =>
+                                            trackSiteClick({
+                                                action: SITE_ACTIONS.cards_showcase_card_cta,
+                                                pagePath: "/cards",
+                                            })
+                                        }
                                     >
                                         התחילו ליצור כרטיס &larr;
                                     </Link>
@@ -398,6 +404,12 @@ export default function Cards() {
                             as={Link}
                             to="/edit/card/templates"
                             variant="secondary"
+                            onClick={() =>
+                                trackSiteClick({
+                                    action: SITE_ACTIONS.cards_showcase_view_all_cta,
+                                    pagePath: "/cards",
+                                })
+                            }
                         >
                             ראו את כל התבניות
                         </Button>

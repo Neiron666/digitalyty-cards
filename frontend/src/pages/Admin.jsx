@@ -119,17 +119,17 @@ const STR = {
         label_trial_ends: "סיום תקופת ניסיון",
         label_effective_billing: "סטטוס תשלום בפועל",
 
-        section_provenance: "מקור סטטוס (Provenance)",
-        label_raw_billing: "Billing (Raw)",
-        label_raw_payer: "Payer (Raw)",
-        label_audit_history: "Audit אחרון",
+        section_provenance: "מקור הסטטוס",
+        label_raw_billing: "חיוב (גולמי)",
+        label_raw_payer: "משלם (גולמי)",
+        label_audit_history: "בדיקה אחרונה",
         label_latest_audit: "אירוע אחרון",
         label_when: "מתי",
         label_action: "פעולה",
-        label_mode: "mode",
-        label_by_admin: "admin",
-        msg_audit_loading: "טוען audit…",
-        msg_audit_empty: "אין אירועי audit לכרטיס זה.",
+        label_mode: "מצב",
+        label_by_admin: "מנהל",
+        msg_audit_loading: "טוען היסטוריה…",
+        msg_audit_empty: "אין אירועי בקרה לכרטיס זה.",
 
         label_analytics: "אנליטיקה",
         label_can_view_analytics: "גישה לאנליטיקה",
@@ -139,15 +139,15 @@ const STR = {
         label_card_tier_override: "רמת פיצ'רים לכרטיס (ידני)",
         label_user_tier_override: "רמת פיצ'רים למשתמש (ידני)",
 
-        section_billing_crud: "ניהול חיובים (Billing CRUD)",
+        section_billing_crud: "ניהול חיובים",
         section_user_subscription: "מנוי משתמש",
-        section_card_billing_crud: "חיוב כרטיס (Runtime SSoT)",
+        section_card_billing_crud: "חיוב הכרטיס בזמן אמת",
         msg_user_subscription_help:
             'טיפ: שינוי מנוי משתמש לא משנה כרטיסים מיד — אחרי זה עושים "סנכרן מהמשתמש".',
         msg_card_billing_help:
-            "טיפ: חיוב כרטיס משפיע מיד. אם יש הטבה ידנית (Override) — היא יכולה להסתיר את החיוב עד שמנקים אותה.",
-        label_user_id: "User ID",
-        label_card_id_crud: "Card ID",
+            "טיפ: חיוב כרטיס משפיע מיד. אם יש הטבה ידנית — היא יכולה להסתיר את החיוב עד שמנקים אותה.",
+        label_user_id: "מזהה משתמש",
+        label_card_id_crud: "מזהה כרטיס",
         label_plan_crud: "מסלול",
         label_expires_at_iso: "תוקף מנוי עד (תאריך ושעה)",
         label_paid_until_iso: "תשלום פעיל עד (תאריך ושעה)",
@@ -156,9 +156,9 @@ const STR = {
         btn_enable_card_billing: "הפעל תשלום לכרטיס",
         btn_revoke_card_billing: "בטל תשלום לכרטיס",
         btn_sync_from_user: "סנכרן מהמשתמש",
-        btn_clear_override: "נקה Override",
+        btn_clear_override: "נקה הטבה ידנית",
         warn_override_precedence:
-            "Override פעיל גובר על Billing ולכן isPaid עשוי להיות false. נדרש ניקוי Override באופן מפורש.",
+            "הטבה ידנית פעילה גוברת על החיוב, ולכן הכרטיס עשוי להופיע כלא משולם. נדרש ניקוי הטבה ידנית באופן מפורש.",
 
         btn_deactivate: "השבת כרטיס(הפוך ללא פעיל)",
         btn_reactivate: "הפעל כרטיס מחדש(הפוך לפעיל)",
@@ -195,11 +195,11 @@ const STR = {
         hint_extend_trial:
             "מאריך/מגדיר ניסיון לכרטיס. זה לא תשלום וזה לא פרימיום.",
         hint_override_plan:
-            'נותן מסלול ידני זמני לכרטיס. כדי לחזור למצב רגיל צריך "נקה Override".',
+            'נותן מסלול ידני זמני לכרטיס. כדי לחזור למצב רגיל צריך "נקה הטבה ידנית".',
         hint_card_tier:
             "קובע רמת פיצ׳רים לכרטיס הזה. זה גובר על הכל — לזכור להסיר כשמסיימים.",
         hint_user_tier:
-            "קובע רמת פיצ׳רים לכל הכרטיסים של המשתמש. כרטיס עם Tier ידני עדיין גובר.",
+            "קובע רמת פיצ׳רים לכל הכרטיסים של המשתמש. כרטיס עם רמה ידנית עדיין גובר.",
         hint_enable_subscription:
             'נותן מנוי למשתמש עד תאריך. כדי שזה ישפיע על כרטיסים — צריך גם ללחוץ "סנכרן מהמשתמש".',
         hint_revoke_subscription:
@@ -208,9 +208,9 @@ const STR = {
             "נותן פרימיום לכרטיס הזה עד תאריך. ההשפעה מיידית (פרסום, כתובת קצרה, SEO וסקריפטים, אנליטיקה).",
         hint_revoke_card_billing: "מבטל פרימיום בכרטיס הזה ומחזיר לחינם מיד.",
         hint_sync_from_user:
-            "מעתיק את מצב המנוי של המשתמש לכרטיס. אם התשלום שייך לארגון/משלם אחר — סמן Force לפני הסנכרון.",
+            "מעתיק את מצב המנוי של המשתמש לכרטיס. אם התשלום שייך לארגון/משלם אחר — סמן «הגדרת משלם לארגון» לפני הסנכרון.",
         hint_clear_override:
-            "מסיר הטבה ידנית (Override). אחרי הניקוי — הכרטיס חוזר להתנהג לפי החיוב האמיתי שלו.",
+            "מסיר הטבה ידנית. אחרי הניקוי — הכרטיס חוזר להתנהג לפי החיוב האמיתי שלו.",
 
         label_payer_type: "סוג משלם",
         label_payer_note: "הערת משלם",
@@ -221,7 +221,7 @@ const STR = {
 
         section_legend: "מקרא",
         legend_intro:
-            "לוח ניהול למנהלים בלבד. כל פעולה דורשת מילוי שדה «סיבה» ונרשמת ב־Audit לצורכי מעקב ובקרה.",
+            "לוח ניהול למנהלים בלבד. כל פעולה דורשת מילוי שדה «סיבה» ונרשמת ביומן הפעולות לצורכי מעקב ובקרה.",
         legend_nav: "ניווט",
         legend_nav_desc:
             "לוח הניהול מחולק לשלושה אזורים: סרגל סטטיסטיקות עליון, אזור מרכזי עם טבלאות ספרייה (כרטיסים / משתמשים / ארגונים), ופאנל כרטיס נבחר עם טאבים.",
@@ -231,28 +231,28 @@ const STR = {
         legend_tab_billing: "טאב «חיוב»",
         legend_tab_billing_desc:
             "מציג מצב חיוב בפועל: מסלול תשלום (free/monthly/yearly), גישה פעילה (entitled), שולם (isPaid), רמת פיצ'רים (free/basic/premium) + מקור + תוקף, סיום ניסיון, וסטטוס תשלום מפורט.",
-        legend_provenance: "Provenance",
+        legend_provenance: "מקור הסטטוס",
         legend_provenance_desc:
-            "בתוך טאב חיוב — מציג נתונים גולמיים: Billing Raw (status · plan · paidUntil), Payer Raw (type · source · updatedAt), והיסטוריית Audit עם פעולה, מקור, admin, וסיבה.",
+            "בתוך טאב חיוב — מציג נתונים גולמיים: חיוב גולמי (סטטוס · מסלול · תשלום עד), משלם גולמי (סוג · מקור · עודכן), והיסטוריית בקרה עם פעולה, מצב, מנהל, וסיבה.",
         legend_tab_actions: "טאב «פעולות מנהל»",
         legend_tab_actions_items:
-            "הארכת ניסיון (ימים / תאריך מדויק), הטבת מסלול ידנית (plan override), רמת פיצ'רים לכרטיס (tier override), רמת פיצ'רים למשתמש (רק אם הכרטיס בבעלות משתמש), אנליטיקס פרימיום (toggle).",
+            "הארכת ניסיון (ימים / תאריך מדויק), הטבת מסלול ידנית, רמת פיצ'רים לכרטיס, רמת פיצ'רים למשתמש (רק אם הכרטיס בבעלות משתמש), אנליטיקס פרימיום (הפעלה/כיבוי).",
         legend_tab_danger: "טאב «אזור סכנה»",
         legend_tab_danger_desc:
             "השבתה/הפעלה מחדש של כרטיס (isActive), מחיקת כרטיס לצמיתות, מחיקת משתמש לצמיתות. כל פעולה דורשת אישור.",
         legend_billing_crud: "פאנל «ניהול חיובים»",
         legend_billing_crud_desc: "פאנל ימני נפרד עם שתי יחידות:",
         legend_user_sub:
-            "מנוי משתמש — הגדרת plan + תוקף ברמת User.subscription. לא משפיע ישירות על כרטיס עד ביצוע סנכרון.",
+            "מנוי משתמש — הגדרת מסלול + תוקף ברמת המשתמש. לא משפיע ישירות על כרטיס עד ביצוע סנכרון.",
         legend_card_billing:
-            "חיוב כרטיס (SSoT) — קובע Card.billing ומשפיע מיידית על effectiveBilling. כולל: מסלול, תשלום עד, סוג משלם, הערת משלם, סנכרון מהמשתמש, Force org payer, וניקוי Override.",
+            "חיוב כרטיס (מקור אמת) — קובע את חיוב הכרטיס ומשפיע מיידית על החיוב בפועל. כולל: מסלול, תשלום עד, סוג משלם, הערת משלם, סנכרון מהמשתמש, הגדרת משלם לארגון, וניקוי הטבה ידנית.",
         legend_what_affects_what_title: "מה משפיע על מה?",
         legend_what_affects_what_tier:
             "רמת פיצ׳רים: כרטיס (ידני) → משתמש (ידני) → תשלום → חינם",
         legend_what_affects_what_billing:
-            "מסלול תשלום בפועל: הטבה ידנית (Override) → חיוב כרטיס → סנכרון מהמשתמש",
+            "מסלול תשלום בפועל: הטבה ידנית → חיוב כרטיס → סנכרון מהמשתמש",
         legend_what_affects_what_rules:
-            "כללי אצבע: אחרי שינוי מנוי משתמש מסנכרנים; אם יש Override — מנקים כדי לחזור לרגיל",
+            "כללי אצבע: אחרי שינוי מנוי משתמש מסנכרנים; אם יש הטבה ידנית — מנקים כדי לחזור לרגיל",
         legend_slug_note:
             "סלאג: כתובת קצרה. כרטיסים אישיים: /card/:slug. כרטיסי ארגון: /c/:orgSlug/:slug.",
         legend_ltr_note:
@@ -279,11 +279,11 @@ const STR = {
         label_no_slug: "(אין סלאג)",
         msg_loading_card: "טוען כרטיס…",
 
-        label_force_org_payer: "Force (org payer)",
+        label_force_org_payer: "הגדרת משלם לארגון",
         msg_sync_uses_saved_db:
-            "Sync uses saved DB User.subscription.expiresAt.",
+            "הסנכרון משתמש בתאריך התפוגה השמור במנוי המשתמש.",
         err_org_payer_locked:
-            "התשלום משויך לארגון (Org payer lock). סמן Force (org payer) ונסה שוב.",
+            "התשלום משויך לארגון ונעול. סמן «הגדרת משלם לארגון» ונסה שוב.",
 
         err_reason_required: "יש למלא סיבה.",
         err_reason_too_long: "הסיבה ארוכה מדי.",
@@ -3428,8 +3428,8 @@ export default function Admin() {
                                         </h2>
                                     </div>
                                     <p className={styles.muted}>
-                                        Runtime billing SSoT הוא
-                                        Card.effectiveBilling.
+                                        מקור האמת לחיוב בזמן אמת הוא החיוב בפועל
+                                        של הכרטיס.
                                     </p>
                                 </div>
 

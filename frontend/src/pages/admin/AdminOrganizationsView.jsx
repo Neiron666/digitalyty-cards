@@ -29,6 +29,20 @@ function clampInt(value, { min, max, fallback }) {
     return n;
 }
 
+/** Local human-readable Hebrew label for member status values. */
+function memberStatusHe(status) {
+    if (status === "active") return "פעיל";
+    if (status === "suspended") return "מושהה";
+    return String(status || "");
+}
+
+/** Local human-readable Hebrew label for role values. */
+function roleHe(role) {
+    if (role === "member") return "חבר";
+    if (role === "admin") return "מנהל";
+    return String(role || "");
+}
+
 function mapAdminApiError(err) {
     const status = err?.response?.status;
     const code = err?.response?.data?.code;
@@ -52,9 +66,10 @@ function mapAdminApiError(err) {
         return "אי אפשר לשנות סלאג לאחר יצירה.";
     if (status === 400 && code === "INVALID_NAME") return "שם לא תקין.";
     if (status === 400 && code === "INVALID_EMAIL") return "אימייל לא תקין.";
-    if (status === 400 && code === "INVALID_USER_ID") return "UserId לא תקין.";
-    if (status === 400 && code === "INVALID_ROLE") return "Role לא תקין.";
-    if (status === 400 && code === "INVALID_STATUS") return "Status לא תקין.";
+    if (status === 400 && code === "INVALID_USER_ID")
+        return "מזהה משתמש לא תקין.";
+    if (status === 400 && code === "INVALID_ROLE") return "תפקיד לא תקין.";
+    if (status === 400 && code === "INVALID_STATUS") return "סטטוס לא תקין.";
     if (status === 400 && (code === "EMPTY_PATCH" || code === "INVALID_PATCH"))
         return "אין מה לעדכן.";
 
@@ -273,7 +288,7 @@ export default function AdminOrganizationsView() {
             if (!seatLimitParsed.ok) {
                 showFlash(
                     "error",
-                    "Seat limit must be a positive integer or empty",
+                    "מגבלת מושבים חייבת להיות מספר חיובי או ריקה",
                 );
                 return;
             }
@@ -350,10 +365,7 @@ export default function AdminOrganizationsView() {
 
         const parsed = parseSeatLimitInput(selectedSeatLimit);
         if (!parsed.ok) {
-            showFlash(
-                "error",
-                "Seat limit must be a positive integer or empty",
-            );
+            showFlash("error", "מגבלת מושבים חייבת להיות מספר חיובי או ריקה");
             return;
         }
 
@@ -572,7 +584,9 @@ export default function AdminOrganizationsView() {
                             </Button>
                         </div>
                         <div className={styles.pagerLimit}>
-                            <label className={styles.limitLabel}>Limit</label>
+                            <label className={styles.limitLabel}>
+                                כמות להצגה
+                            </label>
                             <Input
                                 value={String(limit)}
                                 onChange={(e) => setLimit(e.target.value)}
@@ -593,22 +607,22 @@ export default function AdminOrganizationsView() {
                         <Input
                             value={createSlug}
                             onChange={(e) => setCreateSlug(e.target.value)}
-                            placeholder="example-company"
+                            placeholder="לדוגמה: חברה-לדוגמה"
                         />
                         <label className={styles.label}>הערה (אופציונלי)</label>
                         <Input
                             value={createNote}
                             onChange={(e) => setCreateNote(e.target.value)}
-                            placeholder="note"
+                            placeholder="הערה"
                         />
                         <label className={styles.label}>
-                            Seat limit (optional)
+                            מגבלת מושבים (אופציונלי)
                         </label>
                         <Input
                             value={createSeatLimit}
                             onChange={(e) => setCreateSeatLimit(e.target.value)}
                             inputMode="numeric"
-                            placeholder="e.g. 25"
+                            placeholder="לדוגמה: 25"
                         />
                         <Button type="submit" disabled={createBusy}>
                             צור
@@ -664,7 +678,7 @@ export default function AdminOrganizationsView() {
                                                 : prev,
                                         )
                                     }
-                                    placeholder="internal note"
+                                    placeholder="הערה פנימית"
                                 />
                                 <Button
                                     onClick={handleUpdateOrgNote}
@@ -677,7 +691,7 @@ export default function AdminOrganizationsView() {
 
                             <div className={styles.noteBlock}>
                                 <label className={styles.label}>
-                                    Seat limit (empty = not set)
+                                    מגבלת מושבים (ריק = ללא הגבלה מוגדרת)
                                 </label>
                                 <Input
                                     value={selectedSeatLimit}
@@ -685,7 +699,7 @@ export default function AdminOrganizationsView() {
                                         setSelectedSeatLimit(e.target.value)
                                     }
                                     inputMode="numeric"
-                                    placeholder="e.g. 25"
+                                    placeholder="לדוגמה: 25"
                                 />
                                 <Button
                                     onClick={handleUpdateOrgSeatLimit}
@@ -701,13 +715,12 @@ export default function AdminOrganizationsView() {
                             <h3 className={styles.h3}>הזמנות</h3>
 
                             <div className={styles.detailItem}>
-                                <div className={styles.detailLabel}>Seats</div>
+                                <div className={styles.detailLabel}>מושבים</div>
                                 <div className={styles.detailValue}>
-                                    Seats: {usedSeats}/
+                                    מושבים: {usedSeats}/
                                     {hasSeatLimit ? seatLimit : "∞"}
                                     <br />
-                                    Remaining:{" "}
-                                    {hasSeatLimit ? remainingSeats : "∞"}
+                                    נותרו: {hasSeatLimit ? remainingSeats : "∞"}
                                 </div>
                             </div>
 
@@ -740,10 +753,8 @@ export default function AdminOrganizationsView() {
                                                 setInviteRole(e.target.value)
                                             }
                                         >
-                                            <option value="member">
-                                                member
-                                            </option>
-                                            <option value="admin">admin</option>
+                                            <option value="member">חבר</option>
+                                            <option value="admin">מנהל</option>
                                         </select>
                                     </div>
                                 </div>
@@ -829,7 +840,7 @@ export default function AdminOrganizationsView() {
                                                                 styles.cell
                                                             }
                                                         >
-                                                            {inv.role}
+                                                            {roleHe(inv.role)}
                                                         </td>
                                                         <td
                                                             className={
@@ -890,9 +901,9 @@ export default function AdminOrganizationsView() {
                                 <table className={styles.table}>
                                     <thead>
                                         <tr>
-                                            <th>Email</th>
-                                            <th>Role</th>
-                                            <th>Status</th>
+                                            <th>אימייל</th>
+                                            <th>תפקיד</th>
+                                            <th>סטטוס</th>
                                             <th />
                                         </tr>
                                     </thead>
@@ -927,10 +938,10 @@ export default function AdminOrganizationsView() {
                                                             disabled={busy}
                                                         >
                                                             <option value="member">
-                                                                member
+                                                                חבר
                                                             </option>
                                                             <option value="admin">
-                                                                admin
+                                                                מנהל
                                                             </option>
                                                         </select>
                                                     </td>
@@ -944,7 +955,9 @@ export default function AdminOrganizationsView() {
                                                             }
                                                             disabled={busy}
                                                         >
-                                                            {m.status}
+                                                            {memberStatusHe(
+                                                                m.status,
+                                                            )}
                                                         </Button>
                                                     </td>
                                                     <td
@@ -1019,7 +1032,7 @@ export default function AdminOrganizationsView() {
                                 </div>
                                 <div className={styles.pagerLimit}>
                                     <label className={styles.limitLabel}>
-                                        Limit
+                                        כמות להצגה
                                     </label>
                                     <Input
                                         value={String(membersLimit)}

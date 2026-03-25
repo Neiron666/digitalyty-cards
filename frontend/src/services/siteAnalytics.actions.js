@@ -13,6 +13,8 @@ export const SITE_ACTIONS = Object.freeze({
     cards_hero_cta: "cards_hero_cta",
     cards_templates_cta: "cards_templates_cta",
     cards_bottom_cta: "cards_bottom_cta",
+    cards_showcase_card_cta: "cards_showcase_card_cta",
+    cards_showcase_view_all_cta: "cards_showcase_view_all_cta",
 
     contact_email_click: "contact_email_click",
     contact_form_submit: "contact_form_submit",
