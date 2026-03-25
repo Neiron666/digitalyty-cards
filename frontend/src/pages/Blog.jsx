@@ -171,10 +171,6 @@ export default function Blog() {
             <section className={pub.sectionDark}>
                 <div className={`${pub.sectionWrap} ${styles.heroWrap}`}>
                     <div className={styles.heroCopy}>
-                        <span className={styles.kicker}>
-                            תובנות, מדריכים ורעיונות לצמיחה דיגיטלית
-                        </span>
-
                         <h1 className={styles.h1}>
                             הבלוג של Cardigo
                             <span

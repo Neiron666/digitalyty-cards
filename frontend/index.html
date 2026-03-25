@@ -18,6 +18,19 @@
 </head>
 
 <body>
+  <!-- Hidden Netlify form for deploy-time detection (SPA) -->
+  <form name="contact" data-netlify="true" netlify-honeypot="bot-field" hidden>
+    <input name="bot-field" />
+    <input name="fullName" />
+    <input name="phone" />
+    <input name="email" />
+    <select name="subject">
+      <option value=""></option>
+    </select>
+    <textarea name="message"></textarea>
+    <input name="consent" type="checkbox" />
+  </form>
+
   <div id="root"></div>
   <script type="module" src="/src/main.jsx"></script>
   <script src="/accessibility-widget-embed.js" defer></script>
