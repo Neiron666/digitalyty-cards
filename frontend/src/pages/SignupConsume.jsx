@@ -16,7 +16,11 @@ export default function SignupConsume() {
         return typeof t === "string" ? t.trim() : "";
     }, [searchParams]);
 
-    const [form, setForm] = useState({ password: "", confirmPassword: "" });
+    const [form, setForm] = useState({
+        password: "",
+        confirmPassword: "",
+        consent: false,
+    });
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
 
@@ -38,9 +42,18 @@ export default function SignupConsume() {
             return;
         }
 
+        if (!form.consent) {
+            setError("חובה להסכים למדיניות הפרטיות ולתנאי השימוש");
+            return;
+        }
+
         setLoading(true);
         try {
-            const res = await consumeSignupToken(token, form.password);
+            const res = await consumeSignupToken(
+                token,
+                form.password,
+                form.consent,
+            );
             const jwt = res?.data?.token;
 
             if (!jwt) {
@@ -105,6 +118,35 @@ export default function SignupConsume() {
                     onChange={(e) => update("confirmPassword", e.target.value)}
                     required
                 />
+
+                <label className={styles.consentRow}>
+                    <input
+                        type="checkbox"
+                        checked={form.consent}
+                        onChange={(e) => update("consent", e.target.checked)}
+                        required
+                    />
+                    <span className={styles.consentText}>
+                        אני מסכים ל
+                        <a
+                            href="/privacy"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className={styles.consentLink}
+                        >
+                            מדיניות הפרטיות
+                        </a>{" "}
+                        וגם ל
+                        <a
+                            href="/terms"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className={styles.consentLink}
+                        >
+                            תנאי השימוש באתר
+                        </a>
+                    </span>
+                </label>
 
                 {error ? <p className={styles.error}>{error}</p> : null}
 

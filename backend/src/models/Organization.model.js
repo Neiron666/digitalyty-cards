@@ -15,7 +15,7 @@ const OrganizationSchema = new mongoose.Schema(
         },
         name: { type: String, required: true, trim: true, maxlength: 120 },
         note: { type: String, default: "", trim: true, maxlength: 500 },
-        isActive: { type: Boolean, default: true, index: true },
+        isActive: { type: Boolean, default: true },
         seatLimit: {
             type: Number,
             default: null,

@@ -47,7 +47,9 @@ responses stay 204 (anti-enum).
 
 POST /api/auth/signup-consume
 
-Input: { "token": "<raw token>", "password": "<new password>" }
+Input: { "token": "<raw token>", "password": "<new password>", "consent": true }
+
+`consent` is required (strict boolean `true`). See `docs/runbooks/auth-registration-consent.md` for consent runbook.
 
 Output:
 

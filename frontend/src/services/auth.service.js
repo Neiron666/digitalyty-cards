@@ -25,8 +25,8 @@ export const resetPassword = (token, password) =>
 export const requestSignupLink = (email) =>
     api.post("/auth/signup-link", { email });
 
-export const consumeSignupToken = (token, password) =>
-    api.post("/auth/signup-consume", { token, password });
+export const consumeSignupToken = (token, password, consent) =>
+    api.post("/auth/signup-consume", { token, password, consent });
 
 export const verifyEmail = (token) => api.post("/auth/verify-email", { token });
 

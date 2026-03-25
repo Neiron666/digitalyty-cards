@@ -1,22 +1,40 @@
-# Auth: Registration Consent — Runbook
+# Auth: Account-Creation Consent — Runbook
 
 ## Purpose
 
-Registration requires explicit consent to the Privacy Policy and Terms of Use (Israeli Privacy Law baseline).
-This is the engineering consent gate for `POST /api/auth/register`.
+All account-creation flows require explicit consent to the Privacy Policy and Terms of Use (Israeli Privacy Law baseline).
+
+Consent-bearing flows:
+
+- `POST /api/auth/register`
+- `POST /api/auth/signup-consume`
+- `POST /api/invites/accept` (new-user branch only)
+
+**Important:** Email-ownership proof (magic link, invite token) justifies `isVerified: true` but does **not** satisfy consent. These are distinct concerns.
 
 ---
 
 ## How It Works
 
-1. Frontend: Register form renders a required checkbox linking to `/privacy` and `/terms`.
-2. Payload: `{ email, password, consent: true }` is sent to backend.
-3. Backend: enforces `consent === true` (strict boolean). Any other value → `400 { code: "CONSENT_REQUIRED" }`.
-4. Persistence: on successful registration the User document receives:
+All three consent-bearing flows follow the same truth chain:
+
+1. **UI:** A required consent checkbox linking to `/privacy` and `/terms`.
+2. **Payload:** `consent: true` is included in the request body.
+3. **Backend:** enforces `consent === true` (strict boolean). Rejection behavior per flow:
+    - `/register` → `400 { code: "CONSENT_REQUIRED" }`
+    - `/signup-consume` → neutral `400` (anti-enumeration)
+    - `/invites/accept` (new-user) → `404` (anti-enumeration)
+4. **Persistence:** on successful account creation the User document receives:
     - `termsAcceptedAt` — timestamp of acceptance
     - `privacyAcceptedAt` — timestamp of acceptance
     - `termsVersion` — version string from SSoT constants
     - `privacyVersion` — version string from SSoT constants
+
+### Flow-specific notes
+
+- **Register:** `isVerified: false` (email verification sent separately).
+- **Signup-consume:** `isVerified: true` (magic link proves email ownership).
+- **Invite-accept new-user:** `isVerified: true` (invite token proves email ownership). Existing-user branch does not collect new consent.
 
 ---
 
@@ -93,18 +111,25 @@ After test 4, verify the User document in MongoDB contains `termsAcceptedAt`, `p
 - `/privacy` and `/terms` pages are **engineering baseline content**, not lawyer-reviewed final legal text.
 - Card editor / card-data consent is **out of scope** — deferred to a separate future task.
 - Existing users have `null` consent fields — backward compatible, no migration required.
+- Retroactive consent backfill for legacy null-consent users is intentionally deferred.
+- Re-consent / version-bump flow is intentionally deferred.
 
 ---
 
 ## Related Files
 
-| File                                     | Role                             |
-| ---------------------------------------- | -------------------------------- |
-| `frontend/src/pages/Register.jsx`        | Consent checkbox UI              |
-| `frontend/src/pages/Register.module.css` | Consent row styles               |
-| `frontend/src/services/auth.service.js`  | Sends `consent` param to backend |
-| `backend/src/routes/auth.routes.js`      | Strict enforcement + persistence |
-| `backend/src/models/User.model.js`       | Consent fields on User schema    |
-| `backend/src/utils/consentVersions.js`   | Version SSoT constants           |
-| `frontend/src/pages/Privacy.jsx`         | Privacy policy page              |
-| `frontend/src/pages/Terms.jsx`           | Terms of use page                |
+| File                                          | Role                                            |
+| --------------------------------------------- | ----------------------------------------------- |
+| `frontend/src/pages/Register.jsx`             | Consent checkbox UI (register)                  |
+| `frontend/src/pages/Register.module.css`      | Consent row styles (register)                   |
+| `frontend/src/pages/SignupConsume.jsx`        | Consent checkbox UI (signup-consume)            |
+| `frontend/src/pages/SignupConsume.module.css` | Consent row styles (signup-consume)             |
+| `frontend/src/pages/InviteAccept.jsx`         | Consent checkbox UI (invite-accept, new-user)   |
+| `frontend/src/pages/InviteAccept.module.css`  | Consent row styles (invite-accept)              |
+| `frontend/src/services/auth.service.js`       | Sends `consent` param to backend                |
+| `backend/src/routes/auth.routes.js`           | Consent enforcement (register + signup-consume) |
+| `backend/src/routes/invites.routes.js`        | Consent enforcement (invite-accept new-user)    |
+| `backend/src/models/User.model.js`            | Consent fields on User schema                   |
+| `backend/src/utils/consentVersions.js`        | Version SSoT constants                          |
+| `frontend/src/pages/Privacy.jsx`              | Privacy policy page                             |
+| `frontend/src/pages/Terms.jsx`                | Terms of use page                               |

@@ -15,6 +15,7 @@ Before making any changes, read and follow our corporate standards:
 - [Runbook: SEO & Scripts (GTM / GA4 / Meta Pixel)](docs/runbooks/seo-scripts.md)
 - [Runbook: Backend Verification & Deploy (Render + Windows)](docs/runbooks/backend-verification-and-deploy.md)
 - [Runbook: Image Upload Incident (Gallery / Design Assets)](docs/runbooks/image-upload-incident-runbook.md)
+- [Enterprise Governance & Hardening Cycle (2026-03)](docs/governance-hardening-cycle-2026-03.md)
 
 Hard constraints (non-negotiable):
 

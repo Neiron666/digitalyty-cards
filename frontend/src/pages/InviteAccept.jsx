@@ -16,6 +16,7 @@ function InviteAccept() {
     }, [location?.search]);
 
     const [password, setPassword] = useState("");
+    const [consent, setConsent] = useState(false);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
     const [loginRequired, setLoginRequired] = useState(false);
@@ -28,6 +29,11 @@ function InviteAccept() {
     const loginHref = useMemo(() => {
         return `/login?returnTo=${encodeURIComponent(returnTo)}`;
     }, [returnTo]);
+
+    // Branch signal: new-user vs existing-user.
+    // Drives password-entry, consent visibility, consent validation, and payload shape.
+    const existingJwt = String(localStorage.getItem("token") || "").trim();
+    const isNewUser = !existingJwt;
 
     async function handleSubmit(e) {
         e.preventDefault();
@@ -58,9 +64,20 @@ function InviteAccept() {
             return;
         }
 
+        // New-user flow requires explicit consent.
+        if (!isLoggedIn && !consent) {
+            setError(
+                "Необходимо принять условия использования и политику конфиденциальности",
+            );
+            return;
+        }
+
         setLoading(true);
         try {
-            const payload = { token, ...(password ? { password } : null) };
+            const payload = {
+                token,
+                ...(isNewUser ? { password, consent } : null),
+            };
             const res = await api.post("/invites/accept", payload);
             const jwt = res?.data?.token;
             const orgSlug = String(res?.data?.orgSlug || "").trim();
@@ -118,6 +135,36 @@ function InviteAccept() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                 />
+
+                {isNewUser ? (
+                    <label className={styles.consentRow}>
+                        <input
+                            type="checkbox"
+                            checked={consent}
+                            onChange={(e) => setConsent(e.target.checked)}
+                        />
+                        <span className={styles.consentText}>
+                            Я принимаю{" "}
+                            <a
+                                href="/privacy"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className={styles.consentLink}
+                            >
+                                политику конфиденциальности
+                            </a>{" "}
+                            и{" "}
+                            <a
+                                href="/terms"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className={styles.consentLink}
+                            >
+                                условия использования
+                            </a>
+                        </span>
+                    </label>
+                ) : null}
 
                 {error && <p className={styles.error}>{error}</p>}
 

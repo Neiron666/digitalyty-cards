@@ -199,18 +199,21 @@ Request a magic signup link via email. **Anti-enumeration** — always returns 2
 
 Consume a magic signup link token and create an account with a password.
 
-| Field      | Location | Required | Description                          |
-| ---------- | -------- | -------- | ------------------------------------ |
-| `token`    | body     | yes      | Raw signup token (hex)               |
-| `password` | body     | yes      | Password for new account (≥ 8 chars) |
+| Field      | Location | Required | Description                                             |
+| ---------- | -------- | -------- | ------------------------------------------------------- |
+| `token`    | body     | yes      | Raw signup token (hex)                                  |
+| `password` | body     | yes      | Password for new account (≥ 8 chars)                    |
+| `consent`  | body     | yes      | Boolean `true` — explicit acceptance of Terms & Privacy |
 
 **Rate limit**: 60 requests / 10 min per IP.
 
 **Behaviour**:
 
 1. Atomically consumes the signup token.
-2. Creates user with `isVerified: true` — the magic link already proves email ownership.
-3. Hashes password with `bcrypt` (salt rounds 10).
+2. Enforces `consent === true` (strict boolean); rejects with neutral 400 otherwise.
+3. Creates user with `isVerified: true` — the magic link already proves email ownership.
+4. Persists `termsAcceptedAt`, `privacyAcceptedAt`, `termsVersion`, `privacyVersion` from SSoT version constants.
+5. Hashes password with `bcrypt` (salt rounds 10).
 
 **Responses**:
 
@@ -373,10 +376,10 @@ User requests magic link → email sent
 
 ## 5. Password Policy
 
-| Rule       | Value       | Enforced on                              |
-| ---------- | ----------- | ---------------------------------------- |
-| Min length | **8 chars** | `/register`, `/signup-consume`, `/reset` |
-| Hashing    | bcrypt      | Salt rounds: 10                          |
+| Rule       | Value       | Enforced on                                                                     |
+| ---------- | ----------- | ------------------------------------------------------------------------------- |
+| Min length | **8 chars** | `/register`, `/signup-consume`, `/reset`, `/change-password`, `/invites/accept` |
+| Hashing    | bcrypt      | Salt rounds: 10                                                                 |
 
 > Future: consider adding complexity rules (uppercase, digit, symbol).
 
@@ -430,12 +433,22 @@ Token consumption uses MongoDB's `findOneAndUpdate` with a `usedAt: null` predic
 - Salt rounds: **10**.
 - Used for all password hashing (registration, reset, magic-link signup).
 
-### Registration consent
+### Account-creation consent
 
-- `/register` enforces `consent === true` (strict boolean, same pattern as lead-form consent).
-- Requests with missing, `false`, or string `"true"` consent are rejected with `400 CONSENT_REQUIRED`.
-- On success, `termsAcceptedAt`, `privacyAcceptedAt`, `termsVersion`, and `privacyVersion` are persisted on the User document.
-- Version constants are managed in `backend/src/utils/consentVersions.js`; see `docs/runbooks/auth-registration-consent.md` for operational guidance.
+Consent to Terms of Use and Privacy Policy is required on all account-creation flows:
+
+| Flow                                     | Consent required | Enforcement                                                              |
+| ---------------------------------------- | ---------------- | ------------------------------------------------------------------------ |
+| `/register`                              | yes              | `consent === true` (strict boolean); rejects with `400 CONSENT_REQUIRED` |
+| `/signup-consume`                        | yes              | `consent === true`; rejects with neutral `400`                           |
+| `/invites/accept` (new-user branch)      | yes              | `consent === true`; rejects with `404` (anti-enumeration)                |
+| `/invites/accept` (existing-user branch) | no               | Existing user already consented at account creation                      |
+
+On success, all consent-bearing flows persist: `termsAcceptedAt`, `privacyAcceptedAt`, `termsVersion`, `privacyVersion` on the User document.
+
+**Important distinction:** Email-ownership proof (magic link, invite token) is sufficient for `isVerified: true`, but is **not** sufficient for consent. Consent requires explicit UI capture and strict boolean validation.
+
+Version constants are managed in `backend/src/utils/consentVersions.js`; see `docs/runbooks/auth-registration-consent.md` for operational guidance.
 
 ---
 

@@ -544,6 +544,11 @@ router.post("/signup-consume", async (req, res) => {
             return fail();
         }
 
+        // ── Consent enforcement (strict boolean) ──
+        if (req.body.consent !== true) {
+            return fail();
+        }
+
         const existing = await findUserByEmailCaseInsensitive(emailNormalized);
         if (existing) {
             return fail();
@@ -553,10 +558,15 @@ router.post("/signup-consume", async (req, res) => {
 
         let user;
         try {
+            const consentNow = new Date();
             user = await User.create({
                 email: emailNormalized,
                 passwordHash,
                 isVerified: true, // Magic link already proves email ownership.
+                termsAcceptedAt: consentNow,
+                privacyAcceptedAt: consentNow,
+                termsVersion: CURRENT_TERMS_VERSION,
+                privacyVersion: CURRENT_PRIVACY_VERSION,
             });
         } catch (err) {
             if (err && (err.code === 11000 || err.code === 11001)) {
@@ -585,6 +595,9 @@ router.post("/reset", async (req, res) => {
     const password = req.body?.password;
 
     if (!rawToken || typeof password !== "string" || !password) {
+        return res.status(400).json({ message: "Unable to reset password" });
+    }
+    if (password.length < PASSWORD_MIN_LENGTH) {
         return res.status(400).json({ message: "Unable to reset password" });
     }
 

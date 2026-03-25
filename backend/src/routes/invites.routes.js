@@ -10,6 +10,10 @@ import User from "../models/User.model.js";
 import { optionalAuth } from "../middlewares/auth.middleware.js";
 import { signToken } from "../utils/jwt.js";
 import { getOrgSeatUsage } from "../utils/orgSeats.util.js";
+import {
+    CURRENT_TERMS_VERSION,
+    CURRENT_PRIVACY_VERSION,
+} from "../utils/consentVersions.js";
 
 const router = Router();
 
@@ -111,8 +115,14 @@ router.post("/accept", optionalAuth, async (req, res) => {
     }
 
     // Enterprise hardening: if this invite would create a new user,
-    // require a password BEFORE consuming the invite.
-    if (!user && (typeof password !== "string" || !password)) {
+    // require a password + consent BEFORE consuming the invite.
+    if (
+        !user &&
+        (typeof password !== "string" || !password || password.length < 8)
+    ) {
+        return notFound(res);
+    }
+    if (!user && req.body.consent !== true) {
         return notFound(res);
     }
 
@@ -137,7 +147,16 @@ router.post("/accept", optionalAuth, async (req, res) => {
         const passwordHash = await bcrypt.hash(password, 10);
 
         try {
-            user = await User.create({ email, passwordHash });
+            const consentNow = new Date();
+            user = await User.create({
+                email,
+                passwordHash,
+                isVerified: true,
+                termsAcceptedAt: consentNow,
+                privacyAcceptedAt: consentNow,
+                termsVersion: CURRENT_TERMS_VERSION,
+                privacyVersion: CURRENT_PRIVACY_VERSION,
+            });
         } catch (err) {
             if (err && (err.code === 11000 || err.code === 11001)) {
                 user = await findUserByEmailCaseInsensitive(email);

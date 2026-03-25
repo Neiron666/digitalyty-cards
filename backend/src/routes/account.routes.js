@@ -186,6 +186,11 @@ router.post("/change-password", requireAuth, async (req, res) => {
                 .status(400)
                 .json({ message: "Unable to change password" });
         }
+        if (newPassword.length < 8) {
+            return res
+                .status(400)
+                .json({ message: "Unable to change password" });
+        }
 
         const user = await User.findById(req.userId)
             .select("passwordHash")

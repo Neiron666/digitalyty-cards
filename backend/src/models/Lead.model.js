@@ -60,21 +60,25 @@ const leadSchema = new mongoose.Schema(
     { timestamps: true },
 );
 
-// Index for list-by-card queries + cascade deleteMany performance.
-// autoIndex is NOT enabled — migration is manual (project index governance).
-leadSchema.index({ card: 1, createdAt: -1 });
+// ── Governed index declarations (autoIndex OFF — migration is manual) ──
 
-// Compound index for inbox read path: unread-count + filtered list.
-// Additive — does NOT replace the index above (removal is a separate ops ticket).
-leadSchema.index({ card: 1, readAt: 1, createdAt: -1 });
+// Mailbox views: active / archived / trash filtered lists + cursor pagination.
+leadSchema.index(
+    { card: 1, deletedAt: 1, archivedAt: 1, createdAt: -1 },
+    { name: "idx_leads_mailbox" },
+);
 
-// Compound index for mailbox views: active / archived / trash filtered lists.
-// Additive — does NOT replace the indexes above.
-leadSchema.index({ card: 1, deletedAt: 1, archivedAt: 1, createdAt: -1 });
-
-// TTL index: auto-purge soft-deleted leads after 90 days (7 776 000 s).
+// TTL: auto-purge soft-deleted leads after 90 days (7 776 000 s).
 // MongoDB TTL skips documents where the field is null/missing — safe for active leads.
-// autoIndex is OFF — create manually: db.leads.createIndex({ deletedAt: 1 }, { expireAfterSeconds: 7776000 })
-leadSchema.index({ deletedAt: 1 }, { expireAfterSeconds: 7_776_000 });
+leadSchema.index(
+    { deletedAt: 1 },
+    { name: "idx_leads_deletedAt_ttl", expireAfterSeconds: 7_776_000 },
+);
+
+// Unread-count: supports countDocuments({ card, readAt:null, archivedAt:null, deletedAt:null }).
+leadSchema.index(
+    { card: 1, deletedAt: 1, archivedAt: 1, readAt: 1 },
+    { name: "idx_leads_unread_count" },
+);
 
 export default mongoose.model("Lead", leadSchema);
