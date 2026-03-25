@@ -23,6 +23,7 @@ import orgInvitesRoutes from "./routes/orgInvites.routes.js";
 import previewRoutes from "./routes/preview.routes.js";
 import accountRoutes from "./routes/account.routes.js";
 import blogRoutes from "./routes/blog.routes.js";
+import guideRoutes from "./routes/guide.routes.js";
 import aiRoutes from "./routes/ai.routes.js";
 import path from "path";
 
@@ -152,6 +153,9 @@ app.use("/api/preview", previewRoutes);
 
 // Blog public read API
 app.use("/api/blog", blogRoutes);
+
+// Guides public read API
+app.use("/api/guides", guideRoutes);
 
 // API fallback: never return HTML for /api/*
 app.use("/api", (req, res) => {

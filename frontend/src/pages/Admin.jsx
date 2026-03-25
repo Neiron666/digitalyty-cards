@@ -28,6 +28,7 @@ import {
 } from "../services/admin.service";
 import AdminAnalyticsView from "./admin/AdminAnalyticsView";
 import AdminBlogView from "./admin/AdminBlogView";
+import AdminGuidesView from "./admin/AdminGuidesView";
 import AdminOrganizationsView from "./admin/AdminOrganizationsView";
 import styles from "./Admin.module.css";
 
@@ -1566,6 +1567,17 @@ export default function Admin() {
                             onClick={() => setAdminMode("blog")}
                         >
                             בלוג
+                        </button>
+                        <button
+                            type="button"
+                            className={`${styles.tab} ${
+                                adminMode === "guides" ? styles.tabActive : ""
+                            }`}
+                            role="tab"
+                            aria-selected={adminMode === "guides"}
+                            onClick={() => setAdminMode("guides")}
+                        >
+                            מדריכים
                         </button>
                         <button
                             type="button"
@@ -6639,6 +6651,8 @@ export default function Admin() {
                     </div>
                 ) : adminMode === "blog" ? (
                     <AdminBlogView />
+                ) : adminMode === "guides" ? (
+                    <AdminGuidesView />
                 ) : (
                     <AdminAnalyticsView refreshKey={analyticsRefreshKey} />
                 )}

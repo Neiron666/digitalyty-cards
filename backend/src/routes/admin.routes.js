@@ -56,6 +56,18 @@ import {
     uploadBlogSectionImage,
     removeBlogSectionImage,
 } from "../controllers/adminBlog.controller.js";
+import {
+    getAdminGuidePostById,
+    listAdminGuidePosts,
+    createGuidePost,
+    updateGuidePost,
+    publishGuidePost,
+    unpublishGuidePost,
+    deleteGuidePost,
+    uploadGuideHeroImage,
+    uploadGuideSectionImage,
+    removeGuideSectionImage,
+} from "../controllers/adminGuide.controller.js";
 import { upload } from "../middlewares/upload.middleware.js";
 
 const router = Router();
@@ -133,5 +145,28 @@ router.post(
     removeBlogSectionImage,
 );
 router.post("/blog/posts/:id/delete", deleteBlogPost);
+
+// Guides admin CRUD
+router.get("/guides/posts", listAdminGuidePosts);
+router.get("/guides/posts/:id", getAdminGuidePostById);
+router.post("/guides/posts", createGuidePost);
+router.patch("/guides/posts/:id", updateGuidePost);
+router.post("/guides/posts/:id/publish", publishGuidePost);
+router.post("/guides/posts/:id/unpublish", unpublishGuidePost);
+router.post(
+    "/guides/posts/:id/upload-hero",
+    upload.single("image"),
+    uploadGuideHeroImage,
+);
+router.post(
+    "/guides/posts/:id/sections/:sectionIdx/upload-image",
+    upload.single("image"),
+    uploadGuideSectionImage,
+);
+router.post(
+    "/guides/posts/:id/sections/:sectionIdx/remove-image",
+    removeGuideSectionImage,
+);
+router.post("/guides/posts/:id/delete", deleteGuidePost);
 
 export default router;

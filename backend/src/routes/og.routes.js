@@ -1,6 +1,7 @@
 import { Router } from "express";
 import Card from "../models/Card.model.js";
 import BlogPost from "../models/BlogPost.model.js";
+import GuidePost from "../models/GuidePost.model.js";
 import Organization from "../models/Organization.model.js";
 import OrganizationMember from "../models/OrganizationMember.model.js";
 import { isEntitled, isTrialExpired } from "../utils/trial.js";
@@ -42,6 +43,73 @@ router.get("/og/blog/:slug", async (req, res) => {
     const title =
         collapseWs(post.seo?.title || post.title) ||
         "\u05D1\u05DC\u05D5\u05D2 | Cardigo";
+    const description = collapseWs(post.seo?.description || post.excerpt || "");
+
+    const heroPath =
+        post.heroImage?.storagePath ||
+        (post.heroImage && typeof post.heroImage === "object"
+            ? post.heroImage.storagePath
+            : "");
+    const image = getPublicUrlForPath({ path: heroPath }) || "";
+
+    const imageMeta = image
+        ? `
+    <meta property="og:image" content="${escapeHtml(image)}" />
+    <meta name="twitter:image" content="${escapeHtml(image)}" />`
+        : "";
+
+    const html = `<!doctype html>
+<html lang="he" dir="rtl">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>${escapeHtml(title)}</title>
+    <meta name="description" content="${escapeHtml(description)}" />
+
+    <meta property="og:type" content="article" />
+    <meta property="og:site_name" content="Cardigo" />
+    <meta property="og:title" content="${escapeHtml(title)}" />
+    <meta property="og:description" content="${escapeHtml(description)}" />
+    <meta property="og:url" content="${escapeHtml(publicUrl)}" />${imageMeta}
+
+    <meta name="twitter:card" content="${image ? "summary_large_image" : "summary"}" />
+    <meta name="twitter:title" content="${escapeHtml(title)}" />
+    <meta name="twitter:description" content="${escapeHtml(description)}" />
+
+    <meta http-equiv="refresh" content="0; url=${escapeHtml(publicUrl)}" />
+  </head>
+  <body>
+    <a href="${escapeHtml(publicUrl)}">${escapeHtml(publicUrl)}</a>
+  </body>
+</html>`;
+
+    res.setHeader("Content-Type", "text/html; charset=utf-8");
+    res.send(html);
+});
+
+/* ── Guide OG ─────────────────────────────────────────────────── */
+
+router.get("/og/guides/:slug", async (req, res) => {
+    const slug = String(req.params.slug || "")
+        .trim()
+        .toLowerCase();
+    if (!slug) return res.status(404).send("Not found");
+
+    const post = await GuidePost.findOne({ slug, status: "published" }).lean();
+    if (!post) return res.status(404).send("Not found");
+
+    const siteUrl = getSiteUrl();
+    const publicUrl = `${siteUrl}/guides/${slug}`;
+
+    const collapseWs = (s) =>
+        String(s || "")
+            .replace(/[\r\n]+/g, " ")
+            .trim();
+
+    const title =
+        collapseWs(post.seo?.title || post.title) ||
+        "\u05DE\u05D3\u05E8\u05D9\u05DB\u05D9\u05DD | Cardigo";
     const description = collapseWs(post.seo?.description || post.excerpt || "");
 
     const heroPath =

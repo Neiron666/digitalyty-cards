@@ -263,3 +263,55 @@ export function removeAdminBlogSectionImage(id, sectionIdx) {
         `/admin/blog/posts/${id}/sections/${sectionIdx}/remove-image`,
     );
 }
+
+// Guides admin CRUD
+export function listAdminGuidePosts(params = {}) {
+    return api.get("/admin/guides/posts", { params });
+}
+
+export function getAdminGuidePostById(id) {
+    return api.get(`/admin/guides/posts/${id}`);
+}
+
+export function createAdminGuidePost(body) {
+    return api.post("/admin/guides/posts", body);
+}
+
+export function updateAdminGuidePost(id, body) {
+    return api.patch(`/admin/guides/posts/${id}`, body);
+}
+
+export function publishAdminGuidePost(id) {
+    return api.post(`/admin/guides/posts/${id}/publish`);
+}
+
+export function unpublishAdminGuidePost(id) {
+    return api.post(`/admin/guides/posts/${id}/unpublish`);
+}
+
+export function deleteAdminGuidePost(id) {
+    return api.post(`/admin/guides/posts/${id}/delete`);
+}
+
+export function uploadAdminGuideHeroImage(id, file, alt) {
+    const fd = new FormData();
+    fd.append("image", file);
+    fd.append("alt", alt);
+    return api.post(`/admin/guides/posts/${id}/upload-hero`, fd);
+}
+
+export function uploadAdminGuideSectionImage(id, sectionIdx, file, alt) {
+    const fd = new FormData();
+    fd.append("image", file);
+    fd.append("alt", alt);
+    return api.post(
+        `/admin/guides/posts/${id}/sections/${sectionIdx}/upload-image`,
+        fd,
+    );
+}
+
+export function removeAdminGuideSectionImage(id, sectionIdx) {
+    return api.post(
+        `/admin/guides/posts/${id}/sections/${sectionIdx}/remove-image`,
+    );
+}

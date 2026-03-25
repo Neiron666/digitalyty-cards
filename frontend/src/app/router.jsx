@@ -34,6 +34,7 @@ const Admin = lazy(() => import("../pages/Admin"));
 const OrgInvites = lazy(() => import("../pages/OrgInvites"));
 const Inbox = lazy(() => import("../pages/Inbox"));
 const BlogPost = lazy(() => import("../pages/BlogPost"));
+const GuidePost = lazy(() => import("../pages/GuidePost"));
 
 // public card
 const PublicCard = lazy(() => import("../pages/PublicCard"));
@@ -78,6 +79,19 @@ const router = createBrowserRouter([
             },
             { path: "pricing", element: <Pricing /> },
             { path: "guides", element: <Guides /> },
+            { path: "guides/page/:pageNum", element: <Guides /> },
+            {
+                path: "guides/:slug",
+                element: (
+                    <ChunkErrorBoundary label="שגיאת טעינה במדריך">
+                        <Suspense
+                            fallback={<RouteFallback label="טוען מדריך…" />}
+                        >
+                            <GuidePost />
+                        </Suspense>
+                    </ChunkErrorBoundary>
+                ),
+            },
             { path: "cards", element: <Cards /> },
 
             // legal

@@ -24,13 +24,16 @@ export const GENTLE_QUALITY = 90;
 export const AGGRESSIVE_QUALITIES = [82, 78, 74];
 
 // ── Per-kind processing profiles ───────────────────────────────
+// Keys must be lowercase — resolveProfile() normalises input via .toLowerCase().
 const PROFILES = {
     gallery: { maxLongSide: 2048, minLongSide: 1024 },
-    blogHero: { maxLongSide: 2048, minLongSide: 1024 },
-    blogSectionImage: { maxLongSide: 1600, minLongSide: 800 },
+    bloghero: { maxLongSide: 2048, minLongSide: 1024 },
+    blogsectionimage: { maxLongSide: 1600, minLongSide: 800 },
+    guidehero: { maxLongSide: 2048, minLongSide: 1024 },
+    guidesectionimage: { maxLongSide: 1600, minLongSide: 800 },
     background: { maxLongSide: 1920, minLongSide: 800 },
     avatar: { maxLongSide: 800, minLongSide: 400 },
-    galleryThumb: { maxLongSide: 600, minLongSide: 400 },
+    gallerythumb: { maxLongSide: 600, minLongSide: 400 },
 };
 
 const DEFAULT_PROFILE = { maxLongSide: 2048, minLongSide: 1024 };

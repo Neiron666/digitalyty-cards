@@ -1,6 +1,7 @@
 import { Router } from "express";
 import Card from "../models/Card.model.js";
 import BlogPost from "../models/BlogPost.model.js";
+import GuidePost from "../models/GuidePost.model.js";
 import Organization from "../models/Organization.model.js";
 import OrganizationMember from "../models/OrganizationMember.model.js";
 import { isEntitled, isTrialExpired } from "../utils/trial.js";
@@ -140,9 +141,34 @@ router.get("/sitemap.xml", async (req, res) => {
             blogArchiveUrls += `<url><loc>${siteUrl}/blog/page/${n}</loc></url>`;
         }
 
+        /* ── Guide posts (single query, published-only) ───────── */
+        const guidePosts = await GuidePost.find({ status: "published" })
+            .select("slug updatedAt")
+            .lean();
+
+        const guideUrls = guidePosts
+            .map((p) => {
+                const s = String(p.slug || "");
+                if (!s) return "";
+                const lastmod = p.updatedAt
+                    ? `<lastmod>${p.updatedAt.toISOString()}</lastmod>`
+                    : "";
+                return `<url><loc>${siteUrl}/guides/${s}</loc>${lastmod}</url>`;
+            })
+            .filter(Boolean)
+            .join("");
+
+        /* ── Guide archive pages (/guides/page/2 … /guides/page/N) ── */
+        const GUIDE_PAGE_SIZE = 12;
+        const guideTotalPages = Math.ceil(guidePosts.length / GUIDE_PAGE_SIZE);
+        let guideArchiveUrls = "";
+        for (let n = 2; n <= guideTotalPages; n++) {
+            guideArchiveUrls += `<url><loc>${siteUrl}/guides/page/${n}</loc></url>`;
+        }
+
         const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-${staticUrls}${urls}${blogUrls}${blogArchiveUrls}
+${staticUrls}${urls}${blogUrls}${blogArchiveUrls}${guideUrls}${guideArchiveUrls}
 </urlset>`;
 
         res.header("Content-Type", "application/xml");
