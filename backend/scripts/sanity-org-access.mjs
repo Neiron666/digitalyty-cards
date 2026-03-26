@@ -322,7 +322,11 @@ async function main() {
             baseUrl,
             path: "/invites/accept",
             method: "POST",
-            body: { token: tokenFromLink, password: SANITY_INVITE_PASSWORD },
+            body: {
+                token: tokenFromLink,
+                password: SANITY_INVITE_PASSWORD,
+                consent: true,
+            },
         });
 
         statuses.inviteAccept = {
@@ -374,6 +378,26 @@ async function main() {
             };
         }
         assert(created.memberId, "Missing member id");
+
+        // Provision publish-capable tier for the invited user so feature gates
+        // (publish, slugChange, etc.) don't block the org-access invariants
+        // tested here. Follows the same canonical pattern as sanity-slug-policy.
+        const invitedUser = await User.findOne({ email: userEmail })
+            .select("_id")
+            .lean();
+        assert(invitedUser?._id, "Missing invited user after accept");
+        created.userId = String(invitedUser._id);
+        await User.updateOne(
+            { _id: invitedUser._id },
+            {
+                $set: {
+                    adminTier: "premium",
+                    adminTierUntil: new Date(
+                        Date.now() + 365 * 24 * 60 * 60 * 1000,
+                    ),
+                },
+            },
+        );
 
         // Ensure personal card exists for member user
         const personalCreate = await requestJson({

@@ -1,9 +1,36 @@
+/* ── Inner RTL wrapper ── */
+
 .root {
     display: flex;
     flex-direction: column;
-    gap: 12px;
-    padding: 12px;
+    gap: 14px;
 }
+
+/* ── Section grouping (inner subsections) ── */
+
+.section {
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.sectionTitle {
+    font-weight: 700;
+    font-size: var(--fs-h6);
+    margin: 0;
+    color: var(--text-main);
+    letter-spacing: 0.01em;
+    padding-block-end: 6px;
+    border-block-end: 1px solid rgba(255, 255, 255, 0.06);
+    text-decoration: underline var(--gold) 1px;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 4px;
+}
+
+/* ── Toggle row ── */
 
 .headerRow {
     display: flex;
@@ -12,27 +39,48 @@
     align-items: flex-start;
 }
 
-.title {
-    font-size: var(--fs-20);
-    font-weight: 700;
-}
-
 .switch {
     display: flex;
     align-items: center;
     gap: 8px;
-    font-size: var(--fs-14);
+    font-size: var(--fs-body-sm);
 }
 
 .switchLabel {
-    font-size: var(--fs-14);
+    font-size: var(--fs-body-sm);
 }
 
 .hint {
-    font-size: var(--fs-12);
+    font-size: var(--fs-ui);
     line-height: var(--lh-normal);
-    opacity: 0.9;
+    opacity: 0.85;
 }
+
+/* ── Premium locked block ── */
+
+.lockedBlock {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 14px 16px;
+    border: 1px dashed rgba(255, 215, 0, 0.35);
+    border-radius: var(--radius-md);
+    background: rgba(255, 215, 0, 0.04);
+}
+
+.lockedTitle {
+    font-weight: 700;
+    font-size: var(--fs-body-sm);
+    color: var(--gold, #d4a017);
+}
+
+.lockedText {
+    opacity: 0.85;
+    font-size: var(--fs-ui);
+    line-height: 1.5;
+}
+
+/* ── Day cards ── */
 
 .dayCard {
     display: flex;
@@ -53,7 +101,7 @@
 }
 
 .dayLabel {
-    font-size: var(--fs-16);
+    font-size: var(--fs-body);
     font-weight: 700;
 }
 
@@ -61,15 +109,15 @@
     display: flex;
     align-items: center;
     gap: 8px;
-    font-size: var(--fs-14);
+    font-size: var(--fs-body-sm);
 }
 
 .openToggleLabel {
-    font-size: var(--fs-14);
+    font-size: var(--fs-body-sm);
 }
 
 .addBtn {
-    font-size: var(--fs-14);
+    font-size: var(--fs-body-sm);
     padding: 8px 10px;
     border-radius: 10px;
     border: 1px solid rgba(255, 255, 255, 0.16);
@@ -80,6 +128,8 @@
 .addBtn:disabled {
     opacity: 0.5;
 }
+
+/* ── Intervals ── */
 
 .intervals {
     display: flex;
@@ -103,7 +153,7 @@
 }
 
 .selectLabel {
-    font-size: var(--fs-12);
+    font-size: var(--fs-ui);
     opacity: 0.9;
 }
 
@@ -112,7 +162,7 @@
     align-items: center;
     justify-content: space-between;
     gap: 10px;
-    font-size: var(--fs-14);
+    font-size: var(--fs-body-sm);
     line-height: var(--lh-normal);
     padding: 10px;
     border-radius: 10px;
@@ -175,7 +225,7 @@
     display: flex;
     align-items: center;
     justify-content: flex-start;
-    font-size: var(--fs-14);
+    font-size: var(--fs-body-sm);
     line-height: var(--lh-normal);
     padding: 8px 10px;
     border-radius: 10px;
@@ -200,7 +250,7 @@
 }
 
 .removeBtn {
-    font-size: var(--fs-14);
+    font-size: var(--fs-body-sm);
     padding: 10px 12px;
     border-radius: 10px;
     border: 1px solid rgba(255, 255, 255, 0.16);
@@ -213,7 +263,7 @@
 }
 
 .emptyDayHint {
-    font-size: var(--fs-12);
+    font-size: var(--fs-ui);
     line-height: var(--lh-normal);
     opacity: 0.9;
 }

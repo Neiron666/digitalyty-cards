@@ -298,7 +298,11 @@ async function main() {
             baseUrl,
             path: "/invites/accept",
             method: "POST",
-            body: { token: tokenFromLink, password: SANITY_INVITE_PASSWORD },
+            body: {
+                token: tokenFromLink,
+                password: SANITY_INVITE_PASSWORD,
+                consent: true,
+            },
         });
 
         statuses.inviteAccept = {

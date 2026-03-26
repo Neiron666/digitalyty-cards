@@ -104,6 +104,11 @@ export default function EditorPanel({
                     onChange={(nextBusinessHours) =>
                         onFieldChange?.("businessHours", nextBusinessHours)
                     }
+                    bookingSettings={card?.bookingSettings}
+                    canUseBooking={card?.entitlements?.canUseBooking === true}
+                    onBookingChange={(nextBooking) =>
+                        onFieldChange?.("bookingSettings", nextBooking)
+                    }
                 />
             );
 

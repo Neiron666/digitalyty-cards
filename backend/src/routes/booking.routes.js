@@ -4,6 +4,7 @@ import {
     approveMyBooking,
     cancelMyBooking,
     createPublicBooking,
+    getPublicAvailability,
     listMyBookings,
     reconcileExpiredBookings,
 } from "../controllers/booking.controller.js";
@@ -81,6 +82,29 @@ function authRateLimit(req, res, next) {
 
     return next();
 }
+
+// ── Public availability read (anonymous) ────────────────────────────
+
+router.get(
+    "/availability",
+    (req, res, next) => {
+        const ip = getClientIp(req);
+
+        if (
+            !rateLimitByKey(
+                ip,
+                inMemoryBookIpRate,
+                BOOK_RATE_LIMIT_IP,
+                BOOK_RATE_WINDOW_MS,
+            )
+        ) {
+            return res.status(429).json({ message: "Too many requests" });
+        }
+
+        return next();
+    },
+    getPublicAvailability,
+);
 
 // ── Public submit (anonymous) ───────────────────────────────────────
 

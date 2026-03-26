@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import styles from "./BusinessHoursPanel.module.css";
+import Panel from "./Panel";
 
 const WEEKDAYS = [
     { key: "sun", label: "ראשון" },
@@ -188,9 +189,21 @@ function TimeListbox({ label, value, options, onChange, disabled, invalid }) {
     );
 }
 
-export default function BusinessHoursPanel({ value, disabled, onChange }) {
+export default function BusinessHoursPanel({
+    value,
+    disabled,
+    onChange,
+    bookingSettings,
+    canUseBooking,
+    onBookingChange,
+}) {
     const bh = useMemo(() => coerceBusinessHours(value), [value]);
     const timeOptions = useMemo(() => buildTimeOptions30m(), []);
+
+    const bookingEnabled =
+        bookingSettings != null &&
+        typeof bookingSettings === "object" &&
+        bookingSettings.enabled === true;
 
     function commit(next) {
         onChange?.(next);
@@ -245,144 +258,213 @@ export default function BusinessHoursPanel({ value, disabled, onChange }) {
     }
 
     return (
-        <div className={styles.root} dir="rtl">
-            <div className={styles.headerRow}>
-                <div className={styles.title}>שעות פעילות</div>
-                <label className={styles.switch}>
-                    <input
-                        type="checkbox"
-                        checked={bh.enabled === true}
-                        onChange={(e) => setEnabled(e.target.checked)}
-                        disabled={disabled}
-                    />
-                    <span className={styles.switchLabel}>הצג בכרטיס</span>
-                </label>
-            </div>
-
-            <div className={styles.hint}>
-                השעות יוצגו בכרטיס רק אם הסעיף פעיל ומוגדרות שעות פעילות.{" "}
-            </div>
-
-            {WEEKDAYS.map((d) => {
-                const day = bh.week?.[d.key] || defaultDay();
-                const isOpen = day.open === true;
-                const intervals = Array.isArray(day.intervals)
-                    ? day.intervals
-                    : [];
-
-                return (
-                    <div key={d.key} className={styles.dayCard}>
-                        <div className={styles.dayRow}>
-                            <div className={styles.dayLabel}>{d.label}</div>
-                            <label className={styles.openToggle}>
+        <Panel title="שעות פעילות וזימון תורים">
+            <div className={styles.root} dir="rtl">
+                {/* ── Booking section (elevated, first) ── */}
+                {canUseBooking ? (
+                    <div className={styles.section}>
+                        <h3 className={styles.sectionTitle}>הזמנת תורים</h3>
+                        <div className={styles.headerRow}>
+                            <label className={styles.switch}>
                                 <input
                                     type="checkbox"
-                                    checked={isOpen}
+                                    checked={bookingEnabled}
                                     onChange={(e) =>
-                                        setDayOpen(d.key, e.target.checked)
+                                        onBookingChange?.({
+                                            enabled: e.target.checked,
+                                        })
                                     }
-                                    disabled={disabled || bh.enabled !== true}
+                                    disabled={disabled}
                                 />
-                                <span className={styles.openToggleLabel}>
-                                    {isOpen ? "פתוח" : "סגור"}
+                                <span className={styles.switchLabel}>
+                                    אפשר הזמנת תורים
                                 </span>
                             </label>
-
-                            <button
-                                type="button"
-                                className={styles.addBtn}
-                                onClick={() => addInterval(d.key)}
-                                disabled={
-                                    disabled ||
-                                    bh.enabled !== true ||
-                                    !isOpen ||
-                                    intervals.length >= 4
-                                }
-                            >
-                                הוסף טווח
-                            </button>
                         </div>
-
-                        {bh.enabled === true && isOpen && intervals.length ? (
-                            <div className={styles.intervals}>
-                                {intervals.map((it, idx) => {
-                                    const ok = isValidInterval(it);
-                                    return (
-                                        <div
-                                            key={`${d.key}-${idx}`}
-                                            className={styles.intervalRow}
-                                            data-invalid={ok ? "0" : "1"}
-                                        >
-                                            <TimeListbox
-                                                label="התחלה"
-                                                value={
-                                                    typeof it.start === "string"
-                                                        ? it.start
-                                                        : ""
-                                                }
-                                                options={timeOptions}
-                                                disabled={
-                                                    disabled ||
-                                                    bh.enabled !== true ||
-                                                    !isOpen
-                                                }
-                                                invalid={!ok}
-                                                onChange={(next) =>
-                                                    setIntervalField(
-                                                        d.key,
-                                                        idx,
-                                                        "start",
-                                                        next,
-                                                    )
-                                                }
-                                            />
-
-                                            <TimeListbox
-                                                label="סיום"
-                                                value={
-                                                    typeof it.end === "string"
-                                                        ? it.end
-                                                        : ""
-                                                }
-                                                options={timeOptions}
-                                                disabled={
-                                                    disabled ||
-                                                    bh.enabled !== true ||
-                                                    !isOpen
-                                                }
-                                                invalid={!ok}
-                                                onChange={(next) =>
-                                                    setIntervalField(
-                                                        d.key,
-                                                        idx,
-                                                        "end",
-                                                        next,
-                                                    )
-                                                }
-                                            />
-
-                                            <button
-                                                type="button"
-                                                className={styles.removeBtn}
-                                                onClick={() =>
-                                                    removeInterval(d.key, idx)
-                                                }
-                                                disabled={disabled}
-                                            >
-                                                הסר
-                                            </button>
-                                        </div>
-                                    );
-                                })}
-                            </div>
-                        ) : bh.enabled === true && isOpen ? (
-                            <div className={styles.emptyDayHint}>
-                                אין טווחים. הוסיפו טווח כדי להציג בכרטיס.
-                            </div>
-                        ) : null}
+                        <div className={styles.hint}>
+                            כאשר מופעל, לקוחות יוכלו לשלוח בקשות לתורים דרך
+                            הכרטיס.
+                        </div>
                     </div>
-                );
-            })}
-        </div>
+                ) : (
+                    <div className={styles.lockedBlock}>
+                        <div className={styles.lockedTitle}>הזמנת תורים</div>
+                        <div className={styles.lockedText}>
+                            הזמנת תורים זמינה במסלול בתשלום בלבד.
+                        </div>
+                    </div>
+                )}
+
+                {/* ── Business hours section ── */}
+                <div className={styles.section}>
+                    <h3 className={styles.sectionTitle}>שעות פעילות</h3>
+
+                    <div className={styles.headerRow}>
+                        <label className={styles.switch}>
+                            <input
+                                type="checkbox"
+                                checked={bh.enabled === true}
+                                onChange={(e) => setEnabled(e.target.checked)}
+                                disabled={disabled}
+                            />
+                            <span className={styles.switchLabel}>
+                                הצג בכרטיס
+                            </span>
+                        </label>
+                    </div>
+
+                    <div className={styles.hint}>
+                        השעות יוצגו בכרטיס רק אם הסעיף פעיל ומוגדרות שעות
+                        פעילות.
+                    </div>
+
+                    {WEEKDAYS.map((d) => {
+                        const day = bh.week?.[d.key] || defaultDay();
+                        const isOpen = day.open === true;
+                        const intervals = Array.isArray(day.intervals)
+                            ? day.intervals
+                            : [];
+
+                        return (
+                            <div key={d.key} className={styles.dayCard}>
+                                <div className={styles.dayRow}>
+                                    <div className={styles.dayLabel}>
+                                        {d.label}
+                                    </div>
+                                    <label className={styles.openToggle}>
+                                        <input
+                                            type="checkbox"
+                                            checked={isOpen}
+                                            onChange={(e) =>
+                                                setDayOpen(
+                                                    d.key,
+                                                    e.target.checked,
+                                                )
+                                            }
+                                            disabled={
+                                                disabled || bh.enabled !== true
+                                            }
+                                        />
+                                        <span
+                                            className={styles.openToggleLabel}
+                                        >
+                                            {isOpen ? "פתוח" : "סגור"}
+                                        </span>
+                                    </label>
+
+                                    <button
+                                        type="button"
+                                        className={styles.addBtn}
+                                        onClick={() => addInterval(d.key)}
+                                        disabled={
+                                            disabled ||
+                                            bh.enabled !== true ||
+                                            !isOpen ||
+                                            intervals.length >= 4
+                                        }
+                                    >
+                                        הוסף טווח
+                                    </button>
+                                </div>
+
+                                {bh.enabled === true &&
+                                isOpen &&
+                                intervals.length ? (
+                                    <div className={styles.intervals}>
+                                        {intervals.map((it, idx) => {
+                                            const ok = isValidInterval(it);
+                                            return (
+                                                <div
+                                                    key={`${d.key}-${idx}`}
+                                                    className={
+                                                        styles.intervalRow
+                                                    }
+                                                    data-invalid={
+                                                        ok ? "0" : "1"
+                                                    }
+                                                >
+                                                    <TimeListbox
+                                                        label="התחלה"
+                                                        value={
+                                                            typeof it.start ===
+                                                            "string"
+                                                                ? it.start
+                                                                : ""
+                                                        }
+                                                        options={timeOptions}
+                                                        disabled={
+                                                            disabled ||
+                                                            bh.enabled !==
+                                                                true ||
+                                                            !isOpen
+                                                        }
+                                                        invalid={!ok}
+                                                        onChange={(next) =>
+                                                            setIntervalField(
+                                                                d.key,
+                                                                idx,
+                                                                "start",
+                                                                next,
+                                                            )
+                                                        }
+                                                    />
+
+                                                    <TimeListbox
+                                                        label="סיום"
+                                                        value={
+                                                            typeof it.end ===
+                                                            "string"
+                                                                ? it.end
+                                                                : ""
+                                                        }
+                                                        options={timeOptions}
+                                                        disabled={
+                                                            disabled ||
+                                                            bh.enabled !==
+                                                                true ||
+                                                            !isOpen
+                                                        }
+                                                        invalid={!ok}
+                                                        onChange={(next) =>
+                                                            setIntervalField(
+                                                                d.key,
+                                                                idx,
+                                                                "end",
+                                                                next,
+                                                            )
+                                                        }
+                                                    />
+
+                                                    <button
+                                                        type="button"
+                                                        className={
+                                                            styles.removeBtn
+                                                        }
+                                                        onClick={() =>
+                                                            removeInterval(
+                                                                d.key,
+                                                                idx,
+                                                            )
+                                                        }
+                                                        disabled={disabled}
+                                                    >
+                                                        הסר
+                                                    </button>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                ) : bh.enabled === true && isOpen ? (
+                                    <div className={styles.emptyDayHint}>
+                                        אין טווחים. הוסיפו טווח כדי להציג
+                                        בכרטיס.
+                                    </div>
+                                ) : null}
+                            </div>
+                        );
+                    })}
+                </div>
+            </div>
+        </Panel>
     );
 }

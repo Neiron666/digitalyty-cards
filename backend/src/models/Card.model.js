@@ -414,6 +414,15 @@ const CardSchema = new mongoose.Schema(
         // Additive (V1): operational business hours config (display-only).
         businessHours: { type: BusinessHoursSchema, default: null },
 
+        // Additive: booking feature enablement (separate from businessHours).
+        bookingSettings: {
+            type: new mongoose.Schema(
+                { enabled: { type: Boolean, default: false } },
+                { _id: false },
+            ),
+            default: null,
+        },
+
         faq: { type: FaqSchema, default: null },
 
         seo: {

@@ -13,6 +13,8 @@ import {
     buildPersonKey,
 } from "../utils/bookingSanitize.js";
 import { assertSlotLegalAgainstBusinessHoursOrThrow } from "../utils/bookingBusinessHours.util.js";
+import { getPersonalOrgId } from "../utils/personalOrg.util.js";
+import { toIsrael, addIsraelDaysFromNow } from "../utils/time.util.js";
 
 const FAKE_BOOKING_ID = "000000000000000000000000";
 
@@ -131,12 +133,27 @@ async function assertBookingEntitled(card) {
         throw new HttpError(403, "Access expired", "TRIAL_EXPIRED");
     }
 
-    // V1 gate: reuse premium gating semantics (similar to leads).
-    if (!entitlements?.canUseLeads) {
+    if (!entitlements?.canUseBooking) {
         throw new HttpError(
             403,
             "Booking available only for paid plans",
             "FEATURE_NOT_AVAILABLE",
+        );
+    }
+
+    return entitlements;
+}
+
+function assertBookingEnabled(card) {
+    const bs =
+        card?.bookingSettings && typeof card.bookingSettings === "object"
+            ? card.bookingSettings
+            : null;
+    if (!bs || bs.enabled !== true) {
+        throw new HttpError(
+            400,
+            "Booking not enabled",
+            "BOOKING_NOT_AVAILABLE",
         );
     }
 }
@@ -163,6 +180,187 @@ function assertSlotInBusinessHoursOrInvalidRequest({
     });
 }
 
+// ── Availability read (public, anonymous) ───────────────────────────
+
+const AVAIL_WEEKDAY_MAP = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];
+const AVAIL_SLOT_DURATION = 30;
+const AVAIL_MAX_DAYS = 14;
+
+function parseHHmm(hhmm) {
+    if (typeof hhmm !== "string") return null;
+    const m = /^([01]\d|2[0-3]):(00|30)$/.exec(hhmm);
+    if (!m) return null;
+    return Number(m[1]) * 60 + Number(m[2]);
+}
+
+export async function getPublicAvailability(req, res) {
+    try {
+        // ── Validate cardId ──
+        const cardId = String(req.query.cardId || "").trim();
+        if (!cardId || !/^[0-9a-fA-F]{24}$/.test(cardId)) {
+            return res
+                .status(400)
+                .json({ message: "Invalid request", code: "INVALID_CARD_ID" });
+        }
+
+        // ── Load card + gates ──
+        const card = await loadActiveCardOrNotFound(cardId);
+        assertBookingEnabled(card);
+        await assertBookingEntitled(card);
+
+        // ── Validate businessHours ──
+        const bh =
+            card?.businessHours && typeof card.businessHours === "object"
+                ? card.businessHours
+                : null;
+        if (!bh || bh.enabled !== true) {
+            throw new HttpError(
+                400,
+                "Booking not available",
+                "BOOKING_NOT_AVAILABLE",
+            );
+        }
+        const week = bh.week && typeof bh.week === "object" ? bh.week : null;
+        if (!week) {
+            throw new HttpError(
+                400,
+                "Booking not available",
+                "BOOKING_NOT_AVAILABLE",
+            );
+        }
+
+        // ── Parse days param ──
+        const daysRaw = parseInt(req.query.days, 10);
+        const daysCount = Number.isFinite(daysRaw)
+            ? Math.min(Math.max(daysRaw, 1), AVAIL_MAX_DAYS)
+            : 7;
+
+        // ── Resolve date range (Israel-local) ──
+        const nowUtcDate = new Date();
+        const todayIl = toIsrael(nowUtcDate);
+        const todayKey = todayIl.toFormat("yyyy-LL-dd");
+        const nowMinutesIl = todayIl.hour * 60 + todayIl.minute;
+
+        // Optional startDate — must be today or future (Israel-local).
+        const startDateRaw = String(req.query.startDate || "").trim();
+        let baseUtc = nowUtcDate;
+        if (startDateRaw) {
+            if (!/^\d{4}-\d{2}-\d{2}$/.test(startDateRaw)) {
+                return res.status(400).json({
+                    message: "Invalid date format",
+                    code: "INVALID_DATE",
+                });
+            }
+            if (startDateRaw < todayKey) {
+                return res.status(400).json({
+                    message: "Date in the past",
+                    code: "INVALID_DATE",
+                });
+            }
+            baseUtc = new Date(`${startDateRaw}T00:00:00Z`);
+            if (!Number.isFinite(baseUtc.getTime())) {
+                return res.status(400).json({
+                    message: "Invalid date",
+                    code: "INVALID_DATE",
+                });
+            }
+        }
+
+        // ── Build date keys ──
+        const dateKeys = [];
+        for (let i = 0; i < daysCount; i++) {
+            dateKeys.push(addIsraelDaysFromNow(baseUtc, i));
+        }
+
+        // ── Fetch blocking bookings in one query ──
+        const blockingBookings = await Booking.find({
+            card: cardId,
+            dateKeyIl: { $in: dateKeys },
+            status: { $in: ["pending", "approved"] },
+        })
+            .select("dateKeyIl localStartHHmm")
+            .lean();
+
+        // Group blocked slots by date
+        const blockedByDate = new Map();
+        for (const b of blockingBookings) {
+            const key = b.dateKeyIl;
+            if (!blockedByDate.has(key)) blockedByDate.set(key, new Set());
+            blockedByDate.get(key).add(b.localStartHHmm);
+        }
+
+        // ── Generate per-day availability ──
+        const result = dateKeys.map((dateKey) => {
+            const wdIdx = new Date(`${dateKey}T00:00:00Z`).getUTCDay();
+            const weekdayKey = AVAIL_WEEKDAY_MAP[wdIdx] || "sun";
+
+            const dayConf =
+                week[weekdayKey] && typeof week[weekdayKey] === "object"
+                    ? week[weekdayKey]
+                    : null;
+            if (!dayConf || dayConf.open !== true) {
+                return {
+                    dateKeyIl: dateKey,
+                    weekdayKey,
+                    isBookable: false,
+                    slots: [],
+                };
+            }
+
+            const intervals = Array.isArray(dayConf.intervals)
+                ? dayConf.intervals
+                : [];
+            const blocked = blockedByDate.get(dateKey) || new Set();
+            const isToday = dateKey === todayKey;
+
+            const slots = [];
+            for (const interval of intervals) {
+                const sM = parseHHmm(interval?.start);
+                const eM = parseHHmm(interval?.end);
+                if (sM === null || eM === null || sM >= eM) continue;
+
+                for (
+                    let m = sM;
+                    m + AVAIL_SLOT_DURATION <= eM;
+                    m += AVAIL_SLOT_DURATION
+                ) {
+                    const hh = String(Math.floor(m / 60)).padStart(2, "0");
+                    const mm = String(m % 60).padStart(2, "0");
+                    const time = `${hh}:${mm}`;
+                    const isPast = isToday && m <= nowMinutesIl;
+                    const isBlocked = blocked.has(time);
+                    slots.push({ time, available: !isPast && !isBlocked });
+                }
+            }
+
+            return {
+                dateKeyIl: dateKey,
+                weekdayKey,
+                isBookable: true,
+                slots,
+            };
+        });
+
+        return res.json({ days: result, slotDuration: AVAIL_SLOT_DURATION });
+    } catch (err) {
+        const status = err?.statusCode || err?.status;
+        if (status) {
+            return res.status(status).json({
+                message: err?.message || "Error",
+                code: err?.code || null,
+            });
+        }
+
+        console.error(
+            "[booking/availability] error:",
+            err?.message || "unknown",
+        );
+        return res
+            .status(500)
+            .json({ message: "Failed to fetch availability" });
+    }
+}
+
 export async function createPublicBooking(req, res) {
     try {
         const input = sanitizePublicBookingInput(req.body);
@@ -184,6 +382,7 @@ export async function createPublicBooking(req, res) {
         }
 
         const card = await loadActiveCardOrNotFound(input.cardId);
+        assertBookingEnabled(card);
         await assertBookingEntitled(card);
 
         assertSlotInBusinessHoursOrInvalidRequest({
@@ -314,9 +513,13 @@ export async function listMyBookings(req, res) {
             .limit(limit)
             .lean();
 
+        const personalOrgId = await getPersonalOrgId();
+
         const bookings = docs.map((d) => {
             const meta = cardsById.get(String(d.card)) || null;
-            const cardKind = !meta?.orgId ? "personal" : "org";
+            const orgId = meta?.orgId ? String(meta.orgId) : "";
+            const cardKind =
+                !orgId || orgId === String(personalOrgId) ? "personal" : "org";
 
             return {
                 _id: d._id,
