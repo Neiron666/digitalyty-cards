@@ -263,48 +263,93 @@ export async function listMyBookings(req, res) {
         }
 
         const cardId = String(req.query.cardId || "").trim();
-        if (!cardId) {
-            return res.status(400).json({ message: "Invalid request" });
-        }
-
-        const card = await Card.findById(cardId);
-        assertCardOwner(card, actor);
 
         const limitRaw = parseInt(req.query.limit, 10);
         const limit = Number.isFinite(limitRaw)
             ? Math.min(Math.max(limitRaw, 1), 50)
             : 20;
 
-        const docs = await Booking.find({ card: card._id })
+        let cardFilterIds = null;
+        let cardsById = new Map();
+
+        if (cardId) {
+            const card = await Card.findById(cardId);
+            assertCardOwner(card, actor);
+            cardFilterIds = [card._id];
+            cardsById.set(String(card._id), {
+                _id: card._id,
+                slug: card.slug || null,
+                displayName: card.displayName || card.name || null,
+                orgId: card.orgId || null,
+            });
+        } else {
+            const ownedCards = await Card.find({
+                user: actor.userId,
+                isActive: true,
+            })
+                .select("_id slug displayName name orgId")
+                .lean();
+
+            const ids = (ownedCards || []).map((c) => c._id).filter(Boolean);
+            cardFilterIds = ids;
+            cardsById = new Map(
+                (ownedCards || []).map((c) => [
+                    String(c._id),
+                    {
+                        _id: c._id,
+                        slug: c.slug || null,
+                        displayName: c.displayName || c.name || null,
+                        orgId: c.orgId || null,
+                    },
+                ]),
+            );
+        }
+
+        if (!cardFilterIds || cardFilterIds.length === 0) {
+            return res.json({ bookings: [] });
+        }
+
+        const docs = await Booking.find({ card: { $in: cardFilterIds } })
             .sort({ startAt: -1, _id: -1 })
             .limit(limit)
             .lean();
 
-        const bookings = docs.map((d) => ({
-            _id: d._id,
-            card: d.card,
-            startAt: d.startAt,
-            endAt: d.endAt,
-            dateKeyIl: d.dateKeyIl,
-            localStartHHmm: d.localStartHHmm,
-            tz: d.tz,
-            status: d.status,
-            expiresAt: d.expiresAt,
-            createdAt: d.createdAt,
-            customerName: d.customerName,
-            customerPhoneRaw: d.customerPhoneRaw,
-        }));
+        const bookings = docs.map((d) => {
+            const meta = cardsById.get(String(d.card)) || null;
+            const cardKind = !meta?.orgId ? "personal" : "org";
+
+            return {
+                _id: d._id,
+                card: d.card,
+                cardMeta: meta
+                    ? {
+                          _id: meta._id,
+                          slug: meta.slug || null,
+                          cardLabel: meta.displayName || meta.slug || null,
+                          cardKind,
+                      }
+                    : null,
+                startAt: d.startAt,
+                endAt: d.endAt,
+                dateKeyIl: d.dateKeyIl,
+                localStartHHmm: d.localStartHHmm,
+                tz: d.tz,
+                status: d.status,
+                expiresAt: d.expiresAt,
+                createdAt: d.createdAt,
+                customerName: d.customerName,
+                customerPhoneRaw: d.customerPhoneRaw,
+            };
+        });
 
         return res.json({ bookings });
     } catch (err) {
         const status = err?.statusCode || err?.status;
         if (status) {
-            return res
-                .status(status)
-                .json({
-                    message: err?.message || "Error",
-                    code: err?.code || null,
-                });
+            return res.status(status).json({
+                message: err?.message || "Error",
+                code: err?.code || null,
+            });
         }
 
         console.error("[booking/mine] error:", err?.message || "unknown");
@@ -361,12 +406,10 @@ export async function approveMyBooking(req, res) {
     } catch (err) {
         const status = err?.statusCode || err?.status;
         if (status) {
-            return res
-                .status(status)
-                .json({
-                    message: err?.message || "Error",
-                    code: err?.code || null,
-                });
+            return res.status(status).json({
+                message: err?.message || "Error",
+                code: err?.code || null,
+            });
         }
 
         console.error("[booking/approve] error:", err?.message || "unknown");
@@ -402,12 +445,10 @@ export async function cancelMyBooking(req, res) {
     } catch (err) {
         const status = err?.statusCode || err?.status;
         if (status) {
-            return res
-                .status(status)
-                .json({
-                    message: err?.message || "Error",
-                    code: err?.code || null,
-                });
+            return res.status(status).json({
+                message: err?.message || "Error",
+                code: err?.code || null,
+            });
         }
 
         console.error("[booking/cancel] error:", err?.message || "unknown");
@@ -442,12 +483,10 @@ export async function reconcileExpiredBookings(req, res) {
     } catch (err) {
         const status = err?.statusCode || err?.status;
         if (status) {
-            return res
-                .status(status)
-                .json({
-                    message: err?.message || "Error",
-                    code: err?.code || null,
-                });
+            return res.status(status).json({
+                message: err?.message || "Error",
+                code: err?.code || null,
+            });
         }
 
         console.error("[booking/reconcile] error:", err?.message || "unknown");

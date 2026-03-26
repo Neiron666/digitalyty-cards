@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Navigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import {
@@ -7,6 +7,11 @@ import {
     updateLeadFlags,
     hardDeleteLead,
 } from "../services/leads.service";
+import {
+    getMyBookings,
+    approveMyBooking,
+    cancelMyBooking,
+} from "../services/bookings.service";
 import useUnreadCount from "../hooks/useUnreadCount";
 import styles from "./Inbox.module.css";
 
@@ -15,6 +20,11 @@ const VIEWS = [
     { key: "important", label: "חשובים" },
     { key: "archived", label: "ארכיון" },
     { key: "trash", label: "פח" },
+];
+
+const CATEGORIES = [
+    { key: "leads", label: "פניות" },
+    { key: "bookings", label: "בקשות תיאום" },
 ];
 
 function formatDate(iso) {
@@ -31,10 +41,15 @@ function formatDate(iso) {
     }
 }
 
+function safeStr(v) {
+    return String(v ?? "").trim();
+}
+
 export default function Inbox() {
     const { isAuthenticated } = useAuth();
     const { adjustUnreadCount } = useUnreadCount();
 
+    const [activeCategory, setActiveCategory] = useState("leads");
     const [activeView, setActiveView] = useState("active");
     const [leads, setLeads] = useState([]);
     const [nextCursor, setNextCursor] = useState(null);
@@ -44,68 +59,66 @@ export default function Inbox() {
     const [fetchError, setFetchError] = useState(false);
     const viewRef = useRef(activeView);
 
-    const fetchLeads = useCallback(async (cursor, view) => {
-        const data = await getMyLeads({ cursor, limit: 20, view });
-        return data;
-    }, []);
+    const [bookings, setBookings] = useState([]);
+    const [bookingsLoading, setBookingsLoading] = useState(false);
+    const [bookingsError, setBookingsError] = useState(false);
+    const [bookingsExpandedId, setBookingsExpandedId] = useState(null);
 
-    // Load leads for current view.
-    const loadView = useCallback(
-        async (view) => {
-            setLoading(true);
-            setFetchError(false);
-            setExpandedId(null);
+    const loadLeads = useCallback(
+        async ({ reset } = {}) => {
             try {
-                const data = await fetchLeads(null, view);
-                if (viewRef.current !== view) return;
-                setLeads(data.leads || []);
+                if (reset) {
+                    setLoading(true);
+                    setFetchError(false);
+                    setLeads([]);
+                    setNextCursor(null);
+                    setExpandedId(null);
+                }
+
+                const cursor = reset ? null : nextCursor;
+                const data = await getMyLeads({
+                    cursor,
+                    limit: 20,
+                    view: viewRef.current,
+                });
+
+                setLeads((prev) =>
+                    reset ? data.leads || [] : [...prev, ...(data.leads || [])],
+                );
                 setNextCursor(data.nextCursor || null);
             } catch {
-                if (viewRef.current === view) setFetchError(true);
+                setFetchError(true);
             } finally {
-                if (viewRef.current === view) setLoading(false);
+                setLoading(false);
+                setLoadingMore(false);
             }
         },
-        [fetchLeads],
+        [nextCursor],
     );
 
-    // Initial load + view change.
-    useEffect(() => {
-        viewRef.current = activeView;
-        loadView(activeView);
-    }, [activeView, loadView]);
-
-    // Retry after error.
-    const handleRetry = useCallback(() => {
-        loadView(activeView);
-    }, [activeView, loadView]);
-
-    // Load more.
-    const handleLoadMore = useCallback(async () => {
-        if (!nextCursor || loadingMore) return;
+    const loadMore = useCallback(async () => {
+        if (loadingMore || !nextCursor) return;
         setLoadingMore(true);
-        try {
-            const data = await fetchLeads(nextCursor, activeView);
-            setLeads((prev) => [...prev, ...(data.leads || [])]);
-            setNextCursor(data.nextCursor || null);
-        } catch {
-            setFetchError(true);
-        } finally {
-            setLoadingMore(false);
-        }
-    }, [nextCursor, loadingMore, fetchLeads, activeView]);
+        await loadLeads({ reset: false });
+    }, [loadingMore, nextCursor, loadLeads]);
 
-    // Expand + mark read (active/important views only).
+    const handleCategoryChange = useCallback((key) => {
+        setActiveCategory(key);
+        setFetchError(false);
+        setExpandedId(null);
+        setBookingsExpandedId(null);
+    }, []);
+
     const handleToggle = useCallback(
         (lead) => {
-            const id = String(lead._id);
+            const id = safeStr(lead?._id);
             setExpandedId((prev) => (prev === id ? null : id));
 
-            if (!lead.readAt && activeView !== "trash") {
+            if (id && !lead.readAt && activeView !== "trash") {
                 markLeadRead(id).catch(() => {});
                 setLeads((prev) =>
                     prev.map((l) =>
-                        String(l._id) === id
+                        safeStr(l._id) === id
                             ? { ...l, readAt: new Date().toISOString() }
                             : l,
                     ),
@@ -115,140 +128,156 @@ export default function Inbox() {
                 }
             }
         },
-        [adjustUnreadCount, activeView],
+        [activeView, adjustUnreadCount],
     );
 
-    // ── Flag actions (optimistic) ──────────────────────────────────
-
-    const handleFlag = useCallback(
-        (lead, flags) => {
-            const id = String(lead._id);
-            const wasUnread = !lead.readAt;
-            const wasActive =
-                activeView === "active" || activeView === "important";
-
-            updateLeadFlags(id, flags).catch(() => {});
-
-            // Determine if lead should be removed from current view.
-            const willRemove =
-                (flags.archivedAt === true && activeView !== "archived") ||
-                (flags.archivedAt === false && activeView === "archived") ||
-                (flags.deletedAt === true && activeView !== "trash") ||
-                (flags.deletedAt === false && activeView === "trash");
-
-            if (willRemove) {
-                setLeads((prev) => prev.filter((l) => String(l._id) !== id));
-                if (expandedId === id) setExpandedId(null);
-
-                // Badge adjustment: if unread lead leaves/enters active.
-                if (wasUnread && wasActive) {
-                    adjustUnreadCount(-1);
-                }
-                if (
-                    wasUnread &&
-                    (flags.deletedAt === false || flags.archivedAt === false)
-                ) {
-                    // Restoring to active — bump badge.
-                    adjustUnreadCount(+1);
-                }
-            } else {
-                // In-place update.
-                setLeads((prev) =>
-                    prev.map((l) => {
-                        if (String(l._id) !== id) return l;
-                        const updated = { ...l };
-                        if (flags.readAt === true)
-                            updated.readAt = new Date().toISOString();
-                        if (flags.readAt === false) updated.readAt = null;
-                        if (flags.isImportant !== undefined)
-                            updated.isImportant = flags.isImportant;
-                        if (flags.archivedAt === true)
-                            updated.archivedAt = new Date().toISOString();
-                        if (flags.archivedAt === false)
-                            updated.archivedAt = null;
-                        if (flags.deletedAt === true)
-                            updated.deletedAt = new Date().toISOString();
-                        if (flags.deletedAt === false) updated.deletedAt = null;
-                        return updated;
-                    }),
-                );
-
-                // Badge: read/unread toggle in active view.
-                if (wasActive) {
-                    if (flags.readAt === true && wasUnread) {
-                        adjustUnreadCount(-1);
-                    }
-                    if (flags.readAt === false && !wasUnread) {
-                        adjustUnreadCount(+1);
-                    }
-                }
-            }
-        },
-        [activeView, expandedId, adjustUnreadCount],
-    );
-
-    // Tab switch.
-    const handleTabChange = useCallback((view) => {
-        setActiveView(view);
+    const handleFlag = useCallback(async (leadId, patch) => {
+        const id = safeStr(leadId);
+        if (!id) return;
+        setLeads((prev) =>
+            prev.map((l) => (safeStr(l._id) === id ? { ...l, ...patch } : l)),
+        );
+        try {
+            await updateLeadFlags(id, patch);
+        } catch {
+            setLeads((prev) => prev);
+        }
     }, []);
 
-    // Hard delete (trash only, with confirm).
     const handleHardDelete = useCallback(
-        async (lead) => {
-            const ok = window.confirm(
-                "\u05DC\u05DE\u05D7\u05D5\u05E7 \u05DC\u05E6\u05DE\u05D9\u05EA\u05D5\u05EA? \u05DC\u05D0 \u05E0\u05D9\u05EA\u05DF \u05DC\u05E9\u05D7\u05D6\u05E8.",
-            );
-            if (!ok) return;
+        async (leadId) => {
+            const id = safeStr(leadId);
+            if (!id) return;
 
-            const id = String(lead._id);
+            const prevLead = leads.find((l) => safeStr(l._id) === id);
+            setLeads((prev) => prev.filter((l) => safeStr(l._id) !== id));
+
             try {
                 await hardDeleteLead(id);
-                setLeads((prev) => prev.filter((l) => String(l._id) !== id));
-                if (expandedId === id) setExpandedId(null);
+                if (prevLead && !prevLead.readAt) adjustUnreadCount(-1);
             } catch {
-                // best-effort; lead stays in list on failure
+                setLeads((prev) => (prevLead ? [prevLead, ...prev] : prev));
             }
         },
-        [expandedId],
+        [leads, adjustUnreadCount],
     );
 
-    if (!isAuthenticated) {
-        return <Navigate to="/login" replace />;
-    }
+    const handleRetry = useCallback(() => {
+        setFetchError(false);
+        setBookingsError(false);
+        if (activeCategory === "leads") {
+            loadLeads({ reset: true });
+        } else {
+            // bookings will be loaded via effect when category is bookings
+            setBookingsLoading(false);
+        }
+    }, [activeCategory, loadLeads]);
 
-    // ── Render ─────────────────────────────────────────────────────
+    useEffect(() => {
+        viewRef.current = activeView;
+        if (activeCategory !== "leads") return;
+        loadLeads({ reset: true });
+    }, [activeView, activeCategory, loadLeads]);
 
-    const tabBar = (
-        <nav className={styles.tabs} aria-label="תצוגת הודעות">
-            {VIEWS.map((v) => (
-                <button
-                    key={v.key}
-                    type="button"
-                    className={`${styles.tab} ${activeView === v.key ? styles.tabActive : ""}`}
-                    onClick={() => handleTabChange(v.key)}
-                    aria-current={activeView === v.key ? "page" : undefined}
-                >
-                    {v.label}
-                </button>
-            ))}
-        </nav>
+    const loadBookings = useCallback(async () => {
+        setBookingsLoading(true);
+        setBookingsError(false);
+
+        try {
+            const data = await getMyBookings({ limit: 50 });
+            setBookings(data?.bookings || []);
+        } catch {
+            setBookingsError(true);
+        } finally {
+            setBookingsLoading(false);
+        }
+    }, []);
+
+    useEffect(() => {
+        if (activeCategory !== "bookings") return;
+        loadBookings();
+    }, [activeCategory, loadBookings]);
+
+    const handleBookingAction = useCallback(
+        async (bookingId, action) => {
+            const id = safeStr(bookingId);
+            if (!id) return;
+
+            try {
+                if (action === "approve") await approveMyBooking(id);
+                if (action === "cancel") await cancelMyBooking(id);
+                await loadBookings();
+            } catch {
+                setBookingsError(true);
+            }
+        },
+        [loadBookings],
     );
 
-    if (loading) {
+    const tabBar = useMemo(() => {
         return (
-            <main className={styles.main}>
-                <h1 className={styles.heading}>הודעות נכנסות</h1>
-                {tabBar}
-                <p className={styles.loading}>טוען הודעות…</p>
-            </main>
+            <nav className={styles.tabs} aria-label="תיבות">
+                {VIEWS.map((v) => (
+                    <button
+                        key={v.key}
+                        type="button"
+                        className={`${styles.tab} ${activeView === v.key ? styles.tabActive : ""}`}
+                        onClick={() => setActiveView(v.key)}
+                        aria-current={activeView === v.key ? "page" : undefined}
+                    >
+                        {v.label}
+                    </button>
+                ))}
+            </nav>
         );
-    }
+    }, [activeView]);
 
-    if (fetchError && leads.length === 0) {
+    const categoryBar = useMemo(() => {
         return (
-            <main className={styles.main}>
-                <h1 className={styles.heading}>הודעות נכנסות</h1>
-                {tabBar}
+            <nav className={styles.categoryTabs} aria-label="סוג הודעות">
+                {CATEGORIES.map((c) => (
+                    <button
+                        key={c.key}
+                        type="button"
+                        className={`${styles.categoryTab} ${activeCategory === c.key ? styles.categoryTabActive : ""}`}
+                        onClick={() => handleCategoryChange(c.key)}
+                        aria-current={
+                            activeCategory === c.key ? "page" : undefined
+                        }
+                    >
+                        {c.label}
+                    </button>
+                ))}
+            </nav>
+        );
+    }, [activeCategory, handleCategoryChange]);
+
+    if (!isAuthenticated) return <Navigate to="/login" replace />;
+
+    const isLeadsEmptyState =
+        activeCategory === "leads" &&
+        !loading &&
+        !fetchError &&
+        leads.length === 0;
+
+    const leadsEmptyText =
+        (activeView === "important" && "אין הודעות חשובות") ||
+        (activeView === "archived" && "אין הודעות בארכיון") ||
+        (activeView === "trash" && "הפח ריק") ||
+        "אין הודעות";
+
+    return (
+        <main className={styles.main}>
+            <h1 className={styles.heading}>הודעות נכנסות</h1>
+            {categoryBar}
+
+            {activeCategory === "leads" ? tabBar : null}
+
+            {activeCategory === "leads" && loading ? (
+                <p className={styles.loading}>טוען…</p>
+            ) : null}
+
+            {activeCategory === "leads" && fetchError ? (
                 <div className={styles.errorWrap}>
                     <p className={styles.errorText}>
                         אירעה שגיאה בטעינת ההודעות
@@ -261,279 +290,313 @@ export default function Inbox() {
                         נסה שנית
                     </button>
                 </div>
-            </main>
-        );
-    }
+            ) : null}
 
-    if (leads.length === 0) {
-        return (
-            <main className={styles.main}>
-                <h1 className={styles.heading}>הודעות נכנסות</h1>
-                {tabBar}
-                <p className={styles.empty}>
-                    {activeView === "active" && "אין הודעות נכנסות עדיין"}
-                    {activeView === "important" && "אין הודעות חשובות"}
-                    {activeView === "archived" && "אין הודעות בארכיון"}
-                    {activeView === "trash" && "הפח ריק"}
-                </p>
-            </main>
-        );
-    }
+            {isLeadsEmptyState ? (
+                <p className={styles.empty}>{leadsEmptyText}</p>
+            ) : null}
 
-    return (
-        <main className={styles.main}>
-            <h1 className={styles.heading}>הודעות נכנסות</h1>
-            {tabBar}
+            {activeCategory === "leads" &&
+            !loading &&
+            !fetchError &&
+            leads.length > 0 ? (
+                <>
+                    <ul className={styles.list}>
+                        {leads.map((lead) => {
+                            const id = safeStr(lead._id);
+                            const isExpanded = expandedId === id;
+                            const isUnread = !lead.readAt;
 
-            <ul className={styles.list}>
-                {leads.map((lead) => {
-                    const id = String(lead._id);
-                    const isExpanded = expandedId === id;
-                    const isUnread = !lead.readAt;
-
-                    return (
-                        <li key={id} className={styles.item}>
-                            <button
-                                type="button"
-                                className={`${styles.card} ${isUnread ? styles.unread : ""}`}
-                                onClick={() => handleToggle(lead)}
-                                aria-expanded={isExpanded}
-                            >
-                                <span className={styles.senderRow}>
-                                    {isUnread && (
-                                        <span
-                                            className={styles.dot}
-                                            aria-label="לא נקראה"
-                                        />
-                                    )}
-                                    <span className={styles.label}>מאת:</span>
-                                    <span className={styles.senderName}>
-                                        {lead.senderName}
-                                    </span>
-                                    <span
-                                        className={`${styles.statusPill} ${isUnread ? styles.statusPillUnread : ""}`}
+                            return (
+                                <li key={id} className={styles.item}>
+                                    <button
+                                        type="button"
+                                        className={`${styles.card} ${isUnread ? styles.unread : ""}`}
+                                        onClick={() => handleToggle(lead)}
+                                        aria-expanded={isExpanded}
                                     >
-                                        {isUnread ? "לא נקרא" : "נקרא"}
-                                    </span>
-                                    {lead.isImportant && (
-                                        <span
-                                            className={styles.starBadge}
-                                            aria-label="חשוב"
-                                        >
-                                            ★
-                                        </span>
-                                    )}
-                                    {(lead.card?.cardLabel ||
-                                        lead.card?.slug) && (
-                                        <span className={styles.cardMeta}>
-                                            <span className={styles.cardLabel}>
-                                                {lead.card.cardLabel ||
-                                                    lead.card.slug}
-                                            </span>
-                                            <span
-                                                className={`${styles.kindPill} ${
-                                                    lead.card.cardKind === "org"
-                                                        ? styles.kindPillOrg
-                                                        : styles.kindPillPersonal
-                                                }`}
-                                            >
-                                                {lead.card.cardKind === "org"
-                                                    ? "עסקי"
-                                                    : "אישי"}
-                                            </span>
-                                        </span>
-                                    )}
-                                    <span className={styles.chevron}>
-                                        {isExpanded ? "▾" : "◂"}
-                                    </span>
-                                </span>
+                                        <div className={styles.row}>
+                                            <div className={styles.meta}>
+                                                <div className={styles.name}>
+                                                    {lead.name || "(ללא שם)"}
+                                                </div>
+                                                <div className={styles.date}>
+                                                    {formatDate(lead.createdAt)}
+                                                </div>
+                                            </div>
+                                            {isUnread ? (
+                                                <span className={styles.badge}>
+                                                    חדש
+                                                </span>
+                                            ) : null}
+                                        </div>
+                                        <div className={styles.preview}>
+                                            {lead.message ||
+                                                lead.email ||
+                                                lead.phone}
+                                        </div>
+                                    </button>
 
-                                {lead.message && (
-                                    <span className={styles.preview}>
-                                        {lead.message.length > 80
-                                            ? lead.message.slice(0, 80) + "…"
-                                            : lead.message}
-                                    </span>
-                                )}
-
-                                <span className={styles.date}>
-                                    {formatDate(lead.createdAt)}
-                                </span>
-                            </button>
-
-                            {isExpanded && (
-                                <div className={styles.detail}>
-                                    <p className={styles.detailField}>
-                                        <span className={styles.detailLabel}>
-                                            מאת:
-                                        </span>{" "}
-                                        {lead.senderName}
-                                    </p>
-                                    {lead.message && (
-                                        <p className={styles.detailMessage}>
-                                            {lead.message}
-                                        </p>
-                                    )}
-                                    <p className={styles.detailField}>
-                                        <span className={styles.detailLabel}>
-                                            אימייל:
-                                        </span>{" "}
-                                        {lead.senderEmail ? (
-                                            <a
-                                                href={`mailto:${lead.senderEmail}`}
-                                                className={styles.detailLink}
-                                            >
-                                                {lead.senderEmail}
-                                            </a>
-                                        ) : (
-                                            <span
-                                                className={styles.placeholder}
-                                            >
-                                                לא סופק
-                                            </span>
-                                        )}
-                                    </p>
-                                    <p className={styles.detailField}>
-                                        <span className={styles.detailLabel}>
-                                            טלפון:
-                                        </span>{" "}
-                                        {lead.senderPhone ? (
-                                            <a
-                                                href={`tel:${lead.senderPhone}`}
-                                                className={styles.detailLink}
-                                            >
-                                                {lead.senderPhone}
-                                            </a>
-                                        ) : (
-                                            <span
-                                                className={styles.placeholder}
-                                            >
-                                                לא סופק
-                                            </span>
-                                        )}
-                                    </p>
-
-                                    {/* ── Action bar ── */}
-                                    <div className={styles.actionBar}>
-                                        <button
-                                            type="button"
-                                            className={styles.actionBtn}
-                                            onClick={() =>
-                                                handleFlag(lead, {
-                                                    readAt: isUnread,
-                                                })
-                                            }
-                                        >
-                                            {isUnread
-                                                ? "סמן כנקרא"
-                                                : "סמן כלא נקרא"}
-                                        </button>
-                                        <button
-                                            type="button"
-                                            className={styles.actionBtn}
-                                            onClick={() =>
-                                                handleFlag(lead, {
-                                                    isImportant:
-                                                        !lead.isImportant,
-                                                })
-                                            }
-                                        >
-                                            {lead.isImportant
-                                                ? "★ חשוב"
-                                                : "☆ חשוב"}
-                                        </button>
-                                        {activeView !== "trash" && (
-                                            <button
-                                                type="button"
-                                                className={styles.actionBtn}
-                                                onClick={() =>
-                                                    handleFlag(lead, {
-                                                        archivedAt:
-                                                            activeView ===
-                                                            "archived"
-                                                                ? false
-                                                                : true,
-                                                    })
-                                                }
-                                            >
-                                                {activeView === "archived"
-                                                    ? "הוצא מארכיון"
-                                                    : "ארכיון"}
-                                            </button>
-                                        )}
-                                        {activeView === "trash" ? (
-                                            <>
-                                                <button
-                                                    type="button"
-                                                    className={styles.actionBtn}
-                                                    onClick={() =>
-                                                        handleFlag(lead, {
-                                                            deletedAt: false,
-                                                        })
-                                                    }
-                                                >
-                                                    שחזר
-                                                </button>
-                                                <button
-                                                    type="button"
+                                    {isExpanded ? (
+                                        <div className={styles.details}>
+                                            {lead.email ? (
+                                                <div
                                                     className={
-                                                        styles.actionBtnDanger
-                                                    }
-                                                    onClick={() =>
-                                                        handleHardDelete(lead)
+                                                        styles.detailLine
                                                     }
                                                 >
-                                                    מחק לצמיתות
-                                                </button>
-                                            </>
-                                        ) : (
-                                            <button
-                                                type="button"
-                                                className={
-                                                    styles.actionBtnDanger
-                                                }
-                                                onClick={() =>
-                                                    handleFlag(lead, {
-                                                        deletedAt: true,
-                                                    })
-                                                }
-                                            >
-                                                מחק
-                                            </button>
-                                        )}
-                                    </div>
-                                </div>
-                            )}
-                        </li>
-                    );
-                })}
-            </ul>
+                                                    אימייל: {lead.email}
+                                                </div>
+                                            ) : null}
+                                            {lead.phone ? (
+                                                <div
+                                                    className={
+                                                        styles.detailLine
+                                                    }
+                                                >
+                                                    טלפון: {lead.phone}
+                                                </div>
+                                            ) : null}
+                                            {lead.message ? (
+                                                <div
+                                                    className={
+                                                        styles.detailLine
+                                                    }
+                                                >
+                                                    הודעה: {lead.message}
+                                                </div>
+                                            ) : null}
 
-            {fetchError && leads.length > 0 && (
+                                            <div className={styles.actions}>
+                                                {activeView !== "trash" ? (
+                                                    <>
+                                                        <button
+                                                            type="button"
+                                                            className={
+                                                                styles.actionBtn
+                                                            }
+                                                            onClick={() =>
+                                                                handleFlag(id, {
+                                                                    isImportant:
+                                                                        !lead.isImportant,
+                                                                })
+                                                            }
+                                                        >
+                                                            {lead.isImportant
+                                                                ? "הסר חשוב"
+                                                                : "סמן חשוב"}
+                                                        </button>
+                                                        <button
+                                                            type="button"
+                                                            className={
+                                                                styles.actionBtn
+                                                            }
+                                                            onClick={() =>
+                                                                handleFlag(id, {
+                                                                    isArchived:
+                                                                        !lead.isArchived,
+                                                                })
+                                                            }
+                                                        >
+                                                            {lead.isArchived
+                                                                ? "בטל ארכיון"
+                                                                : "העבר לארכיון"}
+                                                        </button>
+                                                        <button
+                                                            type="button"
+                                                            className={
+                                                                styles.dangerBtn
+                                                            }
+                                                            onClick={() =>
+                                                                handleFlag(id, {
+                                                                    isTrash: true,
+                                                                })
+                                                            }
+                                                        >
+                                                            העבר לפח
+                                                        </button>
+                                                    </>
+                                                ) : (
+                                                    <button
+                                                        type="button"
+                                                        className={
+                                                            styles.dangerBtn
+                                                        }
+                                                        onClick={() =>
+                                                            handleHardDelete(id)
+                                                        }
+                                                    >
+                                                        מחיקה סופית
+                                                    </button>
+                                                )}
+                                            </div>
+                                        </div>
+                                    ) : null}
+                                </li>
+                            );
+                        })}
+                    </ul>
+
+                    {nextCursor ? (
+                        <button
+                            type="button"
+                            className={styles.loadMoreBtn}
+                            onClick={loadMore}
+                            disabled={loadingMore}
+                        >
+                            {loadingMore ? "טוען…" : "טען עוד"}
+                        </button>
+                    ) : null}
+                </>
+            ) : null}
+
+            {activeCategory === "bookings" && bookingsLoading ? (
+                <p className={styles.loading}>טוען בקשות תיאום…</p>
+            ) : null}
+
+            {activeCategory === "bookings" && bookingsError ? (
                 <div className={styles.errorWrap}>
                     <p className={styles.errorText}>
-                        אירעה שגיאה בטעינת הודעות נוספות
+                        אירעה שגיאה בטעינת בקשות התיאום
                     </p>
                     <button
                         type="button"
                         className={styles.retryBtn}
-                        onClick={handleLoadMore}
+                        onClick={handleRetry}
                     >
                         נסה שנית
                     </button>
                 </div>
-            )}
+            ) : null}
 
-            {nextCursor && !fetchError && (
-                <button
-                    type="button"
-                    className={styles.loadMore}
-                    onClick={handleLoadMore}
-                    disabled={loadingMore}
-                >
-                    {loadingMore ? "טוען…" : "טען עוד"}
-                </button>
-            )}
+            {activeCategory === "bookings" &&
+            !bookingsLoading &&
+            !bookingsError &&
+            bookings.length === 0 ? (
+                <p className={styles.empty}>אין בקשות תיאום להצגה</p>
+            ) : null}
+
+            {activeCategory === "bookings" &&
+            !bookingsLoading &&
+            !bookingsError &&
+            bookings.length > 0 ? (
+                <ul className={styles.list}>
+                    {bookings.map((b) => {
+                        const id = safeStr(b._id);
+                        const isExpanded = bookingsExpandedId === id;
+                        const status = safeStr(b.status || b.state || "");
+                        const createdAt = b.createdAt || b.requestedAt;
+
+                        const cardMeta =
+                            b?.cardMeta && typeof b.cardMeta === "object"
+                                ? b.cardMeta
+                                : null;
+                        const cardLabel = safeStr(cardMeta?.cardLabel);
+                        const cardSlug = safeStr(cardMeta?.slug);
+
+                        const canApprove = status === "pending";
+                        const canCancel =
+                            status === "pending" || status === "approved";
+
+                        return (
+                            <li key={id} className={styles.item}>
+                                <button
+                                    type="button"
+                                    className={styles.card}
+                                    onClick={() =>
+                                        setBookingsExpandedId((prev) =>
+                                            prev === id ? null : id,
+                                        )
+                                    }
+                                    aria-expanded={isExpanded}
+                                >
+                                    <div className={styles.row}>
+                                        <div className={styles.meta}>
+                                            <div className={styles.name}>
+                                                {b.name ||
+                                                    b.customerName ||
+                                                    "(ללא שם)"}
+                                            </div>
+                                            <div className={styles.date}>
+                                                {createdAt
+                                                    ? formatDate(createdAt)
+                                                    : ""}
+                                            </div>
+                                        </div>
+                                        {status ? (
+                                            <span className={styles.badge}>
+                                                {status}
+                                            </span>
+                                        ) : null}
+                                    </div>
+                                    <div className={styles.preview}>
+                                        {cardLabel
+                                            ? `כרטיס: ${cardLabel}`
+                                            : cardSlug
+                                              ? `כרטיס: ${cardSlug}`
+                                              : null}
+                                        {cardLabel || cardSlug ? " · " : ""}
+                                        {b.note ||
+                                            b.message ||
+                                            b.phone ||
+                                            b.email ||
+                                            "בקשת תיאום"}
+                                    </div>
+                                </button>
+
+                                {isExpanded ? (
+                                    <div className={styles.details}>
+                                        {b.email ? (
+                                            <div className={styles.detailLine}>
+                                                אימייל: {b.email}
+                                            </div>
+                                        ) : null}
+                                        {b.phone ? (
+                                            <div className={styles.detailLine}>
+                                                טלפון: {b.phone}
+                                            </div>
+                                        ) : null}
+                                        {b.note ? (
+                                            <div className={styles.detailLine}>
+                                                הערה: {b.note}
+                                            </div>
+                                        ) : null}
+
+                                        <div className={styles.actions}>
+                                            <button
+                                                type="button"
+                                                className={styles.actionBtn}
+                                                disabled={!canApprove}
+                                                onClick={() =>
+                                                    handleBookingAction(
+                                                        id,
+                                                        "approve",
+                                                    )
+                                                }
+                                            >
+                                                אשר
+                                            </button>
+                                            <button
+                                                type="button"
+                                                className={styles.dangerBtn}
+                                                disabled={!canCancel}
+                                                onClick={() =>
+                                                    handleBookingAction(
+                                                        id,
+                                                        "cancel",
+                                                    )
+                                                }
+                                            >
+                                                בטל
+                                            </button>
+                                        </div>
+                                    </div>
+                                ) : null}
+                            </li>
+                        );
+                    })}
+                </ul>
+            ) : null}
         </main>
     );
 }

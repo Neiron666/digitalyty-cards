@@ -55,6 +55,36 @@
     font-weight: 600;
 }
 
+.categoryTabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-block: 12px 8px;
+}
+
+.categoryTab {
+    appearance: none;
+    border: 1px solid var(--c-border);
+    background: var(--c-surface);
+    color: var(--c-text);
+    border-radius: 999px;
+    padding: 8px 12px;
+    font-size: var(--fs-sm);
+    line-height: var(--lh-sm);
+    cursor: pointer;
+}
+
+.categoryTab:focus-visible {
+    outline: 2px solid var(--c-primary-400);
+    outline-offset: 2px;
+}
+
+.categoryTabActive {
+    border-color: var(--c-primary-200);
+    background: var(--c-primary-50);
+    color: var(--c-primary-700);
+}
+
 .tabActive:hover {
     background: var(--gold, #d4af37);
 }
