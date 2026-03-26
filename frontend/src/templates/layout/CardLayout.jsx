@@ -9,6 +9,7 @@ import GallerySection from "../../components/card/sections/GallerySection";
 import VideoSection from "../../components/card/sections/VideoSection";
 import ReviewsSection from "../../components/card/sections/ReviewsSection";
 import FaqSection from "../../components/card/sections/FaqSection";
+import BookingSection from "../../components/card/sections/BookingSection";
 import LeadForm from "../../components/card/sections/LeadForm";
 import { toAbsoluteUrl } from "../../services/upload.service";
 import useReveal from "../../hooks/useReveal";
@@ -189,6 +190,7 @@ export default function CardLayout({
                                 publicPath={card?.publicPath}
                             />
                         )}
+                        <BookingSection card={card} />
                         <div className={cx(styles.formWrap, skin?.formWrap)}>
                             <LeadForm
                                 cardId={card?._id}

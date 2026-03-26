@@ -1,6 +1,22 @@
 import api from "./api";
 
-export async function getMyBookings({ cardId, limit } = {}) {
+/* ── Public (unauthenticated) ── */
+
+export async function getPublicAvailability(cardId, { days } = {}) {
+    const params = { cardId: String(cardId || "").trim() };
+    if (Number.isFinite(days)) params.days = days;
+    const res = await api.get("/bookings/availability", { params });
+    return res.data;
+}
+
+export async function createPublicBooking(data) {
+    const res = await api.post("/bookings", data);
+    return res.data;
+}
+
+/* ── Owner (authenticated) ── */
+
+export async function getMyBookings(cardId, { limit } = {}) {
     const id = String(cardId || "").trim();
 
     const params = {};
