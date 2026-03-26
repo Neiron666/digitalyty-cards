@@ -484,6 +484,15 @@
     word-break: break-all;
 }
 
+/* ── Upload hint ────────────────────────────────────────────────── */
+
+.uploadHint {
+    margin: 4px 0 0;
+    font-size: var(--fs-caption);
+    color: var(--danger, #d33);
+    line-height: 1.45;
+}
+
 /* ── Action buttons row ────────────────────────────────────────── */
 
 .actionRow {

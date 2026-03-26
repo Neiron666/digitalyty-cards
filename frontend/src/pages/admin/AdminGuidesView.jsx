@@ -710,6 +710,11 @@ export default function AdminGuidesView() {
                             >
                                 העלה תמונה
                             </Button>
+                            {!selectedId && (
+                                <p className={styles.uploadHint}>
+                                    כדי להעלות תמונה צריך קודם לשמור את המדריך.
+                                </p>
+                            )}
                         </div>
                     </div>
 
@@ -828,6 +833,12 @@ export default function AdminGuidesView() {
                                         >
                                             העלה תמונת קטע
                                         </Button>
+                                        {!selectedId && (
+                                            <p className={styles.uploadHint}>
+                                                כדי להעלות תמונה צריך קודם לשמור
+                                                את המדריך.
+                                            </p>
+                                        )}
                                         {sec.imageUrl && (
                                             <Button
                                                 onClick={() =>

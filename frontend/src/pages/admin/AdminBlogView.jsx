@@ -708,6 +708,11 @@ export default function AdminBlogView() {
                             >
                                 העלה תמונה
                             </Button>
+                            {!selectedId && (
+                                <p className={styles.uploadHint}>
+                                    כדי להעלות תמונה צריך קודם לשמור את הפוסט.
+                                </p>
+                            )}
                         </div>
                     </div>
 
@@ -826,6 +831,12 @@ export default function AdminBlogView() {
                                         >
                                             העלה תמונת קטע
                                         </Button>
+                                        {!selectedId && (
+                                            <p className={styles.uploadHint}>
+                                                כדי להעלות תמונה צריך קודם לשמור
+                                                את הפוסט.
+                                            </p>
+                                        )}
                                         {sec.imageUrl && (
                                             <Button
                                                 onClick={() =>
