@@ -1,0 +1,227 @@
+.root {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 12px;
+}
+
+.headerRow {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    align-items: flex-start;
+}
+
+.title {
+    font-size: var(--fs-20);
+    font-weight: 700;
+}
+
+.switch {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: var(--fs-14);
+}
+
+.switchLabel {
+    font-size: var(--fs-14);
+}
+
+.hint {
+    font-size: var(--fs-12);
+    line-height: var(--lh-normal);
+    opacity: 0.9;
+}
+
+.dayCard {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 12px;
+    padding: 12px;
+    background: rgba(255, 255, 255, 0.03);
+}
+
+.dayRow {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.dayLabel {
+    font-size: var(--fs-16);
+    font-weight: 700;
+}
+
+.openToggle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: var(--fs-14);
+}
+
+.openToggleLabel {
+    font-size: var(--fs-14);
+}
+
+.addBtn {
+    font-size: var(--fs-14);
+    padding: 8px 10px;
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    background: rgba(255, 255, 255, 0.06);
+    color: inherit;
+}
+
+.addBtn:disabled {
+    opacity: 0.5;
+}
+
+.intervals {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.intervalRow {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: flex-end;
+}
+
+.selectWrap {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 140px;
+    position: relative;
+}
+
+.selectLabel {
+    font-size: var(--fs-12);
+    opacity: 0.9;
+}
+
+.pickerBtn {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    font-size: var(--fs-14);
+    line-height: var(--lh-normal);
+    padding: 10px;
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    background: rgba(0, 0, 0, 0.12);
+    color: inherit;
+    text-align: start;
+}
+
+.pickerBtn:disabled {
+    opacity: 0.5;
+}
+
+.pickerBtn:focus-visible {
+    outline: 2px solid rgba(255, 255, 255, 0.28);
+    outline-offset: 2px;
+}
+
+.pickerBtn[data-invalid="1"] {
+    border-color: rgba(255, 92, 92, 0.6);
+}
+
+.pickerValue {
+    display: inline-flex;
+    align-items: center;
+    min-height: 1.2em;
+}
+
+.pickerChevron {
+    inline-size: 10px;
+    block-size: 10px;
+    border-inline-end: 2px solid rgba(255, 255, 255, 0.6);
+    border-block-end: 2px solid rgba(255, 255, 255, 0.6);
+    transform: rotate(45deg);
+    opacity: 0.9;
+    flex: 0 0 auto;
+}
+
+.pickerPopover {
+    position: absolute;
+    inset-inline: 0;
+    inset-block-start: calc(100% + 6px);
+    z-index: 30;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: rgba(18, 18, 18, 0.98);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.55);
+    overflow: hidden;
+}
+
+.pickerList {
+    display: flex;
+    flex-direction: column;
+    max-block-size: 12.5rem;
+    overflow: auto;
+    padding: 6px;
+}
+
+.pickerOption {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    font-size: var(--fs-14);
+    line-height: var(--lh-normal);
+    padding: 8px 10px;
+    border-radius: 10px;
+    border: 1px solid transparent;
+    background: transparent;
+    color: inherit;
+    text-align: start;
+}
+
+.pickerOption:hover {
+    background: rgba(255, 255, 255, 0.06);
+}
+
+.pickerOption:focus-visible {
+    outline: 2px solid rgba(255, 255, 255, 0.22);
+    outline-offset: 1px;
+}
+
+.pickerOption[data-selected="1"] {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.12);
+}
+
+.removeBtn {
+    font-size: var(--fs-14);
+    padding: 10px 12px;
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    background: rgba(255, 255, 255, 0.06);
+    color: inherit;
+}
+
+.removeBtn:disabled {
+    opacity: 0.5;
+}
+
+.emptyDayHint {
+    font-size: var(--fs-12);
+    line-height: var(--lh-normal);
+    opacity: 0.9;
+}
+
+@media (min-width: 40rem) {
+    .headerRow {
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
+    }
+}

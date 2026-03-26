@@ -88,6 +88,7 @@ function pickSafeCardFields(cardObj) {
         business: cardObj.business,
         contact: cardObj.contact,
         content: cardObj.content,
+        businessHours: cardObj.businessHours,
         faq: cardObj.faq,
         design: cardObj.design,
         gallery: cardObj.gallery,

@@ -3,6 +3,8 @@ import ContactButtons from "../../components/card/sections/ContactButtons";
 import SaveContactButton from "../../components/card/sections/SaveContactButton";
 import QRCodeBlock from "../../components/card/QRCodeBlock";
 import AboutSection from "../../components/card/sections/AboutSection";
+import ServicesSection from "../../components/card/sections/ServicesSection";
+import BusinessHoursSection from "../../components/card/sections/BusinessHoursSection";
 import GallerySection from "../../components/card/sections/GallerySection";
 import VideoSection from "../../components/card/sections/VideoSection";
 import ReviewsSection from "../../components/card/sections/ReviewsSection";
@@ -169,6 +171,8 @@ export default function CardLayout({
                         className={cx(styles.sectionWrap, skin?.sectionWrap)}
                     >
                         <AboutSection card={card} />
+                        <ServicesSection card={card} mode={mode} />
+                        <BusinessHoursSection card={card} mode={mode} />
                         {supports?.gallery !== false && (
                             <GallerySection card={card} mode={mode} />
                         )}

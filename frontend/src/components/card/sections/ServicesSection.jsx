@@ -1,0 +1,67 @@
+import { useMemo, useState } from "react";
+import Section from "./Section";
+import styles from "./ServicesSection.module.css";
+
+function normalizeServices(card) {
+    const services =
+        card?.content?.services && typeof card.content.services === "object"
+            ? card.content.services
+            : null;
+    if (!services) return null;
+
+    const title =
+        typeof services.title === "string" ? services.title.trim() : "";
+    const rawItems = Array.isArray(services.items) ? services.items : [];
+
+    const items = rawItems
+        .map((v) => (typeof v === "string" ? v : ""))
+        .map((v) => v.replace(/\s+/g, " ").trim())
+        .filter(Boolean);
+
+    if (!items.length) return null;
+
+    return {
+        title: title || "שירותים",
+        items,
+    };
+}
+
+export default function ServicesSection({ card, mode }) {
+    const services = useMemo(() => normalizeServices(card), [card]);
+    const initialOpen = mode === "editor" ? false : true;
+    const [open, setOpen] = useState(initialOpen);
+
+    if (!services) return null;
+
+    return (
+        <Section
+            id="services"
+            title={services.title}
+            className={styles.section}
+            contentClassName={styles.content}
+            titleClassName={styles.title}
+        >
+            <div className={styles.wrap}>
+                <button
+                    type="button"
+                    className={styles.toggle}
+                    aria-expanded={open}
+                    onClick={() => setOpen((v) => !v)}
+                >
+                    <span className={styles.toggleText}>{services.title}</span>
+                    <span className={styles.icon} aria-hidden="true" />
+                </button>
+
+                {open ? (
+                    <ul className={styles.list} role="list">
+                        {services.items.map((item, idx) => (
+                            <li key={`${idx}-${item}`} className={styles.item}>
+                                {item}
+                            </li>
+                        ))}
+                    </ul>
+                ) : null}
+            </div>
+        </Section>
+    );
+}

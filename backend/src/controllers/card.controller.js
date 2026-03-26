@@ -587,6 +587,7 @@ function sanitizeWritablePatch(raw) {
         "business",
         "contact",
         "content",
+        "businessHours",
         "faq",
         "gallery",
         "reviews",

@@ -1,0 +1,76 @@
+.section {
+}
+
+.title {
+}
+
+.content {
+}
+
+.wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.toggle {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    width: 100%;
+    background: transparent;
+    border: 0;
+    padding: 10px 0;
+    color: inherit;
+    cursor: pointer;
+}
+
+.toggleText {
+    font-size: var(--fs-16);
+    font-weight: 700;
+}
+
+.icon {
+    width: 12px;
+    height: 12px;
+    border-inline-end: 2px solid currentColor;
+    border-bottom: 2px solid currentColor;
+    transform: rotate(-45deg);
+    opacity: 0.8;
+}
+
+.table {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.row {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.day {
+    font-size: var(--fs-14);
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.hours {
+    min-width: 0;
+    text-align: start;
+    font-size: var(--fs-14);
+    line-height: var(--lh-normal);
+}
+
+.closed {
+    opacity: 0.85;
+}
+
+.ranges {
+    overflow-wrap: anywhere;
+    word-break: break-word;
+}

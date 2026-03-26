@@ -59,6 +59,88 @@ const FaqSchema = new mongoose.Schema(
     { _id: false },
 );
 
+const ServicesSchema = new mongoose.Schema(
+    {
+        title: { type: String, trim: true, default: null, maxlength: 120 },
+        items: {
+            type: [String],
+            default: undefined,
+            validate: {
+                validator: (arr) => {
+                    if (arr === undefined || arr === null) return true;
+                    if (!Array.isArray(arr)) return false;
+                    return arr.length <= 20;
+                },
+                message: "content.services.items must contain at most 20 items",
+            },
+        },
+    },
+    { _id: false },
+);
+
+const BusinessHoursIntervalSchema = new mongoose.Schema(
+    {
+        start: {
+            type: String,
+            trim: true,
+            default: "",
+            validate: {
+                validator: (v) => !v || /^([01]\d|2[0-3]):(00|30)$/.test(v),
+                message:
+                    "businessHours.week.*.intervals.start must be HH:mm (00|30)",
+            },
+        },
+        end: {
+            type: String,
+            trim: true,
+            default: "",
+            validate: {
+                validator: (v) => !v || /^([01]\d|2[0-3]):(00|30)$/.test(v),
+                message:
+                    "businessHours.week.*.intervals.end must be HH:mm (00|30)",
+            },
+        },
+    },
+    { _id: false },
+);
+
+const BusinessHoursDaySchema = new mongoose.Schema(
+    {
+        open: { type: Boolean, default: false },
+        intervals: {
+            type: [BusinessHoursIntervalSchema],
+            default: undefined,
+            validate: {
+                validator: (arr) => {
+                    if (arr === undefined || arr === null) return true;
+                    if (!Array.isArray(arr)) return false;
+                    return arr.length <= 4;
+                },
+                message:
+                    "businessHours.week.*.intervals must contain at most 4 intervals",
+            },
+        },
+    },
+    { _id: false },
+);
+
+const BusinessHoursSchema = new mongoose.Schema(
+    {
+        v: { type: Number, default: 1 },
+        enabled: { type: Boolean, default: false },
+        week: {
+            sun: { type: BusinessHoursDaySchema, default: () => ({}) },
+            mon: { type: BusinessHoursDaySchema, default: () => ({}) },
+            tue: { type: BusinessHoursDaySchema, default: () => ({}) },
+            wed: { type: BusinessHoursDaySchema, default: () => ({}) },
+            thu: { type: BusinessHoursDaySchema, default: () => ({}) },
+            fri: { type: BusinessHoursDaySchema, default: () => ({}) },
+            sat: { type: BusinessHoursDaySchema, default: () => ({}) },
+        },
+    },
+    { _id: false },
+);
+
 const PayerSchema = new mongoose.Schema(
     {
         type: {
@@ -324,7 +406,13 @@ const CardSchema = new mongoose.Schema(
             },
             aboutText: String,
             videoUrl: String,
+
+            // Additive (V1): descriptive services list.
+            services: { type: ServicesSchema, default: null },
         },
+
+        // Additive (V1): operational business hours config (display-only).
+        businessHours: { type: BusinessHoursSchema, default: null },
 
         faq: { type: FaqSchema, default: null },
 

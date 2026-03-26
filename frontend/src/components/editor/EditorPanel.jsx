@@ -1,6 +1,8 @@
 import BusinessPanel from "./panels/BusinessPanel";
 import ContactPanel from "./panels/ContactPanel";
 import ContentPanel from "./panels/ContentPanel";
+import ServicesPanel from "./panels/ServicesPanel";
+import BusinessHoursPanel from "./panels/BusinessHoursPanel";
 import GalleryPanel from "./panels/GalleryPanel";
 import ReviewsPanel from "./panels/ReviewsPanel";
 import FaqPanel from "./panels/FaqPanel";
@@ -82,6 +84,26 @@ export default function EditorPanel({
                     disabled={editingDisabled}
                     onNavigateTab={onNavigateTab}
                     onChange={(patch) => applyPatch("content", patch)}
+                />
+            );
+
+        case "services":
+            return (
+                <ServicesPanel
+                    services={card?.content?.services}
+                    disabled={editingDisabled}
+                    onChange={(patch) => applyPatch("content", patch)}
+                />
+            );
+
+        case "businessHours":
+            return (
+                <BusinessHoursPanel
+                    value={card?.businessHours}
+                    disabled={editingDisabled}
+                    onChange={(nextBusinessHours) =>
+                        onFieldChange?.("businessHours", nextBusinessHours)
+                    }
                 />
             );
 

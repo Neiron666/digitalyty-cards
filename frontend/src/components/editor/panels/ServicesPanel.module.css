@@ -1,0 +1,73 @@
+.root {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    min-width: 0;
+}
+
+.block {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-width: 0;
+}
+
+.labelRow {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    min-width: 0;
+}
+
+.label {
+    font-size: var(--fs-14, 0.875rem);
+    font-weight: 600;
+    color: var(--text-main);
+}
+
+.list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    min-width: 0;
+}
+
+.row {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+}
+
+.row :global(input) {
+    flex: 1;
+    min-width: 0;
+}
+
+.actions {
+    display: flex;
+    flex-direction: row;
+    justify-content: flex-start;
+    gap: 10px;
+}
+
+.hint {
+    font-size: var(--fs-12, 0.75rem);
+    line-height: var(--lh-normal, 1.5);
+    color: var(--text-muted, rgba(0, 0, 0, 0.65));
+}
+
+@media (max-width: 600px) {
+    .row {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .actions {
+        flex-direction: column;
+        align-items: stretch;
+    }
+}

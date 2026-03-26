@@ -1,0 +1,101 @@
+.section {
+    min-width: 0;
+}
+
+.title {
+    /* Use the default Section title styling */
+}
+
+.content {
+    padding: 0;
+    width: var(--section-content-width, 70%);
+}
+
+.wrap {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    text-align: start;
+    gap: 10px;
+    padding: 1rem 0 2rem 0;
+}
+
+.toggle {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    width: 100%;
+    min-width: 0;
+    background: transparent;
+    border: 1px solid var(--border-subtle, rgba(0, 0, 0, 0.12));
+    border-radius: var(--radius-md, 10px);
+    padding: 12px 14px;
+    color: var(--text-main);
+    text-align: start;
+}
+
+.toggleText {
+    font-size: var(--fs-16, 1rem);
+    font-weight: 600;
+}
+
+.icon {
+    width: 10px;
+    height: 10px;
+    flex: 0 0 auto;
+    border-right: 2px solid currentColor;
+    border-bottom: 2px solid currentColor;
+    transform: rotate(45deg);
+    opacity: 0.75;
+}
+
+.toggle[aria-expanded="true"] .icon {
+    transform: rotate(225deg);
+}
+
+.list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 0;
+    margin: 0;
+    list-style: none;
+}
+
+.item {
+    display: flex;
+    flex-direction: row;
+    gap: 10px;
+    align-items: flex-start;
+    padding: 10px 12px;
+    border: 1px solid var(--border-subtle, rgba(0, 0, 0, 0.12));
+    border-radius: var(--radius-md, 10px);
+    background: var(--bg-surface, rgba(255, 255, 255, 0.7));
+    font-size: var(--fs-14, 0.875rem);
+    line-height: var(--lh-normal, 1.5);
+    color: var(--text-main);
+}
+
+@media (max-width: 600px) {
+    .content {
+        width: var(--section-content-width-sm, 95%);
+    }
+
+    .toggleText {
+        font-size: var(--fs-14, 0.875rem);
+    }
+}
+
+@container phone (max-width: 520px) {
+    [data-preview="phone"] .content {
+        width: var(--section-content-width-sm, 95%);
+    }
+}
+
+@container (max-width: 520px) {
+    [data-preview="phone"] .content {
+        width: var(--section-content-width-sm, 95%);
+    }
+}
