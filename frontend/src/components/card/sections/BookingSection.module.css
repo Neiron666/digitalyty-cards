@@ -2,6 +2,24 @@
 
 .content {
     text-align: start;
+    border: 1px solid var(--border, rgba(0, 0, 0, 0.1));
+    border-radius: var(--radius-md, 18px);
+    /* background: var(--section-bg, var(--bg-surface)); */
+    padding: 16px 12px;
+}
+
+@media (max-width: 600px) {
+    .content {
+        border: none;
+        border-radius: 0;
+        padding: 0;
+    }
+}
+
+:global([data-preview="phone"]) .content {
+    border: none;
+    border-radius: 0;
+    padding: 0;
 }
 
 /* ── Intro ── */
@@ -326,4 +344,15 @@
 .dismissBtn:focus-visible {
     outline: 2px solid var(--action-bg, #d4af37);
     outline-offset: 2px;
+}
+
+/* Preview: override CardLayout global button width (0,2,1) with (0,3,0) */
+:global([data-preview="phone"]) .slotArea .dismissBtn,
+:global([data-preview="phone"]) .selectedSummary .dismissBtn {
+    width: 1.5rem;
+    height: 1.5rem;
+}
+
+:global([data-preview="phone"]) .slotArea .slotBtn {
+    width: auto;
 }

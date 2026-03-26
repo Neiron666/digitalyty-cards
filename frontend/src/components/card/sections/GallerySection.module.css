@@ -31,7 +31,8 @@
 
     transform: none;
     transition: none;
-    box-shadow: 0 0 5px 1px var(--secondary);
+    box-shadow: 0 0 3px 1px
+        color-mix(in srgb, var(--secondary) 40%, transparent);
 }
 
 /* .gallery .imageWrapper:hover,
