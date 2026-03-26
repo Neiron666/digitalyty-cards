@@ -25,6 +25,7 @@ import accountRoutes from "./routes/account.routes.js";
 import blogRoutes from "./routes/blog.routes.js";
 import guideRoutes from "./routes/guide.routes.js";
 import aiRoutes from "./routes/ai.routes.js";
+import bookingRoutes from "./routes/booking.routes.js";
 import path from "path";
 
 const app = express();
@@ -129,6 +130,7 @@ app.get("/api/health", (req, res) => {
 app.use("/api/analytics", analyticsRoutes);
 app.use("/api/site-analytics", siteAnalyticsRoutes);
 app.use("/api/leads", leadRoutes);
+app.use("/api/bookings", bookingRoutes);
 app.use(multerErrorHandler);
 // Cards API
 app.use("/api/cards", cardRoutes);
