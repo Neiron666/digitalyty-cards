@@ -1387,6 +1387,17 @@ export async function updateCard(req, res) {
         return res.status(403).json({ ok: false, code: "PREMIUM_REQUIRED" });
     }
 
+    // Gate: enabling booking requires entitlement (disabling is always allowed).
+    if (
+        featurePlan !== null &&
+        patch.bookingSettings &&
+        isPlainObject(patch.bookingSettings) &&
+        patch.bookingSettings.enabled === true &&
+        !hasAccess(featurePlan, "booking")
+    ) {
+        return res.status(403).json({ ok: false, code: "PREMIUM_REQUIRED" });
+    }
+
     const businessTouched = Object.prototype.hasOwnProperty.call(
         patch,
         "business",

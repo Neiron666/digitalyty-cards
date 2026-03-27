@@ -35,7 +35,7 @@ export function sanitizePublicBookingInput(body) {
     }
 
     // ── honeypot ──
-    const hp = raw.website != null ? String(raw.website) : "";
+    const hp = raw._xf92 != null ? String(raw._xf92) : "";
 
     // ── name (required) ──
     const customerName = stripTags(raw.name, { maxLen: 100 });

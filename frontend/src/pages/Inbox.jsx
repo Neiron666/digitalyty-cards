@@ -184,7 +184,7 @@ export default function Inbox() {
         setBookingsError(false);
 
         try {
-            const data = await getMyBookings({ limit: 50 });
+            const data = await getMyBookings(null, { limit: 50 });
             setBookings(data?.bookings || []);
         } catch {
             setBookingsError(true);

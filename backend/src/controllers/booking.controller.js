@@ -449,6 +449,15 @@ export async function createPublicBooking(req, res) {
             });
         }
 
+        // Preserve domain/product HttpError status (same pattern as availability).
+        const status = err?.statusCode || err?.status;
+        if (status) {
+            return res.status(status).json({
+                message: err?.message || "Error",
+                code: err?.code || null,
+            });
+        }
+
         console.error("[booking/public] error:", err?.message || "unknown");
         return res.status(500).json({ message: "Failed to create booking" });
     }
@@ -483,7 +492,7 @@ export async function listMyBookings(req, res) {
             });
         } else {
             const ownedCards = await Card.find({
-                user: actor.userId,
+                user: actor.id,
                 isActive: true,
             })
                 .select("_id slug displayName name orgId")
@@ -542,6 +551,7 @@ export async function listMyBookings(req, res) {
                 createdAt: d.createdAt,
                 customerName: d.customerName,
                 customerPhoneRaw: d.customerPhoneRaw,
+                phone: d.customerPhoneRaw,
             };
         });
 
@@ -596,14 +606,14 @@ export async function approveMyBooking(req, res) {
         const card = await Card.findById(String(booking.card));
         assertCardOwner(card, actor);
 
-        await expireIfNeeded(booking);
+        const fresh = await expireIfNeeded(booking);
 
-        if (booking.status !== "pending") {
+        if (fresh.status !== "pending") {
             throw new HttpError(400, "Invalid request", "INVALID_STATUS");
         }
 
-        booking.status = "approved";
-        await booking.save();
+        fresh.status = "approved";
+        await fresh.save();
 
         return res.json({ success: true });
     } catch (err) {
@@ -635,14 +645,14 @@ export async function cancelMyBooking(req, res) {
         const card = await Card.findById(String(booking.card));
         assertCardOwner(card, actor);
 
-        await expireIfNeeded(booking);
+        const fresh = await expireIfNeeded(booking);
 
-        if (booking.status !== "pending" && booking.status !== "approved") {
+        if (fresh.status !== "pending" && fresh.status !== "approved") {
             throw new HttpError(400, "Invalid request", "INVALID_STATUS");
         }
 
-        booking.status = "canceled";
-        await booking.save();
+        fresh.status = "canceled";
+        await fresh.save();
 
         return res.json({ success: true });
     } catch (err) {

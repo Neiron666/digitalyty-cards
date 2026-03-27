@@ -161,7 +161,7 @@ export default function BookingSection({ card }) {
     const [form, setForm] = useState({
         name: "",
         phone: "",
-        website: "",
+        _xf92: "",
         consent: false,
     });
     const [submitStatus, setSubmitStatus] = useState("idle");
@@ -272,10 +272,10 @@ export default function BookingSection({ card }) {
                 date: selectedDay.dateKeyIl,
                 hour: parsed.hour,
                 minute: parsed.minute,
-                website: form.website,
+                _xf92: form._xf92,
             });
             setSubmitStatus("success");
-            setForm({ name: "", phone: "", website: "", consent: false });
+            setForm({ name: "", phone: "", _xf92: "", consent: false });
         } catch (err) {
             const httpStatus = err.response?.status;
             const code = err.response?.data?.code;
@@ -297,9 +297,7 @@ export default function BookingSection({ card }) {
             } else if (httpStatus === 403) {
                 msg = "שירות לא זמין כרגע.";
             } else if (httpStatus === 404) {
-                // Honeypot / bot — silent-ish
-                setSubmitStatus("success");
-                return;
+                msg = "הכרטיס לא נמצא או לא פעיל.";
             } else if (httpStatus === 400) {
                 msg = "אנא בדקו את הפרטים ונסו שנית.";
             } else {
@@ -523,10 +521,10 @@ export default function BookingSection({ card }) {
 
                         {/* Honeypot */}
                         <input
-                            name="website"
-                            value={form.website}
+                            name="_xf92"
+                            value={form._xf92}
                             onChange={(e) =>
-                                updateField("website", e.target.value)
+                                updateField("_xf92", e.target.value)
                             }
                             className={styles.hp}
                             tabIndex={-1}
