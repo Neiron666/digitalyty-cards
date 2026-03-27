@@ -17,6 +17,8 @@ import {
     SeoIcon,
     AnalyticsIcon,
     SelfDesignIcon,
+    BookingIcon,
+    WorkHoursIcon,
 } from "../components/icons/EditorTabIcons";
 import {
     PhoneIcon,
@@ -135,7 +137,9 @@ const SHARE_CHANNELS = [
 ];
 
 const PRESENCE_FEATURES = [
+    { Icon: BookingIcon, label: "קביעת פגישות" },
     { Icon: GalleryIcon, label: "גלריית עבודות" },
+    { Icon: WorkHoursIcon, label: "שעות פעילות" },
     { Icon: VideoIcon, label: "סרטון YouTube" },
     { Icon: StarIcon, label: "המלצות לקוחות" },
     { Icon: QuestionIcon, label: "שאלות נפוצות" },
@@ -149,25 +153,32 @@ const SECTION_1_IMG = "/images/home-page/main-sections/Section-1";
 const PRESENCE_PROOF_CARDS = [
     {
         title: "המלצות",
-        src: `${SECTION_1_IMG}/review.webp`,
+        src: `${SECTION_1_IMG}/review-cardigo-digital-bussines-card.webp`,
         alt: "המלצות לקוחות בכרטיס ביקור דיגיטלי",
         posClass: "proofTopStart",
     },
     {
+        title: "קביעת פגישות",
+        src: `${SECTION_1_IMG}/booking-cardigo-digital-bussines-card.webp`,
+        alt: "קביעת פגישות בכרטיס ביקור דיגיטלי",
+        posClass: "proofCenter",
+    },
+    {
         title: "כפתורי פעולה",
-        src: `${SECTION_1_IMG}/social-buttons.webp`,
+        src: `${SECTION_1_IMG}/social-buttons-cardigo-digital-bussines-card.webp`,
         alt: "כפתורי שיתוף ופעולה בכרטיס ביקור דיגיטלי",
         posClass: "proofBottomStart",
     },
+
     {
         title: "טופס לידים",
-        src: `${SECTION_1_IMG}/lead.webp`,
+        src: `${SECTION_1_IMG}/lead-cardigo-digital-bussines-card.webp`,
         alt: "טופס יצירת קשר בכרטיס ביקור דיגיטלי",
         posClass: "proofTopEnd",
     },
     {
         title: "גלרית תמונות",
-        src: `${SECTION_1_IMG}/gallery.webp`,
+        src: `${SECTION_1_IMG}/gallery-cardigo-digital-bussines-card.webp`,
         alt: "גלרית תמונות בכרטיס ביקור דיגיטלי",
         posClass: "proofBottomEnd",
     },
@@ -492,8 +503,13 @@ export default function Home() {
                         <strong className={styles.presenceLeadBrand}>
                             Cardigo
                         </strong>{" "}
-                        זה לא רק פרטי קשר. זהו עמוד עסקי קומפקטי עם גלריה,
-                        וידאו, המלצות, שאלות נפוצות וטופס פנייה -{" "}
+                        זה לא רק פרטי קשר. זהו עמוד עסקי קומפקטי עם{" "}
+                        <span className={`${pub.goldUnderline} ${pub.boldTxt}`}>
+                            {" "}
+                            אפשרות קביעת פגישות
+                        </span>
+                        , גלריה, וידאו, המלצות, שאלות נפוצות, טופס פנייה ועוד...
+                        -{" "}
                         <em className={styles.presenceLeadPunch}>
                             הכל בקישור אחד שנראה מקצועי ונוח לשיתוף.
                         </em>
@@ -531,7 +547,7 @@ export default function Home() {
                     </div>
 
                     <p className={styles.presenceMore}>
-                        ועוד הרבה פיצ'רים נוספים&hellip;
+                        ועוד הרבה כלים נוספים&hellip;
                     </p>
 
                     <div className={pub.highlight}>

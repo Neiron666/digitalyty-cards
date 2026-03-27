@@ -609,6 +609,13 @@
     --scroll-drift-distance: 80%;
 }
 
+.proofCenter {
+    top: 50%;
+    transform: translateY(-50%);
+    inset-inline-start: 4%;
+    --scroll-drift-distance: 80%;
+}
+
 .proofBottomStart {
     bottom: 20%;
     inset-inline-start: 4%;
@@ -1494,6 +1501,13 @@
         --scroll-drift-distance: 90%;
     }
 
+    .proofCenter {
+        top: 50%;
+        transform: translateY(-50%);
+        inset-inline-start: 2%;
+        --scroll-drift-distance: 90%;
+    }
+
     .proofBottomStart {
         bottom: 15%;
         inset-inline-start: 2%;
@@ -1533,6 +1547,10 @@
     }
 
     .proofTopStart {
+        --scroll-drift-distance: 100%;
+    }
+
+    .proofCenter {
         --scroll-drift-distance: 100%;
     }
 
