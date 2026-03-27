@@ -165,6 +165,19 @@ export function FaqIcon({ className, title }) {
     );
 }
 
+export function ServicesIcon({ className, title }) {
+    return (
+        <svg {...svgProps(className, title)}>
+            {title ? <title>{title}</title> : null}
+            <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+            <path d="M12 9m-1 0a1 1 0 1 0 2 0a1 1 0 1 0 -2 0" />
+            <path d="M12 10v1" />
+            <path d="M5 18c1 -4.2 3.8 -7 7 -7s6 2.8 7 7" />
+            <path d="M4 18h16" />
+        </svg>
+    );
+}
+
 export function SeoIcon({ className, title }) {
     return (
         <svg {...svgProps(className, title)}>
