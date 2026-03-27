@@ -25,7 +25,22 @@ const VIEWS = [
 const CATEGORIES = [
     { key: "leads", label: "פניות" },
     { key: "bookings", label: "בקשות תיאום" },
+    { key: "futureMeetings", label: "פגישות עתידיות" },
 ];
+
+const STATUS_LABELS = {
+    pending: "ממתין",
+    approved: "מאושר",
+    canceled: "בוטל",
+    expired: "פג תוקף",
+};
+
+const STATUS_CLASS_MAP = {
+    pending: "badgePending",
+    approved: "badgeApproved",
+    canceled: "badgeCanceled",
+    expired: "badgeExpired",
+};
 
 function formatDate(iso) {
     try {
@@ -63,6 +78,8 @@ export default function Inbox() {
     const [bookingsLoading, setBookingsLoading] = useState(false);
     const [bookingsError, setBookingsError] = useState(false);
     const [bookingsExpandedId, setBookingsExpandedId] = useState(null);
+    const [bookingActionError, setBookingActionError] = useState("");
+    const bookingActionTimerRef = useRef(null);
 
     const loadLeads = useCallback(
         async ({ reset } = {}) => {
@@ -162,23 +179,6 @@ export default function Inbox() {
         [leads, adjustUnreadCount],
     );
 
-    const handleRetry = useCallback(() => {
-        setFetchError(false);
-        setBookingsError(false);
-        if (activeCategory === "leads") {
-            loadLeads({ reset: true });
-        } else {
-            // bookings will be loaded via effect when category is bookings
-            setBookingsLoading(false);
-        }
-    }, [activeCategory, loadLeads]);
-
-    useEffect(() => {
-        viewRef.current = activeView;
-        if (activeCategory !== "leads") return;
-        loadLeads({ reset: true });
-    }, [activeView, activeCategory, loadLeads]);
-
     const loadBookings = useCallback(async () => {
         setBookingsLoading(true);
         setBookingsError(false);
@@ -193,8 +193,29 @@ export default function Inbox() {
         }
     }, []);
 
+    const handleRetry = useCallback(() => {
+        setFetchError(false);
+        setBookingsError(false);
+        if (activeCategory === "leads") {
+            loadLeads({ reset: true });
+        } else {
+            // bookings / futureMeetings share the same data source
+            loadBookings();
+        }
+    }, [activeCategory, loadLeads, loadBookings]);
+
     useEffect(() => {
-        if (activeCategory !== "bookings") return;
+        viewRef.current = activeView;
+        if (activeCategory !== "leads") return;
+        loadLeads({ reset: true });
+    }, [activeView, activeCategory, loadLeads]);
+
+    useEffect(() => {
+        if (
+            activeCategory !== "bookings" &&
+            activeCategory !== "futureMeetings"
+        )
+            return;
         loadBookings();
     }, [activeCategory, loadBookings]);
 
@@ -203,16 +224,38 @@ export default function Inbox() {
             const id = safeStr(bookingId);
             if (!id) return;
 
+            setBookingActionError("");
+            clearTimeout(bookingActionTimerRef.current);
+
             try {
                 if (action === "approve") await approveMyBooking(id);
                 if (action === "cancel") await cancelMyBooking(id);
-                await loadBookings();
-            } catch {
-                setBookingsError(true);
+            } catch (err) {
+                const code = err?.response?.data?.code;
+                const msg =
+                    code === "INVALID_STATUS"
+                        ? "הבקשה כבר אינה תקפה."
+                        : "לא ניתן לבצע את הפעולה כרגע.";
+                setBookingActionError(msg);
+                bookingActionTimerRef.current = setTimeout(
+                    () => setBookingActionError(""),
+                    6000,
+                );
             }
+
+            // Always refresh list to show truthful state.
+            await loadBookings();
         },
         [loadBookings],
     );
+
+    function formatRequestedBooking(booking) {
+        const dateKey = safeStr(booking?.dateKeyIl);
+        const localStart = safeStr(booking?.localStartHHmm);
+        if (dateKey && localStart) return `${dateKey} בשעה ${localStart}`;
+        if (booking?.startAt) return formatDate(booking.startAt);
+        return "";
+    }
 
     const tabBar = useMemo(() => {
         return (
@@ -251,6 +294,29 @@ export default function Inbox() {
             </nav>
         );
     }, [activeCategory, handleCategoryChange]);
+
+    const nowMs = Date.now();
+
+    const requestBookings = useMemo(
+        () =>
+            bookings.filter((b) => {
+                const st = safeStr(b.status);
+                return (
+                    st === "pending" || st === "canceled" || st === "expired"
+                );
+            }),
+        [bookings],
+    );
+
+    const futureMeetings = useMemo(
+        () =>
+            bookings.filter((b) => {
+                if (safeStr(b.status) !== "approved") return false;
+                const end = b.endAt ? new Date(b.endAt).getTime() : 0;
+                return end > nowMs;
+            }),
+        [bookings, nowMs],
+    );
 
     if (!isAuthenticated) return <Navigate to="/login" replace />;
 
@@ -450,14 +516,30 @@ export default function Inbox() {
                 </>
             ) : null}
 
-            {activeCategory === "bookings" && bookingsLoading ? (
-                <p className={styles.loading}>טוען בקשות תיאום…</p>
+            {(activeCategory === "bookings" ||
+                activeCategory === "futureMeetings") &&
+            bookingActionError ? (
+                <p className={styles.errorText}>{bookingActionError}</p>
             ) : null}
 
-            {activeCategory === "bookings" && bookingsError ? (
+            {(activeCategory === "bookings" ||
+                activeCategory === "futureMeetings") &&
+            bookingsLoading ? (
+                <p className={styles.loading}>
+                    {activeCategory === "futureMeetings"
+                        ? "טוען פגישות…"
+                        : "טוען בקשות תיאום…"}
+                </p>
+            ) : null}
+
+            {(activeCategory === "bookings" ||
+                activeCategory === "futureMeetings") &&
+            bookingsError ? (
                 <div className={styles.errorWrap}>
                     <p className={styles.errorText}>
-                        אירעה שגיאה בטעינת בקשות התיאום
+                        {activeCategory === "futureMeetings"
+                            ? "אירעה שגיאה בטעינת הפגישות"
+                            : "אירעה שגיאה בטעינת בקשות התיאום"}
                     </p>
                     <button
                         type="button"
@@ -469,23 +551,36 @@ export default function Inbox() {
                 </div>
             ) : null}
 
+            {(activeCategory === "bookings" ||
+                activeCategory === "futureMeetings") &&
+            !bookingsLoading &&
+            !bookingsError ? (
+                <p className={styles.retentionNote}>
+                    רשומות נשמרות כ-7 ימים לאחר סיום מועד הפגישה ונמחקות
+                    אוטומטית.
+                </p>
+            ) : null}
+
             {activeCategory === "bookings" &&
             !bookingsLoading &&
             !bookingsError &&
-            bookings.length === 0 ? (
+            requestBookings.length === 0 ? (
                 <p className={styles.empty}>אין בקשות תיאום להצגה</p>
             ) : null}
 
             {activeCategory === "bookings" &&
             !bookingsLoading &&
             !bookingsError &&
-            bookings.length > 0 ? (
+            requestBookings.length > 0 ? (
                 <ul className={styles.list}>
-                    {bookings.map((b) => {
+                    {requestBookings.map((b) => {
                         const id = safeStr(b._id);
                         const isExpanded = bookingsExpandedId === id;
                         const status = safeStr(b.status || b.state || "");
+                        const statusLabel = STATUS_LABELS[status] || status;
+                        const statusCls = STATUS_CLASS_MAP[status] || "";
                         const createdAt = b.createdAt || b.requestedAt;
+                        const requestedSlot = formatRequestedBooking(b);
 
                         const cardMeta =
                             b?.cardMeta && typeof b.cardMeta === "object"
@@ -524,8 +619,10 @@ export default function Inbox() {
                                             </div>
                                         </div>
                                         {status ? (
-                                            <span className={styles.badge}>
-                                                {status}
+                                            <span
+                                                className={`${styles.badge} ${statusCls ? styles[statusCls] : ""}`}
+                                            >
+                                                {statusLabel}
                                             </span>
                                         ) : null}
                                     </div>
@@ -561,6 +658,16 @@ export default function Inbox() {
                                                 הערה: {b.note}
                                             </div>
                                         ) : null}
+                                        {createdAt ? (
+                                            <div className={styles.detailLine}>
+                                                נוצרה: {formatDate(createdAt)}
+                                            </div>
+                                        ) : null}
+                                        {requestedSlot ? (
+                                            <div className={styles.detailLine}>
+                                                מועד מבוקש: {requestedSlot}
+                                            </div>
+                                        ) : null}
 
                                         <div className={styles.actions}>
                                             <button
@@ -578,7 +685,9 @@ export default function Inbox() {
                                             </button>
                                             <button
                                                 type="button"
-                                                className={styles.dangerBtn}
+                                                className={
+                                                    styles.actionBtnDanger
+                                                }
                                                 disabled={!canCancel}
                                                 onClick={() =>
                                                     handleBookingAction(
@@ -588,6 +697,129 @@ export default function Inbox() {
                                                 }
                                             >
                                                 בטל
+                                            </button>
+                                        </div>
+                                    </div>
+                                ) : null}
+                            </li>
+                        );
+                    })}
+                </ul>
+            ) : null}
+
+            {activeCategory === "futureMeetings" &&
+            !bookingsLoading &&
+            !bookingsError &&
+            futureMeetings.length === 0 ? (
+                <p className={styles.empty}>אין פגישות עתידיות</p>
+            ) : null}
+
+            {activeCategory === "futureMeetings" &&
+            !bookingsLoading &&
+            !bookingsError &&
+            futureMeetings.length > 0 ? (
+                <ul className={styles.list}>
+                    {futureMeetings.map((b) => {
+                        const id = safeStr(b._id);
+                        const isExpanded = bookingsExpandedId === id;
+                        const createdAt = b.createdAt || b.requestedAt;
+                        const requestedSlot = formatRequestedBooking(b);
+
+                        const cardMeta =
+                            b?.cardMeta && typeof b.cardMeta === "object"
+                                ? b.cardMeta
+                                : null;
+                        const cardLabel = safeStr(cardMeta?.cardLabel);
+                        const cardSlug = safeStr(cardMeta?.slug);
+
+                        return (
+                            <li key={id} className={styles.item}>
+                                <button
+                                    type="button"
+                                    className={styles.card}
+                                    onClick={() =>
+                                        setBookingsExpandedId((prev) =>
+                                            prev === id ? null : id,
+                                        )
+                                    }
+                                    aria-expanded={isExpanded}
+                                >
+                                    <div className={styles.row}>
+                                        <div className={styles.meta}>
+                                            <div className={styles.name}>
+                                                {b.name ||
+                                                    b.customerName ||
+                                                    "(ללא שם)"}
+                                            </div>
+                                            {requestedSlot ? (
+                                                <div className={styles.date}>
+                                                    {requestedSlot}
+                                                </div>
+                                            ) : null}
+                                        </div>
+                                        <span
+                                            className={`${styles.badge} ${styles.badgeApproved}`}
+                                        >
+                                            {STATUS_LABELS.approved}
+                                        </span>
+                                    </div>
+                                    <div className={styles.preview}>
+                                        {cardLabel
+                                            ? `כרטיס: ${cardLabel}`
+                                            : cardSlug
+                                              ? `כרטיס: ${cardSlug}`
+                                              : null}
+                                        {cardLabel || cardSlug ? " · " : ""}
+                                        {b.note ||
+                                            b.message ||
+                                            b.phone ||
+                                            b.email ||
+                                            "פגישה מאושרת"}
+                                    </div>
+                                </button>
+
+                                {isExpanded ? (
+                                    <div className={styles.details}>
+                                        {b.phone ? (
+                                            <div className={styles.detailLine}>
+                                                טלפון: {b.phone}
+                                            </div>
+                                        ) : null}
+                                        {b.email ? (
+                                            <div className={styles.detailLine}>
+                                                אימייל: {b.email}
+                                            </div>
+                                        ) : null}
+                                        {b.note ? (
+                                            <div className={styles.detailLine}>
+                                                הערה: {b.note}
+                                            </div>
+                                        ) : null}
+                                        {createdAt ? (
+                                            <div className={styles.detailLine}>
+                                                נוצרה: {formatDate(createdAt)}
+                                            </div>
+                                        ) : null}
+                                        {requestedSlot ? (
+                                            <div className={styles.detailLine}>
+                                                מועד מבוקש: {requestedSlot}
+                                            </div>
+                                        ) : null}
+
+                                        <div className={styles.actions}>
+                                            <button
+                                                type="button"
+                                                className={
+                                                    styles.actionBtnDanger
+                                                }
+                                                onClick={() =>
+                                                    handleBookingAction(
+                                                        id,
+                                                        "cancel",
+                                                    )
+                                                }
+                                            >
+                                                בטל פגישה
                                             </button>
                                         </div>
                                     </div>

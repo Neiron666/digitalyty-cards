@@ -517,6 +517,15 @@ export async function listMyBookings(req, res) {
             return res.json({ bookings: [] });
         }
 
+        await Booking.updateMany(
+            {
+                card: { $in: cardFilterIds },
+                status: "pending",
+                expiresAt: { $lt: new Date() },
+            },
+            { $set: { status: "expired" } },
+        );
+
         const docs = await Booking.find({ card: { $in: cardFilterIds } })
             .sort({ startAt: -1, _id: -1 })
             .limit(limit)

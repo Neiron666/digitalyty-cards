@@ -13,7 +13,11 @@
 
 .heading {
     font-size: var(--fs-h2);
-    margin-block-end: 12px;
+    margin-block-end: 20px;
+    text-align: center;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+    color: var(--card-text, #0f172a);
 }
 
 /* ── Tabs ─────────────────────────────────────────────── */
@@ -58,31 +62,46 @@
 .categoryTabs {
     display: flex;
     flex-wrap: wrap;
-    gap: 8px;
-    margin-block: 12px 8px;
+    gap: 6px;
+    margin-block: 4px 20px;
+    justify-content: center;
+    padding-block-end: 16px;
+    border-bottom: 1px solid var(--gold-fade, rgba(212, 175, 55, 0.12));
 }
 
 .categoryTab {
     appearance: none;
-    border: 1px solid var(--c-border);
-    background: var(--c-surface);
-    color: var(--c-text);
+    border: 1px solid var(--gold-fade, rgba(212, 175, 55, 0.18));
+    background: transparent;
+    color: var(--card-muted, #475569);
     border-radius: 999px;
-    padding: 8px 12px;
-    font-size: var(--fs-sm);
-    line-height: var(--lh-sm);
+    padding: 8px 18px;
+    font-size: var(--fs-body-sm);
+    font-weight: 500;
     cursor: pointer;
+    transition:
+        background 0.2s ease,
+        color 0.2s ease,
+        border-color 0.2s ease,
+        box-shadow 0.2s ease;
+}
+
+.categoryTab:hover {
+    background: rgba(212, 175, 55, 0.06);
+    border-color: rgba(212, 175, 55, 0.35);
 }
 
 .categoryTab:focus-visible {
-    outline: 2px solid var(--c-primary-400);
+    outline: 2px solid var(--gold, #d4af37);
     outline-offset: 2px;
 }
 
 .categoryTabActive {
-    border-color: var(--c-primary-200);
-    background: var(--c-primary-50);
-    color: var(--c-primary-700);
+    background: var(--gold, #d4af37);
+    color: #fff;
+    border-color: var(--gold, #d4af37);
+    font-weight: 600;
+    box-shadow: 0 2px 8px rgba(212, 175, 55, 0.25);
 }
 
 .tabActive:hover {
@@ -95,6 +114,14 @@
     text-align: center;
     color: var(--card-muted, #475569);
     padding-block: 60px;
+}
+
+.retentionNote {
+    font-size: var(--fs-caption);
+    color: var(--card-muted, #94a3b8);
+    text-align: center;
+    margin: 0;
+    padding-block: 4px;
 }
 
 /* ── Error state ──────────────────────────────────────── */
@@ -334,6 +361,95 @@
     color: var(--card-muted, #475569);
 }
 
+/* ── Booking card row / meta (structural) ─────────────── */
+
+.row {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.meta {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+    flex: 1 1 0%;
+}
+
+.name {
+    font-size: var(--fs-body);
+    font-weight: 600;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* ── Booking status badge ─────────────────────────────── */
+
+.badge {
+    font-size: var(--fs-caption);
+    line-height: 1;
+    padding: 3px 10px;
+    border-radius: 999px;
+    white-space: nowrap;
+    flex-shrink: 0;
+    font-weight: 600;
+    border: 1px solid var(--card-muted, #94a3b8);
+    color: var(--card-muted, #475569);
+}
+
+.badgePending {
+    border-color: var(--gold-fade, rgba(212, 175, 55, 0.4));
+    color: var(--gold, #d4af37);
+    background: rgba(212, 175, 55, 0.08);
+}
+
+.badgeApproved {
+    border-color: rgba(34, 139, 34, 0.35);
+    color: #1b7a1b;
+    background: rgba(34, 139, 34, 0.08);
+}
+
+.badgeCanceled {
+    border-color: rgba(198, 40, 40, 0.3);
+    color: var(--c-danger, #c62828);
+    background: rgba(198, 40, 40, 0.06);
+}
+
+.badgeExpired {
+    border-color: rgba(148, 163, 184, 0.35);
+    color: var(--card-muted, #94a3b8);
+    background: rgba(148, 163, 184, 0.06);
+}
+
+/* ── Expanded detail section ──────────────────────────── */
+
+.details {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 10px 16px 14px;
+    border-top: 1px solid var(--gold-fade, rgba(212, 175, 55, 0.12));
+}
+
+.detailLine {
+    font-size: var(--fs-body);
+    margin: 0;
+}
+
+/* ── Actions row inside expanded card ─────────────────── */
+
+.actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    padding-block-start: 10px;
+    border-top: 1px solid var(--gold-fade, rgba(212, 175, 55, 0.08));
+    margin-block-start: 6px;
+}
+
 /* ── Star badge ───────────────────────────────────────── */
 
 .starBadge {
@@ -342,7 +458,7 @@
     flex-shrink: 0;
 }
 
-/* ── Action bar ───────────────────────────────────────── */
+/* ── Action bar (leads legacy) ────────────────────────── */
 
 .actionBar {
     display: flex;
@@ -372,6 +488,11 @@
 .actionBtn:focus-visible {
     outline: 2px solid var(--gold, #d4af37);
     outline-offset: -2px;
+}
+
+.actionBtn:disabled {
+    opacity: 0.4;
+    cursor: default;
 }
 
 .actionBtnDanger {
@@ -410,4 +531,14 @@
 .loadMore:disabled {
     opacity: 0.5;
     cursor: default;
+}
+
+/* ── Legacy class aliases (leads JSX references) ──────── */
+
+.dangerBtn {
+    composes: actionBtnDanger;
+}
+
+.loadMoreBtn {
+    composes: loadMore;
 }
