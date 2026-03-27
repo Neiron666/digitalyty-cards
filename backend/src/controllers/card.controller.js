@@ -1843,6 +1843,29 @@ export async function updateCard(req, res) {
         $set.business = normalizedBusinessForSet;
     }
 
+    // content.services: tolerant atomic writer.
+    // WHY: buildSetUpdateFromPatch() recurses into content.services and produces dotted
+    // child paths like "content.services.title" / "content.services.items".
+    // MongoDB rejects dotted child writes when the current DB value of content.services is null.
+    // Fix: replace all dotted content.services.* entries with one atomic write of the parent field,
+    // exactly mirroring the faqTouched / businessTouched pattern above.
+    const contentServicesTouched =
+        isPlainObject(patch.content) &&
+        Object.prototype.hasOwnProperty.call(patch.content, "services");
+
+    if (contentServicesTouched) {
+        for (const key of Object.keys($set)) {
+            if (
+                key === "content.services" ||
+                key.startsWith("content.services.")
+            ) {
+                delete $set[key];
+            }
+        }
+        // patch.content.services is already the merged value (null or a plain ServicesSchema object).
+        $set["content.services"] = patch.content.services;
+    }
+
     const updateDoc = {
         $set,
         ...(Object.keys($unset).length ? { $unset } : {}),

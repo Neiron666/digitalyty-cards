@@ -17,7 +17,9 @@
     min-width: 0;
     text-align: start;
     gap: 10px;
-    padding: 1rem 0 2rem 0;
+    padding: 12px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
 }
 
 .toggle {
@@ -34,6 +36,13 @@
     padding: 12px 14px;
     color: var(--text-main);
     text-align: start;
+}
+
+.tabIcon {
+    flex-shrink: 0;
+    width: 1.125rem;
+    height: 1.125rem;
+    opacity: 0.85;
 }
 
 .toggleText {
@@ -76,6 +85,40 @@
     font-size: var(--fs-14, 0.875rem);
     line-height: var(--lh-normal, 1.5);
     color: var(--text-main);
+}
+
+.item::before {
+    content: "";
+    display: block;
+    flex-shrink: 0;
+    align-self: center;
+    width: 0.45em;
+    height: 0.45em;
+    border-radius: 50%;
+    background: var(--secondary-token-color, var(--primary, currentColor));
+    animation: haloWave 2.2s ease-out infinite;
+}
+
+@keyframes haloWave {
+    0% {
+        box-shadow: 0 0 0 0
+            rgba(var(--secondary-token-color-rgb, 193, 138, 168), 0);
+    }
+    15% {
+        box-shadow: 0 0 0 0
+            rgba(var(--secondary-token-color-rgb, 193, 138, 168), 0.35);
+    }
+    100% {
+        box-shadow: 0 0 0 14px
+            rgba(var(--secondary-token-color-rgb, 193, 138, 168), 0);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .item::before {
+        animation: none;
+        box-shadow: none;
+    }
 }
 
 @media (max-width: 600px) {

@@ -1,8 +1,9 @@
+import { useEffect, useRef, useState } from "react";
 import Panel from "./Panel";
 import Input from "../../ui/Input";
-import Button from "../../ui/Button";
-import formStyles from "../../ui/Form.module.css";
 import styles from "./ServicesPanel.module.css";
+
+const SERVICES_MAX = 10;
 
 function normalizeServices(value) {
     if (!value || typeof value !== "object" || Array.isArray(value)) {
@@ -23,70 +24,101 @@ function normalizeServices(value) {
 
 function cleanItems(items) {
     const arr = Array.isArray(items) ? items : [];
-    const cleaned = arr
+    return arr
         .map((v) => (typeof v === "string" ? v : ""))
         .map((v) => v.replace(/\s+/g, " "))
         .map((v) => v.trim());
+}
 
-    // Keep at least one row for editing.
-    return cleaned.length ? cleaned : [""];
+function buildCommittedServices(title, items) {
+    const nextTitle = typeof title === "string" ? title : "";
+    const normalizedTitle = nextTitle.trim();
+    const cleanedItems = cleanItems(items).filter(Boolean);
+
+    if (!normalizedTitle && cleanedItems.length === 0) {
+        return null;
+    }
+
+    return {
+        title: normalizedTitle || null,
+        items: cleanedItems,
+    };
+}
+
+function serializeCommittedServices(value) {
+    if (!value || typeof value !== "object" || Array.isArray(value)) {
+        return "null";
+    }
+
+    return JSON.stringify(buildCommittedServices(value.title, value.items));
 }
 
 export default function ServicesPanel({ services, disabled, onChange }) {
     const normalized = normalizeServices(services);
-    const title = normalized.title;
-    const items = normalized.items;
+    const [draftTitle, setDraftTitle] = useState(() => normalized.title);
+    const [draftItems, setDraftItems] = useState(() => normalized.items);
+    const lastCommittedSignatureRef = useRef(
+        serializeCommittedServices(services),
+    );
 
-    function commit(next) {
-        const nextTitle = typeof next?.title === "string" ? next.title : "";
-        const nextItems = cleanItems(next?.items);
+    useEffect(() => {
+        const nextSignature = serializeCommittedServices(services);
+        if (nextSignature === lastCommittedSignatureRef.current) return;
 
-        const hasTitle = Boolean(nextTitle.trim());
-        const hasItems = nextItems.some(
-            (v) => typeof v === "string" && v.trim(),
-        );
+        lastCommittedSignatureRef.current = nextSignature;
+        const nextNormalized = normalizeServices(services);
+        setDraftTitle(nextNormalized.title);
+        setDraftItems(nextNormalized.items);
+    }, [services]);
 
-        if (!hasTitle && !hasItems) {
-            onChange?.({ services: null });
+    function commit(nextTitle, nextItems) {
+        const committed = buildCommittedServices(nextTitle, nextItems);
+        const nextSignature = JSON.stringify(committed);
+
+        if (nextSignature === serializeCommittedServices(services)) {
             return;
         }
 
-        onChange?.({
-            services: {
-                title: nextTitle.trim() || null,
-                items: nextItems.filter((v) => v && v.trim()),
-            },
-        });
+        lastCommittedSignatureRef.current = nextSignature;
+        onChange?.({ services: committed });
     }
 
     function setTitle(nextTitle) {
-        commit({ title: nextTitle, items });
+        setDraftTitle(nextTitle);
+        commit(nextTitle, draftItems);
     }
 
     function setItem(index, value) {
-        const next = items.slice();
+        const next = draftItems.slice();
         next[index] = value;
-        commit({ title, items: next });
+        setDraftItems(next);
+        commit(draftTitle, next);
     }
 
     function addItem() {
-        commit({ title, items: [...items, ""] });
+        if (draftItems.length >= SERVICES_MAX) return;
+        setDraftItems((prev) => [...prev, ""]);
     }
 
     function removeItem(index) {
-        const next = items.filter((_, i) => i !== index);
-        commit({ title, items: next.length ? next : [""] });
+        const next = draftItems.filter((_, i) => i !== index);
+        const safeNext = next.length ? next : [""];
+        setDraftItems(safeNext);
+        commit(draftTitle, safeNext);
     }
+
+    const rowCount = draftItems.length;
+    const remainingSlots = Math.max(0, SERVICES_MAX - rowCount);
+    const isOverLimit = rowCount > SERVICES_MAX;
+    const overflowCount = Math.max(0, rowCount - SERVICES_MAX);
 
     return (
         <Panel title="שירותים">
             <div className={styles.root} dir="rtl">
                 <div className={styles.block}>
-                    <div className={styles.labelRow}>
-                        <div className={styles.label}>כותרת (אופציונלי)</div>
-                    </div>
                     <Input
-                        value={title}
+                        label="כותרת (אופציונלי)"
+                        value={draftTitle}
                         disabled={disabled}
                         placeholder="לדוגמה: שירותים"
                         onChange={(e) => setTitle(e.target.value)}
@@ -94,16 +126,12 @@ export default function ServicesPanel({ services, disabled, onChange }) {
                 </div>
 
                 <div className={styles.block}>
-                    <div className={styles.labelRow}>
-                        <div className={styles.label}>רשימת שירותים</div>
-                    </div>
-
                     <div className={styles.list}>
-                        {items.map((value, index) => {
+                        {draftItems.map((value, index) => {
                             const key = `service-${index}`;
-                            const canRemove = items.length > 1;
+                            const canRemove = draftItems.length > 1;
                             return (
-                                <div key={key} className={styles.row}>
+                                <div key={key} className={styles.itemBlock}>
                                     <Input
                                         value={value}
                                         disabled={disabled}
@@ -112,33 +140,51 @@ export default function ServicesPanel({ services, disabled, onChange }) {
                                             setItem(index, e.target.value)
                                         }
                                     />
-                                    <Button
-                                        type="button"
-                                        variant="secondary"
-                                        className={formStyles.inlineButton}
-                                        disabled={disabled || !canRemove}
-                                        onClick={() => removeItem(index)}
-                                    >
-                                        הסר
-                                    </Button>
+                                    {canRemove && (
+                                        <div className={styles.itemActionRow}>
+                                            <button
+                                                type="button"
+                                                className={styles.removeButton}
+                                                disabled={disabled}
+                                                onClick={() =>
+                                                    removeItem(index)
+                                                }
+                                            >
+                                                הסר
+                                            </button>
+                                        </div>
+                                    )}
                                 </div>
                             );
                         })}
                     </div>
 
-                    <div className={styles.actions}>
-                        <Button
+                    {isOverLimit && (
+                        <div className={styles.overLimitWarning}>
+                            המגבלה עודכנה ל-{SERVICES_MAX} שירותים. יש להסיר{" "}
+                            {overflowCount}{" "}
+                            {overflowCount === 1 ? "שירות" : "שירותים"} לפני
+                            שמירה.
+                        </div>
+                    )}
+
+                    <div className={styles.addRow}>
+                        <button
                             type="button"
-                            variant="secondary"
-                            disabled={disabled}
+                            className={styles.addButton}
+                            disabled={disabled || rowCount >= SERVICES_MAX}
                             onClick={addItem}
                         >
-                            הוסף שירות
-                        </Button>
+                            + הוסף שירות
+                        </button>
+                        <span className={styles.counter}>
+                            נותרו {remainingSlots}/{SERVICES_MAX}
+                        </span>
                     </div>
 
                     <div className={styles.hint}>
                         כדי להסתיר את הסקשן בכרטיס הציבורי, מחק/י את כל הפריטים.
+                        רק שירותים מלאים נשמרים.
                     </div>
                 </div>
             </div>

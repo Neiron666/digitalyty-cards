@@ -12,21 +12,6 @@
     min-width: 0;
 }
 
-.labelRow {
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    justify-content: space-between;
-    gap: 8px;
-    min-width: 0;
-}
-
-.label {
-    font-size: var(--fs-14, 0.875rem);
-    font-weight: 600;
-    color: var(--text-main);
-}
-
 .list {
     display: flex;
     flex-direction: column;
@@ -34,40 +19,97 @@
     min-width: 0;
 }
 
-.row {
+.itemBlock {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 0;
+}
+
+.itemActionRow {
     display: flex;
     flex-direction: row;
     align-items: center;
-    gap: 10px;
-    min-width: 0;
+    gap: 8px;
 }
 
-.row :global(input) {
-    flex: 1;
-    min-width: 0;
+.removeButton {
+    appearance: none;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--danger, #ef4444);
+    padding: 6px 12px;
+    border-radius: var(--radius-sm, 10px);
+    cursor: pointer;
+    font-family: inherit;
+    font-size: var(--fs-ui);
+    font-weight: 700;
+    line-height: 1.4;
 }
 
-.actions {
-    display: flex;
-    flex-direction: row;
-    justify-content: flex-start;
-    gap: 10px;
+.removeButton:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+.removeButton:focus-visible {
+    outline: 2px solid rgba(239, 68, 68, 0.65);
+    outline-offset: 2px;
+}
+
+.addButton {
+    align-self: flex-start;
+    border: 1px solid var(--border);
+    background: var(--bg-surface);
+    color: var(--text-main);
+    padding: 8px 12px;
+    border-radius: var(--radius-sm, 10px);
+    cursor: pointer;
+    font-family: inherit;
+    font-size: var(--fs-ui);
+    font-weight: 700;
+    line-height: 1.4;
+}
+
+.addButton:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.addButton:focus-visible {
+    outline: none;
+    box-shadow: var(--focus-ring);
 }
 
 .hint {
-    font-size: var(--fs-12, 0.75rem);
-    line-height: var(--lh-normal, 1.5);
-    color: var(--text-muted, rgba(0, 0, 0, 0.65));
+    font-size: var(--fs-caption);
+    line-height: 1.5;
+    color: var(--text-muted);
 }
 
-@media (max-width: 600px) {
-    .row {
-        flex-direction: column;
-        align-items: stretch;
-    }
+.addRow {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+}
 
-    .actions {
-        flex-direction: column;
-        align-items: stretch;
-    }
+.counter {
+    font-size: var(--fs-caption);
+    line-height: 1.5;
+    color: var(--text-muted);
+}
+
+.overLimitWarning {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 8px 12px;
+    border-radius: var(--radius-sm, 10px);
+    border: 1px solid var(--danger, #ef4444);
+    color: var(--danger, #ef4444);
+    font-size: var(--fs-caption);
+    line-height: 1.5;
+    font-weight: 600;
 }

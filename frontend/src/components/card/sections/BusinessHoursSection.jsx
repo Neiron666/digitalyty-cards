@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import Section from "./Section";
+import { WorkHoursIcon } from "../../icons/EditorTabIcons";
 import styles from "./BusinessHoursSection.module.css";
 
 const WEEKDAYS = [
@@ -78,7 +79,7 @@ function normalizeBusinessHours(card) {
 
 export default function BusinessHoursSection({ card, mode }) {
     const data = useMemo(() => normalizeBusinessHours(card), [card]);
-    const initialOpen = mode === "editor" ? false : true;
+    const initialOpen = false;
     const [open, setOpen] = useState(initialOpen);
 
     if (!data) return null;
@@ -98,6 +99,7 @@ export default function BusinessHoursSection({ card, mode }) {
                     aria-expanded={open}
                     onClick={() => setOpen((v) => !v)}
                 >
+                    <WorkHoursIcon className={styles.tabIcon} />
                     <span className={styles.toggleText}>{data.title}</span>
                     <span className={styles.icon} aria-hidden="true" />
                 </button>

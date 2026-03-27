@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import Section from "./Section";
+import { ServicesIcon } from "../../icons/EditorTabIcons";
 import styles from "./ServicesSection.module.css";
 
 function normalizeServices(card) {
@@ -28,7 +29,7 @@ function normalizeServices(card) {
 
 export default function ServicesSection({ card, mode }) {
     const services = useMemo(() => normalizeServices(card), [card]);
-    const initialOpen = mode === "editor" ? false : true;
+    const initialOpen = false;
     const [open, setOpen] = useState(initialOpen);
 
     if (!services) return null;
@@ -48,6 +49,7 @@ export default function ServicesSection({ card, mode }) {
                     aria-expanded={open}
                     onClick={() => setOpen((v) => !v)}
                 >
+                    <ServicesIcon className={styles.tabIcon} />
                     <span className={styles.toggleText}>{services.title}</span>
                     <span className={styles.icon} aria-hidden="true" />
                 </button>

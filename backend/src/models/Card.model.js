@@ -69,9 +69,9 @@ const ServicesSchema = new mongoose.Schema(
                 validator: (arr) => {
                     if (arr === undefined || arr === null) return true;
                     if (!Array.isArray(arr)) return false;
-                    return arr.length <= 20;
+                    return arr.length <= 10;
                 },
-                message: "content.services.items must contain at most 20 items",
+                message: "content.services.items must contain at most 10 items",
             },
         },
     },
