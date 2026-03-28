@@ -1,5 +1,6 @@
 import { verifyToken } from "../utils/jwt.js";
 import User from "../models/User.model.js";
+import { isTokenFresh } from "../utils/isTokenFresh.js";
 
 function denyAdminNotFound(res) {
     // Anti-enumeration: make /api/admin/* indistinguishable from non-existent routes.
@@ -23,8 +24,13 @@ export async function requireAdmin(req, res, next) {
         const userId = payload?.userId;
         if (!userId) return denyAdminNotFound(res);
 
-        const user = await User.findById(userId).select("role");
+        const user = await User.findById(userId).select(
+            "role passwordChangedAt",
+        );
         if (!user || user.role !== "admin") {
+            return denyAdminNotFound(res);
+        }
+        if (!isTokenFresh(payload, user.passwordChangedAt)) {
             return denyAdminNotFound(res);
         }
 

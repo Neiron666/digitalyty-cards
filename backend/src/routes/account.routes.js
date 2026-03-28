@@ -211,7 +211,7 @@ router.post("/change-password", requireAuth, async (req, res) => {
         const newHash = await bcrypt.hash(newPassword, 10);
         const result = await User.updateOne(
             { _id: req.userId },
-            { $set: { passwordHash: newHash } },
+            { $set: { passwordHash: newHash, passwordChangedAt: new Date() } },
         );
 
         if (!result || result.modifiedCount < 1) {

@@ -1,6 +1,8 @@
 import { verifyToken } from "../utils/jwt.js";
+import User from "../models/User.model.js";
+import { isTokenFresh } from "../utils/isTokenFresh.js";
 
-export function requireAuth(req, res, next) {
+export async function requireAuth(req, res, next) {
     const header = req.headers.authorization;
     if (!header) return res.status(401).json({ message: "No token" });
 
@@ -8,6 +10,13 @@ export function requireAuth(req, res, next) {
 
     try {
         const payload = verifyToken(token);
+        const user = await User.findById(payload.userId)
+            .select("passwordChangedAt")
+            .lean();
+        if (!user) return res.status(401).json({ message: "Invalid token" });
+        if (!isTokenFresh(payload, user.passwordChangedAt)) {
+            return res.status(401).json({ message: "Invalid token" });
+        }
         req.userId = payload.userId;
         req.user = { id: payload.userId, userId: payload.userId };
         next();
@@ -16,7 +25,7 @@ export function requireAuth(req, res, next) {
     }
 }
 
-export function optionalAuth(req, res, next) {
+export async function optionalAuth(req, res, next) {
     const header = req.headers.authorization;
     if (!header) return next();
 
@@ -25,10 +34,16 @@ export function optionalAuth(req, res, next) {
 
     try {
         const payload = verifyToken(token);
-        req.userId = payload.userId;
-        req.user = { id: payload.userId, userId: payload.userId };
-        return next();
+        const user = await User.findById(payload.userId)
+            .select("passwordChangedAt")
+            .lean();
+        if (user && isTokenFresh(payload, user.passwordChangedAt)) {
+            req.userId = payload.userId;
+            req.user = { id: payload.userId, userId: payload.userId };
+        }
+        // Stale or missing user: silently drop credentials, proceed as unauthenticated.
     } catch {
-        return next();
+        // Invalid token: silently proceed as unauthenticated.
     }
+    return next();
 }

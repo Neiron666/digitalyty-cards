@@ -20,6 +20,7 @@ import {
 const router = Router();
 
 const RESET_TOKEN_TTL_MS = 30 * 60 * 1000;
+const FORGOT_RESEND_COOLDOWN_MS = 180 * 1000; // 3-minute per-user resend cooldown
 const SIGNUP_TOKEN_TTL_MS = 30 * 60 * 1000;
 const VERIFY_TOKEN_TTL_MS = 24 * 60 * 60 * 1000; // 24h for email verification
 
@@ -306,10 +307,8 @@ router.post("/login", async (req, res) => {
 // FORGOT PASSWORD (anti-enumeration)
 router.post("/forgot", async (req, res) => {
     if (!rateLimitByIp(req, inMemoryForgotRate, FORGOT_RATE_LIMIT)) {
-        return res.status(429).json({
-            code: "RATE_LIMITED",
-            message: "Too many requests",
-        });
+        // Anti-enumeration: return 204 even on IP rate-limit (not distinguishable 429).
+        return res.sendStatus(204);
     }
 
     const rawEmail = req.body?.email;
@@ -330,6 +329,33 @@ router.post("/forgot", async (req, res) => {
     }
 
     if (!user) {
+        return res.sendStatus(204);
+    }
+
+    // DB-backed per-user cooldown: suppress resend if a recent active reset was already
+    // issued for this userId within the last FORGOT_RESEND_COOLDOWN_MS (cross-IP safe).
+    // Fail-closed: any lookup error also suppresses the send (anti-enumeration preserved).
+    try {
+        const cooldownCutoff = new Date(Date.now() - FORGOT_RESEND_COOLDOWN_MS);
+        const recentReset = await PasswordReset.findOne({
+            userId: user._id,
+            usedAt: null,
+            expiresAt: { $gt: new Date() },
+            createdAt: { $gt: cooldownCutoff },
+        })
+            .select("_id")
+            .lean();
+        if (recentReset) {
+            // Cooldown active: suppress silently, anti-enumeration safe.
+            return res.sendStatus(204);
+        }
+    } catch (err) {
+        // Fail-closed: cooldown check error suppresses token create and email send.
+        // Anti-enumeration preserved — still returns generic 204.
+        console.error(
+            "[auth] forgot cooldown check failed",
+            err?.message || err,
+        );
         return res.sendStatus(204);
     }
 
@@ -619,7 +645,7 @@ router.post("/reset", async (req, res) => {
 
     const upd = await User.updateOne(
         { _id: reset.userId },
-        { $set: { passwordHash } },
+        { $set: { passwordHash, passwordChangedAt: new Date() } },
     );
 
     if (!upd?.matchedCount) {

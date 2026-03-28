@@ -68,6 +68,11 @@ const UserSchema = new mongoose.Schema(
         privacyAcceptedAt: { type: Date, default: null },
         termsVersion: { type: String, default: null },
         privacyVersion: { type: String, default: null },
+
+        // Post-password-change JWT invalidation.
+        // Stamped to now() on every successful password reset or change-password.
+        // Null means no password event has occurred — all existing tokens are treated as fresh.
+        passwordChangedAt: { type: Date, default: null },
     },
     { timestamps: true },
 );
