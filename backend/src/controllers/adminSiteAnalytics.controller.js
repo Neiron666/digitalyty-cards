@@ -2,7 +2,7 @@ import SiteAnalyticsDaily from "../models/SiteAnalyticsDaily.model.js";
 import { SITE_CHANNELS } from "../utils/siteAnalyticsSource.util.js";
 import { getSiteAnalyticsDiagnosticsSnapshot } from "./siteAnalytics.controller.js";
 
-const RANGE_ALLOWLIST = new Set([7, 30, 90]);
+const RANGE_ALLOWLIST = new Set([1, 7, 30, 90]);
 
 function utcDayKey(now = new Date()) {
     const y = now.getUTCFullYear();

@@ -5,7 +5,7 @@ import {
 } from "../../services/admin.service";
 import styles from "./AdminAnalyticsView.module.css";
 
-const RANGE_OPTIONS = [7, 30, 90];
+const RANGE_OPTIONS = [1, 7, 30, 90];
 const OPT_OUT_KEY = "siteAnalyticsOptOut";
 
 /** Local human-readable Hebrew labels for analytics action keys. */
@@ -56,6 +56,7 @@ export default function AdminAnalyticsView({ refreshKey = 0 } = {}) {
     const [sources, setSources] = useState(null);
 
     const rangeLabel = useMemo(() => {
+        if (rangeDays === 1) return "היום (UTC)";
         if (rangeDays === 7) return "7 ימים";
         if (rangeDays === 30) return "30 ימים";
         if (rangeDays === 90) return "90 ימים";
@@ -173,7 +174,7 @@ export default function AdminAnalyticsView({ refreshKey = 0 } = {}) {
                                 aria-selected={rangeDays === d}
                                 onClick={() => setRangeDays(d)}
                             >
-                                {d}
+                                {d === 1 ? "היום (UTC)" : d}
                             </button>
                         ))}
                     </div>
@@ -234,7 +235,7 @@ export default function AdminAnalyticsView({ refreshKey = 0 } = {}) {
                             </div>
                         </div>
                     </div>
-                    {today ? (
+                    {today && rangeDays !== 1 ? (
                         <p className={styles.muted}>
                             היום: צפיות {Number(today.views) || 0} · קליקים{" "}
                             {Number(today.clicksTotal) || 0}
