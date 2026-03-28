@@ -237,7 +237,7 @@ export default function SeoHelmet({
                     key={`jsonld-${index}`}
                     type="application/ld+json"
                 >
-                    {JSON.stringify(obj)}
+                    {JSON.stringify(obj).replace(/<\/script>/gi, "<\\/script>")}
                 </script>
             ))}
         </Helmet>

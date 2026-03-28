@@ -365,9 +365,48 @@ const CardSchema = new mongoose.Schema(
 
         contact: {
             // required minimal fields
-            phone: String,
-            whatsapp: String,
-            email: String,
+            phone: {
+                type: String,
+                trim: true,
+                maxlength: 30,
+                validate: {
+                    // Base: digits + safe formatting chars (spaces, -, parens, +, ., *, #, ,).
+                    // Optional structured extension suffix: "x42" or "ext 42" or "ext.42" (digits only).
+                    // No free-form letters allowed anywhere outside the tightly scoped ext suffix.
+                    validator: (v) =>
+                        !v ||
+                        /^\+?[\d\s\-()+.*#,]+(?:\s*(?:x|ext\.?)\s*\d{1,6})?$/i.test(
+                            v,
+                        ),
+                    message: "contact.phone contains invalid characters",
+                },
+            },
+            whatsapp: {
+                type: String,
+                trim: true,
+                maxlength: 20,
+                validate: {
+                    // Digits, optional leading +. No query/path characters allowed.
+                    // Blocks ?text=, /path, &param injection into wa.me/<value>
+                    validator: (v) => !v || /^\+?[\d\s\-()+]{4,20}$/.test(v),
+                    message:
+                        "contact.whatsapp must be a phone number (digits, +, spaces, dashes, parens)",
+                },
+            },
+            email: {
+                type: String,
+                trim: true,
+                maxlength: 254,
+                validate: {
+                    // Rejects mailto-injection vectors: ?, &, <, >, whitespace in address.
+                    // Allows user+tag@domain.com (+ NOT excluded).
+                    validator: (v) =>
+                        !v ||
+                        /^[^\s@<>?&][^@<>?&]*@[^@<>?&]+\.[^@<>?&\s]+$/.test(v),
+                    message:
+                        "contact.email must be a valid email address without query parameters",
+                },
+            },
             website: String,
 
             // extended social/contact links (additive; backward compatible)
@@ -438,14 +477,18 @@ const CardSchema = new mongoose.Schema(
                     validator: (v) => {
                         if (!v) return true;
                         try {
-                            // Allow absolute URLs only
+                            // Allow only http/https absolute URLs (aligns with frontend isValidAbsoluteHttpUrl)
                             const u = new URL(v);
-                            return Boolean(u.protocol && u.host);
+                            return (
+                                u.protocol === "http:" ||
+                                u.protocol === "https:"
+                            );
                         } catch {
                             return false;
                         }
                     },
-                    message: "seo.canonicalUrl must be a valid absolute URL",
+                    message:
+                        "seo.canonicalUrl must be an absolute http:// or https:// URL",
                 },
             },
             robots: {
