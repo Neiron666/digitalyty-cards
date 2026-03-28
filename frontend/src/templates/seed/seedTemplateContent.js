@@ -1,6 +1,5 @@
 const ARRAY_CAPS = {
     gallery: 6,
-    services: 8,
     reviews: 4,
 };
 
@@ -95,7 +94,7 @@ export function seedTemplateContent(card = {}, template) {
         if (path === "gallery") {
             if (Array.isArray(sampleValue)) {
                 const isStringArray = sampleValue.every(
-                    (item) => typeof item === "string"
+                    (item) => typeof item === "string",
                 );
                 if (isStringArray) {
                     const assets = normalizeAssets(sampleValue);
@@ -116,7 +115,7 @@ export function seedTemplateContent(card = {}, template) {
             // Asset-only rule applies ONLY to arrays of strings (string[]) for asset-like fields.
             // Arrays of objects (e.g., socials) must be seeded as-is.
             const containsObject = capped.some(
-                (v) => v !== null && typeof v === "object"
+                (v) => v !== null && typeof v === "object",
             );
             if (containsObject || !isAssetLike) {
                 set(next, path, capped);

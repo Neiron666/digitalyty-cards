@@ -108,9 +108,6 @@ function DesignPanel({
         if (seededCard.reviews !== card.reviews) {
             onFieldChange("reviews", seededCard.reviews);
         }
-        if (seededCard.services !== card.services) {
-            onFieldChange("services", seededCard.services);
-        }
         if (seededCard.cta !== card.cta) {
             onFieldChange("cta", seededCard.cta);
         }
