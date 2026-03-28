@@ -131,6 +131,86 @@ Do not casually reopen closed steps without a bounded reason.
 
 ---
 
+---
+
+## Post-Cycle Hardening — Late March 2026
+
+Four additional bounded security/governance scopes were completed after the primary nine-step cycle. Each followed the same protocol.
+
+### Step 10 — Forgot-Password Abuse Hardening
+
+**Scope:** Prevent spam/abuse on `/auth/forgot` regardless of IP rotation.
+
+**Outcome:**
+
+- Backend-authoritative per-user DB-backed cooldown (180 s): if an active unexpired reset token was already issued within the cooldown window, the new send is suppressed silently and 204 is returned (anti-enumeration preserved).
+- Catch block is fail-closed: any DB error during cooldown check also returns 204 (cannot bypass abuse rail via error injection).
+- IP rate-limit response changed from 429 to 204 (consistent anti-enumeration posture — callers cannot distinguish IP limit from user-not-found).
+- Frontend: 180-second countdown UX after send, spam/junk folder helper hint, button disabled during cooldown.
+
+**Verdict:** CLOSED / PASS
+
+---
+
+### Step 11 — JWT Session Invalidation After Password Change
+
+**Scope:** Existing JWT sessions remain valid after password reset or change-password — stale sessions must be invalidated server-side.
+
+**Outcome:**
+
+- `passwordChangedAt: Date` field added to `User` schema (default `null`; null = no event yet = all tokens fresh — backward-compatible).
+- `backend/src/utils/isTokenFresh.js` helper: compares `payload.iat` against `Math.floor(passwordChangedAt.getTime() / 1000)`. Same-second tokens are FRESH (`iat >= changedAtSec`).
+- `requireAuth` middleware rewritten as async: DB read of `passwordChangedAt` + freshness check; stale tokens → 401.
+- `optionalAuth` middleware: same DB read + freshness check; stale tokens silently drop credentials and fall through (no 401).
+- `requireAdmin` middleware: extended existing `.select("role")` to `.select("role passwordChangedAt")` — zero additional DB round-trip.
+- `/auth/reset` and `/account/change-password` both set `passwordChangedAt: new Date()` on success.
+- Live probe verified: T1 stale after change-password → 401; T2 fresh after re-login → 200; optionalAuth stale → public fallback, no 401/500.
+- Admin: DB read was already in `requireAdmin` (precedent). Static proof via import sanity accepted (no live admin fixture was available in the test environment).
+
+**Verdict:** CLOSED / PASS
+
+---
+
+### Step 12 — Auth Malicious-Input Audit (XSS / NoSQL Injection / Email Injection)
+
+**Scope:** Read-only audit of all auth-related input paths for XSS, operator injection, email header injection, unsafe sinks.
+
+**Outcome:** No P0 or P1 issues found. No Phase 2 fix required.
+
+Key findings proven clean:
+
+- Zero `dangerouslySetInnerHTML` / `innerHTML` in `frontend/src` (grep: 0 matches).
+- All React auth UIs render errors and user-originated values as JSX text nodes — auto-escaped.
+- Mailjet: `TextPart` only across all 4 send functions — no `HtmlPart` anywhere; email body = static prefix + crypto-generated link, no user input interpolated.
+- `normalizeEmail()`: `typeof value !== "string" → ""` — operator objects cannot reach any Mongo query.
+- `typeof password !== "string"` guards on all password-bearing endpoints (login, register, reset, signup-consume, change-password).
+- `String(req.body?.token || "").trim()` coercion on all token endpoints: `{"$gt":""}` → `"[object Object]"` → sha256 lookup fails → 400/204.
+- `consent !== true` strict boolean — object injection cannot satisfy this predicate.
+- Admin search uses `escapeRegExp()` before constructing regex — regex injection mitigated.
+
+One P2 note (non-security): admin email regex search is a full collection scan (no index on `email` regex path) — performance concern only, no security gap.
+
+**Verdict:** CLOSED / PASS (no fix)
+
+---
+
+### Step 13 — PasswordReset Index Governance
+
+**Scope:** PasswordReset documents had no guaranteed live DB indexes. Canonical apply path was absent from `package.json`.
+
+**Outcome:**
+
+- Canonical migration script confirmed: `migrate:user-auth-indexes` (`backend/scripts/migrate-user-auth-indexes.mjs`). This script supersedes the legacy `migrate-passwordreset-indexes.mjs` and covers four indexes: `tokenHash_1` (unique), `userId_1`, `expiresAt_1`, `usedAt_1`.
+- `migrate:user-auth-indexes` added to `backend/package.json`.
+- `backend/README.md` §Index Governance updated with the canonical script entry.
+- `docs/runbooks/auth-forgot-reset-runbook.md` §Index governance rewritten with canonical script, procedure, and explicit TTL-deferred note.
+- **Apply run result:** all four indexes confirmed present in live `passwordresets` collection. Post-check: `POST-CHECK: all critical indexes verified`. Idempotent — zero mutations on apply (indexes were already live).
+- TTL index on `expiresAt`: intentionally deferred (see Deferred section). App-level expiry guard (`expiresAt: { $gt: now }`) remains authoritative for correctness/security regardless of TTL state.
+
+**Verdict:** CLOSED / PASS
+
+---
+
 ## Canonical Decisions Accepted
 
 ### Email ownership ≠ consent
@@ -155,8 +235,10 @@ Consent, legal, and compliance gaps cannot be silently backfilled as "technical 
 
 ### Auth / token retention
 
-- Token TTL indexes and cleanup policy for used/expired rows.
-- Stale unverified users cleanup.
+- PasswordReset operational indexes: **resolved** (Step 13 — live and verified).
+- PasswordReset TTL index (`expireAfterSeconds` on `expiresAt`): still deferred. Expired documents accumulate but are harmless — app-level expiry guard rejects them on every query. Apply via `migrate-passwordreset-indexes.mjs --apply --ttl` when operationally decided.
+- Other token collections (`emailverificationtokens`, `emailsignuptokens`): confirmed live via post-check in Step 13 apply run.
+- Stale unverified users cleanup: still deferred.
 
 ### Consent future work
 
@@ -191,8 +273,12 @@ Consent, legal, and compliance gaps cannot be silently backfilled as "technical 
 | 7    | Analytics / counters governance        | CLOSED / PASS WITH FOLLOW-UP |
 | 8    | Auth runtime hardening                 | CLOSED / PASS                |
 | 9    | Consent / terms / privacy truth        | CLOSED / PASS                |
+| 10   | Forgot-password abuse hardening        | CLOSED / PASS                |
+| 11   | JWT session invalidation               | CLOSED / PASS                |
+| 12   | Auth malicious-input audit             | CLOSED / PASS (no fix)       |
+| 13   | PasswordReset index governance         | CLOSED / PASS                |
 
-**Cycle status: completed and closed at enterprise governance level.**
+**Cycle status: completed and closed at enterprise governance level (Steps 1–13).**
 
 ---
 
@@ -205,4 +291,4 @@ Consent, legal, and compliance gaps cannot be silently backfilled as "technical 
 
 ---
 
-_Last updated: 2026-03-25_
+_Last updated: 2026-03-28 (Steps 10–13 added)_

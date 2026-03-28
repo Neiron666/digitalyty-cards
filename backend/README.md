@@ -48,6 +48,13 @@ Runtime ≠ Sanity ≠ Migration:
     - Dry-run by default. Apply: `npm.cmd run migrate:blogpost-indexes -- --apply`
     - Includes duplicate-slug safety check before creating unique index.
     - Details: `docs/runbooks/docs_blog_seo_og_runbook.md` §10.
+- Migration (`migrate:user-auth-indexes`): **canonical** index-apply path for all auth token collections (`users`, `emailverificationtokens`, `emailsignuptokens`, `passwordresets`).
+    - Covers `passwordresets` indexes: `tokenHash_1` (unique), `userId_1`, `expiresAt_1`, `usedAt_1`.
+    - Dry-run by default. Apply: `npm.cmd run migrate:user-auth-indexes -- --apply`
+    - Includes per-collection duplicate precheck before creating unique index.
+    - Runs post-check after apply to verify all critical unique indexes are present.
+    - **No TTL index is created by default.** TTL on `expiresAt` is a separate operator decision (see `docs/runbooks/auth-forgot-reset-runbook.md` §Index governance).
+    - **Do NOT use `autoIndex`/`autoCreate` as a substitute** — runtime has both disabled by default.
 
 Do NOT run `--apply` automatically in CI.
 

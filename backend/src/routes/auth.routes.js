@@ -296,10 +296,16 @@ router.post("/login", async (req, res) => {
             strength: 2, // case-insensitive
         });
     }
-    if (!user) return res.status(401).json({ message: "Invalid credentials" });
+    if (!user) {
+        console.warn("[auth] login failed", { reason: "bad-credentials" });
+        return res.status(401).json({ message: "Invalid credentials" });
+    }
 
     const ok = await bcrypt.compare(password, user.passwordHash);
-    if (!ok) return res.status(401).json({ message: "Invalid credentials" });
+    if (!ok) {
+        console.warn("[auth] login failed", { reason: "bad-credentials" });
+        return res.status(401).json({ message: "Invalid credentials" });
+    }
 
     res.json({ token: signToken(user._id) });
 });
@@ -346,7 +352,10 @@ router.post("/forgot", async (req, res) => {
             .select("_id")
             .lean();
         if (recentReset) {
-            // Cooldown active: suppress silently, anti-enumeration safe.
+            // Cooldown active: suppress, anti-enumeration safe (204 always).
+            console.info("[auth] forgot suppressed cooldown", {
+                userId: String(user._id),
+            });
             return res.sendStatus(204);
         }
     } catch (err) {

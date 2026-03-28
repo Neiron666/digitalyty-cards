@@ -15,6 +15,10 @@ export async function requireAuth(req, res, next) {
             .lean();
         if (!user) return res.status(401).json({ message: "Invalid token" });
         if (!isTokenFresh(payload, user.passwordChangedAt)) {
+            console.warn("[auth] stale token rejected", {
+                surface: "requireAuth",
+                userId: payload.userId,
+            });
             return res.status(401).json({ message: "Invalid token" });
         }
         req.userId = payload.userId;

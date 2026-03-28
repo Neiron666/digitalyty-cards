@@ -141,12 +141,13 @@ Request a password-reset link. **Anti-enumeration** — always returns 204 regar
 
 **Rate limit**: 20 requests / 10 min per IP.
 
+> **Backend-authoritative abuse cooldown (live):** In addition to the IP rate limit, a per-user DB-backed cooldown of 180 seconds is enforced. If an active unexpired reset token was already issued for the same user within the last 180 s, the re-send is suppressed silently. The catch block is fail-closed — any DB error during the cooldown check also returns 204. The IP rate-limit response is also 204 (not 429) to preserve consistent anti-enumeration posture.
+
 **Responses**:
 
-| Status | Body                                                         | Condition                 |
-| ------ | ------------------------------------------------------------ | ------------------------- |
-| 204    | —                                                            | Always (anti-enumeration) |
-| 429    | `{ "code": "RATE_LIMITED", "message": "Too many requests" }` | Rate limit                |
+| Status | Body | Condition                                                    |
+| ------ | ---- | ------------------------------------------------------------ |
+| 204    | —    | Always (anti-enumeration, including rate limit and cooldown) |
 
 ---
 
@@ -428,6 +429,18 @@ Token consumption uses MongoDB's `findOneAndUpdate` with a `usedAt: null` predic
 - Expiry: **7 days**.
 - No refresh-token mechanism currently implemented.
 
+### JWT session invalidation after password change
+
+All existing JWT sessions are invalidated server-side when a user changes their password via `/auth/reset` or `/account/change-password`.
+
+- Mechanism: `User.passwordChangedAt` (Date, default `null`) is written with `new Date()` on every successful password change.
+- `requireAuth` and `optionalAuth` middlewares perform an async DB read of `passwordChangedAt` and compare against the token's `iat`. Tokens issued before the last password change are rejected (`requireAuth` → 401; `optionalAuth` → silent credential drop, public fallback).
+- `requireAdmin` performs the same check using the existing DB read (no additional query).
+- `null` / absent value means "no change event yet" — all tokens are fresh (backward-compatible with pre-existing accounts).
+- Same-second safety: `iat >= changedAtSec` (tokens issued in the same clock second as the change are FRESH).
+- Helper: `backend/src/utils/isTokenFresh.js`.
+- **Admin coverage note:** static proof via `requireAdmin` code path + import sanity was accepted during verification. Live admin fixture was not available in the test environment at time of audit.
+
 ### bcrypt
 
 - Salt rounds: **10**.
@@ -452,4 +465,4 @@ Version constants are managed in `backend/src/utils/consentVersions.js`; see `do
 
 ---
 
-_Last updated: 2026-03_
+_Last updated: 2026-03-28 (forgot cooldown, JWT session invalidation added)_

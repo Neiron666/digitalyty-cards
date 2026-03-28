@@ -675,6 +675,8 @@ ops notes
 
 If behavior changed meaningfully and docs did not change, the task is not fully done.
 
+Ephemeral artifact cleanup: before closing a workstream, delete any `_tmp_*` probe or verification scripts that are no longer referenced. If a temp script is genuinely reusable, promote it to a proper permanent name. See copilot-instructions.md §1.9 for the full canonical rule.
+
 15) Final Working Rule
 
 Do not search for the fastest path.

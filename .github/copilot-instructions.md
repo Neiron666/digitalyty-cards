@@ -93,6 +93,14 @@ For EVERY task you must follow the 2-phase workflow:
 - Mongo safety: prevent dotted-path injection (`.` / `$`), keep writes bounded (no unbounded key growth).
 - Index governance: runtime must not auto-apply indexes by surprise; drift is detected via sanities; migrations are manual only.
 
+### 1.9 Ephemeral verification artifacts must be deleted before the workstream ends
+
+- Any file created for verification, probing, debugging, dry-runs, or one-off analysis (e.g. `_tmp_*.mjs`, `_tmp_*.ps1`, `_tmp_*.sh`, or any `_tmp_*`-prefixed file) is ephemeral.
+- Before finishing a task, check whether each such file is still referenced anywhere (e.g. `tasks.json`, imports, scripts). If it is not referenced — delete it.
+- Do not leave `_tmp_*` scripts or probe artifacts in `backend/`, `backend/scripts/`, the repo root, or anywhere else in the repo.
+- Output captures (`_tmp_*.txt`, `_tmp_*.json`) are gitignored but must still be cleaned up proactively; do not rely on `.gitignore` as an excuse to leave them.
+- If a temp script proves genuinely reusable, promote it to a properly named permanent file under the correct directory. Never keep a file named `_tmp_*` as a long-term artifact.
+
 ---
 
 ## 2) SSoT & Precedence (when texts disagree)

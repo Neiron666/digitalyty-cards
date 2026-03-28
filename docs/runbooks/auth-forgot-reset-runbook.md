@@ -53,17 +53,62 @@ Rate limiting baseline
 
 Note: in-memory limiter is not shared across instances (enterprise future improvement: Redis/shared limiter).
 
+/auth/forgot abuse hardening (live)
+
+In addition to IP rate limiting, a backend-authoritative per-user DB-backed cooldown is enforced:
+
+- Cooldown window: 180 seconds from creation of the last active unexpired reset token for the same userId.
+- If a recent active token is found, the send is suppressed silently; 204 is returned (anti-enumeration preserved).
+- Catch block is fail-closed: any DB error during cooldown check also returns 204 (error cannot bypass the abuse rail).
+- IP rate-limit response is 204 (not 429): callers cannot distinguish IP limit from user-not-found or cooldown.
+- Frontend client enforces a matching 180-second countdown UX with a spam/junk folder hint.
+
+JWT session invalidation consequence
+
+A successful /auth/reset call sets passwordChangedAt on the user record, which immediately invalidates all existing JWT sessions for that user. Any token with iat < passwordChangedAt.getTime()/1000 will be rejected by requireAuth (401) and silently dropped by optionalAuth on the next authenticated request.
+
 Index governance
 
-Mongoose autoIndex/autoCreate may be off in runtime.
+Mongoose autoIndex/autoCreate are disabled at runtime. PasswordReset indexes must be applied manually via the canonical migration script.
 
-PasswordReset indexes are managed via migration script:
+Canonical script: migrate:user-auth-indexes (backend/scripts/migrate-user-auth-indexes.mjs)
 
-Default is dry-run.
+This script governs indexes for all auth token collections including passwordresets. It creates:
 
-Apply requires explicit --apply.
+- tokenHash_1 (unique) — enforces at DB level that no two reset documents share a hash
+- userId_1 — supports per-user cooldown and invalidation queries
+- expiresAt_1 — supports expire-filter queries
+- usedAt_1 — supports active-token queries
 
-Script handles missing collection safely.
+Operational procedure:
+
+1. Dry-run first (default, safe, read-only):
+   node scripts/migrate-user-auth-indexes.mjs
+   or: npm.cmd run migrate:user-auth-indexes
+
+2. Review output — confirm no BLOCKED messages.
+
+3. Apply (mutates DB — run in a maintenance window):
+   npm.cmd run migrate:user-auth-indexes -- --apply
+
+4. Confirm post-check passes: script prints POST-CHECK: all critical indexes verified.
+
+App-level expiry remains authoritative: even without DB indexes, the application always
+filters on expiresAt: { $gt: now } and usedAt: null before accepting any token. Missing
+indexes are a performance and uniqueness-guarantee gap, not a correctness or security gap.
+
+TTL index decision (deferred):
+
+A MongoDB TTL index on expiresAt (expireAfterSeconds: 0) would allow MongoDB to
+automatically delete expired PasswordReset documents. This is NOT currently applied.
+
+Current state: expired documents accumulate in the collection but are harmless — the
+application-level expiry guard rejects them on every lookup.
+
+To apply TTL in a future maintenance window (separate from the canonical index apply):
+node scripts/migrate-passwordreset-indexes.mjs --apply --ttl
+Note: if expiresAt_1 was already created as a plain index, it must be dropped before
+recreating as a TTL index. Confirm with dry-run first.
 
 Manual smoke (PowerShell + curl.exe)
 

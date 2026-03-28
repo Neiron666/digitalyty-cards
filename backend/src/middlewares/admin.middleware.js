@@ -31,6 +31,10 @@ export async function requireAdmin(req, res, next) {
             return denyAdminNotFound(res);
         }
         if (!isTokenFresh(payload, user.passwordChangedAt)) {
+            console.warn("[auth] stale token rejected", {
+                surface: "requireAdmin",
+                userId,
+            });
             return denyAdminNotFound(res);
         }
 
