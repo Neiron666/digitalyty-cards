@@ -416,7 +416,6 @@ const ADVANCED_SEO_KEYS = new Set([
     "gtmId",
     "gaMeasurementId",
     "metaPixelId",
-    "headSnippets",
     "googleSiteVerification",
     "facebookDomainVerification",
 ]);
@@ -612,6 +611,13 @@ function sanitizeWritablePatch(raw) {
         delete patch.design.coverImagePath;
         delete patch.design.avatarImagePath;
         delete patch.design.logoPath;
+    }
+
+    // seo.headSnippets is a dormant internal field frozen for client writes.
+    // Stored DB values are preserved via the existingSeo spread in the PATCH merge;
+    // only client-supplied mutations are blocked here.
+    if (patch.seo && typeof patch.seo === "object") {
+        delete patch.seo.headSnippets;
     }
 
     return patch;

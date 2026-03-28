@@ -26,6 +26,7 @@ if (SENTRY_DSN) {
                         lower === "authorization" ||
                         lower === "cookie" ||
                         lower === "set-cookie" ||
+                        lower === "x-forwarded-for" ||
                         lower === "x-cardigo-proxy-secret"
                     ) {
                         delete headers[key];

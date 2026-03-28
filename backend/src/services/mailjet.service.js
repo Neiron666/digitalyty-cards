@@ -196,7 +196,6 @@ export async function sendOrgInviteEmailMailjetBestEffort({
                 statusCode: res.statusCode,
                 orgId: String(orgId || ""),
                 inviteId: String(inviteId || ""),
-                toEmail: toEmailNormalized,
             });
         }
 
@@ -205,7 +204,6 @@ export async function sendOrgInviteEmailMailjetBestEffort({
         console.error("[mailjet] invite send error", {
             orgId: String(orgId || ""),
             inviteId: String(inviteId || ""),
-            toEmail: toEmailNormalized,
             error: err?.message || err,
         });
         return { ok: false };
@@ -273,7 +271,6 @@ export async function sendPasswordResetEmailMailjetBestEffort({
                 statusCode: res.statusCode,
                 userId: String(userId || ""),
                 resetId: String(resetId || ""),
-                toEmail: toEmailNormalized,
             });
         }
 
@@ -282,7 +279,6 @@ export async function sendPasswordResetEmailMailjetBestEffort({
         console.error("[mailjet] reset send error", {
             userId: String(userId || ""),
             resetId: String(resetId || ""),
-            toEmail: toEmailNormalized,
             error: err?.message || err,
         });
         return { ok: false };
@@ -348,18 +344,14 @@ export async function sendSignupLinkEmailMailjetBestEffort({
         if (!ok) {
             console.error("[mailjet] signup send failed", {
                 statusCode: res.statusCode,
-                emailNormalized: String(emailNormalized || ""),
                 tokenId: String(tokenId || ""),
-                toEmail: toEmailNormalized,
             });
         }
 
         return { ok };
     } catch (err) {
         console.error("[mailjet] signup send error", {
-            emailNormalized: String(emailNormalized || ""),
             tokenId: String(tokenId || ""),
-            toEmail: toEmailNormalized,
             error: err?.message || err,
         });
         return { ok: false };
@@ -427,7 +419,6 @@ export async function sendVerificationEmailMailjetBestEffort({
                 statusCode: res.statusCode,
                 userId: String(userId || ""),
                 tokenId: String(tokenId || ""),
-                toEmail: toEmailNormalized,
             });
         }
 
@@ -436,7 +427,6 @@ export async function sendVerificationEmailMailjetBestEffort({
         console.error("[mailjet] verify send error", {
             userId: String(userId || ""),
             tokenId: String(tokenId || ""),
-            toEmail: toEmailNormalized,
             error: err?.message || err,
         });
         return { ok: false };

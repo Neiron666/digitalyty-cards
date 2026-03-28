@@ -1,10 +1,16 @@
 export function errorMiddleware(err, req, res, next) {
-    console.error(err);
-
     const isProd =
         String(process.env.NODE_ENV || "")
             .trim()
             .toLowerCase() === "production";
+
+    console.error("[error] unhandled", {
+        name: err?.name || null,
+        message: err?.message || null,
+        code: err?.code || null,
+        statusCode: err?.statusCode || err?.status || null,
+        ...(isProd ? {} : { stack: err?.stack || null }),
+    });
 
     // Production-safe mapping for common user-input errors.
     // Do not leak values; include only stable codes + field paths.

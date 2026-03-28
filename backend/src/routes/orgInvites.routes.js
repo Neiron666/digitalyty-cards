@@ -213,7 +213,6 @@ router.post("/:orgId/invites", requireAuth, async (req, res, next) => {
             console.error("[mailjet] best-effort send failed", {
                 orgId: String(org._id),
                 inviteId: String(created._id),
-                toEmail: email,
                 error: err?.message || err,
             });
         });

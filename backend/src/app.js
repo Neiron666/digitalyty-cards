@@ -171,6 +171,12 @@ if (typeof Sentry.expressErrorHandler === "function") {
     app.use(
         Sentry.expressErrorHandler({
             shouldHandleError(error) {
+                if (
+                    error?.name === "ValidationError" ||
+                    error?.name === "CastError"
+                ) {
+                    return false;
+                }
                 const status = error?.statusCode || error?.status || 500;
                 return status >= 500;
             },

@@ -152,6 +152,19 @@ export function toCardDTO(
           }
         : pickSafeCardFields(cardObj);
 
+    // Governance: headSnippets is a dormant premium feature stub with no frontend renderer.
+    // Strip from public/default DTO to stop schema-shape leakage in public card responses.
+    // Admin/private paths (includePrivate=true) retain the full seo object for support/debug.
+    if (
+        !minimal &&
+        !includePrivate &&
+        base.seo &&
+        typeof base.seo === "object"
+    ) {
+        const { headSnippets: _hs, ...seoWithoutSnippets } = base.seo;
+        base.seo = seoWithoutSnippets;
+    }
+
     const dto = {
         ...base,
         effectiveBilling,
