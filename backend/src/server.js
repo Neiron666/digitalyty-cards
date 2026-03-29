@@ -2,6 +2,7 @@ import "dotenv/config";
 import * as Sentry from "@sentry/node";
 import { connectDB } from "./config/db.js";
 import { startTrialCleanupJob } from "./jobs/trialCleanup.js";
+import { startResetMailWorker } from "./jobs/resetMailWorker.js";
 
 // --- Sentry early init (before Express app loads) ---
 // Must run before app.js is imported so Sentry can instrument Express/http.
@@ -50,6 +51,11 @@ async function start() {
     startTrialCleanupJob({
         intervalMs:
             Number(process.env.TRIAL_CLEANUP_INTERVAL_MS) || 60 * 60 * 1000,
+    });
+
+    // Password-reset mail worker: drains MailJob queue, generates tokens, sends links.
+    startResetMailWorker({
+        intervalMs: Number(process.env.RESET_MAIL_WORKER_INTERVAL_MS) || 60_000,
     });
 
     app.listen(PORT, () => {

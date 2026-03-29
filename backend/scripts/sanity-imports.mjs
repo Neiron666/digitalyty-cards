@@ -75,6 +75,11 @@ async function main() {
             relPath: "src/models/OrganizationMember.model.js",
         },
         { label: "OrgInvite.model", relPath: "src/models/OrgInvite.model.js" },
+        {
+            label: "ActivePasswordReset.model",
+            relPath: "src/models/ActivePasswordReset.model.js",
+        },
+        { label: "MailJob.model", relPath: "src/models/MailJob.model.js" },
     ];
 
     const failures = [];

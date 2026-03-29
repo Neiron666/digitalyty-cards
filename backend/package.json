@@ -15,6 +15,7 @@
         "migrate:aiusagemonthly-indexes": "node scripts/migrate-aiusagemonthly-indexes.mjs",
         "migrate:blogpost-indexes": "node scripts/migrate-blogpost-indexes.mjs",
         "migrate:user-auth-indexes": "node scripts/migrate-user-auth-indexes.mjs",
+        "migrate:active-password-reset-indexes": "node scripts/migrate-active-password-reset-indexes.mjs",
         "sanity:ownership-consistency": "node scripts/sanity-ownership-consistency.mjs",
         "sanity:slug-policy": "node scripts/sanity-slug-policy.mjs",
         "sanity:org-membership": "node scripts/sanity-org-membership.mjs",

@@ -3,13 +3,14 @@ import crypto from "crypto";
 import bcrypt from "bcrypt";
 import User from "../models/User.model.js";
 import PasswordReset from "../models/PasswordReset.model.js";
+import ActivePasswordReset from "../models/ActivePasswordReset.model.js";
+import MailJob from "../models/MailJob.model.js";
 import EmailSignupToken from "../models/EmailSignupToken.model.js";
 import EmailVerificationToken from "../models/EmailVerificationToken.model.js";
 import { signToken } from "../utils/jwt.js";
 import { claimAnonymousCardForUser } from "../services/claimCard.service.js";
 import { requireAuth } from "../middlewares/auth.middleware.js";
 import { getSiteUrl } from "../utils/siteUrl.util.js";
-import { sendPasswordResetEmailMailjetBestEffort } from "../services/mailjet.service.js";
 import { sendSignupLinkEmailMailjetBestEffort } from "../services/mailjet.service.js";
 import { sendVerificationEmailMailjetBestEffort } from "../services/mailjet.service.js";
 import {
@@ -21,6 +22,7 @@ const router = Router();
 
 const RESET_TOKEN_TTL_MS = 30 * 60 * 1000;
 const FORGOT_RESEND_COOLDOWN_MS = 180 * 1000; // 3-minute per-user resend cooldown
+const FORGOT_RESPONSE_FLOOR_MS = 50; // minimum ms before any 204 — closes user-existence timing oracle
 const SIGNUP_TOKEN_TTL_MS = 30 * 60 * 1000;
 const VERIFY_TOKEN_TTL_MS = 24 * 60 * 60 * 1000; // 24h for email verification
 
@@ -312,8 +314,15 @@ router.post("/login", async (req, res) => {
 
 // FORGOT PASSWORD (anti-enumeration)
 router.post("/forgot", async (req, res) => {
+    // Shared floor: every 204 branch awaits this before responding.
+    // Decouples response timing from DB/Mailjet latency — closes user-existence oracle.
+    const floorPromise = new Promise((resolve) =>
+        setTimeout(resolve, FORGOT_RESPONSE_FLOOR_MS),
+    );
+
     if (!rateLimitByIp(req, inMemoryForgotRate, FORGOT_RATE_LIMIT)) {
         // Anti-enumeration: return 204 even on IP rate-limit (not distinguishable 429).
+        await floorPromise;
         return res.sendStatus(204);
     }
 
@@ -322,6 +331,7 @@ router.post("/forgot", async (req, res) => {
 
     // Anti-enumeration: always 204, even for invalid inputs.
     if (!isValidEmail(rawEmail)) {
+        await floorPromise;
         return res.sendStatus(204);
     }
 
@@ -335,101 +345,102 @@ router.post("/forgot", async (req, res) => {
     }
 
     if (!user) {
+        await floorPromise;
         return res.sendStatus(204);
     }
 
-    // DB-backed per-user cooldown: suppress resend if a recent active reset was already
-    // issued for this userId within the last FORGOT_RESEND_COOLDOWN_MS (cross-IP safe).
-    // Fail-closed: any lookup error also suppresses the send (anti-enumeration preserved).
+    // DB-backed per-user cooldown (cross-IP safe).
+    // Suppress if:
+    //   - APR.status === 'active': a usable link has already been delivered to this user.
+    //   - APR.status === 'pending-delivery' AND a live MailJob exists (pipeline in flight).
+    // Do NOT suppress if APR is pending-delivery but no live MailJob — self-heal path.
+    // Fail-closed: any lookup error also suppresses (anti-enumeration preserved).
     try {
         const cooldownCutoff = new Date(Date.now() - FORGOT_RESEND_COOLDOWN_MS);
-        const recentReset = await PasswordReset.findOne({
+        const now = new Date();
+        const recentAPR = await ActivePasswordReset.findOne({
             userId: user._id,
             usedAt: null,
-            expiresAt: { $gt: new Date() },
-            createdAt: { $gt: cooldownCutoff },
+            expiresAt: { $gt: now },
+            status: { $in: ["pending-delivery", "active"] },
+            updatedAt: { $gt: cooldownCutoff },
         })
-            .select("_id")
+            .select("_id status")
             .lean();
-        if (recentReset) {
-            // Cooldown active: suppress, anti-enumeration safe (204 always).
-            console.info("[auth] forgot suppressed cooldown", {
-                userId: String(user._id),
-            });
-            return res.sendStatus(204);
+
+        if (recentAPR) {
+            let shouldSuppress = false;
+
+            if (recentAPR.status === "active") {
+                // A usable reset link was already delivered — suppress the resend.
+                shouldSuppress = true;
+            } else {
+                // pending-delivery: suppress only if a live MailJob is still in flight.
+                const liveJob = await MailJob.findOne({
+                    userId: user._id,
+                    status: { $in: ["pending", "processing"] },
+                    expiresAt: { $gt: now },
+                })
+                    .select("_id")
+                    .lean();
+                shouldSuppress = Boolean(liveJob);
+            }
+
+            if (shouldSuppress) {
+                console.info("[auth] forgot suppressed cooldown", {
+                    userId: String(user._id),
+                    aprStatus: recentAPR.status,
+                });
+                await floorPromise;
+                return res.sendStatus(204);
+            }
+            // No suppression: partial-write self-heal — fall through and re-issue.
         }
     } catch (err) {
-        // Fail-closed: cooldown check error suppresses token create and email send.
+        // Fail-closed: cooldown check error suppresses intent writes and email send.
         // Anti-enumeration preserved — still returns generic 204.
         console.error(
             "[auth] forgot cooldown check failed",
             err?.message || err,
         );
+        await floorPromise;
         return res.sendStatus(204);
     }
 
-    const siteUrl = getSiteUrl();
-
-    // Extremely low collision risk, but retry once on duplicate key just in case.
-    let created = null;
-    for (let attempt = 0; attempt < 2; attempt += 1) {
-        const rawToken = crypto.randomBytes(32).toString("hex");
-        const tokenHash = sha256Hex(rawToken);
-        const expiresAt = new Date(Date.now() + RESET_TOKEN_TTL_MS);
-
-        try {
-            created = await PasswordReset.create({
+    // Persist durable reset intent and durable delivery intent before responding.
+    // Both writes are inside one try/catch. If either fails: fail-silent, return 204.
+    // On partial write (APR ok, MailJob fails): cooldown detects missing MailJob and
+    // allows immediate retry on the next /forgot request.
+    const expiresAt = new Date(Date.now() + RESET_TOKEN_TTL_MS);
+    try {
+        // One-active-per-user: findOneAndReplace atomically supersedes any prior intent.
+        // The unique userId index (applied by migration) enforces the one-active guarantee.
+        await ActivePasswordReset.findOneAndReplace(
+            { userId: user._id },
+            {
                 userId: user._id,
-                tokenHash,
+                status: "pending-delivery",
                 expiresAt,
-            });
-
-            const resetLink = `${siteUrl}/reset-password?token=${encodeURIComponent(
-                rawToken,
-            )}`;
-
-            const sendRes = await sendPasswordResetEmailMailjetBestEffort({
-                toEmail: user.email,
-                resetLink,
-                userId: user._id,
-                resetId: created._id,
-            });
-
-            // Mailer safety: if Mailjet is not configured and the send was skipped,
-            // do NOT invalidate existing tokens (avoid locking the user out of the last working link).
-            const didAttemptSend = !sendRes?.skipped;
-            if (didAttemptSend) {
-                const now = new Date();
-                try {
-                    await PasswordReset.updateMany(
-                        {
-                            userId: user._id,
-                            _id: { $ne: created._id },
-                            usedAt: null,
-                            expiresAt: { $gt: now },
-                        },
-                        { $set: { usedAt: now } },
-                    );
-                } catch (err) {
-                    console.error(
-                        "[auth] forgot invalidate previous tokens failed",
-                        err?.message || err,
-                    );
-                }
-            }
-
-            break;
-        } catch (err) {
-            // Duplicate tokenHash (unlikely): retry once. Any other error: stop.
-            if (err && (err.code === 11000 || err.code === 11001)) {
-                continue;
-            }
-            console.error("[auth] forgot failed", err?.message || err);
-            break;
-        }
+                usedAt: null,
+            },
+            { upsert: true, new: true },
+        );
+        // Durable delivery intent: userId only — no token, no email snapshot.
+        // Worker resolves User.email at send time via indexed findById.
+        await MailJob.create({
+            userId: user._id,
+            status: "pending",
+            attempts: 0,
+            lastAttemptAt: null,
+            expiresAt,
+        });
+    } catch (err) {
+        console.error("[auth] forgot intent write failed", err?.message || err);
+        // Fail-silent: anti-enumeration preserved.
     }
 
     // Best-effort / anti-enumeration: never reveal status.
+    await floorPromise;
     return res.sendStatus(204);
 });
 
@@ -639,12 +650,22 @@ router.post("/reset", async (req, res) => {
     const tokenHash = sha256Hex(rawToken);
     const now = new Date();
 
-    // Atomically mark token as used to prevent reuse.
-    const reset = await PasswordReset.findOneAndUpdate(
-        { tokenHash, usedAt: null, expiresAt: { $gt: now } },
-        { $set: { usedAt: now } },
+    // Primary path: new flow — worker has set tokenHash + status:'active'.
+    let reset = await ActivePasswordReset.findOneAndUpdate(
+        { tokenHash, status: "active", usedAt: null, expiresAt: { $gt: now } },
+        { $set: { usedAt: now, status: "used" } },
         { new: false },
     );
+
+    // Legacy fallback: PasswordReset tokens issued before Slice 2+3 deployment.
+    // All legacy tokens expire within 30 min of the /forgot switch; remove in next cycle.
+    if (!reset) {
+        reset = await PasswordReset.findOneAndUpdate(
+            { tokenHash, usedAt: null, expiresAt: { $gt: now } },
+            { $set: { usedAt: now } },
+            { new: false },
+        );
+    }
 
     if (!reset) {
         return res.status(400).json({ message: "Unable to reset password" });
