@@ -667,7 +667,9 @@ router.post("/reset", async (req, res) => {
         return res.status(400).json({ message: "Unable to reset password" });
     }
     if (password.length < PASSWORD_MIN_LENGTH) {
-        return res.status(400).json({ message: "Unable to reset password" });
+        return res
+            .status(400)
+            .json({ code: "WEAK_PASSWORD", message: "Password too short" });
     }
 
     const tokenHash = sha256Hex(rawToken);

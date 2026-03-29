@@ -32,6 +32,11 @@ export default function ResetPassword() {
             return;
         }
 
+        if (form.password.length < 8) {
+            setError("הסיסמה חייבת להכיל לפחות 8 תווים.");
+            return;
+        }
+
         if (form.password !== form.confirmPassword) {
             setError("הסיסמאות לא תואמות.");
             return;
@@ -42,7 +47,12 @@ export default function ResetPassword() {
             await resetPassword(token, form.password);
             navigate("/login?reset=1", { replace: true });
         } catch (err) {
-            setError("לא ניתן לאפס סיסמה. בקשו קישור חדש.");
+            const code = err?.response?.data?.code;
+            if (code === "WEAK_PASSWORD") {
+                setError("הסיסמה חייבת להכיל לפחות 8 תווים.");
+            } else {
+                setError("לא ניתן לאפס סיסמה. בקשו קישור חדש.");
+            }
         } finally {
             setLoading(false);
         }
