@@ -50,6 +50,8 @@ export default function ResetPassword() {
             const code = err?.response?.data?.code;
             if (code === "WEAK_PASSWORD") {
                 setError("הסיסמה חייבת להכיל לפחות 8 תווים.");
+            } else if (code === "RATE_LIMITED") {
+                setError("נסו שוב בעוד כמה דקות.");
             } else {
                 setError("לא ניתן לאפס סיסמה. בקשו קישור חדש.");
             }
