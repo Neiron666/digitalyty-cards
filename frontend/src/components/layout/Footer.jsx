@@ -71,6 +71,9 @@ export default function Footer() {
                     <Link to="/terms" className={styles.link}>
                         תנאי שימוש
                     </Link>
+                    <Link to="/accessibility-statement" className={styles.link}>
+                        הצהרת נגישות
+                    </Link>
                     <div className={styles.text}>
                         אימייל: cardigo.app@gmail.com
                     </div>

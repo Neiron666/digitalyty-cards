@@ -16,6 +16,7 @@ import Cards from "../pages/Cards";
 // legal
 import Privacy from "../pages/Privacy";
 import Terms from "../pages/Terms";
+import Accessibility from "../pages/Accessibility";
 
 // auth
 import Login from "../pages/Login";
@@ -97,6 +98,7 @@ const router = createBrowserRouter([
             // legal
             { path: "privacy", element: <Privacy /> },
             { path: "terms", element: <Terms /> },
+            { path: "accessibility-statement", element: <Accessibility /> },
 
             // auth
             { path: "login", element: <Login /> },
