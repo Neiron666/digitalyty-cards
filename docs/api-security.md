@@ -39,12 +39,12 @@
         - [JWT session invalidation after password change](#jwt-session-invalidation-after-password-change)
         - [bcrypt](#bcrypt)
         - [Account-creation consent](#account-creation-consent)
-        - [Password-reset: current accepted implementation vs. target design](#password-reset-current-accepted-implementation-vs-target-design)
+        - [Password-reset: implemented runtime design](#password-reset-implemented-runtime-design)
             - [Guiding principle](#guiding-principle)
-            - [Current accepted implementation (as of 2026-03-29)](#current-accepted-implementation-as-of-2026-03-29)
-            - [Target design (not current truth)](#target-design-not-current-truth)
+            - [Current implementation (live as of 2026-03-29)](#current-implementation-live-as-of-2026-03-29)
+            - [Transition: dual-read on /auth/reset (temporary)](#transition-dual-read-on-authreset-temporary)
             - [First-version delivery policy](#first-version-delivery-policy)
-            - [Implementation prerequisites](#implementation-prerequisites)
+            - [DB / index prerequisites (applied 2026-03-29)](#db--index-prerequisites-applied-2026-03-29)
 
 ---
 
@@ -485,53 +485,79 @@ On success, all consent-bearing flows persist: `termsAcceptedAt`, `privacyAccept
 
 Version constants are managed in `backend/src/utils/consentVersions.js`; see `docs/runbooks/auth-registration-consent.md` for operational guidance.
 
-### Password-reset: current accepted implementation vs. target design
+### Password-reset: implemented runtime design
 
 #### Guiding principle
 
 > **Response must wait for durable reset intent and durable delivery intent, but must not wait for external mail transport.**
 
-#### Current accepted implementation (as of 2026-03-29)
+#### Current implementation (live as of 2026-03-29)
 
-`POST /auth/forgot` uses a hybrid approach:
+`POST /auth/forgot` persists two durable DB writes before responding with `204`, then defers all mail transport — including usable token generation — to a background worker (`resetMailWorker`):
 
-1. **Timing floor** — a 50 ms `Promise` (`FORGOT_RESPONSE_FLOOR_MS`) is created at handler entry and awaited before every `204` branch, applying a uniform minimum response floor. All `204` branches are subject to this floor; slower branches (e.g. those with DB round-trips) will naturally exceed it.
-2. **`PasswordReset.create()` is awaited** before the response path continues — the reset token is durably written to MongoDB before the client receives `204`.
-3. **Mailjet send is fire-and-forget** — the handler launches a structured `.then().catch()` background continuation (`sendAndInvalidate`) and does not await it before responding. The `204` response is decoupled from Mailjet transport latency.
-4. **Previous-token invalidation** runs inside the background continuation, gated on `!sendRes?.skipped` (unchanged semantic from the pre-hardening code).
+| Aspect             | Behaviour                                                                                                                                                                          |
+| ------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Reset intent       | `ActivePasswordReset` upserted per-user (`findOneAndReplace`, unique `userId` index) with `status: 'pending-delivery'` — new request atomically replaces prior intent before `204` |
+| Token generation   | `rawToken` (32 random bytes) generated **only in memory** by `resetMailWorker` at delivery time — no plaintext secret ever persisted at any point                                  |
+| Token invalidation | Prior active record atomically replaced by the upsert — no separate invalidation step, no post-response side effect                                                                |
+| Mail delivery      | `MailJob` (`userId` only, no email or token snapshot) persisted before `204` — worker resolves `User.email` at send time via `User.findById`                                       |
+| Transport          | `resetMailWorker` drains `MailJob` queue asynchronously (default: every 60 s, 30 s initial delay)                                                                                  |
+| Response floor     | Uniform 50 ms minimum floor (`FORGOT_RESPONSE_FLOOR_MS`) preserved on all `204` branches                                                                                           |
+| Security invariant | Both durable writes complete before `204` — no security-critical side-effect executes after the response                                                                           |
 
-Together, steps 1 and 3 materially reduce and close the dominant Mailjet-coupled timing oracle: Mailjet transport latency is removed from the response path, and a uniform minimum response floor is applied across all branches.
+**Cooldown semantics (per-user DB-backed, 180 s):**
 
-**Current accepted trade-off:**  
-Previous-token invalidation now completes _after_ the `204` response (rather than before). If the process crashes between the `204` and the background continuation completing, old tokens may not be invalidated. This is accepted given the 3-minute per-user cooldown (`FORGOT_RESEND_COOLDOWN_MS`) which limits the practical exposure window.
+The cooldown queries `ActivePasswordReset` by `updatedAt`. Suppression is status-aware:
 
-#### Target design (not current truth)
+- **Suppress** if `APR.status === 'active'` — a usable link has already been delivered to this user.
+- **Suppress** if `APR.status === 'pending-delivery'` AND a live `MailJob` exists (`status: pending|processing`, not expired) — delivery pipeline is in flight.
+- **Do NOT suppress** if `APR.status === 'pending-delivery'` but no live `MailJob` exists — self-heal path: cooldown allows a retry which replaces the orphaned `APR` and creates a new `MailJob`.
+- **Fail-closed**: any DB error during cooldown check returns `204` without writes (anti-enumeration preserved).
 
-The target design makes all durable security state changes before the response, and defers only external mail transport — including usable token generation — to a background worker:
+**Collections introduced:**
 
-| Aspect             | Target behaviour                                                                                                                      |
-| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------- |
-| Reset intent       | One active reset record per user — new request durably _replaces_ prior reset intent before response (unique `userId` index + upsert) |
-| Token generation   | Usable reset token (`rawToken` + `tokenHash`) generated by worker at delivery time — no plaintext reset secret persisted at any point |
-| Token invalidation | Prior active record atomically replaced by the upsert — no separate invalidation step, no post-response invalidation                  |
-| Mail delivery      | Durable mail job (`userId` only, no email snapshot) persisted before response — worker resolves recipient address at send time        |
-| Transport          | Background worker drains the mail job asynchronously after `204`                                                                      |
-| Response floor     | Uniform minimum floor preserved on all branches                                                                                       |
-| Security invariant | No security-critical side-effect executes after the response                                                                          |
+| Collection             | Purpose                                                                | PII stored                         |
+| ---------------------- | ---------------------------------------------------------------------- | ---------------------------------- |
+| `activepasswordresets` | One-active-per-user reset intent; `tokenHash` set by worker on deliver | `userId` only                      |
+| `mailjobs`             | Durable delivery intent for worker queue                               | `userId` only — no email, no token |
 
-This satisfies the revised guiding principle: response waits for durable reset intent + durable delivery intent (two DB writes), never for external mail transport or token derivation.
+#### Transition: dual-read on /auth/reset (temporary)
+
+`POST /auth/reset` uses a temporary dual-read to support `PasswordReset` tokens issued before the Slice 2+3 cutover:
+
+1. **Primary** — `ActivePasswordReset.findOneAndUpdate({tokenHash, status:'active', ...})`
+2. **Legacy fallback** — `PasswordReset.findOneAndUpdate({tokenHash, ...})` — runs only if primary returns `null`
+
+All existing `PasswordReset` tokens expire within 30 minutes of the `/forgot` cutover (`RESET_TOKEN_TTL_MS = 30 min`). **Deferred cleanup:** remove the fallback read, the `PasswordReset` import from `auth.routes.js`, and `PasswordReset.model.js` in the next release cycle after the window has closed.
 
 #### First-version delivery policy
 
-The first implementation does **not** perform blind automatic retry with a regenerated token when mail-delivery outcome is ambiguous. If the Mailjet response is uncertain (network timeout, non-definitive error), the job is left in a `processing` state for operator inspection rather than immediately regenerating a new `rawToken` and overwriting the prior `tokenHash`. Rationale: regenerating a token on an ambiguous outcome would invalidate a link that may already have been delivered, locking the user out of a working link without certainty.
+The first implementation does **not** perform blind automatic retry with a regenerated token when mail-delivery outcome is ambiguous. If the Mailjet response is uncertain (network timeout, non-definitive error), the `MailJob` is left in `processing` state for operator inspection rather than immediately regenerating a new `rawToken` and overwriting the prior `tokenHash`. Rationale: regenerating a token on an ambiguous outcome would invalidate a link that may already have been delivered, locking the user out of a working link without certainty.
 
-#### Implementation prerequisites
+See `docs/runbooks/auth-forgot-reset-runbook.md` for stuck-job operator guidance.
 
-- **No new external vendor required** — the MongoDB / Express / Mailjet stack provides the necessary primitives; the worker follows the existing `trialCleanup.js` pattern.
-- **Transaction support** is not required: the upsert on `ActivePasswordReset` (unique `userId` index) provides the one-active guarantee without multi-document transactions.
-- The mail job must store `userId` only — no `toEmail` snapshot. The worker resolves `User.email` at send time via indexed `findById`. This handles user-deletion correctly (job abandoned if user not found) and minimises PII surface in the outbox collection.
-- Deployment order: (1) apply `ActivePasswordReset` unique `userId` index + `MailJob` indexes via migration script, (2) deploy updated `/forgot` + `/reset` handlers, (3) register and start `resetMailWorker` in `server.js`.
+#### DB / index prerequisites (applied 2026-03-29)
+
+Migration script: `npm run migrate:active-password-reset-indexes` (`backend/scripts/migrate-active-password-reset-indexes.mjs`)
+
+**`activepasswordresets` indexes:**
+
+| Index                        | Key             | Unique | Note                                                                        |
+| ---------------------------- | --------------- | ------ | --------------------------------------------------------------------------- |
+| `userId_1_unique`            | `{userId:1}`    | yes    | One-active-per-user structural guarantee                                    |
+| `tokenHash_1_partial_unique` | `{tokenHash:1}` | yes    | Partial filter `{tokenHash:{$type:"string"}}` — excludes absent `tokenHash` |
+| `expiresAt_1`                | `{expiresAt:1}` | no     | Worker filter + cleanup                                                     |
+| `status_1`                   | `{status:1}`    | no     | Worker polling                                                              |
+| `usedAt_1`                   | `{usedAt:1}`    | no     | Cleanup / audit                                                             |
+
+**`mailjobs` indexes:**
+
+| Index                  | Key                       | Unique | Note                         |
+| ---------------------- | ------------------------- | ------ | ---------------------------- |
+| `userId_1`             | `{userId:1}`              | no     | Per-user lookup              |
+| `status_1_expiresAt_1` | `{status:1, expiresAt:1}` | no     | Primary worker poll compound |
+| `expiresAt_1`          | `{expiresAt:1}`           | no     | Cleanup sweep                |
 
 ---
 
-_Last updated: 2026-03-29 (forgot cooldown, JWT session invalidation, timing-hardening architecture note added; target design aligned: worker-generated token, userId-only mail job, first-version delivery policy)_
+_Last updated: 2026-03-29 (worker-based runtime cutover applied; dual-read transition recorded; DB indexes applied; cooldown semantics documented; first-version delivery policy confirmed)_

@@ -7,6 +7,7 @@ import { forgotPassword } from "../services/auth.service";
 import styles from "./ForgotPassword.module.css";
 
 const RESEND_COOLDOWN_SEC = 180;
+const COOLDOWN_STORAGE_KEY = "cardigo_forgot_cooldown_until";
 
 export default function ForgotPassword() {
     const [email, setEmail] = useState("");
@@ -22,20 +23,63 @@ export default function ForgotPassword() {
         };
     }, []);
 
-    function startCountdown() {
-        setCountdown(RESEND_COOLDOWN_SEC);
+    function safeWriteCooldown() {
+        try {
+            localStorage.setItem(
+                COOLDOWN_STORAGE_KEY,
+                String(Date.now() + RESEND_COOLDOWN_SEC * 1000),
+            );
+        } catch {
+            // localStorage unavailable (private mode, blocked storage) — graceful degradation.
+        }
+    }
+
+    function safeReadCooldownMs() {
+        try {
+            return Number(localStorage.getItem(COOLDOWN_STORAGE_KEY)) || 0;
+        } catch {
+            return 0;
+        }
+    }
+
+    function safeClearCooldown() {
+        try {
+            localStorage.removeItem(COOLDOWN_STORAGE_KEY);
+        } catch {
+            // ignore
+        }
+    }
+
+    function startCountdown(initialSec = RESEND_COOLDOWN_SEC) {
         if (intervalRef.current) clearInterval(intervalRef.current);
+        setCountdown(initialSec);
         intervalRef.current = setInterval(() => {
             setCountdown((prev) => {
                 if (prev <= 1) {
                     clearInterval(intervalRef.current);
                     intervalRef.current = null;
+                    safeClearCooldown();
                     return 0;
                 }
                 return prev - 1;
             });
         }, 1000);
     }
+
+    // Mount: restore countdown continuity from localStorage if a resend cooldown is still active.
+    // Backend remains source of truth for actual suppression; this is UX continuity only.
+    useEffect(() => {
+        const until = safeReadCooldownMs();
+        const remainingMs = until - Date.now();
+        if (remainingMs > 0) {
+            const remainingSec = Math.ceil(remainingMs / 1000);
+            setDone(true);
+            startCountdown(remainingSec);
+        } else {
+            safeClearCooldown();
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     async function handleSubmit(e) {
         e.preventDefault();
@@ -45,6 +89,7 @@ export default function ForgotPassword() {
         try {
             await forgotPassword(email);
             setDone(true);
+            safeWriteCooldown();
             startCountdown();
         } catch (err) {
             setError("לא ניתן לשלוח קישור כרגע. נסו שוב.");
@@ -91,7 +136,7 @@ export default function ForgotPassword() {
                             </p>
                         ) : (
                             <p className={styles.cooldownHint}>
-                                לא קיבלת? ניתן לשלוח שוב.
+                                לא קיבלת? ניתן לנסות שוב.
                             </p>
                         )}
                     </div>

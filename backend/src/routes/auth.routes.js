@@ -349,52 +349,75 @@ router.post("/forgot", async (req, res) => {
         return res.sendStatus(204);
     }
 
-    // DB-backed per-user cooldown (cross-IP safe).
-    // Suppress if:
-    //   - APR.status === 'active': a usable link has already been delivered to this user.
-    //   - APR.status === 'pending-delivery' AND a live MailJob exists (pipeline in flight).
-    // Do NOT suppress if APR is pending-delivery but no live MailJob — self-heal path.
-    // Fail-closed: any lookup error also suppresses (anti-enumeration preserved).
+    // DB-backed per-user cooldown (cross-IP safe). Fail-closed.
+    // Two independent status-scoped lookups enforce different suppression semantics:
+    //   1. active APR — suppress unconditionally for the full remaining validity window.
+    //      Hotfix: removed updatedAt gate from this branch. The prior single-query approach
+    //      gated active-APR suppression to the 3-minute cooldown window, allowing a second
+    //      /forgot to silently replace (findOneAndReplace) a still-valid APR's tokenHash,
+    //      invalidating the previously emailed link within the 30-minute TTL window.
+    //   2. pending-delivery APR — suppress within the cooldown window AND only when a live
+    //      MailJob is in flight. No live MailJob => self-heal path remains open.
+    // Fail-closed: any DB error during either lookup returns 204 without writes.
     try {
-        const cooldownCutoff = new Date(Date.now() - FORGOT_RESEND_COOLDOWN_MS);
         const now = new Date();
-        const recentAPR = await ActivePasswordReset.findOne({
+
+        // 1. Active APR: a usable link has already been delivered.
+        //    Suppress for the full remaining validity window — no updatedAt gate.
+        const activeAPR = await ActivePasswordReset.findOne({
             userId: user._id,
+            status: "active",
             usedAt: null,
             expiresAt: { $gt: now },
-            status: { $in: ["pending-delivery", "active"] },
-            updatedAt: { $gt: cooldownCutoff },
         })
-            .select("_id status")
+            .select("_id")
             .lean();
 
-        if (recentAPR) {
-            let shouldSuppress = false;
-
-            if (recentAPR.status === "active") {
-                // A usable reset link was already delivered — suppress the resend.
-                shouldSuppress = true;
-            } else {
-                // pending-delivery: suppress only if a live MailJob is still in flight.
-                const liveJob = await MailJob.findOne({
-                    userId: user._id,
-                    status: { $in: ["pending", "processing"] },
-                    expiresAt: { $gt: now },
-                })
-                    .select("_id")
-                    .lean();
-                shouldSuppress = Boolean(liveJob);
-            }
-
-            if (shouldSuppress) {
-                console.info("[auth] forgot suppressed cooldown", {
+        if (activeAPR) {
+            console.info(
+                "[auth] forgot suppressed (active APR in validity window)",
+                {
                     userId: String(user._id),
-                    aprStatus: recentAPR.status,
-                });
+                },
+            );
+            await floorPromise;
+            return res.sendStatus(204);
+        }
+
+        // 2. Pending-delivery APR: delivery pipeline may still be in flight.
+        //    Suppress only within the resend cooldown window AND only if a live MailJob
+        //    exists. No live MailJob => partial-write self-heal — fall through and re-issue.
+        const cooldownCutoff = new Date(Date.now() - FORGOT_RESEND_COOLDOWN_MS);
+        const pendingAPR = await ActivePasswordReset.findOne({
+            userId: user._id,
+            status: "pending-delivery",
+            usedAt: null,
+            expiresAt: { $gt: now },
+            updatedAt: { $gt: cooldownCutoff },
+        })
+            .select("_id")
+            .lean();
+
+        if (pendingAPR) {
+            const liveJob = await MailJob.findOne({
+                userId: user._id,
+                status: { $in: ["pending", "processing"] },
+                expiresAt: { $gt: now },
+            })
+                .select("_id")
+                .lean();
+
+            if (liveJob) {
+                console.info(
+                    "[auth] forgot suppressed (pending-delivery in-flight)",
+                    {
+                        userId: String(user._id),
+                    },
+                );
                 await floorPromise;
                 return res.sendStatus(204);
             }
-            // No suppression: partial-write self-heal — fall through and re-issue.
+            // No live MailJob: partial-write self-heal — fall through and re-issue.
         }
     } catch (err) {
         // Fail-closed: cooldown check error suppresses intent writes and email send.
