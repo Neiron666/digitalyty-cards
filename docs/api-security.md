@@ -188,11 +188,12 @@ Consume a password-reset token and set a new password.
 
 **Responses**:
 
-| Status | Body                                                         | Condition             |
-| ------ | ------------------------------------------------------------ | --------------------- |
-| 204    | —                                                            | Password reset        |
-| 400    | `{ "message": "Unable to reset password" }`                  | Invalid/expired token |
-| 429    | `{ "code": "RATE_LIMITED", "message": "Too many requests" }` | Rate limit            |
+| Status | Body                                                           | Condition                                               |
+| ------ | -------------------------------------------------------------- | ------------------------------------------------------- |
+| 204    | —                                                              | Password reset                                          |
+| 400    | `{ "code": "WEAK_PASSWORD", "message": "Password too short" }` | Password < 8 chars. **Token is NOT consumed.**          |
+| 400    | `{ "message": "Unable to reset password" }`                    | Invalid, expired, or already-used token (no code field) |
+| 429    | `{ "code": "RATE_LIMITED", "message": "Too many requests" }`   | Rate limit                                              |
 
 ---
 
@@ -560,4 +561,4 @@ Migration script: `npm run migrate:active-password-reset-indexes` (`backend/scri
 
 ---
 
-_Last updated: 2026-03-29 (worker-based runtime cutover applied; dual-read transition recorded; DB indexes applied; cooldown semantics documented; first-version delivery policy confirmed)_
+_Last updated: 2026-03-29 (worker-based runtime cutover applied; dual-read transition recorded; DB indexes applied; cooldown semantics documented; first-version delivery policy confirmed; WEAK_PASSWORD validation code added to /reset — token not consumed on short-password failure; /reset UI error mapping now distinguishes WEAK_PASSWORD / RATE_LIMITED / generic-link-invalid)_

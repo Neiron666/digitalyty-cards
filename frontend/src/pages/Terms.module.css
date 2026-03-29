@@ -1,0 +1,70 @@
+/* ══════════════════════════════════════════════════════════
+   Terms — local layout & prose rules
+   Shared premium visual language: public-sections.module.css
+   ══════════════════════════════════════════════════════════ */
+
+/* ── Page root ─────────────────────────────────────────── */
+
+.page {
+    min-height: 60vh;
+}
+
+/* ── Hero overrides ─────────────────────────────────────── */
+
+.heroWrap {
+    padding: 3rem 1.5rem;
+}
+
+.h1 {
+    font-size: var(--fs-hero-title);
+    font-weight: 900;
+    line-height: 1.15;
+    color: #f8fafc;
+    margin: 0 0 0.75rem;
+}
+
+/* ── Legal content ──────────────────────────────────────── */
+
+.legalWrap {
+    width: 95%;
+    max-width: 52rem;
+    margin: 0 auto;
+    text-align: start;
+    display: flex;
+    flex-direction: column;
+    gap: 2.5rem;
+}
+
+.legalBlock {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.legalBlock h2 {
+    font-size: var(--fs-h4);
+    font-weight: 800;
+    color: #0f172a;
+    margin: 0;
+    padding-block-end: 0.5rem;
+    border-block-end: 1px solid rgba(212, 175, 55, 0.2);
+}
+
+.legalBlock p {
+    font-size: var(--fs-body);
+    line-height: 1.85;
+    color: #334155;
+    margin: 0;
+}
+
+/* ── Responsive ─────────────────────────────────────────── */
+
+@media (min-width: 48rem) {
+    .heroWrap {
+        padding: 4rem 3rem;
+    }
+
+    .legalWrap {
+        width: 88%;
+    }
+}
