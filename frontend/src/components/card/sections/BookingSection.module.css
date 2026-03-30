@@ -64,6 +64,71 @@
     padding-block-end: 6px;
 }
 
+/* ── Month navigation row ── */
+
+.calNav {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    padding-block-end: 4px;
+}
+
+.calNavTitle {
+    text-align: center;
+    font-size: var(--fs-16, 1rem);
+    font-weight: 600;
+    color: var(--text-main);
+    /* Prevent character-by-character collapse in flex row (RTL-safe) */
+    white-space: nowrap;
+    flex: 1 1 auto;
+}
+
+.calNavBtn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--border, rgba(0, 0, 0, 0.1));
+    border-radius: 50%;
+    color: var(--text-main);
+    font-size: var(--fs-16, 1rem);
+    line-height: 1;
+    cursor: pointer;
+    transition: border-color 0.15s;
+}
+
+/* Specificity (0,2,0) to override .card-body button (0,1,1) in card-theme */
+.calNav .calNavBtn {
+    width: 1.75rem;
+    height: 1.75rem;
+    background: none;
+    flex-shrink: 0;
+    flex-grow: 0;
+    padding: 0;
+}
+
+/* Specificity (0,2,0) to override .card-body button (0,1,1) in card-theme */
+/* Prevents available-day buttons from stretching to 100% width inside the row */
+.calRow .calCell {
+    width: 0;
+    min-width: 0;
+}
+
+.calNavBtn:hover {
+    border-color: var(--action-bg, #d4af37);
+}
+
+.calNavBtn:focus-visible {
+    outline: 2px solid var(--action-bg, #d4af37);
+    outline-offset: 2px;
+}
+
+.calNavBtn:disabled {
+    opacity: 0.3;
+    cursor: default;
+    pointer-events: none;
+}
+
 .calRow {
     display: flex;
     flex-direction: row;

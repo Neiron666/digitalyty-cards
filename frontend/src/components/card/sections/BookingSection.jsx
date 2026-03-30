@@ -48,36 +48,39 @@ function parseSlotTime(timeStr) {
 }
 
 /**
- * Build a single month-view grid from backend days[].
- * Primary month comes from the first backend day.
- * If the 7-day window overflows into the next month, those cells are
- * appended after the primary month's last day (adjacent-month overflow).
+ * Derive the distinct months (in order) present in the backend days array.
+ * Returns an array of { key: "YYYY-MM", year, month } objects.
  */
-function buildCalendarGrid(days) {
-    if (!days || days.length === 0) return null;
+function deriveMonths(days) {
+    if (!days || days.length === 0) return [];
+    const seen = new Set();
+    const months = [];
+    for (const d of days) {
+        const key = d.dateKeyIl.slice(0, 7); // "YYYY-MM"
+        if (!seen.has(key)) {
+            seen.add(key);
+            const [y, m] = d.dateKeyIl.split("-");
+            months.push({ key, year: Number(y), month: Number(m) });
+        }
+    }
+    return months;
+}
+
+/**
+ * Build a strict single-month grid for the given year+month.
+ * Only days present in the backend days array influence cell state.
+ * Days in the month not present in the backend array render as "outside".
+ * No overflow into adjacent months — one month at a time only.
+ */
+function buildStrictMonthGrid(days, year, month) {
+    if (!days || !year || !month) return null;
 
     const dayMap = new Map();
     for (const d of days) dayMap.set(d.dateKeyIl, d);
 
-    const [py, pm] = days[0].dateKeyIl.split("-");
-    const primaryYear = Number(py);
-    const primaryMonth = Number(pm);
-
-    const daysInPrimary = new Date(primaryYear, primaryMonth, 0).getDate();
-    const firstWeekday = new Date(primaryYear, primaryMonth - 1, 1).getDay();
-
-    // Detect overflow into next month
-    const lastDay = days[days.length - 1];
-    const [ly, lm] = lastDay.dateKeyIl.split("-");
-    const lastYear = Number(ly);
-    const lastMonth = Number(lm);
-    const hasOverflow = lastYear !== primaryYear || lastMonth !== primaryMonth;
-
-    let title = `${MONTH_LABELS[primaryMonth - 1]} ${primaryYear}`;
-    if (hasOverflow) {
-        title += ` – ${MONTH_LABELS[lastMonth - 1]}`;
-        if (lastYear !== primaryYear) title += ` ${lastYear}`;
-    }
+    const daysInMonth = new Date(year, month, 0).getDate();
+    const firstWeekday = new Date(year, month - 1, 1).getDay();
+    const title = `${MONTH_LABELS[month - 1]} ${year}`;
 
     const rows = [];
     let currentRow = [];
@@ -87,11 +90,11 @@ function buildCalendarGrid(days) {
         currentRow.push({ type: "empty" });
     }
 
-    // Primary-month cells
-    for (let day = 1; day <= daysInPrimary; day++) {
-        const mm = String(primaryMonth).padStart(2, "0");
+    // All days in this month — no overflow into adjacent months
+    for (let day = 1; day <= daysInMonth; day++) {
+        const mm = String(month).padStart(2, "0");
         const dd = String(day).padStart(2, "0");
-        const dateKey = `${primaryYear}-${mm}-${dd}`;
+        const dateKey = `${year}-${mm}-${dd}`;
         const backend = dayMap.get(dateKey);
 
         let cellType;
@@ -106,30 +109,7 @@ function buildCalendarGrid(days) {
         }
     }
 
-    // Adjacent-month overflow cells
-    if (hasOverflow) {
-        const overflowDays = days.filter((d) => {
-            const [y, m] = d.dateKeyIl.split("-");
-            return Number(y) !== primaryYear || Number(m) !== primaryMonth;
-        });
-        for (const od of overflowDays) {
-            const dayNum = Number(od.dateKeyIl.split("-")[2]);
-            const cellType = od.isBookable
-                ? "available"
-                : "inWindowUnavailable";
-            currentRow.push({
-                type: cellType,
-                day: dayNum,
-                dateKey: od.dateKeyIl,
-            });
-            if (currentRow.length === 7) {
-                rows.push(currentRow);
-                currentRow = [];
-            }
-        }
-    }
-
-    // Trailing blanks
+    // Trailing blanks to complete last row
     if (currentRow.length > 0) {
         while (currentRow.length < 7) {
             currentRow.push({ type: "empty" });
@@ -157,6 +137,7 @@ export default function BookingSection({ card }) {
     const [loadError, setLoadError] = useState("");
     const [selectedDateKey, setSelectedDateKey] = useState(null);
     const [selectedSlot, setSelectedSlot] = useState(null);
+    const [activeMonthKey, setActiveMonthKey] = useState(null);
 
     const [form, setForm] = useState({
         name: "",
@@ -179,7 +160,7 @@ export default function BookingSection({ card }) {
         setSubmitStatus("idle");
         setSubmitError("");
         try {
-            const data = await getPublicAvailability(cardId, { days: 7 });
+            const data = await getPublicAvailability(cardId, { days: 14 });
             setDays(Array.isArray(data?.days) ? data.days : []);
         } catch (err) {
             const code = err.response?.data?.code;
@@ -218,8 +199,59 @@ export default function BookingSection({ card }) {
             : null;
     const availableSlots = selectedDay?.slots?.filter((s) => s.available) || [];
 
-    // ── Calendar grid (single block) ──
-    const calendarGrid = useMemo(() => buildCalendarGrid(days), [days]);
+    // ── Derived months present in the 14-day window ──
+    const monthList = useMemo(() => deriveMonths(days), [days]);
+
+    // ── Sync active month when fetch completes or resets ──
+    useEffect(() => {
+        setActiveMonthKey(monthList.length > 0 ? monthList[0].key : null);
+    }, [monthList]);
+
+    // ── Active month data + calendar grid (strict single-month) ──
+    const activeMonthData = useMemo(
+        () =>
+            activeMonthKey
+                ? (monthList.find((m) => m.key === activeMonthKey) ?? null)
+                : null,
+        [activeMonthKey, monthList],
+    );
+
+    const calendarGrid = useMemo(
+        () =>
+            activeMonthData
+                ? buildStrictMonthGrid(
+                      days,
+                      activeMonthData.year,
+                      activeMonthData.month,
+                  )
+                : null,
+        [days, activeMonthData],
+    );
+
+    // ── Month navigation (local, between months present in the window) ──
+    const activeMonthIndex = activeMonthKey
+        ? monthList.findIndex((m) => m.key === activeMonthKey)
+        : -1;
+
+    function handlePrevMonth() {
+        if (activeMonthIndex <= 0) return;
+        const prev = monthList[activeMonthIndex - 1];
+        setActiveMonthKey(prev.key);
+        if (selectedDateKey && selectedDateKey.slice(0, 7) !== prev.key) {
+            setSelectedDateKey(null);
+            setSelectedSlot(null);
+        }
+    }
+
+    function handleNextMonth() {
+        if (activeMonthIndex >= monthList.length - 1) return;
+        const next = monthList[activeMonthIndex + 1];
+        setActiveMonthKey(next.key);
+        if (selectedDateKey && selectedDateKey.slice(0, 7) !== next.key) {
+            setSelectedDateKey(null);
+            setSelectedSlot(null);
+        }
+    }
 
     function handleDaySelect(dateKey) {
         const day = days?.find((d) => d.dateKeyIl === dateKey);
@@ -347,10 +379,35 @@ export default function BookingSection({ card }) {
                 בחרו יום ושעה מתאימים, ובעל העסק ייצור איתכם קשר לאישור.
             </p>
 
-            {/* ── Month-view calendar ── */}
+            {/* ── Month-view calendar (strict single-month, local navigation) ── */}
             {calendarGrid && (
                 <div className={styles.calBlock}>
-                    <div className={styles.calTitle}>{calendarGrid.title}</div>
+                    {/* Month navigation row — prev/next only between months in the window */}
+                    <div className={styles.calNav}>
+                        {/* In RTL: ‹ is first DOM child → visual RIGHT → previous month */}
+                        <button
+                            type="button"
+                            className={styles.calNavBtn}
+                            aria-label="חודש קודם"
+                            onClick={handlePrevMonth}
+                            disabled={activeMonthIndex <= 0}
+                        >
+                            ‹
+                        </button>
+                        <span className={styles.calNavTitle}>
+                            {calendarGrid.title}
+                        </span>
+                        {/* In RTL: › is last DOM child → visual LEFT → next month */}
+                        <button
+                            type="button"
+                            className={styles.calNavBtn}
+                            aria-label="חודש הבא"
+                            onClick={handleNextMonth}
+                            disabled={activeMonthIndex >= monthList.length - 1}
+                        >
+                            ›
+                        </button>
+                    </div>
 
                     {/* Weekday headers */}
                     <div className={styles.calRow}>
