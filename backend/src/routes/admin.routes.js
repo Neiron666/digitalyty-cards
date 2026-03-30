@@ -43,6 +43,7 @@ import {
     getAdminSiteAnalyticsSources,
     getAdminSiteAnalyticsSummary,
     getAdminSiteAnalyticsDiagnostics,
+    getAdminSiteAnalyticsVisits,
 } from "../controllers/adminSiteAnalytics.controller.js";
 import {
     getAdminBlogPostById,
@@ -88,6 +89,7 @@ router.get("/analytics/sources", getAdminAnalyticsSources);
 router.get("/site-analytics/summary", getAdminSiteAnalyticsSummary);
 router.get("/site-analytics/sources", getAdminSiteAnalyticsSources);
 router.get("/site-analytics/diagnostics", getAdminSiteAnalyticsDiagnostics);
+router.get("/site-analytics/visits", getAdminSiteAnalyticsVisits);
 
 // safe write actions (no generic patch)
 router.post("/orgs", adminCreateOrganization);

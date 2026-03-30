@@ -1,4 +1,5 @@
 import SiteAnalyticsDaily from "../models/SiteAnalyticsDaily.model.js";
+import SiteAnalyticsVisit from "../models/SiteAnalyticsVisit.model.js";
 import { SITE_CHANNELS } from "../utils/siteAnalyticsSource.util.js";
 import { getSiteAnalyticsDiagnosticsSnapshot } from "./siteAnalytics.controller.js";
 
@@ -261,4 +262,199 @@ export async function getAdminSiteAnalyticsSources(req, res) {
 
 export async function getAdminSiteAnalyticsDiagnostics(req, res) {
     return res.status(200).json(getSiteAnalyticsDiagnosticsSnapshot());
+}
+
+/**
+ * GET /admin/site-analytics/visits?range=<1|7|30|90>
+ *
+ * Visit-level intelligence from SiteAnalyticsVisit.
+ * All unique-visitor counts use DISTINCT deviceHash aggregation —
+ * never derived by summing per-source uniques.
+ */
+export async function getAdminSiteAnalyticsVisits(req, res) {
+    const rangeDays = parseRangeDays(req.query?.range);
+    const siteKey = "main";
+
+    const today = new Date();
+    const endDay = utcDayKey(today);
+    const startDate = addUtcDays(today, -(rangeDays - 1));
+    const startDay = utcDayKey(startDate);
+
+    // Single $facet aggregation — one collection scan, four sub-pipelines.
+    // $match result is shared as input to all four.
+    const [result = {}] = await SiteAnalyticsVisit.aggregate([
+        { $match: { siteKey, day: { $gte: startDay, $lte: endDay } } },
+        {
+            $facet: {
+                // --- visit counts per source ---
+                // One group stage: count visit documents per source.
+                visitCounts: [
+                    {
+                        $group: {
+                            _id: "$source",
+                            visitCount: { $sum: 1 },
+                        },
+                    },
+                    {
+                        $project: {
+                            _id: 0,
+                            source: "$_id",
+                            visitCount: 1,
+                        },
+                    },
+                    { $sort: { visitCount: -1 } },
+                ],
+
+                // --- distinct device counts per source ---
+                // Two-stage: deduplicate {source, deviceHash} pairs first,
+                // then count unique devices per source.
+                // Does NOT materialize a deviceHash array (no $addToSet).
+                uniqueCounts: [
+                    {
+                        $group: {
+                            _id: {
+                                source: "$source",
+                                deviceHash: "$deviceHash",
+                            },
+                        },
+                    },
+                    {
+                        $group: {
+                            _id: "$_id.source",
+                            uniqueCount: { $sum: 1 },
+                        },
+                    },
+                    {
+                        $project: {
+                            _id: 0,
+                            source: "$_id",
+                            uniqueCount: 1,
+                        },
+                    },
+                    { $sort: { uniqueCount: -1 } },
+                ],
+
+                // --- total unique visitors across all sources ---
+                // Two-stage: deduplicate by deviceHash first, then count rows.
+                // Must NOT be derived by summing per-source uniqueCounts
+                // (a device may appear under multiple sources in the range).
+                totalUnique: [
+                    { $group: { _id: "$deviceHash" } },
+                    { $group: { _id: null, count: { $sum: 1 } } },
+                ],
+
+                // --- top important actions per source ---
+                // importantActions is an allowlisted string array per visit doc.
+                // $unwind fans each action out as a separate document,
+                // then groups by {source, action} to count occurrences,
+                // then rolls up top 5 per source.
+                actionsBySource: [
+                    {
+                        $unwind: {
+                            path: "$importantActions",
+                            preserveNullAndEmptyArrays: false,
+                        },
+                    },
+                    {
+                        $group: {
+                            _id: {
+                                source: "$source",
+                                action: "$importantActions",
+                            },
+                            count: { $sum: 1 },
+                        },
+                    },
+                    // Sort so $push inside the next $group accumulates in
+                    // count-desc order within each source.
+                    { $sort: { "_id.source": 1, count: -1 } },
+                    {
+                        $group: {
+                            _id: "$_id.source",
+                            actions: {
+                                $push: {
+                                    action: "$_id.action",
+                                    count: "$count",
+                                },
+                            },
+                        },
+                    },
+                    {
+                        $project: {
+                            _id: 0,
+                            source: "$_id",
+                            topActions: { $slice: ["$actions", 5] },
+                        },
+                    },
+                ],
+
+                // --- top landing pages per source ---
+                // landingPage is first-touch (immutable, $setOnInsert) per visit.
+                // Groups by {source, landingPage}, counts visits, top 5 per source.
+                landingsBySource: [
+                    {
+                        $group: {
+                            _id: {
+                                source: "$source",
+                                landingPage: "$landingPage",
+                            },
+                            count: { $sum: 1 },
+                        },
+                    },
+                    { $sort: { "_id.source": 1, count: -1 } },
+                    {
+                        $group: {
+                            _id: "$_id.source",
+                            landings: {
+                                $push: {
+                                    landingPage: "$_id.landingPage",
+                                    count: "$count",
+                                },
+                            },
+                        },
+                    },
+                    {
+                        $project: {
+                            _id: 0,
+                            source: "$_id",
+                            topLandings: { $slice: ["$landings", 5] },
+                        },
+                    },
+                ],
+            },
+        },
+    ]);
+
+    const totalUniqueVisitors = result?.totalUnique?.[0]?.count ?? 0;
+
+    // visitsBySource: sorted desc by visit count.
+    const visitsBySource = (result?.visitCounts ?? []).map((r) => ({
+        source: r.source,
+        visits: r.visitCount,
+    }));
+
+    // uniquesBySource: DISTINCT deviceHash per source, sorted desc by unique count.
+    // Cross-source DISTINCT is totalUniqueVisitors — do not sum these.
+    const uniquesBySource = (result?.uniqueCounts ?? []).map((r) => ({
+        source: r.source,
+        uniqueVisitors: r.uniqueCount,
+    }));
+
+    // topActionsBySource and topLandingsBySource are keyed by source string
+    // for efficient lookup in the UI layer.
+    const topActionsBySource = Object.fromEntries(
+        (result?.actionsBySource ?? []).map((r) => [r.source, r.topActions]),
+    );
+
+    const topLandingsBySource = Object.fromEntries(
+        (result?.landingsBySource ?? []).map((r) => [r.source, r.topLandings]),
+    );
+
+    return res.json({
+        rangeDays,
+        totalUniqueVisitors,
+        visitsBySource,
+        uniquesBySource,
+        topActionsBySource,
+        topLandingsBySource,
+    });
 }

@@ -1,4 +1,6 @@
+import { createHash } from "node:crypto";
 import SiteAnalyticsDaily from "../models/SiteAnalyticsDaily.model.js";
+import SiteAnalyticsVisit from "../models/SiteAnalyticsVisit.model.js";
 import {
     detectChannel,
     normalizeSource,
@@ -280,6 +282,117 @@ async function bumpPageChannelCount({ siteKey, day, pagePath, channel }) {
     }
 }
 
+// ---------------------------------------------------------------------------
+// Visit-layer helpers
+// ---------------------------------------------------------------------------
+
+/**
+ * Deterministic SHA-256 prefix used for hashing raw client IDs before storage.
+ * Returns the first 16 hex characters of sha256(siteKey + "|" + rawId).
+ * Raw deviceId / visitId are NEVER stored in any collection.
+ */
+function hashHex16(siteKey, rawId) {
+    return createHash("sha256")
+        .update(`${siteKey}|${rawId}`)
+        .digest("hex")
+        .slice(0, 16);
+}
+
+/**
+ * Action keys allowed to accumulate in SiteAnalyticsVisit.importantActions.
+ * Must mirror frontend SITE_ACTIONS in siteAnalytics.actions.js.
+ * Raw / unknown action strings are never written to visit documents.
+ */
+const IMPORTANT_ACTIONS_SET = new Set([
+    "home_hero_primary_register",
+    "home_hero_secondary_examples",
+    "home_templates_cta",
+    "home_bottom_cta",
+    "pricing_trial_start",
+    "pricing_premium_upgrade",
+    "pricing_monthly_start",
+    "pricing_annual_start",
+    "cards_hero_cta",
+    "cards_templates_cta",
+    "cards_bottom_cta",
+    "cards_showcase_card_cta",
+    "cards_showcase_view_all_cta",
+    "contact_email_click",
+    "contact_form_submit",
+    "contact_whatsapp_click",
+]);
+
+/**
+ * Non-blocking visit-layer upsert.
+ * - Skips silently when deviceId or visitId are absent/empty.
+ * - First-touch attribution (channel, source, landingPage, UTM) is immutable
+ *   via $setOnInsert — never overwritten on subsequent events.
+ * - pageViewsCount / clicksCount are incremented per event.
+ * - importantActions accumulates only allowlisted action keys via $addToSet.
+ * - Any failure is swallowed; it must not affect the 204 response.
+ */
+async function tryUpsertVisit({
+    siteKey,
+    day,
+    now,
+    event,
+    action,
+    pagePath,
+    channel,
+    source,
+    referrerHost,
+    utmSource,
+    utmMedium,
+    utmCampaign,
+    utmContent,
+    deviceIdRaw,
+    visitIdRaw,
+}) {
+    try {
+        const deviceId = String(deviceIdRaw || "").trim();
+        const visitId = String(visitIdRaw || "").trim();
+        if (!deviceId || !visitId) return; // missing identity → skip gracefully
+
+        const deviceHash = hashHex16(siteKey, deviceId);
+        const visitHash = hashHex16(siteKey, visitId);
+
+        const $inc = {};
+        if (event === "view") $inc.pageViewsCount = 1;
+        if (event === "click") $inc.clicksCount = 1;
+
+        const update = {
+            $setOnInsert: {
+                siteKey,
+                visitHash,
+                deviceHash,
+                day,
+                startedAt: now,
+                channel: channel || "",
+                source: source || "",
+                landingPage: pagePath || "",
+                referrerHost: referrerHost || "",
+                utmSource: utmSource || "",
+                utmMedium: utmMedium || "",
+                utmCampaign: utmCampaign || "",
+                utmContent: utmContent || "",
+            },
+            $set: { lastSeenAt: now },
+            ...(Object.keys($inc).length ? { $inc } : {}),
+        };
+
+        // Accumulate allowlisted click actions only.
+        if (event === "click" && action && IMPORTANT_ACTIONS_SET.has(action)) {
+            update.$addToSet = { importantActions: action };
+        }
+
+        await SiteAnalyticsVisit.updateOne({ siteKey, visitHash }, update, {
+            upsert: true,
+        });
+    } catch {
+        // Fail-safe: visit-layer failure must never surface to the caller.
+    }
+}
+
 export async function trackSiteAnalytics(req, res) {
     // Never help enumeration; always 204 for most failures.
     try {
@@ -465,6 +578,29 @@ export async function trackSiteAnalytics(req, res) {
 
         await SiteAnalyticsDaily.updateOne({ siteKey, day }, update, {
             upsert: true,
+        });
+
+        // --- Visit-layer upsert: fire-and-forget, truly non-blocking. ---
+        // 204 is sent immediately; the secondary write races independently.
+        // .catch() is mandatory to prevent unhandled promise rejection.
+        tryUpsertVisit({
+            siteKey,
+            day,
+            now,
+            event,
+            action,
+            pagePath,
+            channel,
+            source: normalizedSource,
+            referrerHost,
+            utmSource,
+            utmMedium,
+            utmCampaign,
+            utmContent: safeKey(utm?.content),
+            deviceIdRaw: req.body?.deviceId,
+            visitIdRaw: req.body?.visitId,
+        }).catch(() => {
+            /* swallowed — visit layer must never surface */
         });
 
         return res.sendStatus(204);

@@ -1,4 +1,8 @@
 import { isKnownSiteAction } from "./siteAnalytics.actions";
+import {
+    getOrCreateDeviceId,
+    getOrCreateVisitId,
+} from "./siteAnalyticsIdentity.util";
 import { getUtm } from "./utm.util";
 
 const OPT_OUT_KEY = "siteAnalyticsOptOut";
@@ -113,6 +117,8 @@ export function trackSitePageView({ siteKey = "main" } = {}) {
             pagePath,
             utm: getUtm(),
             ref: document.referrer || "",
+            deviceId: getOrCreateDeviceId(),
+            visitId: getOrCreateVisitId(),
         });
     } catch {
         // ignore
@@ -158,6 +164,8 @@ export function trackSiteClick({
                 pagePath,
                 utm: getUtm(),
                 ref: document.referrer || "",
+                deviceId: getOrCreateDeviceId(),
+                visitId: getOrCreateVisitId(),
             },
             { preferFetch: true },
         );
