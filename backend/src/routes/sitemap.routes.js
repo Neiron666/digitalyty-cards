@@ -20,6 +20,7 @@ const STATIC_PATHS = [
     "/cards",
     "/privacy",
     "/terms",
+    "/accessibility-statement",
 ];
 
 router.get("/sitemap.xml", async (req, res) => {

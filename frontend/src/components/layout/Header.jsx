@@ -4,16 +4,21 @@ import Button from "../ui/Button";
 import { useAuth } from "../../context/AuthContext";
 import { getHasOrgAdmin } from "../../services/orgAdminGate";
 import useUnreadCount from "../../hooks/useUnreadCount";
+import useFocusTrap from "../../hooks/useFocusTrap";
 import styles from "./Header.module.css";
 
 export default function Header() {
     const [mobileOpen, setMobileOpen] = useState(false);
     const [hasOrgAdmin, setHasOrgAdmin] = useState(false);
     const scrollYRef = useRef(0);
+    const burgerRef = useRef(null);
+    const drawerRef = useRef(null);
     const navigate = useNavigate();
     const { token, user, logout } = useAuth();
     const isAuth = Boolean(token);
     const { unreadCount } = useUnreadCount();
+
+    useFocusTrap(drawerRef, mobileOpen);
 
     useEffect(() => {
         if (!token) {
@@ -63,7 +68,16 @@ export default function Header() {
         return items;
     }, [hasOrgAdmin, isAuth, user?.role]);
 
-    const closeMobile = useCallback(() => setMobileOpen(false), []);
+    const closeMobile = useCallback(() => {
+        setMobileOpen(false);
+    }, []);
+
+    // Restore focus to burger button when drawer closes.
+    useEffect(() => {
+        if (!mobileOpen) {
+            burgerRef.current?.focus?.();
+        }
+    }, [mobileOpen]);
 
     // Lock body scroll when mobile drawer is open (iOS-safe body-pinning).
     useEffect(() => {
@@ -147,6 +161,7 @@ export default function Header() {
 
                     {/* Mobile menu toggle */}
                     <button
+                        ref={burgerRef}
                         type="button"
                         className={
                             mobileOpen
@@ -271,6 +286,7 @@ export default function Header() {
                 aria-hidden="true"
             />
             <aside
+                ref={drawerRef}
                 id="mobile-nav"
                 role="dialog"
                 aria-modal={mobileOpen ? "true" : undefined}

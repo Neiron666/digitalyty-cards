@@ -1,6 +1,7 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Cropper from "react-easy-crop";
 import styles from "./CropModal.module.css";
+import useFocusTrap from "../../../hooks/useFocusTrap";
 
 export default function CropModal({
     open,
@@ -14,6 +15,33 @@ export default function CropModal({
     const [crop, setCrop] = useState({ x: 0, y: 0 });
     const [zoom, setZoom] = useState(1);
     const [croppedAreaPixels, setCroppedAreaPixels] = useState(null);
+
+    const dialogRef = useRef(null);
+    const cancelButtonRef = useRef(null);
+
+    useFocusTrap(dialogRef, Boolean(open));
+
+    // Focus the cancel button on open.
+    useEffect(() => {
+        if (!open) return;
+        const t = window.setTimeout(() => {
+            cancelButtonRef.current?.focus?.();
+        }, 0);
+        return () => window.clearTimeout(t);
+    }, [open]);
+
+    // Close on Escape.
+    useEffect(() => {
+        if (!open) return;
+        const onKeyDown = (e) => {
+            if (e.key === "Escape") {
+                e.preventDefault();
+                onCancel?.();
+            }
+        };
+        window.addEventListener("keydown", onKeyDown);
+        return () => window.removeEventListener("keydown", onKeyDown);
+    }, [open, onCancel]);
 
     const safeAspect = useMemo(() => {
         const v = Number(aspect);
@@ -35,6 +63,7 @@ export default function CropModal({
 
     return (
         <div
+            ref={dialogRef}
             className={styles.backdrop}
             role="dialog"
             aria-modal="true"
@@ -47,6 +76,7 @@ export default function CropModal({
                 <div className={styles.header}>
                     <h3 className={styles.title}>{title || "Crop"}</h3>
                     <button
+                        ref={cancelButtonRef}
                         type="button"
                         className={styles.button}
                         onClick={onCancel}

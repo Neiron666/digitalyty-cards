@@ -11,6 +11,7 @@ import formStyles from "../../ui/Form.module.css";
 import styles from "./SeoPanel.module.css";
 import { suggestSeo, fetchAiQuota } from "../../../services/ai.service";
 import AiQuotaHint from "./AiQuotaHint";
+import useFocusTrap from "../../../hooks/useFocusTrap";
 
 // --- localStorage consent (shared with About AI) ----------------------------
 const AI_CONSENT_KEY = "cardigo_ai_about_consent";
@@ -58,6 +59,8 @@ function SeoAiConsentModal({ open, onConfirm, onCancel }) {
     const titleId = useId();
     const bodyId = useId();
     const confirmRef = useRef(null);
+    const dialogRef = useRef(null);
+    useFocusTrap(dialogRef, open);
 
     useEffect(() => {
         if (!open) return;
@@ -81,6 +84,7 @@ function SeoAiConsentModal({ open, onConfirm, onCancel }) {
 
     return (
         <div
+            ref={dialogRef}
             className={styles.consentOverlay}
             role="dialog"
             aria-modal="true"
@@ -126,6 +130,8 @@ function JsonLdOverwriteConfirmModal({ open, onConfirm, onCancel }) {
     const titleId = useId();
     const bodyId = useId();
     const confirmRef = useRef(null);
+    const dialogRef = useRef(null);
+    useFocusTrap(dialogRef, open);
 
     useEffect(() => {
         if (!open) return;
@@ -149,6 +155,7 @@ function JsonLdOverwriteConfirmModal({ open, onConfirm, onCancel }) {
 
     return (
         <div
+            ref={dialogRef}
             className={styles.consentOverlay}
             role="dialog"
             aria-modal="true"

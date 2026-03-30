@@ -1,5 +1,6 @@
 import { useEffect, useId, useRef } from "react";
 import styles from "./ConfirmUnsavedChangesModal.module.css";
+import useFocusTrap from "../../hooks/useFocusTrap";
 
 export default function ConfirmUnsavedChangesModal({
     open,
@@ -16,7 +17,10 @@ export default function ConfirmUnsavedChangesModal({
     const titleId = useId();
     const bodyId = useId();
 
+    const dialogRef = useRef(null);
     const primaryButtonRef = useRef(null);
+
+    useFocusTrap(dialogRef, open);
 
     useEffect(() => {
         if (!open) return;
@@ -47,6 +51,7 @@ export default function ConfirmUnsavedChangesModal({
 
     return (
         <div
+            ref={dialogRef}
             className={styles.backdrop}
             role="dialog"
             aria-modal="true"

@@ -5,6 +5,7 @@ import formStyles from "../../ui/Form.module.css";
 import styles from "./FaqPanel.module.css";
 import { suggestFaq, fetchAiQuota } from "../../../services/ai.service";
 import AiQuotaHint from "./AiQuotaHint";
+import useFocusTrap from "../../../hooks/useFocusTrap";
 
 const MAX_ITEMS = 5;
 
@@ -57,6 +58,8 @@ function AiFaqConsentModal({ open, onConfirm, onCancel }) {
     const titleId = useId();
     const bodyId = useId();
     const confirmRef = useRef(null);
+    const dialogRef = useRef(null);
+    useFocusTrap(dialogRef, open);
 
     useEffect(() => {
         if (!open) return;
@@ -80,6 +83,7 @@ function AiFaqConsentModal({ open, onConfirm, onCancel }) {
 
     return (
         <div
+            ref={dialogRef}
             className={styles.consentOverlay}
             role="dialog"
             aria-modal="true"

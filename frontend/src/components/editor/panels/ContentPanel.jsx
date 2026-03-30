@@ -6,6 +6,7 @@ import formStyles from "../../ui/Form.module.css";
 import styles from "./ContentPanel.module.css";
 import { suggestAbout, fetchAiQuota } from "../../../services/ai.service";
 import AiQuotaHint from "./AiQuotaHint";
+import useFocusTrap from "../../../hooks/useFocusTrap";
 
 // --- localStorage consent key ------------------------------------------------
 const AI_ABOUT_CONSENT_KEY = "cardigo_ai_about_consent";
@@ -55,6 +56,8 @@ function AiConsentModal({ open, onConfirm, onCancel }) {
     const titleId = useId();
     const bodyId = useId();
     const confirmRef = useRef(null);
+    const dialogRef = useRef(null);
+    useFocusTrap(dialogRef, open);
 
     useEffect(() => {
         if (!open) return;
@@ -78,6 +81,7 @@ function AiConsentModal({ open, onConfirm, onCancel }) {
 
     return (
         <div
+            ref={dialogRef}
             className={styles.consentOverlay}
             role="dialog"
             aria-modal="true"
