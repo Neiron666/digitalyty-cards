@@ -152,6 +152,10 @@ export function getAdminSiteAnalyticsSources(params = {}) {
     return api.get("/admin/site-analytics/sources", { params });
 }
 
+export function getAdminSiteAnalyticsVisits(params = {}) {
+    return api.get("/admin/site-analytics/visits", { params });
+}
+
 // Organizations (admin)
 export function listAdminOrganizations(params = {}) {
     return api.get("/admin/orgs", { params });

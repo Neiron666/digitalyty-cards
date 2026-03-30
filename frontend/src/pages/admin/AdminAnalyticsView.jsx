@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import {
     getAdminSiteAnalyticsSources,
     getAdminSiteAnalyticsSummary,
+    getAdminSiteAnalyticsVisits,
 } from "../../services/admin.service";
 import styles from "./AdminAnalyticsView.module.css";
 
@@ -91,6 +92,7 @@ export default function AdminAnalyticsView({ refreshKey = 0 } = {}) {
     const [error, setError] = useState("");
     const [summary, setSummary] = useState(null);
     const [sources, setSources] = useState(null);
+    const [visits, setVisits] = useState(null);
 
     const rangeLabel = useMemo(() => {
         if (rangeDays === 1) return "היום (UTC)";
@@ -102,7 +104,9 @@ export default function AdminAnalyticsView({ refreshKey = 0 } = {}) {
 
     useEffect(() => {
         let alive = true;
-        async function run() {
+
+        // Primary path: summary + sources. Failure here surfaces a page-level error.
+        async function runBase() {
             setLoading(true);
             setError("");
             try {
@@ -127,7 +131,25 @@ export default function AdminAnalyticsView({ refreshKey = 0 } = {}) {
                 setLoading(false);
             }
         }
-        run();
+
+        // Secondary path: visit intelligence. Failure is isolated — only the
+        // visits block degrades; summary/sources are unaffected.
+        async function runVisits() {
+            try {
+                const s3 = await getAdminSiteAnalyticsVisits({
+                    range: rangeDays,
+                });
+                if (!alive) return;
+                setVisits(s3?.data || null);
+            } catch {
+                if (!alive) return;
+                setVisits(null);
+            }
+        }
+
+        runBase();
+        runVisits();
+
         return () => {
             alive = false;
         };
@@ -167,6 +189,44 @@ export default function AdminAnalyticsView({ refreshKey = 0 } = {}) {
     const topActions = Array.isArray(sources?.topActions)
         ? sources.topActions
         : [];
+
+    // Visit intelligence (C4/C5) — derived from /admin/site-analytics/visits
+    const totalUniqueVisitors =
+        typeof visits?.totalUniqueVisitors === "number"
+            ? visits.totalUniqueVisitors
+            : null;
+    const topActionsBySource =
+        visits?.topActionsBySource &&
+        typeof visits.topActionsBySource === "object" &&
+        !Array.isArray(visits.topActionsBySource)
+            ? visits.topActionsBySource
+            : {};
+    const topLandingsBySource =
+        visits?.topLandingsBySource &&
+        typeof visits.topLandingsBySource === "object" &&
+        !Array.isArray(visits.topLandingsBySource)
+            ? visits.topLandingsBySource
+            : {};
+    const visitSourceRows = useMemo(() => {
+        const vbs = Array.isArray(visits?.visitsBySource)
+            ? visits.visitsBySource
+            : [];
+        const ubs = Array.isArray(visits?.uniquesBySource)
+            ? visits.uniquesBySource
+            : [];
+        const uniquesMap = {};
+        for (const r of ubs) {
+            uniquesMap[r.source] = r.uniqueVisitors;
+        }
+        return vbs.map((r) => ({
+            source: r.source,
+            visits: r.visits,
+            uniqueVisitors:
+                uniquesMap[r.source] !== undefined
+                    ? uniquesMap[r.source]
+                    : null,
+        }));
+    }, [visits]);
 
     const formatPct = (value) => {
         const n = Number(value);
@@ -487,6 +547,159 @@ export default function AdminAnalyticsView({ refreshKey = 0 } = {}) {
                             )}
                         </div>
                     </div>
+                </div>
+
+                <div className={styles.block}>
+                    <div className={styles.blockTitle}>ביקורים לפי מקור</div>
+
+                    <div className={styles.kpis}>
+                        <div className={styles.kpiCard}>
+                            <div className={styles.kpiLabel}>
+                                מבקרים (בקירוב)
+                            </div>
+                            <div className={styles.kpiValue}>
+                                {totalUniqueVisitors !== null
+                                    ? totalUniqueVisitors
+                                    : "—"}
+                            </div>
+                            <p className={styles.visitApproxNote}>
+                                כפיל דפדפן בלבד · לא מייצג אנשים · ביקורים
+                                ממקורות שונים עשויים לחפוף
+                            </p>
+                        </div>
+                    </div>
+
+                    {visitSourceRows.length > 0 ? (
+                        <div>
+                            <div className={styles.visitTableHead}>
+                                <span className={styles.visitCellSource}>
+                                    מקור
+                                </span>
+                                <span className={styles.visitCellNum}>
+                                    ביקורים
+                                </span>
+                                <span className={styles.visitCellNum}>
+                                    מבקרים ייחודיים (בקירוב)
+                                </span>
+                            </div>
+                            {visitSourceRows.map((r) => (
+                                <div
+                                    key={r.source}
+                                    className={styles.visitTableRow}
+                                >
+                                    <span className={styles.visitCellSource}>
+                                        {sourceLabel(r.source)}
+                                    </span>
+                                    <span className={styles.visitCellNum}>
+                                        {r.visits}
+                                    </span>
+                                    <span className={styles.visitCellNum}>
+                                        {r.uniqueVisitors !== null
+                                            ? r.uniqueVisitors
+                                            : "—"}
+                                    </span>
+                                </div>
+                            ))}
+                        </div>
+                    ) : !loading && !error ? (
+                        <p className={styles.muted}>
+                            אין נתוני ביקורים לתקופה זו.
+                        </p>
+                    ) : null}
+
+                    {Object.keys(topLandingsBySource).length > 0 && (
+                        <div>
+                            <p className={styles.visitSubTitle}>
+                                עמודי כניסה לפי מקור
+                            </p>
+                            <div className={styles.sourcesGrid}>
+                                {Object.entries(topLandingsBySource).map(
+                                    ([src, pages]) => (
+                                        <div
+                                            key={src}
+                                            className={styles.sourceCard}
+                                        >
+                                            <div className={styles.sourceTitle}>
+                                                {sourceLabel(src)}
+                                            </div>
+                                            <div className={styles.rows}>
+                                                {pages.map((p) => (
+                                                    <div
+                                                        key={p.landingPage}
+                                                        className={styles.row}
+                                                    >
+                                                        <span
+                                                            className={
+                                                                styles.rowKey
+                                                            }
+                                                        >
+                                                            {p.landingPage}
+                                                        </span>
+                                                        <span
+                                                            className={
+                                                                styles.rowVal
+                                                            }
+                                                        >
+                                                            {Number(p.count) ||
+                                                                0}
+                                                        </span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    ),
+                                )}
+                            </div>
+                        </div>
+                    )}
+
+                    {Object.keys(topActionsBySource).length > 0 && (
+                        <div>
+                            <p className={styles.visitSubTitle}>
+                                פעולות לפי מקור
+                            </p>
+                            <div className={styles.sourcesGrid}>
+                                {Object.entries(topActionsBySource).map(
+                                    ([src, actions]) => (
+                                        <div
+                                            key={src}
+                                            className={styles.sourceCard}
+                                        >
+                                            <div className={styles.sourceTitle}>
+                                                {sourceLabel(src)}
+                                            </div>
+                                            <div className={styles.rows}>
+                                                {actions.map((a) => (
+                                                    <div
+                                                        key={a.action}
+                                                        className={styles.row}
+                                                    >
+                                                        <span
+                                                            className={
+                                                                styles.rowKey
+                                                            }
+                                                        >
+                                                            {ACTION_LABELS[
+                                                                a.action
+                                                            ] || a.action}
+                                                        </span>
+                                                        <span
+                                                            className={
+                                                                styles.rowVal
+                                                            }
+                                                        >
+                                                            {Number(a.count) ||
+                                                                0}
+                                                        </span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    ),
+                                )}
+                            </div>
+                        </div>
+                    )}
                 </div>
             </div>
         </section>

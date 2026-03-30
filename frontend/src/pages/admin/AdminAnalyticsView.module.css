@@ -263,3 +263,57 @@
         padding-bottom: 2px;
     }
 }
+
+/* ── Visit intelligence (C5) ── */
+
+.visitApproxNote {
+    margin: 0;
+    font-size: var(--fs-caption);
+    opacity: 0.65;
+    font-style: italic;
+}
+
+.visitSubTitle {
+    margin: 0;
+    font-size: var(--fs-body-sm);
+    font-weight: 900;
+    opacity: 0.85;
+    padding-top: 4px;
+}
+
+.visitTableHead {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    font-size: var(--fs-caption);
+    font-weight: 900;
+    opacity: 0.75;
+    padding-block-end: 4px;
+    border-block-end: 1px solid var(--border);
+}
+
+.visitTableRow {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    padding-block: 4px;
+    border-block-end: 1px solid var(--border);
+}
+
+.visitTableRow:last-child {
+    border-block-end: none;
+}
+
+.visitCellSource {
+    flex: 2 1 0;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.visitCellNum {
+    flex: 1 1 0;
+    min-width: 0;
+    font-weight: 900;
+}
