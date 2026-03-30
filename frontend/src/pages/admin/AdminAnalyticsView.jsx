@@ -20,39 +20,29 @@ const CHANNEL_LABELS = {
     other: "אחר",
 };
 
-/** Known social-platform domains → display name (display hint only, no classification). */
-const SOCIAL_DOMAIN_LABELS = {
-    "facebook.com": "Facebook",
-    "instagram.com": "Instagram",
-    "tiktok.com": "TikTok",
-    "x.com": "X",
-    "twitter.com": "X",
-    "t.co": "X",
-    "linkedin.com": "LinkedIn",
-    "youtube.com": "YouTube",
-    "youtu.be": "YouTube",
+/** Human-readable labels for normalized source keys returned by sourceTop. */
+const SOURCE_LABELS = {
+    facebook: "Facebook",
+    instagram: "Instagram",
+    tiktok: "TikTok",
+    x: "X",
+    linkedin: "LinkedIn",
+    youtube: "YouTube",
+    google: "Google",
+    bing: "Bing",
+    duckduckgo: "DuckDuckGo",
+    yahoo: "Yahoo",
+    direct: "ישיר",
+    ai: "בינה מלאכותית",
+    other_source: "מקור אחר",
 };
 
-function hostToSocialLabel(host) {
-    const h = String(host || "")
-        .toLowerCase()
-        .trim();
-    for (const [domain, label] of Object.entries(SOCIAL_DOMAIN_LABELS)) {
-        if (h === domain || h.endsWith(`.${domain}`)) return label;
-    }
-    return "";
-}
-
-function hostToSearchLabel(host) {
-    const h = String(host || "")
-        .toLowerCase()
-        .trim();
-    if (h.includes("google.")) return "Google";
-    if (h === "bing.com" || h.endsWith(".bing.com")) return "Bing";
-    if (h === "duckduckgo.com" || h.endsWith(".duckduckgo.com"))
-        return "DuckDuckGo";
-    if (h === "search.yahoo.com" || h.endsWith(".yahoo.com")) return "Yahoo";
-    return "";
+function sourceLabel(key) {
+    const k = String(key || "");
+    if (SOURCE_LABELS[k]) return SOURCE_LABELS[k];
+    if (k.startsWith("ext_")) return k.slice(4);
+    if (k.startsWith("utm_")) return `UTM: ${k.slice(4)}`;
+    return k;
 }
 
 /** Local human-readable Hebrew labels for analytics action keys. */
@@ -170,28 +160,13 @@ export default function AdminAnalyticsView({ refreshKey = 0 } = {}) {
     const aiSourcesTop = Array.isArray(sources?.aiSourcesTop)
         ? sources.aiSourcesTop
         : [];
+    const sourceTopRows = Array.isArray(sources?.sourceTop)
+        ? sources.sourceTop
+        : [];
     const topPages = Array.isArray(sources?.topPages) ? sources.topPages : [];
     const topActions = Array.isArray(sources?.topActions)
         ? sources.topActions
         : [];
-
-    /** Sub-hint label per channel key, derived from already-returned referrersTop data. */
-    const channelSubHint = useMemo(() => {
-        const result = {};
-        for (const r of referrersTop) {
-            const host = String(r?.referrer || "")
-                .toLowerCase()
-                .trim();
-            if (!host) continue;
-            const socialLabel = hostToSocialLabel(host);
-            const searchLabel = socialLabel ? "" : hostToSearchLabel(host);
-            if (socialLabel && !result.social) result.social = socialLabel;
-            if (searchLabel && !result.search) result.search = searchLabel;
-            if (!socialLabel && !searchLabel && !result.referral)
-                result.referral = host;
-        }
-        return result;
-    }, [referrersTop]);
 
     const formatPct = (value) => {
         const n = Number(value);
@@ -319,23 +294,36 @@ export default function AdminAnalyticsView({ refreshKey = 0 } = {}) {
                                 <div className={styles.rows}>
                                     {channelsRows.map((r) => (
                                         <div key={r.key} className={styles.row}>
-                                            <span className={styles.rowKeyWrap}>
-                                                <span className={styles.rowKey}>
-                                                    {CHANNEL_LABELS[r.key] ||
-                                                        r.key}
-                                                </span>
-                                                {channelSubHint[r.key] ? (
-                                                    <span
-                                                        className={
-                                                            styles.rowSub
-                                                        }
-                                                    >
-                                                        {channelSubHint[r.key]}
-                                                    </span>
-                                                ) : null}
+                                            <span className={styles.rowKey}>
+                                                {CHANNEL_LABELS[r.key] || r.key}
                                             </span>
                                             <span className={styles.rowVal}>
                                                 {r.count}
+                                            </span>
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <p className={styles.muted}>—</p>
+                            )}
+                        </div>
+
+                        <div className={styles.sourceCard}>
+                            <div className={styles.sourceTitle}>
+                                מקורות מנורמלים
+                            </div>
+                            {sourceTopRows.length ? (
+                                <div className={styles.rows}>
+                                    {sourceTopRows.map((r) => (
+                                        <div
+                                            key={r.source}
+                                            className={styles.row}
+                                        >
+                                            <span className={styles.rowKey}>
+                                                {sourceLabel(r.source)}
+                                            </span>
+                                            <span className={styles.rowVal}>
+                                                {Number(r.count) || 0}
                                             </span>
                                         </div>
                                     ))}

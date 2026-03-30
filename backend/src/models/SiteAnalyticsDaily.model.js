@@ -38,6 +38,11 @@ const SiteAnalyticsDailySchema = new Schema(
         utmMediumCounts: { type: Map, of: Number, default: {} },
         referrerCounts: { type: Map, of: Number, default: {} },
 
+        // Normalized source attribution: one canonical platform key per event
+        // (e.g. facebook, google, direct, ext_<host>, utm_<declared>).
+        // Capped at MAX_BUCKET_KEYS, same bounded-map pattern as other counts.
+        sourceCounts: { type: Map, of: Number, default: {} },
+
         // Site-specific
         pagePathCounts: { type: Map, of: Number, default: {} },
         actionCounts: { type: Map, of: Number, default: {} },

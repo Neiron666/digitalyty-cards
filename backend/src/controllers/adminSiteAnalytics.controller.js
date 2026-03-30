@@ -124,12 +124,13 @@ export async function getAdminSiteAnalyticsSources(req, res) {
         day: { $gte: startDay, $lte: endDay },
     })
         .select(
-            "channelCounts referrerCounts utmSourceCounts utmCampaignCounts utmMediumCounts pagePathCounts actionCounts pageChannelCounts",
+            "channelCounts referrerCounts sourceCounts utmSourceCounts utmCampaignCounts utmMediumCounts pagePathCounts actionCounts pageChannelCounts",
         )
         .lean();
 
     const channelCounts = {};
     const referrerCounts = {};
+    const sourceCounts = {};
     const utmSourceCounts = {};
     const utmCampaignCounts = {};
     const utmMediumCounts = {};
@@ -140,6 +141,7 @@ export async function getAdminSiteAnalyticsSources(req, res) {
     for (const doc of docs) {
         sumInto(channelCounts, doc?.channelCounts);
         sumInto(referrerCounts, doc?.referrerCounts);
+        sumInto(sourceCounts, doc?.sourceCounts);
         sumInto(utmSourceCounts, doc?.utmSourceCounts);
         sumInto(utmCampaignCounts, doc?.utmCampaignCounts);
         sumInto(utmMediumCounts, doc?.utmMediumCounts);
@@ -238,10 +240,16 @@ export async function getAdminSiteAnalyticsSources(req, res) {
 
     channelsByTopPages.sort((a, b) => b.total - a.total);
 
+    const sourceTop = topN(sourceCounts, 10).map((x) => ({
+        source: x.key,
+        count: x.count,
+    }));
+
     return res.json({
         rangeDays,
         channels,
         referrersTop,
+        sourceTop,
         utmSourcesTop,
         campaignsTop,
         aiSourcesTop,

@@ -1,6 +1,7 @@
 import SiteAnalyticsDaily from "../models/SiteAnalyticsDaily.model.js";
 import {
     detectChannel,
+    normalizeSource,
     parseReferrerHost,
     SITE_CHANNEL_SET,
 } from "../utils/siteAnalyticsSource.util.js";
@@ -348,6 +349,14 @@ export async function trackSiteAnalytics(req, res) {
             referrerHost,
         });
 
+        const userAgent = String(req.headers?.["user-agent"] || "");
+        const normalizedSource = normalizeSource({
+            utmSource: utm?.source,
+            utmMedium: utm?.medium,
+            referrerHost,
+            userAgent,
+        });
+
         const $inc = {};
         $inc[`channelCounts.${channel}`] = 1;
 
@@ -428,6 +437,21 @@ export async function trackSiteAnalytics(req, res) {
             });
             const key = ok ? referrerHost : "other_referrer";
             Object.assign($inc, bumpMapUpdate("referrerCounts", key) || {});
+        }
+
+        // sourceCounts (capped) — normalized source attribution
+        {
+            const sourceKey = safeKey(normalizedSource, { maxLen: 40 });
+            if (sourceKey) {
+                const ok = await capMapKeys({
+                    siteKey,
+                    day,
+                    mapField: "sourceCounts",
+                    maxKeys: SiteAnalyticsDaily.MAX_BUCKET_KEYS,
+                });
+                const key = ok ? sourceKey : "other_source";
+                Object.assign($inc, bumpMapUpdate("sourceCounts", key) || {});
+            }
         }
 
         const update = {
