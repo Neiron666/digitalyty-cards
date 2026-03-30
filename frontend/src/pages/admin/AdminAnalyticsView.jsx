@@ -8,6 +8,53 @@ import styles from "./AdminAnalyticsView.module.css";
 const RANGE_OPTIONS = [1, 7, 30, 90];
 const OPT_OUT_KEY = "siteAnalyticsOptOut";
 
+/** Hebrew display labels for channel machine keys. */
+const CHANNEL_LABELS = {
+    direct: "ישיר",
+    social: "רשתות חברתיות",
+    referral: "הפניה",
+    search: "חיפוש",
+    email: "אימייל",
+    paid: "ממומן",
+    ai: "בינה מלאכותית (AI)",
+    other: "אחר",
+};
+
+/** Known social-platform domains → display name (display hint only, no classification). */
+const SOCIAL_DOMAIN_LABELS = {
+    "facebook.com": "Facebook",
+    "instagram.com": "Instagram",
+    "tiktok.com": "TikTok",
+    "x.com": "X",
+    "twitter.com": "X",
+    "t.co": "X",
+    "linkedin.com": "LinkedIn",
+    "youtube.com": "YouTube",
+    "youtu.be": "YouTube",
+};
+
+function hostToSocialLabel(host) {
+    const h = String(host || "")
+        .toLowerCase()
+        .trim();
+    for (const [domain, label] of Object.entries(SOCIAL_DOMAIN_LABELS)) {
+        if (h === domain || h.endsWith(`.${domain}`)) return label;
+    }
+    return "";
+}
+
+function hostToSearchLabel(host) {
+    const h = String(host || "")
+        .toLowerCase()
+        .trim();
+    if (h.includes("google.")) return "Google";
+    if (h === "bing.com" || h.endsWith(".bing.com")) return "Bing";
+    if (h === "duckduckgo.com" || h.endsWith(".duckduckgo.com"))
+        return "DuckDuckGo";
+    if (h === "search.yahoo.com" || h.endsWith(".yahoo.com")) return "Yahoo";
+    return "";
+}
+
 /** Local human-readable Hebrew labels for analytics action keys. */
 const ACTION_LABELS = {
     home_hero_primary_register: "לחיצה על הכפתור הראשי בכותרת הבית",
@@ -127,6 +174,24 @@ export default function AdminAnalyticsView({ refreshKey = 0 } = {}) {
     const topActions = Array.isArray(sources?.topActions)
         ? sources.topActions
         : [];
+
+    /** Sub-hint label per channel key, derived from already-returned referrersTop data. */
+    const channelSubHint = useMemo(() => {
+        const result = {};
+        for (const r of referrersTop) {
+            const host = String(r?.referrer || "")
+                .toLowerCase()
+                .trim();
+            if (!host) continue;
+            const socialLabel = hostToSocialLabel(host);
+            const searchLabel = socialLabel ? "" : hostToSearchLabel(host);
+            if (socialLabel && !result.social) result.social = socialLabel;
+            if (searchLabel && !result.search) result.search = searchLabel;
+            if (!socialLabel && !searchLabel && !result.referral)
+                result.referral = host;
+        }
+        return result;
+    }, [referrersTop]);
 
     const formatPct = (value) => {
         const n = Number(value);
@@ -254,8 +319,20 @@ export default function AdminAnalyticsView({ refreshKey = 0 } = {}) {
                                 <div className={styles.rows}>
                                     {channelsRows.map((r) => (
                                         <div key={r.key} className={styles.row}>
-                                            <span className={styles.rowKey}>
-                                                {r.key}
+                                            <span className={styles.rowKeyWrap}>
+                                                <span className={styles.rowKey}>
+                                                    {CHANNEL_LABELS[r.key] ||
+                                                        r.key}
+                                                </span>
+                                                {channelSubHint[r.key] ? (
+                                                    <span
+                                                        className={
+                                                            styles.rowSub
+                                                        }
+                                                    >
+                                                        {channelSubHint[r.key]}
+                                                    </span>
+                                                ) : null}
                                             </span>
                                             <span className={styles.rowVal}>
                                                 {r.count}
