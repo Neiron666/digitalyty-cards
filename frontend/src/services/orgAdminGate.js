@@ -1,20 +1,20 @@
 // frontend/src/services/orgAdminGate.js
 // Enterprise UX-gate for org-admin surfaces.
 // - SSoT: backend GET /api/orgs/mine (myRole/myStatus).
-// - Cache keyed by JWT token to avoid duplicate requests per session.
+// - Cache keyed by user identifier (email) to avoid duplicate requests per session.
 // - Allow only myRole === "admin" (backend role enum: member|admin).
 // - If myStatus exists -> must be "active"; if absent -> allow (back-compat).
 // - Transient errors (offline/5xx/429) must NOT stick deny forever.
 
 import api from "./api";
 
-let cachedToken = null; // string | null
+let cachedUserId = null; // string | null
 let cachedPromise = null; // Promise<boolean> | null
 let cachedValue = null; // boolean | null
 
-function normalizeToken(token) {
-    if (typeof token !== "string") return null;
-    const t = token.trim();
+function normalizeUserId(userId) {
+    if (typeof userId !== "string") return null;
+    const t = userId.trim();
     return t ? t : null;
 }
 
@@ -70,20 +70,20 @@ function computeHasOrgAdmin(orgs) {
     });
 }
 
-export async function getHasOrgAdmin({ token, signal } = {}) {
-    const nextToken = normalizeToken(token);
+export async function getHasOrgAdmin({ userId, signal } = {}) {
+    const nextUserId = normalizeUserId(userId);
 
-    // No token => reset cache, deny
-    if (!nextToken) {
-        cachedToken = null;
+    // No userId => reset cache, deny
+    if (!nextUserId) {
+        cachedUserId = null;
         cachedPromise = null;
         cachedValue = null;
         return false;
     }
 
-    // Token changed => reset cache
-    if (cachedToken !== nextToken) {
-        cachedToken = nextToken;
+    // UserId changed => reset cache
+    if (cachedUserId !== nextUserId) {
+        cachedUserId = nextUserId;
         cachedPromise = null;
         cachedValue = null;
     }
@@ -94,11 +94,8 @@ export async function getHasOrgAdmin({ token, signal } = {}) {
     // Return in-flight promise
     if (cachedPromise) return cachedPromise;
 
-    // IMPORTANT: tie the request to the passed token explicitly
-    const headers = { Authorization: `Bearer ${nextToken}` };
-
     cachedPromise = api
-        .get("/orgs/mine", { signal, headers })
+        .get("/orgs/mine", { signal })
         .then((res) => {
             const orgs = extractOrgs(res?.data);
             const allowed = computeHasOrgAdmin(orgs);
@@ -110,7 +107,7 @@ export async function getHasOrgAdmin({ token, signal } = {}) {
 
             // canceled/unmount => don't cache anything
             if (isCanceled(err)) {
-                if (cachedToken === nextToken) {
+                if (cachedUserId === nextUserId) {
                     cachedValue = null;
                     cachedPromise = null;
                 }

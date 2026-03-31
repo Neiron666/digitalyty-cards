@@ -1,14 +1,12 @@
 import { useMemo, useState } from "react";
-import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import AuthLayout from "../components/auth/AuthLayout";
 import Input from "../components/ui/Input";
 import Button from "../components/ui/Button";
-import api from "../services/api";
 import { consumeSignupToken } from "../services/auth.service";
 import styles from "./SignupConsume.module.css";
 
 export default function SignupConsume() {
-    const navigate = useNavigate();
     const [searchParams] = useSearchParams();
 
     const token = useMemo(() => {
@@ -61,10 +59,7 @@ export default function SignupConsume() {
                 return;
             }
 
-            localStorage.setItem("token", jwt);
-            api.defaults.headers.common.Authorization = `Bearer ${jwt}`;
-
-            navigate("/edit", { replace: true });
+            window.location.replace("/edit");
         } catch {
             setError("לא ניתן להשלים הרשמה. בקשו קישור חדש.");
         } finally {

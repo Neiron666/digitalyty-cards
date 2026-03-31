@@ -14,8 +14,9 @@ function normalizeApiBaseUrl(raw) {
 
 const api = axios.create({
     baseURL: normalizeApiBaseUrl(
-        import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api"
+        import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api",
     ),
+    withCredentials: true,
 });
 
 api.defaults.headers.common.Accept = "application/json";
@@ -65,11 +66,11 @@ function uuidV4() {
     bytes[8] = (bytes[8] & 0x3f) | 0x80;
 
     const hex = Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join(
-        ""
+        "",
     );
     return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(
         12,
-        16
+        16,
     )}-${hex.slice(16, 20)}-${hex.slice(20)}`;
 }
 

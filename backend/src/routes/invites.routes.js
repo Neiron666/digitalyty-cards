@@ -17,6 +17,15 @@ import {
 
 const router = Router();
 
+const AUTH_COOKIE_NAME = "__Host-cardigo_auth";
+const AUTH_COOKIE_OPTIONS = {
+    httpOnly: true,
+    secure: true,
+    sameSite: "lax",
+    path: "/",
+    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days in ms — matches JWT expiresIn:"7d"
+};
+
 function normalizeEmail(value) {
     if (typeof value !== "string") return "";
     return value.trim().toLowerCase();
@@ -208,8 +217,10 @@ router.post("/accept", optionalAuth, async (req, res) => {
         console.error("[audit] invite accept failed", err?.message || err);
     }
 
+    const acceptToken = signToken(user._id);
+    res.cookie(AUTH_COOKIE_NAME, acceptToken, AUTH_COOKIE_OPTIONS);
     return res.json({
-        token: signToken(user._id),
+        token: acceptToken,
         orgId: String(org._id),
         orgSlug: String(org.slug || "")
             .trim()

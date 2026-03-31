@@ -4,17 +4,16 @@ import {
     login as loginRequest,
     register as registerRequest,
     getMe,
+    logout as logoutRequest,
 } from "../services/auth.service";
 
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
-    // ✅ sync hydration: token is available on first render
-    const [token, setToken] = useState(() => localStorage.getItem("token"));
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
 
-    const isAuthenticated = Boolean(token);
+    const isAuthenticated = Boolean(user);
 
     async function loadMeSafely() {
         try {
@@ -27,9 +26,8 @@ export function AuthProvider({ children }) {
         } catch (err) {
             const status = err?.response?.status;
             if (status === 401) {
-                localStorage.removeItem("token");
-                applyToken(null);
-                setToken(null);
+                localStorage.removeItem("token"); // transition cleanup
+                delete api.defaults.headers.common.Authorization;
                 setUser(null);
                 return;
             }
@@ -38,62 +36,52 @@ export function AuthProvider({ children }) {
         }
     }
 
-    function applyToken(nextToken) {
-        if (nextToken) {
-            api.defaults.headers.common.Authorization = `Bearer ${nextToken}`;
-            return;
-        }
-        delete api.defaults.headers.common.Authorization;
-    }
-
-    // ✅ keep axios defaults in sync with token state (single source of truth)
+    // Bootstrap: verify active session via httpOnly cookie.
     useEffect(() => {
-        if (token) {
-            applyToken(token);
-            // non-blocking: do not block UI rendering on /me
-            queueMicrotask(() => {
-                loadMeSafely();
-            });
-        } else {
-            applyToken(null);
-            setUser(null);
+        async function bootstrap() {
+            try {
+                const me = await getMe();
+                setUser({
+                    email: me?.email,
+                    role: me?.role,
+                    isVerified: Boolean(me?.isVerified),
+                });
+            } catch {
+                setUser(null);
+            }
+            setLoading(false);
         }
-
-        // children may render after first sync
-        setLoading(false);
+        bootstrap();
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [token]);
+    }, []);
 
     async function login(email, password) {
-        const res = await loginRequest(email, password);
-        const nextToken = res.data.token;
-
-        localStorage.setItem("token", nextToken);
-        applyToken(nextToken); // sync: ensure immediate auth for requests after await login
-        setToken(nextToken); // effect will sync axios + loadMe
-        setUser(null);
+        await loginRequest(email, password);
+        localStorage.removeItem("token"); // transition cleanup
+        await loadMeSafely();
     }
 
-    async function register(email, password) {
-        const res = await registerRequest(email, password);
-        const nextToken = res.data.token;
-
-        localStorage.setItem("token", nextToken);
-        applyToken(nextToken); // sync: ensure immediate auth for requests after await register
-        setToken(nextToken); // effect will sync axios + loadMe
-        setUser(null);
+    async function register(email, password, consent) {
+        const res = await registerRequest(email, password, consent);
+        localStorage.removeItem("token"); // transition cleanup
+        return res;
     }
 
-    function logout() {
-        localStorage.removeItem("token");
-        applyToken(null);
-        setToken(null); // effect will clear axios defaults
+    async function logout() {
+        try {
+            await logoutRequest();
+        } catch {
+            // Best effort — clear local session regardless
+        }
+        localStorage.removeItem("token"); // transition cleanup
+        delete api.defaults.headers.common.Authorization;
         setUser(null);
     }
 
     const value = useMemo(
-        () => ({ token, user, isAuthenticated, login, register, logout }),
-        [token, user, isAuthenticated],
+        () => ({ user, isAuthenticated, login, register, logout }),
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+        [user, isAuthenticated],
     );
 
     return (

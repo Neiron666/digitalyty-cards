@@ -4,10 +4,12 @@ import AuthLayout from "../components/auth/AuthLayout";
 import Input from "../components/ui/Input";
 import Button from "../components/ui/Button";
 import api from "../services/api";
+import { useAuth } from "../context/AuthContext";
 import styles from "./InviteAccept.module.css";
 
 function InviteAccept() {
     const location = useLocation();
+    const { isAuthenticated } = useAuth();
 
     const token = useMemo(() => {
         const raw = String(location?.search || "");
@@ -32,8 +34,7 @@ function InviteAccept() {
 
     // Branch signal: new-user vs existing-user.
     // Drives password-entry, consent visibility, consent validation, and payload shape.
-    const existingJwt = String(localStorage.getItem("token") || "").trim();
-    const isNewUser = !existingJwt;
+    const isNewUser = !isAuthenticated;
 
     async function handleSubmit(e) {
         e.preventDefault();
@@ -45,16 +46,7 @@ function InviteAccept() {
             return;
         }
 
-        const existingJwt = String(localStorage.getItem("token") || "").trim();
-        const isLoggedIn = Boolean(existingJwt);
-
-        if (
-            isLoggedIn &&
-            (!api.defaults.headers.common.Authorization ||
-                String(api.defaults.headers.common.Authorization).trim() === "")
-        ) {
-            api.defaults.headers.common.Authorization = `Bearer ${existingJwt}`;
-        }
+        const isLoggedIn = isAuthenticated;
 
         // New-user flow requires a password. Existing-user flow requires login.
         if (!isLoggedIn && !password) {
@@ -79,19 +71,11 @@ function InviteAccept() {
                 ...(isNewUser ? { password, consent } : null),
             };
             const res = await api.post("/invites/accept", payload);
-            const jwt = res?.data?.token;
             const orgSlug = String(res?.data?.orgSlug || "").trim();
 
-            if (!jwt) {
-                setError("Ошибка сервера, попробуйте позже");
-                return;
-            }
-
-            localStorage.setItem("token", jwt);
-            api.defaults.headers.common.Authorization = `Bearer ${jwt}`;
-
-            // AuthContext loads token from localStorage on mount.
-            // Full replace avoids StrictMode double-mount edge cases.
+            // Cookie is now set by the backend on success.
+            // Full replace triggers a fresh AuthProvider mount which bootstraps
+            // the session from the httpOnly cookie via /auth/me.
             if (orgSlug) {
                 window.location.replace(
                     `/edit?org=${encodeURIComponent(orgSlug)}`,

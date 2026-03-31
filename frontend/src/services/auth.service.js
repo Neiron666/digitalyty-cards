@@ -31,3 +31,5 @@ export const consumeSignupToken = (token, password, consent) =>
 export const verifyEmail = (token) => api.post("/auth/verify-email", { token });
 
 export const resendVerification = () => api.post("/auth/resend-verification");
+
+export const logout = () => api.post("/auth/logout");

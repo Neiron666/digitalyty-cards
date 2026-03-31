@@ -54,10 +54,12 @@ function classifyError(err) {
 }
 
 export default function OrgInvites() {
-    const { token } = useAuth();
+    const { isAuthenticated, user } = useAuth();
     const navigate = useNavigate();
 
-    const [gateState, setGateState] = useState(token ? "checking" : "unauth");
+    const [gateState, setGateState] = useState(
+        isAuthenticated ? "checking" : "unauth",
+    );
     const [gateAllowed, setGateAllowed] = useState(false);
 
     const [flash, setFlash] = useState(null);
@@ -86,7 +88,7 @@ export default function OrgInvites() {
     }, []);
 
     useEffect(() => {
-        if (!token) {
+        if (!isAuthenticated) {
             setGateAllowed(false);
             setGateState("unauth");
             return;
@@ -100,7 +102,7 @@ export default function OrgInvites() {
 
         (async () => {
             const ok = await getHasOrgAdmin({
-                token,
+                userId: user?.email,
                 signal: controller.signal,
             });
             if (!alive || !mountedRef.current) return;
@@ -119,13 +121,13 @@ export default function OrgInvites() {
             alive = false;
             controller.abort();
         };
-    }, [navigate, token]);
+    }, [navigate, isAuthenticated, user?.email]);
 
     useEffect(() => {
         let stopped = false;
 
         const loadOrgs = async () => {
-            if (!token) {
+            if (!isAuthenticated) {
                 setOrgsState("unauth");
                 setOrgs([]);
                 setSelectedOrgId("");
@@ -160,7 +162,7 @@ export default function OrgInvites() {
         return () => {
             stopped = true;
         };
-    }, [gateAllowed, token]);
+    }, [gateAllowed, isAuthenticated]);
 
     const selectedOrg = useMemo(() => {
         const id = String(selectedOrgId || "");
@@ -193,7 +195,7 @@ export default function OrgInvites() {
 
         const loadInvites = async () => {
             setInviteLink("");
-            if (!token) return;
+            if (!isAuthenticated) return;
             if (!gateAllowed) return;
             if (!selectedOrgId) {
                 setInvites([]);
@@ -230,11 +232,11 @@ export default function OrgInvites() {
         return () => {
             stopped = true;
         };
-    }, [gateAllowed, token, selectedOrgId]);
+    }, [gateAllowed, isAuthenticated, selectedOrgId]);
 
     const handleCreateInvite = async (e) => {
         e?.preventDefault?.();
-        if (!token) {
+        if (!isAuthenticated) {
             setFlash({ type: "error", message: "צריך להתחבר" });
             return;
         }
@@ -303,7 +305,7 @@ export default function OrgInvites() {
     const handleRevoke = async (inviteId) => {
         const id = String(inviteId || "");
         if (!id) return;
-        if (!token) {
+        if (!isAuthenticated) {
             setFlash({ type: "error", message: "צריך להתחבר" });
             return;
         }
@@ -496,7 +498,7 @@ export default function OrgInvites() {
         );
     };
 
-    if (token && gateState === "checking") {
+    if (isAuthenticated && gateState === "checking") {
         return (
             <main className={styles.main} dir="rtl">
                 <div className={styles.container}>

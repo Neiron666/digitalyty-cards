@@ -45,18 +45,7 @@ function Register() {
 
         setLoading(true);
         try {
-            const regRes = await registerUser(
-                form.email,
-                form.password,
-                form.consent,
-            );
-            const jwt = regRes?.data?.token;
-
-            // Store token so user has a session (even if not verified yet).
-            if (jwt) {
-                localStorage.setItem("token", jwt);
-                api.defaults.headers.common.Authorization = `Bearer ${jwt}`;
-            }
+            await registerUser(form.email, form.password, form.consent);
 
             // Best-effort: claim anonymous card in the background.
             const anonymousId = getAnonymousId();

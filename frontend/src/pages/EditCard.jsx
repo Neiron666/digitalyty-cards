@@ -16,7 +16,7 @@ const REFETCH_THROTTLE_MS = 15_000;
 function EditCard() {
     const navigate = useNavigate();
     const { section, tab } = useParams();
-    const { token } = useAuth();
+    const { isAuthenticated } = useAuth();
 
     useEffect(() => {
         // Legacy section routes are redirected into the card editor tabs.
@@ -428,9 +428,11 @@ function EditCard() {
 
     // Bootstrap gate: for authenticated sessions, resolve card context BEFORE hitting /cards/mine
     // to avoid a personal-first race during invite onboarding.
-    const [contextResolved, setContextResolved] = useState(() => !token);
+    const [contextResolved, setContextResolved] = useState(
+        () => !isAuthenticated,
+    );
 
-    const isOrgMode = Boolean(token) && Boolean(activeOrgSlug);
+    const isOrgMode = isAuthenticated && Boolean(activeOrgSlug);
 
     // Keep org context available for callbacks defined above this section.
     orgContextRef.current.isOrgMode = isOrgMode;
@@ -445,13 +447,13 @@ function EditCard() {
         // Keep bootstrap behavior stable when auth state changes.
         // - Anonymous: no org bootstrap needed.
         // - Authenticated: require context resolve before first initCard.
-        setContextResolved(!token);
+        setContextResolved(!isAuthenticated);
 
         // Reset one-time query bootstrap on auth transitions.
         orgFromQueryRef.current = null;
         orgFromQueryLoadRequestedRef.current = false;
         orgFromQueryAppliedRef.current = false;
-    }, [token]);
+    }, [isAuthenticated]);
 
     function isCreateInFlightError(err) {
         const status = err?.response?.status;
@@ -546,7 +548,7 @@ function EditCard() {
         async (isMounted = () => true) => {
             try {
                 // Enterprise: for authenticated users, do not start personal init until context is resolved.
-                if (token && !contextResolved) return;
+                if (isAuthenticated && !contextResolved) return;
 
                 setOrgCardError("");
                 const res = isOrgMode
@@ -574,7 +576,7 @@ function EditCard() {
                     }
 
                     // Enterprise contract: authenticated users must explicitly create a card.
-                    if (token) {
+                    if (isAuthenticated) {
                         setNeedsCreateUserCard(true);
                         setCreateUserCardError(null);
                         setIsInitializing(false);
@@ -616,7 +618,7 @@ function EditCard() {
                         }
 
                         // Enterprise contract: authenticated users must explicitly create a card.
-                        if (token) {
+                        if (isAuthenticated) {
                             setNeedsCreateUserCard(true);
                             setCreateUserCardError(null);
                             setIsInitializing(false);
@@ -660,7 +662,7 @@ function EditCard() {
 
                     try {
                         // Anonymous: show consent gate before first card creation.
-                        if (!token) {
+                        if (!isAuthenticated) {
                             setShowAnonConsentGate(true);
                             setIsInitializing(false);
                             return;
@@ -695,11 +697,11 @@ function EditCard() {
                 setIsInitializing(false);
             }
         },
-        [navigate, activeOrgSlug, isOrgMode, token, contextResolved],
+        [navigate, activeOrgSlug, isOrgMode, isAuthenticated, contextResolved],
     );
 
     const loadMyOrgs = useCallback(async () => {
-        if (!token) return;
+        if (!isAuthenticated) return;
         if (orgsLoadState === "loading" || orgsLoadState === "loaded") return;
 
         setOrgsLoadState("loading");
@@ -713,7 +715,7 @@ function EditCard() {
             setOrgsLoadState("error");
             setOrgsError("לא הצלחנו לטעון ארגונים");
         }
-    }, [token, orgsLoadState]);
+    }, [isAuthenticated, orgsLoadState]);
 
     const handleContextChange = useCallback(
         (nextOrgSlug) => {
@@ -739,7 +741,7 @@ function EditCard() {
         //  a) ?org=<slug> AND slug exists in myOrgs => choose it
         //  b) else if myOrgs.length > 0 => choose first org (org-first default)
         //  c) else => personal ("")
-        if (!token) return;
+        if (!isAuthenticated) return;
         if (contextResolved) return;
 
         // Do not override an already-chosen context.
@@ -809,7 +811,7 @@ function EditCard() {
         orgFromQueryAppliedRef.current = true;
         setContextResolved(true);
     }, [
-        token,
+        isAuthenticated,
         contextResolved,
         activeOrgSlug,
         orgsLoadState,
@@ -851,7 +853,7 @@ function EditCard() {
 
         // Gate: do not initialize personal card for authenticated sessions
         // until context was resolved (query org / first org / personal).
-        if (token && !contextResolved) {
+        if (isAuthenticated && !contextResolved) {
             return () => {
                 isMounted = false;
             };
@@ -862,7 +864,7 @@ function EditCard() {
         return () => {
             isMounted = false;
         };
-    }, [initCard, reloadKey, token, contextResolved]);
+    }, [initCard, reloadKey, isAuthenticated, contextResolved]);
 
     useEffect(() => {
         if (!editingDisabled) return;
@@ -882,17 +884,17 @@ function EditCard() {
         // Keep legacy behavior for anonymous locked sessions: refresh on focus.
         // Logged-in users are handled by the global focus/visibility refetch below.
         const onFocus = () => tick();
-        if (!token) window.addEventListener("focus", onFocus);
+        if (!isAuthenticated) window.addEventListener("focus", onFocus);
 
         return () => {
             stopped = true;
             clearInterval(interval);
-            if (!token) window.removeEventListener("focus", onFocus);
+            if (!isAuthenticated) window.removeEventListener("focus", onFocus);
         };
-    }, [editingDisabled, refetchMineThrottled, token]);
+    }, [editingDisabled, refetchMineThrottled, isAuthenticated]);
 
     useEffect(() => {
-        if (!token) return;
+        if (!isAuthenticated) return;
 
         let stopped = false;
         const tick = async () => {
@@ -920,7 +922,7 @@ function EditCard() {
                 onVisibilityChange,
             );
         };
-    }, [token, refetchMineThrottled]);
+    }, [isAuthenticated, refetchMineThrottled]);
 
     // Phase 2: no autosave while typing.
 
@@ -986,16 +988,12 @@ function EditCard() {
 
             if (status === 401) {
                 // Only redirect if there is truly no session context.
-                const token =
-                    typeof window !== "undefined"
-                        ? window.localStorage?.getItem("token")
-                        : null;
                 const anon = getAnonymousId();
-                if (!token && !anon) {
+                if (!isAuthenticated && !anon) {
                     window.location.href = "/login";
                     return;
                 }
-                // If we do have anon/jwt, 401 is unexpected after backend fix.
+                // If we do have anon/cookie session, 401 is unexpected after backend fix.
             }
 
             const fallback = "שגיאה במחיקה";
@@ -2008,11 +2006,11 @@ function EditCard() {
     }
 
     if (!draftCard?._id) {
-        if (token && !contextResolved) {
+        if (isAuthenticated && !contextResolved) {
             return <div className={styles.editCard}>טוען...</div>;
         }
 
-        if (token && contextResolved && isOrgMode && orgCardError) {
+        if (isAuthenticated && contextResolved && isOrgMode && orgCardError) {
             return (
                 <div className={styles.editCard}>
                     <main className={styles.main}>
@@ -2043,7 +2041,12 @@ function EditCard() {
             );
         }
 
-        if (token && contextResolved && !activeOrgSlug && needsCreateUserCard) {
+        if (
+            isAuthenticated &&
+            contextResolved &&
+            !activeOrgSlug &&
+            needsCreateUserCard
+        ) {
             return (
                 <div className={styles.editCard}>
                     <main className={styles.main}>
@@ -2174,8 +2177,8 @@ function EditCard() {
     }
 
     const anonId = getAnonymousId();
-    const shouldShowAnonCta = !token && Boolean(anonId);
-    const authenticatedSession = Boolean(token) && !shouldShowAnonCta;
+    const shouldShowAnonCta = !isAuthenticated && Boolean(anonId);
+    const authenticatedSession = isAuthenticated && !shouldShowAnonCta;
 
     const eb = draftCard?.effectiveBilling || null;
     const untilIso = eb?.until;
@@ -2204,7 +2207,9 @@ function EditCard() {
     const cardPublicUrl = cardPublicPath
         ? `${window.location.origin}${cardPublicPath}`
         : null;
-    const cardIsPublished = Boolean(token && draftCard?.status === "published");
+    const cardIsPublished = Boolean(
+        isAuthenticated && draftCard?.status === "published",
+    );
 
     return (
         <div className={styles.editCard}>
@@ -2312,8 +2317,8 @@ function EditCard() {
                         myOrgs={myOrgs}
                         onContextChange={handleContextChange}
                         onLoadOrgs={loadMyOrgs}
-                        showContextBar={Boolean(token)}
-                        isAuthenticated={Boolean(token)}
+                        showContextBar={isAuthenticated}
+                        isAuthenticated={isAuthenticated}
                         // Mobile: public link in sidebar drawer
                         publicUrl={cardPublicUrl}
                         publicPath={cardPublicPath}

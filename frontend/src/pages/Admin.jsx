@@ -420,7 +420,7 @@ function getIsraelNowParts() {
 }
 
 export default function Admin() {
-    const { token } = useAuth();
+    const { isAuthenticated } = useAuth();
 
     const [adminMode, setAdminMode] = useState("manage");
     const [analyticsRefreshKey, setAnalyticsRefreshKey] = useState(0);
@@ -1182,10 +1182,10 @@ export default function Admin() {
     }
 
     useEffect(() => {
-        if (!token) return;
+        if (!isAuthenticated) return;
         loadAll();
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [token]);
+    }, [isAuthenticated]);
 
     useEffect(() => {
         if (!selectedCard) return;
@@ -1346,7 +1346,7 @@ export default function Admin() {
         };
     }, [selectedCard?._id]);
 
-    if (!token) {
+    if (!isAuthenticated) {
         return (
             <main className={styles.adminRoot} dir="rtl">
                 <div className={styles.centerCard}>

@@ -30,7 +30,7 @@ export default function SettingsPanel({
     onUnpublish,
     onUpdateSlug,
 }) {
-    const { token, isAuthenticated, logout } = useAuth();
+    const { isAuthenticated, logout } = useAuth();
     const slug = card?.slug;
 
     const [account, setAccount] = useState(null);
@@ -157,7 +157,7 @@ export default function SettingsPanel({
     const publicPath = card?.publicPath || null;
     const publicUrl = publicPath ? `${origin}${publicPath}` : "";
     const isPublished = card?.status === "published";
-    const isPublicLink = Boolean(token) && isPublished;
+    const isPublicLink = isAuthenticated && isPublished;
 
     const [slugDraft, setSlugDraft] = useState(() => String(slug || ""));
     const [slugBusy, setSlugBusy] = useState(false);
@@ -178,12 +178,12 @@ export default function SettingsPanel({
 
     const canEditSlug = useMemo(() => {
         return (
-            Boolean(token) &&
+            isAuthenticated &&
             card?.status === "draft" &&
             !editingDisabled &&
             typeof onUpdateSlug === "function"
         );
-    }, [token, card?.status, editingDisabled, onUpdateSlug]);
+    }, [isAuthenticated, card?.status, editingDisabled, onUpdateSlug]);
 
     const publicPathPrefix = useMemo(() => {
         if (!publicPath) return null;
@@ -256,7 +256,7 @@ export default function SettingsPanel({
     const entCanPublish = card?.entitlements?.canPublish === true;
     const entCanChangeSlug = card?.entitlements?.canChangeSlug === true;
     const canPublish =
-        Boolean(token) &&
+        isAuthenticated &&
         Boolean(card?._id) &&
         !editingDisabled &&
         entCanPublish;
@@ -344,27 +344,30 @@ export default function SettingsPanel({
                         </div>
                     ) : (
                         <>
-                            {Boolean(token) && card?.status !== "published" && (
-                                <Button
-                                    variant="primary"
-                                    disabled={!canPublish}
-                                    onClick={() => onPublish?.()}
-                                >
-                                    פרסום
-                                </Button>
-                            )}
+                            {isAuthenticated &&
+                                card?.status !== "published" && (
+                                    <Button
+                                        variant="primary"
+                                        disabled={!canPublish}
+                                        onClick={() => onPublish?.()}
+                                    >
+                                        פרסום
+                                    </Button>
+                                )}
 
-                            {Boolean(token) && card?.status === "published" && (
-                                <Button
-                                    variant="secondary"
-                                    disabled={
-                                        !Boolean(card?._id) || editingDisabled
-                                    }
-                                    onClick={() => onUnpublish?.()}
-                                >
-                                    החזרה לטיוטה
-                                </Button>
-                            )}
+                            {isAuthenticated &&
+                                card?.status === "published" && (
+                                    <Button
+                                        variant="secondary"
+                                        disabled={
+                                            !Boolean(card?._id) ||
+                                            editingDisabled
+                                        }
+                                        onClick={() => onUnpublish?.()}
+                                    >
+                                        החזרה לטיוטה
+                                    </Button>
+                                )}
                         </>
                     )}
 
@@ -400,7 +403,7 @@ export default function SettingsPanel({
                         </div>
                     )}
 
-                    {Boolean(token) && (
+                    {isAuthenticated && (
                         <div className={styles.slugBlock}>
                             <div className={styles.urlTitle}>
                                 סלאג (כתובת קצרה)

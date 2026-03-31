@@ -14,14 +14,14 @@ export default function Header() {
     const burgerRef = useRef(null);
     const drawerRef = useRef(null);
     const navigate = useNavigate();
-    const { token, user, logout } = useAuth();
-    const isAuth = Boolean(token);
+    const { isAuthenticated, user, logout } = useAuth();
+    const isAuth = isAuthenticated;
     const { unreadCount } = useUnreadCount();
 
     useFocusTrap(drawerRef, mobileOpen);
 
     useEffect(() => {
-        if (!token) {
+        if (!isAuthenticated) {
             setHasOrgAdmin(false);
             return;
         }
@@ -31,7 +31,7 @@ export default function Header() {
 
         (async () => {
             const ok = await getHasOrgAdmin({
-                token,
+                userId: user?.email,
                 signal: controller.signal,
             });
             if (!alive) return;
@@ -41,7 +41,7 @@ export default function Header() {
         return () => {
             alive = false;
         };
-    }, [token]);
+    }, [isAuthenticated, user?.email]);
 
     const navItems = useMemo(() => {
         const items = [
