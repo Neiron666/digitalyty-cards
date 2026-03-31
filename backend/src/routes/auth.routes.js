@@ -20,6 +20,15 @@ import {
 
 const router = Router();
 
+const AUTH_COOKIE_NAME = "__Host-cardigo_auth";
+const AUTH_COOKIE_OPTIONS = {
+    httpOnly: true,
+    secure: true,
+    sameSite: "lax",
+    path: "/",
+    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days in ms — matches JWT expiresIn:"7d"
+};
+
 const RESET_TOKEN_TTL_MS = 30 * 60 * 1000;
 const FORGOT_RESEND_COOLDOWN_MS = 180 * 1000; // 3-minute per-user resend cooldown
 const FORGOT_RESPONSE_FLOOR_MS = 50; // minimum ms before any 204 — closes user-existence timing oracle
@@ -273,7 +282,9 @@ router.post("/register", async (req, res) => {
         );
     }
 
-    res.json({ token: signToken(user._id), isVerified: false });
+    const regToken = signToken(user._id);
+    res.cookie(AUTH_COOKIE_NAME, regToken, AUTH_COOKIE_OPTIONS);
+    res.json({ token: regToken, isVerified: false });
 });
 
 // LOGIN
@@ -309,7 +320,9 @@ router.post("/login", async (req, res) => {
         return res.status(401).json({ message: "Invalid credentials" });
     }
 
-    res.json({ token: signToken(user._id) });
+    const loginToken = signToken(user._id);
+    res.cookie(AUTH_COOKIE_NAME, loginToken, AUTH_COOKIE_OPTIONS);
+    res.json({ token: loginToken });
 });
 
 // FORGOT PASSWORD (anti-enumeration)
@@ -644,7 +657,9 @@ router.post("/signup-consume", async (req, res) => {
             throw err;
         }
 
-        return res.json({ token: signToken(user._id) });
+        const consumeToken = signToken(user._id);
+        res.cookie(AUTH_COOKIE_NAME, consumeToken, AUTH_COOKIE_OPTIONS);
+        return res.json({ token: consumeToken });
     } catch (err) {
         console.error("[auth] signup-consume failed", err?.message || err);
         return fail();
@@ -849,6 +864,17 @@ router.post("/resend-verification", requireAuth, async (req, res) => {
 
     // Anti-enumeration: always success.
     return res.json({ message: "Verification email sent" });
+});
+
+// LOGOUT — clears auth cookie unconditionally; no auth required
+router.post("/logout", (req, res) => {
+    res.clearCookie(AUTH_COOKIE_NAME, {
+        httpOnly: true,
+        secure: true,
+        sameSite: "lax",
+        path: "/",
+    });
+    return res.sendStatus(204);
 });
 
 export default router;

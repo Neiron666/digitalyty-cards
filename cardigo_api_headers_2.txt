@@ -1,0 +1,14 @@
+HTTP/1.1 401 Unauthorized
+Age: 0
+Cache-Control: no-store
+Cache-Status: "Netlify Durable"; fwd=bypass
+Cache-Status: "Netlify Edge"; fwd=miss
+Content-Type: application/json; charset=utf-8
+Date: Tue, 31 Mar 2026 14:05:05 GMT
+Netlify-Vary: query
+Server: Netlify
+Strict-Transport-Security: max-age=31536000
+Vary: Cookie
+X-Nf-Request-Id: 01KN23CP7K6RXN503MCMREFNVN
+Transfer-Encoding: chunked
+

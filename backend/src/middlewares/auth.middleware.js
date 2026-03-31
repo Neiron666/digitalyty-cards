@@ -4,9 +4,10 @@ import { isTokenFresh } from "../utils/isTokenFresh.js";
 
 export async function requireAuth(req, res, next) {
     const header = req.headers.authorization;
-    if (!header) return res.status(401).json({ message: "No token" });
-
-    const token = header.split(" ")[1];
+    const token = header
+        ? header.split(" ")[1]
+        : req.cookies?.["__Host-cardigo_auth"];
+    if (!token) return res.status(401).json({ message: "No token" });
 
     try {
         const payload = verifyToken(token);
@@ -31,9 +32,9 @@ export async function requireAuth(req, res, next) {
 
 export async function optionalAuth(req, res, next) {
     const header = req.headers.authorization;
-    if (!header) return next();
-
-    const token = header.split(" ")[1];
+    const token = header
+        ? header.split(" ")[1]
+        : req.cookies?.["__Host-cardigo_auth"];
     if (!token) return next();
 
     try {

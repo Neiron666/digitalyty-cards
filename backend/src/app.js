@@ -1,4 +1,5 @@
 import express from "express";
+import cookieParser from "cookie-parser";
 import cors from "cors";
 import helmet from "helmet";
 import * as Sentry from "@sentry/node";
@@ -68,6 +69,9 @@ app.use(
     ),
 );
 app.use(express.json());
+// Cookie parsing: populates req.cookies for future cookie-based auth.
+// No cookies are currently issued or consumed; this is a no-op today.
+app.use(cookieParser());
 
 // Site analytics write endpoint must be "always 204".
 // If a client sends malformed JSON, Express would normally return 400 before hitting the handler.
