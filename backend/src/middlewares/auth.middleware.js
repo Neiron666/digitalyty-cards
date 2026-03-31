@@ -2,11 +2,16 @@ import { verifyToken } from "../utils/jwt.js";
 import User from "../models/User.model.js";
 import { isTokenFresh } from "../utils/isTokenFresh.js";
 
+const AUTH_COOKIE_NAME =
+    process.env.NODE_ENV === "production"
+        ? "__Host-cardigo_auth"
+        : "cardigo_auth";
+
 export async function requireAuth(req, res, next) {
     const header = req.headers.authorization;
     const token = header
         ? header.split(" ")[1]
-        : req.cookies?.["__Host-cardigo_auth"];
+        : req.cookies?.[AUTH_COOKIE_NAME];
     if (!token) return res.status(401).json({ message: "No token" });
 
     try {
@@ -34,7 +39,7 @@ export async function optionalAuth(req, res, next) {
     const header = req.headers.authorization;
     const token = header
         ? header.split(" ")[1]
-        : req.cookies?.["__Host-cardigo_auth"];
+        : req.cookies?.[AUTH_COOKIE_NAME];
     if (!token) return next();
 
     try {

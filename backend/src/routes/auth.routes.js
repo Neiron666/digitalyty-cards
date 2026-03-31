@@ -20,10 +20,11 @@ import {
 
 const router = Router();
 
-const AUTH_COOKIE_NAME = "__Host-cardigo_auth";
+const IS_PROD = process.env.NODE_ENV === "production";
+const AUTH_COOKIE_NAME = IS_PROD ? "__Host-cardigo_auth" : "cardigo_auth";
 const AUTH_COOKIE_OPTIONS = {
     httpOnly: true,
-    secure: true,
+    secure: IS_PROD,
     sameSite: "lax",
     path: "/",
     maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days in ms — matches JWT expiresIn:"7d"
@@ -870,7 +871,7 @@ router.post("/resend-verification", requireAuth, async (req, res) => {
 router.post("/logout", (req, res) => {
     res.clearCookie(AUTH_COOKIE_NAME, {
         httpOnly: true,
-        secure: true,
+        secure: IS_PROD,
         sameSite: "lax",
         path: "/",
     });
