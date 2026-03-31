@@ -3,42 +3,143 @@
     border-top: 1px solid var(--border);
     font-size: var(--fs-12, 0.75rem);
     text-align: center;
-    color: var(--text-muted);
+    color: var(--text-main);
     display: flex;
     flex-direction: column;
+    align-items: center;
+    gap: 10px;
+}
+
+/* --- Share block: title + icon row --- */
+
+.shareBlock {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
     gap: 8px;
+    width: 100%;
 }
 
-.platform {
+.shareTitle {
+    margin: 0;
     font-size: var(--fs-12, 0.75rem);
-    opacity: 0.8;
+    color: var(--text-main);
+    opacity: 0.85;
 }
 
-.platform a {
+.shareRow {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+    gap: 14px;
+}
+
+/* Each share anchor — circular icon button */
+.shareIcon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    color: var(--text-main);
+    background: transparent;
+    text-decoration: none;
+    transition:
+        color 0.18s ease,
+        background 0.18s ease;
+}
+
+.shareIcon:hover {
+    color: var(--primary);
+    background: color-mix(in srgb, var(--primary) 10%, transparent 90%);
+}
+
+.shareIcon:focus-visible {
+    outline: none;
+    box-shadow: var(--focus-ring);
+}
+
+/* Mask-based icons — same technique as ContactButtons.module.css */
+.iconFacebook,
+.iconEmail,
+.iconWhatsapp {
+    width: 25px;
+    height: 25px;
+    flex-shrink: 0;
+    background-color: currentColor;
+    -webkit-mask-repeat: no-repeat;
+    -webkit-mask-position: center;
+    -webkit-mask-size: contain;
+    mask-repeat: no-repeat;
+    mask-position: center;
+    mask-size: contain;
+}
+
+.iconFacebook {
+    -webkit-mask-image: url("/icons/facebook.svg");
+    mask-image: url("/icons/facebook.svg");
+}
+
+.iconEmail {
+    -webkit-mask-image: url("/icons/mail.svg");
+    mask-image: url("/icons/mail.svg");
+    /* slightly larger glyph to balance envelope visual weight */
+    width: 33px;
+    height: 33px;
+}
+
+.iconWhatsapp {
+    -webkit-mask-image: url("/icons/whatsapp.svg");
+    mask-image: url("/icons/whatsapp.svg");
+}
+
+/* --- Cardigo logo row --- */
+
+.logoWrap {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    /* opacity: 0.6; */
+    transition: opacity 0.18s ease;
+    text-decoration: none;
+    padding: 7px 12px;
+}
+
+.logoWrap:hover {
+    opacity: 0.9;
+}
+
+.logoWrap:focus-visible {
+    outline: none;
+    box-shadow: var(--focus-ring);
+}
+
+.logoImg {
+    display: block;
+    height: 45px;
+    width: auto;
+    max-width: 120px;
+    object-fit: contain;
+}
+
+/* --- Bottom promo line --- */
+
+.promo {
+    margin: 0;
+    font-size: var(--fs-12, 0.75rem);
+    color: var(--text-main);
+    opacity: 0.75;
+}
+
+.promoLink {
     color: var(--primary);
     text-decoration: none;
     font-weight: 500;
 }
 
-.platform a:hover {
+.promoLink:hover {
     color: var(--primary-hover);
     text-decoration: underline;
-}
-
-.socials {
-    display: flex;
-    justify-content: center;
-    gap: 12px;
-    flex-wrap: wrap;
-}
-
-.socials a {
-    color: var(--text-muted);
-    font-size: var(--fs-12, 0.75rem);
-    text-decoration: none;
-    transition: color 0.2s;
-}
-
-.socials a:hover {
-    color: var(--primary);
 }

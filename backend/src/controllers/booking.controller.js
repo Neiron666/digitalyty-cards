@@ -678,6 +678,52 @@ export async function cancelMyBooking(req, res) {
     }
 }
 
+// ── GET /api/bookings/mine/pending-count ─────────────────────────
+// Returns the count of actionable (non-expired) pending bookings across all
+// cards owned by the authenticated user. Used only for the header badge.
+export async function getPendingCount(req, res) {
+    try {
+        const actor = resolveActor(req);
+        if (!actor || actor.type !== "user") {
+            throw new HttpError(401, "Unauthorized", "UNAUTHORIZED");
+        }
+
+        const ownedCards = await Card.find({ user: actor.id, isActive: true })
+            .select("_id")
+            .lean();
+
+        if (!ownedCards || ownedCards.length === 0) {
+            return res.json({ pendingCount: 0 });
+        }
+
+        const cardIds = ownedCards.map((c) => c._id);
+        const now = new Date();
+
+        const pendingCount = await Booking.countDocuments({
+            card: { $in: cardIds },
+            status: "pending",
+            expiresAt: { $gt: now }, // safety-net: exclude expired-but-not-yet-reconciled
+        });
+
+        return res.json({ pendingCount });
+    } catch (err) {
+        const status = err?.statusCode || err?.status;
+        if (status) {
+            return res.status(status).json({
+                message: err?.message || "Error",
+                code: err?.code || null,
+            });
+        }
+        console.error(
+            "[booking/pending-count] error:",
+            err?.message || "unknown",
+        );
+        return res
+            .status(500)
+            .json({ message: "Failed to fetch pending count" });
+    }
+}
+
 export async function reconcileExpiredBookings(req, res) {
     try {
         // Internal lightweight reconciler endpoint: auth required.

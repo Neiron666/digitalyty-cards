@@ -9,6 +9,7 @@ import {
 } from "react";
 import { useAuth } from "./AuthContext";
 import { getUnreadCount } from "../services/leads.service";
+import { getPendingBookingCount } from "../services/bookings.service";
 
 const POLL_INTERVAL_MS = 60_000; // 60 s
 
@@ -16,7 +17,11 @@ const UnreadCountContext = createContext(null);
 
 export function UnreadCountProvider({ children }) {
     const { isAuthenticated } = useAuth();
-    const [unreadCount, setUnreadCount] = useState(0);
+    // leadsUnread: count of unread leads (readAt=null)
+    // bookingsPending: count of actionable pending bookings
+    // unreadCount (exposed): sum used by Header badge
+    const [leadsUnread, setLeadsUnread] = useState(0);
+    const [bookingsPending, setBookingsPending] = useState(0);
     const inflightRef = useRef(false);
     const pendingRefetchRef = useRef(false);
     const timerRef = useRef(null);
@@ -28,8 +33,20 @@ export function UnreadCountProvider({ children }) {
         }
         inflightRef.current = true;
         try {
-            const count = await getUnreadCount();
-            setUnreadCount(typeof count === "number" ? count : 0);
+            const [leads, bookings] = await Promise.allSettled([
+                getUnreadCount(),
+                getPendingBookingCount(),
+            ]);
+            if (leads.status === "fulfilled") {
+                setLeadsUnread(
+                    typeof leads.value === "number" ? leads.value : 0,
+                );
+            }
+            if (bookings.status === "fulfilled") {
+                setBookingsPending(
+                    typeof bookings.value === "number" ? bookings.value : 0,
+                );
+            }
         } catch {
             // best-effort, silent
         } finally {
@@ -44,7 +61,8 @@ export function UnreadCountProvider({ children }) {
     // Start / stop polling based on auth + visibility.
     useEffect(() => {
         if (!isAuthenticated) {
-            setUnreadCount(0);
+            setLeadsUnread(0);
+            setBookingsPending(0);
             return;
         }
 
@@ -88,13 +106,18 @@ export function UnreadCountProvider({ children }) {
         };
     }, [isAuthenticated, fetchCount]);
 
+    // Adjust leads-only unread count optimistically (mark-read, delete).
+    // Booking count is always server-driven; no client-side delta for bookings.
     const adjustUnreadCount = useCallback(
         (delta) =>
-            setUnreadCount((prev) =>
+            setLeadsUnread((prev) =>
                 Math.max(0, (typeof prev === "number" ? prev : 0) + delta),
             ),
         [],
     );
+
+    // Summed badge value: leads unread + actionable pending bookings.
+    const unreadCount = leadsUnread + bookingsPending;
 
     const value = useMemo(
         () => ({ unreadCount, refresh: fetchCount, adjustUnreadCount }),

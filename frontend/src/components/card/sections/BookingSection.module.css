@@ -423,3 +423,17 @@
 :global([data-preview="phone"]) .slotArea .slotBtn {
     width: auto;
 }
+
+/* Preview: restore calendar nav button compact sizing (0,3,0) overrides
+   CardLayout @container phone .sectionWrap button width:100% (0,2,1) */
+:global([data-preview="phone"]) .calNav .calNavBtn {
+    width: 1.75rem;
+    height: 1.75rem;
+}
+
+/* Preview: restore calendar day cell flex-basis (0,3,0) overrides
+   CardLayout @container phone .sectionWrap button width:100% (0,2,1) */
+:global([data-preview="phone"]) .calRow .calCell {
+    width: 0;
+    min-width: 0;
+}

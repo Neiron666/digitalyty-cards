@@ -1,72 +1,169 @@
+import { useMemo } from "react";
 import styles from "./CardFooter.module.css";
 import { trackClick } from "../../../services/analytics.client";
-import ensureHttpUrl from "../../../utils/ensureHttpUrl";
+
+// SSoT: same field priority as getDisplayName in CardLayout.jsx
+function getBrandName(card) {
+    return (
+        card?.business?.name ||
+        card?.business?.businessName ||
+        card?.business?.ownerName ||
+        ""
+    );
+}
+
+// SSoT: same derivation pattern as QRCodeBlock.jsx
+function isAbsoluteUrl(value) {
+    return /^https?:\/\//i.test(String(value || "").trim());
+}
+
+function buildShareUrl(publicPath) {
+    if (typeof window === "undefined") return "";
+    const raw = typeof publicPath === "string" ? publicPath.trim() : "";
+    if (!raw) return "";
+    const origin = window.location.origin;
+    if (isAbsoluteUrl(raw)) {
+        return raw.startsWith(origin) ? raw : "";
+    }
+    const normalized = raw.startsWith("/") ? raw : `/${raw}`;
+    return `${origin}${normalized}`;
+}
+
+// Best-effort clipboard copy — does not block primary link navigation
+function tryCopyToClipboard(url) {
+    if (!url) return;
+    try {
+        if (
+            typeof navigator !== "undefined" &&
+            typeof navigator.clipboard?.writeText === "function"
+        ) {
+            navigator.clipboard.writeText(url).catch(() => {});
+        }
+    } catch {
+        // best effort — ignore
+    }
+}
 
 function CardFooter({ card }) {
-    const { contact } = card;
+    const brandName = getBrandName(card);
 
-    const facebookHref = ensureHttpUrl(contact?.facebook);
-    const instagramHref = ensureHttpUrl(contact?.instagram);
-    const linkedinHref = ensureHttpUrl(contact?.linkedin);
+    const shareUrl = useMemo(
+        () => buildShareUrl(card?.publicPath),
+        [card?.publicPath],
+    );
+
+    const facebookShareHref = shareUrl
+        ? `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`
+        : null;
+
+    const emailShareHref = shareUrl
+        ? `mailto:?body=${encodeURIComponent(shareUrl)}`
+        : null;
+
+    const waShareHref = shareUrl
+        ? `https://wa.me/?text=${encodeURIComponent(shareUrl)}`
+        : null;
 
     return (
         <footer className={styles.footer}>
-            <div className={styles.platform}>
-                נבנה ע״י{" "}
+            {shareUrl && (
+                <div className={styles.shareBlock}>
+                    <p className={styles.shareTitle}>
+                        {brandName ? `שתפו את ${brandName}` : "שתפו"}
+                    </p>
+
+                    <div
+                        className={styles.shareRow}
+                        role="group"
+                        aria-label="שיתוף הכרטיס"
+                    >
+                        <a
+                            href={facebookShareHref}
+                            target="_blank"
+                            rel="noreferrer noopener"
+                            className={styles.shareIcon}
+                            aria-label="שתף בפייסבוק"
+                            onClick={() => {
+                                tryCopyToClipboard(shareUrl);
+                                trackClick(card?.slug, "facebook");
+                            }}
+                        >
+                            <span
+                                className={styles.iconFacebook}
+                                aria-hidden="true"
+                            />
+                        </a>
+
+                        <a
+                            href={emailShareHref}
+                            className={styles.shareIcon}
+                            aria-label="שתף במייל"
+                            onClick={() => {
+                                tryCopyToClipboard(shareUrl);
+                                trackClick(card?.slug, "email");
+                            }}
+                        >
+                            <span
+                                className={styles.iconEmail}
+                                aria-hidden="true"
+                            />
+                        </a>
+
+                        <a
+                            href={waShareHref}
+                            target="_blank"
+                            rel="noreferrer noopener"
+                            className={styles.shareIcon}
+                            aria-label="שתף בוואטסאפ"
+                            onClick={() => {
+                                tryCopyToClipboard(shareUrl);
+                                trackClick(card?.slug, "whatsapp");
+                            }}
+                        >
+                            <span
+                                className={styles.iconWhatsapp}
+                                aria-hidden="true"
+                            />
+                        </a>
+                    </div>
+                </div>
+            )}
+
+            <a
+                href="https://cardigo.co.il"
+                target="_blank"
+                rel="noreferrer"
+                className={styles.logoWrap}
+            >
+                <picture>
+                    <source
+                        srcSet="/images/brand-logo/cardigo-logo.webp"
+                        type="image/webp"
+                    />
+                    <img
+                        src="/images/brand-logo/cardigo-logo-512.png"
+                        alt="Cardigo"
+                        className={styles.logoImg}
+                        width="80"
+                        height="28"
+                        loading="lazy"
+                        decoding="async"
+                    />
+                </picture>
+            </a>
+
+            <p className={styles.promo}>
+                נבנה ב־
                 <a
                     href="https://cardigo.co.il"
                     target="_blank"
                     rel="noreferrer"
+                    className={styles.promoLink}
                 >
                     Cardigo
                 </a>
-            </div>
-
-            {(facebookHref ||
-                instagramHref ||
-                linkedinHref ||
-                contact?.email) && (
-                <div className={styles.socials}>
-                    {facebookHref && (
-                        <a
-                            href={facebookHref}
-                            target="_blank"
-                            rel="noreferrer"
-                            onClick={() => trackClick(card?.slug, "facebook")}
-                        >
-                            Facebook
-                        </a>
-                    )}
-                    {instagramHref && (
-                        <a
-                            href={instagramHref}
-                            target="_blank"
-                            rel="noreferrer"
-                            onClick={() => trackClick(card?.slug, "instagram")}
-                        >
-                            Instagram
-                        </a>
-                    )}
-                    {linkedinHref && (
-                        <a
-                            href={linkedinHref}
-                            target="_blank"
-                            rel="noreferrer"
-                            onClick={() => trackClick(card?.slug, "linkedin")}
-                        >
-                            LinkedIn
-                        </a>
-                    )}
-                    {contact?.email && (
-                        <a
-                            href={`mailto:${contact.email}`}
-                            onClick={() => trackClick(card?.slug, "email")}
-                        >
-                            Email
-                        </a>
-                    )}
-                </div>
-            )}
+                {" — הדרך החכמה לכרטיס ביקור דיגיטלי מקצועי"}
+            </p>
         </footer>
     );
 }

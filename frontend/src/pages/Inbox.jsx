@@ -62,7 +62,7 @@ function safeStr(v) {
 
 export default function Inbox() {
     const { isAuthenticated } = useAuth();
-    const { adjustUnreadCount } = useUnreadCount();
+    const { adjustUnreadCount, refresh } = useUnreadCount();
 
     const [activeCategory, setActiveCategory] = useState("leads");
     const [activeView, setActiveView] = useState("active");
@@ -243,10 +243,11 @@ export default function Inbox() {
                 );
             }
 
-            // Always refresh list to show truthful state.
+            // Refresh inbox list and header badge in parallel.
             await loadBookings();
+            refresh();
         },
-        [loadBookings],
+        [loadBookings, refresh],
     );
 
     function formatRequestedBooking(booking) {

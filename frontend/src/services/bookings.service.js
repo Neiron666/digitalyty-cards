@@ -16,6 +16,11 @@ export async function createPublicBooking(data) {
 
 /* ── Owner (authenticated) ── */
 
+export async function getPendingBookingCount() {
+    const res = await api.get("/bookings/mine/pending-count");
+    return res.data.pendingCount;
+}
+
 export async function getMyBookings(cardId, { limit } = {}) {
     const id = String(cardId || "").trim();
 

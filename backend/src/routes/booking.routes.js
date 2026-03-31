@@ -5,6 +5,7 @@ import {
     cancelMyBooking,
     createPublicBooking,
     getPublicAvailability,
+    getPendingCount,
     listMyBookings,
     reconcileExpiredBookings,
 } from "../controllers/booking.controller.js";
@@ -147,6 +148,7 @@ router.post(
 // ── Owner endpoints (auth required) ─────────────────────────────────
 
 router.get("/mine", requireAuth, authRateLimit, listMyBookings);
+router.get("/mine/pending-count", requireAuth, authRateLimit, getPendingCount);
 router.post("/:id/approve", requireAuth, authRateLimit, approveMyBooking);
 router.post("/:id/cancel", requireAuth, authRateLimit, cancelMyBooking);
 
