@@ -77,7 +77,29 @@ async function ensureLeadIndexes({ dryRun, verbose }) {
 
     // No prechecks — no unique indexes in scope.
 
-    // 1) idx_leads_unread_count
+    // 1) idx_leads_mailbox
+    //    key: { card: 1, deletedAt: 1, archivedAt: 1, createdAt: -1 }
+    //    Supports: mailbox list views with cursor pagination.
+    await ensureIndex(
+        col,
+        byName,
+        { card: 1, deletedAt: 1, archivedAt: 1, createdAt: -1 },
+        { name: "idx_leads_mailbox" },
+        { dryRun, verbose },
+    );
+
+    // 2) idx_leads_deletedAt_ttl
+    //    key: { deletedAt: 1 }   TTL: 7 776 000 s (90 days)
+    //    Auto-purges soft-deleted leads. TTL skips null/missing — safe for active leads.
+    await ensureIndex(
+        col,
+        byName,
+        { deletedAt: 1 },
+        { name: "idx_leads_deletedAt_ttl", expireAfterSeconds: 7_776_000 },
+        { dryRun, verbose },
+    );
+
+    // 3) idx_leads_unread_count
     //    key: { card: 1, deletedAt: 1, archivedAt: 1, readAt: 1 }
     //    Supports: countDocuments({ card:{$in:…}, readAt:null, archivedAt:null, deletedAt:null })
     await ensureIndex(

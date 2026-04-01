@@ -1,5 +1,7 @@
 import "dotenv/config";
 
+import mongoose from "mongoose";
+
 import ActivePasswordReset from "../src/models/ActivePasswordReset.model.js";
 import MailJob from "../src/models/MailJob.model.js";
 import { connectDB } from "../src/config/db.js";
@@ -218,10 +220,14 @@ async function main() {
 
     await connectDB(mongoUri);
 
-    await ensureActivePasswordResetIndexes(args);
-    await ensureMailJobIndexes(args);
+    try {
+        await ensureActivePasswordResetIndexes(args);
+        await ensureMailJobIndexes(args);
 
-    console.log("done", { dryRun: args.dryRun });
+        console.log("done", { dryRun: args.dryRun });
+    } finally {
+        await mongoose.disconnect();
+    }
 }
 
 main().catch((err) => {

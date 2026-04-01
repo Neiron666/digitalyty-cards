@@ -1758,6 +1758,69 @@ export async function updateCard(req, res) {
         }
     }
 
+    // businessHours: tolerant atomic writer.
+    // WHY: Card.model declares businessHours with default: null. buildSetUpdateFromPatch()
+    // recurses into the incoming object and produces dotted child paths like
+    // "businessHours.enabled" / "businessHours.week.sunday.isOpen".
+    // MongoDB rejects dotted child writes when the current DB value is null.
+    // Fix: merge existing + incoming into one atomic write,
+    // exactly mirroring the businessTouched / faqTouched pattern.
+    const businessHoursTouched = Object.prototype.hasOwnProperty.call(
+        patch,
+        "businessHours",
+    );
+
+    if (businessHoursTouched) {
+        const existingBhRaw =
+            existingCard?.businessHours &&
+            typeof existingCard.businessHours === "object"
+                ? typeof existingCard.businessHours.toObject === "function"
+                    ? existingCard.businessHours.toObject()
+                    : existingCard.businessHours
+                : null;
+
+        const baseBh =
+            existingBhRaw && typeof existingBhRaw === "object"
+                ? existingBhRaw
+                : {};
+
+        const incomingBh = isPlainObject(patch.businessHours)
+            ? patch.businessHours
+            : {};
+
+        patch.businessHours = { ...baseBh, ...incomingBh };
+    }
+
+    // bookingSettings: tolerant atomic writer.
+    // WHY: Card.model declares bookingSettings with default: null.
+    // buildSetUpdateFromPatch() produces "bookingSettings.enabled".
+    // MongoDB rejects dot-path writes when the current DB value is null.
+    const bookingSettingsTouched = Object.prototype.hasOwnProperty.call(
+        patch,
+        "bookingSettings",
+    );
+
+    if (bookingSettingsTouched) {
+        const existingBsRaw =
+            existingCard?.bookingSettings &&
+            typeof existingCard.bookingSettings === "object"
+                ? typeof existingCard.bookingSettings.toObject === "function"
+                    ? existingCard.bookingSettings.toObject()
+                    : existingCard.bookingSettings
+                : null;
+
+        const baseBs =
+            existingBsRaw && typeof existingBsRaw === "object"
+                ? existingBsRaw
+                : {};
+
+        const incomingBs = isPlainObject(patch.bookingSettings)
+            ? patch.bookingSettings
+            : {};
+
+        patch.bookingSettings = { ...baseBs, ...incomingBs };
+    }
+
     const $set = buildSetUpdateFromPatch(patch);
 
     const selfThemeV1Touched =
@@ -1847,6 +1910,29 @@ export async function updateCard(req, res) {
             }
         }
         $set.business = normalizedBusinessForSet;
+    }
+
+    if (businessHoursTouched) {
+        // Remove any dot-path updates for businessHours.* and write as a whole.
+        for (const key of Object.keys($set)) {
+            if (key === "businessHours" || key.startsWith("businessHours.")) {
+                delete $set[key];
+            }
+        }
+        $set.businessHours = patch.businessHours;
+    }
+
+    if (bookingSettingsTouched) {
+        // Remove any dot-path updates for bookingSettings.* and write as a whole.
+        for (const key of Object.keys($set)) {
+            if (
+                key === "bookingSettings" ||
+                key.startsWith("bookingSettings.")
+            ) {
+                delete $set[key];
+            }
+        }
+        $set.bookingSettings = patch.bookingSettings;
     }
 
     // content.services: tolerant atomic writer.

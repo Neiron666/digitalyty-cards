@@ -28,7 +28,14 @@ function Login() {
             await login(form.email, form.password);
             navigate("/edit", { replace: true });
         } catch (err) {
-            setError(err?.response?.data?.message || "שגיאה בהתחברות");
+            const code = err?.response?.data?.code;
+            if (code === "EMAIL_NOT_VERIFIED") {
+                setError(
+                    "יש לאמת את כתובת האימייל לפני התחברות. בדקו את תיבת הדואר שלכם.",
+                );
+            } else {
+                setError(err?.response?.data?.message || "שגיאה בהתחברות");
+            }
         } finally {
             setLoading(false);
         }

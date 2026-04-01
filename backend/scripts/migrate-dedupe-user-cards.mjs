@@ -339,8 +339,12 @@ if (
     typeof argv1 === "string" &&
     import.meta.url === pathToFileURL(argv1).href
 ) {
-    main().catch((err) => {
-        console.error("FAILED", err?.message || err);
-        process.exitCode = 1;
-    });
+    main()
+        .catch((err) => {
+            console.error("FAILED", err?.message || err);
+            process.exitCode = 1;
+        })
+        .finally(async () => {
+            await mongoose.disconnect();
+        });
 }

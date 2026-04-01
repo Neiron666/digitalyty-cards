@@ -1,5 +1,7 @@
 import "dotenv/config";
 
+import mongoose from "mongoose";
+
 import AiUsageMonthly from "../src/models/AiUsageMonthly.model.js";
 import { connectDB } from "../src/config/db.js";
 
@@ -160,9 +162,13 @@ async function main() {
 
     await connectDB(mongoUri);
 
-    await ensureIndexes(args);
+    try {
+        await ensureIndexes(args);
 
-    console.log("done", { dryRun: args.dryRun });
+        console.log("done", { dryRun: args.dryRun });
+    } finally {
+        await mongoose.disconnect();
+    }
 }
 
 main().catch((err) => {

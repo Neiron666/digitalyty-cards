@@ -283,9 +283,8 @@ router.post("/register", async (req, res) => {
         );
     }
 
-    const regToken = signToken(user._id);
-    res.cookie(AUTH_COOKIE_NAME, regToken, AUTH_COOKIE_OPTIONS);
-    res.json({ token: regToken, isVerified: false });
+    // Do NOT issue auth cookie/session — user must verify email first.
+    res.json({ registered: true, isVerified: false });
 });
 
 // LOGIN
@@ -319,6 +318,19 @@ router.post("/login", async (req, res) => {
     if (!ok) {
         console.warn("[auth] login failed", { reason: "bad-credentials" });
         return res.status(401).json({ message: "Invalid credentials" });
+    }
+
+    if (!user.isVerified) {
+        console.warn("[auth] login blocked", {
+            reason: "email-not-verified",
+            userId: user._id,
+        });
+        return res
+            .status(403)
+            .json({
+                code: "EMAIL_NOT_VERIFIED",
+                message: "Email not verified",
+            });
     }
 
     const loginToken = signToken(user._id);

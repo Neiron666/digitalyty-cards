@@ -4,7 +4,6 @@ import { register as registerUser } from "../services/auth.service";
 import AuthLayout from "../components/auth/AuthLayout";
 import Input from "../components/ui/Input";
 import Button from "../components/ui/Button";
-import api, { clearAnonymousId, getAnonymousId } from "../services/api";
 import styles from "./Register.module.css";
 
 const PASSWORD_MIN_LENGTH = 8;
@@ -46,17 +45,6 @@ function Register() {
         setLoading(true);
         try {
             await registerUser(form.email, form.password, form.consent);
-
-            // Best-effort: claim anonymous card in the background.
-            const anonymousId = getAnonymousId();
-            if (anonymousId) {
-                try {
-                    await api.post("/cards/claim");
-                    clearAnonymousId();
-                } catch {
-                    // Non-blocking; claim can fail gracefully.
-                }
-            }
 
             // Show "check your email" message.
             setRegistered(true);

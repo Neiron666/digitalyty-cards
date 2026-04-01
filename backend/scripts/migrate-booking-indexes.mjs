@@ -44,7 +44,8 @@ async function main() {
         console.log(
             "Refusing to apply without --i-understand-index-downtime (enterprise governance).",
         );
-        process.exit(1);
+        process.exitCode = 1;
+        return;
     }
 
     await connectDB(process.env.MONGO_URI);
@@ -64,7 +65,17 @@ async function main() {
         };
     });
 
-    const actual = (await Booking.collection.indexes()).map(pick);
+    let rawIndexes;
+    try {
+        rawIndexes = await Booking.collection.indexes();
+    } catch (err) {
+        if (err?.code === 26 || err?.codeName === "NamespaceNotFound") {
+            rawIndexes = [];
+        } else {
+            throw err;
+        }
+    }
+    const actual = rawIndexes.map(pick);
 
     const byName = new Map(
         actual.filter((i) => i?.name).map((i) => [i.name, i]),
@@ -115,37 +126,35 @@ async function main() {
 
     if (!apply) {
         // Dry-run: fail if drift exists.
-        process.exit(hasMismatch || hasCreates ? 1 : 0);
+        process.exitCode = hasMismatch || hasCreates ? 1 : 0;
+        return;
     }
 
     if (hasMismatch) {
         console.log(
             "Refusing to apply due to mismatches. Manual intervention required.",
         );
-        process.exit(1);
+        process.exitCode = 1;
+        return;
     }
 
     for (const item of plan) {
         if (item.action !== "create") continue;
         const idx = item.index;
-        await Booking.collection.createIndex(idx.key, {
-            name: idx.name,
-            unique: idx.unique,
-            partialFilterExpression: idx.partialFilterExpression || undefined,
-            expireAfterSeconds:
-                typeof idx.expireAfterSeconds === "number"
-                    ? idx.expireAfterSeconds
-                    : undefined,
-        });
+        const opts = { name: idx.name };
+        if (idx.unique) opts.unique = true;
+        if (idx.partialFilterExpression)
+            opts.partialFilterExpression = idx.partialFilterExpression;
+        if (typeof idx.expireAfterSeconds === "number")
+            opts.expireAfterSeconds = idx.expireAfterSeconds;
+        await Booking.collection.createIndex(idx.key, opts);
     }
-
-    process.exit(0);
 }
 
 main()
     .catch((err) => {
         console.error("[migrate-booking-indexes] error:", err?.message || err);
-        process.exit(1);
+        process.exitCode = 1;
     })
     .finally(async () => {
         try {

@@ -23,7 +23,11 @@
         "sanity:admin-user-delete": "node scripts/sanity-admin-user-delete.mjs",
         "sanity:imports": "node scripts/sanity-imports.mjs",
         "sanity:site-analytics-visit-index-drift": "node scripts/sanity-site-analytics-visit-index-drift.mjs",
-        "migrate:site-analytics-visit-indexes": "node scripts/migrate-site-analytics-visit-indexes.mjs"
+        "migrate:site-analytics-visit-indexes": "node scripts/migrate-site-analytics-visit-indexes.mjs",
+        "migrate:orgmember-indexes": "node scripts/migrate-orgmember-indexes.mjs",
+        "migrate:analytics-daily-indexes": "node scripts/migrate-analytics-daily-indexes.mjs",
+        "migrate:card-anonymousid-index": "node scripts/migrate-card-anonymousid-index.mjs",
+        "bootstrap:first-admin": "node scripts/bootstrap-first-admin.mjs"
     },
     "keywords": [],
     "author": "",

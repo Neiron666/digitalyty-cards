@@ -2,6 +2,11 @@ import { verifyToken } from "../utils/jwt.js";
 import User from "../models/User.model.js";
 import { isTokenFresh } from "../utils/isTokenFresh.js";
 
+const AUTH_COOKIE_NAME =
+    process.env.NODE_ENV === "production"
+        ? "__Host-cardigo_auth"
+        : "cardigo_auth";
+
 function denyAdminNotFound(res) {
     // Anti-enumeration: make /api/admin/* indistinguishable from non-existent routes.
     // Align body with the global /api fallback response in backend/src/app.js.
@@ -14,9 +19,9 @@ function denyAdminNotFound(res) {
 
 export async function requireAdmin(req, res, next) {
     const header = req.headers.authorization;
-    if (!header) return denyAdminNotFound(res);
-
-    const token = header.split(" ")[1];
+    const token = header
+        ? header.split(" ")[1]
+        : req.cookies?.[AUTH_COOKIE_NAME];
     if (!token) return denyAdminNotFound(res);
 
     try {

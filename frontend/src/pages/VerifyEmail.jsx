@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import AuthLayout from "../components/auth/AuthLayout";
 import Button from "../components/ui/Button";
@@ -18,26 +18,23 @@ export default function VerifyEmail() {
     const [resendDone, setResendDone] = useState(false);
     const [errorMsg, setErrorMsg] = useState("");
 
-    useEffect(() => {
-        if (!token) return;
+    // Guard: prevent StrictMode double-mount from firing a second destructive POST.
+    const attempted = useRef(false);
 
-        let cancelled = false;
+    useEffect(() => {
+        if (!token || attempted.current) return;
+        attempted.current = true;
+
         setStatus("loading");
 
         verifyEmail(token)
             .then(() => {
-                if (!cancelled) setStatus("success");
+                setStatus("success");
             })
             .catch(() => {
-                if (!cancelled) {
-                    setStatus("error");
-                    setErrorMsg("הקישור לא תקין או שפג תוקפו.");
-                }
+                setStatus("error");
+                setErrorMsg("הקישור לא תקין או שפג תוקפו.");
             });
-
-        return () => {
-            cancelled = true;
-        };
     }, [token]);
 
     async function handleResend() {

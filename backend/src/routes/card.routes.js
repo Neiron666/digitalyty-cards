@@ -15,14 +15,19 @@ import {
 const router = Router();
 
 function requireAuthOrAnonymous(req, res, next) {
-    // Keep existing JWT auth middleware intact, but allow access when anonymousId exists.
-    // If caller provides an Authorization header, keep current behavior (requireAuth decides).
+    // Prefer cookie/header auth when present, then fall back to anonymous.
+    // This prevents logged-in users from being silently treated as anonymous
+    // just because the frontend sends x-anonymous-id alongside its auth cookie.
     const hasAuthHeader = Boolean(req.headers?.authorization);
     if (hasAuthHeader) return requireAuth(req, res, next);
 
-    if (req.anonymousId) return next();
-
-    return requireAuth(req, res, next);
+    // Try cookie-based auth first (non-blocking). If it resolves a userId,
+    // proceed as an authenticated user even when anonymousId is also present.
+    return optionalAuth(req, res, () => {
+        if (req.userId) return next();
+        if (req.anonymousId) return next();
+        return requireAuth(req, res, next);
+    });
 }
 
 router.get("/mine", requireAuthOrAnonymous, getMyCard);
