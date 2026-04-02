@@ -331,20 +331,20 @@ async function main() {
 
         statuses.inviteAccept = {
             status: inviteAccept.status,
-            hasJwt: typeof inviteAccept.body?.token === "string",
+            hasOk: inviteAccept.body?.ok === true,
         };
 
         assert(
             inviteAccept.status === 200,
             `Failed to accept invite: status=${inviteAccept.status}`,
         );
-        assert(
-            typeof inviteAccept.body?.token === "string" &&
-                inviteAccept.body.token.trim(),
-            "Missing JWT from invite accept",
-        );
 
-        const userJwt = String(inviteAccept.body.token);
+        // Obtain member JWT via User lookup + signToken (no body.token dependency).
+        const invitedUserForJwt = await User.findOne({ email: userEmail })
+            .select("_id")
+            .lean();
+        assert(invitedUserForJwt?._id, "Missing invited user after accept");
+        const userJwt = signToken(String(invitedUserForJwt._id));
         userHeaders = { Authorization: `Bearer ${userJwt}` };
 
         const listMembers = await requestJson({

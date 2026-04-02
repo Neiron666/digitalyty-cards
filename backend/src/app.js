@@ -47,27 +47,23 @@ app.use(
     }),
 );
 
-// CORS: allow only canonical origin in production; permissive otherwise.
+// CORS: explicit origin whitelist (never fall back to permissive defaults).
 const CORS_ORIGINS = process.env.CORS_ORIGINS
     ? process.env.CORS_ORIGINS.split(",")
           .map((o) => o.trim())
           .filter(Boolean)
-    : [];
+    : ["http://localhost:5173"];
 
 app.use(
-    cors(
-        CORS_ORIGINS.length > 0
-            ? {
-                  origin(origin, cb) {
-                      // Allow requests with no origin (server-to-server, curl, mobile).
-                      if (!origin) return cb(null, true);
-                      if (CORS_ORIGINS.includes(origin)) return cb(null, true);
-                      return cb(new Error("CORS not allowed"));
-                  },
-                  credentials: true,
-              }
-            : undefined,
-    ),
+    cors({
+        origin(origin, cb) {
+            // Allow requests with no origin (server-to-server, curl, mobile).
+            if (!origin) return cb(null, true);
+            if (CORS_ORIGINS.includes(origin)) return cb(null, true);
+            return cb(new Error("CORS not allowed"));
+        },
+        credentials: true,
+    }),
 );
 app.use(express.json());
 // Cookie parsing: populates req.cookies for future cookie-based auth.

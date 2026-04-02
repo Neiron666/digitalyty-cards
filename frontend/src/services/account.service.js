@@ -2,7 +2,7 @@ import api from "./api";
 
 /**
  * GET /api/account/me — self-service read-only account summary.
- * Requires valid JWT (Authorization header set via AuthContext).
+ * Requires active session (httpOnly auth cookie).
  */
 export async function getAccountSummary() {
     const res = await api.get("/account/me");

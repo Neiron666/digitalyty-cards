@@ -325,17 +325,15 @@ router.post("/login", async (req, res) => {
             reason: "email-not-verified",
             userId: user._id,
         });
-        return res
-            .status(403)
-            .json({
-                code: "EMAIL_NOT_VERIFIED",
-                message: "Email not verified",
-            });
+        return res.status(403).json({
+            code: "EMAIL_NOT_VERIFIED",
+            message: "Email not verified",
+        });
     }
 
     const loginToken = signToken(user._id);
     res.cookie(AUTH_COOKIE_NAME, loginToken, AUTH_COOKIE_OPTIONS);
-    res.json({ token: loginToken });
+    res.json({ ok: true });
 });
 
 // FORGOT PASSWORD (anti-enumeration)
@@ -672,7 +670,7 @@ router.post("/signup-consume", async (req, res) => {
 
         const consumeToken = signToken(user._id);
         res.cookie(AUTH_COOKIE_NAME, consumeToken, AUTH_COOKIE_OPTIONS);
-        return res.json({ token: consumeToken });
+        return res.json({ ok: true });
     } catch (err) {
         console.error("[auth] signup-consume failed", err?.message || err);
         return fail();

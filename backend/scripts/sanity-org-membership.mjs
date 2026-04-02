@@ -307,7 +307,7 @@ async function main() {
 
         statuses.inviteAccept = {
             status: inviteAccept.status,
-            hasJwt: typeof inviteAccept.body?.token === "string",
+            hasOk: inviteAccept.body?.ok === true,
             body: inviteAccept.body || null,
         };
 
@@ -317,9 +317,7 @@ async function main() {
         );
 
         checks.addMemberOk =
-            inviteCreate.status === 201 &&
-            inviteAccept.status === 200 &&
-            typeof inviteAccept.body?.token === "string";
+            inviteCreate.status === 201 && inviteAccept.status === 200;
 
         // 4) Duplicate accept should not create extra membership (token is single-use).
         // Hardening: accept may return different non-2xx codes across implementations.

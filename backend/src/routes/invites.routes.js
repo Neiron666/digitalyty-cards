@@ -221,7 +221,7 @@ router.post("/accept", optionalAuth, async (req, res) => {
     const acceptToken = signToken(user._id);
     res.cookie(AUTH_COOKIE_NAME, acceptToken, AUTH_COOKIE_OPTIONS);
     return res.json({
-        token: acceptToken,
+        ok: true,
         orgId: String(org._id),
         orgSlug: String(org.slug || "")
             .trim()

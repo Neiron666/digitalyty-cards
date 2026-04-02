@@ -52,9 +52,7 @@ export default function SignupConsume() {
                 form.password,
                 form.consent,
             );
-            const jwt = res?.data?.token;
-
-            if (!jwt) {
+            if (!res?.data?.ok) {
                 setError("לא ניתן להשלים הרשמה. נסו שוב.");
                 return;
             }

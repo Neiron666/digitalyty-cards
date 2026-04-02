@@ -1,5 +1,4 @@
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
-import api from "../services/api";
 import {
     login as loginRequest,
     register as registerRequest,
@@ -26,8 +25,6 @@ export function AuthProvider({ children }) {
         } catch (err) {
             const status = err?.response?.status;
             if (status === 401) {
-                localStorage.removeItem("token"); // transition cleanup
-                delete api.defaults.headers.common.Authorization;
                 setUser(null);
                 return;
             }
@@ -57,13 +54,11 @@ export function AuthProvider({ children }) {
 
     async function login(email, password) {
         await loginRequest(email, password);
-        localStorage.removeItem("token"); // transition cleanup
         await loadMeSafely();
     }
 
     async function register(email, password, consent) {
         const res = await registerRequest(email, password, consent);
-        localStorage.removeItem("token"); // transition cleanup
         return res;
     }
 
@@ -73,8 +68,6 @@ export function AuthProvider({ children }) {
         } catch {
             // Best effort — clear local session regardless
         }
-        localStorage.removeItem("token"); // transition cleanup
-        delete api.defaults.headers.common.Authorization;
         setUser(null);
     }
 
