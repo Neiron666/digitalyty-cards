@@ -27,6 +27,7 @@ import blogRoutes from "./routes/blog.routes.js";
 import guideRoutes from "./routes/guide.routes.js";
 import aiRoutes from "./routes/ai.routes.js";
 import bookingRoutes from "./routes/booking.routes.js";
+import { csrfGuard } from "./middlewares/csrf.middleware.js";
 import path from "path";
 
 const app = express();
@@ -72,6 +73,9 @@ app.use(express.json());
 // Cookie parsing: populates req.cookies for future cookie-based auth.
 // No cookies are currently issued or consumed; this is a no-op today.
 app.use(cookieParser());
+
+// CSRF defense-in-depth: require X-Requested-With on cookie-auth mutation requests.
+app.use(csrfGuard);
 
 // Site analytics write endpoint must be "always 204".
 // If a client sends malformed JSON, Express would normally return 400 before hitting the handler.

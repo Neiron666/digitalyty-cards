@@ -12,6 +12,7 @@
         "sanity:claim-vs-create-race": "node scripts/sanity-claim-vs-create-race.mjs",
         "sanity:card-index-drift": "node scripts/sanity-card-index-drift.mjs",
         "migrate:card-user-index": "node scripts/migrate-card-user-index.mjs",
+        "migrate:card-org-user-index": "node scripts/migrate-card-org-user-index.mjs",
         "migrate:aiusagemonthly-indexes": "node scripts/migrate-aiusagemonthly-indexes.mjs",
         "migrate:blogpost-indexes": "node scripts/migrate-blogpost-indexes.mjs",
         "migrate:user-auth-indexes": "node scripts/migrate-user-auth-indexes.mjs",

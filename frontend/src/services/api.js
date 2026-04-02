@@ -20,6 +20,7 @@ const api = axios.create({
 });
 
 api.defaults.headers.common.Accept = "application/json";
+api.defaults.headers.common["X-Requested-With"] = "XMLHttpRequest";
 
 const ANON_STORAGE_KEY = "digitalyty_anon_id";
 
