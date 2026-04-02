@@ -428,6 +428,7 @@ export default function Admin() {
     const [selectedTab, setSelectedTab] = useState("general");
     const [selectedUserTab, setSelectedUserTab] = useState("general");
     const [cardsQuery, setCardsQuery] = useState("");
+    const [cardsCohort, setCardsCohort] = useState("");
     const [usersQuery, setUsersQuery] = useState("");
     const [usersAppliedQ, setUsersAppliedQ] = useState("");
     const [usersCohort, setUsersCohort] = useState("");
@@ -614,17 +615,31 @@ export default function Admin() {
     }, [selectedCard]);
 
     const filteredCards = useMemo(() => {
+        let list = Array.isArray(cards) ? cards : [];
+
+        if (cardsCohort === "paid") {
+            list = list.filter((c) => c?.effectiveBilling?.isPaid === true);
+        } else if (cardsCohort === "free") {
+            list = list.filter(
+                (c) =>
+                    c?.effectiveBilling?.isPaid !== true &&
+                    c?.ownerSummary?.type !== "anonymous",
+            );
+        } else if (cardsCohort === "anonymous") {
+            list = list.filter((c) => c?.ownerSummary?.type === "anonymous");
+        }
+
         const q = String(cardsQuery || "")
             .trim()
             .toLowerCase();
-        if (!q) return cards;
+        if (!q) return list;
 
-        return (Array.isArray(cards) ? cards : []).filter((c) => {
+        return list.filter((c) => {
             const slug = String(c?.slug || "").toLowerCase();
             const email = String(c?.ownerSummary?.email || "").toLowerCase();
             return slug.includes(q) || email.includes(q);
         });
-    }, [cards, cardsQuery]);
+    }, [cards, cardsQuery, cardsCohort]);
 
     function toDateInputUtc(value) {
         if (!value) return "";
@@ -1936,8 +1951,42 @@ export default function Admin() {
                                                 </Button>
                                             ) : null}
                                         </div>
+                                        <div className={styles.searchRow}>
+                                            {[
+                                                { key: "", label: "הכל" },
+                                                {
+                                                    key: "paid",
+                                                    label: "משלמים",
+                                                },
+                                                {
+                                                    key: "free",
+                                                    label: "חינם",
+                                                },
+                                                {
+                                                    key: "anonymous",
+                                                    label: "אנונימי",
+                                                },
+                                            ].map((c) => (
+                                                <Button
+                                                    key={c.key || "all"}
+                                                    variant={
+                                                        cardsCohort === c.key
+                                                            ? "primary"
+                                                            : "secondary"
+                                                    }
+                                                    size="small"
+                                                    disabled={loading}
+                                                    onClick={() =>
+                                                        setCardsCohort(c.key)
+                                                    }
+                                                >
+                                                    {c.label}
+                                                </Button>
+                                            ))}
+                                        </div>
                                         <p className={styles.muted}>
-                                            {String(cardsQuery || "").trim()
+                                            {String(cardsQuery || "").trim() ||
+                                            cardsCohort
                                                 ? `מסנן ${filteredCards.length} מתוך ${cards.length} בעמוד`
                                                 : `עמוד ${cardsPage} · ${cards.length} מתוך ${cardsTotal}`}
                                         </p>
