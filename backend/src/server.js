@@ -45,6 +45,22 @@ const { default: app } = await import("./app.js");
 const PORT = process.env.PORT || 5000;
 
 async function start() {
+    // --- Critical env validation (fail-fast before any side effects) ---
+    if (
+        typeof process.env.JWT_SECRET !== "string" ||
+        !process.env.JWT_SECRET.trim()
+    ) {
+        throw new Error("JWT_SECRET is required");
+    }
+    if (
+        process.env.NODE_ENV === "production" &&
+        !process.env.CARDIGO_PROXY_SHARED_SECRET?.trim()
+    ) {
+        throw new Error(
+            "CARDIGO_PROXY_SHARED_SECRET is required in production",
+        );
+    }
+
     await connectDB(process.env.MONGO_URI);
 
     // Guaranteed cleanup for expired unpaid trial cards (Mongo + Supabase media).
