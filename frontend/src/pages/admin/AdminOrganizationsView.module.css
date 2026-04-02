@@ -8,20 +8,10 @@
     gap: 16px;
 }
 
-@media (min-width: 1000px) {
-    .grid {
-        flex-direction: row;
-        align-items: flex-start;
-    }
-}
-
 .panel {
-    /* background: #fff; */
-    border: 1px solid rgba(0, 0, 0, 0.08);
+    border: 1px solid var(--border);
     border-radius: 12px;
     padding: 16px;
-    flex: 1 1 0;
-    min-width: 0;
 }
 
 .h2 {
@@ -43,26 +33,25 @@
 
 .tableWrap {
     overflow-x: auto;
-    border: 1px solid rgba(0, 0, 0, 0.08);
+    border: 1px solid var(--border);
     border-radius: 10px;
 }
 
 .table {
     width: 100%;
     border-collapse: collapse;
-    min-width: 520px;
 }
 
 .table th,
 .table td {
     padding: 10px;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
     text-align: start;
     vertical-align: middle;
 }
 
 .row:hover {
-    background: rgba(0, 0, 0, 0.02);
+    background: rgba(255, 255, 255, 0.04);
 }
 
 .cellMono {
@@ -93,7 +82,8 @@
 }
 
 .pagerMeta {
-    color: rgba(0, 0, 0, 0.7);
+    color: inherit;
+    opacity: 0.7;
     font-size: var(--fs-body-sm);
 }
 
@@ -116,7 +106,8 @@
 
 .limitLabel {
     font-size: var(--fs-body-sm);
-    color: rgba(0, 0, 0, 0.7);
+    color: inherit;
+    opacity: 0.7;
 }
 
 .form {
@@ -127,7 +118,8 @@
 
 .label {
     font-size: var(--fs-body-sm);
-    color: rgba(0, 0, 0, 0.75);
+    color: inherit;
+    opacity: 0.75;
 }
 
 .detailsGrid {
@@ -145,7 +137,7 @@
 }
 
 .detailItem {
-    background: rgba(0, 0, 0, 0.02);
+    background: rgba(255, 255, 255, 0.04);
     border-radius: 10px;
     padding: 10px;
     flex: 1 1 0;
@@ -154,7 +146,8 @@
 
 .detailLabel {
     font-size: var(--fs-caption);
-    color: rgba(0, 0, 0, 0.6);
+    color: inherit;
+    opacity: 0.6;
     margin-bottom: 4px;
 }
 
@@ -178,7 +171,7 @@
 }
 
 .memberForm {
-    border: 1px solid rgba(0, 0, 0, 0.08);
+    border: 1px solid var(--border);
     border-radius: 10px;
     padding: 12px;
     margin-bottom: 12px;
@@ -217,24 +210,27 @@
 
 .select {
     width: 100%;
-    border: 1px solid rgba(0, 0, 0, 0.15);
+    border: 1px solid var(--input-border);
     border-radius: 10px;
     padding: 10px;
     font: inherit;
-    background: #fff;
+    background: var(--input-bg);
+    color: var(--text-main);
 }
 
 .selectInline {
     width: 100%;
-    border: 1px solid rgba(0, 0, 0, 0.15);
+    border: 1px solid var(--input-border);
     border-radius: 10px;
     padding: 8px;
     font: inherit;
-    background: #fff;
+    background: var(--input-bg);
+    color: var(--text-main);
 }
 
 .empty {
     padding: 14px;
     text-align: center;
-    color: rgba(0, 0, 0, 0.6);
+    color: inherit;
+    opacity: 0.6;
 }
