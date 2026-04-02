@@ -60,6 +60,7 @@ app.use(
             // Allow requests with no origin (server-to-server, curl, mobile).
             if (!origin) return cb(null, true);
             if (CORS_ORIGINS.includes(origin)) return cb(null, true);
+            console.warn("[cors] rejected", { origin });
             return cb(new Error("CORS not allowed"));
         },
         credentials: true,

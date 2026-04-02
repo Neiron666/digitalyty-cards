@@ -13,5 +13,12 @@ export function csrfGuard(req, res, next) {
 
     if (req.headers["x-requested-with"] === "XMLHttpRequest") return next();
 
+    console.warn("[csrf] rejected", {
+        method: req.method,
+        url: req.originalUrl || req.url,
+        origin: req.headers.origin || null,
+        hasCookie: true,
+        hasRequestedWith: Boolean(req.headers["x-requested-with"]),
+    });
     return res.status(403).json({ message: "Forbidden" });
 }

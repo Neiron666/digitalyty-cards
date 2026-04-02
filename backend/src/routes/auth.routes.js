@@ -169,8 +169,8 @@ function noStore(req, res, next) {
     res.set("Pragma", "no-cache");
     res.set("Expires", "0");
     res.set("Surrogate-Control", "no-store");
-    // Critical: this endpoint depends on the token.
-    res.set("Vary", "Authorization");
+    // Critical: this endpoint depends on the auth transport (header or cookie).
+    res.set("Vary", "Authorization, Cookie");
     next();
 }
 
