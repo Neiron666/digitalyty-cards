@@ -92,6 +92,8 @@ For EVERY task you must follow the 2-phase workflow:
 - Analytics tracking endpoint remains **always 204** (best effort, no existence leakage).
 - Mongo safety: prevent dotted-path injection (`.` / `$`), keep writes bounded (no unbounded key growth).
 - Index governance: runtime must not auto-apply indexes by surprise; drift is detected via sanities; migrations are manual only.
+- Auth transport invariant: browser auth is **httpOnly cookie-backed** (`__Host-cardigo_auth` / `cardigo_auth`). Browser runtime must **not** use localStorage for auth tokens and must **not** write `Authorization` headers. Backend dual-mode middleware (header-first → cookie-fallback) is intentional for tooling/sanity scripts only.
+- Startup env validation: `JWT_SECRET` is required at startup (always). `CARDIGO_PROXY_SHARED_SECRET` is required at startup in production only. Server must fail fast if these are missing.
 
 ### 1.9 Ephemeral verification artifacts must be deleted before the workstream ends
 
@@ -181,6 +183,15 @@ Paste raw outputs + EXIT codes. Never claim you ran checks you didn’t run.
 - Avoid resource existence leaks where policy requires anti-enumeration.
 - Use bounded aggregates/maps for analytics; enforce safe keys (no `.` / `$`).
 - Never expose internal fields (billing/adminOverride/etc.) to non-admin clients.
+- Auth response-body contract: `login`, `signup-consume`, `invite-accept` return `{ ok: true }` — they do **not** return JWT tokens in the response body. Auth credential is set as an httpOnly cookie only.
+- CSRF contract: cookie-auth mutation requests require `X-Requested-With: XMLHttpRequest`. Frontend sends this header by default on every request.
+- CORS contract: explicit allowlist from `CORS_ORIGINS` env, `credentials: true`, no wildcard origin drift.
+- Closed contour discipline: the following contours are closed and must not be casually reopened without explicit architect approval and a bounded audit:
+    - browser auth cookie migration
+    - CSRF (X-Requested-With)
+    - CORS hardening
+    - Bearer/tooling decision (dual-mode intentional)
+    - startup env validation hardening
 
 ---
 

@@ -99,7 +99,8 @@ curl.exe -s -X POST http://localhost:5000/api/auth/register `
 curl.exe -s -X POST http://localhost:5000/api/auth/register `
   -H "Content-Type: application/json" `
   -d '{"email":"smoke4@example.com","password":"Test1234!","consent":true}'
-# expect: 200 { "token": "eyJ...", "isVerified": false }
+# expect: 200 { "registered": true, "isVerified": false }
+# No auth cookie is set — user must verify email first.
 ```
 
 After test 4, verify the User document in MongoDB contains `termsAcceptedAt`, `privacyAcceptedAt`, `termsVersion`, and `privacyVersion` populated.

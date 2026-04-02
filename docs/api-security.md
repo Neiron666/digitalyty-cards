@@ -105,15 +105,15 @@ Create a new user account via email + password.
 
 **Responses**:
 
-| Status | Body                                                           | Condition                      |
-| ------ | -------------------------------------------------------------- | ------------------------------ |
-| 200    | `{ "token": "<jwt>", "isVerified": false }`                    | Account created                |
-| 400    | `{ "message": "Invalid email" }`                               | Malformed email                |
-| 400    | `{ "message": "Invalid password" }`                            | Missing or non-string password |
-| 400    | `{ "message": "Password must be at least 8 characters" }`      | Too short                      |
-| 400    | `{ "message": "Invalid request", "code": "CONSENT_REQUIRED" }` | `consent !== true`             |
-| 409    | `{ "message": "Unable to register" }`                          | Duplicate email (anti-enum)    |
-| 429    | `{ "code": "RATE_LIMITED", "message": "Too many requests" }`   | Rate limit exceeded            |
+| Status | Body                                                           | Condition                                                       |
+| ------ | -------------------------------------------------------------- | --------------------------------------------------------------- |
+| 200    | `{ "registered": true, "isVerified": false }`                  | Account created (no auth cookie — user must verify email first) |
+| 400    | `{ "message": "Invalid email" }`                               | Malformed email                                                 |
+| 400    | `{ "message": "Invalid password" }`                            | Missing or non-string password                                  |
+| 400    | `{ "message": "Password must be at least 8 characters" }`      | Too short                                                       |
+| 400    | `{ "message": "Invalid request", "code": "CONSENT_REQUIRED" }` | `consent !== true`                                              |
+| 409    | `{ "message": "Unable to register" }`                          | Duplicate email (anti-enum)                                     |
+| 429    | `{ "code": "RATE_LIMITED", "message": "Too many requests" }`   | Rate limit exceeded                                             |
 
 **Example**:
 
@@ -121,7 +121,8 @@ Create a new user account via email + password.
 curl -X POST https://cardigo.co.il/api/auth/register \
   -H "Content-Type: application/json" \
   -d '{"email":"user@example.com","password":"securePass1","consent":true}'
-# → 200 {"token":"eyJ...","isVerified":false}
+# → 200 {"registered":true,"isVerified":false}
+# No auth cookie is set — user must verify email first.
 ```
 
 ---
@@ -141,15 +142,15 @@ Authenticate an existing user.
 
 1. 2-step case-insensitive user lookup.
 2. Compares password via `bcrypt.compare`.
-3. Returns a JWT on success.
+3. On success, sets an httpOnly auth cookie and returns `{ ok: true }`.
 
 **Responses**:
 
-| Status | Body                                                         | Condition          |
-| ------ | ------------------------------------------------------------ | ------------------ |
-| 200    | `{ "token": "<jwt>" }`                                       | Success            |
-| 401    | `{ "message": "Invalid credentials" }`                       | Bad email/password |
-| 429    | `{ "code": "RATE_LIMITED", "message": "Too many requests" }` | Rate limit         |
+| Status | Body                                                         | Condition                                  |
+| ------ | ------------------------------------------------------------ | ------------------------------------------ |
+| 200    | `{ "ok": true }`                                             | Success (auth cookie set via `Set-Cookie`) |
+| 401    | `{ "message": "Invalid credentials" }`                       | Bad email/password                         |
+| 429    | `{ "code": "RATE_LIMITED", "message": "Too many requests" }` | Rate limit                                 |
 
 ---
 
@@ -241,10 +242,10 @@ Consume a magic signup link token and create an account with a password.
 
 **Responses**:
 
-| Status | Body                                         | Condition               |
-| ------ | -------------------------------------------- | ----------------------- |
-| 200    | `{ "token": "<jwt>" }`                       | Account created         |
-| 400    | `{ "message": "Unable to complete signup" }` | Any failure (anti-enum) |
+| Status | Body                                         | Condition                                          |
+| ------ | -------------------------------------------- | -------------------------------------------------- |
+| 200    | `{ "ok": true }`                             | Account created (auth cookie set via `Set-Cookie`) |
+| 400    | `{ "message": "Unable to complete signup" }` | Any failure (anti-enum)                            |
 
 > **Design note**: neutral 400 on _all_ failures including rate limit (enterprise contract — no distinction between invalid token and rate limit).
 
@@ -252,11 +253,11 @@ Consume a magic signup link token and create an account with a password.
 
 ### GET /api/auth/me
 
-Return the current user's profile. Requires JWT (`Authorization: Bearer <token>`).
+Return the current user's profile. Requires authentication (browser: httpOnly cookie; tooling/curl: `Authorization: Bearer <token>`).
 
 **Rate limit**: none (auth-gated).
 
-**Cache control**: `no-store` — response must not be cached; `Vary: Authorization`.
+**Cache control**: `no-store` — response must not be cached; `Vary: Authorization, Cookie`.
 
 **Responses**:
 
@@ -313,7 +314,7 @@ curl -X POST https://cardigo.co.il/api/auth/verify-email \
 
 ### POST /api/auth/resend-verification
 
-Resend the email-verification link. Requires JWT (`Authorization: Bearer <token>`).
+Resend the email-verification link. Requires authentication (browser: httpOnly cookie; tooling/curl: `Authorization: Bearer <token>`).
 
 **Rate limit**: 5 requests / 10 min per IP.
 
@@ -363,8 +364,7 @@ All rate limits use an **in-memory Map** per endpoint keyed by client IP. Window
 
 ```
 User submits email + password
-  → Account created (isVerified: false)
-  → JWT returned immediately (user can access the app)
+  → Account created (isVerified: false, no auth cookie)
   → Verification email sent (best-effort, 24 h TTL)
   → User clicks link → /verify-email consumes token
   → isVerified set to true

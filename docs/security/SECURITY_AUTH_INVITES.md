@@ -8,10 +8,12 @@
 
 ## 0) Текущее состояние (snapshot из аудита)
 
+> **Примечание:** этот snapshot отражает состояние на момент аудита (Feb 2026). Текущая реальность может отличаться — см. ниже пометки **(обновлено)**.
+
 - Auth endpoints: register/login/me.
-- Нет email verification, нет password reset.
-- JWT хранится в localStorage, Authorization ставится через `api.defaults`.
-- CORS включён без allowlist.
+- ~~Нет email verification, нет password reset.~~ **(обновлено)** Email verification, password reset и magic-link signup реализованы.
+- ~~JWT хранится в localStorage, Authorization ставится через `api.defaults`.~~ **(обновлено)** Auth перенесён на httpOnly cookies; browser runtime не использует localStorage для токенов и не ставит Authorization headers.
+- ~~CORS включён без allowlist.~~ **(обновлено)** CORS allowlist через `CORS_ORIGINS` env.
 - Error middleware возвращает `err.message` клиенту.
 - Email normalization непоследовательна: auth использует raw email, admin-lookup нормализует.
 
@@ -25,7 +27,7 @@
 - User/email enumeration.
 - Token theft (invite/reset).
 - Cross-tenant data access (org isolation).
-- XSS → кража JWT из localStorage (P2: переход на httpOnly cookies).
+- ~~XSS → кража JWT из localStorage (P2: переход на httpOnly cookies).~~ **(выполнено)** Auth перенесён на httpOnly cookies + CSRF (`X-Requested-With`). XSS-вектор через localStorage устранён.
 - Abuse: brute force, invite/reset spamming.
 
 ---
@@ -195,7 +197,7 @@ Render — это хостинг. Для писем нужен именно **em
 
 - CORS allowlist через ENV (P0/P1).
 - Helmet (P1).
-- CSP (P2), особенно если JWT в localStorage.
+- CSP (P2).
 
 ---
 
@@ -238,7 +240,7 @@ Render — это хостинг. Для писем нужен именно **em
 
 ### P2 (укрепление)
 
-9. httpOnly cookies + CSRF.
+9. ~~httpOnly cookies + CSRF.~~ **(выполнено)** Browser auth теперь cookie-backed; CSRF guard (`X-Requested-With`) установлен.
 10. Helmet + CSP.
 11. Redis rate limiter (multi-instance).
 12. MFA/Passkeys (по запросу enterprise клиентов).

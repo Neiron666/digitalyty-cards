@@ -428,6 +428,9 @@ export default function Admin() {
     const [selectedTab, setSelectedTab] = useState("general");
     const [selectedUserTab, setSelectedUserTab] = useState("general");
     const [cardsQuery, setCardsQuery] = useState("");
+    const [usersQuery, setUsersQuery] = useState("");
+    const [usersAppliedQ, setUsersAppliedQ] = useState("");
+    const [usersCohort, setUsersCohort] = useState("");
     const selectedTabListRef = useRef(null);
     const selectedTabListRefMobile = useRef(null);
     const selectedUserTabListRef = useRef(null);
@@ -470,9 +473,16 @@ export default function Admin() {
         analyticsPremium: "",
     });
 
+    const CARDS_PAGE_LIMIT = 25;
+    const USERS_PAGE_LIMIT = 25;
+
     const [stats, setStats] = useState(null);
     const [users, setUsers] = useState([]);
+    const [usersTotal, setUsersTotal] = useState(0);
+    const [usersPage, setUsersPage] = useState(1);
     const [cards, setCards] = useState([]);
+    const [cardsTotal, setCardsTotal] = useState(0);
+    const [cardsPage, setCardsPage] = useState(1);
 
     const [selectedCardId, setSelectedCardId] = useState("");
     const [selectedCard, setSelectedCard] = useState(null);
@@ -661,12 +671,19 @@ export default function Admin() {
         try {
             const [s, u, c] = await Promise.all([
                 getAdminStats(),
-                listAdminUsers(),
-                listAdminCards(),
+                listAdminUsers({
+                    page: usersPage,
+                    limit: USERS_PAGE_LIMIT,
+                    ...(usersAppliedQ ? { q: usersAppliedQ } : {}),
+                    ...(usersCohort ? { cohort: usersCohort } : {}),
+                }),
+                listAdminCards({ page: cardsPage, limit: CARDS_PAGE_LIMIT }),
             ]);
             setStats(s.data);
             setUsers(u.data?.items || []);
+            setUsersTotal(Number(u.data?.total) || 0);
             setCards(c.data?.items || []);
+            setCardsTotal(Number(c.data?.total) || 0);
         } catch (err) {
             if (isAccessDenied(err)) {
                 setAccessDenied(true);
@@ -676,6 +693,69 @@ export default function Admin() {
         } finally {
             setLoading(false);
         }
+    }
+
+    async function loadCardsPage(nextPage) {
+        setCardsPage(nextPage);
+        setLoading(true);
+        setError("");
+        try {
+            const c = await listAdminCards({
+                page: nextPage,
+                limit: CARDS_PAGE_LIMIT,
+            });
+            setCards(c.data?.items || []);
+            setCardsTotal(Number(c.data?.total) || 0);
+        } catch (err) {
+            if (isAccessDenied(err)) {
+                setAccessDenied(true);
+            } else {
+                setError(mapApiErrorToHebrew(err, "err_load_admin"));
+            }
+        } finally {
+            setLoading(false);
+        }
+    }
+
+    async function loadUsersPage(nextPage, appliedQ, cohort) {
+        const q = typeof appliedQ === "string" ? appliedQ : usersAppliedQ;
+        const c = typeof cohort === "string" ? cohort : usersCohort;
+        setUsersPage(nextPage);
+        setLoading(true);
+        setError("");
+        try {
+            const trimmedQ = String(q || "").trim();
+            const u = await listAdminUsers({
+                page: nextPage,
+                limit: USERS_PAGE_LIMIT,
+                ...(trimmedQ ? { q: trimmedQ } : {}),
+                ...(c ? { cohort: c } : {}),
+            });
+            setUsers(u.data?.items || []);
+            setUsersTotal(Number(u.data?.total) || 0);
+        } catch (err) {
+            if (isAccessDenied(err)) {
+                setAccessDenied(true);
+            } else {
+                setError(mapApiErrorToHebrew(err, "err_load_admin"));
+            }
+        } finally {
+            setLoading(false);
+        }
+    }
+
+    function handleUsersSearch() {
+        const trimmed = String(usersQuery || "").trim();
+        if (!trimmed) return;
+        setUsersAppliedQ(trimmed);
+        loadUsersPage(1, trimmed);
+    }
+
+    function handleUsersClearSearch() {
+        setUsersQuery("");
+        setUsersAppliedQ("");
+        setUsersCohort("");
+        loadUsersPage(1, "", "");
     }
 
     function handleRefreshClick() {
@@ -1822,12 +1902,11 @@ export default function Admin() {
 
                             <details
                                 className={`${styles.queuePanel} ${styles.queueCards}`}
-                                open
                             >
                                 <summary className={styles.queueSummary}>
                                     {t("section_cards")}
                                     <span className={styles.queueCount}>
-                                        ({filteredCards.length}/{cards.length})
+                                        ({cardsTotal})
                                     </span>
                                 </summary>
                                 <div className={styles.queueBody}>
@@ -1858,8 +1937,9 @@ export default function Admin() {
                                             ) : null}
                                         </div>
                                         <p className={styles.muted}>
-                                            מציג {filteredCards.length} מתוך{" "}
-                                            {cards.length}
+                                            {String(cardsQuery || "").trim()
+                                                ? `מסנן ${filteredCards.length} מתוך ${cards.length} בעמוד`
+                                                : `עמוד ${cardsPage} · ${cards.length} מתוך ${cardsTotal}`}
                                         </p>
                                     </div>
 
@@ -1966,6 +2046,49 @@ export default function Admin() {
                                             {t("msg_loading_card")}
                                         </p>
                                     ) : null}
+
+                                    <div className={styles.pager}>
+                                        <span className={styles.pagerMeta}>
+                                            סה״כ: {cardsTotal}
+                                        </span>
+                                        <div className={styles.pagerControls}>
+                                            <Button
+                                                variant="secondary"
+                                                size="small"
+                                                onClick={() =>
+                                                    loadCardsPage(
+                                                        Math.max(
+                                                            1,
+                                                            cardsPage - 1,
+                                                        ),
+                                                    )
+                                                }
+                                                disabled={
+                                                    loading || cardsPage <= 1
+                                                }
+                                            >
+                                                הקודם
+                                            </Button>
+                                            <span className={styles.pagerPage}>
+                                                עמוד {cardsPage}
+                                            </span>
+                                            <Button
+                                                variant="secondary"
+                                                size="small"
+                                                onClick={() =>
+                                                    loadCardsPage(cardsPage + 1)
+                                                }
+                                                disabled={
+                                                    loading ||
+                                                    cardsPage *
+                                                        CARDS_PAGE_LIMIT >=
+                                                        cardsTotal
+                                                }
+                                            >
+                                                הבא
+                                            </Button>
+                                        </div>
+                                    </div>
                                 </div>
                             </details>
 
@@ -1975,10 +2098,90 @@ export default function Admin() {
                                 <summary className={styles.queueSummary}>
                                     {t("section_users")}
                                     <span className={styles.queueCount}>
-                                        ({users.length})
+                                        ({usersTotal})
                                     </span>
                                 </summary>
                                 <div className={styles.queueBody}>
+                                    <div className={styles.directoryTools}>
+                                        <div className={styles.searchRow}>
+                                            <Input
+                                                label="חיפוש משתמשים"
+                                                value={usersQuery}
+                                                onChange={(e) =>
+                                                    setUsersQuery(
+                                                        e.target.value,
+                                                    )
+                                                }
+                                                onKeyDown={(e) => {
+                                                    if (e.key === "Enter") {
+                                                        e.preventDefault();
+                                                        handleUsersSearch();
+                                                    }
+                                                }}
+                                                placeholder="אימייל"
+                                                className={styles.searchInput}
+                                            />
+                                            <Button
+                                                variant="secondary"
+                                                size="small"
+                                                onClick={handleUsersSearch}
+                                                disabled={
+                                                    loading ||
+                                                    !String(
+                                                        usersQuery || "",
+                                                    ).trim()
+                                                }
+                                            >
+                                                חפש
+                                            </Button>
+                                            {String(usersQuery || "").trim() ||
+                                            usersAppliedQ ||
+                                            usersCohort ? (
+                                                <Button
+                                                    variant="secondary"
+                                                    size="small"
+                                                    onClick={
+                                                        handleUsersClearSearch
+                                                    }
+                                                >
+                                                    נקה
+                                                </Button>
+                                            ) : null}
+                                        </div>
+                                        <div className={styles.searchRow}>
+                                            {["", "paying", "non-paying"].map(
+                                                (c) => (
+                                                    <Button
+                                                        key={c || "all"}
+                                                        variant={
+                                                            usersCohort === c
+                                                                ? "primary"
+                                                                : "secondary"
+                                                        }
+                                                        size="small"
+                                                        disabled={loading}
+                                                        onClick={() => {
+                                                            setUsersCohort(c);
+                                                            loadUsersPage(
+                                                                1,
+                                                                undefined,
+                                                                c,
+                                                            );
+                                                        }}
+                                                    >
+                                                        {c === "paying"
+                                                            ? "משלמים"
+                                                            : c === "non-paying"
+                                                              ? "לא משלמים"
+                                                              : "הכל"}
+                                                    </Button>
+                                                ),
+                                            )}
+                                        </div>
+                                        <p className={styles.muted}>
+                                            {`עמוד ${usersPage} · ${users.length} מתוך ${usersTotal}`}
+                                        </p>
+                                    </div>
                                     <table className={styles.table}>
                                         <thead>
                                             <tr>
@@ -2102,6 +2305,49 @@ export default function Admin() {
                                             ))}
                                         </tbody>
                                     </table>
+
+                                    <div className={styles.pager}>
+                                        <span className={styles.pagerMeta}>
+                                            סה״כ: {usersTotal}
+                                        </span>
+                                        <div className={styles.pagerControls}>
+                                            <Button
+                                                variant="secondary"
+                                                size="small"
+                                                onClick={() =>
+                                                    loadUsersPage(
+                                                        Math.max(
+                                                            1,
+                                                            usersPage - 1,
+                                                        ),
+                                                    )
+                                                }
+                                                disabled={
+                                                    loading || usersPage <= 1
+                                                }
+                                            >
+                                                הקודם
+                                            </Button>
+                                            <span className={styles.pagerPage}>
+                                                עמוד {usersPage}
+                                            </span>
+                                            <Button
+                                                variant="secondary"
+                                                size="small"
+                                                onClick={() =>
+                                                    loadUsersPage(usersPage + 1)
+                                                }
+                                                disabled={
+                                                    loading ||
+                                                    usersPage *
+                                                        USERS_PAGE_LIMIT >=
+                                                        usersTotal
+                                                }
+                                            >
+                                                הבא
+                                            </Button>
+                                        </div>
+                                    </div>
                                 </div>
                             </details>
 

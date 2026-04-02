@@ -322,6 +322,19 @@ DOM-dependent visual hacks
 
 Skins are token providers, not structural styling systems.
 
+3.8 Browser auth contract (frozen)
+
+Browser auth uses **httpOnly cookies** set by the backend. Frontend does not manage auth tokens directly.
+
+Rules:
+
+- API client must use `withCredentials: true` (already configured in `api.js`). Do not remove it.
+- API client must send `X-Requested-With: XMLHttpRequest` on every request (CSRF contract). Do not remove it.
+- Do **not** store auth tokens in `localStorage` or `sessionStorage`.
+- Do **not** write `Authorization` headers in browser runtime code. Bearer auth is reserved for backend tooling/sanity scripts only.
+- Login / signup-consume / invite-accept responses contain `{ ok: true }` — they do **not** return JWT tokens in the body. Auth credential arrives as a Set-Cookie header handled by the browser automatically.
+- Auth bootstrap uses `GET /auth/me` with cookie credentials. Do not replace this with token-based bootstrap.
+
 4) Styling Governance
 4.1 CSS Modules only
 

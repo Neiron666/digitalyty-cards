@@ -53,7 +53,7 @@ Input: { "token": "<raw token>", "password": "<new password>", "consent": true }
 
 Output:
 
-Success: returns { "token": "<jwt>" } (user is authenticated immediately).
+Success: returns `{ "ok": true }` — auth credential is set as an httpOnly cookie (`Set-Cookie` header).
 
 Any failure: 400 with a neutral message (invalid/expired/used token, existing user, rate-limit, internal error). No reason leakage.
 

@@ -258,14 +258,24 @@ export async function listUsers(req, res) {
     const { skip, limit, page } = parsePagination(req);
     const q = parseSearch(req);
 
+    const cohort =
+        typeof req.query.cohort === "string" ? req.query.cohort.trim() : "";
+
     const filter = q ? { email: q } : {};
+    if (cohort === "paying") {
+        filter["subscription.status"] = "active";
+    } else if (cohort === "non-paying") {
+        filter["subscription.status"] = { $ne: "active" };
+    }
 
     const [items, total] = await Promise.all([
         User.find(filter)
             .sort({ createdAt: -1 })
             .skip(skip)
             .limit(limit)
-            .select("email role cardId adminTier adminTierUntil createdAt"),
+            .select(
+                "email role cardId adminTier adminTierUntil subscription.status createdAt",
+            ),
         User.countDocuments(filter),
     ]);
 

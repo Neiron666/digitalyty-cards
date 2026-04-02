@@ -881,6 +881,32 @@
     overflow: visible;
 }
 
+.pager {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    padding: 10px 14px 14px;
+}
+
+.pagerMeta {
+    font-size: var(--fs-body-sm);
+    opacity: 0.75;
+}
+
+.pagerControls {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.pagerPage {
+    min-width: 70px;
+    text-align: center;
+    font-size: var(--fs-body-sm);
+}
+
 .centerCard {
     margin: auto;
     width: min(720px, 100%);

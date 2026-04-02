@@ -474,6 +474,25 @@ rate limits
 anti-abuse rails
 honeypot / fake-success patterns where product already uses them
 best-effort behavior when contract requires it
+
+7.6 Auth transport contract (frozen)
+
+Browser auth uses **httpOnly cookies** (`__Host-cardigo_auth` in production, `cardigo_auth` in development).
+
+Rules:
+
+- `login`, `signup-consume`, `invite-accept` set the auth cookie via `res.cookie()` and return `{ ok: true }` — they do **not** return a JWT token in the response body.
+- Backend auth middleware is **dual-mode** (header-first → cookie-fallback). This is intentional for tooling/sanity-script compatibility. Do not remove either mode without an explicit bounded audit.
+- CSRF guard (`csrfGuard`) is mounted globally and requires `X-Requested-With: XMLHttpRequest` on cookie-auth mutation requests. Do not bypass or remove it.
+- CORS is configured with an explicit origin allowlist from `CORS_ORIGINS` env, `credentials: true`, no wildcard. Do not weaken it.
+
+7.7 Startup env validation contract (frozen)
+
+- `JWT_SECRET` must be validated at startup (fail-fast). Server must not boot without it.
+- `CARDIGO_PROXY_SHARED_SECRET` must be validated at startup in production only. Server must not boot in production without it.
+- These validations run inside `start()` before `connectDB()` and any other side effects.
+- Do not move, weaken, or defer these checks.
+
 8) Persistence, Storage, Media & Cleanup Doctrine
 8.1 Server-side media processing is the source of truth
 
