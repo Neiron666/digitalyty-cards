@@ -683,8 +683,11 @@ export default function Home() {
                         </em>
                     </p>
                     <p className={styles.analyticsCaveat}>
-                        * ניתוח נתונים מלא זמין במסלול פרימיום. במסלול חינמי
-                        ניתן לצפות בתצוגה לדוגמה.
+                        * ניתוח נתונים מלא זמין ב
+                        <Link to="/pricing" className={styles.caveatLink}>
+                            מסלול פרימיום
+                        </Link>
+                        . במסלול חינמי ניתן לצפות בתצוגה לדוגמה.
                     </p>
                 </div>
             </section>
@@ -915,6 +918,20 @@ export default function Home() {
                         >
                             בחרו תבנית והתחילו חינם
                         </Button>
+                    </div>
+                    <div className={styles.center}>
+                        <Link
+                            to="/cards"
+                            className={styles.templatesSeeAll}
+                            onClick={() =>
+                                trackSiteClick({
+                                    action: SITE_ACTIONS.home_templates_see_all,
+                                    pagePath: "/",
+                                })
+                            }
+                        >
+                            גלו עוד דוגמאות ויכולות של הכרטיסים
+                        </Link>
                     </div>
                 </div>
             </section>

@@ -1215,6 +1215,29 @@
     justify-content: center;
 }
 
+.templatesSeeAll {
+    font-size: var(--fs-body-sm);
+    color: rgba(255, 255, 255, 0.7);
+    text-decoration: underline;
+    text-underline-offset: 4px;
+    margin-top: 0.5rem;
+    transition: color 0.2s;
+}
+
+.templatesSeeAll:hover {
+    color: #fff;
+}
+
+.caveatLink {
+    color: inherit;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+}
+
+.caveatLink:hover {
+    color: var(--gold, #d4af37);
+}
+
 /* ── 7. Steps (2 + 1 image-led cards) ───────────────────── */
 
 .steps {
