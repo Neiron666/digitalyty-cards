@@ -50,8 +50,11 @@ function Register() {
             setRegistered(true);
         } catch (err) {
             const code = err.response?.data?.code;
+            const status = err.response?.status;
             if (code === "CONSENT_REQUIRED") {
                 setError("חובה להסכים למדיניות הפרטיות ולתנאי השימוש");
+            } else if (status === 409) {
+                setError("לא ניתן ליצור חשבון עם כתובת האימייל הזו.");
             } else {
                 setError(err.response?.data?.message || "שגיאה בהרשמה");
             }

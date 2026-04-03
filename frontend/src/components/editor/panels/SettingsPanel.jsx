@@ -56,6 +56,7 @@ export default function SettingsPanel({
     const [delSubmitting, setDelSubmitting] = useState(false);
     const [delError, setDelError] = useState("");
     const [delBlockOrgs, setDelBlockOrgs] = useState(null);
+    const [delDone, setDelDone] = useState(false);
 
     async function handleDeleteAccount(e) {
         e.preventDefault();
@@ -75,9 +76,12 @@ export default function SettingsPanel({
             });
 
             if (result?.ok) {
-                // Success — logout + hard redirect.
-                logout();
-                window.location.href = "/";
+                // Show finality message, then logout + redirect.
+                setDelDone(true);
+                setTimeout(() => {
+                    logout();
+                    window.location.href = "/";
+                }, 1500);
                 return;
             }
 
@@ -932,12 +936,20 @@ export default function SettingsPanel({
                                         </div>
                                     )}
 
+                                    {delDone && (
+                                        <div className={styles.dangerText}>
+                                            החשבון נמחק. כתובת האימייל לא תהיה
+                                            זמינה ליצירת חשבון חדש.
+                                        </div>
+                                    )}
+
                                     <div className={styles.dangerActions}>
                                         <Button
                                             type="submit"
                                             variant="ghost"
                                             loading={delSubmitting}
                                             disabled={
+                                                delDone ||
                                                 delSubmitting ||
                                                 delConfirm.trim() !== "מחיקה" ||
                                                 !delPassword.trim()
