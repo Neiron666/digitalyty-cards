@@ -112,7 +112,7 @@ Create a new user account via email + password.
 | 400    | `{ "message": "Invalid password" }`                            | Missing or non-string password                                  |
 | 400    | `{ "message": "Password must be at least 8 characters" }`      | Too short                                                       |
 | 400    | `{ "message": "Invalid request", "code": "CONSENT_REQUIRED" }` | `consent !== true`                                              |
-| 409    | `{ "message": "Unable to register" }`                          | Duplicate email (anti-enum)                                     |
+| 409    | `{ "message": "Unable to register" }`                          | Duplicate or permanently blocked email (anti-enum)              |
 | 429    | `{ "code": "RATE_LIMITED", "message": "Too many requests" }`   | Rate limit exceeded                                             |
 
 **Example**:
@@ -411,17 +411,18 @@ User requests magic link → email sent
 
 ## 6. Environment Variables
 
-| Variable                     | Required | Default                                                                  | Description                         |
-| ---------------------------- | -------- | ------------------------------------------------------------------------ | ----------------------------------- |
-| `CORS_ORIGINS`               | prod     | (empty = allow all)                                                      | Comma-separated allowed origins     |
-| `JWT_SECRET`                 | yes      | —                                                                        | HS256 signing key                   |
-| `SITE_URL`                   | prod     | `http://localhost:5173`                                                  | Base URL for links in emails        |
-| `MAILJET_API_KEY`            | yes\*    | —                                                                        | Mailjet public key                  |
-| `MAILJET_SECRET_KEY`         | yes\*    | —                                                                        | Mailjet private key                 |
-| `MAILJET_FROM_EMAIL`         | no       | `noreply@cardigo.co.il`                                                  | Sender email                        |
-| `MAILJET_FROM_NAME`          | no       | `Cardigo`                                                                | Sender display name                 |
-| `MAILJET_VERIFY_SUBJECT`     | no       | `אימות כתובת האימייל` (Verify your email)                                | Subject for verification emails     |
-| `MAILJET_VERIFY_TEXT_PREFIX` | no       | `כדי להשלים את ההרשמה, נא לאמת את כתובת האימייל על ידי לחיצה על הקישור.` | Body prefix for verification emails |
+| Variable                     | Required | Default                                                                  | Description                                                                |
+| ---------------------------- | -------- | ------------------------------------------------------------------------ | -------------------------------------------------------------------------- |
+| `CORS_ORIGINS`               | prod     | (empty = allow all)                                                      | Comma-separated allowed origins                                            |
+| `JWT_SECRET`                 | yes      | —                                                                        | HS256 signing key                                                          |
+| `SITE_URL`                   | prod     | `http://localhost:5173`                                                  | Base URL for links in emails                                               |
+| `MAILJET_API_KEY`            | yes\*    | —                                                                        | Mailjet public key                                                         |
+| `MAILJET_SECRET_KEY`         | yes\*    | —                                                                        | Mailjet private key                                                        |
+| `MAILJET_FROM_EMAIL`         | no       | `noreply@cardigo.co.il`                                                  | Sender email                                                               |
+| `MAILJET_FROM_NAME`          | no       | `Cardigo`                                                                | Sender display name                                                        |
+| `MAILJET_VERIFY_SUBJECT`     | no       | `אימות כתובת האימייל` (Verify your email)                                | Subject for verification emails                                            |
+| `MAILJET_VERIFY_TEXT_PREFIX` | no       | `כדי להשלים את ההרשמה, נא לאמת את כתובת האימייל על ידי לחיצה על הקישור.` | Body prefix for verification emails                                        |
+| `EMAIL_BLOCK_SECRET`         | yes      | —                                                                        | HMAC-SHA256 key for deleted-email tombstone hashing (fail-fast at startup) |
 
 \* If Mailjet keys are not configured, email sending is skipped (best-effort).
 
@@ -431,10 +432,11 @@ User requests magic link → email sent
 
 ### Anti-enumeration
 
-- `/register` returns a generic `409 "Unable to register"` — does not reveal whether the email exists.
+- `/register` returns a generic `409 "Unable to register"` — does not reveal whether the email exists or is permanently blocked.
 - `/forgot` always returns `204` regardless of email existence.
-- `/signup-link` always returns `204`.
-- `/signup-consume` always returns `400` on any failure — no distinction between rate limit, invalid token, or duplicate user.
+- `/signup-link` always returns `204` — including when the email is permanently blocked.
+- `/signup-consume` always returns `400` on any failure — no distinction between rate limit, invalid token, blocked email, or duplicate user.
+- `/invites/accept` (new-user branch) returns `404` on blocked email — consistent with the existing anti-enumeration posture for that route.
 - `/resend-verification` always returns `200` — does not expose internal errors.
 
 ### Token storage
@@ -559,6 +561,43 @@ Migration script: `npm run migrate:active-password-reset-indexes` (`backend/scri
 | `status_1_expiresAt_1` | `{status:1, expiresAt:1}` | no     | Primary worker poll compound |
 | `expiresAt_1`          | `{expiresAt:1}`           | no     | Cleanup sweep                |
 
+### Deleted-email recreation block (self-delete only)
+
+After a user performs a full self-delete of their account, the email address is **permanently blocked** from creating a new Cardigo account.
+
+**Mechanism:**
+
+- On self-delete, before the destructive cascade (card/media/data removal), the system writes a **tombstone document** to the `deletedemailblocks` collection.
+- The tombstone stores an HMAC-SHA256 hash of the normalized email (`emailKey`), keyed by `EMAIL_BLOCK_SECRET`. The raw email is not stored.
+- All account-creation flows check for the tombstone before proceeding.
+
+**Guard coverage:**
+
+| Flow                         | Blocked-email response     | Anti-enum shape            |
+| ---------------------------- | -------------------------- | -------------------------- |
+| `/auth/register`             | `409 "Unable to register"` | Same as duplicate email    |
+| `/auth/signup-link`          | `204` (silent)             | Same as all other outcomes |
+| `/auth/signup-consume`       | `400` (neutral)            | Same as all other failures |
+| `/invites/accept` (new-user) | `404`                      | Same as not-found          |
+
+**Ordering invariant:** Tombstone is written **before** the destructive cascade. If the cascade fails partway, the email remains blocked (fail-safe).
+
+**Model: `DeletedEmailBlock`**
+
+| Field          | Type     | Index  | Description                           |
+| -------------- | -------- | ------ | ------------------------------------- |
+| `emailKey`     | String   | unique | HMAC-SHA256 hash of normalized email  |
+| `formerUserId` | ObjectId | —      | Reference to the deleted user (audit) |
+| `createdAt`    | Date     | —      | Timestamp of deletion                 |
+
+**DB / index prerequisite:**
+
+| Index        | Key            | Unique | Note                                                                                                           |
+| ------------ | -------------- | ------ | -------------------------------------------------------------------------------------------------------------- |
+| `emailKey_1` | `{emailKey:1}` | yes    | Manual governance — must be created via `db.deletedemailblocks.createIndex({ emailKey: 1 }, { unique: true })` |
+
+**Scope limitation:** Admin-delete does **not** create tombstones in this milestone. This is an intentional product decision — admin-delete policy is a separate future contour.
+
 ---
 
-_Last updated: 2026-03-29 (worker-based runtime cutover applied; dual-read transition recorded; DB indexes applied; cooldown semantics documented; first-version delivery policy confirmed; WEAK_PASSWORD validation code added to /reset — token not consumed on short-password failure; /reset UI error mapping now distinguishes WEAK_PASSWORD / RATE_LIMITED / generic-link-invalid)_
+_Last updated: 2026-04-03 (deleted-email recreation block: tombstone mechanism, guard coverage on all 4 account-creation flows, EMAIL_BLOCK_SECRET env var, anti-enumeration notes updated for blocked-email paths, deletedemailblocks index prerequisite documented)_

@@ -81,7 +81,7 @@ export default function SettingsPanel({
                 setTimeout(() => {
                     logout();
                     window.location.href = "/";
-                }, 1500);
+                }, 3000);
                 return;
             }
 

@@ -93,7 +93,7 @@ For EVERY task you must follow the 2-phase workflow:
 - Mongo safety: prevent dotted-path injection (`.` / `$`), keep writes bounded (no unbounded key growth).
 - Index governance: runtime must not auto-apply indexes by surprise; drift is detected via sanities; migrations are manual only.
 - Auth transport invariant: browser auth is **httpOnly cookie-backed** (`__Host-cardigo_auth` / `cardigo_auth`). Browser runtime must **not** use localStorage for auth tokens and must **not** write `Authorization` headers. Backend dual-mode middleware (header-first → cookie-fallback) is intentional for tooling/sanity scripts only.
-- Startup env validation: `JWT_SECRET` is required at startup (always). `CARDIGO_PROXY_SHARED_SECRET` is required at startup in production only. Server must fail fast if these are missing.
+- Startup env validation: `JWT_SECRET` and `EMAIL_BLOCK_SECRET` are required at startup (always). `CARDIGO_PROXY_SHARED_SECRET` is required at startup in production only. Server must fail fast if these are missing.
 
 ### 1.9 Ephemeral verification artifacts must be deleted before the workstream ends
 
