@@ -60,6 +60,12 @@ async function start() {
             "CARDIGO_PROXY_SHARED_SECRET is required in production",
         );
     }
+    if (
+        typeof process.env.EMAIL_BLOCK_SECRET !== "string" ||
+        !process.env.EMAIL_BLOCK_SECRET.trim()
+    ) {
+        throw new Error("EMAIL_BLOCK_SECRET is required");
+    }
 
     await connectDB(process.env.MONGO_URI);
 

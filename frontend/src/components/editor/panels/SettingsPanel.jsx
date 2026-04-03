@@ -882,6 +882,10 @@ export default function SettingsPanel({
                                     <div className={styles.dangerText}>
                                         לא ניתן החזר כספי אוטומטי על תשלום קיים.
                                     </div>
+                                    <div className={styles.dangerText}>
+                                        כתובת האימייל הזו לא תהיה זמינה ליצירת
+                                        חשבון חדש ב-Cardigo.
+                                    </div>
 
                                     <Input
                                         label='הקלד "מחיקה" לאישור'

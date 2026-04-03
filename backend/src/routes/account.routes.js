@@ -17,6 +17,7 @@ import {
     getAnonPrivateBucketName,
 } from "../services/supabaseStorage.js";
 import { deleteCardCascade } from "../utils/cardDeleteCascade.js";
+import { createEmailBlock } from "../utils/emailBlock.util.js";
 
 const router = Router();
 
@@ -277,9 +278,9 @@ router.post("/delete-account", requireAuth, async (req, res) => {
                 .json({ message: "Unable to delete account" });
         }
 
-        // Load user — minimal fields.
+        // Load user — minimal fields + email for tombstone.
         const user = await User.findById(req.userId)
-            .select("role passwordHash")
+            .select("email role passwordHash")
             .lean();
 
         // Idempotent: user already gone → 204.
@@ -351,6 +352,29 @@ router.post("/delete-account", requireAuth, async (req, res) => {
                     })),
                 });
             }
+        }
+
+        // ── Tombstone-first: permanent email re-registration block ──
+        // Must succeed BEFORE any destructive side effects.
+        const normalizedEmail = (user.email || "").trim().toLowerCase();
+        if (!normalizedEmail) {
+            return res
+                .status(400)
+                .json({ message: "Unable to delete account" });
+        }
+        try {
+            await createEmailBlock({
+                normalizedEmail,
+                formerUserId: req.userId,
+            });
+        } catch (err) {
+            console.error(
+                "[account] tombstone write failed",
+                err?.message || err,
+            );
+            return res
+                .status(400)
+                .json({ message: "Unable to delete account" });
         }
 
         // ── Delete all user's cards (Supabase-first) ──

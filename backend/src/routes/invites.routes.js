@@ -14,6 +14,7 @@ import {
     CURRENT_TERMS_VERSION,
     CURRENT_PRIVACY_VERSION,
 } from "../utils/consentVersions.js";
+import { isEmailBlocked } from "../utils/emailBlock.util.js";
 
 const router = Router();
 
@@ -154,6 +155,11 @@ router.post("/accept", optionalAuth, async (req, res) => {
     if (!invite) return notFound(res);
 
     if (!user) {
+        // Blocked-email guard: permanently deleted accounts cannot be re-created via invite.
+        if (await isEmailBlocked(email)) {
+            return notFound(res);
+        }
+
         const passwordHash = await bcrypt.hash(password, 10);
 
         try {

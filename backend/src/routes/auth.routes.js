@@ -17,6 +17,7 @@ import {
     CURRENT_TERMS_VERSION,
     CURRENT_PRIVACY_VERSION,
 } from "../utils/consentVersions.js";
+import { isEmailBlocked } from "../utils/emailBlock.util.js";
 
 const router = Router();
 
@@ -204,6 +205,11 @@ router.post("/register", async (req, res) => {
         return res
             .status(400)
             .json({ message: "Invalid request", code: "CONSENT_REQUIRED" });
+    }
+
+    // Blocked-email guard: permanently deleted accounts cannot re-register.
+    if (await isEmailBlocked(email)) {
+        return res.status(409).json({ message: "Unable to register" });
     }
 
     // Prevent casing-duplicates until we can enforce a case-insensitive unique index.
@@ -525,6 +531,11 @@ router.post("/signup-link", async (req, res) => {
             return res.sendStatus(204);
         }
 
+        // Blocked-email guard: do not send doomed signup links.
+        if (await isEmailBlocked(emailNormalized)) {
+            return res.sendStatus(204);
+        }
+
         const siteUrl = getSiteUrl();
 
         // Retry once on duplicate tokenHash just in case.
@@ -639,6 +650,11 @@ router.post("/signup-consume", async (req, res) => {
 
         // ── Consent enforcement (strict boolean) ──
         if (req.body.consent !== true) {
+            return fail();
+        }
+
+        // Blocked-email guard: permanently deleted accounts cannot re-register.
+        if (await isEmailBlocked(emailNormalized)) {
             return fail();
         }
 
