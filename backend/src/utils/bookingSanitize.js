@@ -106,8 +106,9 @@ export function computeBookingTimers({ nowUtc, endAtUtc } = {}) {
     if (!Number.isFinite(now.getTime())) throw new Error("Invalid nowUtc");
     if (!Number.isFinite(endAt.getTime())) throw new Error("Invalid endAtUtc");
 
-    // Pending expiry: 30 minutes from submission.
-    const expiresAt = new Date(now.getTime() + 30 * 60 * 1000);
+    // Pending expiry: aligned to slot end time (owner-decision model).
+    // Pending bookings remain actionable until the slot time passes.
+    const expiresAt = new Date(endAt.getTime());
 
     // Purge: one week after appointment end.
     const purgeAt = new Date(endAt.getTime() + 7 * 24 * 60 * 60 * 1000);

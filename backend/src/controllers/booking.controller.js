@@ -84,13 +84,13 @@ async function preExpireBlockingPending({
     const now = nowUtc instanceof Date ? nowUtc : new Date(nowUtc);
     if (!Number.isFinite(now.getTime())) return;
 
-    // Targeted release: expire ONLY pending bookings that could conflict with this submit
-    // (slot lock or person lock), so stale pending can't keep blocking.
+    // Targeted release: expire ONLY pending bookings whose slot time has already
+    // passed and that could conflict with this submit (slot lock or person lock).
     await Booking.updateMany(
         {
             card: cardId,
             status: "pending",
-            expiresAt: { $lte: now },
+            endAt: { $lte: now },
             $or: [{ slotKey }, { personKey }],
         },
         { $set: { status: "expired" } },
@@ -517,11 +517,13 @@ export async function listMyBookings(req, res) {
             return res.json({ bookings: [] });
         }
 
+        // Past-slot cleanup: only expire pending bookings whose requested
+        // slot time has already passed (owner-decision model).
         await Booking.updateMany(
             {
                 card: { $in: cardFilterIds },
                 status: "pending",
-                expiresAt: { $lt: new Date() },
+                endAt: { $lt: new Date() },
             },
             { $set: { status: "expired" } },
         );
@@ -582,18 +584,19 @@ export async function listMyBookings(req, res) {
 async function expireIfNeeded(booking) {
     if (!booking || booking.status !== "pending") return booking;
 
+    // Only auto-expire if the requested slot time has already passed.
     const now = Date.now();
-    const exp =
-        booking.expiresAt instanceof Date
-            ? booking.expiresAt.getTime()
-            : new Date(booking.expiresAt).getTime();
-    if (!Number.isFinite(exp)) return booking;
+    const end =
+        booking.endAt instanceof Date
+            ? booking.endAt.getTime()
+            : new Date(booking.endAt).getTime();
+    if (!Number.isFinite(end)) return booking;
 
-    if (exp > now) return booking;
+    if (end > now) return booking;
 
-    // Transition pending -> expired to release unique locks while keeping history until purgeAt.
+    // Slot time passed without owner action — transition to expired.
     await Booking.updateOne(
-        { _id: booking._id, status: "pending", expiresAt: booking.expiresAt },
+        { _id: booking._id, status: "pending" },
         { $set: { status: "expired" } },
     );
 
@@ -702,7 +705,7 @@ export async function getPendingCount(req, res) {
         const pendingCount = await Booking.countDocuments({
             card: { $in: cardIds },
             status: "pending",
-            expiresAt: { $gt: now }, // safety-net: exclude expired-but-not-yet-reconciled
+            endAt: { $gt: now }, // exclude past-slot pending not yet reconciled
         });
 
         return res.json({ pendingCount });
@@ -738,10 +741,12 @@ export async function reconcileExpiredBookings(req, res) {
             ? Math.min(Math.max(limitRaw, 1), 200)
             : 200;
 
+        // Past-slot cleanup: only expire pending bookings whose requested
+        // slot time has already passed (owner-decision model).
         const result = await Booking.updateMany(
             {
                 status: "pending",
-                expiresAt: { $lte: now },
+                endAt: { $lte: now },
             },
             { $set: { status: "expired" } },
             { limit },

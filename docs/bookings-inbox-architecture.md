@@ -1,7 +1,7 @@
 # Bookings & Owner Inbox — Architecture & Specification (SSoT)
 
 > **Owner:** Full-stack (Backend + Frontend).  
-> **Last updated:** 2026-03-27.  
+> **Last updated:** 2026-04-03.  
 > **Related docs:** [Ops Runbook → docs/runbooks/bookings-indexes-ops.md](runbooks/bookings-indexes-ops.md)
 
 ---
@@ -12,16 +12,18 @@ Cardigo provides a public **booking request** flow on card pages and an **owner 
 
 ### Bounded scope
 
-The booking system is currently a **request-based scheduling surface** — not a full calendar or appointment engine. A public visitor submits a time-slot request; the card owner reviews, approves, or allows it to expire. There is no reschedule, no recurring booking, and no calendar sync at this time.
+The booking system is currently a **request-based scheduling surface** — not a full calendar or appointment engine. A public visitor submits a time-slot request; the card owner reviews it and decides to approve or cancel. A pending request auto-expires only after the requested slot's end time passes without owner action. There is no reschedule, no recurring booking, and no calendar sync at this time.
 
 ### High-level flow
 
 ```
 Visitor views availability → selects slot → submits booking request
   ↓
-Booking created (status: pending, expiresAt set)
+Booking created (status: pending, blocks slot until owner action or slot end)
   ↓
-Owner opens Inbox → reviews request → approve / cancel / let expire
+Owner opens Inbox → reviews request → approve / cancel
+  ↓
+If owner does not act by slot end time → system auto-expires the pending request
   ↓
 Record retained ≈7 days after requested slot ends → TTL auto-purge
 ```
@@ -40,24 +42,24 @@ Booking is available only on cards with an active paid entitlement (`canUseBooki
 
 ### 2.1 Key schema fields
 
-| Field                                                                 | Type                | Notes                                                  |
-| --------------------------------------------------------------------- | ------------------- | ------------------------------------------------------ |
-| `card`                                                                | ObjectId (ref Card) | FK to the card that owns the booking                   |
-| `startAt` / `endAt`                                                   | Date                | UTC boundaries of the requested slot                   |
-| `dateKeyIl`                                                           | String              | Israel-local date `YYYY-MM-DD` (derived, for grouping) |
-| `localStartHHmm`                                                      | String              | Israel-local start time `HH:mm` (derived)              |
-| `tz`                                                                  | String              | Timezone identifier                                    |
-| `status`                                                              | String (enum)       | `pending` · `approved` · `canceled` · `expired`        |
-| `expiresAt`                                                           | Date                | Pending-hold expiry (see §4)                           |
-| `purgeAt`                                                             | Date                | TTL deletion timestamp (see §4)                        |
-| `customerName`                                                        | String              | Visitor name (required, max 100)                       |
-| `customerPhoneRaw`                                                    | String              | Visitor phone as entered                               |
-| `customerPhoneNormalized`                                             | String              | Normalized phone for dedup                             |
-| `personKey`                                                           | String              | Deterministic hash for per-person uniqueness index     |
-| `slotKey`                                                             | String              | UTC-based slot key for per-slot uniqueness index       |
-| `consentAccepted`                                                     | Boolean             | Consent evidence                                       |
-| `consentAcceptedAt` / `consentTermsVersion` / `consentPrivacyVersion` | —                   | Consent audit fields                                   |
-| `publicIpHash`                                                        | String              | Best-effort IP hash (anti-abuse, not identity)         |
+| Field                                                                 | Type                | Notes                                                        |
+| --------------------------------------------------------------------- | ------------------- | ------------------------------------------------------------ |
+| `card`                                                                | ObjectId (ref Card) | FK to the card that owns the booking                         |
+| `startAt` / `endAt`                                                   | Date                | UTC boundaries of the requested slot                         |
+| `dateKeyIl`                                                           | String              | Israel-local date `YYYY-MM-DD` (derived, for grouping)       |
+| `localStartHHmm`                                                      | String              | Israel-local start time `HH:mm` (derived)                    |
+| `tz`                                                                  | String              | Timezone identifier                                          |
+| `status`                                                              | String (enum)       | `pending` · `approved` · `canceled` · `expired`              |
+| `expiresAt`                                                           | Date                | Legacy-compatible; set equal to `endAt` at creation (see §4) |
+| `purgeAt`                                                             | Date                | TTL deletion timestamp (see §4)                              |
+| `customerName`                                                        | String              | Visitor name (required, max 100)                             |
+| `customerPhoneRaw`                                                    | String              | Visitor phone as entered                                     |
+| `customerPhoneNormalized`                                             | String              | Normalized phone for dedup                                   |
+| `personKey`                                                           | String              | Deterministic hash for per-person uniqueness index           |
+| `slotKey`                                                             | String              | UTC-based slot key for per-slot uniqueness index             |
+| `consentAccepted`                                                     | Boolean             | Consent evidence                                             |
+| `consentAcceptedAt` / `consentTermsVersion` / `consentPrivacyVersion` | —                   | Consent audit fields                                         |
+| `publicIpHash`                                                        | String              | Best-effort IP hash (anti-abuse, not identity)               |
 
 ### 2.2 Indexes
 
@@ -86,7 +88,7 @@ For the canonical `createIndex` commands and verification procedure, see [bookin
 | `pending`  | Visitor submitted; awaiting owner action. Holds slot and person locks. |
 | `approved` | Owner confirmed the booking. Slot and person remain locked.            |
 | `canceled` | Owner (or system) canceled. Slot and person locks released.            |
-| `expired`  | Pending hold timed out without owner action. Locks released.           |
+| `expired`  | Requested slot end time passed without owner action. Locks released.   |
 
 ### 3.2 Blocking semantics
 
@@ -95,12 +97,12 @@ For the canonical `createIndex` commands and verification procedure, see [bookin
 
 ### 3.3 Valid transitions
 
-| From       | To         | Trigger                                       |
-| ---------- | ---------- | --------------------------------------------- |
-| `pending`  | `approved` | Owner approves                                |
-| `pending`  | `canceled` | Owner cancels                                 |
-| `pending`  | `expired`  | `expiresAt` reached (automatic or reconciler) |
-| `approved` | `canceled` | Owner cancels                                 |
+| From       | To         | Trigger                                                         |
+| ---------- | ---------- | --------------------------------------------------------------- |
+| `pending`  | `approved` | Owner approves                                                  |
+| `pending`  | `canceled` | Owner cancels                                                   |
+| `pending`  | `expired`  | Slot end time reached (`endAt ≤ now`) — automatic or reconciler |
+| `approved` | `canceled` | Owner cancels                                                   |
 
 No other transitions are permitted. There is no transition back to `pending` and no hard-delete action; records remain until TTL purge.
 
@@ -114,14 +116,16 @@ Canceling a booking (pending or approved) transitions it to `canceled`, which re
 
 ### 4.1 Two independent timers
 
-| Timer         | Field       | Purpose                                                                                                                   |
-| ------------- | ----------- | ------------------------------------------------------------------------------------------------------------------------- |
-| Pending hold  | `expiresAt` | Controls how long a pending request blocks its slot before auto-expiring. Set at creation time.                           |
-| History purge | `purgeAt`   | Controls when the document is physically deleted by MongoDB TTL. Set relative to `endAt` (the end of the requested slot). |
+| Timer           | Field     | Purpose                                                                                                                         |
+| --------------- | --------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| Slot-end expiry | `endAt`   | Pending requests auto-expire when the requested slot end time passes without owner action. This is the runtime lifecycle clock. |
+| History purge   | `purgeAt` | Controls when the document is physically deleted by MongoDB TTL. Set relative to `endAt` (the end of the requested slot).       |
+
+**Legacy field — `expiresAt`:** Still written at creation time (set equal to `endAt`) for backward compatibility. It no longer independently controls lifecycle decisions; all expiry logic uses `endAt` directly.
 
 These are independent concerns:
 
-- `expiresAt` governs **status transition** (pending → expired). The document is not deleted.
+- `endAt` governs **status transition** (pending → expired). The document is not deleted.
 - `purgeAt` governs **physical deletion**. Records are kept approximately 7 days after the requested meeting end time, then auto-deleted by TTL index.
 
 ### 4.2 Cleanup strategy
@@ -133,10 +137,10 @@ These are independent concerns:
 
 ### 4.3 Pending expiry reconciliation
 
-Stale pending bookings are expired in two ways:
+Stale pending bookings (whose requested slot has ended) are expired in two ways:
 
-1. **Targeted pre-expire on public create path:** Before inserting a new booking, the system expires any pending bookings on the same card that have passed their `expiresAt` and overlap the incoming slot or person key. This is the primary anti-drift guarantee.
-2. **Reconciler endpoint:** `POST /api/bookings/reconcile/expired` (auth required) — batch-expires all pending bookings past `expiresAt`. This is a secondary safety valve, not the primary mechanism.
+1. **Targeted pre-expire on public create path:** Before inserting a new booking, the system expires any pending bookings on the same card whose slot has ended (`endAt ≤ now`) and overlap the incoming slot or person key. This is the primary anti-drift guarantee.
+2. **Reconciler endpoint:** `POST /api/bookings/reconcile/expired` (auth required) — batch-expires all pending bookings whose slot has ended (`endAt ≤ now`). This is a secondary safety valve, not the primary mechanism.
 
 ---
 
@@ -165,11 +169,11 @@ Base path: `/api/bookings` (mounted via `backend/src/routes/booking.routes.js`).
 
 ### 5.2 Owner endpoints (authenticated)
 
-| Method | Path                     | Purpose                                                                                                                                |
-| ------ | ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------- |
-| `GET`  | `/mine?cardId=…&limit=…` | List bookings across owned cards (or filtered to one card). Max 50 per request. Inline-expires stale pending before returning results. |
-| `POST` | `/:id/approve`           | Approve a pending booking. Only valid from `pending` status.                                                                           |
-| `POST` | `/:id/cancel`            | Cancel a pending or approved booking. Frees the slot.                                                                                  |
+| Method | Path                     | Purpose                                                                                                                                             |
+| ------ | ------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `GET`  | `/mine?cardId=…&limit=…` | List bookings across owned cards (or filtered to one card). Max 50 per request. Inline-expires stale pending (slot ended) before returning results. |
+| `POST` | `/:id/approve`           | Approve a pending booking. Only valid from `pending` status.                                                                                        |
+| `POST` | `/:id/cancel`            | Cancel a pending or approved booking. Frees the slot.                                                                                               |
 
 **Auth:** JWT via `requireAuth` middleware. Owner identity verified via `assertCardOwner`.  
 **Rate limit (owner):** 120 requests / 15 min per IP:userId.

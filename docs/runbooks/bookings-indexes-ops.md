@@ -73,7 +73,8 @@ db.bookings.getIndexes().forEach((idx) => {
 
 ## 2. Retention vs Expiry (critical distinction)
 
-- `expiresAt`: pending hold expiry. Bookings are not deleted at `expiresAt`.
+- `endAt`: slot end time — the runtime lifecycle clock. Pending bookings auto-expire when `endAt ≤ now`. Bookings are not deleted at expiry.
+- `expiresAt`: legacy-compatible field, now set equal to `endAt` at creation time. No longer independently controls lifecycle decisions.
 - `purgeAt`: history deletion. Documents are removed by TTL after `purgeAt`.
 
 ---
