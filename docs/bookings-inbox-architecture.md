@@ -69,13 +69,13 @@ For the canonical `createIndex` commands and verification procedure, see [bookin
 
 **Summary:**
 
-| #   | Name                            | Purpose                                                                          |
-| --- | ------------------------------- | -------------------------------------------------------------------------------- |
-| 1   | `uniq_booking_blocking_slot`    | Slot lock — one blocking booking per card + slot (partial: pending/approved)     |
-| 2   | `uniq_booking_blocking_person`  | Person lock — one blocking booking per card + person (partial: pending/approved) |
-| 3   | `idx_booking_card_startAt`      | Owner list view ordering                                                         |
-| 4   | `idx_booking_pending_expiresAt` | Pending expiry reconciler scan                                                   |
-| 5   | `idx_booking_purgeAt_ttl`       | TTL auto-purge (expireAfterSeconds: 0)                                           |
+| #   | Name                           | Purpose                                                                          |
+| --- | ------------------------------ | -------------------------------------------------------------------------------- |
+| 1   | `uniq_booking_blocking_slot`   | Slot lock — one blocking booking per card + slot (partial: pending/approved)     |
+| 2   | `uniq_booking_blocking_person` | Person lock — one blocking booking per card + person (partial: pending/approved) |
+| 3   | `idx_booking_card_startAt`     | Owner list view ordering                                                         |
+| 4   | `idx_booking_pending_endAt`    | Pending slot-end reconciler scan                                                 |
+| 5   | `idx_booking_purgeAt_ttl`      | TTL auto-purge (expireAfterSeconds: 0)                                           |
 
 ---
 

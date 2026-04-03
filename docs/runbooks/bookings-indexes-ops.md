@@ -41,10 +41,10 @@ db.bookings.createIndex(
     { name: "idx_booking_card_startAt" },
 );
 
-// #4 — Pending expiry reconciler scan
+// #4 — Pending slot-end reconciler scan
 db.bookings.createIndex(
-    { status: 1, expiresAt: 1, _id: 1 },
-    { name: "idx_booking_pending_expiresAt" },
+    { status: 1, endAt: 1, _id: 1 },
+    { name: "idx_booking_pending_endAt" },
 );
 
 // #5 — TTL purge (history deletion): delete docs when purgeAt < now
