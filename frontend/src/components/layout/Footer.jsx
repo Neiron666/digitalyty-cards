@@ -33,18 +33,24 @@ export default function Footer() {
 
                 <div className={styles.col}>
                     <div className={styles.title}>קישורים</div>
-                    <a href="#features" className={styles.link}>
+                    <Link to="/#features" className={styles.link}>
                         תכונות
-                    </a>
-                    <a href="#templates" className={styles.link}>
-                        תבניות
-                    </a>
-                    <a href="#how" className={styles.link}>
+                    </Link>
+                    <Link to="/cards" className={styles.link}>
+                        דוגמאות
+                    </Link>
+                    <Link to="/#how" className={styles.link}>
                         איך זה עובד
-                    </a>
-                    <a href="#faq" className={styles.link}>
+                    </Link>
+                    <Link to="/#faq" className={styles.link}>
                         שאלות נפוצות
-                    </a>
+                    </Link>
+                    <Link to="/pricing" className={styles.link}>
+                        מחירים
+                    </Link>
+                    <Link to="/guides" className={styles.link}>
+                        מדריכים
+                    </Link>
                     <Link to="/blog" className={styles.link}>
                         בלוג
                     </Link>
