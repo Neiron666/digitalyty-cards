@@ -28,7 +28,8 @@ const BookingSchema = new Schema(
             index: true,
         },
 
-        // Pending-hold expiry (release slot by status transition, not by deletion).
+        // Legacy-compatible expiry field; set equal to endAt at creation.
+        // Lifecycle decisions now use endAt directly (see booking.controller).
         expiresAt: { type: Date, required: true },
 
         // History purge: auto-delete one week after appointment time has passed.
@@ -107,10 +108,10 @@ BookingSchema.index(
     { name: "idx_booking_card_startAt" },
 );
 
-// #4 Reconciler scan: pending by expiresAt.
+// #4 Reconciler scan: pending by endAt (slot-end cleanup).
 BookingSchema.index(
-    { status: 1, expiresAt: 1, _id: 1 },
-    { name: "idx_booking_pending_expiresAt" },
+    { status: 1, endAt: 1, _id: 1 },
+    { name: "idx_booking_pending_endAt" },
 );
 
 // #5 Retention purge TTL: delete docs when purgeAt < now.
