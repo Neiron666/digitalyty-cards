@@ -247,6 +247,28 @@
     color: var(--text-muted);
 }
 
+/* Bridge link to /cards */
+.seeExamples {
+    text-align: center;
+    padding-block: 24px;
+    font-size: var(--fs-body-sm);
+}
+
+.seeExamples a {
+    color: var(--text-muted);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+}
+
+.seeExamples a:hover {
+    color: var(--primary);
+}
+
+.seeExamples a:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
+}
+
 /* Responsive — tablet: 2 columns */
 @media (min-width: 40rem) {
     .card {

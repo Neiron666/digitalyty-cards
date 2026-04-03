@@ -295,6 +295,11 @@ export default function Blog() {
                 </div>
             </section>
 
+            {/* ── Bridge → /cards ─────────────────────────── */}
+            <p className={styles.seeExamples}>
+                <Link to="/cards">ראו דוגמאות לכרטיסי ביקור דיגיטליים</Link>
+            </p>
+
             {/* ── FAQ ──────────────────────────────────────── */}
             <section className={pub.sectionDark} id="faq">
                 <div className={pub.sectionWrap}>
