@@ -107,11 +107,17 @@
     padding: 0;
 }
 
-/* Specificity (0,2,0) to override .card-body button (0,1,1) in card-theme */
-/* Prevents available-day buttons from stretching to 100% width inside the row */
+/* Specificity (0,2,0) to override CardLayout .sectionWrap button (0,1,1) */
+/* Resets CTA-button styles so calendar day cells render as uniform grid */
 .calRow .calCell {
     width: 0;
     min-width: 0;
+    padding: 6px 0;
+    background: none;
+    border: 1px solid transparent;
+    border-radius: var(--radius-sm, 14px);
+    font-size: var(--fs-14, 0.875rem);
+    color: var(--text-main);
 }
 
 .calNavBtn:hover {
@@ -172,6 +178,11 @@
     border: 1px dashed var(--border, rgba(0, 0, 0, 0.1));
 }
 
+/* (0,2,0) override: dashed border must beat .calRow .calCell transparent border */
+.calRow .calCellInWindowUnavail {
+    border: 1px dashed var(--border, rgba(0, 0, 0, 0.1));
+}
+
 /* Available — bookable (accent border only, no fill) */
 .calCellAvailable {
     cursor: pointer;
@@ -179,6 +190,11 @@
     border: 1px solid var(--action-bg, #d4af37);
     background: none;
     transition: filter 0.15s;
+}
+
+/* (0,2,0) override: border-color must beat .calRow .calCell transparent border */
+.calRow .calCellAvailable {
+    border-color: var(--action-bg, #d4af37);
 }
 
 .calCellAvailable:hover {
@@ -192,6 +208,13 @@
 
 /* Selected day */
 .calCellSelected {
+    background: var(--action-bg, #d4af37);
+    color: var(--action-text, #fff);
+    border-color: var(--action-bg, #d4af37);
+}
+
+/* (0,2,0) override: must beat .calRow .calCell background:none / color / border reset */
+.calRow .calCellSelected {
     background: var(--action-bg, #d4af37);
     color: var(--action-text, #fff);
     border-color: var(--action-bg, #d4af37);
