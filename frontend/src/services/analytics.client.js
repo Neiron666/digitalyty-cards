@@ -108,7 +108,9 @@ function normalizeAction(action) {
         "facebook",
         "tiktok",
         "linkedin",
+        "twitter",
         "lead",
+        "booking",
         "other",
     ]);
     return allowed.has(a) ? a : "other";
