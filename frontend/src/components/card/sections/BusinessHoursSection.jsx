@@ -87,12 +87,11 @@ export default function BusinessHoursSection({ card, mode }) {
     return (
         <Section
             id="business-hours"
-            title={data.title}
             className={styles.section}
             contentClassName={styles.content}
-            titleClassName={styles.title}
         >
             <div className={styles.wrap}>
+                <h2 className={styles.sectionTitle}>{data.title}</h2>
                 <button
                     type="button"
                     className={styles.toggle}
@@ -100,7 +99,9 @@ export default function BusinessHoursSection({ card, mode }) {
                     onClick={() => setOpen((v) => !v)}
                 >
                     <WorkHoursIcon className={styles.tabIcon} />
-                    <span className={styles.toggleText}>{data.title}</span>
+                    <span className={styles.toggleText}>
+                        {open ? "הסתר שעות פעילות" : "הצג שעות פעילות"}
+                    </span>
                     <span className={styles.icon} aria-hidden="true" />
                 </button>
 

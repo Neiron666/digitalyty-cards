@@ -6,8 +6,18 @@
     /* Use the default Section title styling */
 }
 
+.sectionTitle {
+    font-size: var(--fs-20, 1.25rem);
+    font-weight: 600;
+    text-align: center;
+    color: var(--color-title);
+    text-decoration: underline var(--action-bg) 3px solid;
+    margin: 0;
+    padding: 0 8px;
+}
+
 .content {
-    padding: 0;
+    padding: 0.75rem 0;
     width: var(--section-content-width, 70%);
 }
 

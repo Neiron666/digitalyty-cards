@@ -34,15 +34,18 @@ export default function ServicesSection({ card, mode }) {
 
     if (!services) return null;
 
+    const toggleLabel = open
+        ? `הסתר ${services.title}`
+        : `הצג ${services.title}`;
+
     return (
         <Section
             id="services"
-            title={services.title}
             className={styles.section}
             contentClassName={styles.content}
-            titleClassName={styles.title}
         >
             <div className={styles.wrap}>
+                <h2 className={styles.sectionTitle}>{services.title}</h2>
                 <button
                     type="button"
                     className={styles.toggle}
@@ -50,7 +53,7 @@ export default function ServicesSection({ card, mode }) {
                     onClick={() => setOpen((v) => !v)}
                 >
                     <ServicesIcon className={styles.tabIcon} />
-                    <span className={styles.toggleText}>{services.title}</span>
+                    <span className={styles.toggleText}>{toggleLabel}</span>
                     <span className={styles.icon} aria-hidden="true" />
                 </button>
 
