@@ -36,10 +36,10 @@ const CARD_FEATURES = [
         text: "הציגו עבודות, פרויקטים ותמונות מקצועיות בצורה ויזואלית.",
     },
     {
-        src: `${FEATURES_IMG}/faq-preview.webp`,
-        alt: "שאלות ותשובות בכרטיס ביקור דיגיטלי — Cardigo",
-        title: "שאלות ותשובות",
-        text: "מענה מיידי ללקוחות בלי טלפון — חוסך זמן לשני הצדדים.",
+        src: `${FEATURES_IMG}/booking-preview.webp`,
+        alt: "תיאום תורים בכרטיס ביקור דיגיטלי — Cardigo",
+        title: "תיאום תורים",
+        text: "לקוחות יכולים לקבוע תורים ישירות מהכרטיס — חוסך זמן ומייעל את התהליך.",
     },
     {
         src: `${FEATURES_IMG}/reviews-preview.webp`,

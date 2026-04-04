@@ -62,13 +62,14 @@ exports.handler = async function handler(event) {
             return { statusCode: 404, body: "Not found" };
         }
 
-        // Narrow bypass: the public site analytics write endpoint does not
-        // require the gate cookie. POST only — no other path is bypassed.
-        const isSiteAnalyticsBypass =
+        // Narrow bypass: public analytics write endpoints do not require
+        // the gate cookie. POST only — no other path is bypassed.
+        const isPublicAnalyticsBypass =
             String(event.httpMethod || "").toUpperCase() === "POST" &&
-            targetPath === "/api/site-analytics/track";
+            (targetPath === "/api/site-analytics/track" ||
+                targetPath === "/api/analytics/track");
 
-        if (!isSiteAnalyticsBypass) {
+        if (!isPublicAnalyticsBypass) {
             const expectedGateCookie = String(
                 process.env.CARDIGO_GATE_COOKIE_VALUE || "",
             ).trim();
