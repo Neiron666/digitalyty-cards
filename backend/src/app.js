@@ -74,17 +74,19 @@ app.use(cookieParser());
 // CSRF defense-in-depth: require X-Requested-With on cookie-auth mutation requests.
 app.use(csrfGuard);
 
-// Site analytics write endpoint must be "always 204".
+// Public analytics write endpoints must be "always 204".
 // If a client sends malformed JSON, Express would normally return 400 before hitting the handler.
-// We intentionally swallow JSON parse errors for this specific endpoint to preserve anti-enumeration.
+// We intentionally swallow JSON parse errors for these endpoints to preserve anti-enumeration.
 // NOTE: Must be an error-handling middleware (4 args) and registered after express.json().
 app.use((err, req, res, next) => {
     const url = String(req?.originalUrl || req?.url || "");
-    const isSiteAnalyticsTrack =
-        req?.method === "POST" && url.startsWith("/api/site-analytics/track");
+    const isPublicAnalyticsTrack =
+        req?.method === "POST" &&
+        (url.startsWith("/api/site-analytics/track") ||
+            url.startsWith("/api/analytics/track"));
 
     // body-parser uses `type: 'entity.parse.failed'` and `status: 400` for invalid JSON.
-    if (isSiteAnalyticsTrack && err?.type === "entity.parse.failed") {
+    if (isPublicAnalyticsTrack && err?.type === "entity.parse.failed") {
         return res.sendStatus(204);
     }
 
