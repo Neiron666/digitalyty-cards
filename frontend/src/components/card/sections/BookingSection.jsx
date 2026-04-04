@@ -344,7 +344,7 @@ export default function BookingSection({ card }) {
     // ── Loading state ──
     if (days === null && !loadError) {
         return (
-            <Section title="קביעת תור" contentClassName={styles.content}>
+            <Section title=" תיאום תור" contentClassName={styles.content}>
                 <div className={styles.loading}>טוען זמינות…</div>
             </Section>
         );
@@ -353,7 +353,7 @@ export default function BookingSection({ card }) {
     // ── Load error ──
     if (loadError) {
         return (
-            <Section title="קביעת תור" contentClassName={styles.content}>
+            <Section title=" תיאום תור" contentClassName={styles.content}>
                 <Notice variant="error">{loadError}</Notice>
             </Section>
         );
@@ -365,7 +365,7 @@ export default function BookingSection({ card }) {
     // ── Success state ──
     if (submitStatus === "success") {
         return (
-            <Section title="קביעת תור" contentClassName={styles.content}>
+            <Section title=" תיאום תור" contentClassName={styles.content}>
                 <Notice variant="success">
                     בקשת התיאום התקבלה! בעל העסק ייצור איתך קשר לאישור המועד.
                 </Notice>
@@ -374,7 +374,7 @@ export default function BookingSection({ card }) {
     }
 
     return (
-        <Section title="קביעת תור" contentClassName={styles.content}>
+        <Section title=" תיאום תור" contentClassName={styles.content}>
             <p className={styles.intro}>
                 בחרו יום ושעה מתאימים, ובעל העסק ייצור איתכם קשר לאישור.
             </p>

@@ -56,6 +56,10 @@ Required Netlify env vars:
     - If `CARDIGO_GATE_COOKIE_VALUE` is missing ⇒ `500` `GATE_MISCONFIG`
     - If cookie `__Host-cardigo_gate` is missing or does not match ⇒ `401` `GATE_REQUIRED`
     - Otherwise forwards the request upstream.
+- **Bypass exceptions (intentional, bounded):** The following `POST` endpoints skip the gate-cookie check entirely because they are public best-effort analytics write surfaces that use `sendBeacon` (which cannot carry cookies on cross-origin or gate-gated flows):
+    - `POST /api/analytics/track`
+    - `POST /api/site-analytics/track`
+      This bypass is path-matched and method-matched in `proxy.js`. It is NOT a general gate weakening.
 
 - Adds header `x-cardigo-proxy-secret` (from `CARDIGO_PROXY_SHARED_SECRET`) to the upstream request.
 

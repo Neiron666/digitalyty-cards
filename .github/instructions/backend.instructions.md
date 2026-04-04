@@ -483,7 +483,7 @@ Rules:
 
 - `login`, `signup-consume`, `invite-accept` set the auth cookie via `res.cookie()` and return `{ ok: true }` — they do **not** return a JWT token in the response body.
 - Backend auth middleware is **dual-mode** (header-first → cookie-fallback). This is intentional for tooling/sanity-script compatibility. Do not remove either mode without an explicit bounded audit.
-- CSRF guard (`csrfGuard`) is mounted globally and requires `X-Requested-With: XMLHttpRequest` on cookie-auth mutation requests. Do not bypass or remove it.
+- CSRF guard (`csrfGuard`) is mounted globally and requires `X-Requested-With: XMLHttpRequest` on cookie-auth mutation requests. Do not bypass or remove it. **Bounded exception:** `POST /api/analytics/track` and `POST /api/site-analytics/track` are CSRF-exempt (path-matched, POST-only) because `sendBeacon` cannot set custom headers. This exemption is intentional and must not be widened.
 - CORS is configured with an explicit origin allowlist from `CORS_ORIGINS` env, `credentials: true`, no wildcard. Do not weaken it.
 
 7.7 Startup env validation contract (frozen)
@@ -533,17 +533,22 @@ if a TTL/index is introduced or changed, migration and ops note are required
 9.1 Analytics
 
 For analytics write surfaces, preserve contract behavior.
-Example baseline:
 
-best-effort write-only flows
-no existence leakage
-status semantics must remain stable where product already depends on them
+Current invariants for public analytics write endpoints (`POST /api/analytics/track`, `POST /api/site-analytics/track`):
+
+- Always-204 style: every response is `204 No Content`, regardless of card existence, validity, or internal errors (anti-enumeration).
+- Malformed-JSON swallow: `entity.parse.failed` errors from `express.json()` are caught and returned as `204` (not the default `400`). This is enforced by the error-handling middleware in `app.js`.
+- CSRF-exempt: both endpoints are in `CSRF_EXEMPT_PATHS` (`csrf.middleware.js`). `sendBeacon` cannot set `X-Requested-With`.
+- Proxy gate bypass: both endpoints skip the `__Host-cardigo_gate` cookie check in `proxy.js`.
+- `normalizeAction` allowlist (backend + frontend): `call`, `whatsapp`, `email`, `navigate`, `website`, `instagram`, `facebook`, `tiktok`, `linkedin`, `twitter`, `lead`, `booking`, `other`. Unknown values normalize to `"other"`.
+- Dimensions are bounded: Map keys capped at `MAX_BUCKET_KEYS` (25), social campaign keys at 200, unique hashes at 2500.
 
 If touching tracking / aggregation:
 
-keep dimensions bounded
-use safe normalization / allowlist strategy
-avoid hot-path unbounded growth
+- keep dimensions bounded
+- use safe normalization / allowlist strategy
+- avoid hot-path unbounded growth
+- do not widen the CSRF/proxy exemptions beyond the two analytics write endpoints
 9.2 AI
 
 If touching AI endpoints:

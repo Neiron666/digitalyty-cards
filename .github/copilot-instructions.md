@@ -89,7 +89,7 @@ For EVERY task you must follow the 2-phase workflow:
 
 - Org security anti-enumeration: non-member/revoked must get **404** where policy says so.
 - Public routing invariants: personal `/card/:slug`, org `/c/:orgSlug/:slug`; frontend must not “guess” orgSlug when DTO gives SSoT paths.
-- Analytics tracking endpoint remains **always 204** (best effort, no existence leakage).
+- Analytics tracking endpoints (`POST /api/analytics/track`, `POST /api/site-analytics/track`) remain **always 204** (best effort, no existence leakage). Both have bounded CSRF and proxy-gate exemptions (sendBeacon cannot set custom headers or gate cookies). Malformed JSON on both endpoints is swallowed to 204.
 - Mongo safety: prevent dotted-path injection (`.` / `$`), keep writes bounded (no unbounded key growth).
 - Index governance: runtime must not auto-apply indexes by surprise; drift is detected via sanities; migrations are manual only.
 - Auth transport invariant: browser auth is **httpOnly cookie-backed** (`__Host-cardigo_auth` / `cardigo_auth`). Browser runtime must **not** use localStorage for auth tokens and must **not** write `Authorization` headers. Backend dual-mode middleware (header-first → cookie-fallback) is intentional for tooling/sanity scripts only.
@@ -188,10 +188,11 @@ Paste raw outputs + EXIT codes. Never claim you ran checks you didn’t run.
 - CORS contract: explicit allowlist from `CORS_ORIGINS` env, `credentials: true`, no wildcard origin drift.
 - Closed contour discipline: the following contours are closed and must not be casually reopened without explicit architect approval and a bounded audit:
     - browser auth cookie migration
-    - CSRF (X-Requested-With)
+    - CSRF (X-Requested-With) — bounded exception: analytics write endpoints are CSRF-exempt (sendBeacon limitation)
     - CORS hardening
     - Bearer/tooling decision (dual-mode intentional)
     - startup env validation hardening
+    - analytics write-path parity (CSRF exemption + proxy bypass + malformed-JSON 204 + normalizeAction allowlist)
 
 ---
 
