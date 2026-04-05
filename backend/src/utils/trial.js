@@ -1,4 +1,5 @@
 import { HttpError } from "./httpError.js";
+import { TRIAL_DURATION_DAYS } from "../config/trial.js";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -31,6 +32,17 @@ export function computeTrialDates(now = new Date()) {
         trialEndsAt: endsAt,
         trialDeleteAt: deleteAt,
     };
+}
+
+/**
+ * Compute trial dates for the user-premium-trial lifecycle.
+ * Separate from anonymous computeTrialDates() — different duration, no deleteAt.
+ * Returns { trialStartedAt, trialEndsAt } only.
+ */
+export function computeUserPremiumTrialDates(now = new Date()) {
+    const startedAt = new Date(now);
+    const endsAt = new Date(startedAt.getTime() + TRIAL_DURATION_DAYS * DAY_MS);
+    return { trialStartedAt: startedAt, trialEndsAt: endsAt };
 }
 
 function normalizePlan(value) {
@@ -143,6 +155,27 @@ export function resolveBilling(card, now = new Date()) {
             isEntitled: true,
             isPaid: false,
         };
+    }
+
+    // 2b) user-owned card with active premium trial.
+    // Condition: card is user-owned, billing.status is "trial", and trialEndsAt is in the future.
+    // Belt-and-suspenders: require billing.status === "trial" to prevent dirty-data false positives.
+    if (card?.user && card?.trialEndsAt && billingStatus === "trial") {
+        const trialEndsAtIso = new Date(card.trialEndsAt).toISOString();
+        const trialEndsAtMs = new Date(trialEndsAtIso).getTime();
+        if (Number.isFinite(trialEndsAtMs) && trialEndsAtMs > nowMs) {
+            return {
+                source: "trial-premium",
+                plan:
+                    normalizePlan(billing?.plan) !== "free"
+                        ? normalizePlan(billing?.plan)
+                        : "monthly",
+                until: trialEndsAtIso,
+                isEntitled: true,
+                isPaid: true,
+            };
+        }
+        // Trial expired — fall through to user-owned free block below.
     }
 
     // Policy: user-owned cards are free-to-edit when not paid/adminOverride.

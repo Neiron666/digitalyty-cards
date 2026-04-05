@@ -53,7 +53,12 @@ function serializeCommittedServices(value) {
     return JSON.stringify(buildCommittedServices(value.title, value.items));
 }
 
-export default function ServicesPanel({ services, disabled, onChange }) {
+export default function ServicesPanel({
+    services,
+    disabled,
+    onChange,
+    entitlements,
+}) {
     const normalized = normalizeServices(services);
     const [draftTitle, setDraftTitle] = useState(() => normalized.title);
     const [draftItems, setDraftItems] = useState(() => normalized.items);
@@ -70,6 +75,9 @@ export default function ServicesPanel({ services, disabled, onChange }) {
         setDraftTitle(nextNormalized.title);
         setDraftItems(nextNormalized.items);
     }, [services]);
+
+    // Defense-in-depth: hidden via sidebar, but guard if mounted through other path.
+    if (entitlements && !entitlements.canUseServices) return null;
 
     function commit(nextTitle, nextItems) {
         const committed = buildCommittedServices(nextTitle, nextItems);

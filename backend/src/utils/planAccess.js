@@ -11,3 +11,8 @@ export function getGalleryLimit(plan = "free") {
     const planConfig = PLANS[plan];
     return planConfig?.galleryLimit || 0;
 }
+
+export function getContentParagraphsLimit(plan = "free") {
+    const planConfig = PLANS[plan];
+    return planConfig?.contentParagraphs || 1;
+}

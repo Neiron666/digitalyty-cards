@@ -244,6 +244,16 @@ const CardSchema = new mongoose.Schema(
         trialEndsAt: { type: Date, default: null },
         trialDeleteAt: { type: Date, default: null, index: true },
 
+        // Lifecycle reconciliation: stamped when an expired user-premium trial
+        // is detected and billing is normalized back to free.
+        // Null = not yet downgraded (or never had a trial).
+        downgradedAt: { type: Date, default: null },
+
+        // Retention purge: stamped when premium-only surplus data is purged
+        // after the retention grace window expires post-downgrade.
+        // Null = not yet purged (or never downgraded).
+        retentionPurgedAt: { type: Date, default: null },
+
         // Authoritative billing (server-controlled only; client must NOT set directly).
         billing: {
             status: {

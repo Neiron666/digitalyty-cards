@@ -72,6 +72,7 @@ export default function EditorPanel({
                         if (sectionName !== "contact") return;
                         onFieldChange?.("contact", patch);
                     }}
+                    entitlements={card?.entitlements}
                 />
             );
 
@@ -84,6 +85,7 @@ export default function EditorPanel({
                     disabled={editingDisabled}
                     onNavigateTab={onNavigateTab}
                     onChange={(patch) => applyPatch("content", patch)}
+                    entitlements={card?.entitlements}
                 />
             );
 
@@ -93,6 +95,7 @@ export default function EditorPanel({
                     services={card?.content?.services}
                     disabled={editingDisabled}
                     onChange={(patch) => applyPatch("content", patch)}
+                    entitlements={card?.entitlements}
                 />
             );
 
@@ -109,6 +112,7 @@ export default function EditorPanel({
                     onBookingChange={(nextBooking) =>
                         onFieldChange?.("bookingSettings", nextBooking)
                     }
+                    entitlements={card?.entitlements}
                 />
             );
 

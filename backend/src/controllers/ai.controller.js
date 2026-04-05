@@ -88,7 +88,7 @@ function checkRateLimit(userId, limit) {
 // --- Tier resolution (reuses project SSoT) ----------------------------------
 
 async function resolveFeaturePlan(card, userId, now) {
-    if (!userId) return "free";
+    if (!userId) return { plan: "free", billingSource: "unknown" };
     const user = await User.findById(userId)
         .select("adminTier adminTierUntil")
         .lean();
@@ -99,7 +99,10 @@ async function resolveFeaturePlan(card, userId, now) {
         effectiveBilling,
         now,
     });
-    return planFromTier(effectiveTier?.tier || "free");
+    return {
+        plan: planFromTier(effectiveTier?.tier || "free"),
+        billingSource: effectiveBilling?.source || "unknown",
+    };
 }
 
 // --- Monthly quota (persistent, success-only) ------------------------------
@@ -294,8 +297,14 @@ export async function suggestAbout(req, res) {
 
     // 7. Rate limit (tier-aware)
     const now = new Date();
-    const featurePlan = await resolveFeaturePlan(card, userId, now);
-    const isPremium = hasAccess(featurePlan, "seo"); // premium plans unlock seo → proxy for "premium"
+    const { plan: featurePlan, billingSource } = await resolveFeaturePlan(
+        card,
+        userId,
+        now,
+    );
+    // Trial-premium users keep full free AI profile (monthly + daily).
+    const isPremium =
+        billingSource !== "trial-premium" && hasAccess(featurePlan, "seo");
     const rateLimit = isPremium ? RATE_LIMIT_PREMIUM : RATE_LIMIT_FREE;
 
     if (!checkRateLimit(userId, rateLimit)) {
@@ -544,8 +553,14 @@ export async function getAiQuota(req, res) {
 
     // 5. Resolve tier → monthly limit (shared budget)
     const now = new Date();
-    const featurePlan = await resolveFeaturePlan(card, userId, now);
-    const isPremium = hasAccess(featurePlan, "seo");
+    const { plan: featurePlan, billingSource } = await resolveFeaturePlan(
+        card,
+        userId,
+        now,
+    );
+    // Trial-premium users keep full free AI profile.
+    const isPremium =
+        billingSource !== "trial-premium" && hasAccess(featurePlan, "seo");
     const monthlyLimit = isPremium
         ? SHARED_MONTHLY_QUOTA_PREMIUM
         : SHARED_MONTHLY_QUOTA_FREE;
@@ -658,8 +673,14 @@ export async function suggestSeo(req, res) {
 
     // 7. Rate limit (tier-aware, shared rate bucket with about)
     const now = new Date();
-    const featurePlan = await resolveFeaturePlan(card, userId, now);
-    const isPremium = hasAccess(featurePlan, "seo");
+    const { plan: featurePlan, billingSource } = await resolveFeaturePlan(
+        card,
+        userId,
+        now,
+    );
+    // Trial-premium users keep full free AI profile (monthly + daily).
+    const isPremium =
+        billingSource !== "trial-premium" && hasAccess(featurePlan, "seo");
     const rateLimit = isPremium ? RATE_LIMIT_PREMIUM : RATE_LIMIT_FREE;
 
     if (!checkRateLimit(userId, rateLimit)) {
@@ -945,8 +966,14 @@ export async function suggestFaq(req, res) {
 
     // 7. Rate limit (tier-aware, shared rate bucket)
     const now = new Date();
-    const featurePlan = await resolveFeaturePlan(card, userId, now);
-    const isPremium = hasAccess(featurePlan, "seo");
+    const { plan: featurePlan, billingSource } = await resolveFeaturePlan(
+        card,
+        userId,
+        now,
+    );
+    // Trial-premium users keep full free AI profile (monthly + daily).
+    const isPremium =
+        billingSource !== "trial-premium" && hasAccess(featurePlan, "seo");
     const rateLimit = isPremium ? RATE_LIMIT_PREMIUM : RATE_LIMIT_FREE;
 
     if (!checkRateLimit(userId, rateLimit)) {

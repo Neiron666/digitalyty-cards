@@ -8,6 +8,13 @@ const cx = (...classes) => classes.filter(Boolean).join(" ");
 function ContactButtons({ card }) {
     const { contact, business } = card;
 
+    // Defense-in-depth: premium extras only render when entitlements allow.
+    // Free baseline: phone, whatsapp, email, website, instagram.
+    const isPremium =
+        card?.entitlements?.canUseServices !== undefined
+            ? card.entitlements.canUseServices
+            : true;
+
     const phone =
         contact?.phone ||
         contact?.mobilePhone ||
@@ -30,15 +37,16 @@ function ContactButtons({ card }) {
           ? `https://waze.com/ul?q=${encodeURIComponent(addressQuery)}`
           : "";
 
-    const wazeHref =
-        ensureHttpUrl(extractWazeUrl(contact?.waze), {
-            extraSchemes: ["waze"],
-        }) || wazeUrl;
+    const wazeHref = isPremium
+        ? ensureHttpUrl(extractWazeUrl(contact?.waze), {
+              extraSchemes: ["waze"],
+          }) || wazeUrl
+        : "";
 
-    const facebookHref = ensureHttpUrl(contact?.facebook);
+    const facebookHref = isPremium ? ensureHttpUrl(contact?.facebook) : "";
     const instagramHref = ensureHttpUrl(contact?.instagram);
-    const twitterHref = ensureHttpUrl(contact?.twitter);
-    const tiktokHref = ensureHttpUrl(contact?.tiktok);
+    const twitterHref = isPremium ? ensureHttpUrl(contact?.twitter) : "";
+    const tiktokHref = isPremium ? ensureHttpUrl(contact?.tiktok) : "";
     const websiteHref = ensureHttpUrl(contact?.website);
 
     if (

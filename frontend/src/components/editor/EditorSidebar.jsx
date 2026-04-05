@@ -85,6 +85,15 @@ function isPremiumTab(tabId, entitlements) {
     return false;
 }
 
+/** Tabs that should be completely hidden (not just crown-badged) on free. */
+function isHiddenTab(tabId, entitlements) {
+    if (!entitlements) return false;
+    if (tabId === PANEL_SERVICES) return !entitlements.canUseServices;
+    if (tabId === PANEL_BUSINESS_HOURS)
+        return !entitlements.canUseBusinessHours;
+    return false;
+}
+
 export default function EditorSidebar({
     activeTab,
     onChangeTab,
@@ -235,33 +244,35 @@ export default function EditorSidebar({
             <div className={styles.title}>עריכת כרטיס</div>
 
             <nav className={styles.nav}>
-                {TABS.map((tab) => {
-                    const premium = isPremiumTab(tab.id, entitlements);
-                    const TabIcon = TAB_ICON[tab.id];
-                    return (
-                        <button
-                            key={tab.id}
-                            type="button"
-                            className={`${styles.tab} ${
-                                activeTab === tab.id ? styles.active : ""
-                            }`}
-                            onClick={() => onChangeTab(tab.id)}
-                        >
-                            <span className={styles.tabLabel}>
-                                {TabIcon && (
-                                    <TabIcon className={styles.tabIcon} />
-                                )}
-                                {tab.label}
-                                {premium ? (
-                                    <CrownIcon
-                                        className={styles.crown}
-                                        title="רק לפרימיום"
-                                    />
-                                ) : null}
-                            </span>
-                        </button>
-                    );
-                })}
+                {TABS.filter((tab) => !isHiddenTab(tab.id, entitlements)).map(
+                    (tab) => {
+                        const premium = isPremiumTab(tab.id, entitlements);
+                        const TabIcon = TAB_ICON[tab.id];
+                        return (
+                            <button
+                                key={tab.id}
+                                type="button"
+                                className={`${styles.tab} ${
+                                    activeTab === tab.id ? styles.active : ""
+                                }`}
+                                onClick={() => onChangeTab(tab.id)}
+                            >
+                                <span className={styles.tabLabel}>
+                                    {TabIcon && (
+                                        <TabIcon className={styles.tabIcon} />
+                                    )}
+                                    {tab.label}
+                                    {premium ? (
+                                        <CrownIcon
+                                            className={styles.crown}
+                                            title="רק לפרימיום"
+                                        />
+                                    ) : null}
+                                </span>
+                            </button>
+                        );
+                    },
+                )}
             </nav>
         </aside>
     );

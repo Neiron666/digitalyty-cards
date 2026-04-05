@@ -5,7 +5,11 @@ import Organization from "../models/Organization.model.js";
 import OrganizationMember from "../models/OrganizationMember.model.js";
 import { getOrgSeatUsageByOrgIds } from "../utils/orgSeats.util.js";
 import mongoose from "mongoose";
-import { hasAccess } from "../utils/planAccess.js";
+import {
+    hasAccess,
+    getGalleryLimit,
+    getContentParagraphsLimit,
+} from "../utils/planAccess.js";
 import crypto from "crypto";
 import {
     removeObjects,
@@ -28,6 +32,7 @@ import {
     isTrialExpired,
     isEntitled,
     resolveBilling,
+    computeUserPremiumTrialDates,
 } from "../utils/trial.js";
 import { HttpError } from "../utils/httpError.js";
 import { claimAnonymousCardForUser } from "../services/claimCard.service.js";
@@ -44,6 +49,7 @@ import {
     CURRENT_TERMS_VERSION,
     CURRENT_PRIVACY_VERSION,
 } from "../utils/consentVersions.js";
+import { isUserTrialEligible } from "../config/trial.js";
 
 function resolveCleanupBucketsForCard(card) {
     const isAnonymousOwned = !card?.user && Boolean(card?.anonymousId);
@@ -162,7 +168,7 @@ function sleep(ms) {
     return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-function normalizeAboutFieldsInContent(container) {
+function normalizeAboutFieldsInContent(container, { max } = {}) {
     if (!container || typeof container !== "object") return;
 
     const content =
@@ -182,8 +188,10 @@ function normalizeAboutFieldsInContent(container) {
 
     if (!hasAboutText && !hasAboutParagraphs) return;
 
+    const opts = max != null ? { max } : {};
     const paragraphs = normalizeAboutParagraphs(
         hasAboutParagraphs ? content.aboutParagraphs : content.aboutText,
+        opts,
     );
 
     content.aboutParagraphs = paragraphs;
@@ -418,6 +426,17 @@ const ADVANCED_SEO_KEYS = new Set([
     "metaPixelId",
     "googleSiteVerification",
     "facebookDomainVerification",
+]);
+
+// Batch 3: contact subfields allowed on the free plan.
+// Everything else (facebook, twitter, tiktok, waze, linkedin, mobile,
+// officePhone, fax, extraLines) is silently stripped for free users.
+const FREE_CONTACT_ALLOWLIST = new Set([
+    "phone",
+    "whatsapp",
+    "email",
+    "website",
+    "instagram",
 ]);
 
 async function resolveFeaturePlanForCard(card, userId, now) {
@@ -1121,13 +1140,63 @@ export async function createCard(req, res) {
             user.plan === "yearly";
 
         const serverPlan = userIsPaid ? user.plan : "free";
-        const serverBilling = userIsPaid
+        let serverBilling = userIsPaid
             ? {
                   status: "active",
                   plan: user.plan,
                   paidUntil: user.subscription?.expiresAt || null,
               }
             : { status: "free", plan: "free", paidUntil: null };
+
+        // --- User premium trial activation (Foundation Batch) ---
+        let trialFields = {};
+        if (!userIsPaid && isUserTrialEligible(user)) {
+            const { trialStartedAt, trialEndsAt } =
+                computeUserPremiumTrialDates(now);
+            serverBilling = {
+                status: "trial",
+                plan: "monthly",
+                paidUntil: null,
+            };
+            trialFields = { trialStartedAt, trialEndsAt };
+            // Stamp user lifecycle fields (persisted by user.save() below).
+            user.trialActivatedAt = now;
+            user.trialEndsAt = trialEndsAt;
+        }
+
+        // --- Batch 3: free-plan write gates (silent strip) ---
+        const createFeaturePlan = trialFields.trialStartedAt
+            ? "monthly"
+            : serverPlan;
+
+        if (data.content && typeof data.content === "object") {
+            if (!hasAccess(createFeaturePlan, "services"))
+                delete data.content.services;
+            if (!hasAccess(createFeaturePlan, "video"))
+                delete data.content.videoUrl;
+        }
+
+        const createParaLimit = getContentParagraphsLimit(createFeaturePlan);
+        if (data.content?.aboutParagraphs?.length > createParaLimit) {
+            data.content.aboutParagraphs = data.content.aboutParagraphs.slice(
+                0,
+                createParaLimit,
+            );
+            data.content.aboutText = data.content.aboutParagraphs.join("\n\n");
+        }
+
+        if (!hasAccess(createFeaturePlan, "businessHours"))
+            delete data.businessHours;
+
+        if (
+            createFeaturePlan === "free" &&
+            data.contact &&
+            typeof data.contact === "object"
+        ) {
+            for (const key of Object.keys(data.contact)) {
+                if (!FREE_CONTACT_ALLOWLIST.has(key)) delete data.contact[key];
+            }
+        }
 
         try {
             const card = await Card.create({
@@ -1145,6 +1214,7 @@ export async function createCard(req, res) {
                 tenantKey,
                 user: user._id,
                 billing: serverBilling,
+                ...trialFields,
                 seo,
             });
 
@@ -1243,6 +1313,29 @@ export async function createCard(req, res) {
         title: data?.seo?.title || computedSeo.title,
         description: data?.seo?.description || computedSeo.description,
     };
+
+    // --- Batch 3: free-plan write gates (anonymous = always free) ---
+    if (data.content && typeof data.content === "object") {
+        if (!hasAccess("free", "services")) delete data.content.services;
+        if (!hasAccess("free", "video")) delete data.content.videoUrl;
+    }
+
+    const anonParaLimit = getContentParagraphsLimit("free");
+    if (data.content?.aboutParagraphs?.length > anonParaLimit) {
+        data.content.aboutParagraphs = data.content.aboutParagraphs.slice(
+            0,
+            anonParaLimit,
+        );
+        data.content.aboutText = data.content.aboutParagraphs.join("\n\n");
+    }
+
+    if (!hasAccess("free", "businessHours")) delete data.businessHours;
+
+    if (data.contact && typeof data.contact === "object") {
+        for (const key of Object.keys(data.contact)) {
+            if (!FREE_CONTACT_ALLOWLIST.has(key)) delete data.contact[key];
+        }
+    }
 
     try {
         const card = await Card.create({
@@ -1482,6 +1575,13 @@ export async function updateCard(req, res) {
     if (patch.content && isPlainObject(patch.content)) {
         const incoming = patch.content;
 
+        // --- Batch 3: strip premium content fields before merge ---
+        // Deleting from `incoming` before merge preserves existing stored values.
+        if (featurePlan !== null) {
+            if (!hasAccess(featurePlan, "services")) delete incoming.services;
+            if (!hasAccess(featurePlan, "video")) delete incoming.videoUrl;
+        }
+
         const hasAboutParagraphs = Object.prototype.hasOwnProperty.call(
             incoming,
             "aboutParagraphs",
@@ -1518,8 +1618,30 @@ export async function updateCard(req, res) {
 
     // About: tolerant writer (accept aboutText or aboutParagraphs),
     // but only when the incoming PATCH shows intent to modify About.
+    // Batch 3: plan-aware paragraph limit + non-destructive tail preservation.
     if (aboutTouched) {
-        normalizeAboutFieldsInContent(patch);
+        if (featurePlan !== null) {
+            const paragraphsLimit = getContentParagraphsLimit(featurePlan);
+            normalizeAboutFieldsInContent(patch, { max: paragraphsLimit });
+
+            // Non-destructive: preserve stored tail paragraphs beyond the
+            // plan's editable limit so premium content is not lost on downgrade.
+            const existingParas = existingCard?.content?.aboutParagraphs || [];
+            if (
+                existingParas.length > paragraphsLimit &&
+                patch.content?.aboutParagraphs
+            ) {
+                const tail = existingParas.slice(paragraphsLimit);
+                patch.content.aboutParagraphs = [
+                    ...patch.content.aboutParagraphs,
+                    ...tail,
+                ];
+                patch.content.aboutText =
+                    patch.content.aboutParagraphs.join("\n\n");
+            }
+        } else {
+            normalizeAboutFieldsInContent(patch);
+        }
     }
 
     let publishError = null;
@@ -1659,11 +1781,13 @@ export async function updateCard(req, res) {
             ? incomingGallery
             : [];
 
-        if (nextGallery.length > GALLERY_LIMIT) {
+        const galleryLimitForPlan =
+            featurePlan !== null ? getGalleryLimit(featurePlan) : GALLERY_LIMIT;
+        if (nextGallery.length > galleryLimitForPlan) {
             return res.status(422).json({
-                message: `Gallery limit reached (${GALLERY_LIMIT})`,
+                message: `Gallery limit reached (${galleryLimitForPlan})`,
                 code: "GALLERY_LIMIT_REACHED",
-                limit: GALLERY_LIMIT,
+                limit: galleryLimitForPlan,
             });
         }
 
@@ -1758,6 +1882,15 @@ export async function updateCard(req, res) {
         }
     }
 
+    // --- Batch 3: gate businessHours for free plan ---
+    if (
+        featurePlan !== null &&
+        !hasAccess(featurePlan, "businessHours") &&
+        Object.prototype.hasOwnProperty.call(patch, "businessHours")
+    ) {
+        delete patch.businessHours;
+    }
+
     // businessHours: tolerant atomic writer.
     // WHY: Card.model declares businessHours with default: null. buildSetUpdateFromPatch()
     // recurses into the incoming object and produces dotted child paths like
@@ -1819,6 +1952,17 @@ export async function updateCard(req, res) {
             : {};
 
         patch.bookingSettings = { ...baseBs, ...incomingBs };
+    }
+
+    // --- Batch 3: gate premium contact fields for free plan ---
+    if (
+        featurePlan === "free" &&
+        patch.contact &&
+        typeof patch.contact === "object"
+    ) {
+        for (const key of Object.keys(patch.contact)) {
+            if (!FREE_CONTACT_ALLOWLIST.has(key)) delete patch.contact[key];
+        }
     }
 
     const $set = buildSetUpdateFromPatch(patch);

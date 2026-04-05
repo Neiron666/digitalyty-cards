@@ -63,6 +63,9 @@ function toYouTubeEmbedUrl(raw) {
 function VideoSection({ card }) {
     const videoUrl = card.content?.videoUrl;
 
+    // Defense-in-depth: respect entitlement even if data leaked through.
+    if (!card?.entitlements?.canUseVideo) return null;
+
     const embedUrl = toYouTubeEmbedUrl(videoUrl);
 
     if (!embedUrl) return null;

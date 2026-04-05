@@ -196,9 +196,13 @@ export default function BusinessHoursPanel({
     bookingSettings,
     canUseBooking,
     onBookingChange,
+    entitlements,
 }) {
     const bh = useMemo(() => coerceBusinessHours(value), [value]);
     const timeOptions = useMemo(() => buildTimeOptions30m(), []);
+
+    // Defense-in-depth: hidden via sidebar, but guard if mounted through other path.
+    if (entitlements && !entitlements.canUseBusinessHours) return null;
 
     const bookingEnabled =
         bookingSettings != null &&

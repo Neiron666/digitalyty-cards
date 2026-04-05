@@ -32,6 +32,8 @@ export default function ServicesSection({ card, mode }) {
     const initialOpen = false;
     const [open, setOpen] = useState(initialOpen);
 
+    // Defense-in-depth: respect entitlement even if data leaked through.
+    if (!card?.entitlements?.canUseServices) return null;
     if (!services) return null;
 
     const toggleLabel = open

@@ -384,6 +384,11 @@ export async function claimAnonymousCardForUser({
 
     try {
         user.cardId = card._id;
+        // Close trial eligibility permanently on claim (idempotent: only if not already set).
+        // This prevents users from getting auto-trial after deleting a claimed card.
+        if (!user.trialEligibilityClosedAt) {
+            user.trialEligibilityClosedAt = new Date();
+        }
         await user.save();
     } catch (err) {
         // Roll back ownership best-effort (avoid leaving a user-owned card without user.cardId).

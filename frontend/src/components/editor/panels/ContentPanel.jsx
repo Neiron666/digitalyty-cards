@@ -128,7 +128,10 @@ export default function ContentPanel({
     onChange,
     business = {},
     onNavigateTab,
+    entitlements,
 }) {
+    const maxParagraphs = entitlements?.maxContentParagraphs ?? 3;
+    const canUseVideo = entitlements?.canUseVideo !== false;
     const aboutParagraphsRaw =
         Array.isArray(content.aboutParagraphs) && content.aboutParagraphs.length
             ? content.aboutParagraphs
@@ -137,12 +140,12 @@ export default function ContentPanel({
               : [""];
 
     const aboutParagraphs = aboutParagraphsRaw
-        .slice(0, 3)
+        .slice(0, maxParagraphs)
         .map((v) => (typeof v === "string" ? v : ""));
 
     function commitAboutParagraphs(nextParagraphs) {
         const safe = Array.isArray(nextParagraphs)
-            ? nextParagraphs.slice(0, 3)
+            ? nextParagraphs.slice(0, maxParagraphs)
             : [""];
 
         onChange({
@@ -271,7 +274,7 @@ export default function ContentPanel({
             // full
             const title = aiSuggestion.aboutTitle || "";
             const paras = Array.isArray(aiSuggestion.aboutParagraphs)
-                ? aiSuggestion.aboutParagraphs.slice(0, 3)
+                ? aiSuggestion.aboutParagraphs.slice(0, maxParagraphs)
                 : [];
             onChange({ aboutTitle: title });
             commitAboutParagraphs(paras.length ? paras : [""]);
@@ -504,13 +507,18 @@ export default function ContentPanel({
                     type="button"
                     className={styles.addParagraphButton}
                     onClick={() => {
-                        if (aboutParagraphs.length >= 3) return;
+                        if (aboutParagraphs.length >= maxParagraphs) return;
                         commitAboutParagraphs([...aboutParagraphs, ""]);
                     }}
-                    disabled={aboutParagraphs.length >= 3}
+                    disabled={aboutParagraphs.length >= maxParagraphs}
                 >
                     + הוסף פסקה חדשה
                 </button>
+                {maxParagraphs <= 1 && (
+                    <div className={styles.hint}>
+                        הוספת פסקאות נוספות זמינה במסלול פרמיום
+                    </div>
+                )}
             </div>
 
             {/* --- Full block AI action (create-only, shown when About is empty) */}
@@ -551,13 +559,17 @@ export default function ContentPanel({
                 onCancel={handleConsentCancel}
             />
 
-            <Input
-                label="קישור לסרטון YouTube"
-                value={content.videoUrl || ""}
-                onChange={(e) => onChange({ videoUrl: e.target.value })}
-                placeholder="https://www.youtube.com/..."
-            />
-            <div className={styles.hint}>Paste a YouTube link</div>
+            {canUseVideo && (
+                <>
+                    <Input
+                        label="קישור לסרטון YouTube"
+                        value={content.videoUrl || ""}
+                        onChange={(e) => onChange({ videoUrl: e.target.value })}
+                        placeholder="https://www.youtube.com/..."
+                    />
+                    <div className={styles.hint}>Paste a YouTube link</div>
+                </>
+            )}
         </Panel>
     );
 }

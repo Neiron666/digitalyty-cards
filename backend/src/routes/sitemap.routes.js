@@ -4,7 +4,8 @@ import BlogPost from "../models/BlogPost.model.js";
 import GuidePost from "../models/GuidePost.model.js";
 import Organization from "../models/Organization.model.js";
 import OrganizationMember from "../models/OrganizationMember.model.js";
-import { isEntitled, isTrialExpired } from "../utils/trial.js";
+import { isEntitled, isTrialExpired, resolveBilling } from "../utils/trial.js";
+import { resolveEffectiveTier } from "../utils/tier.js";
 import { getSiteUrl } from "../utils/siteUrl.util.js";
 import { getPersonalOrgId } from "../utils/personalOrg.util.js";
 
@@ -37,12 +38,23 @@ router.get("/sitemap.xml", async (req, res) => {
             isActive: true,
             status: "published",
             user: { $exists: true, $ne: null },
-        }).select("slug orgId user trialEndsAt billing plan");
+        }).select(
+            "slug orgId user trialEndsAt billing plan adminOverride adminTier adminTierUntil",
+        );
 
         const now = new Date();
-        const visible = cards.filter(
-            (c) => !(isTrialExpired(c, now) && !isEntitled(c, now)),
-        );
+        const visible = cards
+            .filter((c) => !(isTrialExpired(c, now) && !isEntitled(c, now)))
+            .filter((c) => {
+                // Exclude free-tier cards from sitemap (noindex policy).
+                const billing = resolveBilling(c, now);
+                const tier = resolveEffectiveTier({
+                    card: c,
+                    effectiveBilling: billing,
+                    now,
+                });
+                return (tier?.tier || "free") !== "free";
+            });
 
         const personalOrgIdStr = String(personalOrgId);
         const companyOrgIds = Array.from(

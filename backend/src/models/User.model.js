@@ -73,6 +73,19 @@ const UserSchema = new mongoose.Schema(
         // Stamped to now() on every successful password reset or change-password.
         // Null means no password event has occurred — all existing tokens are treated as fresh.
         passwordChangedAt: { type: Date, default: null },
+
+        // --- User-premium-trial lifecycle (Foundation Batch) ---
+        // When the 10-day premium trial was actually activated (first card creation).
+        // One-time stamp, never resets. Null = trial never started.
+        trialActivatedAt: { type: Date, default: null },
+        // When the trial ends (denormalized for admin/support/future downgrade queries).
+        // Null = no active/past trial.
+        trialEndsAt: { type: Date, default: null },
+        // When trial eligibility was permanently closed WITHOUT activation.
+        // Set by claim-flow (anonymous card ownership transfer) to prevent
+        // future trial eligibility after card deletion + re-creation.
+        // Null = eligibility not closed externally.
+        trialEligibilityClosedAt: { type: Date, default: null },
     },
     { timestamps: true },
 );

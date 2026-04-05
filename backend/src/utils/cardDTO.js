@@ -1,8 +1,8 @@
-import { hasAccess } from "./planAccess.js";
+import { hasAccess, getGalleryLimit } from "./planAccess.js";
 import { resolveBilling } from "./trial.js";
 import { resolveEffectiveTier } from "./tier.js";
 import { formatIsrael, toIsrael } from "./time.util.js";
-import { GALLERY_LIMIT } from "../config/galleryLimit.js";
+import { PLANS } from "../config/plans.js";
 import { normalizeAboutParagraphs } from "./about.js";
 
 export function planFromTier(tier) {
@@ -54,8 +54,11 @@ export function computeEntitlements(
 
     const canViewAnalytics = analyticsLevel !== "none";
 
-    const galleryLimit = GALLERY_LIMIT;
+    const galleryLimit = getGalleryLimit(featurePlan);
     const canUploadGallery = canEdit && galleryLimit > 0;
+
+    const planConfig = PLANS[featurePlan] || PLANS.free;
+    const maxContentParagraphs = planConfig.contentParagraphs || 1;
 
     return {
         canEdit,
@@ -70,6 +73,9 @@ export function computeEntitlements(
         canEditSeo: hasAccess(featurePlan, "seo"),
         canChangeSlug: hasAccess(featurePlan, "slugChange"),
         canUseAnalyticsPremium: hasAccess(featurePlan, "analytics"),
+        canUseBusinessHours: hasAccess(featurePlan, "businessHours"),
+        canUseServices: hasAccess(featurePlan, "services"),
+        maxContentParagraphs,
         analyticsLevel,
         canViewAnalytics,
         analyticsRetentionDays,
@@ -272,6 +278,62 @@ export function toCardDTO(
             aboutParagraphs: paragraphs,
             aboutText: paragraphs.join("\n\n"),
         };
+    }
+
+    // --- Public DTO: suppress premium data based on entitlements ---
+    // SSoT: backend DTO suppression is the truth; frontend checks are defense-in-depth.
+    if (!minimal && !includePrivate) {
+        const tier = effectiveTier?.tier || "free";
+
+        // SEO: free-tier public cards get noindex (no nofollow).
+        if (tier === "free" && dto.seo && typeof dto.seo === "object") {
+            dto.seo = { ...dto.seo, robots: "noindex" };
+        }
+
+        // Content gates.
+        if (dto.content && typeof dto.content === "object") {
+            // Truncate about paragraphs to plan limit.
+            const maxP = entitlements.maxContentParagraphs || 1;
+            const truncated = (dto.content.aboutParagraphs || []).slice(
+                0,
+                maxP,
+            );
+            dto.content.aboutParagraphs = truncated;
+            dto.content.aboutText = truncated.join("\n\n");
+
+            // Services.
+            if (!entitlements.canUseServices) {
+                dto.content.services = null;
+            }
+
+            // Video.
+            if (!entitlements.canUseVideo) {
+                dto.content.videoUrl = null;
+            }
+        }
+
+        // Business hours.
+        if (!entitlements.canUseBusinessHours) {
+            dto.businessHours = null;
+        }
+
+        // Contact: free tier gets only allowlisted fields.
+        if (tier === "free" && dto.contact && typeof dto.contact === "object") {
+            const FREE_PUBLIC_CONTACT = new Set([
+                "phone",
+                "whatsapp",
+                "email",
+                "website",
+                "instagram",
+            ]);
+            const filtered = {};
+            for (const key of Object.keys(dto.contact)) {
+                if (FREE_PUBLIC_CONTACT.has(key)) {
+                    filtered[key] = dto.contact[key];
+                }
+            }
+            dto.contact = filtered;
+        }
     }
 
     return dto;

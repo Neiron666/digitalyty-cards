@@ -1,7 +1,7 @@
 import Section from "./Section";
 import styles from "./AboutSection.module.css";
 
-function normalizeAboutParagraphs(content) {
+function normalizeAboutParagraphs(content, maxParagraphs) {
     const raw =
         content && Array.isArray(content.aboutParagraphs)
             ? content.aboutParagraphs
@@ -12,12 +12,13 @@ function normalizeAboutParagraphs(content) {
     return raw
         .map((v) => (typeof v === "string" ? v.trim() : ""))
         .filter(Boolean)
-        .slice(0, 3);
+        .slice(0, maxParagraphs);
 }
 
 function AboutSection({ card }) {
     const content = card?.content;
-    const paragraphs = normalizeAboutParagraphs(content);
+    const maxParagraphs = card?.entitlements?.maxContentParagraphs ?? 3;
+    const paragraphs = normalizeAboutParagraphs(content, maxParagraphs);
 
     if (!paragraphs.length) return null;
 

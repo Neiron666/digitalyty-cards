@@ -3,6 +3,8 @@ import * as Sentry from "@sentry/node";
 import { connectDB } from "./config/db.js";
 import { startTrialCleanupJob } from "./jobs/trialCleanup.js";
 import { startResetMailWorker } from "./jobs/resetMailWorker.js";
+import { startTrialLifecycleReconcileJob } from "./jobs/trialLifecycleReconcile.js";
+import { startRetentionPurgeJob } from "./jobs/retentionPurge.js";
 
 // --- Sentry early init (before Express app loads) ---
 // Must run before app.js is imported so Sentry can instrument Express/http.
@@ -67,6 +69,24 @@ async function start() {
         throw new Error("EMAIL_BLOCK_SECRET is required");
     }
 
+    // TRIAL_ROLLOUT_DATE: required in production (fail fast), optional in dev.
+    // If provided, must be valid ISO8601. If absent in non-production, trial feature stays disabled.
+    const trialRolloutRaw = process.env.TRIAL_ROLLOUT_DATE;
+    if (
+        trialRolloutRaw &&
+        typeof trialRolloutRaw === "string" &&
+        trialRolloutRaw.trim()
+    ) {
+        const parsed = new Date(trialRolloutRaw.trim());
+        if (!Number.isFinite(parsed.getTime())) {
+            throw new Error(
+                `TRIAL_ROLLOUT_DATE must be valid ISO8601 (got: "${trialRolloutRaw}")`,
+            );
+        }
+    } else if (process.env.NODE_ENV === "production") {
+        throw new Error("TRIAL_ROLLOUT_DATE is required in production");
+    }
+
     await connectDB(process.env.MONGO_URI);
 
     // Guaranteed cleanup for expired unpaid trial cards (Mongo + Supabase media).
@@ -78,6 +98,20 @@ async function start() {
     // Password-reset mail worker: drains MailJob queue, generates tokens, sends links.
     startResetMailWorker({
         intervalMs: Number(process.env.RESET_MAIL_WORKER_INTERVAL_MS) || 60_000,
+    });
+
+    // Lifecycle reconciliation: detect expired user-premium trials, normalize billing to free.
+    startTrialLifecycleReconcileJob({
+        intervalMs:
+            Number(process.env.TRIAL_LIFECYCLE_RECONCILE_INTERVAL_MS) ||
+            6 * 60 * 60 * 1000,
+    });
+
+    // Retention purge: remove premium-only surplus data after grace window.
+    startRetentionPurgeJob({
+        intervalMs:
+            Number(process.env.RETENTION_PURGE_INTERVAL_MS) ||
+            6 * 60 * 60 * 1000,
     });
 
     app.listen(PORT, () => {

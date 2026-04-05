@@ -7,7 +7,9 @@ export default function ContactPanel({
     contact = {},
     onFieldChange,
     editingDisabled = false,
+    entitlements,
 }) {
+    const showPremiumFields = entitlements?.canUseServices !== false;
     const phone = contact.phone || "";
     const whatsapp = contact.whatsapp || "";
 
@@ -81,39 +83,43 @@ export default function ContactPanel({
             />
 
             <Input
-                label="פייסבוק"
-                value={contact.facebook || ""}
-                disabled={editingDisabled}
-                onChange={(e) => emit({ facebook: e.target.value })}
-            />
-
-            <Input
                 label="אינסטגרם"
                 value={contact.instagram || ""}
                 disabled={editingDisabled}
                 onChange={(e) => emit({ instagram: e.target.value })}
             />
 
-            <Input
-                label="X (טוויטר)"
-                value={contact.twitter || ""}
-                disabled={editingDisabled}
-                onChange={(e) => emit({ twitter: e.target.value })}
-            />
+            {showPremiumFields && (
+                <>
+                    <Input
+                        label="פייסבוק"
+                        value={contact.facebook || ""}
+                        disabled={editingDisabled}
+                        onChange={(e) => emit({ facebook: e.target.value })}
+                    />
 
-            <Input
-                label="טיקטוק"
-                value={contact.tiktok || ""}
-                disabled={editingDisabled}
-                onChange={(e) => emit({ tiktok: e.target.value })}
-            />
+                    <Input
+                        label="X (טוויטר)"
+                        value={contact.twitter || ""}
+                        disabled={editingDisabled}
+                        onChange={(e) => emit({ twitter: e.target.value })}
+                    />
 
-            <Input
-                label="קישור לניווט בווייז"
-                value={contact.waze || ""}
-                disabled={editingDisabled}
-                onChange={(e) => emit({ waze: e.target.value })}
-            />
+                    <Input
+                        label="טיקטוק"
+                        value={contact.tiktok || ""}
+                        disabled={editingDisabled}
+                        onChange={(e) => emit({ tiktok: e.target.value })}
+                    />
+
+                    <Input
+                        label="קישור לניווט בווייז"
+                        value={contact.waze || ""}
+                        disabled={editingDisabled}
+                        onChange={(e) => emit({ waze: e.target.value })}
+                    />
+                </>
+            )}
         </Panel>
     );
 }

@@ -1,15 +1,18 @@
 export const PLANS = {
     free: {
         templates: [1], // только базовый шаблон
-        galleryLimit: 5,
+        galleryLimit: 4,
         leadForm: false,
         booking: false,
         video: false,
         reviews: false,
-        publish: false,
+        publish: true,
         seo: false,
         analytics: false,
         slugChange: false,
+        businessHours: false,
+        services: false,
+        contentParagraphs: 1,
     },
 
     monthly: {
@@ -23,6 +26,9 @@ export const PLANS = {
         seo: true,
         analytics: true,
         slugChange: true,
+        businessHours: true,
+        services: true,
+        contentParagraphs: 3,
     },
 
     yearly: {
@@ -36,6 +42,9 @@ export const PLANS = {
         seo: true,
         analytics: true,
         slugChange: true,
+        businessHours: true,
+        services: true,
+        contentParagraphs: 3,
     },
 
     org: {
@@ -49,6 +58,9 @@ export const PLANS = {
         seo: true,
         analytics: true,
         slugChange: true,
+        businessHours: true,
+        services: true,
+        contentParagraphs: 3,
     },
 };
 
