@@ -261,13 +261,13 @@ export default function EditorSidebar({
                 <div className={styles.trialCard} dir="rtl">
                     <div className={styles.trialCountdown}>
                         {trialDaysLeft > 1
-                            ? `נותרו עוד ${trialDaysLeft} ימים`
+                            ? `נותרו עוד ${trialDaysLeft} ימים לניסיון פרמיום`
                             : trialDaysLeft === 1
-                              ? "נותר עוד יום"
-                              : "נותר פחות מיום"}
+                              ? "נותר עוד יום לניסיון פרמיום"
+                              : "נותר פחות מיום לניסיון פרמיום"}
                     </div>
                     <a href="/pricing" className={styles.trialCta}>
-                        למסלולים
+                        עבור למסלולים
                     </a>
                 </div>
             )}

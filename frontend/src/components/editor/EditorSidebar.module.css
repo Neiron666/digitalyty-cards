@@ -130,9 +130,9 @@
 /* ── Trial countdown card (compact sidebar) ── */
 .trialCard {
     display: flex;
+    flex-direction: column;
     align-items: center;
-    justify-content: space-between;
-    gap: 8px;
+    gap: 4px;
     padding-block: 0.4rem;
     padding-inline: 0.75rem;
     border: 1px dashed rgba(255, 215, 0, 0.35);
@@ -143,7 +143,10 @@
 .trialCountdown {
     font-size: var(--fs-caption);
     font-weight: 700;
-    color: var(--gold, #d4a017);
+    color: var(--global-white-text);
+    text-decoration: underline var(--gold, #d4a017);
+    text-underline-offset: 3px;
+    white-space: nowrap;
     line-height: 1.4;
 }
 
@@ -151,7 +154,7 @@
     font-size: var(--fs-caption);
     font-weight: 700;
     color: var(--gold, #d4a017);
-    text-decoration: underline;
+    text-decoration: underline var(--gold, #d4a017) dashed;
     text-underline-offset: 3px;
     white-space: nowrap;
     flex-shrink: 0;
