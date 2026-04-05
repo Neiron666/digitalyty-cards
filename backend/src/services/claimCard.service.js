@@ -237,7 +237,12 @@ export async function claimAnonymousCardForUser({
         const mapping = media.mapping;
         const publicBucket = media.publicBucket;
 
-        const design = isPlainObject(card.design) ? card.design : {};
+        const design =
+            card.design && typeof card.design.toObject === "function"
+                ? card.design.toObject()
+                : isPlainObject(card.design)
+                  ? card.design
+                  : {};
         for (const k of [
             "backgroundImagePath",
             "coverImagePath",
