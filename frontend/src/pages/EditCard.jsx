@@ -6,7 +6,7 @@ import TrialBanner from "../components/editor/TrialBanner";
 import PremiumExpiryBanner from "../components/editor/PremiumExpiryBanner";
 import { EDITOR_CARD_TABS } from "../components/editor/editorTabs";
 import { deleteCard, updateCardSlug } from "../services/cards.service";
-import api, { getAnonymousId } from "../services/api";
+import api, { getAnonymousId, clearAnonymousId } from "../services/api";
 import { useAuth } from "../context/AuthContext";
 import { TEMPLATES } from "../templates/templates.config";
 import styles from "./EditCard.module.css";
@@ -167,6 +167,7 @@ function EditCard() {
     const [needsCreateUserCard, setNeedsCreateUserCard] = useState(false);
     const [createUserCardBusy, setCreateUserCardBusy] = useState(false);
     const [createUserCardError, setCreateUserCardError] = useState(null);
+    const [claimRecoveryError, setClaimRecoveryError] = useState(null);
     const [reloadKey, setReloadKey] = useState(0);
     const [isDeleting, setIsDeleting] = useState(false);
     const [deleteDesignAssetBusyKind, setDeleteDesignAssetBusyKind] =
@@ -576,9 +577,54 @@ function EditCard() {
                     }
 
                     // Enterprise contract: authenticated users must explicitly create a card.
+                    // Fallback: if an anonymous card exists locally, attempt to claim it
+                    // before falling through to the create-card CTA.
                     if (isAuthenticated) {
+                        const anonId = getAnonymousId();
+                        if (anonId) {
+                            try {
+                                const claimRes = await api.post("/cards/claim");
+                                if (claimRes?.data?._id) {
+                                    clearAnonymousId();
+                                    const normalized = normalizeCardForEditor(
+                                        claimRes.data,
+                                    );
+                                    setDraftCard(normalized);
+                                    setNeedsCreateUserCard(false);
+                                    setCreateUserCardError(null);
+                                    setDirtyPaths(new Set());
+                                    setSaveState("idle");
+                                    setSaveErrorText(null);
+                                    setIsInitializing(false);
+                                    return;
+                                }
+                            } catch (claimErr) {
+                                const claimStatus = claimErr?.response?.status;
+                                // Terminal: 400 (no anon id), 403 (window expired),
+                                // 404 (no anon card), 409 (already claimed) — fall through
+                                // to create-card CTA below.
+                                // Transient: 5xx / network — do NOT fall through to
+                                // create-card CTA (prevents duplicate-card creation).
+                                if (claimStatus >= 500 || !claimStatus) {
+                                    console.error(
+                                        "[initCard] fallback claim transient failure",
+                                        claimStatus,
+                                        claimErr?.response?.data || claimErr,
+                                    );
+                                    setNeedsCreateUserCard(true);
+                                    setClaimRecoveryError(
+                                        "לא הצלחנו לשחזר את הכרטיס הקיים. נסו לרענן את הדף.",
+                                    );
+                                    setCreateUserCardError(null);
+                                    setIsInitializing(false);
+                                    return;
+                                }
+                            }
+                        }
+
                         setNeedsCreateUserCard(true);
                         setCreateUserCardError(null);
+                        setClaimRecoveryError(null);
                         setIsInitializing(false);
                         return;
                     }
@@ -2062,26 +2108,48 @@ function EditCard() {
                             <div className={styles.createCtaText}>
                                 כדי להתחיל לערוך, צריך ליצור כרטיס.
                             </div>
-                            {createUserCardError ? (
-                                <div
-                                    className={styles.createCtaError}
-                                    role="alert"
-                                >
-                                    {createUserCardError}
-                                </div>
-                            ) : null}
-                            <div className={styles.createCtaActions}>
-                                <button
-                                    type="button"
-                                    className={styles.createCtaButton}
-                                    onClick={handleCreateUserCard}
-                                    disabled={createUserCardBusy}
-                                >
-                                    {createUserCardBusy
-                                        ? "יוצר כרטיס..."
-                                        : "צור כרטיס"}
-                                </button>
-                            </div>
+                            {claimRecoveryError ? (
+                                <>
+                                    <div
+                                        className={styles.createCtaError}
+                                        role="alert"
+                                    >
+                                        {claimRecoveryError}
+                                    </div>
+                                    <div className={styles.createCtaActions}>
+                                        <button
+                                            type="button"
+                                            className={styles.createCtaButton}
+                                            onClick={() => initCard()}
+                                        >
+                                            נסו שוב
+                                        </button>
+                                    </div>
+                                </>
+                            ) : (
+                                <>
+                                    {createUserCardError ? (
+                                        <div
+                                            className={styles.createCtaError}
+                                            role="alert"
+                                        >
+                                            {createUserCardError}
+                                        </div>
+                                    ) : null}
+                                    <div className={styles.createCtaActions}>
+                                        <button
+                                            type="button"
+                                            className={styles.createCtaButton}
+                                            onClick={handleCreateUserCard}
+                                            disabled={createUserCardBusy}
+                                        >
+                                            {createUserCardBusy
+                                                ? "יוצר כרטיס..."
+                                                : "צור כרטיס"}
+                                        </button>
+                                    </div>
+                                </>
+                            )}
                         </section>
                     </main>
                 </div>

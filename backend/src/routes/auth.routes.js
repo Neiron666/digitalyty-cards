@@ -249,11 +249,32 @@ router.post("/register", async (req, res) => {
     // Best-effort: claim anonymous card right after registration.
     const anonymousId = req?.anonymousId ? String(req.anonymousId) : "";
     try {
-        await claimAnonymousCardForUser({
+        const claimResult = await claimAnonymousCardForUser({
             userId: String(user._id),
             anonymousId,
             strict: false,
         });
+        if (!claimResult?.claimed) {
+            const code = claimResult?.code || "(none)";
+            const meta = {
+                userId: String(user._id),
+                anonymousId: anonymousId ? "(present)" : "(empty)",
+                ok: claimResult?.ok,
+                code,
+            };
+            const EXPECTED_NO_CLAIM_CODES = new Set([
+                "(none)",
+                "USER_ALREADY_HAS_CARD",
+            ]);
+            if (EXPECTED_NO_CLAIM_CODES.has(code)) {
+                console.warn("[auth] register-time claim did not claim", meta);
+            } else {
+                console.error(
+                    "[auth] register-time claim unexpected failure",
+                    meta,
+                );
+            }
+        }
     } catch (err) {
         console.error(
             "[auth] claim after register failed",

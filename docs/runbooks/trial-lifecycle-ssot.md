@@ -27,11 +27,27 @@ A user is eligible when **all** conditions hold:
 
 ## 3) Activation
 
-When a trial is activated:
+Trial activates through one of two canonical paths:
 
-- `user.trialActivatedAt` is set to the current timestamp.
-- `card.trialEndsAt` is set to `now + TRIAL_DURATION_DAYS` days.
-- `card.billing.status` is set to `"trial"`.
+1. **First card creation** — eligible user creates their first personal card (`card.controller.js` → `createCard`).
+2. **Anonymous card claim** — eligible user registers and claims an anonymous card as their first legitimate card acquisition (`claimCard.service.js` → `claimAnonymousCardForUser`).
+
+Both paths mirror the same canonical activation truth. The following fields are set:
+
+**User-side:**
+
+- `user.trialActivatedAt` — current timestamp.
+- `user.trialEndsAt` — `now + TRIAL_DURATION_DAYS` days.
+
+**Card-side:**
+
+- `card.trialStartedAt` — current timestamp.
+- `card.trialEndsAt` — `now + TRIAL_DURATION_DAYS` days.
+- `card.billing.status` — `"trial"`.
+- `card.billing.plan` — `"monthly"`.
+- `card.billing.paidUntil` — `null`.
+
+After successful activation, `user.trialEligibilityClosedAt` is set to close eligibility permanently (anti-abuse law).
 
 **Duration:** `TRIAL_DURATION_DAYS` (default: **10 days**), configurable via env var.
 
