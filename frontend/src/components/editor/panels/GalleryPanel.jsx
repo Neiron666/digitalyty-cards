@@ -18,7 +18,24 @@ export default function GalleryPanel({
     cardId,
     galleryLimit,
     onChange,
+    entitlements,
 }) {
+    if (entitlements?.canUseGallery === false) {
+        return (
+            <Panel title="גלריה">
+                <div className={styles.lockedBlock}>
+                    <div className={styles.lockedTitle}>גלריה</div>
+                    <div className={styles.lockedText}>
+                        כדי להשתמש בגלריה צריך מנוי פרימיום.
+                    </div>
+                    <a href="/pricing" className={styles.lockedCta}>
+                        שדרג לפרימיום
+                    </a>
+                </div>
+            </Panel>
+        );
+    }
+
     const limit =
         typeof galleryLimit === "number" && Number.isFinite(galleryLimit)
             ? galleryLimit

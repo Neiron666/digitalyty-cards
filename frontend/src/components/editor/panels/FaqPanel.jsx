@@ -43,6 +43,8 @@ function mapFaqAiError(err) {
     if (code === "AI_DISABLED") return "שירות ה-AI אינו פעיל כרגע.";
     if (code === "AI_UNAVAILABLE")
         return "שירות ה-AI אינו זמין זמנית. נסה שוב.";
+    if (code === "PREMIUM_REQUIRED")
+        return "יצירת שאלות עם AI זמינה למנויי פרימיום בלבד.";
     if (code === "INVALID_SUGGESTION")
         return "ה-AI החזיר תוכן לא שמיש. נסה שוב.";
     if (code === "INVALID_TARGET") return "בקשה שגויה. נסה שוב.";
@@ -142,7 +144,10 @@ export default function FaqPanel({
     cardId,
     business = {},
     onNavigateTab,
+    entitlements,
+    plan,
 }) {
+    const aiLocked = plan === "free";
     const value = faq && typeof faq === "object" ? faq : {};
 
     const title = typeof value.title === "string" ? value.title : "";
@@ -359,7 +364,7 @@ export default function FaqPanel({
             )}
 
             {/* --- FAQ AI: empty-state CTA + loading/error/preview ---------- */}
-            {cardId && (aiEligible || aiState !== "idle") && (
+            {cardId && !aiLocked && (aiEligible || aiState !== "idle") && (
                 <div className={styles.aiBlock}>
                     {/* Idle CTA — only when FAQ is effectively empty */}
                     {aiEligible && aiState === "idle" && (
@@ -430,6 +435,21 @@ export default function FaqPanel({
                             </div>
                         </div>
                     )}
+                </div>
+            )}
+
+            {cardId && aiLocked && aiEligible && (
+                <div className={styles.aiLockedBlock}>
+                    <div className={styles.aiLockedTitle}>
+                        ✦ יצירת שאלות עם AI
+                    </div>
+                    <div className={styles.aiLockedText}>
+                        יצירת שאלות ותשובות באמצעות AI זמינה למנויי פרימיום
+                        בלבד.
+                    </div>
+                    <a href="/pricing" className={styles.aiLockedCta}>
+                        שדרג לפרימיום
+                    </a>
                 </div>
             )}
 

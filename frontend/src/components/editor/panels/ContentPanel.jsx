@@ -42,6 +42,8 @@ function mapAiError(err) {
     if (code === "AI_DISABLED") return "שירות ה-AI אינו פעיל כרגע.";
     if (code === "AI_UNAVAILABLE")
         return "שירות ה-AI אינו זמין זמנית. נסה שוב.";
+    if (code === "PREMIUM_REQUIRED")
+        return "יצירת תוכן עם AI זמינה למנויי פרימיום בלבד.";
     if (code === "INVALID_SUGGESTION")
         return "ה-AI החזיר תוכן לא שמיש. נסה שוב.";
     if (code === "INVALID_TARGET" || code === "INVALID_PARAGRAPH_INDEX")
@@ -129,9 +131,11 @@ export default function ContentPanel({
     business = {},
     onNavigateTab,
     entitlements,
+    plan,
 }) {
     const maxParagraphs = entitlements?.maxContentParagraphs ?? 3;
     const canUseVideo = entitlements?.canUseVideo !== false;
+    const aiLocked = plan === "free";
     const aboutParagraphsRaw =
         Array.isArray(content.aboutParagraphs) && content.aboutParagraphs.length
             ? content.aboutParagraphs
@@ -406,7 +410,7 @@ export default function ContentPanel({
                 onChange={(e) => onChange({ aboutTitle: e.target.value })}
             />
 
-            {cardId && !aiReady && (
+            {cardId && !aiLocked && !aiReady && (
                 <span className={styles.aiReadinessHint}>
                     כדי לקבל הצעת תוכן מדויקת,{" "}
                     {onNavigateTab ? (
@@ -423,7 +427,7 @@ export default function ContentPanel({
                 </span>
             )}
 
-            {cardId && (
+            {cardId && !aiLocked && (
                 <div className={styles.fieldAiRow}>
                     <button
                         type="button"
@@ -464,20 +468,22 @@ export default function ContentPanel({
 
                         {cardId && (
                             <div className={styles.paragraphActionRow}>
-                                <button
-                                    type="button"
-                                    className={styles.fieldAiButton}
-                                    disabled={
-                                        !aiReady ||
-                                        quotaExhausted ||
-                                        aiState === "loading"
-                                    }
-                                    onClick={() =>
-                                        handleAiClick("paragraph", index)
-                                    }
-                                >
-                                    ✦ הצע פסקה עם AI
-                                </button>
+                                {!aiLocked && (
+                                    <button
+                                        type="button"
+                                        className={styles.fieldAiButton}
+                                        disabled={
+                                            !aiReady ||
+                                            quotaExhausted ||
+                                            aiState === "loading"
+                                        }
+                                        onClick={() =>
+                                            handleAiClick("paragraph", index)
+                                        }
+                                    >
+                                        ✦ הצע פסקה עם AI
+                                    </button>
+                                )}
                                 {aboutParagraphs.length > 1 && (
                                     <button
                                         type="button"
@@ -489,7 +495,7 @@ export default function ContentPanel({
                                         מחק פסקה
                                     </button>
                                 )}
-                                <AiQuotaHint quota={aiQuota} />
+                                {!aiLocked && <AiQuotaHint quota={aiQuota} />}
                             </div>
                         )}
 
@@ -521,8 +527,22 @@ export default function ContentPanel({
                 )}
             </div>
 
+            {cardId && aiLocked && (
+                <div className={styles.aiLockedBlock}>
+                    <div className={styles.aiLockedTitle}>
+                        ✦ יצירת תוכן עם AI
+                    </div>
+                    <div className={styles.aiLockedText}>
+                        יצירת תוכן באמצעות AI זמינה למנויי פרימיום בלבד.
+                    </div>
+                    <a href="/pricing" className={styles.aiLockedCta}>
+                        שדרג לפרימיום
+                    </a>
+                </div>
+            )}
+
             {/* --- Full block AI action (create-only, shown when About is empty) */}
-            {cardId && (bulkEligible || aiTarget === "full") && (
+            {cardId && !aiLocked && (bulkEligible || aiTarget === "full") && (
                 <div className={styles.aiBlock}>
                     {/* Idle CTA — only when both fields are empty */}
                     {bulkEligible && aiTarget !== "full" && (

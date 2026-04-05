@@ -89,7 +89,7 @@ export default function ContactPanel({
                 onChange={(e) => emit({ instagram: e.target.value })}
             />
 
-            {showPremiumFields && (
+            {showPremiumFields ? (
                 <>
                     <Input
                         label="פייסבוק"
@@ -119,6 +119,16 @@ export default function ContactPanel({
                         onChange={(e) => emit({ waze: e.target.value })}
                     />
                 </>
+            ) : (
+                <div className={styles.lockedBlock}>
+                    <div className={styles.lockedTitle}>עוד דרכי קשר</div>
+                    <div className={styles.lockedText}>
+                        פייסבוק, X, טיקטוק וווייז זמינים במסלול פרימיום.
+                    </div>
+                    <a href="/pricing" className={styles.lockedCta}>
+                        שדרג לפרימיום
+                    </a>
+                </div>
             )}
         </Panel>
     );

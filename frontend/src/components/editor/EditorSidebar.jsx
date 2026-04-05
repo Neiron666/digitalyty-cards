@@ -72,6 +72,7 @@ const TAB_ICON = {
 
 function isPremiumTab(tabId, entitlements) {
     if (!entitlements) return false;
+    if (tabId === "gallery") return entitlements.canUseGallery === false;
     if (tabId === "seo") return entitlements.canEditSeo === false;
     if (tabId === "settings") {
         return (

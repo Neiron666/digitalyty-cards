@@ -86,6 +86,7 @@ export default function EditorPanel({
                     onNavigateTab={onNavigateTab}
                     onChange={(patch) => applyPatch("content", patch)}
                     entitlements={card?.entitlements}
+                    plan={effectivePlan}
                 />
             );
 
@@ -149,6 +150,7 @@ export default function EditorPanel({
                     galleryLimit={galleryLimit}
                     onChange={(gallery) => onFieldChange?.("gallery", gallery)}
                     onUpgrade={onUpgrade}
+                    entitlements={card?.entitlements}
                 />
             );
 
@@ -169,6 +171,8 @@ export default function EditorPanel({
                     cardId={card._id}
                     business={card.business}
                     onNavigateTab={onNavigateTab}
+                    entitlements={card?.entitlements}
+                    plan={effectivePlan}
                 />
             );
 

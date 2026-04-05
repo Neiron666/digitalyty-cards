@@ -56,6 +56,47 @@
     outline-offset: 2px;
 }
 
+.aiLockedBlock {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 14px 16px;
+    border: 1px dashed rgba(255, 215, 0, 0.35);
+    border-radius: var(--radius-md);
+    background: rgba(255, 215, 0, 0.04);
+}
+
+.aiLockedTitle {
+    font-weight: 700;
+    font-size: var(--fs-body-sm);
+    color: var(--gold, #d4a017);
+}
+
+.aiLockedText {
+    opacity: 0.85;
+    font-size: var(--fs-ui);
+    line-height: 1.5;
+}
+
+.aiLockedCta {
+    display: inline-flex;
+    align-items: center;
+    font-weight: 700;
+    font-size: var(--fs-body-sm);
+    color: var(--gold, #d4a017);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+}
+
+.aiLockedCta:hover {
+    opacity: 0.85;
+}
+
+.aiLockedCta:focus-visible {
+    outline: 2px solid var(--gold, #d4a017);
+    outline-offset: 2px;
+}
+
 .deleteParagraphButton {
     appearance: none;
     border: 1px solid var(--border);
