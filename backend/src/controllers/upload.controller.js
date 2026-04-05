@@ -208,6 +208,15 @@ export async function uploadGalleryImage(req, res) {
             effectiveTier,
             now,
         );
+
+        // Batch 7A: gallery is fully premium-only — hard deny when feature is off.
+        if (!entitlements.canUseGallery) {
+            return res.status(403).json({
+                code: "PREMIUM_REQUIRED",
+                message: "Gallery requires a premium plan",
+            });
+        }
+
         const limit = Number(entitlements?.galleryLimit) || 0;
 
         const currentCount = galleryCount(card.gallery);

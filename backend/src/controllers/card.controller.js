@@ -1198,6 +1198,9 @@ export async function createCard(req, res) {
             }
         }
 
+        // Batch 7A: gallery is fully premium-only — strip on free.
+        if (!hasAccess(createFeaturePlan, "gallery")) delete data.gallery;
+
         try {
             const card = await Card.create({
                 _id: reservedId,
@@ -1336,6 +1339,9 @@ export async function createCard(req, res) {
             if (!FREE_CONTACT_ALLOWLIST.has(key)) delete data.contact[key];
         }
     }
+
+    // Batch 7A: gallery is fully premium-only — strip on free (anonymous = always free).
+    if (!hasAccess("free", "gallery")) delete data.gallery;
 
     try {
         const card = await Card.create({
@@ -1764,6 +1770,15 @@ export async function updateCard(req, res) {
         title: resolvedTitle || computedSeo.title,
         description: resolvedDescription || computedSeo.description,
     };
+
+    // Batch 7A: gallery is fully premium-only — strip from patch on free.
+    if (
+        featurePlan !== null &&
+        !hasAccess(featurePlan, "gallery") &&
+        Object.prototype.hasOwnProperty.call(patch, "gallery")
+    ) {
+        delete patch.gallery;
+    }
 
     // Gallery delete reconciliation: if gallery was provided, delete orphaned gallery uploads
     // from Supabase (delete-first) and prune corresponding uploads entries.

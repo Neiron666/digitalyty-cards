@@ -302,6 +302,16 @@ export async function suggestAbout(req, res) {
         userId,
         now,
     );
+
+    // Batch 7A: hard deny AI for free users (trial stays allowed with lower profile).
+    if (billingSource === "free") {
+        return res.status(403).json({
+            ok: false,
+            code: "PREMIUM_REQUIRED",
+            message: "AI generation requires a premium plan",
+        });
+    }
+
     // Trial-premium users keep full free AI profile (monthly + daily).
     const isPremium =
         billingSource !== "trial-premium" && hasAccess(featurePlan, "seo");
@@ -579,11 +589,15 @@ export async function getAiQuota(req, res) {
                 ? isAiFaqEnabled()
                 : false;
 
+    // Batch 7A: expose plan-based AI access signal for frontend.
+    const allowed = billingSource !== "free";
+
     return res.status(200).json({
         ok: true,
         quota: {
             ...buildQuotaDTO(feature, periodKey, used, monthlyLimit),
             featureEnabled,
+            allowed,
         },
     });
 }
@@ -678,6 +692,16 @@ export async function suggestSeo(req, res) {
         userId,
         now,
     );
+
+    // Batch 7A: hard deny AI for free users (trial stays allowed with lower profile).
+    if (billingSource === "free") {
+        return res.status(403).json({
+            ok: false,
+            code: "PREMIUM_REQUIRED",
+            message: "AI generation requires a premium plan",
+        });
+    }
+
     // Trial-premium users keep full free AI profile (monthly + daily).
     const isPremium =
         billingSource !== "trial-premium" && hasAccess(featurePlan, "seo");
@@ -971,6 +995,16 @@ export async function suggestFaq(req, res) {
         userId,
         now,
     );
+
+    // Batch 7A: hard deny AI for free users (trial stays allowed with lower profile).
+    if (billingSource === "free") {
+        return res.status(403).json({
+            ok: false,
+            code: "PREMIUM_REQUIRED",
+            message: "AI generation requires a premium plan",
+        });
+    }
+
     // Trial-premium users keep full free AI profile (monthly + daily).
     const isPremium =
         billingSource !== "trial-premium" && hasAccess(featurePlan, "seo");

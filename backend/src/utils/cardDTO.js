@@ -55,7 +55,8 @@ export function computeEntitlements(
     const canViewAnalytics = analyticsLevel !== "none";
 
     const galleryLimit = getGalleryLimit(featurePlan);
-    const canUploadGallery = canEdit && galleryLimit > 0;
+    const canUseGallery = hasAccess(featurePlan, "gallery");
+    const canUploadGallery = canEdit && canUseGallery && galleryLimit > 0;
 
     const planConfig = PLANS[featurePlan] || PLANS.free;
     const maxContentParagraphs = planConfig.contentParagraphs || 1;
@@ -63,6 +64,7 @@ export function computeEntitlements(
     return {
         canEdit,
         lockedReason,
+        canUseGallery,
         galleryLimit,
         canUploadGallery,
         canUseLeads: hasAccess(featurePlan, "leadForm"),
@@ -184,6 +186,13 @@ export function toCardDTO(
             : null,
         entitlements,
     };
+
+    // Batch 7A: gallery is fully premium-only.
+    // Suppress gallery from DTO when the effective plan does not grant gallery access.
+    // Admin/private paths retain the stored data for support/debug.
+    if (!minimal && !includePrivate && !entitlements.canUseGallery) {
+        dto.gallery = [];
+    }
 
     // Policy: user-owned free cards must not expose trial UX fields in the default DTO.
     // Keep trial fields available only via includePrivate=true (admin/debug).

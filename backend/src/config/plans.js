@@ -1,6 +1,7 @@
 export const PLANS = {
     free: {
         templates: [1], // только базовый шаблон
+        gallery: false,
         galleryLimit: 4,
         leadForm: false,
         booking: false,
@@ -17,6 +18,7 @@ export const PLANS = {
 
     monthly: {
         templates: "all",
+        gallery: true,
         galleryLimit: 10,
         leadForm: true,
         booking: true,
@@ -33,6 +35,7 @@ export const PLANS = {
 
     yearly: {
         templates: "all",
+        gallery: true,
         galleryLimit: 10,
         leadForm: true,
         booking: true,
@@ -49,6 +52,7 @@ export const PLANS = {
 
     org: {
         templates: "all",
+        gallery: true,
         galleryLimit: 50,
         leadForm: true,
         booking: true,
