@@ -1162,6 +1162,7 @@ export async function createCard(req, res) {
             // Stamp user lifecycle fields (persisted by user.save() below).
             user.trialActivatedAt = now;
             user.trialEndsAt = trialEndsAt;
+            user.trialEligibilityClosedAt = now;
         }
 
         // --- Batch 3: free-plan write gates (silent strip) ---
