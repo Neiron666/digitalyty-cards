@@ -95,11 +95,22 @@ function isHiddenTab(tabId, entitlements) {
     return false;
 }
 
+function computeTrialDaysLeft(billingUntil) {
+    if (!billingUntil) return null;
+    const endMs = new Date(billingUntil).getTime();
+    if (!Number.isFinite(endMs)) return null;
+    const diff = endMs - Date.now();
+    if (diff <= 0) return 0;
+    return Math.ceil(diff / (24 * 60 * 60 * 1000));
+}
+
 export default function EditorSidebar({
     activeTab,
     onChangeTab,
     entitlements,
     isPremium,
+    billingSource,
+    billingUntil,
     publicUrl,
     publicPath,
     isPublished,
@@ -109,6 +120,8 @@ export default function EditorSidebar({
     onLoadOrgs,
     showContextBar,
 }) {
+    const isTrial = billingSource === "trial-premium";
+    const trialDaysLeft = isTrial ? computeTrialDaysLeft(billingUntil) : null;
     const [copied, setCopied] = useState(false);
     const copiedTimer = useRef(null);
 
@@ -232,7 +245,9 @@ export default function EditorSidebar({
                     <>
                         <CrownIcon className={styles.planCrown} />
                         <span className={styles.planLabel}>מסלול:</span>
-                        <span className={styles.planValue}>פרמיום</span>
+                        <span className={styles.planValue}>
+                            {isTrial ? "פרמיום ניסיון" : "פרמיום"}
+                        </span>
                     </>
                 ) : (
                     <>
@@ -241,6 +256,21 @@ export default function EditorSidebar({
                     </>
                 )}
             </div>
+
+            {isTrial && trialDaysLeft != null && (
+                <div className={styles.trialCard} dir="rtl">
+                    <div className={styles.trialCountdown}>
+                        {trialDaysLeft > 1
+                            ? `נותרו עוד ${trialDaysLeft} ימים`
+                            : trialDaysLeft === 1
+                              ? "נותר עוד יום"
+                              : "נותר פחות מיום"}
+                    </div>
+                    <a href="/pricing" className={styles.trialCta}>
+                        למסלולים
+                    </a>
+                </div>
+            )}
 
             <div className={styles.title}>עריכת כרטיס</div>
 

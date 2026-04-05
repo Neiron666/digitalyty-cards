@@ -127,6 +127,45 @@
     font-weight: 900;
 }
 
+/* ── Trial countdown card (compact sidebar) ── */
+.trialCard {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding-block: 0.4rem;
+    padding-inline: 0.75rem;
+    border: 1px dashed rgba(255, 215, 0, 0.35);
+    border-radius: var(--radius-md);
+    background: rgba(255, 215, 0, 0.04);
+}
+
+.trialCountdown {
+    font-size: var(--fs-caption);
+    font-weight: 700;
+    color: var(--gold, #d4a017);
+    line-height: 1.4;
+}
+
+.trialCta {
+    font-size: var(--fs-caption);
+    font-weight: 700;
+    color: var(--gold, #d4a017);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.trialCta:hover {
+    opacity: 0.8;
+}
+
+.trialCta:focus-visible {
+    outline: 2px solid var(--gold, #d4a017);
+    outline-offset: 2px;
+}
+
 /* ── Public link (shown in mobile drawer) ── */
 .publicLink {
     padding-block: 10px;
