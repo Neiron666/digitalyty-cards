@@ -13,6 +13,8 @@ import {
     collectSupabasePathsFromCard,
     normalizeSupabasePaths,
 } from "../utils/supabasePaths.js";
+import { isUserTrialEligible } from "../config/trial.js";
+import { computeUserPremiumTrialDates } from "../utils/trial.js";
 
 function isPlainObject(v) {
     return (
@@ -339,6 +341,32 @@ export async function claimAnonymousCardForUser({
         }
     }
 
+    // --- Trial activation on claim (mirrors canonical create-path) ---
+    const now = new Date();
+    let trialActivated = false;
+    let trialEndsAtForUser = null;
+
+    const userIsPaid =
+        (user.subscription?.status === "active" &&
+            user.subscription?.expiresAt &&
+            new Date(user.subscription.expiresAt) > now) ||
+        user.plan === "monthly" ||
+        user.plan === "yearly";
+
+    if (
+        !userIsPaid &&
+        isUserTrialEligible(user) &&
+        (!card.billing || card.billing.status === "free")
+    ) {
+        const { trialStartedAt, trialEndsAt } =
+            computeUserPremiumTrialDates(now);
+        card.billing = { status: "trial", plan: "monthly", paidUntil: null };
+        card.trialStartedAt = trialStartedAt;
+        card.trialEndsAt = trialEndsAt;
+        trialActivated = true;
+        trialEndsAtForUser = trialEndsAt;
+    }
+
     try {
         // Normalize personal-scope orgId to prevent legacy null/missing orgId bypass.
         if (card.orgId === null || card.orgId === undefined) {
@@ -384,6 +412,11 @@ export async function claimAnonymousCardForUser({
 
     try {
         user.cardId = card._id;
+        // Stamp user-side trial lifecycle fields (mirrors canonical create-path).
+        if (trialActivated) {
+            user.trialActivatedAt = now;
+            user.trialEndsAt = trialEndsAtForUser;
+        }
         // Close trial eligibility permanently on claim (idempotent: only if not already set).
         // This prevents users from getting auto-trial after deleting a claimed card.
         if (!user.trialEligibilityClosedAt) {
@@ -391,14 +424,34 @@ export async function claimAnonymousCardForUser({
         }
         await user.save();
     } catch (err) {
-        // Roll back ownership best-effort (avoid leaving a user-owned card without user.cardId).
+        // Roll back ownership + trial fields best-effort
+        // (avoid leaving an anonymous card with orphaned trial billing).
         try {
+            const rollbackUpdate = {
+                $set: { anonymousId: aid },
+                $unset: { user: 1 },
+            };
+            if (trialActivated) {
+                rollbackUpdate.$set["billing.status"] = "free";
+                rollbackUpdate.$set["billing.plan"] = "free";
+                rollbackUpdate.$set["billing.paidUntil"] = null;
+                rollbackUpdate.$set.trialStartedAt = null;
+                rollbackUpdate.$set.trialEndsAt = null;
+            }
             await Card.updateOne(
                 { _id: card._id, user: user._id },
-                { $set: { anonymousId: aid }, $unset: { user: 1 } },
+                rollbackUpdate,
             );
-        } catch {
-            // ignore
+        } catch (rollbackErr) {
+            console.error(
+                "[claim] rollback failed — card may be inconsistent",
+                {
+                    cardId: String(card?._id || ""),
+                    userId: String(user?._id || ""),
+                    trialActivated,
+                    error: rollbackErr?.message || rollbackErr,
+                },
+            );
         }
 
         if (newPaths.length) {

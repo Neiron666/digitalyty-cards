@@ -390,11 +390,14 @@ This means: if a user starts a full-block AI flow and then types content into a 
 
 All editor AI generation surfaces share one monthly budget per user.
 
-| Tier    | Shared limit         | Scope                      | Period             |
-| ------- | -------------------- | -------------------------- | ------------------ |
-| Free    | 10 generations/month | About + FAQ + SEO combined | UTC calendar month |
-| Premium | 30 generations/month | About + FAQ + SEO combined | UTC calendar month |
+| Tier           | Shared limit         | Scope                      | Period             |
+| -------------- | -------------------- | -------------------------- | ------------------ |
+| Free           | 10 generations/month | About + FAQ + SEO combined | UTC calendar month |
+| Trial-premium  | 10 generations/month | About + FAQ + SEO combined | UTC calendar month |
+| Premium (paid) | 30 generations/month | About + FAQ + SEO combined | UTC calendar month |
 
+- **Trial-premium** uses the free AI profile (10/mo) because trial billing resolves to `plan: "monthly"` but tier classification maps it to the free quota bucket. SEO AI generation is additionally gated: `billingSource !== "trial-premium"` must hold for SEO generation to be available.
+- **Free hard-block (frontend):** The editor UX disables all three AI surfaces when `plan === "free"` (`ContentPanel`, `FaqPanel`, `SeoPanel` show a locked overlay). This is a frontend-only gate; backend quota enforcement is the canonical limit.
 - Counts successful generations only (across all surfaces).
 - Displayed to the user in real time via a unified `AiQuotaHint` component.
 - Resets automatically at the start of each UTC month (new `periodKey`).

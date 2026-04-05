@@ -16,8 +16,15 @@ const INITIAL_FORM = {
     consent: false,
 };
 
-export default function LeadForm({ cardId, slug, entitlements, onUpgrade }) {
+export default function LeadForm({
+    cardId,
+    slug,
+    entitlements,
+    onUpgrade,
+    mode,
+}) {
     if (!entitlements?.canUseLeads) {
+        if (mode === "public") return null;
         return (
             <Section title="צרו קשר" contentClassName={styles.content}>
                 <Paywall

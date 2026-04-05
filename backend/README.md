@@ -17,6 +17,20 @@
 - `TRIAL_CLEANUP_INTERVAL_MS`: cleanup job schedule interval in ms (default: `3600000` = 1h).
 - `ANON_CARD_TTL_DAYS`: anonymous draft TTL by inactivity, based on `Card.updatedAt` (default: `14`).
 
+## Trial & Retention Lifecycle
+
+| Variable                                | Default    | Purpose                                                        |
+| --------------------------------------- | ---------- | -------------------------------------------------------------- |
+| `TRIAL_ROLLOUT_DATE`                    | —          | ISO 8601 cutoff; users created before this date are ineligible |
+| `TRIAL_DURATION_DAYS`                   | `10`       | Premium trial length in days                                   |
+| `TRIAL_LIFECYCLE_RECONCILE_INTERVAL_MS` | `21600000` | Trial reconcile job interval (6 h)                             |
+| `TRIAL_LIFECYCLE_HEARTBEAT_MS`          | `43200000` | Reconcile heartbeat log interval (12 h)                        |
+| `RETENTION_GRACE_DAYS`                  | `90`       | Days after trial expiry before card purge eligibility          |
+| `RETENTION_PURGE_INTERVAL_MS`           | `21600000` | Retention purge job interval (6 h)                             |
+| `RETENTION_PURGE_HEARTBEAT_MS`          | `43200000` | Purge heartbeat log interval (12 h)                            |
+
+See `docs/runbooks/trial-lifecycle-ssot.md` for the full lifecycle runbook.
+
 ## AI Feature Flags
 
 Three independent feature flags control AI generation surfaces:

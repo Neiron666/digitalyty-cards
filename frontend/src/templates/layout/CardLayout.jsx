@@ -197,6 +197,7 @@ export default function CardLayout({
                                 slug={card?.slug}
                                 entitlements={card?.entitlements}
                                 onUpgrade={onUpgrade}
+                                mode={mode}
                             />
                         </div>
                     </section>

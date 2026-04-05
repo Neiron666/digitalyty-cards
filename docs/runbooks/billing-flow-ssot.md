@@ -41,7 +41,7 @@ All internal amounts are **integers in agorot** (1/100 of ₪). No floats anywhe
 
 | Feature key    | Free           | Monthly        | Yearly         | Org            |
 | -------------- | -------------- | -------------- | -------------- | -------------- |
-| `publish`      | ✗              | ✓              | ✓              | ✓              |
+| `publish`      | ✓              | ✓              | ✓              | ✓              |
 | `seo`          | ✗              | ✓              | ✓              | ✓              |
 | `analytics`    | ✗              | ✓              | ✓              | ✓              |
 | `slugChange`   | ✗              | ✓              | ✓              | ✓              |
@@ -49,8 +49,11 @@ All internal amounts are **integers in agorot** (1/100 of ₪). No floats anywhe
 | `video`        | ✗              | ✓              | ✓              | ✓              |
 | `reviews`      | ✗              | ✓              | ✓              | ✓              |
 | `templates`    | `[1]`          | `"all"`        | `"all"`        | `"all"`        |
-| `galleryLimit` | 5              | 10             | 10             | 50             |
+| `gallery`      | ✗              | ✓              | ✓              | ✓              |
+| `galleryLimit` | 4 (moot)       | 10             | 10             | 50             |
 | `aiGeneration` | 10/mo (shared) | 30/mo (shared) | 30/mo (shared) | 30/mo (shared) |
+
+> **Gallery note:** Free plan has `gallery: false` → `canUseGallery === false` in entitlements. The `galleryLimit` value (4) is never reached because gallery upload is fully gated by the boolean.
 
 > **AI quota note:** `aiGeneration` is a **shared monthly budget** across all AI surfaces (About, FAQ, SEO). The numbers above are the total per-user monthly limit, not per-surface. Enforcement: `backend/src/controllers/ai.controller.js` → `readTotalMonthlyUsage`. See `docs/ai-about-workstream.md` §5.1 for details.
 
@@ -203,10 +206,13 @@ Strategy: **discover-then-derive**.
 Precedence (highest → lowest):
 
 1. `card.adminOverride` (temporary support override, time-bounded)
-2. `card.billing` (real payment, time-bounded by `paidUntil`)
-3. Trial (anonymous cards only; user-owned cards are always entitled to write)
-4. Legacy `card.plan` field (migration fallback)
-5. None → free
+2. `card.billing` (real payment — status `active`/`paid`, `paidUntil > now`)
+3. Anonymous card → `source: "free"` (no trial countdown for anonymous)
+4. `trial-premium` (user-owned card with `billing.status === "trial"` and `trialEndsAt > now`) — grants `isPaid: true`, `plan: "monthly"`, time-bounded premium
+5. User-owned fallback → `source: "free"`
+6. Trial (anonymous cards with `trialEndsAt > now` or no trial dates yet)
+7. Legacy `card.plan` field (migration fallback)
+8. None → `source: "none"` (isEntitled: false)
 
 **SSoT files:**
 
@@ -330,7 +336,7 @@ Ledger (PaymentTransaction) is not exposed to the cabinet directly. Cabinet read
 
 ## 12) Known Issues (documented, not solved in this epic)
 
-1. **Gallery limit conflict:** `cardDTO.js` uses flat `GALLERY_LIMIT = 12` from `config/galleryLimit.js`, ignoring per-plan values in `plans.js` (free=5, monthly=10, yearly=10, org=50). Resolution deferred. The flat 12 remains effective until explicitly aligned.
+1. **~~Gallery limit conflict~~ (RESOLVED):** Gallery limits are now per-plan via `planAccess.js` → `getGalleryLimit(featurePlan)` reading from `plans.js`. Free plan has `gallery: false` (upload fully gated). The old flat `GALLERY_LIMIT = 12` from `config/galleryLimit.js` is no longer used by `cardDTO.js`.
 
 2. **Dead code in payment.controller.js:** Contains stale `PRICES` and functions never called by routes (routes use the provider factory). Must be deleted when billing code is updated.
 
