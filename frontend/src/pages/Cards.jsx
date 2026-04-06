@@ -264,7 +264,7 @@ export default function Cards() {
                                     })
                                 }
                             >
-                                צרו כרטיס ביקור דיגיטלי
+                                צרו כרטיס בחינם
                             </Button>
 
                             <Button
@@ -491,7 +491,7 @@ export default function Cards() {
                                         })
                                     }
                                 >
-                                    צרו כרטיס ביקור דיגיטלי
+                                    צרו כרטיס בחינם
                                 </Button>
                                 <Button
                                     as={Link}

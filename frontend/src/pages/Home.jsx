@@ -485,7 +485,7 @@ export default function Home() {
                                 })
                             }
                         >
-                            צרו כרטיס ביקור דיגיטלי
+                            צרו כרטיס בחינם
                         </Button>
                     </div>
                 </div>
@@ -980,7 +980,7 @@ export default function Home() {
                     <div className={styles.ctaInner}>
                         <h2 className={styles.ctaTitle}>
                             {" "}
-                            צרו כרטיס ביקור דיגיטלי{" "}
+                            צרו כרטיס בחינם{" "}
                             <span
                                 className={`${pub.goldHilight} ${pub.goldUnderline}`}
                             >
@@ -1017,7 +1017,7 @@ export default function Home() {
                                 })
                             }
                         >
-                            צרו כרטיס ביקור דיגיטלי
+                            צרו כרטיס בחינם
                         </Button>
                     </div>
                 </div>
