@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 import styles from "./Footer.module.css";
 
-export default function Footer() {
+export default function Footer({ onOpenPrivacyPrefs }) {
     return (
         <footer className={styles.footer} id="contact">
             <div className={styles.inner}>
@@ -80,6 +80,13 @@ export default function Footer() {
                     <Link to="/accessibility-statement" className={styles.link}>
                         הצהרת נגישות
                     </Link>
+                    <button
+                        type="button"
+                        className={styles.linkButton}
+                        onClick={onOpenPrivacyPrefs}
+                    >
+                        העדפות פרטיות
+                    </button>
                     <div className={styles.text}>
                         אימייל: cardigo.app@gmail.com
                     </div>

@@ -57,6 +57,27 @@
     color: var(--gold);
 }
 
+.linkButton {
+    appearance: none;
+    border: 0;
+    background: transparent;
+    padding: 0;
+    cursor: pointer;
+    color: var(--text-muted);
+    font: inherit;
+    text-align: start;
+}
+
+.linkButton:hover {
+    color: var(--gold);
+}
+
+.linkButton:focus-visible {
+    outline: 2px solid var(--gold-soft);
+    outline-offset: 2px;
+    border-radius: 2px;
+}
+
 .text {
     color: var(--text-muted);
     line-height: 1.7;

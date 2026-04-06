@@ -874,12 +874,32 @@ Recently fully closed contours:
 - retention gallery full purge fixed
 - Services / Business Hours premium-lock parity fixed in editor
 - claim-flow Mongo transaction atomicity implemented and documented
+- cookie/privacy consent banner contour closed (see section 17.1)
 
 Working rule:
 Do not move to the next task until all tails in the current one are either fixed or explicitly classified as non-blocking / deferred / intentional.
 
 Choose safest mature path over fastest hack.
 ```
+
+---
+
+### 17.1) Cookie / Privacy Consent Banner — Closed Contour Truth
+
+**Status: CLOSED.** All gates pass. Verified via Phase 3.
+
+**Canonical durable truth:** [`docs/policies/privacy-consent-and-tracking.md`](../../policies/privacy-consent-and-tracking.md)
+
+That policy doc is the SSoT for: tracking independence rule, banner architecture, consent persistence, privacy policy alignment (clause 8.6), third-party loader gating rule, and deferred items. Do not contradict it from this handoff.
+
+**Summary:**
+
+- Internal first-party analytics is always-on and independent of the banner.
+- Banner consent governs optional third-party tracking only (not yet integrated).
+- Two-view replacement model (notice / preferences) in same fixed-bottom container.
+- Footer reopen entry point: "העדפות פרטיות" button reopens banner directly into preferences view via React prop flow (Layout → Footer / Banner).
+- Consent key: `cardigo_cookie_consent_v1` in localStorage.
+- Files: `cookieConsent.js`, `CookieConsentBanner.jsx/.module.css`, `Layout.jsx`, `Footer.jsx/.module.css`, `Privacy.jsx` (clause 8.6).
 
 ---
 
@@ -907,4 +927,4 @@ Choose safest mature path over fastest hack.
 
 ## 19) Финальная выжимка в одном абзаце
 
-Cardigo сейчас находится в сильной зрелой точке: это enterprise-minded Israel-first SaaS для цифровых визиток с ручной DB/index governance, сильной архитектурной дисциплиной, закрытым trial/free/premium lifecycle contour, корректным claim/recovery path, выровненной public/free truth, работающим forced expiry/free fallback, корректным retention purge с полной gallery cleanup, выровненным editor premium-lock parity для Services/Business Hours, реализованной claim-flow transaction atomicity через native Mongo transaction, обновлённой docs/handoff truth и полностью пройденным Final Controlled Smoke Under Gate. Следующий GPT должен не “чинить всё подряд”, а идти bounded contours, держать architecture truth, соблюдать enterprise workflow и выбирать safest mature path over fastest hack.
+Cardigo сейчас находится в сильной зрелой точке: это enterprise-minded Israel-first SaaS для цифровых визиток с ручной DB/index governance, сильной архитектурной дисциплиной, закрытым trial/free/premium lifecycle contour, корректным claim/recovery path, выровненной public/free truth, работающим forced expiry/free fallback, корректным retention purge с полной gallery cleanup, выровненным editor premium-lock parity для Services/Business Hours, реализованной claim-flow transaction atomicity через native Mongo transaction, закрытым cookie/privacy consent banner contour с двух-view-моделью и aligned privacy policy 8.6, обновлённой docs/handoff truth и полностью пройденным Final Controlled Smoke Under Gate. Следующий GPT должен не "чинить всё подряд", а идти bounded contours, держать architecture truth, соблюдать enterprise workflow и выбирать safest mature path over fastest hack.

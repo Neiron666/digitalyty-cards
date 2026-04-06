@@ -1,16 +1,24 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import {
     hasAcceptedConsent,
     acceptConsent,
     saveConsent,
+    getConsentState,
 } from "../../../utils/cookieConsent";
 import styles from "./CookieConsentBanner.module.css";
 
-export default function CookieConsentBanner() {
+export default function CookieConsentBanner({ reopenPrefs }) {
     const [visible, setVisible] = useState(() => !hasAcceptedConsent());
     const [view, setView] = useState("notice");
     const [optionalTracking, setOptionalTracking] = useState(true);
+
+    useEffect(() => {
+        if (!reopenPrefs) return;
+        setOptionalTracking(getConsentState()?.optionalTrackingAllowed ?? true);
+        setView("prefs");
+        setVisible(true);
+    }, [reopenPrefs]);
 
     if (!visible) return null;
 
