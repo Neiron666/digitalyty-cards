@@ -1,0 +1,237 @@
+.overlay {
+    position: fixed;
+    inset-inline: 0;
+    bottom: 0;
+    z-index: 9000;
+    display: flex;
+    justify-content: center;
+    padding: 12px;
+    pointer-events: none;
+}
+
+.banner {
+    pointer-events: auto;
+    max-width: 720px;
+    width: 100%;
+
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 14px;
+
+    padding: 16px 20px;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--gold-fade);
+
+    background: rgba(11, 18, 32, 0.93);
+    color: var(--text-main);
+
+    box-shadow: var(--shadow-soft);
+    backdrop-filter: blur(8px);
+}
+
+.text {
+    flex: 1 1 0;
+    min-width: 0;
+    font-size: var(--fs-caption);
+    line-height: 1.55;
+    color: var(--text-muted);
+}
+
+.link {
+    color: var(--gold);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+}
+
+.link:hover {
+    color: var(--text-main);
+}
+
+.link:focus-visible {
+    outline: 2px solid var(--gold-soft);
+    outline-offset: 2px;
+    border-radius: 2px;
+}
+
+.accept {
+    appearance: none;
+    border: 0;
+    cursor: pointer;
+
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    padding: 8px 22px;
+    border-radius: var(--radius-sm);
+
+    background: var(--gold);
+    color: #0f172a;
+    font-weight: 700;
+    font-size: var(--fs-caption);
+    line-height: 1;
+    white-space: nowrap;
+
+    transition: background var(--duration-fast) var(--ease-default);
+}
+
+.accept:hover {
+    background: var(--gold-soft);
+}
+
+.accept:focus-visible {
+    outline: 2px solid var(--gold);
+    outline-offset: 2px;
+}
+
+.actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-shrink: 0;
+}
+
+.prefsToggle {
+    appearance: none;
+    border: 0;
+    background: transparent;
+    cursor: pointer;
+    color: var(--text-muted);
+    font-size: var(--fs-caption);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    white-space: nowrap;
+    padding: 0;
+    line-height: 1;
+}
+
+.prefsToggle:hover {
+    color: var(--text-main);
+}
+
+.prefsToggle:focus-visible {
+    outline: 2px solid var(--gold-soft);
+    outline-offset: 2px;
+    border-radius: 2px;
+}
+
+.prefsView {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    width: 100%;
+}
+
+.prefRow {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.prefLabel {
+    font-size: var(--fs-caption);
+    color: var(--text-muted);
+    line-height: 1.4;
+}
+
+.prefAlways {
+    font-size: var(--fs-caption-sm);
+    color: var(--gold);
+    white-space: nowrap;
+}
+
+.checkbox {
+    width: 18px;
+    height: 18px;
+    accent-color: var(--gold);
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+.prefsActions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.save {
+    appearance: none;
+    border: 1px solid var(--gold-fade);
+    cursor: pointer;
+
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    padding: 6px 18px;
+    border-radius: var(--radius-sm);
+
+    background: transparent;
+    color: var(--text-main);
+    font-weight: 600;
+    font-size: var(--fs-caption);
+    line-height: 1;
+    white-space: nowrap;
+
+    transition: background var(--duration-fast) var(--ease-default);
+}
+
+.save:hover {
+    background: rgba(255, 255, 255, 0.06);
+}
+
+.save:focus-visible {
+    outline: 2px solid var(--gold);
+    outline-offset: 2px;
+}
+
+.back {
+    appearance: none;
+    border: 0;
+    background: transparent;
+    cursor: pointer;
+    color: var(--text-muted);
+    font-size: var(--fs-caption);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    white-space: nowrap;
+    padding: 0;
+    line-height: 1;
+}
+
+.back:hover {
+    color: var(--text-main);
+}
+
+.back:focus-visible {
+    outline: 2px solid var(--gold-soft);
+    outline-offset: 2px;
+    border-radius: 2px;
+}
+
+@media (max-width: 480px) {
+    .banner {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
+        padding: 14px 16px;
+    }
+
+    .actions {
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .accept {
+        align-self: stretch;
+        justify-content: center;
+        padding: 10px 16px;
+    }
+
+    .save {
+        align-self: stretch;
+        justify-content: center;
+    }
+}

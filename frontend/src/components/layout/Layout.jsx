@@ -2,6 +2,7 @@ import { Outlet } from "react-router-dom";
 import Header from "./Header";
 import Footer from "./Footer";
 import ScrollToTop from "./ScrollToTop";
+import CookieConsentBanner from "../ui/CookieConsentBanner/CookieConsentBanner";
 import styles from "./Layout.module.css";
 
 export default function Layout() {
@@ -16,6 +17,7 @@ export default function Layout() {
                 <Outlet />
             </div>
             <Footer />
+            <CookieConsentBanner />
         </>
     );
 }
