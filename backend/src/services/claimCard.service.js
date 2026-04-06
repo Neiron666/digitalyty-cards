@@ -372,50 +372,19 @@ export async function claimAnonymousCardForUser({
         trialEndsAtForUser = trialEndsAt;
     }
 
+    // --- Atomic ownership transfer via Mongo transaction ---
+    const session = await mongoose.startSession();
     try {
+        session.startTransaction();
+
         // Normalize personal-scope orgId to prevent legacy null/missing orgId bypass.
         if (card.orgId === null || card.orgId === undefined) {
             card.orgId = personalOrgObjectId;
         }
         card.user = user._id;
         card.anonymousId = undefined;
-        await card.save();
-    } catch (err) {
-        // If we already copied to public bucket but cannot claim in Mongo,
-        // best-effort cleanup to avoid orphaned objects.
-        if (newPaths.length) {
-            try {
-                await removeObjects({
-                    paths: newPaths,
-                    buckets: [publicBucket],
-                });
-            } catch {
-                // ignore
-            }
-        }
+        await card.save({ session });
 
-        if (isDuplicateForKey(err, "user")) {
-            return {
-                ok: false,
-                code: "USER_ALREADY_HAS_CARD",
-                message: "User already has a card",
-            };
-        }
-
-        console.error("[claim] card save failed", {
-            cardId: String(card?._id || ""),
-            userId: String(user?._id || ""),
-            error: err?.message || err,
-        });
-
-        return {
-            ok: false,
-            code: "CLAIM_FAILED",
-            message: "Failed to claim card",
-        };
-    }
-
-    try {
         user.cardId = card._id;
         // Stamp user-side trial lifecycle fields (mirrors canonical create-path).
         if (trialActivated) {
@@ -427,38 +396,17 @@ export async function claimAnonymousCardForUser({
         if (!user.trialEligibilityClosedAt) {
             user.trialEligibilityClosedAt = new Date();
         }
-        await user.save();
+        await user.save({ session });
+
+        await session.commitTransaction();
     } catch (err) {
-        // Roll back ownership + trial fields best-effort
-        // (avoid leaving an anonymous card with orphaned trial billing).
         try {
-            const rollbackUpdate = {
-                $set: { anonymousId: aid },
-                $unset: { user: 1 },
-            };
-            if (trialActivated) {
-                rollbackUpdate.$set["billing.status"] = "free";
-                rollbackUpdate.$set["billing.plan"] = "free";
-                rollbackUpdate.$set["billing.paidUntil"] = null;
-                rollbackUpdate.$set.trialStartedAt = null;
-                rollbackUpdate.$set.trialEndsAt = null;
-            }
-            await Card.updateOne(
-                { _id: card._id, user: user._id },
-                rollbackUpdate,
-            );
-        } catch (rollbackErr) {
-            console.error(
-                "[claim] rollback failed — card may be inconsistent",
-                {
-                    cardId: String(card?._id || ""),
-                    userId: String(user?._id || ""),
-                    trialActivated,
-                    error: rollbackErr?.message || rollbackErr,
-                },
-            );
+            await session.abortTransaction();
+        } catch {
+            // abort is best-effort after commit failure or double-abort
         }
 
+        // Best-effort cleanup of newly-copied Supabase objects.
         if (newPaths.length) {
             try {
                 await removeObjects({
@@ -470,7 +418,10 @@ export async function claimAnonymousCardForUser({
             }
         }
 
-        if (isDuplicateForKey(err, "cardId")) {
+        if (
+            isDuplicateForKey(err, "user") ||
+            isDuplicateForKey(err, "cardId")
+        ) {
             return {
                 ok: false,
                 code: "USER_ALREADY_HAS_CARD",
@@ -478,7 +429,7 @@ export async function claimAnonymousCardForUser({
             };
         }
 
-        console.error("[claim] user link failed", {
+        console.error("[claim] transaction failed", {
             cardId: String(card?._id || ""),
             userId: String(user?._id || ""),
             error: err?.message || err,
@@ -489,6 +440,8 @@ export async function claimAnonymousCardForUser({
             code: "CLAIM_FAILED",
             message: "Failed to claim card",
         };
+    } finally {
+        session.endSession();
     }
 
     // Best-effort cleanup of old anon objects AFTER Mongo commit.
