@@ -69,7 +69,7 @@ async function requestFormData({ baseUrl, path, method, headers, formData }) {
 }
 
 function tinyJpegBuffer() {
-    // 4x4 opaque JPEG — stable across all libvips/libspng builds.
+    // 4x4 opaque JPEG - stable across all libvips/libspng builds.
     const base64 =
         "/9j/2wBDAAMCAgMCAgMDAwMEAwMEBQgFBQQEBQoHBwYIDAoMDAsKCwsNDhIQDQ4RDgsLEBYQERMUFRUVDA8XGBYUGBIUFRT/2wBDAQMEBAUEBQkFBQkUDQsNFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBT/wAARCAAEAAQDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAT/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFQEBAQAAAAAAAAAAAAAAAAAABwj/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwCQAHqQf//Z";
     return Buffer.from(base64, "base64");

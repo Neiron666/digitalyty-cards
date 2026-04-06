@@ -71,7 +71,7 @@ function mapBlogApiError(err) {
 }
 
 function formatDate(iso) {
-    if (!iso) return "—";
+    if (!iso) return "-";
     try {
         return new Date(iso).toLocaleString("he-IL", {
             dateStyle: "short",
@@ -653,7 +653,7 @@ export default function AdminBlogView() {
                         {/[\u0590-\u05FF]/.test(fTitle) &&
                             !normalizeSlug(fTitle) && (
                                 <p className={styles.slugHint}>
-                                    שימו לב: כשכותרת בעברית — הסלאג לא נוצר
+                                    שימו לב: כשכותרת בעברית - הסלאג לא נוצר
                                     אוטומטית. אפשר להשאיר ריק (ייווצר אוטומטית
                                     כמו post-xxxxxxxx), או להזין סלאג באנגלית
                                     (a-z, 0-9, מקפים) לטובת SEO.
@@ -863,7 +863,7 @@ export default function AdminBlogView() {
                                             [טקסט להצגה](כתובת)
                                         </code>
                                         <p>
-                                            אפשר גם להדביק כתובת URL מלאה — היא
+                                            אפשר גם להדביק כתובת URL מלאה - היא
                                             תזוהה אוטומטית.
                                         </p>
                                         <p>

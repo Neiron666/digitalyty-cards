@@ -9,7 +9,7 @@ const AiUsageMonthlySchema = new Schema(
             ref: "User",
             required: true,
         },
-        // Feature bucket — extensible to "ai_faq_generation", "ai_seo_generation", etc.
+        // Feature bucket - extensible to "ai_faq_generation", "ai_seo_generation", etc.
         feature: {
             type: String,
             required: true,

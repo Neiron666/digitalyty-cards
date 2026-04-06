@@ -40,7 +40,7 @@
 }
 
 @media (min-width: 80rem) {
-    /* Site-page desktop typography uplift —
+    /* Site-page desktop typography uplift -
        scoped to [data-page="site"] so header/footer/admin/auth/
        editor/product surfaces stay at base compact scale. */
     [data-page="site"] {

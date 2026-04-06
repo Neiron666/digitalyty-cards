@@ -1,6 +1,6 @@
 # POLICY_ORGS.md
 
-> **SSoT (Single Source of Truth)** — политика организаций (Organizations) в Cardigo  
+> **SSoT (Single Source of Truth)** - политика организаций (Organizations) в Cardigo  
 > Статус: **v1 (Feb 2026)**  
 > Цель: B2B-онбординг “директор + N сотрудников” **без self-serve создания org**, с минимальным blast radius и enterprise-guardrails.
 
@@ -17,11 +17,11 @@
 
 ## 1) Сущности и определения
 
-**Organization (Org)** — компания/бренд, под которым публикуются карточки сотрудников.  
-**Membership (OrganizationMember)** — принадлежность User к Org (роль + статус).  
-**Org Card** — карточка пользователя в контексте Org, публикуется по `/c/:orgSlug/:slug`.  
-**Personal Card** — карточка в personal контексте, публикуется по `/card/:slug`.  
-**Seat** — место в организации (в v1 считаем по active memberships; точная формула ниже).
+**Organization (Org)** - компания/бренд, под которым публикуются карточки сотрудников.  
+**Membership (OrganizationMember)** - принадлежность User к Org (роль + статус).  
+**Org Card** - карточка пользователя в контексте Org, публикуется по `/c/:orgSlug/:slug`.  
+**Personal Card** - карточка в personal контексте, публикуется по `/card/:slug`.  
+**Seat** - место в организации (в v1 считаем по active memberships; точная формула ниже).
 
 ---
 
@@ -59,7 +59,7 @@
 ### 3.2 Org Owner (директор)
 
 - Управляет участниками org: invites, активация/деактивация membership, роли.
-- Управляет org-метаданными (брендинг/описание) — когда появится user-surface.
+- Управляет org-метаданными (брендинг/описание) - когда появится user-surface.
 - **Не** меняет `orgSlug`, seats, биллинг.
 
 ### 3.3 Org Admin
@@ -71,7 +71,7 @@
 - Может редактировать **только свою** org-card.
 - Не управляет участниками/инвайтами.
 
-> Любые расширения прав org-admin на чужие карточки — только отдельной фазой (RBAC + audit + “impersonation” дизайн).
+> Любые расширения прав org-admin на чужие карточки - только отдельной фазой (RBAC + audit + “impersonation” дизайн).
 
 ---
 
@@ -88,7 +88,7 @@
 
 ### 4.2 Почему orgSlug не меняем
 
-`orgSlug` — это **tenant identifier** и часть публичных URL, QR, SEO, шаринга, OG.  
+`orgSlug` - это **tenant identifier** и часть публичных URL, QR, SEO, шаринга, OG.  
 Он должен быть **immutable**, иначе:
 
 - ломаются внешние ссылки и QR,
@@ -109,7 +109,7 @@
 ### 5.1 Определение seat (v1)
 
 Seat = **active membership** (status=active) в org.  
-(Опционально, если invite резервирует seat — seat usage может считаться как active + pendingInvites.)
+(Опционально, если invite резервирует seat - seat usage может считаться как active + pendingInvites.)
 
 ### 5.2 Enforcement точки
 
@@ -146,7 +146,7 @@ Email-провайдер для онбординга сотрудников **н
 ### 6.4 Кто может приглашать
 
 - Только Org Owner/Admin.
-- Platform admin — только break-glass.
+- Platform admin - только break-glass.
 
 ---
 
@@ -193,7 +193,7 @@ Email-провайдер для онбординга сотрудников **н
 
 - Phase 1 READ-ONLY audit (PROOF file:line) → Phase 2 minimal fix (1–3 файла) → gates/sanities raw output + EXIT.
 - No git commands.
-- No inline styles — CSS Modules only.
+- No inline styles - CSS Modules only.
 - Skins token-only.
 - SSoT render chain (public+preview).
 - Templates registry only in `frontend/src/templates/templates.config.js`.

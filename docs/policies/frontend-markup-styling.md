@@ -1,4 +1,4 @@
-# Frontend Markup & Styling Policy — Cardigo
+# Frontend Markup & Styling Policy - Cardigo
 
 Canonical governance for frontend markup, semantic HTML, accessibility, styling architecture, and CSS discipline across all Cardigo app surfaces.
 
@@ -40,7 +40,7 @@ If the task touches cards, also read:
 - All page-level content must live inside `<main>`.
 - **Maximum one `<h1>` per rendered page/route state.**
 - Headings must follow logical hierarchy (`h1` → `h2` → `h3` …). Never skip levels for styling.
-- Headings must not be used purely for visual sizing — use CSS tokens instead.
+- Headings must not be used purely for visual sizing - use CSS tokens instead.
 - `<section>` only for thematically grouped content that has its own heading or `aria-labelledby`. Use `<div>` when there is no real section semantics.
 - `<article>` only for self-contained, independently meaningful content.
 - Repeated homogeneous items should use list semantics (`<ul>`/`<ol>` → `<li>`).
@@ -89,7 +89,7 @@ If the task touches cards, also read:
 - Global app styling holds app-wide reset, base rules, color tokens, and typography foundations.
 - Page/component CSS Modules add only local layout, spacing, and visual behavior.
 - Do not create parallel global style sources for app-shell without architectural approval.
-- Local component-scoped CSS custom properties are allowed only for local geometry/behavior — never as new shared design tokens.
+- Local component-scoped CSS custom properties are allowed only for local geometry/behavior - never as new shared design tokens.
 - Always reuse existing tokens, components, and patterns before introducing new ones.
 
 ---
@@ -105,7 +105,7 @@ A shared CSS Module (`frontend/src/styles/public-sections.module.css`) that cont
 | Layer                          | Source                                     | Purpose                                                                                          |
 | ------------------------------ | ------------------------------------------ | ------------------------------------------------------------------------------------------------ |
 | 1. Global token layer          | `globals.css`, `variables.module.css`      | Colors, radius, shadows, typography tokens (`--fs-*`, `--gold`, `--radius-*`, etc.)              |
-| 2. Shared public styling layer | `public-sections.module.css`               | Section shells, shared headings, lead text, callout/FAQ helpers — reusable across public pages   |
+| 2. Shared public styling layer | `public-sections.module.css`               | Section shells, shared headings, lead text, callout/FAQ helpers - reusable across public pages   |
 | 3. Page-local CSS Module       | e.g. `Home.module.css`, `Cards.module.css` | Page-unique compositions, hero sections, motion-coupled layouts, page-specific showcase patterns |
 
 When working on a public marketing page, resolve styling in this order: global tokens → shared public module → page-local classes.
@@ -131,7 +131,7 @@ When working on a public marketing page, resolve styling in this order: global t
 
 ### Governance rules
 
-- The shared public module **consumes** global tokens — it must not define new `--fs-*` or other design tokens.
+- The shared public module **consumes** global tokens - it must not define new `--fs-*` or other design tokens.
 - Do not copy section primitives from `Home.module.css` if they already live in the shared module.
 - Adding a new class to the shared module requires proof that at least two public pages need it.
 - Do not turn this layer into a broad utility dump or pseudo design-system.
@@ -174,7 +174,7 @@ Full policy: `docs/typography-ssot.md`, `docs/policies/typography-mobile-first.m
 ## 11. Layout and Responsiveness Discipline
 
 - **Mobile-first mandatory.** Base styles target narrowest viewport; widen with `min-width` media queries.
-- **Flex only — no CSS Grid.** (Project-wide hard ban.)
+- **Flex only - no CSS Grid.** (Project-wide hard ban.)
 - Avoid unnecessary wrapper `<div>` elements.
 - Keep DOM shallow and meaningful.
 - Preserve shared spacing rhythm and container discipline.
@@ -186,7 +186,7 @@ Full policy: `docs/typography-ssot.md`, `docs/policies/typography-mobile-first.m
 
 1. Check instruction files first.
 2. Follow doctrine before coding.
-3. If a change affects a contract, invariant, or policy — update docs accordingly.
+3. If a change affects a contract, invariant, or policy - update docs accordingly.
 4. Do not introduce new styling patterns when an existing canonical pattern already exists.
 5. Run frontend gates after meaningful changes (`check:inline-styles`, `check:skins`, `check:contract`, `build`).
 

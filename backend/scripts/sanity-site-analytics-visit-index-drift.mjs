@@ -12,8 +12,8 @@
  *   node scripts/sanity-site-analytics-visit-index-drift.mjs
  *
  * Exit codes:
- *   0 — all indexes present and correctly configured (PASS)
- *   1 — one or more indexes missing or misconfigured (FAIL)
+ *   0 - all indexes present and correctly configured (PASS)
+ *   1 - one or more indexes missing or misconfigured (FAIL)
  */
 
 import "dotenv/config";

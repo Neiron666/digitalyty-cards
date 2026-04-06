@@ -6,7 +6,7 @@ import DeletedEmailBlock from "../models/DeletedEmailBlock.model.js";
  * Uses HMAC-SHA256 with a dedicated server secret and domain-separated prefix
  * to prevent cross-purpose usage and dictionary attacks.
  *
- * @param {string} normalizedEmail — caller must pass already-normalized email
+ * @param {string} normalizedEmail - caller must pass already-normalized email
  * @returns {string} hex-encoded HMAC-SHA256
  */
 export function computeEmailBlockKey(normalizedEmail) {
@@ -49,7 +49,7 @@ export async function createEmailBlock({ normalizedEmail, formerUserId }) {
         });
     } catch (err) {
         if (err && (err.code === 11000 || err.code === 11001)) {
-            // Already blocked — idempotent success.
+            // Already blocked - idempotent success.
             return;
         }
         throw err;

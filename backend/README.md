@@ -21,7 +21,7 @@
 
 | Variable                                | Default    | Purpose                                                        |
 | --------------------------------------- | ---------- | -------------------------------------------------------------- |
-| `TRIAL_ROLLOUT_DATE`                    | —          | ISO 8601 cutoff; users created before this date are ineligible |
+| `TRIAL_ROLLOUT_DATE`                    | -          | ISO 8601 cutoff; users created before this date are ineligible |
 | `TRIAL_DURATION_DAYS`                   | `10`       | Premium trial length in days                                   |
 | `TRIAL_LIFECYCLE_RECONCILE_INTERVAL_MS` | `21600000` | Trial reconcile job interval (6 h)                             |
 | `TRIAL_LIFECYCLE_HEARTBEAT_MS`          | `43200000` | Reconcile heartbeat log interval (12 h)                        |
@@ -68,7 +68,7 @@ Runtime ≠ Sanity ≠ Migration:
     - Includes per-collection duplicate precheck before creating unique index.
     - Runs post-check after apply to verify all critical unique indexes are present.
     - **No TTL index is created by default.** TTL on `expiresAt` is a separate operator decision (see `docs/runbooks/auth-forgot-reset-runbook.md` §Index governance).
-    - **Do NOT use `autoIndex`/`autoCreate` as a substitute** — runtime has both disabled by default.
+    - **Do NOT use `autoIndex`/`autoCreate` as a substitute** - runtime has both disabled by default.
 
 Do NOT run `--apply` automatically in CI.
 

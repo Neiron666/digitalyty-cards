@@ -70,7 +70,7 @@ function deriveMonths(days) {
  * Build a strict single-month grid for the given year+month.
  * Only days present in the backend days array influence cell state.
  * Days in the month not present in the backend array render as "outside".
- * No overflow into adjacent months — one month at a time only.
+ * No overflow into adjacent months - one month at a time only.
  */
 function buildStrictMonthGrid(days, year, month) {
     if (!days || !year || !month) return null;
@@ -90,7 +90,7 @@ function buildStrictMonthGrid(days, year, month) {
         currentRow.push({ type: "empty" });
     }
 
-    // All days in this month — no overflow into adjacent months
+    // All days in this month - no overflow into adjacent months
     for (let day = 1; day <= daysInMonth; day++) {
         const mm = String(month).padStart(2, "0");
         const dd = String(day).padStart(2, "0");
@@ -382,7 +382,7 @@ export default function BookingSection({ card }) {
             {/* ── Month-view calendar (strict single-month, local navigation) ── */}
             {calendarGrid && (
                 <div className={styles.calBlock}>
-                    {/* Month navigation row — prev/next only between months in the window */}
+                    {/* Month navigation row - prev/next only between months in the window */}
                     <div className={styles.calNav}>
                         {/* In RTL: ‹ is first DOM child → visual RIGHT → previous month */}
                         <button
@@ -495,7 +495,7 @@ export default function BookingSection({ card }) {
                     <div className={styles.slotHeader}>
                         {WEEKDAY_LABELS[selectedDay.weekdayKey] ||
                             selectedDay.weekdayKey}{" "}
-                        {formatDateShort(selectedDay.dateKeyIl)} — בחרו שעה
+                        {formatDateShort(selectedDay.dateKeyIl)} - בחרו שעה
                     </div>
                     {availableSlots.length > 0 ? (
                         <div

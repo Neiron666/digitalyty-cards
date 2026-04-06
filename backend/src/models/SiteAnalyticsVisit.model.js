@@ -3,7 +3,7 @@ import mongoose from "mongoose";
 const { Schema } = mongoose;
 
 // ---------------------------------------------------------------------------
-// Retention constants — must match sanity-site-analytics-visit-index-drift.mjs
+// Retention constants - must match sanity-site-analytics-visit-index-drift.mjs
 // ---------------------------------------------------------------------------
 const MIN_RETENTION_DAYS = 30;
 const DEFAULT_RETENTION_DAYS = 90;
@@ -121,7 +121,7 @@ const SiteAnalyticsVisitSchema = new Schema(
         },
     },
     {
-        // timestamps: true adds createdAt/updatedAt — not needed for
+        // timestamps: true adds createdAt/updatedAt - not needed for
         // visit-layer truth; startedAt/lastSeenAt serve this role explicitly.
         timestamps: false,
         minimize: false,

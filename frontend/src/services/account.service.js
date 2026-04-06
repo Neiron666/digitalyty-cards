@@ -1,7 +1,7 @@
 import api from "./api";
 
 /**
- * GET /api/account/me — self-service read-only account summary.
+ * GET /api/account/me - self-service read-only account summary.
  * Requires active session (httpOnly auth cookie).
  */
 export async function getAccountSummary() {
@@ -10,7 +10,7 @@ export async function getAccountSummary() {
 }
 
 /**
- * POST /api/account/change-password — self-service password change.
+ * POST /api/account/change-password - self-service password change.
  * Returns true on 204 success.
  */
 export async function changePassword({ currentPassword, newPassword }) {
@@ -22,7 +22,7 @@ export async function changePassword({ currentPassword, newPassword }) {
 }
 
 /**
- * POST /api/account/delete-account — self-service permanent account deletion.
+ * POST /api/account/delete-account - self-service permanent account deletion.
  * Returns { ok: true } on 204.
  * Throws on 400/429; returns { code, orgs } on 409 (sole-org-admin block).
  */

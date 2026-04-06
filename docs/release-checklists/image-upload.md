@@ -1,4 +1,4 @@
-# Image Upload — Release Checklist
+# Image Upload - Release Checklist
 
 ## Purpose & Scope
 
@@ -27,7 +27,7 @@
 ## Quick QA Commands (PowerShell + curl.exe)
 
 ```powershell
-# Variables — fill in before running
+# Variables - fill in before running
 $base = "http://localhost:5000"
 $jwt  = "<YOUR_JWT>"
 $cardId = "<CARD_ID>"
@@ -41,7 +41,7 @@ curl.exe -X POST "$base/api/uploads/image" `
   -H "Authorization: Bearer $jwt" `
   -F "cardId=$cardId" -F "image=@$img"
 
-# 3. HEAD — verify content-type on returned URL
+# 3. HEAD - verify content-type on returned URL
 curl.exe -I "<RETURNED_URL>"
 
 # 4. Oversize → 413
@@ -70,4 +70,4 @@ curl.exe -s -w "`n%{http_code}" -X POST "$base/api/uploads/image" `
 ## Rollback
 
 - Revert backend changes: `imagePolicy.js`, `processImage.js`, controller `HttpError` pass-through in `upload.controller.js` + `adminBlog.controller.js`, and restore multer limit to 2 MB.
-- No DB migration involved — rollback is code-only.
+- No DB migration involved - rollback is code-only.

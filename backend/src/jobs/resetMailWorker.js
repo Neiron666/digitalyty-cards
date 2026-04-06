@@ -9,7 +9,7 @@ import { sendPasswordResetEmailMailjetBestEffort } from "../services/mailjet.ser
 const MONITOR_SLUG = "reset-mail-worker";
 let monitorIntervalMs = 60_000;
 
-// sha256 helper — intentionally local to this worker; do not import from auth.routes.
+// sha256 helper - intentionally local to this worker; do not import from auth.routes.
 function sha256Hex(value) {
     return crypto
         .createHash("sha256")
@@ -41,7 +41,7 @@ async function deliverOnce() {
             return;
         }
 
-        // Resolve user — userId only stored in job (no PII snapshot).
+        // Resolve user - userId only stored in job (no PII snapshot).
         const user = await User.findById(job.userId).select("email").lean();
         if (!user) {
             // User was deleted before delivery. Abandon.
@@ -65,7 +65,7 @@ async function deliverOnce() {
             return;
         }
 
-        // Generate rawToken in memory only — never persisted anywhere.
+        // Generate rawToken in memory only - never persisted anywhere.
         const rawToken = crypto.randomBytes(32).toString("hex");
         const tokenHash = sha256Hex(rawToken);
 
@@ -86,7 +86,7 @@ async function deliverOnce() {
 
         if (!resetRecord) {
             // APR expired, already consumed, or replaced by a newer /forgot request.
-            // Abandon this job — the delivery pipeline is no longer valid.
+            // Abandon this job - the delivery pipeline is no longer valid.
             await MailJob.findByIdAndUpdate(job._id, {
                 $set: { status: "abandoned" },
             });
@@ -101,7 +101,7 @@ async function deliverOnce() {
             return;
         }
 
-        // Build reset link in memory — rawToken exists only within this call frame.
+        // Build reset link in memory - rawToken exists only within this call frame.
         const siteUrl = getSiteUrl();
         const resetLink = `${siteUrl}/reset-password?token=${encodeURIComponent(rawToken)}`;
 
@@ -121,7 +121,7 @@ async function deliverOnce() {
                 jobId: String(job._id),
                 error: err?.message || err,
             });
-            // Leave job in 'processing' — ambiguous outcome per first-version policy.
+            // Leave job in 'processing' - ambiguous outcome per first-version policy.
             // DO NOT regenerate rawToken or overwrite tokenHash on APR.
             // rawToken is discarded; the link may or may not have been sent.
             return;

@@ -1,4 +1,4 @@
-# Motion Framework — Canonical Doc
+# Motion Framework - Canonical Doc
 
 **Scope:** NEW pages and components only.  
 **Canonical SSoT** for the Cardigo motion subsystem.
@@ -10,9 +10,9 @@
 | Milestone                                                                     | Status              |
 | ----------------------------------------------------------------------------- | ------------------- |
 | V1 reveal framework (`motion.module.css` + `useMotionReveal`)                 | ✅ Built & verified |
-| V1 reveal pilot — Pricing `.value` / `.seo`                                   | ✅ Verified         |
+| V1 reveal pilot - Pricing `.value` / `.seo`                                   | ✅ Verified         |
 | V2 scroll-linked framework (`motion-scroll.module.css` + `useScrollProgress`) | ✅ Built & verified |
-| V2 scroll-linked pilot — Pricing demo blocks                                  | ✅ Verified         |
+| V2 scroll-linked pilot - Pricing demo blocks                                  | ✅ Verified         |
 | V2 parameterized local tuning API                                             | ✅ Built & verified |
 
 ---
@@ -29,9 +29,9 @@
 
 - Card-boundary (CardLayout, sections, skins)
 - Preview wrapper
-- Existing consumers — unless explicitly approved per-case
+- Existing consumers - unless explicitly approved per-case
 - Broad retrofits without prior audit
-- Drawer / modal / accordion / storytelling / sticky flows — unless separately approved
+- Drawer / modal / accordion / storytelling / sticky flows - unless separately approved
 - Route transitions
 - 3D / perspective effects
 - Opacity scrub (deferred to v3)
@@ -125,7 +125,7 @@ Safe pattern:
 
 ```jsx
 {
-    /* ✅ CORRECT — reveal on wrapper, interaction on inner */
+    /* ✅ CORRECT - reveal on wrapper, interaction on inner */
 }
 <div
     className={`${motion.fadeUp} ${isRevealed ? motion.isVisible : ""}`}
@@ -135,7 +135,7 @@ Safe pattern:
 </div>;
 
 {
-    /* ❌ WRONG — transform conflict on same element */
+    /* ❌ WRONG - transform conflict on same element */
 }
 <button className={`${motion.fadeUp} ${motion.hoverLift}`}>Action</button>;
 ```
@@ -188,15 +188,15 @@ Under `prefers-reduced-motion: reduce`:
 | `hoverGlowSoft`          | Remains active (non-motion visual feedback)                           |
 | `pressDown`              | Scale movement removed                                                |
 
-The hook (`useMotionReveal`) reports `isRevealed: true` immediately when reduced motion is preferred — no observer is created.
+The hook (`useMotionReveal`) reports `isRevealed: true` immediately when reduced motion is preferred - no observer is created.
 
 ---
 
 ## What Remains Untouched
 
-- `variables.module.css` — existing motion tokens consumed, not modified
-- `globals.css` — no import added
-- `useReveal.js` — card-boundary hook, completely separate
+- `variables.module.css` - existing motion tokens consumed, not modified
+- `globals.css` - no import added
+- `useReveal.js` - card-boundary hook, completely separate
 - All existing pages, components, and card surfaces
 - CardLayout DOM skeleton
 - Header, Editor, Admin existing motion behavior
@@ -207,16 +207,16 @@ The hook (`useMotionReveal`) reports `isRevealed: true` immediately when reduced
 
 **Consumer:** `Pricing.jsx`
 
-- `.value` section: `fadeUp` + `useMotionReveal` — verified
-- `.seo` section: `fadeUp` + `delay200` + `useMotionReveal` — verified
+- `.value` section: `fadeUp` + `useMotionReveal` - verified
+- `.seo` section: `fadeUp` + `delay200` + `useMotionReveal` - verified
 - Framework files (`motion.module.css`, `useMotionReveal.js`) remained untouched during the pilot
 - Reduced-motion path works through existing framework (`@media` block) + hook (`isRevealed: true` immediately)
 
 ---
 
-# V2 — Scroll-Linked Motion Layer
+# V2 - Scroll-Linked Motion Layer
 
-**Scope:** NEW marketing/app-shell sections only. Additive layer — does not replace or modify v1.
+**Scope:** NEW marketing/app-shell sections only. Additive layer - does not replace or modify v1.
 
 ---
 
@@ -260,7 +260,7 @@ The hook writes **only** `el.style.setProperty('--scroll-progress', numericValue
 
 ## V2 Local Tuning (Parameterized Effect Strength)
 
-Each V2 scroll preset exposes a CSS custom property for local strength tuning. When the property is not set, the fallback matches the original hardcoded default — **zero visual change** for existing consumers.
+Each V2 scroll preset exposes a CSS custom property for local strength tuning. When the property is not set, the fallback matches the original hardcoded default - **zero visual change** for existing consumers.
 
 | Custom Property              | Default   | Units           | Effect                                       |
 | ---------------------------- | --------- | --------------- | -------------------------------------------- |
@@ -341,7 +341,7 @@ Safe pattern:
 
 ```jsx
 {
-    /* ✅ CORRECT — v1 on wrapper, v2 on inner */
+    /* ✅ CORRECT - v1 on wrapper, v2 on inner */
 }
 <div
     className={`${motion.fadeUp} ${isRevealed ? motion.isVisible : ""}`}
@@ -353,7 +353,7 @@ Safe pattern:
 </div>;
 
 {
-    /* ❌ WRONG — transform conflict */
+    /* ❌ WRONG - transform conflict */
 }
 <div className={`${motion.fadeUp} ${scroll.scrollZoomSoft}`}>…</div>;
 ```
@@ -374,20 +374,20 @@ No special-case patches needed in consumers.
 
 ## V2 Scope Exclusions
 
-- **Card-boundary** (CardLayout, sections, skins) — out of scope
-- **Preview wrapper** — out of scope
-- **Existing v1 consumers** (Pricing.jsx pilot) — must not be retrofitted
-- **Drawer/modal/accordion** — out of scope
-- **Route transitions** — out of scope
-- **Sticky/pinned/storytelling** — not supported
-- **Opacity scrub** — deferred to v3
-- **3D/perspective effects** — not supported
+- **Card-boundary** (CardLayout, sections, skins) - out of scope
+- **Preview wrapper** - out of scope
+- **Existing v1 consumers** (Pricing.jsx pilot) - must not be retrofitted
+- **Drawer/modal/accordion** - out of scope
+- **Route transitions** - out of scope
+- **Sticky/pinned/storytelling** - not supported
+- **Opacity scrub** - deferred to v3
+- **3D/perspective effects** - not supported
 
 ---
 
 ## V2 Pilot Status
 
-**Consumer:** `Pricing.jsx` — 3 static demo sections appended after the `.seo` section.
+**Consumer:** `Pricing.jsx` - 3 static demo sections appended after the `.seo` section.
 
 | Demo block | Preset used                                   | Hook                |
 | ---------- | --------------------------------------------- | ------------------- |
@@ -400,17 +400,17 @@ No special-case patches needed in consumers.
 
 ---
 
-## Copilot Operating Protocol — Motion Tasks
+## Copilot Operating Protocol - Motion Tasks
 
 When working on motion-related tasks, Copilot must follow these rules:
 
-1. **Audit first** — Phase 1 read-only audit with PROOF before any changes.
-2. **Minimal fix second** — Phase 2 smallest safe change set (prefer 1–3 files).
-3. **Verification third** — Phase 3 gates + build + RAW stdout + EXIT.
-4. **No framework drift** — do not modify framework files (`motion.module.css`, `motion-scroll.module.css`, `useMotionReveal.js`, `useScrollProgress.js`) without explicit architect approval.
-5. **No consumer migration** — existing verified consumers remain unchanged unless explicitly approved per-case.
-6. **Reduced-motion must always be respected** — every new consumer must degrade gracefully; no special-case patches needed if using the framework correctly.
-7. **No transform stacking** — do not place v1 reveal + v2 scroll presets on the same DOM node; do not place reveal + interaction presets on the same DOM node.
-8. **Local tuning only through CSS Modules** — inline styles and JSX style props remain forbidden.
-9. **`setProperty` carve-out is narrow** — only `--scroll-progress` in `useScrollProgress`. Do not extend without architect approval.
-10. **Card-boundary is out of scope** — do not apply motion presets to CardLayout, sections, skins, or preview wrapper.
+1. **Audit first** - Phase 1 read-only audit with PROOF before any changes.
+2. **Minimal fix second** - Phase 2 smallest safe change set (prefer 1–3 files).
+3. **Verification third** - Phase 3 gates + build + RAW stdout + EXIT.
+4. **No framework drift** - do not modify framework files (`motion.module.css`, `motion-scroll.module.css`, `useMotionReveal.js`, `useScrollProgress.js`) without explicit architect approval.
+5. **No consumer migration** - existing verified consumers remain unchanged unless explicitly approved per-case.
+6. **Reduced-motion must always be respected** - every new consumer must degrade gracefully; no special-case patches needed if using the framework correctly.
+7. **No transform stacking** - do not place v1 reveal + v2 scroll presets on the same DOM node; do not place reveal + interaction presets on the same DOM node.
+8. **Local tuning only through CSS Modules** - inline styles and JSX style props remain forbidden.
+9. **`setProperty` carve-out is narrow** - only `--scroll-progress` in `useScrollProgress`. Do not extend without architect approval.
+10. **Card-boundary is out of scope** - do not apply motion presets to CardLayout, sections, skins, or preview wrapper.

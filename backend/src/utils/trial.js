@@ -36,7 +36,7 @@ export function computeTrialDates(now = new Date()) {
 
 /**
  * Compute trial dates for the user-premium-trial lifecycle.
- * Separate from anonymous computeTrialDates() — different duration, no deleteAt.
+ * Separate from anonymous computeTrialDates() - different duration, no deleteAt.
  * Returns { trialStartedAt, trialEndsAt } only.
  */
 export function computeUserPremiumTrialDates(now = new Date()) {
@@ -175,7 +175,7 @@ export function resolveBilling(card, now = new Date()) {
                 isPaid: true,
             };
         }
-        // Trial expired — fall through to user-owned free block below.
+        // Trial expired - fall through to user-owned free block below.
     }
 
     // Policy: user-owned cards are free-to-edit when not paid/adminOverride.

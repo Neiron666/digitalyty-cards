@@ -71,7 +71,7 @@ const UserSchema = new mongoose.Schema(
 
         // Post-password-change JWT invalidation.
         // Stamped to now() on every successful password reset or change-password.
-        // Null means no password event has occurred — all existing tokens are treated as fresh.
+        // Null means no password event has occurred - all existing tokens are treated as fresh.
         passwordChangedAt: { type: Date, default: null },
 
         // --- User-premium-trial lifecycle (Foundation Batch) ---

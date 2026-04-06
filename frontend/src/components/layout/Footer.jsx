@@ -26,7 +26,7 @@ export default function Footer() {
                         </picture>
                     </Link>
                     <div className={styles.text}>
-                        כרטיסי ביקור דיגיטליים לעסקים — יצירה, התאמה אישית
+                        כרטיסי ביקור דיגיטליים לעסקים - יצירה, התאמה אישית
                         ושיתוף בלחיצה.
                     </div>
                 </div>

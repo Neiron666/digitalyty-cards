@@ -7,7 +7,7 @@ export default function Terms() {
         <main data-page="site" className={styles.page}>
             <SeoHelmet
                 title="תנאי שימוש | Cardigo"
-                description="תנאי השימוש של Cardigo — גישה לשירות, שימוש מותר, תכנים ופרסום, מסלולים ותשלומים, קניין רוחני, הגבלת אחריות, שיפוי, פרטיות ויצירת קשר."
+                description="תנאי השימוש של Cardigo - גישה לשירות, שימוש מותר, תכנים ופרסום, מסלולים ותשלומים, קניין רוחני, הגבלת אחריות, שיפוי, פרטיות ויצירת קשר."
                 canonicalUrl="https://cardigo.co.il/terms"
             />
 

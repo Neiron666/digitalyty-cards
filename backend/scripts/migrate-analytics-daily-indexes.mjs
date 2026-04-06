@@ -6,7 +6,7 @@
  *   - siteanalyticsdailys
  *
  * Usage:
- *   node scripts/migrate-analytics-daily-indexes.mjs              (dry-run — default, safe)
+ *   node scripts/migrate-analytics-daily-indexes.mjs              (dry-run - default, safe)
  *   node scripts/migrate-analytics-daily-indexes.mjs --apply      (apply indexes to DB)
  *   node scripts/migrate-analytics-daily-indexes.mjs --apply --verbose
  *
@@ -18,17 +18,17 @@
  *
  * Required indexes:
  *   cardanalyticsdailys:
- *     1. Unique compound: { cardId: 1, day: 1 }  — one doc per card per UTC day
+ *     1. Unique compound: { cardId: 1, day: 1 }  - one doc per card per UTC day
  *
  *   siteanalyticsdailys:
- *     2. Unique compound: { siteKey: 1, day: 1 } — one doc per site per UTC day
- *     3. TTL:             { createdAt: 1 }        — auto-expire per SITE_ANALYTICS_RETENTION_DAYS
+ *     2. Unique compound: { siteKey: 1, day: 1 } - one doc per site per UTC day
+ *     3. TTL:             { createdAt: 1 }        - auto-expire per SITE_ANALYTICS_RETENTION_DAYS
  *
  * TTL governance (siteanalyticsdailys):
  *   - Reads SITE_ANALYTICS_RETENTION_DAYS env var (mirrors SiteAnalyticsDaily.model.js exactly).
  *   - Default: 365 days; minimum floor: 120 days.
  *   - If the TTL index already exists with a different expireAfterSeconds, this script logs
- *     a warning and skips — TTL changes require a manual collMod by the operator.
+ *     a warning and skips - TTL changes require a manual collMod by the operator.
  */
 
 import "dotenv/config";
@@ -84,13 +84,13 @@ async function ensureUniqueIndex(col, byName, key, name, { dryRun, verbose }) {
         const existing = byName.get(name);
         if (!existing.unique) {
             console.error(
-                `  WARNING: ${name} exists but is NOT unique — governance mismatch, manual intervention required`,
+                `  WARNING: ${name} exists but is NOT unique - governance mismatch, manual intervention required`,
             );
             process.exitCode = 2;
         } else {
             if (verbose)
-                console.log(`  ${name} already exists and is unique — no-op`);
-            else console.log(`  ${name} already exists — no-op`);
+                console.log(`  ${name} already exists and is unique - no-op`);
+            else console.log(`  ${name} already exists - no-op`);
         }
         return;
     }
@@ -112,10 +112,10 @@ async function ensureUniqueIndex(col, byName, key, name, { dryRun, verbose }) {
         const created = postByName.get(name);
 
         if (created && created.unique) {
-            console.log(`  created unique index ${name} — POST-CHECK PASS`);
+            console.log(`  created unique index ${name} - POST-CHECK PASS`);
         } else {
             console.error(
-                `  WARNING: ${name} not found or not unique after createIndex — POST-CHECK FAIL`,
+                `  WARNING: ${name} not found or not unique after createIndex - POST-CHECK FAIL`,
             );
             process.exitCode = 2;
         }
@@ -141,7 +141,7 @@ async function checkDuplicateCompound(col, colName, fields, verbose) {
         if (err?.code === 26 || err?.codeName === "NamespaceNotFound") {
             if (verbose)
                 console.log(
-                    `  ${colName} collection not found — no duplicates possible`,
+                    `  ${colName} collection not found - no duplicates possible`,
                 );
             return false;
         }
@@ -150,7 +150,7 @@ async function checkDuplicateCompound(col, colName, fields, verbose) {
 
     if (dupes.length > 0) {
         console.log(
-            `DUPLICATE { ${fields.join(", ")} } in ${colName} — unique index BLOCKED:`,
+            `DUPLICATE { ${fields.join(", ")} } in ${colName} - unique index BLOCKED:`,
         );
         for (const d of dupes) {
             const keyStr = fields.map((f) => `${f}=${d._id[f]}`).join("  ");
@@ -195,11 +195,11 @@ async function ensureCardAnalyticsDailyIndexes({ dryRun, verbose }) {
         if (hasDuplicates) {
             if (dryRun) {
                 console.log(
-                    "  [dry-run] duplicates detected — apply would be BLOCKED until duplicates are resolved",
+                    "  [dry-run] duplicates detected - apply would be BLOCKED until duplicates are resolved",
                 );
             } else {
                 console.error(
-                    "  BLOCKED: cannot create unique cardId_1_day_1 — resolve duplicate documents first",
+                    "  BLOCKED: cannot create unique cardId_1_day_1 - resolve duplicate documents first",
                 );
                 process.exitCode = 2;
             }
@@ -249,11 +249,11 @@ async function ensureSiteAnalyticsDailyIndexes({ dryRun, verbose }) {
         if (hasDuplicates) {
             if (dryRun) {
                 console.log(
-                    "  [dry-run] duplicates detected — apply would be BLOCKED until duplicates are resolved",
+                    "  [dry-run] duplicates detected - apply would be BLOCKED until duplicates are resolved",
                 );
             } else {
                 console.error(
-                    "  BLOCKED: cannot create unique siteKey_1_day_1 — resolve duplicate documents first",
+                    "  BLOCKED: cannot create unique siteKey_1_day_1 - resolve duplicate documents first",
                 );
                 process.exitCode = 2;
             }
@@ -271,11 +271,11 @@ async function ensureSiteAnalyticsDailyIndexes({ dryRun, verbose }) {
         const existing = byName.get(uniqueName);
         if (!existing.unique) {
             console.error(
-                `  WARNING: ${uniqueName} exists but is NOT unique — governance mismatch`,
+                `  WARNING: ${uniqueName} exists but is NOT unique - governance mismatch`,
             );
             process.exitCode = 2;
         } else {
-            console.log(`  ${uniqueName} already exists — no-op`);
+            console.log(`  ${uniqueName} already exists - no-op`);
         }
     }
 
@@ -297,11 +297,11 @@ async function ensureSiteAnalyticsDailyIndexes({ dryRun, verbose }) {
                 );
             } else {
                 console.log(
-                    `  ${ttlName} already exists with correct TTL (${retentionDays}d) — no-op`,
+                    `  ${ttlName} already exists with correct TTL (${retentionDays}d) - no-op`,
                 );
             }
         } else {
-            console.log(`  ${ttlName} already exists (non-TTL) — no-op`);
+            console.log(`  ${ttlName} already exists (non-TTL) - no-op`);
         }
         return;
     }
@@ -327,16 +327,16 @@ async function ensureSiteAnalyticsDailyIndexes({ dryRun, verbose }) {
 
         if (created && created.expireAfterSeconds === ttlSeconds) {
             console.log(
-                `  created TTL index ${ttlName} expireAfterSeconds=${ttlSeconds} — POST-CHECK PASS`,
+                `  created TTL index ${ttlName} expireAfterSeconds=${ttlSeconds} - POST-CHECK PASS`,
             );
         } else if (created) {
             // MongoDB may normalize large TTL values; warn but don't fail hard.
             console.log(
-                `  created TTL index ${ttlName} — expireAfterSeconds in DB: ${created.expireAfterSeconds} (requested ${ttlSeconds})`,
+                `  created TTL index ${ttlName} - expireAfterSeconds in DB: ${created.expireAfterSeconds} (requested ${ttlSeconds})`,
             );
         } else {
             console.error(
-                `  WARNING: ${ttlName} not found after createIndex — POST-CHECK FAIL`,
+                `  WARNING: ${ttlName} not found after createIndex - POST-CHECK FAIL`,
             );
             process.exitCode = 2;
         }

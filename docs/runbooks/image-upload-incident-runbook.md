@@ -7,7 +7,7 @@
 
 ## 1. Purpose / Scope
 
-This runbook covers diagnosis and remediation of **image upload failures** hitting the Cardigo editor — gallery originals, design assets (background/avatar), and gallery thumbnails.
+This runbook covers diagnosis and remediation of **image upload failures** hitting the Cardigo editor - gallery originals, design assets (background/avatar), and gallery thumbnails.
 
 ### Symptoms covered
 
@@ -21,7 +21,7 @@ This runbook covers diagnosis and remediation of **image upload failures** hitti
 
 ### Out of scope
 
-- Admin blog hero upload (`POST /admin/blog/posts/:id/upload-hero`) — same pipeline, but admin-only; triage steps analogous.
+- Admin blog hero upload (`POST /admin/blog/posts/:id/upload-hero`) - same pipeline, but admin-only; triage steps analogous.
 - Non-image uploads.
 
 ---
@@ -52,20 +52,20 @@ This runbook covers diagnosis and remediation of **image upload failures** hitti
 
 ## 3. Quick Triage Checklist (≤ 5 minutes)
 
-### Step 1 — Netlify vs Render?
+### Step 1 - Netlify vs Render?
 
 | Signal                                                                    | Means                                                |
 | ------------------------------------------------------------------------- | ---------------------------------------------------- |
 | Response header `server: Netlify` + body contains "Internal Error. ID: …" | Request **never reached** Render backend             |
-| Response header `x-nf-request-id` present, no `rndr-id`                   | Same — Netlify-level failure                         |
-| Response header `rndr-id` or `x-render-origin-server` present             | Request **reached Render** — failure is backend-side |
+| Response header `x-nf-request-id` present, no `rndr-id`                   | Same - Netlify-level failure                         |
+| Response header `rndr-id` or `x-render-origin-server` present             | Request **reached Render** - failure is backend-side |
 | Backend log `[upload-debug] gallery-entry` / `design-entry` visible       | Confirms Render received the request                 |
 
-### Step 2 — Error shape?
+### Step 2 - Error shape?
 
 | HTTP status | Backend code                  | Interpretation                                                               |
 | ----------- | ----------------------------- | ---------------------------------------------------------------------------- |
-| 422         | `IMAGE_DECODE_FAILED`         | Sharp could not decode the file — corrupt, unsupported format, or zero bytes |
+| 422         | `IMAGE_DECODE_FAILED`         | Sharp could not decode the file - corrupt, unsupported format, or zero bytes |
 | 400         | `GALLERY_LIMIT_REACHED`       | Tier-based gallery limit exceeded                                            |
 | 400         | `MISSING_CARD_ID` / `NO_FILE` | Bad request payload                                                          |
 | 413         | (multer) `LIMIT_FILE_SIZE`    | File exceeds 10 MB hard cap                                                  |
@@ -76,7 +76,7 @@ This runbook covers diagnosis and remediation of **image upload failures** hitti
 
 ## 4. Debug Toggles (safe, temporary)
 
-### Frontend — `?uploadDebug=1`
+### Frontend - `?uploadDebug=1`
 
 Add `?uploadDebug=1` to the editor URL (e.g. `https://cardigo.co.il/edit/<id>?uploadDebug=1`).
 
@@ -88,7 +88,7 @@ Add `?uploadDebug=1` to the editor URL (e.g. `https://cardigo.co.il/edit/<id>?up
 
 No PII is logged. All guarded by `debugEnabled` / `isDebug()`.
 
-### Backend — `CARDIGO_UPLOAD_DEBUG=1`
+### Backend - `CARDIGO_UPLOAD_DEBUG=1`
 
 Set environment variable on Render:
 
@@ -98,8 +98,8 @@ CARDIGO_UPLOAD_DEBUG=1
 
 **Effects:**
 
-- `[upload-debug] gallery-entry` / `gallery-error` / `design-entry` / `design-error` — file meta, actor type, request ID.
-- `[upload-debug] multer-error` — multer rejection details.
+- `[upload-debug] gallery-entry` / `gallery-error` / `design-entry` / `design-error` - file meta, actor type, request ID.
+- `[upload-debug] multer-error` - multer rejection details.
 
 All guarded by `_uploadDebug` flag. No secrets/PII.
 
@@ -117,7 +117,7 @@ All guarded by `_uploadDebug` flag. No secrets/PII.
 | Console lines      | DevTools → Console → filter `[prepare-image]` or `[gallery]`                                 |
 | Network tab        | Request URL, Status, `x-nf-request-id`, `rndr-id`, `content-length` (request), response body |
 | Render logs        | Filter by `[upload-debug]` and/or the `rndr-id` from the response                            |
-| Sentry breadcrumbs | If Sentry is configured — link the issue ID                                                  |
+| Sentry breadcrumbs | If Sentry is configured - link the issue ID                                                  |
 
 ### 5b. Example curl commands (Windows PowerShell)
 
@@ -164,7 +164,7 @@ curl.exe -X POST "https://cardigo-api.onrender.com/api/uploads/asset" `
 - Debug box shows `file` entry with large `origSize` but no `upload-ok` / `upload-error`.
 - `[prepare-image]` console log may show downscale was skipped or returned original (fast-path).
 
-**Resolution:** Verify client-side `prepareImageForUpload` is active and actually downscaling (check `[prepare-image] downscale result` in console). If file is already small, the proxy timeout may be a network issue — retry on better connection.
+**Resolution:** Verify client-side `prepareImageForUpload` is active and actually downscaling (check `[prepare-image] downscale result` in console). If file is already small, the proxy timeout may be a network issue - retry on better connection.
 
 ### 6b. Client-side file has empty type or no bytes
 
@@ -177,7 +177,7 @@ curl.exe -X POST "https://cardigo-api.onrender.com/api/uploads/asset" `
 
 ### 6c. Backend decode fail → 422 IMAGE_DECODE_FAILED
 
-**Cause:** `processImage` sharp pipeline cannot decode the buffer — file is corrupt, truncated, or an unsupported format (e.g. HEIC without libheif).
+**Cause:** `processImage` sharp pipeline cannot decode the buffer - file is corrupt, truncated, or an unsupported format (e.g. HEIC without libheif).
 
 **Indicators:**
 
@@ -206,7 +206,7 @@ curl.exe -X POST "https://cardigo-api.onrender.com/api/uploads/asset" `
 | **Netlify proxy timeout**             | 1. Verify `prepareImageForUpload` downscale is active (console log). 2. Confirm request `Content-Length` is reduced. 3. Retry on better network. 4. If persistent, consider increasing Netlify timeout (proxy config). |
 | **Backend 422 IMAGE_DECODE_FAILED**   | File is corrupt/unsupported. Guide user to re-export or use a different image format (JPEG/PNG/WebP).                                                                                                                  |
 | **Backend 502 (Supabase)**            | Check Supabase status page. Verify bucket env vars. Retry. If persistent, open Supabase support ticket.                                                                                                                |
-| **Backend 413 LIMIT_FILE_SIZE**       | File exceeds 10 MB multer cap. Client-side downscale should prevent this — verify `prepareImageForUpload` ran.                                                                                                         |
+| **Backend 413 LIMIT_FILE_SIZE**       | File exceeds 10 MB multer cap. Client-side downscale should prevent this - verify `prepareImageForUpload` ran.                                                                                                         |
 | **Backend 400 GALLERY_LIMIT_REACHED** | Tier limit. User must upgrade plan or remove existing gallery images.                                                                                                                                                  |
 
 ---
@@ -214,7 +214,7 @@ curl.exe -X POST "https://cardigo-api.onrender.com/api/uploads/asset" `
 ## 8. Post-Incident Cleanup
 
 - [ ] **Remove** `CARDIGO_UPLOAD_DEBUG` env var on Render (or set to `0` / blank).
-- [ ] **Keep** `?uploadDebug=1` mechanism in code — it is zero-cost when not activated.
+- [ ] **Keep** `?uploadDebug=1` mechanism in code - it is zero-cost when not activated.
 - [ ] Remove any temporary curl test scripts or logs from local machine.
 - [ ] If a code fix was deployed, update this runbook with the new root cause entry.
 
@@ -222,7 +222,7 @@ curl.exe -X POST "https://cardigo-api.onrender.com/api/uploads/asset" `
 
 ## 9. DoD / Verification Checklist
 
-- [ ] **No console spam in production** without `?uploadDebug=1` — verified by `npm run check:inline-styles` and manual console inspection.
+- [ ] **No console spam in production** without `?uploadDebug=1` - verified by `npm run check:inline-styles` and manual console inspection.
 - [ ] **With debug enabled**, can capture enough evidence in < 5 minutes (debug box + console + network tab).
-- [ ] **README link updated** — this runbook is listed in the root `README.md` Engineering Policies section.
-- [ ] **Backend README link updated** — this runbook is listed in the `backend/README.md` Runbooks section.
+- [ ] **README link updated** - this runbook is listed in the root `README.md` Engineering Policies section.
+- [ ] **Backend README link updated** - this runbook is listed in the `backend/README.md` Runbooks section.

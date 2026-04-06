@@ -1,5 +1,5 @@
 /**
- * Guides — public routes (read-only, no auth required).
+ * Guides - public routes (read-only, no auth required).
  */
 
 import { Router } from "express";

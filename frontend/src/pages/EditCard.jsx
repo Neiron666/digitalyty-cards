@@ -601,9 +601,9 @@ function EditCard() {
                             } catch (claimErr) {
                                 const claimStatus = claimErr?.response?.status;
                                 // Terminal: 400 (no anon id), 403 (window expired),
-                                // 404 (no anon card), 409 (already claimed) — fall through
+                                // 404 (no anon card), 409 (already claimed) - fall through
                                 // to create-card CTA below.
-                                // Transient: 5xx / network — do NOT fall through to
+                                // Transient: 5xx / network - do NOT fall through to
                                 // create-card CTA (prevents duplicate-card creation).
                                 if (claimStatus >= 500 || !claimStatus) {
                                     console.error(
@@ -2270,7 +2270,7 @@ function EditCard() {
         daysLeft <= 14;
 
     // Pre-compute public link data (used in desktop block + passed to Editor for mobile)
-    // SSoT: publicPath comes ONLY from backend DTO — no fallback guessing.
+    // SSoT: publicPath comes ONLY from backend DTO - no fallback guessing.
     const cardPublicPath = draftCard?.publicPath || null;
     const cardPublicUrl = cardPublicPath
         ? `${window.location.origin}${cardPublicPath}`

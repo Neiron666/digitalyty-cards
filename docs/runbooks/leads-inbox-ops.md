@@ -1,10 +1,10 @@
-# Runbook: Leads & Inbox — Operations
+# Runbook: Leads & Inbox - Operations
 
 > **Owner:** Backend / DevOps.  
 > **Last updated:** 2026-03-03.  
 > **Related docs:** [Architecture & Spec → docs/leads-inbox-architecture.md](../leads-inbox-architecture.md)
 
-> **⚠ Security:** Never paste real secrets, tokens, or credentials into documentation, scripts, logs, or chat. Use placeholders (`$JWT`, `$CARD_ID`, `$LEAD_ID`, etc.). Obtain test tokens via browser DevTools after a normal login — never via `jwt.sign()` or by exposing `JWT_SECRET`.
+> **⚠ Security:** Never paste real secrets, tokens, or credentials into documentation, scripts, logs, or chat. Use placeholders (`$JWT`, `$CARD_ID`, `$LEAD_ID`, etc.). Obtain test tokens via browser DevTools after a normal login - never via `jwt.sign()` or by exposing `JWT_SECRET`.
 
 ---
 
@@ -18,16 +18,16 @@
 Run these commands in `mongosh` connected to the production database:
 
 ```js
-// #1 — Base list + cascade deleteMany
+// #1 - Base list + cascade deleteMany
 db.leads.createIndex({ card: 1, createdAt: -1 });
 
-// #2 — Unread-count + filtered lists
+// #2 - Unread-count + filtered lists
 db.leads.createIndex({ card: 1, readAt: 1, createdAt: -1 });
 
-// #3 — Mailbox view tabs (active / archived / trash)
+// #3 - Mailbox view tabs (active / archived / trash)
 db.leads.createIndex({ card: 1, deletedAt: 1, archivedAt: 1, createdAt: -1 });
 
-// #4 — TTL: auto-purge soft-deleted leads after 90 days
+// #4 - TTL: auto-purge soft-deleted leads after 90 days
 db.leads.createIndex({ deletedAt: 1 }, { expireAfterSeconds: 7776000 });
 ```
 
@@ -58,7 +58,7 @@ Schema + index definitions: `backend/src/models/Lead.model.js` (L65–80).
 
 - Index #4 (`{ deletedAt: 1 }`) has `expireAfterSeconds: 7776000` (90 days).
 - MongoDB's TTL monitor runs approximately **every 60 seconds** and removes documents where `deletedAt + 90 days < now`.
-- Documents with `deletedAt: null` are **skipped** by the TTL monitor — active/archived leads are safe.
+- Documents with `deletedAt: null` are **skipped** by the TTL monitor - active/archived leads are safe.
 
 ### 2.2 Testing TTL (staging / local only)
 
@@ -83,7 +83,7 @@ db.leads.countDocuments({ name: "TTL Test" });
 
 - TTL removal is **not instant**. The monitor runs ~every 60 s, but under heavy load it may lag.
 - On Atlas free/shared tier, TTL may take several minutes.
-- If a lead has `deletedAt` as a non-Date type (string, number), the TTL monitor ignores it — always store a proper `Date`.
+- If a lead has `deletedAt` as a non-Date type (string, number), the TTL monitor ignores it - always store a proper `Date`.
 
 ---
 
@@ -137,7 +137,7 @@ const AUTH_RATE_LIMIT = 60; // per IP:userId
 4. Wait for window to expire, verify requests succeed again.
 5. **Restore original values** before deploying.
 
-> **Do not** reduce `LEAD_RATE_LIMIT_CARD` below 3 without checking UX impact—form submission retries after validation errors count against the limit.
+> **Do not** reduce `LEAD_RATE_LIMIT_CARD` below 3 without checking UX impact-form submission retries after validation errors count against the limit.
 
 ---
 
@@ -151,7 +151,7 @@ const AUTH_RATE_LIMIT = 60; // per IP:userId
 
 All commands use **PowerShell + curl.exe** (Windows).
 
-### 5.1 POST — Lead creation (consent: true)
+### 5.1 POST - Lead creation (consent: true)
 
 ```powershell
 @'
@@ -170,7 +170,7 @@ All commands use **PowerShell + curl.exe** (Windows).
 
 **Expected:** `201 { "success": true, "leadId": "..." }`
 
-### 5.2 POST — Consent false (should fail)
+### 5.2 POST - Consent false (should fail)
 
 ```powershell
 @'
@@ -186,7 +186,7 @@ All commands use **PowerShell + curl.exe** (Windows).
 
 **Expected:** `400 { "message": "Invalid request", "code": "CONSENT_REQUIRED" }`
 
-### 5.3 POST — Honeypot filled (fake success)
+### 5.3 POST - Honeypot filled (fake success)
 
 ```powershell
 @'
@@ -200,9 +200,9 @@ All commands use **PowerShell + curl.exe** (Windows).
      -H "Content-Type: application/json" --data-binary "@-"
 ```
 
-**Expected:** `201 { "success": true, "leadId": "$FAKE_ID" }` — a deterministic fake ObjectId (value intentionally not documented).
+**Expected:** `201 { "success": true, "leadId": "$FAKE_ID" }` - a deterministic fake ObjectId (value intentionally not documented).
 
-### 5.4 POST — Free plan (no canUseLeads)
+### 5.4 POST - Free plan (no canUseLeads)
 
 Use a `cardId` belonging to a free-tier card:
 
@@ -219,7 +219,7 @@ Use a `cardId` belonging to a free-tier card:
 
 **Expected:** `403 { "message": "Lead form available only for paid plans", "code": "FEATURE_NOT_AVAILABLE" }`
 
-### 5.5 POST — Rate limit (429)
+### 5.5 POST - Rate limit (429)
 
 Send 16 requests in rapid succession from the same IP to exceed the IP limit of 15:
 
@@ -239,7 +239,7 @@ Send 16 requests in rapid succession from the same IP to exceed the IP limit of 
 
 **Expected:** Requests 1–15 return `201`, request 16 returns `429`.
 
-### 5.6 GET — Inbox leads (authenticated)
+### 5.6 GET - Inbox leads (authenticated)
 
 ```powershell
 curl.exe -s "http://localhost:5000/api/leads/mine?view=active&limit=5" `
@@ -248,7 +248,7 @@ curl.exe -s "http://localhost:5000/api/leads/mine?view=active&limit=5" `
 
 **Expected:** `200 { "leads": [...], "nextCursor": "..." | null }`
 
-### 5.7 GET — Unread count (authenticated)
+### 5.7 GET - Unread count (authenticated)
 
 ```powershell
 curl.exe -s "http://localhost:5000/api/leads/unread-count" `
@@ -257,7 +257,7 @@ curl.exe -s "http://localhost:5000/api/leads/unread-count" `
 
 **Expected:** `200 { "unreadCount": <number> }`
 
-### 5.8 PATCH — Mark read
+### 5.8 PATCH - Mark read
 
 ```powershell
 curl.exe -s -X PATCH "http://localhost:5000/api/leads/<LEAD_ID>/read" `
@@ -266,7 +266,7 @@ curl.exe -s -X PATCH "http://localhost:5000/api/leads/<LEAD_ID>/read" `
 
 **Expected:** `200 { "success": true }`
 
-### 5.9 PATCH — Toggle flags (star + archive)
+### 5.9 PATCH - Toggle flags (star + archive)
 
 ```powershell
 # Star a lead:
@@ -291,7 +291,7 @@ curl.exe -s -X PATCH "http://localhost:5000/api/leads/<LEAD_ID>/read" `
      -H "Content-Type: application/json" --data-binary "@-"
 ```
 
-### 5.10 DELETE — Hard delete (trash only)
+### 5.10 DELETE - Hard delete (trash only)
 
 ```powershell
 # First move to trash (if not already):
@@ -397,7 +397,7 @@ If `deletedAt + 90 days < now`, it should be purged on the next TTL pass.
 
 ### 7.3 Leads not being purged by TTL
 
-1. Verify TTL index exists: `db.leads.getIndexes()` — look for `{ deletedAt: 1 }` with `expireAfterSeconds: 7776000`.
+1. Verify TTL index exists: `db.leads.getIndexes()` - look for `{ deletedAt: 1 }` with `expireAfterSeconds: 7776000`.
 2. If the index exists but `expireAfterSeconds` differs, drop and recreate it:
     ```js
     db.leads.dropIndex("deletedAt_1");
@@ -408,7 +408,7 @@ If `deletedAt + 90 days < now`, it should be purged on the next TTL pass.
     db.leads.findOne({ deletedAt: { $ne: null } }, { deletedAt: 1 });
     // deletedAt should be ISODate("..."), not a string
     ```
-4. On Atlas free/shared tier, TTL runs less frequently — wait up to 10 minutes.
+4. On Atlas free/shared tier, TTL runs less frequently - wait up to 10 minutes.
 
 ### 7.4 Rate limit too aggressive / too lenient
 

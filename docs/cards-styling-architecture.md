@@ -2,13 +2,13 @@ Cards Styling Architecture (SSoT)
 
 Дата: 2026-01-18
 
-Цель документа: зафиксировать канонический runtime-пайплайн рендера карточки, SSoT registry для templates/skins/palettes, публичный API layout hooks и реальные tokens, которые читает общий layout. Документ — база для продакшн-верстки будущих skins без слома DOM skeleton.
+Цель документа: зафиксировать канонический runtime-пайплайн рендера карточки, SSoT registry для templates/skins/palettes, публичный API layout hooks и реальные tokens, которые читает общий layout. Документ - база для продакшн-верстки будущих skins без слома DOM skeleton.
 
 Инварианты (non-negotiable)
 
-Runtime skeleton карточки — общий CardLayout и его DOM-структура. Skins не меняют разметку.
+Runtime skeleton карточки - общий CardLayout и его DOM-структура. Skins не меняют разметку.
 
-Skins — token-only: только CSS custom properties (переменные), без таргетинга структурных селекторов.
+Skins - token-only: только CSS custom properties (переменные), без таргетинга структурных селекторов.
 
 Запрещено:
 
@@ -82,7 +82,7 @@ EditorPreview рендерит CardRenderer в frontend/src/components/editor/Ed
 2. Registry как Source of Truth (templates/skins/palettes)
    Где registry и что является SSoT
 
-Единственный source-of-truth для списка templates и их дизайна — TEMPLATES в frontend/src/templates/templates.config.js
+Единственный source-of-truth для списка templates и их дизайна - TEMPLATES в frontend/src/templates/templates.config.js
 .
 
 В registry определяются:
@@ -121,7 +121,7 @@ Palette allowlist берется из template.customPalettes (registry-driven):
 
 Default palette берется из template.defaultPaletteKey: frontend/src/templates/TemplateRenderer.jsx
 
-Важно для будущих skins: хотя skinKey живёт в registry, подключение CSS module для skin сейчас задано централизованно в TemplateRenderer (объект skinModules). То есть добавление нового skinKey — это всегда согласованное изменение:
+Важно для будущих skins: хотя skinKey живёт в registry, подключение CSS module для skin сейчас задано централизованно в TemplateRenderer (объект skinModules). То есть добавление нового skinKey - это всегда согласованное изменение:
 
 registry: новый skinKey в frontend/src/templates/templates.config.js
 
@@ -147,8 +147,8 @@ Allowed skin keys (контракт): frontend/scripts/check-template-contract.m
 
 ### 1) Overview
 
-- Self Theme — режим кастомизации token-based дизайна (в первую очередь цветов) поверх self skin (SelfThemeSkin).
-- UX цель: во вкладке “עיצוב עצמי” пользователь видит live preview до Save, а применять/персистить изменения — только через Save.
+- Self Theme - режим кастомизации token-based дизайна (в первую очередь цветов) поверх self skin (SelfThemeSkin).
+- UX цель: во вкладке “עיצוב עצמי” пользователь видит live preview до Save, а применять/персистить изменения - только через Save.
 
 ### 2) Behavior Contract (SSoT bullets)
 
@@ -161,19 +161,19 @@ Allowed skin keys (контракт): frontend/scripts/check-template-contract.m
 
 Implementation anchors (без line numbers):
 
-- frontend/src/templates/templates.config.js — registry templates (`selfThemeV1`, `skinKey`)
-- frontend/src/templates/TemplateRenderer.jsx — gating self-theme + CSS injection (editor blob / public endpoint)
-- frontend/src/components/editor/TemplateSelector.jsx — скрытие self-theme template в “תבניות”
-- frontend/src/components/editor/panels/SelfThemePanel.jsx — запись `design.selfThemeV1.*` + reset “איפוס”
-- frontend/src/components/editor/EditorPreview.jsx — preview-only override при tab "design"
-- frontend/src/pages/EditCard.jsx — `commitDraft` payload forcing + order-guard + auto-reset
-- backend/src/controllers/card.controller.js — atomic normalization `design.selfThemeV1` ($unset / atomic $set)
+- frontend/src/templates/templates.config.js - registry templates (`selfThemeV1`, `skinKey`)
+- frontend/src/templates/TemplateRenderer.jsx - gating self-theme + CSS injection (editor blob / public endpoint)
+- frontend/src/components/editor/TemplateSelector.jsx - скрытие self-theme template в “תבניות”
+- frontend/src/components/editor/panels/SelfThemePanel.jsx - запись `design.selfThemeV1.*` + reset “איפוס”
+- frontend/src/components/editor/EditorPreview.jsx - preview-only override при tab "design"
+- frontend/src/pages/EditCard.jsx - `commitDraft` payload forcing + order-guard + auto-reset
+- backend/src/controllers/card.controller.js - atomic normalization `design.selfThemeV1` ($unset / atomic $set)
 
 ### 3) Data Model
 
-- `design.templateId` — SSoT выбора шаблона (registry template).
-- `design.selfThemeV1` — overrides (object / field absent). `null` допустим как transient значение в draft/patch, но запись в Mongo нормализуется (см. Reset semantics / Postmortem).
-- `entitlements.design.customColors` — write gate для персиста self-theme.
+- `design.templateId` - SSoT выбора шаблона (registry template).
+- `design.selfThemeV1` - overrides (object / field absent). `null` допустим как transient значение в draft/patch, но запись в Mongo нормализуется (см. Reset semantics / Postmortem).
+- `entitlements.design.customColors` - write gate для персиста self-theme.
 
 ### 4) Preview-only override (Why)
 
@@ -183,9 +183,9 @@ Implementation anchors (без line numbers):
 ### 5) Save pipeline & intent guards
 
 - Единственный PATCH: `commitDraft` формирует payload и отправляет его на `/cards/:id`.
-- `selfThemeDirty` учитывает и точный путь `design.selfThemeV1`, и любые `design.selfThemeV1.*` (dirtyPaths — unordered).
+- `selfThemeDirty` учитывает и точный путь `design.selfThemeV1`, и любые `design.selfThemeV1.*` (dirtyPaths - unordered).
 - Order-guard через seq refs: если после self-theme изменений пользователь выбрал другой template, не форсим self-template обратно.
-- Важно: переключение `templateId` — payload-only; draft не мутировать до успешного Save.
+- Важно: переключение `templateId` - payload-only; draft не мутировать до успешного Save.
 
 ### 6) Reset semantics
 
@@ -205,7 +205,7 @@ Implementation anchors (без line numbers):
 
 ### 8) Pitfalls & Guardrails (Don’ts)
 
-- Не делать magic compare по "customV1" — только registry-driven флаг `selfThemeV1`.
+- Не делать magic compare по "customV1" - только registry-driven флаг `selfThemeV1`.
 - Не делать hidden writes на tab-open/mount.
 - Не хранить `design.selfThemeV1: null` в Mongo без atomic write / `$unset` нормализации (иначе возможен dot-path crash).
 - Не добавлять второй PATCH для self-theme.
@@ -287,7 +287,7 @@ Skins не таргетят структурные селекторы .card, .he
 
 Token + hook-контракт описан также в frontend/src/templates/skins/\_base/skinTokens.md
 
-Card Typography — High-Blast-Radius Area (Deferred Exception)
+Card Typography - High-Blast-Radius Area (Deferred Exception)
 
 `CardLayout.module.css` is the sole SSoT for card-boundary typography tokens.
 
@@ -296,7 +296,7 @@ The primitive card font-size scale (`--fs-10` through `--fs-32`) currently uses 
 - Powers all card text rendering across all templates and skins.
 - Is consumed by 35+ `font-size: var(--fs-*)` declarations in card components.
 - Affects both public cards and editor preview identically (same render chain).
-- Is intentional — designed for smooth cross-viewport card scaling.
+- Is intentional - designed for smooth cross-viewport card scaling.
 
 **Do NOT change card typography token definitions casually.** Any modification to `--fs-10`–`--fs-32` or `--fs-scale` interaction constitutes a high-blast-radius change requiring:
 
@@ -448,7 +448,7 @@ Container query для phone preview: frontend/src/templates/layout/CardLayout.m
 
 FLEX ONLY (hard rule): CSS Grid запрещён в этом репозитории. Используем только Flexbox (никаких display: grid и никаких grid-\* свойств).
 
-Когда Flex — это “правильный” выбор (почти всегда)
+Когда Flex - это “правильный” выбор (почти всегда)
 
 Flex предпочтительнее, всегда:
 
@@ -466,9 +466,9 @@ Preview wrapper, который по факту центрирует один с
 
 Мелкие блоки внутри секций, где 2D-раскладка используется только ради центрирования.
 
-6. Phase 2 Prep — инвентаризация non-compliant display:grid (без изменений кода)
+6. Phase 2 Prep - инвентаризация non-compliant display:grid (без изменений кода)
 
-Ниже — только зоны: Dashboard, editor layout, card sections, templates layout.
+Ниже - только зоны: Dashboard, editor layout, card sections, templates layout.
 
 Dashboard / Cards list
 
@@ -511,7 +511,7 @@ Templates layout
 
 CardLayout.module.css использует flex/flow; 2D layout не применяется (runtime skeleton остается flex-first).
 
-7. Phase 2 Prep — порядок нормализации non-compliant layouts → Flex (план)
+7. Phase 2 Prep - порядок нормализации non-compliant layouts → Flex (план)
 
 Цель Phase 2: минимально ломать responsive и не затронуть DOM skeleton CardLayout.
 

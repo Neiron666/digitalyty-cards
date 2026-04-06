@@ -1,4 +1,4 @@
-# Blog SEO & OG — Runbook (Cardigo)
+# Blog SEO & OG - Runbook (Cardigo)
 
 **Статус фичи:** Blog (admin CRUD + public pages + JSON-LD + OG + sitemap) реализован и проверен локально.  
 **Важно:** на проде сейчас включён временный **Gate (password cookie)** на Netlify proxy (`GATE_REQUIRED`). Это **намеренно** блокирует краулеров/соцсети и не даёт SEO/OG работать “наружу” до момента открытия сайта.
@@ -9,8 +9,8 @@
 
 ### Public
 
-- `/blog` — листинг опубликованных постов.
-- `/blog/:slug` — страница поста (семантическая разметка, секции).
+- `/blog` - листинг опубликованных постов.
+- `/blog/:slug` - страница поста (семантическая разметка, секции).
 - SEO в `<head>` через `SeoHelmet` (title/description/canonical/OG) + JSON-LD:
     - `BlogPosting`
     - `BreadcrumbList`
@@ -107,7 +107,7 @@ curl.exe -i "https://cardigo.co.il/api/blog?page=1&limit=5"
 
 Ожидаемо: **200 OK** (не `401 GATE_REQUIRED`).
 
-Негативные тесты — должны остаться закрыты:
+Негативные тесты - должны остаться закрыты:
 
 ```powershell
 curl.exe -i "https://cardigo.co.il/api/admin/blog/posts?page=1&limit=1"
@@ -136,12 +136,12 @@ curl.exe -i -X POST "https://cardigo.co.il/api/auth/forgot" -H "Content-Type: ap
 
 ### Blog listing
 
-- `/blog` — premium public page. Displays published posts with thumbnails, excerpt, author, date.
+- `/blog` - premium public page. Displays published posts with thumbnails, excerpt, author, date.
 - Footer site-shell includes a persistent `/blog` link for discoverability.
 
 ### Blog post page
 
-- `/blog/:slug` — single post page with semantic HTML, `SeoHelmet`, JSON-LD (`BlogPosting`, `BreadcrumbList`).
+- `/blog/:slug` - single post page with semantic HTML, `SeoHelmet`, JSON-LD (`BlogPosting`, `BreadcrumbList`).
 - Page-level light background wrapper prevents body background bleed on the post page.
 - Hero / cover image renders from the post's `heroImage`. If no hero is set, a default fallback placeholder is shown (defined in `blog.js` config constants).
 
@@ -162,7 +162,7 @@ curl.exe -i -X POST "https://cardigo.co.il/api/auth/forgot" -H "Content-Type: ap
 
 ### URL-driven archive pagination
 
-- `/blog/page/:pageNum` — paginated archive pages.
+- `/blog/page/:pageNum` - paginated archive pages.
 - Invalid or out-of-range page numbers (< 1, > totalPages, non-numeric) are normalized: redirect to `/blog` (page 1) or `/blog/page/<totalPages>` respectively.
 
 ### Sitemap
@@ -172,7 +172,7 @@ curl.exe -i -X POST "https://cardigo.co.il/api/auth/forgot" -H "Content-Type: ap
 
 ### OG endpoint
 
-- `GET /og/blog/:slug` — resolves only the **current canonical slug** (not aliases).
+- `GET /og/blog/:slug` - resolves only the **current canonical slug** (not aliases).
 - Published-only; draft/missing → `404 Not found` (anti-enumeration).
 
 ### Analytics
@@ -194,7 +194,7 @@ curl.exe -i -X POST "https://cardigo.co.il/api/auth/forgot" -H "Content-Type: ap
 - Each blog section supports one optional illustration image.
 - Admin can upload, replace, or remove a section image via the blog editor.
 - When a post is deleted, all associated section images are cleaned up from storage.
-- Section images are **body-only presentation** — they do NOT affect OG meta, JSON-LD, or sitemap output.
+- Section images are **body-only presentation** - they do NOT affect OG meta, JSON-LD, or sitemap output.
 
 ### V1 boundaries
 
@@ -206,7 +206,7 @@ curl.exe -i -X POST "https://cardigo.co.il/api/auth/forgot" -H "Content-Type: ap
 
 - Model SSoT: `backend/src/models/BlogPost.model.js`
 - Config constants (limits, fallbacks): `backend/src/config/blog.js`
-- Bounded arrays: `BLOG_SECTIONS_MAX`, `BLOG_PREVIOUS_SLUGS_MAX` — enforced at schema level.
+- Bounded arrays: `BLOG_SECTIONS_MAX`, `BLOG_PREVIOUS_SLUGS_MAX` - enforced at schema level.
 
 ---
 
@@ -214,8 +214,8 @@ curl.exe -i -X POST "https://cardigo.co.il/api/auth/forgot" -H "Content-Type: ap
 
 ### Mechanism
 
-- `previousSlugs[]` — bounded array (max `BLOG_PREVIOUS_SLUGS_MAX`) storing old slugs after a rename.
-- `firstPublishedAt` — set once on first publish. Alias preservation activates only **after** a post has been published at least once.
+- `previousSlugs[]` - bounded array (max `BLOG_PREVIOUS_SLUGS_MAX`) storing old slugs after a rename.
+- `firstPublishedAt` - set once on first publish. Alias preservation activates only **after** a post has been published at least once.
 - When a published post's slug is changed, the old slug is pushed to `previousSlugs`.
 - Drafts that have never been published: slug changes do NOT accumulate aliases.
 
@@ -223,7 +223,7 @@ curl.exe -i -X POST "https://cardigo.co.il/api/auth/forgot" -H "Content-Type: ap
 
 - Public endpoint resolves a post by `slug` OR any entry in `previousSlugs` (via `$or` query).
 - If resolved via an alias (old slug), the response includes the current canonical slug.
-- Frontend performs `navigate("/blog/<canonicalSlug>", { replace: true })` — transparent redirect, no flash.
+- Frontend performs `navigate("/blog/<canonicalSlug>", { replace: true })` - transparent redirect, no flash.
 
 ### Canonical truth
 
@@ -257,7 +257,7 @@ curl.exe -i -X POST "https://cardigo.co.il/api/auth/forgot" -H "Content-Type: ap
 - **Apply:** `npm run migrate:blogpost-indexes -- --apply`
     - Creates missing indexes.
     - Includes `checkDuplicateSlugs()` safety: blocks `slug_1` unique index creation if duplicate slugs are found.
-- **Idempotent:** re-running reports "already exists — no-op" for each index.
+- **Idempotent:** re-running reports "already exists - no-op" for each index.
 
 ### Discipline
 

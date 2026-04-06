@@ -35,7 +35,7 @@ async function reconcileOnce() {
         for (const card of candidates) {
             // Defense-in-depth: re-check billing at evaluation time.
             // If the card has been upgraded or has an active admin override,
-            // skip — do NOT overwrite legitimate billing.
+            // skip - do NOT overwrite legitimate billing.
             const billing = resolveBilling(card, now);
             if (
                 billing?.source === "billing" ||

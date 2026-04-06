@@ -187,10 +187,10 @@ export default {
             });
         } catch (e) {
             if (e.code === 11000) {
-                // Duplicate providerTxnId — idempotent replay, no-op.
+                // Duplicate providerTxnId - idempotent replay, no-op.
                 return;
             }
-            // Infra failure — throw so route returns 500 and provider retries.
+            // Infra failure - throw so route returns 500 and provider retries.
             throw e;
         }
 

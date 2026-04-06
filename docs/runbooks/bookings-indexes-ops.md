@@ -1,4 +1,4 @@
-# Runbook: Bookings — Index Governance & Retention
+# Runbook: Bookings - Index Governance & Retention
 
 > **Owner:** Backend / DevOps.
 >
@@ -15,7 +15,7 @@
 Run these commands in `mongosh` connected to the production database:
 
 ```js
-// #1 — Slot lock (blocking only): one booking per card + slotKey while status in (pending, approved)
+// #1 - Slot lock (blocking only): one booking per card + slotKey while status in (pending, approved)
 db.bookings.createIndex(
     { card: 1, slotKey: 1 },
     {
@@ -25,7 +25,7 @@ db.bookings.createIndex(
     },
 );
 
-// #2 — Same-person lock (blocking only): one booking per card + personKey while status in (pending, approved)
+// #2 - Same-person lock (blocking only): one booking per card + personKey while status in (pending, approved)
 db.bookings.createIndex(
     { card: 1, personKey: 1 },
     {
@@ -35,19 +35,19 @@ db.bookings.createIndex(
     },
 );
 
-// #3 — Owner list view
+// #3 - Owner list view
 db.bookings.createIndex(
     { card: 1, startAt: 1, _id: 1 },
     { name: "idx_booking_card_startAt" },
 );
 
-// #4 — Pending slot-end reconciler scan
+// #4 - Pending slot-end reconciler scan
 db.bookings.createIndex(
     { status: 1, endAt: 1, _id: 1 },
     { name: "idx_booking_pending_endAt" },
 );
 
-// #5 — TTL purge (history deletion): delete docs when purgeAt < now
+// #5 - TTL purge (history deletion): delete docs when purgeAt < now
 // expireAfterSeconds: 0 means expire at the time in the field.
 db.bookings.createIndex(
     { purgeAt: 1 },
@@ -73,7 +73,7 @@ db.bookings.getIndexes().forEach((idx) => {
 
 ## 2. Retention vs Expiry (critical distinction)
 
-- `endAt`: slot end time — the runtime lifecycle clock. Pending bookings auto-expire when `endAt ≤ now`. Bookings are not deleted at expiry.
+- `endAt`: slot end time - the runtime lifecycle clock. Pending bookings auto-expire when `endAt ≤ now`. Bookings are not deleted at expiry.
 - `expiresAt`: legacy-compatible field, now set equal to `endAt` at creation time. No longer independently controls lifecycle decisions.
 - `purgeAt`: history deletion. Documents are removed by TTL after `purgeAt`.
 

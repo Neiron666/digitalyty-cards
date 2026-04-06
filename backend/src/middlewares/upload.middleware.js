@@ -15,6 +15,6 @@ export const upload = multer({
     storage: multer.memoryStorage(),
     fileFilter,
     limits: {
-        fileSize: MAX_UPLOAD_BYTES, // SSoT — see imagePolicy.js
+        fileSize: MAX_UPLOAD_BYTES, // SSoT - see imagePolicy.js
     },
 });

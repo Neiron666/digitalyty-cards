@@ -69,7 +69,7 @@ async function checkRawDuplicateSlugs(col, verbose) {
         const codeName = err?.codeName;
         if (code === 26 || codeName === "NamespaceNotFound") {
             if (verbose)
-                console.log("  organizations collection not found — skip");
+                console.log("  organizations collection not found - skip");
             return false;
         }
         throw err;
@@ -77,7 +77,7 @@ async function checkRawDuplicateSlugs(col, verbose) {
 
     if (dupes.length > 0) {
         console.log(
-            "RAW DUPLICATE slug values in organizations — unique index BLOCKED:",
+            "RAW DUPLICATE slug values in organizations - unique index BLOCKED:",
         );
         for (const d of dupes) {
             console.log(
@@ -134,7 +134,7 @@ async function checkCanonicalDuplicateSlugs(col, verbose) {
         const codeName = err?.codeName;
         if (code === 26 || codeName === "NamespaceNotFound") {
             if (verbose)
-                console.log("  organizations collection not found — skip");
+                console.log("  organizations collection not found - skip");
             return false;
         }
         throw err;
@@ -142,7 +142,7 @@ async function checkCanonicalDuplicateSlugs(col, verbose) {
 
     if (dupes.length > 0) {
         console.log(
-            "CANONICAL DUPLICATE slugs in organizations — unique index BLOCKED:",
+            "CANONICAL DUPLICATE slugs in organizations - unique index BLOCKED:",
         );
         for (const d of dupes) {
             console.log(
@@ -188,7 +188,7 @@ async function checkNonCanonicalSlugs(col, verbose) {
         const codeName = err?.codeName;
         if (code === 26 || codeName === "NamespaceNotFound") {
             if (verbose)
-                console.log("  organizations collection not found — skip");
+                console.log("  organizations collection not found - skip");
             return false;
         }
         throw err;
@@ -196,7 +196,7 @@ async function checkNonCanonicalSlugs(col, verbose) {
 
     if (rows.length > 0) {
         console.log(
-            "NON-CANONICAL persisted slugs in organizations — unique index BLOCKED:",
+            "NON-CANONICAL persisted slugs in organizations - unique index BLOCKED:",
         );
         for (const r of rows) {
             console.log(
@@ -216,7 +216,7 @@ async function checkNonCanonicalSlugs(col, verbose) {
 async function ensureIndex(col, byName, key, opts, { dryRun, verbose }) {
     const name = opts.name;
     if (byName.has(name)) {
-        if (verbose) console.log(`  ${name} already exists — skip`);
+        if (verbose) console.log(`  ${name} already exists - skip`);
         return;
     }
 
@@ -257,11 +257,11 @@ async function ensureOrganizationIndexes({ dryRun, verbose }) {
     if (rawDupes) {
         if (dryRun) {
             console.log(
-                "  [dry-run] raw duplicates detected — apply would be BLOCKED for slug_1 unique",
+                "  [dry-run] raw duplicates detected - apply would be BLOCKED for slug_1 unique",
             );
         } else {
             console.error(
-                "  BLOCKED: cannot create unique slug_1 in organizations — resolve raw duplicates first",
+                "  BLOCKED: cannot create unique slug_1 in organizations - resolve raw duplicates first",
             );
             process.exitCode = 2;
         }
@@ -273,11 +273,11 @@ async function ensureOrganizationIndexes({ dryRun, verbose }) {
     if (canonicalDupes) {
         if (dryRun) {
             console.log(
-                "  [dry-run] canonical duplicates detected — apply would be BLOCKED for slug_1 unique",
+                "  [dry-run] canonical duplicates detected - apply would be BLOCKED for slug_1 unique",
             );
         } else {
             console.error(
-                "  BLOCKED: cannot create unique slug_1 in organizations — resolve canonical duplicates first",
+                "  BLOCKED: cannot create unique slug_1 in organizations - resolve canonical duplicates first",
             );
             process.exitCode = 2;
         }
@@ -289,18 +289,18 @@ async function ensureOrganizationIndexes({ dryRun, verbose }) {
     if (nonCanonical) {
         if (dryRun) {
             console.log(
-                "  [dry-run] non-canonical persisted slugs detected — apply would be BLOCKED for slug_1 unique",
+                "  [dry-run] non-canonical persisted slugs detected - apply would be BLOCKED for slug_1 unique",
             );
         } else {
             console.error(
-                "  BLOCKED: cannot create unique slug_1 in organizations — normalize non-canonical slugs first",
+                "  BLOCKED: cannot create unique slug_1 in organizations - normalize non-canonical slugs first",
             );
             process.exitCode = 2;
         }
         return;
     }
 
-    // 1) slug_1 — unique: org public identity truth + public routing determinism
+    // 1) slug_1 - unique: org public identity truth + public routing determinism
     //    + personalOrg bootstrap race protection.
     await ensureIndex(
         col,

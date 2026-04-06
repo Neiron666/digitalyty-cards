@@ -80,7 +80,7 @@ function Register() {
                     </p>
                     <p className={styles.successHint}>
                         לחצו על הקישור באימייל כדי להשלים את ההרשמה. אם לא
-                        קיבלתם — בדקו בתיקיית הספאם.
+                        קיבלתם - בדקו בתיקיית הספאם.
                     </p>
                 </div>
             </AuthLayout>

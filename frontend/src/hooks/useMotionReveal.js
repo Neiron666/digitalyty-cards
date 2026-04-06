@@ -6,7 +6,7 @@ const REDUCED =
 
 /**
  * Scroll-reveal hook for the motion preset framework.
- * For NEW pages/components only — does NOT touch existing useReveal consumers.
+ * For NEW pages/components only - does NOT touch existing useReveal consumers.
  *
  * Returns { ref, isRevealed }. Consumer applies motion.isVisible conditionally:
  *
@@ -22,7 +22,7 @@ const REDUCED =
  * @param {object}  [opts]
  * @param {number}  [opts.threshold=0.15]
  * @param {string}  [opts.rootMargin="0px 0px -40px 0px"]
- * @param {boolean} [opts.once=true] — unobserve after first reveal
+ * @param {boolean} [opts.once=true] - unobserve after first reveal
  */
 export default function useMotionReveal({
     threshold = 0.15,
@@ -60,7 +60,7 @@ export default function useMotionReveal({
         };
     }, [threshold, rootMargin, once]);
 
-    /* Stable callback ref — handles element mount/unmount */
+    /* Stable callback ref - handles element mount/unmount */
     const ref = useCallback((el) => {
         nodeRef.current = el;
         if (el && observerRef.current) {

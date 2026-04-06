@@ -1,4 +1,4 @@
-// Blog subsystem — SSoT caps & limits.
+// Blog subsystem - SSoT caps & limits.
 // All length checks reference these constants (model validators + controller normalization).
 
 export const BLOG_TITLE_MAX = 200;

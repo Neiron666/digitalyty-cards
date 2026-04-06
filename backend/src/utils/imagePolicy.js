@@ -1,5 +1,5 @@
 /**
- * Image processing policy — Single Source of Truth.
+ * Image processing policy - Single Source of Truth.
  *
  * All upload endpoints (gallery, design assets, blog hero) share these caps,
  * thresholds, and per-kind profiles.  Nothing else in the codebase should
@@ -8,7 +8,7 @@
 
 // ── Hard security caps (reject if exceeded) ────────────────────
 export const MAX_UPLOAD_BYTES = 10 * 1024 * 1024; // 10 MB (multer cap)
-export const MAX_PIXELS = 24_000_000; // 24 MP — sharp limitInputPixels
+export const MAX_PIXELS = 24_000_000; // 24 MP - sharp limitInputPixels
 export const MAX_DIMENSION = 8000; // px, any single side
 
 // ── Aggressive-mode triggers ───────────────────────────────────
@@ -24,7 +24,7 @@ export const GENTLE_QUALITY = 90;
 export const AGGRESSIVE_QUALITIES = [82, 78, 74];
 
 // ── Per-kind processing profiles ───────────────────────────────
-// Keys must be lowercase — resolveProfile() normalises input via .toLowerCase().
+// Keys must be lowercase - resolveProfile() normalises input via .toLowerCase().
 const PROFILES = {
     gallery: { maxLongSide: 2048, minLongSide: 1024 },
     bloghero: { maxLongSide: 2048, minLongSide: 1024 },

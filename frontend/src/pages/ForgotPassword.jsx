@@ -30,7 +30,7 @@ export default function ForgotPassword() {
                 String(Date.now() + RESEND_COOLDOWN_SEC * 1000),
             );
         } catch {
-            // localStorage unavailable (private mode, blocked storage) — graceful degradation.
+            // localStorage unavailable (private mode, blocked storage) - graceful degradation.
         }
     }
 

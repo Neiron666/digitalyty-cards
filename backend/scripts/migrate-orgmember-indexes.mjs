@@ -4,7 +4,7 @@
  * Manual index migration for the organizationmembers collection.
  *
  * Usage:
- *   node scripts/migrate-orgmember-indexes.mjs              (dry-run — default, safe)
+ *   node scripts/migrate-orgmember-indexes.mjs              (dry-run - default, safe)
  *   node scripts/migrate-orgmember-indexes.mjs --apply      (apply index to DB)
  *   node scripts/migrate-orgmember-indexes.mjs --apply --verbose
  *
@@ -15,7 +15,7 @@
  *   - MUST be applied before accepting any org invite/join traffic on a fresh cluster.
  *
  * Required index:
- *   1. Unique compound: { orgId: 1, userId: 1 } — enforces one membership row per user per org.
+ *   1. Unique compound: { orgId: 1, userId: 1 } - enforces one membership row per user per org.
  *      Without this, concurrent invite-accept can produce duplicate membership rows,
  *      causing role-check ambiguity and privilege escalation.
  */
@@ -84,7 +84,7 @@ async function checkDuplicateMembers(col, verbose) {
         if (err?.code === 26 || err?.codeName === "NamespaceNotFound") {
             if (verbose)
                 console.log(
-                    "  organizationmembers collection not found — no duplicates possible",
+                    "  organizationmembers collection not found - no duplicates possible",
                 );
             return false;
         }
@@ -93,7 +93,7 @@ async function checkDuplicateMembers(col, verbose) {
 
     if (dupes.length > 0) {
         console.log(
-            "DUPLICATE { orgId, userId } pairs in organizationmembers — unique index BLOCKED:",
+            "DUPLICATE { orgId, userId } pairs in organizationmembers - unique index BLOCKED:",
         );
         for (const d of dupes) {
             console.log(
@@ -133,11 +133,11 @@ async function ensureOrgMemberIndexes({ dryRun, verbose }) {
         const existing = byName.get(wantName);
         if (!existing.unique) {
             console.error(
-                `  WARNING: ${wantName} exists but is NOT unique — governance mismatch, manual intervention required`,
+                `  WARNING: ${wantName} exists but is NOT unique - governance mismatch, manual intervention required`,
             );
             process.exitCode = 2;
         } else {
-            console.log(`  ${wantName} already exists and is unique — no-op`);
+            console.log(`  ${wantName} already exists and is unique - no-op`);
         }
         return;
     }
@@ -148,11 +148,11 @@ async function ensureOrgMemberIndexes({ dryRun, verbose }) {
     if (hasDuplicates) {
         if (dryRun) {
             console.log(
-                "  [dry-run] duplicates detected — apply would be BLOCKED until duplicates are resolved",
+                "  [dry-run] duplicates detected - apply would be BLOCKED until duplicates are resolved",
             );
         } else {
             console.error(
-                "  BLOCKED: cannot create unique orgId_1_userId_1 — resolve duplicate member rows first",
+                "  BLOCKED: cannot create unique orgId_1_userId_1 - resolve duplicate member rows first",
             );
             process.exitCode = 2;
         }
@@ -179,10 +179,10 @@ async function ensureOrgMemberIndexes({ dryRun, verbose }) {
         const created = postByName.get(wantName);
 
         if (created && created.unique) {
-            console.log(`  created unique index ${wantName} — POST-CHECK PASS`);
+            console.log(`  created unique index ${wantName} - POST-CHECK PASS`);
         } else {
             console.error(
-                `  WARNING: ${wantName} not found or not unique after createIndex — POST-CHECK FAIL`,
+                `  WARNING: ${wantName} not found or not unique after createIndex - POST-CHECK FAIL`,
             );
             process.exitCode = 2;
         }

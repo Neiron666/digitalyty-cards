@@ -55,10 +55,10 @@ export default function SignupLinkRequest() {
                 {done ? (
                     <div className={styles.messageBox}>
                         <p className={styles.message}>
-                            אם האימייל מתאים — נשלח קישור להשלמת ההרשמה.
+                            אם האימייל מתאים - נשלח קישור להשלמת ההרשמה.
                         </p>
                         <p className={styles.hint}>
-                            אם כבר יש חשבון — השתמשו ב-Login / Forgot password.
+                            אם כבר יש חשבון - השתמשו ב-Login / Forgot password.
                         </p>
                     </div>
                 ) : null}

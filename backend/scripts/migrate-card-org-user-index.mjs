@@ -4,7 +4,7 @@
  * Manual index migration for the cards collection: orgId_1_user_1.
  *
  * Usage:
- *   node scripts/migrate-card-org-user-index.mjs                              (dry-run — default, safe)
+ *   node scripts/migrate-card-org-user-index.mjs                              (dry-run - default, safe)
  *   node scripts/migrate-card-org-user-index.mjs --apply                      (apply index to DB)
  *   node scripts/migrate-card-org-user-index.mjs --apply --verbose
  *
@@ -15,7 +15,7 @@
  *   - MUST be applied before accepting any org card traffic on a fresh cluster.
  *
  * Required index:
- *   1. Unique compound: { orgId: 1, user: 1 } — enforces one card per user per org.
+ *   1. Unique compound: { orgId: 1, user: 1 } - enforces one card per user per org.
  *      partialFilterExpression: { orgId: { $type: "objectId" }, user: { $type: "objectId" } }
  *      Does NOT apply to anonymous cards (user missing) or legacy docs where orgId is null/missing.
  *      Without this index, concurrent org-card creation can produce duplicate cards
@@ -94,7 +94,7 @@ async function checkDuplicateOrgUserCards(col, verbose) {
         if (err?.code === 26 || err?.codeName === "NamespaceNotFound") {
             if (verbose)
                 console.log(
-                    "  cards collection not found — no duplicates possible",
+                    "  cards collection not found - no duplicates possible",
                 );
             return false;
         }
@@ -103,7 +103,7 @@ async function checkDuplicateOrgUserCards(col, verbose) {
 
     if (dupes.length > 0) {
         console.log(
-            "DUPLICATE { orgId, user } pairs in cards — unique index BLOCKED:",
+            "DUPLICATE { orgId, user } pairs in cards - unique index BLOCKED:",
         );
         for (const d of dupes) {
             console.log(
@@ -145,13 +145,13 @@ async function ensureOrgUserIndex({ dryRun, verbose }) {
 
         if (isUnique && hasPFE) {
             console.log(
-                `  ${wantName} already exists (unique + partialFilterExpression) — no-op`,
+                `  ${wantName} already exists (unique + partialFilterExpression) - no-op`,
             );
             return;
         }
 
         console.error(
-            `  WARNING: ${wantName} exists but unique=${isUnique} hasPFE=${hasPFE} — governance mismatch, manual intervention required`,
+            `  WARNING: ${wantName} exists but unique=${isUnique} hasPFE=${hasPFE} - governance mismatch, manual intervention required`,
         );
         console.error(
             "  Expected: unique=true with partialFilterExpression on orgId+user $type objectId. Drop and recreate manually if needed.",
@@ -166,11 +166,11 @@ async function ensureOrgUserIndex({ dryRun, verbose }) {
     if (hasDuplicates) {
         if (dryRun) {
             console.log(
-                "  [dry-run] duplicates detected — apply would be BLOCKED until duplicates are resolved",
+                "  [dry-run] duplicates detected - apply would be BLOCKED until duplicates are resolved",
             );
         } else {
             console.error(
-                "  BLOCKED: cannot create unique orgId_1_user_1 — resolve duplicate { orgId, user } pairs first",
+                "  BLOCKED: cannot create unique orgId_1_user_1 - resolve duplicate { orgId, user } pairs first",
             );
             process.exitCode = 2;
         }
@@ -210,11 +210,11 @@ async function ensureOrgUserIndex({ dryRun, verbose }) {
             typeof created.partialFilterExpression === "object"
         ) {
             console.log(
-                `  created unique index ${wantName} with partialFilterExpression — POST-CHECK PASS`,
+                `  created unique index ${wantName} with partialFilterExpression - POST-CHECK PASS`,
             );
         } else {
             console.error(
-                `  WARNING: ${wantName} not found or incorrect after createIndex — POST-CHECK FAIL`,
+                `  WARNING: ${wantName} not found or incorrect after createIndex - POST-CHECK FAIL`,
             );
             process.exitCode = 2;
         }

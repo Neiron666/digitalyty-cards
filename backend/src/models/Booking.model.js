@@ -75,7 +75,7 @@ const BookingSchema = new Schema(
     },
 );
 
-// ── Governed index declarations (autoIndex OFF — migration is manual) ──
+// ── Governed index declarations (autoIndex OFF - migration is manual) ──
 
 // Blocking statuses: pending/approved.
 const BLOCKING_PFE = {

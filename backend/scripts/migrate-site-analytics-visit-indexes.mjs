@@ -4,7 +4,7 @@
  * Manual index migration for the SiteAnalyticsVisit collection.
  *
  * Usage:
- *   node scripts/migrate-site-analytics-visit-indexes.mjs            (dry-run — default, safe)
+ *   node scripts/migrate-site-analytics-visit-indexes.mjs            (dry-run - default, safe)
  *   node scripts/migrate-site-analytics-visit-indexes.mjs --apply    (apply indexes to DB)
  *
  * Governance rules:
@@ -13,9 +13,9 @@
  *   - Idempotent: re-running --apply is safe if indexes already exist.
  *
  * Required indexes:
- *   1. Unique compound: { siteKey: 1, visitHash: 1 }   — one doc per visit per site
- *   2. Query:          { siteKey: 1, day: 1 }          — date-range aggregations
- *   3. TTL:            { startedAt: 1 }                — auto-expire per SITE_ANALYTICS_VISIT_RETENTION_DAYS
+ *   1. Unique compound: { siteKey: 1, visitHash: 1 }   - one doc per visit per site
+ *   2. Query:          { siteKey: 1, day: 1 }          - date-range aggregations
+ *   3. TTL:            { startedAt: 1 }                - auto-expire per SITE_ANALYTICS_VISIT_RETENTION_DAYS
  */
 
 import "dotenv/config";
@@ -86,7 +86,7 @@ async function main() {
 
     const retentionDays = parseVisitRetentionDays();
 
-    // Disable runtime auto-index — this script is the explicit migration path.
+    // Disable runtime auto-index - this script is the explicit migration path.
     mongoose.set("autoIndex", false);
     mongoose.set("autoCreate", false);
 

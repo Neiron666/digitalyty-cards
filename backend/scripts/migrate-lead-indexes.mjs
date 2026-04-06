@@ -38,7 +38,7 @@ function indexMap(indexes) {
 async function ensureIndex(col, byName, key, opts, { dryRun, verbose }) {
     const name = opts.name;
     if (byName.has(name)) {
-        if (verbose) console.log(`  ${name} already exists — skip`);
+        if (verbose) console.log(`  ${name} already exists - skip`);
         return;
     }
 
@@ -75,7 +75,7 @@ async function ensureLeadIndexes({ dryRun, verbose }) {
         );
     }
 
-    // No prechecks — no unique indexes in scope.
+    // No prechecks - no unique indexes in scope.
 
     // 1) idx_leads_mailbox
     //    key: { card: 1, deletedAt: 1, archivedAt: 1, createdAt: -1 }
@@ -90,7 +90,7 @@ async function ensureLeadIndexes({ dryRun, verbose }) {
 
     // 2) idx_leads_deletedAt_ttl
     //    key: { deletedAt: 1 }   TTL: 7 776 000 s (90 days)
-    //    Auto-purges soft-deleted leads. TTL skips null/missing — safe for active leads.
+    //    Auto-purges soft-deleted leads. TTL skips null/missing - safe for active leads.
     await ensureIndex(
         col,
         byName,
@@ -146,7 +146,7 @@ async function postCheck(verbose) {
     const byName = indexMap(idx);
     let allOk = true;
 
-    // 1) idx_leads_mailbox — pre-existing, verify key shape.
+    // 1) idx_leads_mailbox - pre-existing, verify key shape.
     const mailbox = byName.get("idx_leads_mailbox");
     if (!mailbox) {
         console.error("  WARN: idx_leads_mailbox missing");
@@ -165,7 +165,7 @@ async function postCheck(verbose) {
         console.log("  idx_leads_mailbox verified");
     }
 
-    // 2) idx_leads_deletedAt_ttl — pre-existing, verify key + TTL.
+    // 2) idx_leads_deletedAt_ttl - pre-existing, verify key + TTL.
     const ttl = byName.get("idx_leads_deletedAt_ttl");
     if (!ttl) {
         console.error("  WARN: idx_leads_deletedAt_ttl missing");
@@ -182,7 +182,7 @@ async function postCheck(verbose) {
         console.log("  idx_leads_deletedAt_ttl verified (TTL 7776000)");
     }
 
-    // 3) idx_leads_unread_count — newly created, verify key shape.
+    // 3) idx_leads_unread_count - newly created, verify key shape.
     const unread = byName.get("idx_leads_unread_count");
     if (!unread) {
         console.error("  WARN: idx_leads_unread_count missing");

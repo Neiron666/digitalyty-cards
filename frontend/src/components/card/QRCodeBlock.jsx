@@ -10,7 +10,7 @@ function isAbsoluteUrl(value) {
 export default function QRCodeBlock({ slug, publicPath }) {
     const wrapRef = useRef(null);
 
-    // SSoT: URL comes ONLY from backend DTO publicPath — no fallback guessing.
+    // SSoT: URL comes ONLY from backend DTO publicPath - no fallback guessing.
     const url = useMemo(() => {
         if (typeof window === "undefined") return "";
         const origin = window.location.origin;

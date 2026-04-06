@@ -1,4 +1,4 @@
-# Cardigo — Typography & Mobile-First Policy (Corporate Standard)
+# Cardigo - Typography & Mobile-First Policy (Corporate Standard)
 
 **Status:** ENFORCED  
 **Applies to:** Frontend (App UI + Admin UI + Card UI), CSS Modules, global tokens  
@@ -23,8 +23,8 @@
 
 - **В компонентах/страницах запрещено задавать `font-size` числом** (px/rem/em/etc).
 - Разрешено **только**:
-    - `font-size: var(--fs-*)`, где `--fs-*` — **approved existing token** из канонического SSoT для соответствующего scope (app ← `globals.css`, card ← `CardLayout.module.css`)
-- **Новые имена `--fs-*` не изобретаются** в компонентных/страничных стилях — только потребление существующих токенов.
+    - `font-size: var(--fs-*)`, где `--fs-*` - **approved existing token** из канонического SSoT для соответствующего scope (app ← `globals.css`, card ← `CardLayout.module.css`)
+- **Новые имена `--fs-*` не изобретаются** в компонентных/страничных стилях - только потребление существующих токенов.
 - **Card-scope токены** (e.g. `--fs-14`, `--fs-h1`) **не должны утекать** в app-context CSS.
 
 > Идея: компоненты “потребляют” токены, а **значения токенов** определяются в одном SSoT-слое.
@@ -44,31 +44,31 @@
 ### 2.4 Mobile-first обязателен
 
 - Базовые стили пишутся для **мобилы** (узкий экран).
-- Увеличение/изменение — только через `@media (min-width: …rem)`.
+- Увеличение/изменение - только через `@media (min-width: …rem)`.
 
 ## Mobile-first & Responsive Rules (SSoT, ENFORCED)
 
-- **Mobile-first:** базовые стили и значения токенов — для small screens; улучшения/увеличения — только через `@media (min-width: …rem)`.
-- **Брейкпоинты:** по умолчанию разрешены 1–2 rem-брейкпоинта: `48rem` и/или `80rem` (дополнительные — только по явному согласованию).
-- **Единицы в брейкпоинтах:** media queries — только `rem` (никаких `px` брейкпоинтов).
+- **Mobile-first:** базовые стили и значения токенов - для small screens; улучшения/увеличения - только через `@media (min-width: …rem)`.
+- **Брейкпоинты:** по умолчанию разрешены 1–2 rem-брейкпоинта: `48rem` и/или `80rem` (дополнительные - только по явному согласованию).
+- **Единицы в брейкпоинтах:** media queries - только `rem` (никаких `px` брейкпоинтов).
 - **Typography consumption (компоненты/страницы):** `font-size` задаётся **только** как `font-size: var(--fs-*)` с использованием **approved existing tokens** из канонического SSoT для соответствующего scope; локальные `font-size: 18px/1rem/...` запрещены; card-scope токены в app-контексте запрещены.
 - **SSoT значений токенов:** адаптивность достигается **только** через override `--fs-*` в SSoT-слое (например `#root`, `[data-cardigo-scope="card"]`), а не через локальные стили компонентов.
-- **Rem-only для `--fs-*`:** значения `--fs-*` — только `rem`.
+- **Rem-only для `--fs-*`:** значения `--fs-*` - только `rem`.
 - **Запрещено для `font-size`:** `px`, `em`, `%`, `vw`, `vh`, `clamp(...)`.
 - **Запрещено в формулах `font-size`:** любые `calc(...)`, если внутри есть не-rem единицы (т.е. `calc(non-rem)` запрещён).
 - **Card vs App:** Card-типографика изолирована в `[data-cardigo-scope="card"]`; изменения App-типографики не должны влиять на публичную карточку.
-- **Preview-only scope:** любые preview-only визуальные отличия — строго под ancestor-scope `[data-preview="phone"] ...`.
+- **Preview-only scope:** любые preview-only визуальные отличия - строго под ancestor-scope `[data-preview="phone"] ...`.
 - **Layout rule проекта:** Flex only; CSS Grid запрещён (no `display: grid`, no `grid-*`).
-- **Enforcement:** обязательны `check:typography` и `check:typography:boundary`; критерий для основных PR’ов — **0 violations** в выводе.
-- **REPORT_ONLY интерпретация:** если `check:typography` работает в REPORT_ONLY и даёт `EXIT:0`, но печатает нарушения — это считается блокером PR до достижения **0 violations** (если явно не согласовано иначе).
+- **Enforcement:** обязательны `check:typography` и `check:typography:boundary`; критерий для основных PR’ов - **0 violations** в выводе.
+- **REPORT_ONLY интерпретация:** если `check:typography` работает в REPORT_ONLY и даёт `EXIT:0`, но печатает нарушения - это считается блокером PR до достижения **0 violations** (если явно не согласовано иначе).
 
 ### 2.5 Изоляция типографики Card vs App
 
 - Типографика карточки **не должна** меняться при изменении типографики приложения/админки/маркетинга.
 - Используем **одни и те же имена токенов** (`--fs-*`, `--lh-*`, `--fw-*`, `--ls-*`), но **две области значений**:
-    - **App tokens** — в контейнере приложения (см. §3.1)
-    - **Card tokens** — внутри `[data-cardigo-scope="card"]` (см. §3.2)
-- Preview-only изменения — только под ancestor-scope `[data-preview="phone"]`.
+    - **App tokens** - в контейнере приложения (см. §3.1)
+    - **Card tokens** - внутри `[data-cardigo-scope="card"]` (см. §3.2)
+- Preview-only изменения - только под ancestor-scope `[data-preview="phone"]`.
 
 ---
 
@@ -139,7 +139,7 @@ Examples (non-normative):
 Canonical rules are in [Mobile-first & Responsive Rules (SSoT, ENFORCED)](#mobile-first--responsive-rules-ssot-enforced).
 
 Examples (non-normative):
-6.1 База — мобильная
+6.1 База - мобильная
 Все layout-решения начинают с узкого экрана.
 
 Затем добавляем @media (min-width: …rem).
@@ -174,15 +174,15 @@ npm.cmd run build --if-present
 8) Copilot Agent Operating Protocol (обязателен)
 Каждый промпт Copilot начинается с:
 
-«Ты — Copilot Agent, acting as senior frontend engineer with пониманием backend контракта.»
+«Ты - Copilot Agent, acting as senior frontend engineer with пониманием backend контракта.»
 
 И работает строго фазами:
 
-Phase 1 — Read-Only Audit с PROOF (file:line-range) → STOP
+Phase 1 - Read-Only Audit с PROOF (file:line-range) → STOP
 
-Phase 2 — Minimal Fix (обычно 1–3 файла, без рефакторинга/форматирования) → STOP
+Phase 2 - Minimal Fix (обычно 1–3 файла, без рефакторинга/форматирования) → STOP
 
-Phase 3 — Verification: обязательные гейты + raw stdout + EXIT → STOP
+Phase 3 - Verification: обязательные гейты + raw stdout + EXIT → STOP
 
 Hard constraints (в каждом промпте):
 
@@ -192,7 +192,7 @@ No inline styles.
 
 CSS Modules only.
 
-Flex only — no grid in styles.
+Flex only - no grid in styles.
 
 Typography policy: token-only, --fs-* rem-only, никаких clamp/vw/px/em/%.
 

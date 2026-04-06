@@ -144,9 +144,9 @@ const STR = {
         section_user_subscription: "מנוי משתמש",
         section_card_billing_crud: "חיוב הכרטיס בזמן אמת",
         msg_user_subscription_help:
-            'טיפ: שינוי מנוי משתמש לא משנה כרטיסים מיד — אחרי זה עושים "סנכרן מהמשתמש".',
+            'טיפ: שינוי מנוי משתמש לא משנה כרטיסים מיד - אחרי זה עושים "סנכרן מהמשתמש".',
         msg_card_billing_help:
-            "טיפ: חיוב כרטיס משפיע מיד. אם יש הטבה ידנית — היא יכולה להסתיר את החיוב עד שמנקים אותה.",
+            "טיפ: חיוב כרטיס משפיע מיד. אם יש הטבה ידנית - היא יכולה להסתיר את החיוב עד שמנקים אותה.",
         label_user_id: "מזהה משתמש",
         label_card_id_crud: "מזהה כרטיס",
         label_plan_crud: "מסלול",
@@ -198,20 +198,20 @@ const STR = {
         hint_override_plan:
             'נותן מסלול ידני זמני לכרטיס. כדי לחזור למצב רגיל צריך "נקה הטבה ידנית".',
         hint_card_tier:
-            "קובע רמת פיצ׳רים לכרטיס הזה. זה גובר על הכל — לזכור להסיר כשמסיימים.",
+            "קובע רמת פיצ׳רים לכרטיס הזה. זה גובר על הכל - לזכור להסיר כשמסיימים.",
         hint_user_tier:
             "קובע רמת פיצ׳רים לכל הכרטיסים של המשתמש. כרטיס עם רמה ידנית עדיין גובר.",
         hint_enable_subscription:
-            'נותן מנוי למשתמש עד תאריך. כדי שזה ישפיע על כרטיסים — צריך גם ללחוץ "סנכרן מהמשתמש".',
+            'נותן מנוי למשתמש עד תאריך. כדי שזה ישפיע על כרטיסים - צריך גם ללחוץ "סנכרן מהמשתמש".',
         hint_revoke_subscription:
-            'מבטל את המנוי של המשתמש ומחזיר לחינם. כדי לעדכן כרטיסים — צריך גם "סנכרן מהמשתמש".',
+            'מבטל את המנוי של המשתמש ומחזיר לחינם. כדי לעדכן כרטיסים - צריך גם "סנכרן מהמשתמש".',
         hint_enable_card_billing:
             "נותן פרימיום לכרטיס הזה עד תאריך. ההשפעה מיידית (פרסום, כתובת קצרה, SEO וסקריפטים, אנליטיקה).",
         hint_revoke_card_billing: "מבטל פרימיום בכרטיס הזה ומחזיר לחינם מיד.",
         hint_sync_from_user:
-            "מעתיק את מצב המנוי של המשתמש לכרטיס. אם התשלום שייך לארגון/משלם אחר — סמן «הגדרת משלם לארגון» לפני הסנכרון.",
+            "מעתיק את מצב המנוי של המשתמש לכרטיס. אם התשלום שייך לארגון/משלם אחר - סמן «הגדרת משלם לארגון» לפני הסנכרון.",
         hint_clear_override:
-            "מסיר הטבה ידנית. אחרי הניקוי — הכרטיס חוזר להתנהג לפי החיוב האמיתי שלו.",
+            "מסיר הטבה ידנית. אחרי הניקוי - הכרטיס חוזר להתנהג לפי החיוב האמיתי שלו.",
 
         label_payer_type: "סוג משלם",
         label_payer_note: "הערת משלם",
@@ -234,7 +234,7 @@ const STR = {
             "מציג מצב חיוב בפועל: מסלול תשלום (free/monthly/yearly), גישה פעילה (entitled), שולם (isPaid), רמת פיצ'רים (free/basic/premium) + מקור + תוקף, סיום ניסיון, וסטטוס תשלום מפורט.",
         legend_provenance: "מקור הסטטוס",
         legend_provenance_desc:
-            "בתוך טאב חיוב — מציג נתונים גולמיים: חיוב גולמי (סטטוס · מסלול · תשלום עד), משלם גולמי (סוג · מקור · עודכן), והיסטוריית בקרה עם פעולה, מצב, מנהל, וסיבה.",
+            "בתוך טאב חיוב - מציג נתונים גולמיים: חיוב גולמי (סטטוס · מסלול · תשלום עד), משלם גולמי (סוג · מקור · עודכן), והיסטוריית בקרה עם פעולה, מצב, מנהל, וסיבה.",
         legend_tab_actions: "טאב «פעולות מנהל»",
         legend_tab_actions_items:
             "הארכת ניסיון (ימים / תאריך מדויק), הטבת מסלול ידנית, רמת פיצ'רים לכרטיס, רמת פיצ'רים למשתמש (רק אם הכרטיס בבעלות משתמש), אנליטיקס פרימיום (הפעלה/כיבוי).",
@@ -244,16 +244,16 @@ const STR = {
         legend_billing_crud: "פאנל «ניהול חיובים»",
         legend_billing_crud_desc: "פאנל ימני נפרד עם שתי יחידות:",
         legend_user_sub:
-            "מנוי משתמש — הגדרת מסלול + תוקף ברמת המשתמש. לא משפיע ישירות על כרטיס עד ביצוע סנכרון.",
+            "מנוי משתמש - הגדרת מסלול + תוקף ברמת המשתמש. לא משפיע ישירות על כרטיס עד ביצוע סנכרון.",
         legend_card_billing:
-            "חיוב כרטיס (מקור אמת) — קובע את חיוב הכרטיס ומשפיע מיידית על החיוב בפועל. כולל: מסלול, תשלום עד, סוג משלם, הערת משלם, סנכרון מהמשתמש, הגדרת משלם לארגון, וניקוי הטבה ידנית.",
+            "חיוב כרטיס (מקור אמת) - קובע את חיוב הכרטיס ומשפיע מיידית על החיוב בפועל. כולל: מסלול, תשלום עד, סוג משלם, הערת משלם, סנכרון מהמשתמש, הגדרת משלם לארגון, וניקוי הטבה ידנית.",
         legend_what_affects_what_title: "מה משפיע על מה?",
         legend_what_affects_what_tier:
             "רמת פיצ׳רים: כרטיס (ידני) → משתמש (ידני) → תשלום → חינם",
         legend_what_affects_what_billing:
             "מסלול תשלום בפועל: הטבה ידנית → חיוב כרטיס → סנכרון מהמשתמש",
         legend_what_affects_what_rules:
-            "כללי אצבע: אחרי שינוי מנוי משתמש מסנכרנים; אם יש הטבה ידנית — מנקים כדי לחזור לרגיל",
+            "כללי אצבע: אחרי שינוי מנוי משתמש מסנכרנים; אם יש הטבה ידנית - מנקים כדי לחזור לרגיל",
         legend_slug_note:
             "סלאג: כתובת קצרה. כרטיסים אישיים: /card/:slug. כרטיסי ארגון: /c/:orgSlug/:slug.",
         legend_ltr_note:
@@ -1503,7 +1503,7 @@ export default function Admin() {
         focusTabInList(tabListRef.current, nextId);
     }
 
-    /* ---- shared danger tab body (card) — used by mobile + desktop ---- */
+    /* ---- shared danger tab body (card) - used by mobile + desktop ---- */
     function renderCardDangerTab() {
         if (!selectedCard) return null;
         return (
@@ -1582,7 +1582,7 @@ export default function Admin() {
         );
     }
 
-    /* ---- shared analytics premium toggle — used by mobile + desktop ---- */
+    /* ---- shared analytics premium toggle - used by mobile + desktop ---- */
     function renderAnalyticsPremiumToggle() {
         return (
             <>
@@ -2055,7 +2055,7 @@ export default function Admin() {
                                                                     {c
                                                                         .ownerSummary
                                                                         .email ||
-                                                                        "—"}
+                                                                        "-"}
                                                                 </span>
                                                             </span>
                                                         ) : c?.ownerSummary
@@ -2071,7 +2071,7 @@ export default function Admin() {
                                                                 )}
                                                             </span>
                                                         ) : (
-                                                            "—"
+                                                            "-"
                                                         )}
                                                     </td>
                                                     <td data-label="סטטוס">
@@ -2339,7 +2339,7 @@ export default function Admin() {
                                                                 )}
                                                             </span>
                                                         ) : (
-                                                            "—"
+                                                            "-"
                                                         )}
                                                     </td>
                                                     <td data-label="תפקיד">
@@ -3030,7 +3030,7 @@ export default function Admin() {
                                                                         dir="ltr"
                                                                     >
                                                                         {selectedProvenanceSource ||
-                                                                            "—"}
+                                                                            "-"}
                                                                     </span>
                                                                 </span>
 
@@ -3129,7 +3129,7 @@ export default function Admin() {
                                                                         ?.billing
                                                                         ?.payer
                                                                         ? `type=${selectedCard.billing.payer.type || ""} · source=${selectedCard.billing.payer.source || ""}${selectedCard.billing.payer.updatedAt ? ` · updatedAt=${selectedCard.billing.payer.updatedAt}` : ""}`
-                                                                        : "—"}
+                                                                        : "-"}
                                                                 </span>
                                                             </dd>
 
@@ -3863,7 +3863,7 @@ export default function Admin() {
                                                                 {billingUserExpiresAtNorm.ok &&
                                                                 billingUserExpiresAtNorm.isoZ
                                                                     ? billingUserExpiresAtNorm.isoZ
-                                                                    : "—"}
+                                                                    : "-"}
                                                             </span>
                                                         </span>
                                                         <br />
@@ -3878,7 +3878,7 @@ export default function Admin() {
                                                                               "Asia/Jerusalem",
                                                                       },
                                                                   )
-                                                                : "—"}
+                                                                : "-"}
                                                         </span>
                                                     </>
                                                 }
@@ -4116,7 +4116,7 @@ export default function Admin() {
                                                             : billingCards.length >
                                                                 1
                                                               ? "בחר כרטיס"
-                                                              : "—"}
+                                                              : "-"}
                                                     </option>
                                                     {(Array.isArray(
                                                         billingCards,
@@ -4165,7 +4165,7 @@ export default function Admin() {
                                                         }
 
                                                         const label = plan
-                                                            ? `${scopeLabel} — ${plan}`
+                                                            ? `${scopeLabel} - ${plan}`
                                                             : scopeLabel;
 
                                                         return (
@@ -4287,7 +4287,7 @@ export default function Admin() {
                                                                 {billingCardPaidUntilNorm.ok &&
                                                                 billingCardPaidUntilNorm.isoZ
                                                                     ? billingCardPaidUntilNorm.isoZ
-                                                                    : "—"}
+                                                                    : "-"}
                                                             </span>
                                                         </span>
                                                         <br />
@@ -4302,7 +4302,7 @@ export default function Admin() {
                                                                               "Asia/Jerusalem",
                                                                       },
                                                                   )
-                                                                : "—"}
+                                                                : "-"}
                                                         </span>
                                                     </>
                                                 }
@@ -5411,7 +5411,7 @@ export default function Admin() {
                                                                         dir="ltr"
                                                                     >
                                                                         {selectedProvenanceSource ||
-                                                                            "—"}
+                                                                            "-"}
                                                                     </span>
                                                                 </span>
 
@@ -5510,7 +5510,7 @@ export default function Admin() {
                                                                         ?.billing
                                                                         ?.payer
                                                                         ? `type=${selectedCard.billing.payer.type || ""} · source=${selectedCard.billing.payer.source || ""}${selectedCard.billing.payer.updatedAt ? ` · updatedAt=${selectedCard.billing.payer.updatedAt}` : ""}`
-                                                                        : "—"}
+                                                                        : "-"}
                                                                 </span>
                                                             </dd>
 
@@ -6747,7 +6747,7 @@ export default function Admin() {
                                                                 ? formatDate(
                                                                       selectedUser.updatedAt,
                                                                   )
-                                                                : "—"}
+                                                                : "-"}
                                                         </dd>
 
                                                         <dt
@@ -6774,7 +6774,7 @@ export default function Admin() {
                                                                     )}
                                                                 </span>
                                                             ) : (
-                                                                "—"
+                                                                "-"
                                                             )}
                                                         </dd>
                                                     </dl>
@@ -6819,7 +6819,7 @@ export default function Admin() {
                                                                 ? tierHe(
                                                                       selectedUser.adminTier,
                                                                   )
-                                                                : "—"}
+                                                                : "-"}
                                                             {selectedUser?.adminTierUntil
                                                                 ? ` · עד ${formatDate(selectedUser.adminTierUntil)}`
                                                                 : ""}

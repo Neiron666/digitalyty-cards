@@ -1199,7 +1199,7 @@ export async function createCard(req, res) {
             }
         }
 
-        // Batch 7A: gallery is fully premium-only — strip on free.
+        // Batch 7A: gallery is fully premium-only - strip on free.
         if (!hasAccess(createFeaturePlan, "gallery")) delete data.gallery;
 
         try {
@@ -1288,7 +1288,7 @@ export async function createCard(req, res) {
             code: "ANON_CONSENT_REQUIRED",
         });
     }
-    // Strip consent from data — evidence is persisted via dedicated schema fields.
+    // Strip consent from data - evidence is persisted via dedicated schema fields.
     delete data.consent;
 
     // Enterprise policy: anonymous users must never set a custom slug.
@@ -1341,7 +1341,7 @@ export async function createCard(req, res) {
         }
     }
 
-    // Batch 7A: gallery is fully premium-only — strip on free (anonymous = always free).
+    // Batch 7A: gallery is fully premium-only - strip on free (anonymous = always free).
     if (!hasAccess("free", "gallery")) delete data.gallery;
 
     try {
@@ -1482,7 +1482,7 @@ export async function updateCard(req, res) {
             : null;
 
     // Gate: advanced SEO requires premium.
-    // Auto-computed title/description are NOT advanced — they remain free.
+    // Auto-computed title/description are NOT advanced - they remain free.
     if (
         featurePlan !== null &&
         patch.seo &&
@@ -1772,7 +1772,7 @@ export async function updateCard(req, res) {
         description: resolvedDescription || computedSeo.description,
     };
 
-    // Batch 7A: gallery is fully premium-only — strip from patch on free.
+    // Batch 7A: gallery is fully premium-only - strip from patch on free.
     if (
         featurePlan !== null &&
         !hasAccess(featurePlan, "gallery") &&

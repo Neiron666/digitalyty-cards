@@ -3,7 +3,7 @@ import mongoose from "mongoose";
 // One-active-per-user reset intent carrier.
 // The unique userId index (applied via migration script) enforces the one-active guarantee.
 // tokenHash is intentionally absent until the mail worker generates it at delivery time;
-// it must NEVER be stored with a plaintext raw token — only SHA-256(rawToken) is written.
+// it must NEVER be stored with a plaintext raw token - only SHA-256(rawToken) is written.
 const ActivePasswordResetSchema = new mongoose.Schema(
     {
         userId: {
@@ -14,7 +14,7 @@ const ActivePasswordResetSchema = new mongoose.Schema(
         },
         // Absent until worker sets it at delivery time.
         // The unique partial index on tokenHash (applied via migration) covers only documents
-        // where tokenHash is present — this avoids duplicate-key errors on the absent/undefined state.
+        // where tokenHash is present - this avoids duplicate-key errors on the absent/undefined state.
         tokenHash: {
             type: String,
         },
@@ -27,7 +27,7 @@ const ActivePasswordResetSchema = new mongoose.Schema(
             default: "pending-delivery",
             index: true,
         },
-        // Overall TTL for this reset intent — set by /forgot handler.
+        // Overall TTL for this reset intent - set by /forgot handler.
         // Both the cooldown check and the /reset handler gate on this field.
         expiresAt: {
             type: Date,

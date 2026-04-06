@@ -70,7 +70,7 @@ export default function VerifyEmail() {
                     </Button>
                     {resendDone ? (
                         <p className={styles.hint}>
-                            אם החשבון קיים — נשלח אימייל חדש.
+                            אם החשבון קיים - נשלח אימייל חדש.
                         </p>
                     ) : null}
                 </div>
@@ -131,7 +131,7 @@ export default function VerifyEmail() {
                 </Button>
                 {resendDone ? (
                     <p className={styles.hint}>
-                        אם החשבון קיים — נשלח אימייל חדש.
+                        אם החשבון קיים - נשלח אימייל חדש.
                     </p>
                 ) : null}
             </div>

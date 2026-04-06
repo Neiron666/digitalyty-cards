@@ -1,11 +1,11 @@
 /*
- * motion-scroll.module.css — Scroll-linked motion presets (v2 layer).
+ * motion-scroll.module.css - Scroll-linked motion presets (v2 layer).
  *
  * Driven by --scroll-progress (0..1) written by useScrollProgress hook.
  * For NEW marketing/app-shell sections only.
  * Card-boundary and preview wrapper are OUT OF SCOPE.
  *
- * Architecture rule — transform conflict:
+ * Architecture rule - transform conflict:
  *   v1 reveal presets (fadeUp, scaleIn) use `transform`.
  *   v2 scroll presets (scrollZoomSoft, scrollParallaxSoft) also use `transform`.
  *   Do NOT stack v1 and v2 on the SAME DOM node.

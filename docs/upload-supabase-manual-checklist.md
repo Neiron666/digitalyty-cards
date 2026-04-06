@@ -1,17 +1,17 @@
-# Manual Integration Checklist — Supabase Upload Chain
+# Manual Integration Checklist - Supabase Upload Chain
 
 This is a minimal manual checklist to validate the upload chain locally (no route changes required).
 
 ## Prereqs
 
--   Backend `.env` contains valid:
-    -   `SUPABASE_URL`
-    -   `SUPABASE_SERVICE_ROLE_KEY` (server-only)
-    -   `SUPABASE_STORAGE_BUCKET`
--   Supabase bucket is **PUBLIC**.
--   Run apps:
-    -   Backend: `cd backend` → `npm install` → `npm run dev` (or your start script)
-    -   Frontend: `cd frontend` → `npm install` → `npm run dev`
+- Backend `.env` contains valid:
+    - `SUPABASE_URL`
+    - `SUPABASE_SERVICE_ROLE_KEY` (server-only)
+    - `SUPABASE_STORAGE_BUCKET`
+- Supabase bucket is **PUBLIC**.
+- Run apps:
+    - Backend: `cd backend` → `npm install` → `npm run dev` (or your start script)
+    - Frontend: `cd frontend` → `npm install` → `npm run dev`
 
 ## 1) Gallery upload
 
@@ -23,10 +23,10 @@ This is a minimal manual checklist to validate the upload chain locally (no rout
 
 Expected:
 
--   Card JSON in Mongo has `gallery[]` containing either:
-    -   a legacy string URL (older cards), or
-    -   an object `{ url, path, createdAt }` for newly uploaded items.
--   Backend response for upload returns `{ url, path, total, limit }`.
+- Card JSON in Mongo has `gallery[]` containing either:
+    - a legacy string URL (older cards), or
+    - an object `{ url, path, createdAt }` for newly uploaded items.
+- Backend response for upload returns `{ url, path, total, limit }`.
 
 ## 2) Background upload
 
@@ -35,8 +35,8 @@ Expected:
 
 Expected:
 
--   Frontend sends `kind=background` to `POST /api/uploads/asset`.
--   Backend stores path hints in `card.design.backgroundImagePath` (and `coverImagePath`).
+- Frontend sends `kind=background` to `POST /api/uploads/asset`.
+- Backend stores path hints in `card.design.backgroundImagePath` (and `coverImagePath`).
 
 ## 3) Avatar upload
 
@@ -45,8 +45,8 @@ Expected:
 
 Expected:
 
--   Frontend sends `kind=avatar` to `POST /api/uploads/asset`.
--   Backend stores path hints in `card.design.avatarImagePath` (and `logoPath`).
+- Frontend sends `kind=avatar` to `POST /api/uploads/asset`.
+- Backend stores path hints in `card.design.avatarImagePath` (and `logoPath`).
 
 ## 4) Replace cleanup (best-effort)
 
@@ -64,8 +64,8 @@ Avatar:
 
 Notes:
 
--   Cleanup only works when the previous upload already stored a `design.*Path` field.
--   Failures should not block upload; check backend logs for `[supabase] replace cleanup failed`.
+- Cleanup only works when the previous upload already stored a `design.*Path` field.
+- Failures should not block upload; check backend logs for `[supabase] replace cleanup failed`.
 
 ## 5) Delete card cleanup
 
@@ -75,10 +75,10 @@ Notes:
 
 Expected:
 
--   Backend deletes Supabase objects by collecting paths from:
-    -   `gallery[]` object entries
-    -   `uploads[]`
-    -   `design.*Path` fields
+- Backend deletes Supabase objects by collecting paths from:
+    - `gallery[]` object entries
+    - `uploads[]`
+    - `design.*Path` fields
 
 ## 6) Gallery removal cleanup (server-side reconciliation)
 
@@ -95,9 +95,9 @@ underlying Supabase object, without any new endpoints.
 
 Expected:
 
--   The Supabase object at the removed item’s `path` is deleted.
--   `uploads[]` is pruned (no entry with that deleted `path`).
--   `gallery[]` matches what’s left.
+- The Supabase object at the removed item’s `path` is deleted.
+- `uploads[]` is pruned (no entry with that deleted `path`).
+- `gallery[]` matches what’s left.
 
 ### B) Legacy string format (no `path`)
 
@@ -106,8 +106,8 @@ Expected:
 
 Expected:
 
--   No Supabase deletion attempt is made (there is no safe `path`).
--   Mongo updates cleanly.
+- No Supabase deletion attempt is made (there is no safe `path`).
+- Mongo updates cleanly.
 
 ### C) Patch without `gallery`
 
@@ -115,5 +115,5 @@ Expected:
 
 Expected:
 
--   Gallery reconciliation does not run.
--   No Supabase delete call is performed.
+- Gallery reconciliation does not run.
+- No Supabase delete call is performed.

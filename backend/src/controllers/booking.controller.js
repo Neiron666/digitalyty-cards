@@ -241,7 +241,7 @@ export async function getPublicAvailability(req, res) {
         const todayKey = todayIl.toFormat("yyyy-LL-dd");
         const nowMinutesIl = todayIl.hour * 60 + todayIl.minute;
 
-        // Optional startDate — must be today or future (Israel-local).
+        // Optional startDate - must be today or future (Israel-local).
         const startDateRaw = String(req.query.startDate || "").trim();
         let baseUtc = nowUtcDate;
         if (startDateRaw) {
@@ -594,7 +594,7 @@ async function expireIfNeeded(booking) {
 
     if (end > now) return booking;
 
-    // Slot time passed without owner action — transition to expired.
+    // Slot time passed without owner action - transition to expired.
     await Booking.updateOne(
         { _id: booking._id, status: "pending" },
         { $set: { status: "expired" } },

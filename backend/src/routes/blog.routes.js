@@ -1,5 +1,5 @@
 /**
- * Blog — public routes (read-only, no auth required).
+ * Blog - public routes (read-only, no auth required).
  */
 
 import { Router } from "express";

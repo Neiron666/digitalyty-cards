@@ -31,7 +31,7 @@ async function checkDuplicateSlugs(verbose) {
 
     if (dupes.length > 0) {
         console.log(
-            "DUPLICATES FOUND — unique slug index cannot be created safely:",
+            "DUPLICATES FOUND - unique slug index cannot be created safely:",
         );
         for (const d of dupes) {
             console.log(`  slug="${d._id}"  count=${d.count}`);
@@ -75,18 +75,18 @@ async function ensureIndexes({ dryRun, verbose }) {
     const wantSlug = "slug_1";
 
     if (byName.has(wantSlug)) {
-        console.log(`${wantSlug} already exists — no-op`);
+        console.log(`${wantSlug} already exists - no-op`);
     } else {
         const hasDuplicates = await checkDuplicateSlugs(verbose);
 
         if (hasDuplicates) {
             if (dryRun) {
                 console.log(
-                    `[dry-run] duplicates detected — apply would be BLOCKED until duplicates are resolved`,
+                    `[dry-run] duplicates detected - apply would be BLOCKED until duplicates are resolved`,
                 );
             } else {
                 console.error(
-                    `BLOCKED: cannot create unique index ${wantSlug} — resolve duplicate slug values first`,
+                    `BLOCKED: cannot create unique index ${wantSlug} - resolve duplicate slug values first`,
                 );
                 process.exitCode = 2;
                 return;
@@ -114,7 +114,7 @@ async function ensureIndexes({ dryRun, verbose }) {
     const wantCompound = "status_1_publishedAt_-1";
 
     if (byName.has(wantCompound)) {
-        console.log(`${wantCompound} already exists — no-op`);
+        console.log(`${wantCompound} already exists - no-op`);
     } else {
         if (dryRun || verbose) {
             console.log(
@@ -137,7 +137,7 @@ async function ensureIndexes({ dryRun, verbose }) {
     const wantPrevSlugs = "previousSlugs_1";
 
     if (byName.has(wantPrevSlugs)) {
-        console.log(`${wantPrevSlugs} already exists — no-op`);
+        console.log(`${wantPrevSlugs} already exists - no-op`);
     } else {
         if (dryRun || verbose) {
             console.log(

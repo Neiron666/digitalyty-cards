@@ -44,9 +44,9 @@ Implementation proof:
 
 Required Netlify env vars:
 
-- `CARDIGO_GATE_PASSWORD` — the temporary password (do not commit).
-- `CARDIGO_GATE_COOKIE_VALUE` — random opaque cookie value (treat as secret).
-- `CARDIGO_GATE_DEBUG` — optional, set to `1` only for debugging parsing issues.
+- `CARDIGO_GATE_PASSWORD` - the temporary password (do not commit).
+- `CARDIGO_GATE_COOKIE_VALUE` - random opaque cookie value (treat as secret).
+- `CARDIGO_GATE_DEBUG` - optional, set to `1` only for debugging parsing issues.
 
 ### 3) Netlify Function: `proxy` (cookie check + backend proxy)
 
@@ -69,7 +69,7 @@ Implementation proof:
 
 Required Netlify env vars:
 
-- `CARDIGO_PROXY_SHARED_SECRET` — shared secret used to authenticate Netlify → backend.
+- `CARDIGO_PROXY_SHARED_SECRET` - shared secret used to authenticate Netlify → backend.
 
 ### 4) Backend origin lock (Render): shared-secret middleware
 
@@ -84,7 +84,7 @@ Implementation proof:
 
 Required Render env vars:
 
-- `CARDIGO_PROXY_SHARED_SECRET` — must match the Netlify value.
+- `CARDIGO_PROXY_SHARED_SECRET` - must match the Netlify value.
 
 ## Expected error codes (debug checklist)
 
@@ -199,14 +199,14 @@ This gate is intentionally temporary. Removing it should be a **deliberate** cha
 
 To “open” the API you must deliberately remove the gate/auth and decide what to do about Netlify routing (redirects/proxy) and the backend origin-lock policy (keep locked vs make public).
 
-### Step 0 — Decide desired security model
+### Step 0 - Decide desired security model
 
 Choose one of these target states:
 
 - **A) Keep origin locked, remove password gate**: users access APIs via `cardigo.co.il` only, but without `/gate.html`.
 - **B) Allow direct backend origin access**: remove origin lock (not recommended unless you have another control layer).
 
-### Step 1 — Remove the password gate (Netlify side)
+### Step 1 - Remove the password gate (Netlify side)
 
 - Remove `/gate.html` usage in operations (optional: delete the file later).
 - Remove `auth` function and all `CARDIGO_GATE_*` env vars.
@@ -217,7 +217,7 @@ Acceptance criteria:
 - `/api/health` works without prior password.
 - No `GATE_REQUIRED`/`GATE_MISCONFIG` responses.
 
-### Step 2 — Replace gate with real auth (product-grade)
+### Step 2 - Replace gate with real auth (product-grade)
 
 Options (pick based on product requirements):
 
@@ -229,7 +229,7 @@ Acceptance criteria:
 - Auth requirements are enforced per-route and align with backend policy.
 - No reliance on a shared password for gating.
 
-### Step 3 — Keep or remove origin lock (Render side)
+### Step 3 - Keep or remove origin lock (Render side)
 
 If you keep origin lock:
 

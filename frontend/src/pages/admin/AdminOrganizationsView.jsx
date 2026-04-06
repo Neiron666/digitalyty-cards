@@ -861,7 +861,7 @@ export default function AdminOrganizationsView() {
                                                                   ).toLocaleDateString(
                                                                       "he-IL",
                                                                   )
-                                                                : "—"}
+                                                                : "-"}
                                                         </td>
                                                         <td
                                                             className={

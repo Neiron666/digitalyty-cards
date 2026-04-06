@@ -1,4 +1,4 @@
-/* ── Notice — inline feedback (public surfaces) ── */
+/* ── Notice - inline feedback (public surfaces) ── */
 
 .notice {
     display: flex;
@@ -36,7 +36,7 @@
     color: inherit;
 }
 
-/* ── icon — prevents shrink on long text ── */
+/* ── icon - prevents shrink on long text ── */
 .icon {
     flex-shrink: 0;
 }

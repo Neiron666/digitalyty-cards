@@ -183,7 +183,7 @@
     border: 1px dashed var(--border, rgba(0, 0, 0, 0.1));
 }
 
-/* Available — bookable (accent border only, no fill) */
+/* Available - bookable (accent border only, no fill) */
 .calCellAvailable {
     cursor: pointer;
     font-weight: 600;

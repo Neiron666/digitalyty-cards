@@ -8,7 +8,7 @@ import { sanitizeLeadInput } from "../utils/leadSanitize.js";
 import { isValidObjectId } from "../utils/orgMembership.util.js";
 import { getPersonalOrgId } from "../utils/personalOrg.util.js";
 
-// Fake ObjectId returned to bots (honeypot) — looks valid, never in DB.
+// Fake ObjectId returned to bots (honeypot) - looks valid, never in DB.
 const FAKE_LEAD_ID = "000000000000000000000000";
 
 export async function createLead(req, res) {
@@ -119,7 +119,7 @@ async function getOwnerCardIds(userId) {
     return cards;
 }
 
-// ── GET /api/leads/mine — cursor-paginated leads for owner ─────────
+// ── GET /api/leads/mine - cursor-paginated leads for owner ─────────
 
 const DEFAULT_PAGE_SIZE = 20;
 const MAX_PAGE_SIZE = 50;
@@ -412,7 +412,7 @@ export async function updateLeadFlags(req, res) {
     }
 }
 
-// ── DELETE /api/leads/:id — hard delete (trash only) ───────────────
+// ── DELETE /api/leads/:id - hard delete (trash only) ───────────────
 
 export async function hardDeleteLead(req, res) {
     try {

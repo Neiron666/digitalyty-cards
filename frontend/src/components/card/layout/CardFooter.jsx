@@ -29,7 +29,7 @@ function buildShareUrl(publicPath) {
     return `${origin}${normalized}`;
 }
 
-// Best-effort clipboard copy — does not block primary link navigation
+// Best-effort clipboard copy - does not block primary link navigation
 function tryCopyToClipboard(url) {
     if (!url) return;
     try {
@@ -40,7 +40,7 @@ function tryCopyToClipboard(url) {
             navigator.clipboard.writeText(url).catch(() => {});
         }
     } catch {
-        // best effort — ignore
+        // best effort - ignore
     }
 }
 

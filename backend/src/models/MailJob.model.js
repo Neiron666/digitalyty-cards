@@ -1,7 +1,7 @@
 import mongoose from "mongoose";
 
 // Durable delivery intent carrier for the password-reset outbox.
-// Stores userId only — no toEmail snapshot, no rawToken, no resetLink, no tokenHash.
+// Stores userId only - no toEmail snapshot, no rawToken, no resetLink, no tokenHash.
 // The worker resolves User.email at send time via indexed findById.
 const MailJobSchema = new mongoose.Schema(
     {

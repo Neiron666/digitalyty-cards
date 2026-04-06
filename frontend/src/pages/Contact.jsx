@@ -48,7 +48,7 @@ const CONTACT_FAQ = [
     },
     {
         q: "מה צריך להכין לפני שפונים?",
-        a: "שום דבר מיוחד. אם יש לכם שאלה ספציפית או פרטים על העסק — מצוין, אבל אפשר גם סתם לשאול.",
+        a: "שום דבר מיוחד. אם יש לכם שאלה ספציפית או פרטים על העסק - מצוין, אבל אפשר גם סתם לשאול.",
     },
 ];
 
@@ -114,7 +114,7 @@ export default function Contact() {
                 pagePath: "/contact",
             });
         } catch {
-            /* best-effort — Netlify handles the rest */
+            /* best-effort - Netlify handles the rest */
         } finally {
             setSubmitting(false);
         }
@@ -124,7 +124,7 @@ export default function Contact() {
         <main data-page="site">
             <SeoHelmet
                 title="צור קשר | Cardigo"
-                description="צרו קשר עם Cardigo לשאלות על כרטיס ביקור דיגיטלי לעסקים — מחירים, התאמה ודרכי התחלה."
+                description="צרו קשר עם Cardigo לשאלות על כרטיס ביקור דיגיטלי לעסקים - מחירים, התאמה ודרכי התחלה."
                 canonicalUrl={`${ORIGIN}/contact`}
                 url={`${ORIGIN}/contact`}
                 image={`${ORIGIN}/images/og/cardigo-home-og-1200x630.jpg`}
@@ -147,7 +147,7 @@ export default function Contact() {
                         <img
                             className={styles.heroImg}
                             src="/images/contact/hero/contact-cardigo-digital-bussines-card.webp"
-                            alt="צור קשר עם Cardigo — כרטיס ביקור דיגיטלי לעסקים"
+                            alt="צור קשר עם Cardigo - כרטיס ביקור דיגיטלי לעסקים"
                             width="600"
                             height="400"
                             loading="eager"
@@ -206,7 +206,7 @@ export default function Contact() {
                                     <img
                                         className={styles.valueBridgeImg}
                                         src="/images/contact/value-bridge/כרטיס-ביקור-דיגיטלי-כרדיגו-שאלות-לפני-ההתחלה.webp"
-                                        alt="שאלות לפני ההתחלה — כרטיס ביקור דיגיטלי Cardigo"
+                                        alt="שאלות לפני ההתחלה - כרטיס ביקור דיגיטלי Cardigo"
                                         width="400"
                                         height="267"
                                         loading="lazy"
@@ -236,7 +236,7 @@ export default function Contact() {
                                     <img
                                         className={styles.valueBridgeImg}
                                         src="/images/contact/value-bridge/כרטיס-ביקור-דיגיטלי-כרדיגו-מחירים-ומסלולים.webp"
-                                        alt="מחירים ומסלולים — כרטיס ביקור דיגיטלי Cardigo"
+                                        alt="מחירים ומסלולים - כרטיס ביקור דיגיטלי Cardigo"
                                         width="400"
                                         height="267"
                                         loading="lazy"
@@ -259,7 +259,7 @@ export default function Contact() {
                                     <img
                                         className={styles.valueBridgeImg}
                                         src="/images/contact/value-bridge/כרטיס-ביקור-דיגיטלי-כרדיגו-התאמה-לעסק-או-לצוות.webp"
-                                        alt="התאמה לעסק או לצוות — כרטיס ביקור דיגיטלי Cardigo"
+                                        alt="התאמה לעסק או לצוות - כרטיס ביקור דיגיטלי Cardigo"
                                         width="400"
                                         height="267"
                                         loading="lazy"
@@ -557,7 +557,7 @@ export default function Contact() {
                 <div className={pub.sectionWrap}>
                     <h2 className={pub.h2Gold}>שאלות נפוצות</h2>
                     <p className={pub.sectionLead}>
-                        לפני שפונים — הנה כמה תשובות לשאלות שעולות הכי הרבה.
+                        לפני שפונים - הנה כמה תשובות לשאלות שעולות הכי הרבה.
                     </p>
 
                     <div className={pub.faq}>

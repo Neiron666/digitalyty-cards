@@ -1,4 +1,4 @@
-# Cardigo — Enterprise Master Handoff / Email Block Closure
+# Cardigo - Enterprise Master Handoff / Email Block Closure
 
 _Дата: 2026-04-03_
 
@@ -32,7 +32,7 @@ Dated-sibling handoff, закрывающий bounded workstream:
 
 При self-delete backend записывает **tombstone** (HMAC-SHA256 хэш email) в коллекцию `deletedemailblocks` **до** начала destructive cascade (удаление карточки, медиа, данных пользователя).
 
-Если cascade падает частично — email всё равно заблокирован (fail-safe).
+Если cascade падает частично - email всё равно заблокирован (fail-safe).
 
 ### 2.2 Blocked re-registration
 
@@ -85,12 +85,12 @@ Dated-sibling handoff, закрывающий bounded workstream:
 
 ### 5.1 Environment
 
-- `EMAIL_BLOCK_SECRET` — обязателен при старте (fail-fast). Уже настроен в `.env` (local) и production.
+- `EMAIL_BLOCK_SECRET` - обязателен при старте (fail-fast). Уже настроен в `.env` (local) и production.
 
 ### 5.2 Index governance
 
 - Collection: `deletedemailblocks`
-- Index: `emailKey_1` (unique) — создан вручную.
+- Index: `emailKey_1` (unique) - создан вручную.
 - Manual governance truth сохранена (`autoIndex: false`, `autoCreate: false`).
 
 ### 5.3 Файлы, изменённые в этом workstream
@@ -125,7 +125,7 @@ Dated-sibling handoff, закрывающий bounded workstream:
 - Tombstone document содержит `emailKey` (HMAC hash), `formerUserId`, `createdAt`.
 - Frontend показывает предупреждение перед удалением и finality-сообщение после.
 - Все sanity scripts остались зелёными.
-- Frontend build — зелёный.
+- Frontend build - зелёный.
 
 ---
 
@@ -138,8 +138,8 @@ Email-block contour (2026-04-03): CLOSED.
 Tombstone: HMAC-SHA256 в deletedemailblocks (EMAIL_BLOCK_SECRET).
 Guards: /register, /signup-link, /signup-consume, /invites/accept.
 Anti-enumeration: сохранена.
-Admin-delete: intentionally NOT included — отдельный future contour.
-Index: deletedemailblocks.emailKey unique — manual governance.
+Admin-delete: intentionally NOT included - отдельный future contour.
+Index: deletedemailblocks.emailKey unique - manual governance.
 Canonical truth: docs/api-security.md §7 "Deleted-email recreation block".
 ```
 

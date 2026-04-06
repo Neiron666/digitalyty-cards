@@ -6,27 +6,27 @@ import styles from "./BlogPost.module.css";
 
 const ORIGIN = import.meta.env.VITE_PUBLIC_ORIGIN || "https://cardigo.co.il";
 
-/** Dedicated blog fallback OG image — served from public/. */
+/** Dedicated blog fallback OG image - served from public/. */
 const BLOG_OG_FALLBACK = `${ORIGIN}/images/blog/fallback/blog-cardigo-bussines-img-fallback.webp`;
 
-/** Local fallback for related-post thumbnails (no ORIGIN prefix — relative). */
+/** Local fallback for related-post thumbnails (no ORIGIN prefix - relative). */
 const BLOG_THUMB_FALLBACK =
     "/images/blog/fallback/blog-cardigo-bussines-img-fallback.webp";
 
-/** Default author avatar — served from public/ (Vite static asset). */
+/** Default author avatar - served from public/ (Vite static asset). */
 const DEFAULT_AUTHOR_AVATAR =
     "/images/blog/author-img/%D7%95%D7%9C%D7%A0%D7%98%D7%99%D7%9F.jpg";
 
 /** SEO-meaningful fallback alt for author avatar. */
-const DEFAULT_AUTHOR_IMG_ALT = "תמונת מחבר המאמר — Cardigo Blog";
+const DEFAULT_AUTHOR_IMG_ALT = "תמונת מחבר המאמר - Cardigo Blog";
 
-/** Hardcoded author name — single-author blog. */
+/** Hardcoded author name - single-author blog. */
 const DEFAULT_AUTHOR_NAME = "ולנטין";
 
-/** Hardcoded author bio line (JSX — Link to homepage via brand name). */
+/** Hardcoded author bio line (JSX - Link to homepage via brand name). */
 const DEFAULT_AUTHOR_BIO = (
     <>
-        מייסד <Link to="/">Cardigo</Link> — כרטיסי ביקור דיגיטליים
+        מייסד <Link to="/">Cardigo</Link> - כרטיסי ביקור דיגיטליים
     </>
 );
 
@@ -88,7 +88,7 @@ function validateLinkUrl(raw) {
         return { href: trimmed, isInternal: true };
     }
 
-    // Absolute URL — parse with URL API (security source of truth)
+    // Absolute URL - parse with URL API (security source of truth)
     let parsed;
     try {
         parsed = new URL(trimmed);
@@ -111,7 +111,7 @@ function validateLinkUrl(raw) {
     return { href: trimmed, isInternal };
 }
 
-/* Regex: token detection only — validation deferred to validateLinkUrl. */
+/* Regex: token detection only - validation deferred to validateLinkUrl. */
 const MD_LINK_RE = /\[([^\[\]]+)\]\(([^()\s]+)\)/g;
 const BARE_URL_RE = /https?:\/\/[^\s<>\[\]"']+/g;
 const TRAILING_PUNCT_RE = /[.,;:!?]+$/;
@@ -120,8 +120,8 @@ const TRAILING_PUNCT_RE = /[.,;:!?]+$/;
  * Convert a paragraph string into an array of React nodes,
  * with safe markdown links and bare-URL auto-links.
  *
- * Pass 1 — find markdown links [text](url)
- * Pass 2 — auto-linkify bare URLs in remaining plain-text segments
+ * Pass 1 - find markdown links [text](url)
+ * Pass 2 - auto-linkify bare URLs in remaining plain-text segments
  */
 function renderLinkedText(text) {
     if (!text) return [text];

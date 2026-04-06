@@ -63,7 +63,7 @@ exports.handler = async function handler(event) {
         }
 
         // Narrow bypass: public analytics write endpoints do not require
-        // the gate cookie. POST only — no other path is bypassed.
+        // the gate cookie. POST only - no other path is bypassed.
         const isPublicAnalyticsBypass =
             String(event.httpMethod || "").toUpperCase() === "POST" &&
             (targetPath === "/api/site-analytics/track" ||

@@ -1,7 +1,7 @@
 /**
  * Client-side image downscale before upload (transport optimization).
  *
- * Server remains SSoT — sharp still canonicalises to WebP.
+ * Server remains SSoT - sharp still canonicalises to WebP.
  * This util only ensures we don't push 4–8 MB raw camera files
  * through Netlify proxy on slow mobile connections.
  *
@@ -97,8 +97,8 @@ function buildFileName(input, ext) {
  * client transport budget.
  *
  * @param {File|Blob} input
- * @param {string}    kind  — "gallery" | "background" | "avatar" | "galleryThumb" | …
- * @returns {Promise<File|Blob>}  — always resolves (never rejects)
+ * @param {string}    kind  - "gallery" | "background" | "avatar" | "galleryThumb" | …
+ * @returns {Promise<File|Blob>}  - always resolves (never rejects)
  */
 export async function prepareImageForUpload(input, kind) {
     const profile = resolveProfile(kind);
@@ -137,7 +137,7 @@ export async function prepareImageForUpload(input, kind) {
         if (!ctx) throw new Error("Canvas 2D context unavailable");
         ctx.drawImage(img, 0, 0, outW, outH);
 
-        // Bounded quality ladder — max 3 attempts
+        // Bounded quality ladder - max 3 attempts
         const QUALITY_STEPS = [
             profile.qualityStart,
             profile.qualityStart - 0.1,

@@ -1,4 +1,4 @@
-# AI Workstream — Technical Handoff
+# AI Workstream - Technical Handoff
 
 > Internal engineering/product handoff for AI-powered content generation features in Cardigo.
 
@@ -54,9 +54,9 @@ The backend supports both modes for all targets. The frontend determines mode au
 
 **Current user-facing exposure:**
 
-- **Full-block CTA** — visible only when the About section is completely empty (no title and no non-empty paragraphs). Since no content exists at that point, mode is always `create`. The CTA is hidden when missing fields ≤ 1.
-- **Title point-action** — always visible. Sends `improve` when a title exists, `create` when empty.
-- **Paragraph point-action** — always visible per paragraph. Sends `improve` when the paragraph has content, `create` when empty.
+- **Full-block CTA** - visible only when the About section is completely empty (no title and no non-empty paragraphs). Since no content exists at that point, mode is always `create`. The CTA is hidden when missing fields ≤ 1.
+- **Title point-action** - always visible. Sends `improve` when a title exists, `create` when empty.
+- **Paragraph point-action** - always visible per paragraph. Sends `improve` when the paragraph has content, `create` when empty.
 
 The backend `improve` capability for `target=full` remains intact and could be re-exposed via frontend changes without any backend work.
 
@@ -64,7 +64,7 @@ The backend `improve` capability for `target=full` remains intact and could be r
 
 1. User clicks an AI generation button (full, title, or per-paragraph).
 2. A **loading** state is shown during the Gemini call.
-3. On success, a **preview** panel appears with the AI suggestion and target-specific label (e.g., "הצעת AI — כותרת").
+3. On success, a **preview** panel appears with the AI suggestion and target-specific label (e.g., "הצעת AI - כותרת").
 4. The user can **Apply** (writes the suggestion into the card form) or **Dismiss** (discards the suggestion).
 5. Applying resets the AI state machine to idle.
 
@@ -172,37 +172,37 @@ Unknown fields in the request body are silently ignored (forward-compatibility).
 
 The `suggestAbout` handler follows this exact sequence:
 
-1. **Feature flag** — if `AI_ABOUT_ENABLED` is off → 503 `AI_DISABLED`.
-2. **Auth** — defense-in-depth check for `userId` → 401 `UNAUTHORIZED`.
-3. **Card lookup** — → 404 `NOT_FOUND`.
-4. **Ownership check** — card must belong to the authenticated user → 404 `NOT_FOUND`.
-5. **Org membership gate** — if card belongs to a non-personal org, verify active membership → 404 `NOT_FOUND` (anti-enumeration).
-6. **Parse + validate request** — parse body, validate `target` and `paragraphIndex` → 400 on invalid.
-7. **Daily rate-limit** — in-memory, tier-aware → 429 `RATE_LIMITED`.
-   7b. **Monthly quota check** — persistent, success-only → 429 `AI_MONTHLY_LIMIT_REACHED`.
-8. **Derive card context** — extract business name, category, slogan from the trusted card document (server-side only, never from the request body).
-   8b. **Business-context readiness gate** — if `businessName` or `category` is empty → 400 `AI_INSUFFICIENT_BUSINESS_CONTEXT`. This is a server-side enforcement layer; the frontend also gates proactively.
-   8c. **Outbound context caps** — existing About content is extracted from the card and bounded before being sent to Gemini: title capped at 500 chars, each paragraph capped at 2,000 chars. This prevents user-controlled content from inflating input token cost.
-9. **Call Gemini** — target-aware structured output generation.
-10. **Increment monthly usage** — success-only, atomic `$inc`. Accounting failure does not block the response.
-11. **Metadata log** — latency, card ID, user ID, model, mode, language, target. No prompt or AI response content is logged.
-12. **Return** — suggestion + fresh quota DTO.
+1. **Feature flag** - if `AI_ABOUT_ENABLED` is off → 503 `AI_DISABLED`.
+2. **Auth** - defense-in-depth check for `userId` → 401 `UNAUTHORIZED`.
+3. **Card lookup** - → 404 `NOT_FOUND`.
+4. **Ownership check** - card must belong to the authenticated user → 404 `NOT_FOUND`.
+5. **Org membership gate** - if card belongs to a non-personal org, verify active membership → 404 `NOT_FOUND` (anti-enumeration).
+6. **Parse + validate request** - parse body, validate `target` and `paragraphIndex` → 400 on invalid.
+7. **Daily rate-limit** - in-memory, tier-aware → 429 `RATE_LIMITED`.
+   7b. **Monthly quota check** - persistent, success-only → 429 `AI_MONTHLY_LIMIT_REACHED`.
+8. **Derive card context** - extract business name, category, slogan from the trusted card document (server-side only, never from the request body).
+   8b. **Business-context readiness gate** - if `businessName` or `category` is empty → 400 `AI_INSUFFICIENT_BUSINESS_CONTEXT`. This is a server-side enforcement layer; the frontend also gates proactively.
+   8c. **Outbound context caps** - existing About content is extracted from the card and bounded before being sent to Gemini: title capped at 500 chars, each paragraph capped at 2,000 chars. This prevents user-controlled content from inflating input token cost.
+9. **Call Gemini** - target-aware structured output generation.
+10. **Increment monthly usage** - success-only, atomic `$inc`. Accounting failure does not block the response.
+11. **Metadata log** - latency, card ID, user ID, model, mode, language, target. No prompt or AI response content is logged.
+12. **Return** - suggestion + fresh quota DTO.
 
 ### 3.5 Auth / ownership / org-gate posture
 
 - The endpoint requires JWT authentication via `requireAuth` middleware.
 - The card must be owned by the authenticated user (exact `card.user === userId` match).
 - For cards belonging to a non-personal organization, `assertActiveOrgAndMembershipOrNotFound` verifies active org membership.
-- All non-match cases return 404 (anti-enumeration posture — does not distinguish "not found" from "not authorized").
+- All non-match cases return 404 (anti-enumeration posture - does not distinguish "not found" from "not authorized").
 
 ### 3.6 Daily anti-abuse limiter
 
 - **Type**: In-memory `Map`, keyed by `userId`.
 - **Window**: 24 hours (rolling from first request).
 - **Limits**: Free = 15/day, Premium = 75/day.
-- **Counts**: All attempts (both successful and failed Gemini calls), but validation failures (400) are excluded — validation runs before the limiter.
+- **Counts**: All attempts (both successful and failed Gemini calls), but validation failures (400) are excluded - validation runs before the limiter.
 - **Sweep**: Every 200 requests, expired entries are cleaned up. If map exceeds 5,000 entries, oldest 1,000 are evicted.
-- **Not persisted**: Resets on server restart. This is intentional — the daily limiter is a safety rail, not a product feature. The monthly quota is the product-visible limit.
+- **Not persisted**: Resets on server restart. This is intentional - the daily limiter is a safety rail, not a product feature. The monthly quota is the product-visible limit.
 
 ### 3.7 Monthly product quota (shared budget)
 
@@ -212,8 +212,8 @@ All three AI generation surfaces (About, FAQ, SEO) share a **single monthly AI b
 - **Scope**: Shared across all generation features. Constants: `AI_GENERATION_FEATURES = [ai_about_generation, ai_seo_generation, ai_faq_generation]`.
 - **Enforcement**: `readTotalMonthlyUsage(userId, periodKey)` aggregates `$sum` of `count` across all feature rows for the user's current month.
 - **Period**: UTC month in `YYYY-MM` format.
-- **Limits**: Free = **10**/month, Premium = **30**/month — shared across all AI surfaces.
-- **Counting**: Success-only — only incremented after a successful Gemini response (step 10). Failed requests, validation errors, and rate-limit hits do not consume quota.
+- **Limits**: Free = **10**/month, Premium = **30**/month - shared across all AI surfaces.
+- **Counting**: Success-only - only incremented after a successful Gemini response (step 10). Failed requests, validation errors, and rate-limit hits do not consume quota.
 - **Per-feature telemetry**: Each successful generation increments the feature-specific `AiUsageMonthly` row (`incrementMonthlyUsage(userId, feature, periodKey)`). This preserves per-surface telemetry while the user-facing budget is shared.
 - **Atomic increment**: Uses `findOneAndUpdate` with `$inc` and `upsert: true`.
 - **Accounting failure tolerance**: If the increment operation fails, the user still receives their suggestion. A console error is logged but the response is not blocked.
@@ -295,8 +295,8 @@ The Gemini integration uses target-specific output budgets, structured JSON sche
 
 ### 4.3 ai.service responsibilities
 
-- `suggestAbout(cardId, payload)` — POST to `/cards/:id/ai/about-suggestion`, returns `{ suggestion, quota }`.
-- `fetchAiQuota(cardId, feature)` — GET to `/cards/:id/ai/quota`, returns quota DTO.
+- `suggestAbout(cardId, payload)` - POST to `/cards/:id/ai/about-suggestion`, returns `{ suggestion, quota }`.
+- `fetchAiQuota(cardId, feature)` - GET to `/cards/:id/ai/quota`, returns quota DTO.
 - Both use the shared `api` Axios instance which handles auth headers and base URL.
 
 ### 4.4 Shared AI quota display
@@ -371,13 +371,13 @@ AI generation requires business name and category to be present on the card. The
 
 The full-block AI CTA has been narrowed to **create-from-empty only**:
 
-- **`bulkEligible`**: `!hasTitleFilled && !hasParagraphsFilled` — true only when both title is empty **and** no non-empty paragraphs exist. If missing fields ≤ 1, the bulk CTA is hidden and the relevant point-action covers the gap.
+- **`bulkEligible`**: `!hasTitleFilled && !hasParagraphsFilled` - true only when both title is empty **and** no non-empty paragraphs exist. If missing fields ≤ 1, the bulk CTA is hidden and the relevant point-action covers the gap.
 - **Create-only copy**: The disclosure text ("✦ ניתן לייצר את כל בלוק האודות בבת אחת") and button text ("הצע בלוק אודות מלא עם AI") use create wording only. No improve/rewrite bulk copy is user-facing.
 
 **Visibility guards (orphan-safe):**
 
-- **Section outer guard**: `cardId && (bulkEligible || aiTarget === "full")` — the section stays mounted while either the CTA is eligible **or** a full-target flow is active.
-- **Idle CTA guard**: `bulkEligible && aiTarget !== "full"` — the disclosure + CTA button render only in idle state when About is fully empty.
+- **Section outer guard**: `cardId && (bulkEligible || aiTarget === "full")` - the section stays mounted while either the CTA is eligible **or** a full-target flow is active.
+- **Idle CTA guard**: `bulkEligible && aiTarget !== "full"` - the disclosure + CTA button render only in idle state when About is fully empty.
 - **Active flow guard**: `aiTarget === "full"` renders `renderAiStatus()` and `renderAiPreview()` regardless of `bulkEligible`.
 
 This means: if a user starts a full-block AI flow and then types content into a field (causing `bulkEligible` to flip to `false`), the active loading/preview/error surface remains visible until the user applies or dismisses. No orphan wrapper (section visible but empty) can occur.
@@ -411,16 +411,16 @@ All editor AI generation surfaces share one monthly budget per user.
 | Premium | 75 attempts/day | 24h rolling from first request |
 
 - Counts all attempts that pass validation (including failed Gemini calls).
-- Not displayed to the user — this is a safety rail, not a product feature.
+- Not displayed to the user - this is a safety rail, not a product feature.
 - Resets on server restart (in-memory only).
 
 ### 5.3 Why these are separate layers
 
-The **shared monthly budget** is the product-visible consumption limit — it protects against cost overrun and provides a clear UX contract (“you have N AI generations remaining this month”). The budget is shared across About, FAQ, and SEO surfaces so the user sees one simple counter.
+The **shared monthly budget** is the product-visible consumption limit - it protects against cost overrun and provides a clear UX contract (“you have N AI generations remaining this month”). The budget is shared across About, FAQ, and SEO surfaces so the user sees one simple counter.
 
-The **daily anti-abuse rail** is a defense-in-depth mechanism — it prevents a single user from exhausting their entire monthly quota in a burst or from scripting rapid-fire requests. It is intentionally set higher than the monthly quota to avoid interfering with normal usage.
+The **daily anti-abuse rail** is a defense-in-depth mechanism - it prevents a single user from exhausting their entire monthly quota in a burst or from scripting rapid-fire requests. It is intentionally set higher than the monthly quota to avoid interfering with normal usage.
 
-The **provider quota** is an external dependency — even if the user has remaining monthly quota, the upstream Gemini API may impose its own rate limits. The backend detects this and returns a distinct error code so the frontend can explain it differently from "you've used up your quota."
+The **provider quota** is an external dependency - even if the user has remaining monthly quota, the upstream Gemini API may impose its own rate limits. The backend detects this and returns a distinct error code so the frontend can explain it differently from "you've used up your quota."
 
 ---
 
@@ -439,7 +439,7 @@ UTC month in `YYYY-MM` format (e.g., `"2026-03"`). Generated via `currentPeriodK
 ### 6.3 Unique compound index
 
 ```
-{ userId: 1, feature: 1, periodKey: 1 } — unique
+{ userId: 1, feature: 1, periodKey: 1 } - unique
 ```
 
 This index enforces one document per user per feature per month, enabling safe `$inc` with `upsert: true`.
@@ -471,7 +471,7 @@ The unique compound index `userId_1_feature_1_periodKey_1` is **live in producti
 | `AI_ABOUT_ENABLED` | Yes (for About AI)   | `false`                 | Feature flag for About AI. Accepts `1`, `true`, `on`, `yes` (case-insensitive). |
 | `AI_FAQ_ENABLED`   | Yes (for FAQ AI)     | `false`                 | Feature flag for FAQ AI. Same accepted values as above.                         |
 | `AI_SEO_ENABLED`   | Yes (for SEO AI)     | `false`                 | Feature flag for SEO AI. Same accepted values as above.                         |
-| `GEMINI_API_KEY`   | Yes (for generation) | —                       | Google AI API key for Gemini access. Missing key → `AI_UNAVAILABLE`.            |
+| `GEMINI_API_KEY`   | Yes (for generation) | -                       | Google AI API key for Gemini access. Missing key → `AI_UNAVAILABLE`.            |
 | `GEMINI_MODEL`     | No                   | `gemini-2.5-flash-lite` | Model name. Must be in allowlist: `gemini-2.5-flash-lite`, `gemini-2.5-flash`.  |
 
 Each AI surface is independently toggleable. Disabling a flag returns 503 `AI_DISABLED` for that surface only; the other surfaces remain unaffected.
@@ -501,7 +501,7 @@ Each AI surface is independently toggleable. Disabling a flag returns 503 `AI_DI
 | `NOT_FOUND`                        | 404  | Ownership/Org     | Yes           | Card not found, not owned, or org membership failed (anti-enumeration). |
 | `INVALID_TARGET`                   | 400  | Validation        | Yes           | The `target` field is present but not a valid value.                    |
 | `INVALID_PARAGRAPH_INDEX`          | 400  | Validation        | Yes           | The `paragraphIndex` is missing or out of range for a paragraph target. |
-| `AI_INSUFFICIENT_BUSINESS_CONTEXT` | 400  | Readiness gate    | Yes           | Business name or category is empty — generation requires both.          |
+| `AI_INSUFFICIENT_BUSINESS_CONTEXT` | 400  | Readiness gate    | Yes           | Business name or category is empty - generation requires both.          |
 | `RATE_LIMITED`                     | 429  | Anti-abuse        | Yes           | Daily in-memory rate limit exceeded.                                    |
 | `AI_MONTHLY_LIMIT_REACHED`         | 429  | Product quota     | Yes           | Monthly generation quota exhausted. Includes quota DTO in response.     |
 | `AI_PROVIDER_QUOTA`                | 429  | External provider | Yes           | Upstream Gemini API returned 429.                                       |
@@ -514,7 +514,7 @@ Each AI surface is independently toggleable. Disabling a flag returns 503 `AI_DI
 
 1. **External provider quota can block generation.** Even if the user has remaining monthly quota, the upstream Gemini API may impose its own rate limits. This is communicated distinctly to the user but cannot be resolved from the Cardigo side.
 
-2. **Daily limiter counts attempts, monthly counts successes.** A user could exhaust their daily anti-abuse limit without consuming any monthly quota (e.g., if Gemini is consistently failing). This is by design — the daily limiter is a safety rail.
+2. **Daily limiter counts attempts, monthly counts successes.** A user could exhaust their daily anti-abuse limit without consuming any monthly quota (e.g., if Gemini is consistently failing). This is by design - the daily limiter is a safety rail.
 
 3. **Daily limiter is not persisted.** It resets on server restart. In a multi-instance deployment, each instance maintains its own rate map.
 
@@ -536,11 +536,11 @@ Shipped as a separate bounded workstream with its own endpoint, feature flag, an
 
 ### 10.1 Scope (V1)
 
-- **Target**: `full` only — generates the entire FAQ block. No single-item or per-field targeting.
+- **Target**: `full` only - generates the entire FAQ block. No single-item or per-field targeting.
 - **Empty-state only**: Generation is available only when the card has no valid FAQ items (both `q` and `a` must be non-empty for an item to count). If valid items exist, the backend returns 409 `AI_FAQ_NOT_EMPTY`.
 - **`faq.items` only**: AI generates only the `items` array (question/answer pairs). The card's `faq.title` and `faq.lead` are preserved and never overwritten by AI.
-- **Bounded output**: The Gemini schema constrains output to a maximum of **3** Q&A items (`maxItems: 3`). Each question is capped at **120** chars, each answer at **700** chars — enforced both in the system instruction and by a post-Gemini normalizer (`q.slice(0, 120)`, `a.slice(0, 700)`). Items where either `q` or `a` is empty after trim are discarded.
-- **Anti-duplication**: Two layers — (1) the Gemini system instruction explicitly prohibits duplicate or near-identical questions ("Questions must be distinct from each other — no repeated or near-repeated questions"); (2) a programmatic post-Gemini deduplication pass via `normalizeQuestionKey(q)` (trim → collapse whitespace → lowercase) drops items whose normalized question key was already seen.
+- **Bounded output**: The Gemini schema constrains output to a maximum of **3** Q&A items (`maxItems: 3`). Each question is capped at **120** chars, each answer at **700** chars - enforced both in the system instruction and by a post-Gemini normalizer (`q.slice(0, 120)`, `a.slice(0, 700)`). Items where either `q` or `a` is empty after trim are discarded.
+- **Anti-duplication**: Two layers - (1) the Gemini system instruction explicitly prohibits duplicate or near-identical questions ("Questions must be distinct from each other - no repeated or near-repeated questions"); (2) a programmatic post-Gemini deduplication pass via `normalizeQuestionKey(q)` (trim → collapse whitespace → lowercase) drops items whose normalized question key was already seen.
 
 ### 10.2 UX flow
 

@@ -25,7 +25,7 @@ router.post("/create", requireAuth, async (req, res) => {
 
 /**
  * Server-to-server notify (Tranzila)
- * БЕЗ requireAuth — defense-in-depth via x-cardigo-notify-token (MUST-if-set)
+ * БЕЗ requireAuth - defense-in-depth via x-cardigo-notify-token (MUST-if-set)
  */
 router.post("/notify", async (req, res) => {
     try {

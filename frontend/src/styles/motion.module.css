@@ -1,11 +1,11 @@
 /*
- * motion.module.css — Reusable motion presets for NEW pages/components only.
+ * motion.module.css - Reusable motion presets for NEW pages/components only.
  *
  * Usage:
  *   import motion from "../../styles/motion.module.css";
  *   <div className={`${motion.fadeUp} ${isRevealed ? motion.isVisible : ""}`}>
  *
- * Architecture rule — transform conflict:
+ * Architecture rule - transform conflict:
  *   Reveal presets (fadeUp, scaleIn, etc.) use `transform`.
  *   Interaction presets (hoverLift, pressDown) also use `transform`.
  *   Do NOT stack both on the SAME DOM node.
@@ -194,7 +194,7 @@
         transform: none;
     }
 
-    /* hoverGlowSoft: non-motion shadow feedback — remains active */
+    /* hoverGlowSoft: non-motion shadow feedback - remains active */
 
     /* pressDown: remove scale movement */
     .pressDown {

@@ -1,6 +1,6 @@
 # SECURITY_AUTH_INVITES.md
 
-> **SSoT (Single Source of Truth)** — безопасность, auth, invites, восстановление доступа (Cardigo)  
+> **SSoT (Single Source of Truth)** - безопасность, auth, invites, восстановление доступа (Cardigo)  
 > Статус: **v1 (Feb 2026)**  
 > Цель: enterprise-качество безопасности при минимальном blast radius и без self-serve org creation.
 
@@ -8,7 +8,7 @@
 
 ## 0) Текущее состояние (snapshot из аудита)
 
-> **Примечание:** этот snapshot отражает состояние на момент аудита (Feb 2026). Текущая реальность может отличаться — см. ниже пометки **(обновлено)**.
+> **Примечание:** этот snapshot отражает состояние на момент аудита (Feb 2026). Текущая реальность может отличаться - см. ниже пометки **(обновлено)**.
 
 - Auth endpoints: register/login/me.
 - ~~Нет email verification, нет password reset.~~ **(обновлено)** Email verification, password reset и magic-link signup реализованы.
@@ -42,10 +42,10 @@
 
 Рекомендуем:
 
-- `emailNormalized` (обязательно) — unique + index, lookup только по нему
-- `emailOriginal` (опционально) — только для UI/отображения
+- `emailNormalized` (обязательно) - unique + index, lookup только по нему
+- `emailOriginal` (опционально) - только для UI/отображения
 
-> Это P0 перед любыми invites/reset/verify — иначе будут edge-cases и дубли.
+> Это P0 перед любыми invites/reset/verify - иначе будут edge-cases и дубли.
 
 ---
 
@@ -83,7 +83,7 @@ Enterprise-flow:
 ### 3.4 Гейтинг функционала (продуктовая политика)
 
 - редактировать можно сразу,
-- **публиковать/шарить** — только после `emailVerifiedAt != null`.
+- **публиковать/шарить** - только после `emailVerifiedAt != null`.
 
 ---
 
@@ -127,7 +127,7 @@ Enterprise-flow:
 
 ---
 
-## 5) Восстановление пароля (password recovery) — через email
+## 5) Восстановление пароля (password recovery) - через email
 
 ### 5.1 Принятое решение
 
@@ -136,7 +136,7 @@ Enterprise-flow:
 
 ### 5.2 Важная ремарка по “email от Render”
 
-Render — это хостинг. Для писем нужен именно **email-провайдер** (transactional).  
+Render - это хостинг. Для писем нужен именно **email-провайдер** (transactional).  
 Практически лучше использовать **HTTP API** провайдера (не SMTP), чтобы не зависеть от ограничений инфраструктуры.
 
 ### 5.3 Поля reset
@@ -165,7 +165,7 @@ Render — это хостинг. Для писем нужен именно **em
 
 ---
 
-## 6) Email provider (transactional) — старт “бесплатно”
+## 6) Email provider (transactional) - старт “бесплатно”
 
 ### 6.1 Требования
 
@@ -175,10 +175,10 @@ Render — это хостинг. Для писем нужен именно **em
 
 ### 6.2 Рекомендация для начала
 
-- **Resend** — обычно самый быстрый старт (есть free tier; лимиты меняются со временем). :contentReference[oaicite:0]{index=0}
-- **Mailgun** — тоже имеет бесплатные лимиты/планы, но условия зависят от региона/типа аккаунта. :contentReference[oaicite:1]{index=1}
+- **Resend** - обычно самый быстрый старт (есть free tier; лимиты меняются со временем). :contentReference[oaicite:0]{index=0}
+- **Mailgun** - тоже имеет бесплатные лимиты/планы, но условия зависят от региона/типа аккаунта. :contentReference[oaicite:1]{index=1}
 
-> Я бы стартовал с **Resend** (проще интеграция и меньше операционной боли), а когда дойдёшь до масштаба/комплаенса — можно переехать на SES.
+> Я бы стартовал с **Resend** (проще интеграция и меньше операционной боли), а когда дойдёшь до масштаба/комплаенса - можно переехать на SES.
 
 ---
 
@@ -204,7 +204,7 @@ Render — это хостинг. Для писем нужен именно **em
 ## 9) Error handling (P0)
 
 - В prod не отдаём сырые `err.message`.
-- Отдаём: `{ code, message }` (message безопасный), детали — в server logs.
+- Отдаём: `{ code, message }` (message безопасный), детали - в server logs.
 
 ---
 

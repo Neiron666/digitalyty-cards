@@ -93,7 +93,7 @@ router.patch("/:id/read", requireAuth, authRateLimit, markLeadRead);
 router.patch("/:id/flags", requireAuth, authRateLimit, updateLeadFlags);
 router.delete("/:id", requireAuth, authRateLimit, hardDeleteLead);
 
-// ── Public route — lead submission from card page ──
+// ── Public route - lead submission from card page ──
 
 router.post(
     "/",

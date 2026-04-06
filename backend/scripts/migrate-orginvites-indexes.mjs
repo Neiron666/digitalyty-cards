@@ -62,7 +62,7 @@ async function checkTokenHashDuplicates(col, verbose) {
         const codeName = err?.codeName;
         if (code === 26 || codeName === "NamespaceNotFound") {
             if (verbose)
-                console.log("  orginvites collection not found — skip");
+                console.log("  orginvites collection not found - skip");
             return false;
         }
         throw err;
@@ -70,7 +70,7 @@ async function checkTokenHashDuplicates(col, verbose) {
 
     if (dupes.length > 0) {
         console.log(
-            "DUPLICATE tokenHash in orginvites — unique index BLOCKED:",
+            "DUPLICATE tokenHash in orginvites - unique index BLOCKED:",
         );
         for (const d of dupes) {
             console.log(
@@ -89,7 +89,7 @@ async function checkTokenHashDuplicates(col, verbose) {
 async function ensureIndex(col, byName, key, opts, { dryRun, verbose }) {
     const name = opts.name;
     if (byName.has(name)) {
-        if (verbose) console.log(`  ${name} already exists — skip`);
+        if (verbose) console.log(`  ${name} already exists - skip`);
         return;
     }
 
@@ -130,18 +130,18 @@ async function ensureOrgInvitesIndexes({ dryRun, verbose }) {
     if (tokenDupes) {
         if (dryRun) {
             console.log(
-                "  [dry-run] duplicates detected — apply would be BLOCKED for tokenHash_1 unique",
+                "  [dry-run] duplicates detected - apply would be BLOCKED for tokenHash_1 unique",
             );
         } else {
             console.error(
-                "  BLOCKED: cannot create unique tokenHash_1 in orginvites — resolve duplicates first",
+                "  BLOCKED: cannot create unique tokenHash_1 in orginvites - resolve duplicates first",
             );
             process.exitCode = 2;
         }
         return;
     }
 
-    // 1) tokenHash_1 — unique: secure token identity + consume lookup truth.
+    // 1) tokenHash_1 - unique: secure token identity + consume lookup truth.
     await ensureIndex(
         col,
         byName,
@@ -150,7 +150,7 @@ async function ensureOrgInvitesIndexes({ dryRun, verbose }) {
         { dryRun, verbose },
     );
 
-    // 2) orgId_1_createdAt_-1 — supports: find({orgId}).sort({createdAt:-1}).
+    // 2) orgId_1_createdAt_-1 - supports: find({orgId}).sort({createdAt:-1}).
     await ensureIndex(
         col,
         byName,
@@ -159,7 +159,7 @@ async function ensureOrgInvitesIndexes({ dryRun, verbose }) {
         { dryRun, verbose },
     );
 
-    // 3) orgId_1_revokedAt_1_usedAt_1_expiresAt_1 — pending-by-org & seat aggregation.
+    // 3) orgId_1_revokedAt_1_usedAt_1_expiresAt_1 - pending-by-org & seat aggregation.
     await ensureIndex(
         col,
         byName,
@@ -168,7 +168,7 @@ async function ensureOrgInvitesIndexes({ dryRun, verbose }) {
         { dryRun, verbose },
     );
 
-    // 4) orgId_1_email_1_revokedAt_1_usedAt_1_expiresAt_1 — pending invite preflight.
+    // 4) orgId_1_email_1_revokedAt_1_usedAt_1_expiresAt_1 - pending invite preflight.
     await ensureIndex(
         col,
         byName,
@@ -177,7 +177,7 @@ async function ensureOrgInvitesIndexes({ dryRun, verbose }) {
         { dryRun, verbose },
     );
 
-    // 5) createdByUserId_1_revokedAt_1_usedAt_1 — cleanup on account/admin delete.
+    // 5) createdByUserId_1_revokedAt_1_usedAt_1 - cleanup on account/admin delete.
     await ensureIndex(
         col,
         byName,

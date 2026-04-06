@@ -1,13 +1,13 @@
-# API Security — Auth Endpoints & Policies
+# API Security - Auth Endpoints & Policies
 
-> **Tier 2 — Architecture / Ops Contract**
+> **Tier 2 - Architecture / Ops Contract**
 > Canonical reference for auth endpoint behaviour, rate limiting, and security hardening.
 
 ---
 
 ## Table of Contents
 
-- [API Security — Auth Endpoints \& Policies](#api-security--auth-endpoints--policies)
+- [API Security - Auth Endpoints \& Policies](#api-security--auth-endpoints--policies)
     - [Table of Contents](#table-of-contents)
     - [1. Global Middleware](#1-global-middleware)
         - [Helmet](#helmet)
@@ -25,8 +25,8 @@
         - [POST /api/auth/resend-verification](#post-apiauthresend-verification)
     - [3. Rate Limiting Summary](#3-rate-limiting-summary)
     - [4. Email Verification Flow](#4-email-verification-flow)
-        - [Path A — Standard Registration (`/register`)](#path-a--standard-registration-register)
-        - [Path B — Magic Link Signup (`/signup-link` → `/signup-consume`)](#path-b--magic-link-signup-signup-link--signup-consume)
+        - [Path A - Standard Registration (`/register`)](#path-a--standard-registration-register)
+        - [Path B - Magic Link Signup (`/signup-link` → `/signup-consume`)](#path-b--magic-link-signup-signup-link--signup-consume)
         - [Token lifecycle](#token-lifecycle)
         - [Model: `EmailVerificationToken`](#model-emailverificationtoken)
     - [5. Password Policy](#5-password-policy)
@@ -56,8 +56,8 @@
 
 | Header                | Value / Behaviour                                |
 | --------------------- | ------------------------------------------------ |
-| contentSecurityPolicy | **disabled** — CSP is delegated to reverse-proxy |
-| frameguard            | `sameorigin` — prevents click-jacking            |
+| contentSecurityPolicy | **disabled** - CSP is delegated to reverse-proxy |
+| frameguard            | `sameorigin` - prevents click-jacking            |
 | Other defaults        | Enabled (X-Content-Type-Options, HSTS, etc.)     |
 
 ### CORS
@@ -89,7 +89,7 @@ Create a new user account via email + password.
 | ---------- | -------- | -------- | ------------------------------------------------------- |
 | `email`    | body     | yes      | User email (normalized)                                 |
 | `password` | body     | yes      | Plaintext password (≥ 8 chars)                          |
-| `consent`  | body     | yes      | Boolean `true` — explicit acceptance of Terms & Privacy |
+| `consent`  | body     | yes      | Boolean `true` - explicit acceptance of Terms & Privacy |
 
 **Rate limit**: 20 requests / 10 min per IP.
 
@@ -107,7 +107,7 @@ Create a new user account via email + password.
 
 | Status | Body                                                           | Condition                                                       |
 | ------ | -------------------------------------------------------------- | --------------------------------------------------------------- |
-| 200    | `{ "registered": true, "isVerified": false }`                  | Account created (no auth cookie — user must verify email first) |
+| 200    | `{ "registered": true, "isVerified": false }`                  | Account created (no auth cookie - user must verify email first) |
 | 400    | `{ "message": "Invalid email" }`                               | Malformed email                                                 |
 | 400    | `{ "message": "Invalid password" }`                            | Missing or non-string password                                  |
 | 400    | `{ "message": "Password must be at least 8 characters" }`      | Too short                                                       |
@@ -122,7 +122,7 @@ curl -X POST https://cardigo.co.il/api/auth/register \
   -H "Content-Type: application/json" \
   -d '{"email":"user@example.com","password":"securePass1","consent":true}'
 # → 200 {"registered":true,"isVerified":false}
-# No auth cookie is set — user must verify email first.
+# No auth cookie is set - user must verify email first.
 ```
 
 ---
@@ -156,7 +156,7 @@ Authenticate an existing user.
 
 ### POST /api/auth/forgot
 
-Request a password-reset link. **Anti-enumeration** — always returns 204 regardless of whether the email exists.
+Request a password-reset link. **Anti-enumeration** - always returns 204 regardless of whether the email exists.
 
 | Field   | Location | Required | Description |
 | ------- | -------- | -------- | ----------- |
@@ -164,13 +164,13 @@ Request a password-reset link. **Anti-enumeration** — always returns 204 regar
 
 **Rate limit**: 20 requests / 10 min per IP.
 
-> **Backend-authoritative abuse cooldown (live):** In addition to the IP rate limit, a per-user DB-backed cooldown of 180 seconds is enforced. If an active unexpired reset token was already issued for the same user within the last 180 s, the re-send is suppressed silently. The catch block is fail-closed — any DB error during the cooldown check also returns 204. The IP rate-limit response is also 204 (not 429) to preserve consistent anti-enumeration posture.
+> **Backend-authoritative abuse cooldown (live):** In addition to the IP rate limit, a per-user DB-backed cooldown of 180 seconds is enforced. If an active unexpired reset token was already issued for the same user within the last 180 s, the re-send is suppressed silently. The catch block is fail-closed - any DB error during the cooldown check also returns 204. The IP rate-limit response is also 204 (not 429) to preserve consistent anti-enumeration posture.
 
 **Responses**:
 
 | Status | Body | Condition                                                    |
 | ------ | ---- | ------------------------------------------------------------ |
-| 204    | —    | Always (anti-enumeration, including rate limit and cooldown) |
+| 204    | -    | Always (anti-enumeration, including rate limit and cooldown) |
 
 ---
 
@@ -191,7 +191,7 @@ Consume a password-reset token and set a new password.
 
 | Status | Body                                                           | Condition                                               |
 | ------ | -------------------------------------------------------------- | ------------------------------------------------------- |
-| 204    | —                                                              | Password reset                                          |
+| 204    | -                                                              | Password reset                                          |
 | 400    | `{ "code": "WEAK_PASSWORD", "message": "Password too short" }` | Password < 8 chars. **Token is NOT consumed.**          |
 | 400    | `{ "message": "Unable to reset password" }`                    | Invalid, expired, or already-used token (no code field) |
 | 429    | `{ "code": "RATE_LIMITED", "message": "Too many requests" }`   | Rate limit                                              |
@@ -200,7 +200,7 @@ Consume a password-reset token and set a new password.
 
 ### POST /api/auth/signup-link
 
-Request a magic signup link via email. **Anti-enumeration** — always returns 204.
+Request a magic signup link via email. **Anti-enumeration** - always returns 204.
 
 | Field   | Location | Required | Description |
 | ------- | -------- | -------- | ----------- |
@@ -215,7 +215,7 @@ Request a magic signup link via email. **Anti-enumeration** — always returns 2
 
 | Status | Body                                                         | Condition                 |
 | ------ | ------------------------------------------------------------ | ------------------------- |
-| 204    | —                                                            | Always (anti-enumeration) |
+| 204    | -                                                            | Always (anti-enumeration) |
 | 429    | `{ "code": "RATE_LIMITED", "message": "Too many requests" }` | Rate limit                |
 
 ---
@@ -228,7 +228,7 @@ Consume a magic signup link token and create an account with a password.
 | ---------- | -------- | -------- | ------------------------------------------------------- |
 | `token`    | body     | yes      | Raw signup token (hex)                                  |
 | `password` | body     | yes      | Password for new account (≥ 8 chars)                    |
-| `consent`  | body     | yes      | Boolean `true` — explicit acceptance of Terms & Privacy |
+| `consent`  | body     | yes      | Boolean `true` - explicit acceptance of Terms & Privacy |
 
 **Rate limit**: 60 requests / 10 min per IP.
 
@@ -236,7 +236,7 @@ Consume a magic signup link token and create an account with a password.
 
 1. Atomically consumes the signup token.
 2. Enforces `consent === true` (strict boolean); rejects with neutral 400 otherwise.
-3. Creates user with `isVerified: true` — the magic link already proves email ownership.
+3. Creates user with `isVerified: true` - the magic link already proves email ownership.
 4. Persists `termsAcceptedAt`, `privacyAcceptedAt`, `termsVersion`, `privacyVersion` from SSoT version constants.
 5. Hashes password with `bcrypt` (salt rounds 10).
 
@@ -247,7 +247,7 @@ Consume a magic signup link token and create an account with a password.
 | 200    | `{ "ok": true }`                             | Account created (auth cookie set via `Set-Cookie`) |
 | 400    | `{ "message": "Unable to complete signup" }` | Any failure (anti-enum)                            |
 
-> **Design note**: neutral 400 on _all_ failures including rate limit (enterprise contract — no distinction between invalid token and rate limit).
+> **Design note**: neutral 400 on _all_ failures including rate limit (enterprise contract - no distinction between invalid token and rate limit).
 
 ---
 
@@ -257,7 +257,7 @@ Return the current user's profile. Requires authentication (browser: httpOnly co
 
 **Rate limit**: none (auth-gated).
 
-**Cache control**: `no-store` — response must not be cached; `Vary: Authorization, Cookie`.
+**Cache control**: `no-store` - response must not be cached; `Vary: Authorization, Cookie`.
 
 **Responses**:
 
@@ -320,7 +320,7 @@ Resend the email-verification link. Requires authentication (browser: httpOnly c
 
 **Behaviour**:
 
-1. Checks `isVerified` — if already verified, returns `{ "message": "Already verified" }`.
+1. Checks `isVerified` - if already verified, returns `{ "message": "Already verified" }`.
 2. Generates a new 32-byte token (24 h TTL).
 3. Sends verification link via Mailjet (best-effort).
 4. Invalidates all previous unused tokens for this user.
@@ -360,7 +360,7 @@ All rate limits use an **in-memory Map** per endpoint keyed by client IP. Window
 
 ## 4. Email Verification Flow
 
-### Path A — Standard Registration (`/register`)
+### Path A - Standard Registration (`/register`)
 
 ```
 User submits email + password
@@ -370,19 +370,19 @@ User submits email + password
   → isVerified set to true
 ```
 
-### Path B — Magic Link Signup (`/signup-link` → `/signup-consume`)
+### Path B - Magic Link Signup (`/signup-link` → `/signup-consume`)
 
 ```
 User requests magic link → email sent
   → User clicks link → provides password via /signup-consume
   → Account created with isVerified: true
-  (magic link already proves email ownership — no separate verification needed)
+  (magic link already proves email ownership - no separate verification needed)
 ```
 
 ### Token lifecycle
 
 - Generated via `crypto.randomBytes(32).toString("hex")` (64 hex chars).
-- Stored in DB as `SHA-256(raw)` hash — the raw token is _never_ persisted.
+- Stored in DB as `SHA-256(raw)` hash - the raw token is _never_ persisted.
 - **TTL**: 24 hours (`VERIFY_TOKEN_TTL_MS`).
 - Atomically consumed: `findOneAndUpdate` with `usedAt: null, expiresAt: { $gt: now }`.
 - On resend, previous unused tokens for the same user are invalidated.
@@ -414,15 +414,15 @@ User requests magic link → email sent
 | Variable                     | Required | Default                                                                  | Description                                                                |
 | ---------------------------- | -------- | ------------------------------------------------------------------------ | -------------------------------------------------------------------------- |
 | `CORS_ORIGINS`               | prod     | (empty = allow all)                                                      | Comma-separated allowed origins                                            |
-| `JWT_SECRET`                 | yes      | —                                                                        | HS256 signing key                                                          |
+| `JWT_SECRET`                 | yes      | -                                                                        | HS256 signing key                                                          |
 | `SITE_URL`                   | prod     | `http://localhost:5173`                                                  | Base URL for links in emails                                               |
-| `MAILJET_API_KEY`            | yes\*    | —                                                                        | Mailjet public key                                                         |
-| `MAILJET_SECRET_KEY`         | yes\*    | —                                                                        | Mailjet private key                                                        |
+| `MAILJET_API_KEY`            | yes\*    | -                                                                        | Mailjet public key                                                         |
+| `MAILJET_SECRET_KEY`         | yes\*    | -                                                                        | Mailjet private key                                                        |
 | `MAILJET_FROM_EMAIL`         | no       | `noreply@cardigo.co.il`                                                  | Sender email                                                               |
 | `MAILJET_FROM_NAME`          | no       | `Cardigo`                                                                | Sender display name                                                        |
 | `MAILJET_VERIFY_SUBJECT`     | no       | `אימות כתובת האימייל` (Verify your email)                                | Subject for verification emails                                            |
 | `MAILJET_VERIFY_TEXT_PREFIX` | no       | `כדי להשלים את ההרשמה, נא לאמת את כתובת האימייל על ידי לחיצה על הקישור.` | Body prefix for verification emails                                        |
-| `EMAIL_BLOCK_SECRET`         | yes      | —                                                                        | HMAC-SHA256 key for deleted-email tombstone hashing (fail-fast at startup) |
+| `EMAIL_BLOCK_SECRET`         | yes      | -                                                                        | HMAC-SHA256 key for deleted-email tombstone hashing (fail-fast at startup) |
 
 \* If Mailjet keys are not configured, email sending is skipped (best-effort).
 
@@ -432,12 +432,12 @@ User requests magic link → email sent
 
 ### Anti-enumeration
 
-- `/register` returns a generic `409 "Unable to register"` — does not reveal whether the email exists or is permanently blocked.
+- `/register` returns a generic `409 "Unable to register"` - does not reveal whether the email exists or is permanently blocked.
 - `/forgot` always returns `204` regardless of email existence.
-- `/signup-link` always returns `204` — including when the email is permanently blocked.
-- `/signup-consume` always returns `400` on any failure — no distinction between rate limit, invalid token, blocked email, or duplicate user.
-- `/invites/accept` (new-user branch) returns `404` on blocked email — consistent with the existing anti-enumeration posture for that route.
-- `/resend-verification` always returns `200` — does not expose internal errors.
+- `/signup-link` always returns `204` - including when the email is permanently blocked.
+- `/signup-consume` always returns `400` on any failure - no distinction between rate limit, invalid token, blocked email, or duplicate user.
+- `/invites/accept` (new-user branch) returns `404` on blocked email - consistent with the existing anti-enumeration posture for that route.
+- `/resend-verification` always returns `200` - does not expose internal errors.
 
 ### Token storage
 
@@ -461,7 +461,7 @@ All existing JWT sessions are invalidated server-side when a user changes their 
 - Mechanism: `User.passwordChangedAt` (Date, default `null`) is written with `new Date()` on every successful password change.
 - `requireAuth` and `optionalAuth` middlewares perform an async DB read of `passwordChangedAt` and compare against the token's `iat`. Tokens issued before the last password change are rejected (`requireAuth` → 401; `optionalAuth` → silent credential drop, public fallback).
 - `requireAdmin` performs the same check using the existing DB read (no additional query).
-- `null` / absent value means "no change event yet" — all tokens are fresh (backward-compatible with pre-existing accounts).
+- `null` / absent value means "no change event yet" - all tokens are fresh (backward-compatible with pre-existing accounts).
 - Same-second safety: `iat >= changedAtSec` (tokens issued in the same clock second as the change are FRESH).
 - Helper: `backend/src/utils/isTokenFresh.js`.
 - **Admin coverage note:** static proof via `requireAdmin` code path + import sanity was accepted during verification. Live admin fixture was not available in the test environment at time of audit.
@@ -496,25 +496,25 @@ Version constants are managed in `backend/src/utils/consentVersions.js`; see `do
 
 #### Current implementation (live as of 2026-03-29)
 
-`POST /auth/forgot` persists two durable DB writes before responding with `204`, then defers all mail transport — including usable token generation — to a background worker (`resetMailWorker`):
+`POST /auth/forgot` persists two durable DB writes before responding with `204`, then defers all mail transport - including usable token generation - to a background worker (`resetMailWorker`):
 
 | Aspect             | Behaviour                                                                                                                                                                          |
 | ------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Reset intent       | `ActivePasswordReset` upserted per-user (`findOneAndReplace`, unique `userId` index) with `status: 'pending-delivery'` — new request atomically replaces prior intent before `204` |
-| Token generation   | `rawToken` (32 random bytes) generated **only in memory** by `resetMailWorker` at delivery time — no plaintext secret ever persisted at any point                                  |
-| Token invalidation | Prior active record atomically replaced by the upsert — no separate invalidation step, no post-response side effect                                                                |
-| Mail delivery      | `MailJob` (`userId` only, no email or token snapshot) persisted before `204` — worker resolves `User.email` at send time via `User.findById`                                       |
+| Reset intent       | `ActivePasswordReset` upserted per-user (`findOneAndReplace`, unique `userId` index) with `status: 'pending-delivery'` - new request atomically replaces prior intent before `204` |
+| Token generation   | `rawToken` (32 random bytes) generated **only in memory** by `resetMailWorker` at delivery time - no plaintext secret ever persisted at any point                                  |
+| Token invalidation | Prior active record atomically replaced by the upsert - no separate invalidation step, no post-response side effect                                                                |
+| Mail delivery      | `MailJob` (`userId` only, no email or token snapshot) persisted before `204` - worker resolves `User.email` at send time via `User.findById`                                       |
 | Transport          | `resetMailWorker` drains `MailJob` queue asynchronously (default: every 60 s, 30 s initial delay)                                                                                  |
 | Response floor     | Uniform 50 ms minimum floor (`FORGOT_RESPONSE_FLOOR_MS`) preserved on all `204` branches                                                                                           |
-| Security invariant | Both durable writes complete before `204` — no security-critical side-effect executes after the response                                                                           |
+| Security invariant | Both durable writes complete before `204` - no security-critical side-effect executes after the response                                                                           |
 
 **Cooldown semantics (per-user DB-backed, 180 s):**
 
 The cooldown queries `ActivePasswordReset` by `updatedAt`. Suppression is status-aware:
 
-- **Suppress** if `APR.status === 'active'` — a usable link has already been delivered to this user.
-- **Suppress** if `APR.status === 'pending-delivery'` AND a live `MailJob` exists (`status: pending|processing`, not expired) — delivery pipeline is in flight.
-- **Do NOT suppress** if `APR.status === 'pending-delivery'` but no live `MailJob` exists — self-heal path: cooldown allows a retry which replaces the orphaned `APR` and creates a new `MailJob`.
+- **Suppress** if `APR.status === 'active'` - a usable link has already been delivered to this user.
+- **Suppress** if `APR.status === 'pending-delivery'` AND a live `MailJob` exists (`status: pending|processing`, not expired) - delivery pipeline is in flight.
+- **Do NOT suppress** if `APR.status === 'pending-delivery'` but no live `MailJob` exists - self-heal path: cooldown allows a retry which replaces the orphaned `APR` and creates a new `MailJob`.
 - **Fail-closed**: any DB error during cooldown check returns `204` without writes (anti-enumeration preserved).
 
 **Collections introduced:**
@@ -522,14 +522,14 @@ The cooldown queries `ActivePasswordReset` by `updatedAt`. Suppression is status
 | Collection             | Purpose                                                                | PII stored                         |
 | ---------------------- | ---------------------------------------------------------------------- | ---------------------------------- |
 | `activepasswordresets` | One-active-per-user reset intent; `tokenHash` set by worker on deliver | `userId` only                      |
-| `mailjobs`             | Durable delivery intent for worker queue                               | `userId` only — no email, no token |
+| `mailjobs`             | Durable delivery intent for worker queue                               | `userId` only - no email, no token |
 
 #### Transition: dual-read on /auth/reset (temporary)
 
 `POST /auth/reset` uses a temporary dual-read to support `PasswordReset` tokens issued before the Slice 2+3 cutover:
 
-1. **Primary** — `ActivePasswordReset.findOneAndUpdate({tokenHash, status:'active', ...})`
-2. **Legacy fallback** — `PasswordReset.findOneAndUpdate({tokenHash, ...})` — runs only if primary returns `null`
+1. **Primary** - `ActivePasswordReset.findOneAndUpdate({tokenHash, status:'active', ...})`
+2. **Legacy fallback** - `PasswordReset.findOneAndUpdate({tokenHash, ...})` - runs only if primary returns `null`
 
 All existing `PasswordReset` tokens expire within 30 minutes of the `/forgot` cutover (`RESET_TOKEN_TTL_MS = 30 min`). **Deferred cleanup:** remove the fallback read, the `PasswordReset` import from `auth.routes.js`, and `PasswordReset.model.js` in the next release cycle after the window has closed.
 
@@ -548,7 +548,7 @@ Migration script: `npm run migrate:active-password-reset-indexes` (`backend/scri
 | Index                        | Key             | Unique | Note                                                                        |
 | ---------------------------- | --------------- | ------ | --------------------------------------------------------------------------- |
 | `userId_1_unique`            | `{userId:1}`    | yes    | One-active-per-user structural guarantee                                    |
-| `tokenHash_1_partial_unique` | `{tokenHash:1}` | yes    | Partial filter `{tokenHash:{$type:"string"}}` — excludes absent `tokenHash` |
+| `tokenHash_1_partial_unique` | `{tokenHash:1}` | yes    | Partial filter `{tokenHash:{$type:"string"}}` - excludes absent `tokenHash` |
 | `expiresAt_1`                | `{expiresAt:1}` | no     | Worker filter + cleanup                                                     |
 | `status_1`                   | `{status:1}`    | no     | Worker polling                                                              |
 | `usedAt_1`                   | `{usedAt:1}`    | no     | Cleanup / audit                                                             |
@@ -587,16 +587,16 @@ After a user performs a full self-delete of their account, the email address is 
 | Field          | Type     | Index  | Description                           |
 | -------------- | -------- | ------ | ------------------------------------- |
 | `emailKey`     | String   | unique | HMAC-SHA256 hash of normalized email  |
-| `formerUserId` | ObjectId | —      | Reference to the deleted user (audit) |
-| `createdAt`    | Date     | —      | Timestamp of deletion                 |
+| `formerUserId` | ObjectId | -      | Reference to the deleted user (audit) |
+| `createdAt`    | Date     | -      | Timestamp of deletion                 |
 
 **DB / index prerequisite:**
 
 | Index        | Key            | Unique | Note                                                                                                           |
 | ------------ | -------------- | ------ | -------------------------------------------------------------------------------------------------------------- |
-| `emailKey_1` | `{emailKey:1}` | yes    | Manual governance — must be created via `db.deletedemailblocks.createIndex({ emailKey: 1 }, { unique: true })` |
+| `emailKey_1` | `{emailKey:1}` | yes    | Manual governance - must be created via `db.deletedemailblocks.createIndex({ emailKey: 1 }, { unique: true })` |
 
-**Scope limitation:** Admin-delete does **not** create tombstones in this milestone. This is an intentional product decision — admin-delete policy is a separate future contour.
+**Scope limitation:** Admin-delete does **not** create tombstones in this milestone. This is an intentional product decision - admin-delete policy is a separate future contour.
 
 ---
 

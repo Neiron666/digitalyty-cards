@@ -59,8 +59,8 @@ We use **one shared token schema** (same token names everywhere) but we have **t
 
 ### 2.2 Governance: scope & naming
 
-- **App typography SSoT:** `frontend/src/styles/globals.css` `#root {}` — canonical source of approved app tokens.
-- **Card typography SSoT:** `frontend/src/templates/layout/CardLayout.module.css` `.root {}` — canonical source of approved card tokens.
+- **App typography SSoT:** `frontend/src/styles/globals.css` `#root {}` - canonical source of approved app tokens.
+- **Card typography SSoT:** `frontend/src/templates/layout/CardLayout.module.css` `.root {}` - canonical source of approved card tokens.
 - **Cross-scope leakage forbidden:** app-context CSS must not consume card-only tokens (e.g. `--fs-14`, `--fs-h1`). Card-context CSS must not depend on app-only tokens (e.g. `--fs-hero-title`).
 - **Invented token names forbidden:** only SSoT source files may introduce new `--fs-*` names. Page-local and shared CSS consume tokens; they do not create new ones. Local override of an existing approved token name (same name, different value) is permitted.
 - **Approved token source matters as much as token format:** a correctly formatted `var(--fs-*)` usage is still a violation if the token name does not exist in the relevant scope's SSoT.
@@ -169,28 +169,28 @@ Typography-specific rule:
 
 ## 7) Migration Playbook (Phased)
 
-M0 — Inventory
+M0 - Inventory
 
 - Produce a complete violations registry (file:line → violation type → surface).
 
-M1 — Define canonical card tokens
+M1 - Define canonical card tokens
 
 - Replace any fluid/clamp/vw `--fs-*` definitions with rem-only values.
 
-M2 — Replace component literals
+M2 - Replace component literals
 
 - Replace `font-size: *px` and `font-size: clamp(...)` with `var(--fs-*)` usages.
 
-M3 — Align skins
+M3 - Align skins
 
 - Ensure skins only override tokens with rem-only values.
 - Convert typography breakpoints from px to rem and reduce to 1–2.
 
-M4 — Add gates
+M4 - Add gates
 
 - Add a CI check that enforces this policy (see §8).
 
-M5 — Deprecation cleanup
+M5 - Deprecation cleanup
 
 - Remove/stop using `--text-h*` aliases once consumers are migrated.
 
@@ -236,7 +236,7 @@ Planned (future) typography gate:
 
 ## 8.2) Card-Boundary Typography Exception (Deferred)
 
-**Status:** Deferred — acceptable temporary exception.  
+**Status:** Deferred - acceptable temporary exception.  
 **Scope:** Card-boundary only (`[data-cardigo-scope="card"]`). Does NOT relax app-side typography policy.
 
 ### What exists
@@ -247,20 +247,20 @@ The primitive card typography scale (`--fs-10` through `--fs-32`) in `CardLayout
 --fs-N: calc( clamp(min-rem, preferred-rem + X·vw, max-rem) × var(--fs-scale) )
 ```
 
-This uses `clamp`, `vw`, and `calc(non-rem)` — all banned by §2.2 of this policy.
+This uses `clamp`, `vw`, and `calc(non-rem)` - all banned by §2.2 of this policy.
 
 ### Why it is deferred
 
 - The mechanism is **intentional**, not accidental. It provides smooth card typography scaling across viewports.
 - It is **fully isolated** in the card-boundary scope and cannot affect app-side typography.
-- All card-side consumers already use `var(--fs-*)` correctly — only the token definitions are non-compliant.
+- All card-side consumers already use `var(--fs-*)` correctly - only the token definitions are non-compliant.
 - Skins interact with this mechanism only through `--fs-scale` overrides (SkinBase.module.css).
 - Changing these definitions affects **every rendered card** (all templates, all skins, public + preview).
 
 ### Rules
 
 - **Do NOT modify these 12 token definitions** as part of normal typography cleanup or policy enforcement.
-- **Do NOT treat this as a blanket relaxation** — app-side typography policy remains strict and fully enforced.
+- **Do NOT treat this as a blanket relaxation** - app-side typography policy remains strict and fully enforced.
 - The typography gate (`check:typography`) will continue to report these 12 as `FS_TOKEN_DISALLOWED`. This is expected.
 
 ### Prerequisites for future remediation

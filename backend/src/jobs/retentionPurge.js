@@ -83,7 +83,7 @@ async function purgeOnce() {
 
         for (const card of candidates) {
             // Defense-in-depth: if the card has been re-upgraded or admin-overridden,
-            // skip — do NOT purge legitimate premium data.
+            // skip - do NOT purge legitimate premium data.
             const billing = resolveBilling(card, now);
             if (
                 billing?.source === "billing" ||
@@ -132,7 +132,7 @@ async function purgeOnce() {
                 }
             }
 
-            // 7) gallery is premium-only — purge all items on free.
+            // 7) gallery is premium-only - purge all items on free.
             const gallery = card?.gallery;
             let purgedGalleryItems = [];
             if (Array.isArray(gallery) && gallery.length > 0) {
@@ -186,7 +186,7 @@ async function purgeOnce() {
             }
 
             // If storage deletion failed for this card, do NOT stamp
-            // retentionPurgedAt and do NOT apply DB purge — retry next run.
+            // retentionPurgedAt and do NOT apply DB purge - retry next run.
             if (storageDeleteFailed) continue;
 
             // Stamp retentionPurgedAt.

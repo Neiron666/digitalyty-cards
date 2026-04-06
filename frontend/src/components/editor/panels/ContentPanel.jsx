@@ -23,7 +23,7 @@ function saveAiAboutConsent() {
     try {
         localStorage.setItem(AI_ABOUT_CONSENT_KEY, "1");
     } catch {
-        // blocked storage — proceed anyway after in-session acceptance
+        // blocked storage - proceed anyway after in-session acceptance
     }
 }
 
@@ -99,7 +99,7 @@ function AiConsentModal({ open, onConfirm, onCancel }) {
                 </h2>
                 <p id={bodyId} className={styles.consentBody}>
                     ההצעה נוצרת באמצעות שירות בינה מלאכותית חיצוני. המידע העסקי
-                    מהכרטיס שלך ישמש ליצירת הטקסט. התוכן המוצע הוא המלצה בלבד —
+                    מהכרטיס שלך ישמש ליצירת הטקסט. התוכן המוצע הוא המלצה בלבד -
                     תוכל לערוך או לדחות אותו לפני שמירה.
                 </p>
                 <div className={styles.consentActions}>
@@ -343,10 +343,10 @@ export default function ContentPanel({
     }
 
     function renderPreviewLabel() {
-        if (aiTarget === "title") return "הצעת AI — כותרת";
+        if (aiTarget === "title") return "הצעת AI - כותרת";
         if (aiTarget === "paragraph")
-            return `הצעת AI — פסקה ${(aiParagraphIndex ?? 0) + 1}`;
-        return "הצעת AI — בלוק מלא";
+            return `הצעת AI - פסקה ${(aiParagraphIndex ?? 0) + 1}`;
+        return "הצעת AI - בלוק מלא";
     }
 
     // --- Shared inline preview block -----------------------------------------
@@ -544,7 +544,7 @@ export default function ContentPanel({
             {/* --- Full block AI action (create-only, shown when About is empty) */}
             {cardId && !aiLocked && (bulkEligible || aiTarget === "full") && (
                 <div className={styles.aiBlock}>
-                    {/* Idle CTA — only when both fields are empty */}
+                    {/* Idle CTA - only when both fields are empty */}
                     {bulkEligible && aiTarget !== "full" && (
                         <>
                             <div className={styles.aiDisclosure}>
@@ -567,7 +567,7 @@ export default function ContentPanel({
                         </>
                     )}
 
-                    {/* Full-block loading/error/preview — stays visible while flow is active */}
+                    {/* Full-block loading/error/preview - stays visible while flow is active */}
                     {aiTarget === "full" && renderAiStatus()}
                     {aiTarget === "full" && renderAiPreview()}
                 </div>

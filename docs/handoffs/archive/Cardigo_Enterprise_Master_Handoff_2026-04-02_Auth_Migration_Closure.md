@@ -1,4 +1,5 @@
-# Cardigo — Enterprise Master Handoff / Next Chat Playbook
+# Cardigo - Enterprise Master Handoff / Next Chat Playbook
+
 _Обновлено: 2026-04-02 (после финального closure audit + docs/anti-drift closure по auth/security migration program)_
 
 ---
@@ -15,9 +16,9 @@ _Обновлено: 2026-04-02 (после финального closure audit +
 - удержать следующий чат от `scope creep`, broad refactor, решений “на глаз” и случайного architectural drift;
 - сохранить **закрытые контуры** закрытыми;
 - чётко отделить:
-  - то, что уже завершено,
-  - то, что intentionally deferred,
-  - то, что логично брать следующим bounded workstream;
+    - то, что уже завершено,
+    - то, что intentionally deferred,
+    - то, что логично брать следующим bounded workstream;
 - зафиксировать, что **большая программа auth/security migration в текущем scope завершена** и больше не требует “усилений ради усилений”.
 
 Этот файл нужно воспринимать как:
@@ -37,9 +38,9 @@ _Обновлено: 2026-04-02 (после финального closure audit +
 
 ### 1.1 Продукт
 
-**Cardigo** — это зрелый Israel-first SaaS-продукт для создания, управления, публикации и распространения **цифровых визитных карточек**.
+**Cardigo** - это зрелый Israel-first SaaS-продукт для создания, управления, публикации и распространения **цифровых визитных карточек**.
 
-Но по факту Cardigo — это не “просто визитка”.
+Но по факту Cardigo - это не “просто визитка”.
 
 Текущая продуктовая формула:
 
@@ -69,11 +70,11 @@ _Обновлено: 2026-04-02 (после финального closure audit +
 
 ### 1.2 Рынок и продуктовая ориентация
 
-Cardigo — **Israel-first / Israel-only baseline**.
+Cardigo - **Israel-first / Israel-only baseline**.
 
 Это означает:
 
-- иврит / RTL — product default;
+- иврит / RTL - product default;
 - product assumptions строятся под Израиль;
 - multi-locale пока не является базовой product truth;
 - использование `IL` как trusted default допустимо там, где это не ломает contracts и truth.
@@ -84,8 +85,8 @@ Cardigo — **Israel-first / Israel-only baseline**.
 
 Критический инвариант:
 
-- **Cardigo** — отдельный продукт;
-- **Digitalyty** — отдельный бренд / сайт / маркетинговый слой.
+- **Cardigo** - отдельный продукт;
+- **Digitalyty** - отдельный бренд / сайт / маркетинговый слой.
 
 Их нельзя смешивать в:
 
@@ -108,7 +109,7 @@ Production truth:
 
 Политика:
 
-- canonical — non-www;
+- canonical - non-www;
 - Cardigo и Digitalyty не смешивать в canonical / OG / sitemap / URL logic / product copy / structured data.
 
 ---
@@ -157,7 +158,7 @@ Production truth:
 
 - production structural truth не должна рождаться хаотично на runtime;
 - критичные индексы поднимаются **вручную**;
-- миграции и sanity scripts — канонический путь;
+- миграции и sanity scripts - канонический путь;
 - drift должен выявляться и исправляться осознанно, а не “сам создался и ладно”.
 
 ---
@@ -226,13 +227,13 @@ Manual indexes / bootstrap tooling были подтверждены для:
 
 - scripts, которые не делали `mongoose.disconnect()`;
 - bookings migration:
-  - `NamespaceNotFound` safe path;
-  - замена `process.exit()` на более безопасный lifecycle;
-  - фикс `expireAfterSeconds: null` в non-TTL index path;
+    - `NamespaceNotFound` safe path;
+    - замена `process.exit()` на более безопасный lifecycle;
+    - фикс `expireAfterSeconds: null` в non-TTL index path;
 - leads migration:
-  - dry-run/apply mismatch;
-  - missing governed indexes;
-  - добавлены `idx_leads_mailbox` и `idx_leads_deletedAt_ttl`.
+    - dry-run/apply mismatch;
+    - missing governed indexes;
+    - добавлены `idx_leads_mailbox` и `idx_leads_deletedAt_ttl`.
 
 ---
 
@@ -268,21 +269,21 @@ Manual indexes / bootstrap tooling были подтверждены для:
 - технический консалтинг по backend, frontend, API architecture, data storage, deployment и production readiness;
 - code review и improvement proposals с фокусом на качество, maintainability, clean code principles и design patterns;
 - guidance по secure mechanisms:
-  - CSRF/XSS/injection defenses,
-  - data protection,
-  - password / reset / token flow hardening,
-  - privacy / consent / legal truth;
+    - CSRF/XSS/injection defenses,
+    - data protection,
+    - password / reset / token flow hardening,
+    - privacy / consent / legal truth;
 - помощь по CI/CD, monitoring, alerts, release discipline;
 - поддержку документации:
-  - technical docs,
-  - runbooks,
-  - README,
-  - next-chat handoffs,
-  - anti-drift guidance.
+    - technical docs,
+    - runbooks,
+    - README,
+    - next-chat handoffs,
+    - anti-drift guidance.
 
 ### 4.2 Роль Copilot Agent
 
-Copilot Agent — **исполнитель**, а не архитектор.
+Copilot Agent - **исполнитель**, а не архитектор.
 
 Его роль:
 
@@ -302,9 +303,9 @@ Copilot Agent — **исполнитель**, а не архитектор.
 Всегда соблюдать:
 
 1. **Architecture / intent clarification**
-2. **Phase 1 — Read-Only Audit with PROOF**
-3. **Phase 2 — Minimal Fix**
-4. **Phase 3 — Verification with RAW stdout + EXIT**
+2. **Phase 1 - Read-Only Audit with PROOF**
+3. **Phase 2 - Minimal Fix**
+4. **Phase 3 - Verification with RAW stdout + EXIT**
 5. **Documentation / Handoff**
 
 Никаких code changes до audit.  
@@ -323,16 +324,16 @@ Hard constraints:
 - No git commands
 - No inline styles
 - CSS Modules only
-- Flex only — no grid
+- Flex only - no grid
 - Mobile-first mandatory
 - Typography policy:
-  - font-size only via var(--fs-*)
-  - use only existing approved typography tokens from canonical SSoT
-  - do NOT invent token names ad hoc
-  - do NOT leak card-scope tokens into app/public/auth/admin/site-shell
-  - --fs-* rem-only
-  - no px/em/%/vw/vh/clamp/fluid
-  - no calc(non-rem)
+    - font-size only via var(--fs-\*)
+    - use only existing approved typography tokens from canonical SSoT
+    - do NOT invent token names ad hoc
+    - do NOT leak card-scope tokens into app/public/auth/admin/site-shell
+    - --fs-\* rem-only
+    - no px/em/%/vw/vh/clamp/fluid
+    - no calc(non-rem)
 
 ### 5.3 Тактические правила
 
@@ -343,12 +344,12 @@ Hard constraints:
 - broad refactor запрещён, пока он не доказан как safest path;
 - verification важнее уверенного тона;
 - в high-blast-radius зоны входить только при явной необходимости;
-- smoke/manual проверки — через PowerShell + `curl.exe`, где уместно;
-- если речь о двух фазах — помнить, что для Cardigo verification всегда отдельная обязательная фаза;
+- smoke/manual проверки - через PowerShell + `curl.exe`, где уместно;
+- если речь о двух фазах - помнить, что для Cardigo verification всегда отдельная обязательная фаза;
 - **никогда не переходить к следующей задаче, пока в текущей не убраны / не улажены все хвосты**;
 - хвост считается закрытым только если он:
-  - либо исправлен,
-  - либо явно классифицирован как non-blocking / deferred / intentional truth.
+    - либо исправлен,
+    - либо явно классифицирован как non-blocking / deferred / intentional truth.
 
 ### 5.4 Как формулировать хорошие задачи Copilot
 
@@ -386,11 +387,11 @@ Hard constraints:
 - skins token-only;
 - никаких structural styles в skins;
 - никаких `url()`, background images и layout-решений в token layer;
-- app shell, public pages, editor shell, preview wrapper и card boundary — разные контуры, их нельзя смешивать “по чувству”.
+- app shell, public pages, editor shell, preview wrapper и card boundary - разные контуры, их нельзя смешивать “по чувству”.
 
 ### 6.2 Typography law
 
-Typography policy — корпоративный закон:
+Typography policy - корпоративный закон:
 
 - `font-size` только через `var(--fs-*)`;
 - `--fs-*` только rem-only;
@@ -441,7 +442,7 @@ Typography policy — корпоративный закон:
 
 ---
 
-## 8) Большая auth/security migration program — что было сделано
+## 8) Большая auth/security migration program - что было сделано
 
 Это важнейшая часть текущего handoff.
 
@@ -452,11 +453,13 @@ Typography policy — корпоративный закон:
 ### 8.2 Что закрыто по факту
 
 #### Browser runtime
+
 - browser runtime переведён на **httpOnly cookie-backed auth**;
 - browser auth больше не строится на `localStorage["token"]`;
 - browser-side `Authorization` header как primary auth mechanism убран.
 
 #### Response-body token decommission
+
 JWT больше не возвращается в body для browser auth flows:
 
 - `/auth/login`
@@ -464,20 +467,23 @@ JWT больше не возвращается в body для browser auth flows
 - `/invites/accept`
 
 #### Browser localStorage auth truth removal
+
 - auth token больше не живёт в browser localStorage;
 - остались только non-auth localStorage keys, которые допустимы:
-  - cooldown flags,
-  - device/anonymous IDs,
-  - AI consent,
-  - UX/analytics opt-outs и т.п.
+    - cooldown flags,
+    - device/anonymous IDs,
+    - AI consent,
+    - UX/analytics opt-outs и т.п.
 
 #### Admin regression closure
+
 - `requireAdmin` больше не ломает browser runtime в cookie-backed модели;
 - `/admin` снова доступен корректно;
 - tabs/users/cards/orgs грузятся;
 - non-admin не получает admin access.
 
 #### CSRF contour
+
 Принята и закрыта текущая CSRF truth:
 
 - cookie-auth mutation requests требуют `X-Requested-With: XMLHttpRequest`;
@@ -487,6 +493,7 @@ JWT больше не возвращается в body для browser auth flows
 - **не reopen-ить casually** без нового отдельного contour-а.
 
 #### CORS contour
+
 Принята и закрыта текущая CORS truth:
 
 - explicit allowlist from `CORS_ORIGINS`;
@@ -497,6 +504,7 @@ JWT больше не возвращается в body для browser auth flows
 - **не reopen-ить casually** без нового отдельного contour-а.
 
 #### Bearer/tooling decision
+
 Закрыт не удалением, а зрелым decision:
 
 - backend dual-mode middleware intentionally оставлен;
@@ -505,6 +513,7 @@ JWT больше не возвращается в body для browser auth flows
 - сейчас removal **не justified**.
 
 #### Observability / correctness fixes
+
 Были закрыты узкие foundation gaps:
 
 - structured logging для CSRF rejections;
@@ -513,6 +522,7 @@ JWT больше не возвращается в body для browser auth flows
   **`Authorization, Cookie`**
 
 #### Startup/runtime validation hardening
+
 Закрыты важные env/runtime gaps:
 
 - `JWT_SECRET` теперь fail-fast на startup;
@@ -526,7 +536,7 @@ JWT больше не возвращается в body для browser auth flows
 
 ### 9.1 Browser auth contract
 
-Browser auth теперь — это:
+Browser auth теперь - это:
 
 - **cookie-backed**
 - **httpOnly**
@@ -560,26 +570,31 @@ Backend middleware intentionally остаётся:
 ### 9.4 Response-body truth
 
 #### `/register`
+
 - **не выдаёт auth cookie/session**
 - response truth:
-  - `{ registered: true, isVerified: false }`
+    - `{ registered: true, isVerified: false }`
 
 #### `/login`
+
 - **ставит auth cookie**
 - response truth:
-  - `{ ok: true }`
+    - `{ ok: true }`
 
 #### `/auth/signup-consume`
+
 - **ставит auth cookie**
 - response truth:
-  - `{ ok: true }`
+    - `{ ok: true }`
 
 #### `/invites/accept`
+
 - **ставит auth cookie**
 - response truth:
-  - `{ ok: true, orgId, orgSlug }`
+    - `{ ok: true, orgId, orgSlug }`
 
 ### 9.5 `/auth/me`
+
 - browser truth: cookie-backed auth
 - tooling/curl truth: Bearer still accepted
 - `Vary: Authorization, Cookie`
@@ -612,11 +627,12 @@ Backend middleware intentionally остаётся:
 
 ---
 
-## 11) Docs + anti-drift closure — что было сделано
+## 11) Docs + anti-drift closure - что было сделано
 
 После завершения technical contour был сделан отдельный bounded docs workstream.
 
-### 11.1 Pass 1 — Tier 0 anti-drift
+### 11.1 Pass 1 - Tier 0 anti-drift
+
 Обновлены instruction files, чтобы будущий Copilot не регрессировал проект назад:
 
 - `copilot-instructions.md`
@@ -634,7 +650,8 @@ Backend middleware intentionally остаётся:
 - startup env validation contract;
 - closed contours must not be casually reopened.
 
-### 11.2 Pass 2 — Tier 1/2 docs truth-alignment
+### 11.2 Pass 2 - Tier 1/2 docs truth-alignment
+
 Обновлены только нужные docs:
 
 - `api-security.md`
@@ -651,6 +668,7 @@ Backend middleware intentionally остаётся:
 - stale `Vary` wording.
 
 ### 11.3 Что consciously не смешивали
+
 В docs closure **не включали**:
 
 - code files;
@@ -666,6 +684,7 @@ Backend middleware intentionally остаётся:
 Это критично. Следующий чат не должен casually смешивать это с уже закрытыми контурами.
 
 ### 12.1 Gate / public launch strategy
+
 Production всё ещё **behind gate**.
 
 Это отдельный contour:
@@ -675,11 +694,13 @@ Production всё ещё **behind gate**.
 - как делать public launch safely.
 
 ### 12.2 Refresh-token architecture
+
 Refresh-token contour **не делался**.
 
 Это отдельный contour и только по отдельному audit/decision.
 
 ### 12.3 Broader auth redesign
+
 Не было:
 
 - full session-store redesign;
@@ -690,6 +711,7 @@ Refresh-token contour **не делался**.
 Это не нужно примешивать задним числом к уже закрытому bounded contour-у.
 
 ### 12.4 CARDIGO_NOTIFY_TOKEN / payment-notify contour
+
 Это **отдельный будущий contour**, а не хвост текущей migration program.
 
 Сейчас правильная truth такая:
@@ -699,16 +721,17 @@ Refresh-token contour **не делался**.
 - payment notify audit брать только как **новый отдельный bounded workstream**, когда интеграция станет реальной или близкой к go-live.
 
 ### 12.5 Non-blocking notes, которые сознательно не трогали в этом scope
+
 Это **не проблемы, требующие срочного движения**, а либо intentional truth, либо отдельные future micro-contours:
 
-- `CARDIGO_NOTIFY_TOKEN` — отдельный будущий payment/webhook contour;
-- Bearer tooling contract — intentional;
-- non-auth localStorage keys — допустимы;
-- no-origin CORS path — intentional truth;
-- logout without full revocation — accepted stateless truth;
-- `app.js` stale comment — отдельный micro-fix, если вообще будет иметь смысл;
-- `AUTH_COOKIE_NAME` dedup — optional tech-debt note, не security issue;
-- `admin.middleware.js` `Vary` consistency — optional low-priority note.
+- `CARDIGO_NOTIFY_TOKEN` - отдельный будущий payment/webhook contour;
+- Bearer tooling contract - intentional;
+- non-auth localStorage keys - допустимы;
+- no-origin CORS path - intentional truth;
+- logout without full revocation - accepted stateless truth;
+- `app.js` stale comment - отдельный micro-fix, если вообще будет иметь смысл;
+- `AUTH_COOKIE_NAME` dedup - optional tech-debt note, не security issue;
+- `admin.middleware.js` `Vary` consistency - optional low-priority note.
 
 ---
 
@@ -755,16 +778,19 @@ Refresh-token contour **не делался**.
 
 Правильная логика:
 
-### Вариант A — остановиться и считать этот круг закрытым
+### Вариант A - остановиться и считать этот круг закрытым
+
 Это зрелый вариант. Не обязательно открывать новый contour немедленно.
 
-### Вариант B — новый отдельный bounded workstream
+### Вариант B - новый отдельный bounded workstream
+
 Если реально нужен следующий contour, самый логичный кандидат:
 
 - **payment notify / webhook audit**
 - но только если Tranzila уже близка к реальной интеграционной truth
 
 Что не стоит делать:
+
 - переводить tooling Bearer на cookies “чтобы завершить круг”;
 - удалять legacy просто ради симметрии;
 - делать новый hardening без доказанного blocking residual.
@@ -775,8 +801,8 @@ Refresh-token contour **не делался**.
 
 Следующий чат должен помнить:
 
-- ChatGPT здесь — архитектор, не code monkey;
-- Copilot — исполнитель;
+- ChatGPT здесь - архитектор, не code monkey;
+- Copilot - исполнитель;
 - всё делается bounded contours;
 - сначала доказать truth;
 - потом minimal fix;
@@ -790,7 +816,7 @@ Refresh-token contour **не делался**.
 ## 17) Ready-to-paste bootstrap для нового окна ChatGPT
 
 ```text
-Ты — Senior Project Architect / Senior Full-Stack Engineer / Enterprise Consultant для Cardigo. Работаем enterprise-grade. Copilot — исполнитель.
+Ты - Senior Project Architect / Senior Full-Stack Engineer / Enterprise Consultant для Cardigo. Работаем enterprise-grade. Copilot - исполнитель.
 
 Работаем строго фазами:
 Phase 1 Read-Only Audit с PROOF (file:line-range) → STOP;
@@ -804,7 +830,7 @@ Hard constraints:
 - No git commands
 - No inline styles
 - CSS Modules only
-- Flex only — no grid
+- Flex only - no grid
 - Mobile-first mandatory
 - Typography policy:
   - font-size only via var(--fs-*)
@@ -854,7 +880,7 @@ Auth/security truth:
   - JWT_SECRET required at startup
   - CARDIGO_PROXY_SHARED_SECRET required at startup in production only
 
-Closed contours — do NOT casually reopen:
+Closed contours - do NOT casually reopen:
 - browser auth migration
 - response-body token decommission
 - browser localStorage auth removal
@@ -884,7 +910,7 @@ Choose safest mature path over fastest hack.
 - runtime truth стабилизирована;
 - auth/security modernization дошла до серьёзного milestone;
 - docs truth и anti-drift layer закрыты;
-- и потому главный риск дальше — не отсутствие фичи, а **неосторожное смешивание контуров** и “улучшения ради улучшений”.
+- и потому главный риск дальше - не отсутствие фичи, а **неосторожное смешивание контуров** и “улучшения ради улучшений”.
 
 ### Главное правило продолжения
 
@@ -902,13 +928,13 @@ Choose safest mature path over fastest hack.
 
 ChatGPT здесь не “помогатор по коду”.
 
-ChatGPT здесь — **архитектор**, который:
+ChatGPT здесь - **архитектор**, который:
 
 - защищает invariants;
 - держит discipline;
 - следит за blast radius;
 - не даёт проекту скатиться в хаотичные патчи;
-- не создаёт новые задачи там, где mature decision — это остановиться.
+- не создаёт новые задачи там, где mature decision - это остановиться.
 
 ### Главный итог текущего milestone
 

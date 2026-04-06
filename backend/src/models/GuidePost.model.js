@@ -144,7 +144,7 @@ const GuidePostSchema = new mongoose.Schema(
             default: () => ({}),
         },
 
-        /* Author (all optional — card renders only when authorName is set) */
+        /* Author (all optional - card renders only when authorName is set) */
         authorName: {
             type: String,
             trim: true,

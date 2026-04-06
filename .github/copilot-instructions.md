@@ -1,6 +1,6 @@
-# Copilot Instructions (Project-Wide) — Cardigo / The-Card
+# Copilot Instructions (Project-Wide) - Cardigo / The-Card
 
-Project: Cardigo — Digital Business Cards SaaS (RTL-first, Israel).  
+Project: Cardigo - Digital Business Cards SaaS (RTL-first, Israel).  
 Repo: monorepo (`frontend/` React+Vite, `backend/` Node/Express+Mongo, uploads via Supabase).
 
 Ops/Deploy SSoT:
@@ -19,7 +19,7 @@ Priorities (in order): (1) correctness/stability, (2) security/tenant isolation,
 
 For EVERY task you must follow the 2-phase workflow:
 
-### Phase 1 — READ-ONLY AUDIT (no edits)
+### Phase 1 - READ-ONLY AUDIT (no edits)
 
 - Build the flow map UI → API → backend → DB where relevant.
 - Provide **PROOF (file:line)** for every critical claim.
@@ -28,7 +28,7 @@ For EVERY task you must follow the 2-phase workflow:
     - **Minimal Change Surface** (prefer **1–3 files**),
     - DoD/QA checklist.
 
-### Phase 2 — MINIMAL FIX (only after Phase 1)
+### Phase 2 - MINIMAL FIX (only after Phase 1)
 
 - Make the smallest safe change set (prefer **1–3 files**, no drive-by refactors).
 - Preserve contracts and backward compatibility unless explicitly approved.
@@ -42,19 +42,19 @@ For EVERY task you must follow the 2-phase workflow:
 
 ## 1) Non-Negotiable Rules (MUST)
 
-### 1.1 No git commands — EVER
+### 1.1 No git commands - EVER
 
 - No checkout/restore/add/commit/push/tag/stash, no “please run git …”.
 - If a git action is needed, state it as: “User should run …” only if the user explicitly asked.
 
-### 1.2 NO inline styles — CSS Modules only
+### 1.2 NO inline styles - CSS Modules only
 
 - No `style="..."` in HTML.
 - No React `style={{ ... }}` props.
 - Styling must be done via **CSS Modules** only.
-- **Clarification:** `data:image/*` constants (placeholders in configs) are **NOT** “inline styles” — the ban is about inline CSS.
+- **Clarification:** `data:image/*` constants (placeholders in configs) are **NOT** “inline styles” - the ban is about inline CSS.
 
-### 1.3 NO CSS Grid — FLEX ONLY (hard ban)
+### 1.3 NO CSS Grid - FLEX ONLY (hard ban)
 
 - **Never use CSS Grid anywhere** (no `display: grid`, no `grid-template-*`, no `grid-*`).
 - Use Flexbox only: `display:flex`, `flex-wrap`, `gap`, nested flex rows/cols, max-widths, logical props.
@@ -69,7 +69,7 @@ For EVERY task you must follow the 2-phase workflow:
     - typography rules beyond tokens (only override `--fs-*`, `--lh-*`, color tokens, etc.).
 - No inline CSS, no global overrides from skins.
 
-### 1.5 SSoT render chain — public and preview must match
+### 1.5 SSoT render chain - public and preview must match
 
 - One canonical render pipeline for public + preview.
 - Do not create parallel render paths.
@@ -98,7 +98,7 @@ For EVERY task you must follow the 2-phase workflow:
 ### 1.9 Ephemeral verification artifacts must be deleted before the workstream ends
 
 - Any file created for verification, probing, debugging, dry-runs, or one-off analysis (e.g. `_tmp_*.mjs`, `_tmp_*.ps1`, `_tmp_*.sh`, or any `_tmp_*`-prefixed file) is ephemeral.
-- Before finishing a task, check whether each such file is still referenced anywhere (e.g. `tasks.json`, imports, scripts). If it is not referenced — delete it.
+- Before finishing a task, check whether each such file is still referenced anywhere (e.g. `tasks.json`, imports, scripts). If it is not referenced - delete it.
 - Do not leave `_tmp_*` scripts or probe artifacts in `backend/`, `backend/scripts/`, the repo root, or anywhere else in the repo.
 - Output captures (`_tmp_*.txt`, `_tmp_*.json`) are gitignored but must still be cleaned up proactively; do not rely on `.gitignore` as an excuse to leave them.
 - If a temp script proves genuinely reusable, promote it to a properly named permanent file under the correct directory. Never keep a file named `_tmp_*` as a long-term artifact.
@@ -107,20 +107,20 @@ For EVERY task you must follow the 2-phase workflow:
 
 ## 2) SSoT & Precedence (when texts disagree)
 
-**Tier 0 — Execution Law (highest priority)**
+**Tier 0 - Execution Law (highest priority)**
 
 - `.github/copilot-instructions.md` (this file)
 - `.github/instructions/backend.instructions.md`
 - `.github/instructions/frontend.instructions.md`
 
-**Tier 1 — Product / Security Canon**
+**Tier 1 - Product / Security Canon**
 
 - `docs/policies/POLICY_ORGS.md`
 - `docs/security/SECURITY_AUTH_INVITES.md`
 - `docs/policies/frontend-markup-styling.md`
 - `docs/policies/typography-mobile-first.md`
 
-**Tier 2 — Architecture / Ops Contracts**
+**Tier 2 - Architecture / Ops Contracts**
 
 - `docs/admin.md`
 - `docs/cards-styling-architecture.md`
@@ -129,7 +129,7 @@ For EVERY task you must follow the 2-phase workflow:
 - `backend/README.md`
 - `.github/workflows/backend-index-governance.yml`
 
-**Tier 3 — Evidence / Reports / Checklists (NOT CANON)**
+**Tier 3 - Evidence / Reports / Checklists (NOT CANON)**
 
 - `docs/phase-2-report.md`
 - `docs/phase-3-report.md`
@@ -139,7 +139,7 @@ For EVERY task you must follow the 2-phase workflow:
 - `docs/template-qa-matrix.md`
 - `docs/upload-supabase-manual-checklist.md`
 
-If a Tier 3 document conflicts with Tier 0/1/2 — Tier 3 is historical only.
+If a Tier 3 document conflicts with Tier 0/1/2 - Tier 3 is historical only.
 
 ---
 
@@ -183,12 +183,12 @@ Paste raw outputs + EXIT codes. Never claim you ran checks you didn’t run.
 - Avoid resource existence leaks where policy requires anti-enumeration.
 - Use bounded aggregates/maps for analytics; enforce safe keys (no `.` / `$`).
 - Never expose internal fields (billing/adminOverride/etc.) to non-admin clients.
-- Auth response-body contract: `login`, `signup-consume`, `invite-accept` return `{ ok: true }` — they do **not** return JWT tokens in the response body. Auth credential is set as an httpOnly cookie only.
+- Auth response-body contract: `login`, `signup-consume`, `invite-accept` return `{ ok: true }` - they do **not** return JWT tokens in the response body. Auth credential is set as an httpOnly cookie only.
 - CSRF contract: cookie-auth mutation requests require `X-Requested-With: XMLHttpRequest`. Frontend sends this header by default on every request.
 - CORS contract: explicit allowlist from `CORS_ORIGINS` env, `credentials: true`, no wildcard origin drift.
 - Closed contour discipline: the following contours are closed and must not be casually reopened without explicit architect approval and a bounded audit:
     - browser auth cookie migration
-    - CSRF (X-Requested-With) — bounded exception: analytics write endpoints are CSRF-exempt (sendBeacon limitation)
+    - CSRF (X-Requested-With) - bounded exception: analytics write endpoints are CSRF-exempt (sendBeacon limitation)
     - CORS hardening
     - Bearer/tooling decision (dual-mode intentional)
     - startup env validation hardening

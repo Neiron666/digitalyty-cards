@@ -268,7 +268,7 @@ export async function getAdminSiteAnalyticsDiagnostics(req, res) {
  * GET /admin/site-analytics/visits?range=<1|7|30|90>
  *
  * Visit-level intelligence from SiteAnalyticsVisit.
- * All unique-visitor counts use DISTINCT deviceHash aggregation —
+ * All unique-visitor counts use DISTINCT deviceHash aggregation -
  * never derived by summing per-source uniques.
  */
 export async function getAdminSiteAnalyticsVisits(req, res) {
@@ -280,7 +280,7 @@ export async function getAdminSiteAnalyticsVisits(req, res) {
     const startDate = addUtcDays(today, -(rangeDays - 1));
     const startDay = utcDayKey(startDate);
 
-    // Single $facet aggregation — one collection scan, four sub-pipelines.
+    // Single $facet aggregation - one collection scan, four sub-pipelines.
     // $match result is shared as input to all four.
     const [result = {}] = await SiteAnalyticsVisit.aggregate([
         { $match: { siteKey, day: { $gte: startDay, $lte: endDay } } },
@@ -433,7 +433,7 @@ export async function getAdminSiteAnalyticsVisits(req, res) {
     }));
 
     // uniquesBySource: DISTINCT deviceHash per source, sorted desc by unique count.
-    // Cross-source DISTINCT is totalUniqueVisitors — do not sum these.
+    // Cross-source DISTINCT is totalUniqueVisitors - do not sum these.
     const uniquesBySource = (result?.uniqueCounts ?? []).map((r) => ({
         source: r.source,
         uniqueVisitors: r.uniqueCount,

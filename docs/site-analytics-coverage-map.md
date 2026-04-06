@@ -1,4 +1,4 @@
-# Site Analytics — Coverage Map (Marketing Pages)
+# Site Analytics - Coverage Map (Marketing Pages)
 
 Scope: marketing site pages only (not `/card/*`, not `/admin`, not `/edit`).
 

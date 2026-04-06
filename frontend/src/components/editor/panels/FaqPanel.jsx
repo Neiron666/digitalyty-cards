@@ -102,7 +102,7 @@ function AiFaqConsentModal({ open, onConfirm, onCancel }) {
                 <p id={bodyId} className={styles.consentBody}>
                     ההצעה נוצרת באמצעות שירות בינה מלאכותית חיצוני. המידע העסקי
                     מהכרטיס שלך ישמש ליצירת השאלות והתשובות. התוכן המוצע הוא
-                    המלצה בלבד — תוכל לערוך או לדחות אותו לפני שמירה.
+                    המלצה בלבד - תוכל לערוך או לדחות אותו לפני שמירה.
                 </p>
                 <div className={styles.consentActions}>
                     <button
@@ -192,7 +192,7 @@ export default function FaqPanel({
         setShowConsent(false);
     }, [cardId]);
 
-    // (D) Fetch FAQ AI quota — re-runs when cardId changes
+    // (D) Fetch FAQ AI quota - re-runs when cardId changes
     useEffect(() => {
         if (!cardId) return;
         let cancelled = false;
@@ -210,7 +210,7 @@ export default function FaqPanel({
     useEffect(() => {
         if (!hasValidItems) return;
         if (aiState === "idle") return;
-        // FAQ now has valid items — clear any stale AI state
+        // FAQ now has valid items - clear any stale AI state
         reqSeqRef.current += 1;
         setAiSuggestion(null);
         setAiState("idle");
@@ -229,12 +229,12 @@ export default function FaqPanel({
             const { suggestion, quota } = await suggestFaq(cardId, {
                 target: "full",
             });
-            if (reqSeqRef.current !== seq) return; // stale — discard
+            if (reqSeqRef.current !== seq) return; // stale - discard
             setAiSuggestion(suggestion);
             setAiState("preview");
             if (quota) setAiQuota(quota);
         } catch (err) {
-            if (reqSeqRef.current !== seq) return; // stale — discard
+            if (reqSeqRef.current !== seq) return; // stale - discard
             setAiError(mapFaqAiError(err));
             setAiState("error");
             const errQuota = err?.response?.data?.quota;
@@ -366,7 +366,7 @@ export default function FaqPanel({
             {/* --- FAQ AI: empty-state CTA + loading/error/preview ---------- */}
             {cardId && !aiLocked && (aiEligible || aiState !== "idle") && (
                 <div className={styles.aiBlock}>
-                    {/* Idle CTA — only when FAQ is effectively empty */}
+                    {/* Idle CTA - only when FAQ is effectively empty */}
                     {aiEligible && aiState === "idle" && (
                         <>
                             <div className={styles.aiDisclosure}>
@@ -410,7 +410,7 @@ export default function FaqPanel({
                     {aiState === "preview" && aiSuggestion?.items && (
                         <div className={styles.aiPreview}>
                             <div className={styles.aiPreviewTitle}>
-                                הצעת AI — שאלות ותשובות
+                                הצעת AI - שאלות ותשובות
                             </div>
                             {aiSuggestion.items.map((it, i) => (
                                 <div key={i} className={styles.aiPreviewItem}>

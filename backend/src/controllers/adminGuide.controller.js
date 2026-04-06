@@ -1,5 +1,5 @@
 /**
- * Guides — admin CRUD controller.
+ * Guides - admin CRUD controller.
  *
  * All endpoints are behind requireAdmin (via admin.routes.js mount).
  * heroImage stores only { storagePath, alt }; URL is computed via getPublicUrlForPath.
@@ -105,10 +105,10 @@ function validateSlugFormat(slug) {
 }
 
 /**
- * Check if a slug is already taken — either as a current slug or as a
+ * Check if a slug is already taken - either as a current slug or as a
  * historical alias (previousSlugs) on any guide post.
  * @param {string} candidate
- * @param {import('mongoose').Types.ObjectId|string} [excludePostId] — skip this post's current slug from the check (used during update)
+ * @param {import('mongoose').Types.ObjectId|string} [excludePostId] - skip this post's current slug from the check (used during update)
  */
 async function isSlugTaken(candidate, excludePostId) {
     const currentSlugFilter = excludePostId
@@ -178,7 +178,7 @@ function normalizeSections(raw, existingSections) {
                 alt: truncate(s.image.alt, GUIDE_SECTION_IMAGE_ALT_MAX),
             };
         } else if (existing[i]?.image?.storagePath) {
-            // Frontend payload lacks storagePath — preserve DB image
+            // Frontend payload lacks storagePath - preserve DB image
             section.image = {
                 storagePath: existing[i].image.storagePath,
                 alt: truncate(
@@ -421,7 +421,7 @@ export async function updateGuidePost(req, res) {
                     if (currentCount >= GUIDE_PREVIOUS_SLUGS_MAX) {
                         return res.status(422).json({
                             code: "SLUG_ALIAS_LIMIT",
-                            message: `Cannot change slug — alias history limit (${GUIDE_PREVIOUS_SLUGS_MAX}) reached`,
+                            message: `Cannot change slug - alias history limit (${GUIDE_PREVIOUS_SLUGS_MAX}) reached`,
                         });
                     }
                 }
@@ -455,7 +455,7 @@ export async function updateGuidePost(req, res) {
             return res.json(pickAdminDTO(post));
         }
 
-        // Build atomic update ops — preserve alias if ever-published
+        // Build atomic update ops - preserve alias if ever-published
         const updateOps = { $set };
         const everPublished = Boolean(post.firstPublishedAt);
         if (slugChanged && oldSlug && everPublished) {

@@ -8,7 +8,7 @@ import styles from "./Blog.module.css";
 const ORIGIN = import.meta.env.VITE_PUBLIC_ORIGIN || "https://cardigo.co.il";
 const PAGE_LIMIT = 12;
 
-/** Blog cover fallback — same asset used for OG in BlogPost. */
+/** Blog cover fallback - same asset used for OG in BlogPost. */
 const BLOG_COVER_FALLBACK = `${ORIGIN}/images/blog/fallback/blog-cardigo-bussines-img-fallback.webp`;
 
 /* ── FAQ ──────────────────────────────────────────────────────── */
@@ -36,7 +36,7 @@ const BLOG_FAQ = [
     },
     {
         q: "איך לבחור מאיזה מאמר להתחיל?",
-        a: "הדרך הטובה ביותר היא להתחיל מהנושא שהכי רלוונטי לעסק שלכם כרגע — נראות דיגיטלית, יצירת קשר עם לקוחות, SEO, כרטיס ביקור דיגיטלי או שיפור הצגת השירותים. משם אפשר להמשיך לתכנים משלימים לפי הצורך.",
+        a: "הדרך הטובה ביותר היא להתחיל מהנושא שהכי רלוונטי לעסק שלכם כרגע - נראות דיגיטלית, יצירת קשר עם לקוחות, SEO, כרטיס ביקור דיגיטלי או שיפור הצגת השירותים. משם אפשר להמשיך לתכנים משלימים לפי הצורך.",
     },
     {
         q: "האם הבלוג עוסק רק בכרטיסי ביקור דיגיטליים?",
@@ -183,7 +183,7 @@ export default function Blog() {
                         <img
                             className={styles.heroImg}
                             src="/images/blog/hero/blog-cardigo-digital-bussines-card.webp"
-                            alt="כרטיס ביקור דיגיטלי של Cardigo — דוגמה חיה לכרטיס עסקי מעוצב"
+                            alt="כרטיס ביקור דיגיטלי של Cardigo - דוגמה חיה לכרטיס עסקי מעוצב"
                             width="600"
                             height="400"
                             loading="eager"

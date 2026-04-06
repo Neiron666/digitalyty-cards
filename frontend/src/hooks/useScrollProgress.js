@@ -23,7 +23,7 @@ const REDUCED =
  * stays at CSS default (0 via fallback in presets).
  *
  * @param {object}  [opts]
- * @param {number}  [opts.threshold=0] — IO threshold for activation
+ * @param {number}  [opts.threshold=0] - IO threshold for activation
  * @param {string}  [opts.rootMargin="0px 0px 0px 0px"]
  */
 export default function useScrollProgress({

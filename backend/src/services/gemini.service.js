@@ -91,7 +91,7 @@ const SYSTEM_INSTRUCTION_FULL = `You are a professional Hebrew-first copywriter 
 
 TASK: Generate the "About" section for a digital business card.
 
-RULES — follow strictly:
+RULES - follow strictly:
 - Write in the requested language (default: Hebrew).
 - Output ONLY plain text. No markdown, no HTML, no bullet points, no lists, no formatting.
 - aboutTitle: one short, compelling headline (max ${ABOUT_TITLE_MAX_LENGTH} chars).
@@ -107,7 +107,7 @@ const SYSTEM_INSTRUCTION_TITLE = `You are a professional Hebrew-first copywriter
 
 TASK: Generate ONLY the title/headline for the "About" section of a digital business card.
 
-RULES — follow strictly:
+RULES - follow strictly:
 - Write in the requested language (default: Hebrew).
 - Output ONLY plain text. No markdown, no HTML.
 - aboutTitle: one short, compelling headline (max ${ABOUT_TITLE_MAX_LENGTH} chars).
@@ -121,7 +121,7 @@ const SYSTEM_INSTRUCTION_PARAGRAPH = `You are a professional Hebrew-first copywr
 
 TASK: Generate ONLY a single paragraph for the "About" section of a digital business card.
 
-RULES — follow strictly:
+RULES - follow strictly:
 - Write in the requested language (default: Hebrew).
 - Output ONLY plain text. No markdown, no HTML, no bullet points, no lists, no formatting.
 - aboutParagraph: one concise, flowing paragraph (max ${ABOUT_PARAGRAPH_MAX_LENGTH} chars).
@@ -359,7 +359,7 @@ function getTargetConfig(target) {
  * @param {"create"|"improve"} [params.mode="create"]
  * @param {{ title?: string, paragraphs?: string[] }} [params.existingAbout]
  * @param {"full"|"title"|"paragraph"} [params.target="full"]
- * @param {number} [params.paragraphIndex] — required when target === "paragraph"
+ * @param {number} [params.paragraphIndex] - required when target === "paragraph"
  * @returns {Promise<object>} Shape depends on target.
  */
 export async function generateAboutSuggestion({
@@ -490,7 +490,7 @@ const SYSTEM_INSTRUCTION_SEO = `You are an expert SEO copywriter specializing in
 
 TASK: Generate the meta title and meta description tags for a digital business card page.
 
-RULES — follow strictly:
+RULES - follow strictly:
 - Write in the requested language (default: Hebrew).
 - Output ONLY plain text. No markdown, no HTML, no special characters beyond basic punctuation.
 - seoTitle: max ${SEO_TITLE_MAX_LENGTH} characters. Must include the business name and be compelling for search results.
@@ -710,13 +710,13 @@ const SYSTEM_INSTRUCTION_FAQ = `You are a professional Hebrew-first FAQ copywrit
 
 TASK: Generate a list of up to ${FAQ_AI_MAX_ITEMS} frequently-asked-question pairs for a digital business card page.
 
-RULES — follow strictly:
+RULES - follow strictly:
 - Write in the requested language (default: Hebrew).
 - Output ONLY plain text. No markdown, no HTML, no bullet points, no formatting.
 - Generate exactly up to ${FAQ_AI_MAX_ITEMS} distinct Q&A pairs.
 - Each question (q): max ${FAQ_AI_QUESTION_MAX_LENGTH} characters. A practical question a potential customer, client, or visitor would realistically ask.
 - Each answer (a): max ${FAQ_AI_ANSWER_MAX_LENGTH} characters. A concise, helpful, and honest answer.
-- Questions must be distinct from each other — no repeated or near-repeated questions.
+- Questions must be distinct from each other - no repeated or near-repeated questions.
 - Questions must be practical and relevant to the specific business, not generic filler.
 - Answers must be factual and grounded in the provided business information only.
 - Do NOT exaggerate, invent credentials, fabricate testimonials, or make unverifiable claims.

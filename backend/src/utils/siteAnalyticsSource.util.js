@@ -223,8 +223,8 @@ const UTM_SOURCE_ALIASES = new Map([
 
 /**
  * Known IAB (in-app browser) UA substrings → canonical platform key.
- * Checked in order — first match wins.
- * Uses substring matching only (no regex — DoS-safe).
+ * Checked in order - first match wins.
+ * Uses substring matching only (no regex - DoS-safe).
  */
 const IAB_UA_PATTERNS = Object.freeze([
     // Facebook (must appear before generic social checks)
@@ -272,10 +272,10 @@ function hostToSourceKey(rawHost) {
         return "duckduckgo";
     if (h === "search.yahoo.com" || h.endsWith(".yahoo.com")) return "yahoo";
 
-    // AI referrers — coalesced to channel-level key (no per-platform split here)
+    // AI referrers - coalesced to channel-level key (no per-platform split here)
     if (AI_HOST_ALLOWLIST.has(h)) return "ai";
 
-    // Unknown external host — bounded key, safe for Mongo Map field.
+    // Unknown external host - bounded key, safe for Mongo Map field.
     // Replace dots with underscores (no dots allowed in Mongo map keys via $inc).
     const safe = h
         .replace(/\./g, "_")
@@ -302,7 +302,7 @@ function hostToSourceKey(rawHost) {
  */
 export function normalizeSource({
     utmSource,
-    utmMedium, // reserved; unused — mirrors detectChannel() signature convention
+    utmMedium, // reserved; unused - mirrors detectChannel() signature convention
     referrerHost,
     userAgent,
 } = {}) {
@@ -325,7 +325,7 @@ export function normalizeSource({
     }
 
     // 3. IAB user-agent fallback (only meaningful when host was empty, i.e.
-    //    referrer suppressed — as is typical in in-app browsers).
+    //    referrer suppressed - as is typical in in-app browsers).
     if (!host) {
         const ua = String(userAgent || "");
         if (ua) {
@@ -335,7 +335,7 @@ export function normalizeSource({
         }
     }
 
-    // 4. Direct — no attributable signal.
+    // 4. Direct - no attributable signal.
     return "direct";
 }
 

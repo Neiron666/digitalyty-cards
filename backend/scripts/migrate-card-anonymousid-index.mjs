@@ -4,7 +4,7 @@
  * Manual index migration for the cards collection: anonymousId unique+sparse.
  *
  * Usage:
- *   node scripts/migrate-card-anonymousid-index.mjs              (dry-run — default, safe)
+ *   node scripts/migrate-card-anonymousid-index.mjs              (dry-run - default, safe)
  *   node scripts/migrate-card-anonymousid-index.mjs --apply      (apply index to DB)
  *   node scripts/migrate-card-anonymousid-index.mjs --apply --verbose
  *
@@ -15,7 +15,7 @@
  *   - MUST be applied before accepting any anonymous card traffic on a fresh cluster.
  *
  * Required index:
- *   1. Unique + sparse: { anonymousId: 1 } — enforces one card per anonymousId.
+ *   1. Unique + sparse: { anonymousId: 1 } - enforces one card per anonymousId.
  *      Sparse: documents without anonymousId are excluded from the index,
  *      allowing many user-owned cards (anonymousId absent/null) without conflict.
  *      Without this index, a second anonymous card creation from the same browser
@@ -95,7 +95,7 @@ async function checkDuplicateAnonymousIds(col, verbose) {
         if (err?.code === 26 || err?.codeName === "NamespaceNotFound") {
             if (verbose)
                 console.log(
-                    "  cards collection not found — no duplicates possible",
+                    "  cards collection not found - no duplicates possible",
                 );
             return false;
         }
@@ -104,7 +104,7 @@ async function checkDuplicateAnonymousIds(col, verbose) {
 
     if (dupes.length > 0) {
         console.log(
-            "DUPLICATE anonymousId values in cards — unique index BLOCKED:",
+            "DUPLICATE anonymousId values in cards - unique index BLOCKED:",
         );
         for (const d of dupes) {
             console.log(
@@ -145,13 +145,13 @@ async function ensureAnonymousIdIndex({ dryRun, verbose }) {
         const isSparse = Boolean(existing.sparse);
 
         if (isUnique && isSparse) {
-            console.log(`  ${wantName} already exists (unique+sparse) — no-op`);
+            console.log(`  ${wantName} already exists (unique+sparse) - no-op`);
             return;
         }
 
-        // Index exists but with wrong options — governance mismatch.
+        // Index exists but with wrong options - governance mismatch.
         console.error(
-            `  WARNING: ${wantName} exists but unique=${isUnique} sparse=${isSparse} — governance mismatch, manual intervention required`,
+            `  WARNING: ${wantName} exists but unique=${isUnique} sparse=${isSparse} - governance mismatch, manual intervention required`,
         );
         console.error(
             "  Expected: unique=true sparse=true. Drop and recreate manually if needed.",
@@ -174,13 +174,13 @@ async function ensureAnonymousIdIndex({ dryRun, verbose }) {
 
         if (isUnique && isSparse) {
             console.log(
-                `  index on { anonymousId: 1 } already exists as "${existingByKey.name}" (unique+sparse) — no-op`,
+                `  index on { anonymousId: 1 } already exists as "${existingByKey.name}" (unique+sparse) - no-op`,
             );
             return;
         }
 
         console.error(
-            `  WARNING: index on { anonymousId: 1 } exists as "${existingByKey.name}" but unique=${isUnique} sparse=${isSparse} — governance mismatch`,
+            `  WARNING: index on { anonymousId: 1 } exists as "${existingByKey.name}" but unique=${isUnique} sparse=${isSparse} - governance mismatch`,
         );
         process.exitCode = 2;
         return;
@@ -192,11 +192,11 @@ async function ensureAnonymousIdIndex({ dryRun, verbose }) {
     if (hasDuplicates) {
         if (dryRun) {
             console.log(
-                "  [dry-run] duplicates detected — apply would be BLOCKED until duplicates are resolved",
+                "  [dry-run] duplicates detected - apply would be BLOCKED until duplicates are resolved",
             );
         } else {
             console.error(
-                "  BLOCKED: cannot create unique+sparse anonymousId_1 — resolve duplicate anonymousId values first",
+                "  BLOCKED: cannot create unique+sparse anonymousId_1 - resolve duplicate anonymousId values first",
             );
             process.exitCode = 2;
         }
@@ -224,11 +224,11 @@ async function ensureAnonymousIdIndex({ dryRun, verbose }) {
 
         if (created && created.unique && created.sparse) {
             console.log(
-                `  created unique+sparse index ${wantName} — POST-CHECK PASS`,
+                `  created unique+sparse index ${wantName} - POST-CHECK PASS`,
             );
         } else {
             console.error(
-                `  WARNING: ${wantName} not found or incorrect after createIndex — POST-CHECK FAIL`,
+                `  WARNING: ${wantName} not found or incorrect after createIndex - POST-CHECK FAIL`,
             );
             process.exitCode = 2;
         }

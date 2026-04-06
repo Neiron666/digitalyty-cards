@@ -28,7 +28,7 @@ function saveAiConsent() {
     try {
         localStorage.setItem(AI_CONSENT_KEY, "1");
     } catch {
-        // blocked storage — proceed anyway after in-session acceptance
+        // blocked storage - proceed anyway after in-session acceptance
     }
 }
 
@@ -101,7 +101,7 @@ function SeoAiConsentModal({ open, onConfirm, onCancel }) {
                 <p id={bodyId} className={styles.consentBody}>
                     ההצעה נוצרת באמצעות שירות בינה מלאכותית חיצוני. המידע העסקי
                     מהכרטיס שלך ישמש ליצירת כותרת ותיאור לגוגל. התוכן המוצע הוא
-                    המלצה בלבד — תוכל לערוך או לדחות אותו לפני שמירה.
+                    המלצה בלבד - תוכל לערוך או לדחות אותו לפני שמירה.
                 </p>
                 <div className={styles.consentActions}>
                     <button
@@ -384,7 +384,7 @@ export default function SeoPanel({
             setRobotsManual(Boolean(raw) && !/noindex/i.test(raw));
             return;
         }
-        if (value.robots === robotsLocalRef.current) return; // local write — skip
+        if (value.robots === robotsLocalRef.current) return; // local write - skip
         robotsLocalRef.current = value.robots; // accept external value as new baseline
         const raw = (value.robots || "").trim();
         setRobotsManual(Boolean(raw) && !/noindex/i.test(raw));
@@ -610,7 +610,7 @@ export default function SeoPanel({
     return (
         <Panel title="SEO וסקריפטים">
             <div className={styles.stack}>
-                {/* ── Section 1: Basic — always open ── */}
+                {/* ── Section 1: Basic - always open ── */}
                 <div className={styles.section}>
                     <div className={styles.sectionHeader}>
                         נתונים בסיסיים לגוגל
@@ -673,13 +673,13 @@ export default function SeoPanel({
                                         <span className={styles.aiPreviewKey}>
                                             כותרת:
                                         </span>{" "}
-                                        {aiSuggestion.seoTitle || "—"}
+                                        {aiSuggestion.seoTitle || "-"}
                                     </div>
                                     <div className={styles.aiPreviewField}>
                                         <span className={styles.aiPreviewKey}>
                                             תיאור:
                                         </span>{" "}
-                                        {aiSuggestion.seoDescription || "—"}
+                                        {aiSuggestion.seoDescription || "-"}
                                     </div>
                                     <div className={styles.aiActions}>
                                         <button
@@ -736,7 +736,7 @@ export default function SeoPanel({
                     </div>
                 </div>
 
-                {/* ── Section 2: URLs & Indexing — collapsible ── */}
+                {/* ── Section 2: URLs & Indexing - collapsible ── */}
                 <details
                     className={styles.collapsible}
                     open={hasUrlsContent || undefined}
@@ -800,7 +800,7 @@ export default function SeoPanel({
                                 </div>
                                 {canonicalExampleCom ? (
                                     <div className={styles.warningText}>
-                                        נראה שזו כתובת דוגמה (example.com) —
+                                        נראה שזו כתובת דוגמה (example.com) -
                                         כדאי להחליף לכתובת האמיתית.
                                     </div>
                                 ) : null}
@@ -851,7 +851,7 @@ export default function SeoPanel({
                                         }}
                                     >
                                         <option value="default">
-                                            ברירת מחדל — הצג בגוגל (מומלץ)
+                                            ברירת מחדל - הצג בגוגל (מומלץ)
                                         </option>
                                         <option value="hide">
                                             לא להציג בגוגל
@@ -898,7 +898,7 @@ export default function SeoPanel({
                     </div>
                 </details>
 
-                {/* ── Section 3: Verification — collapsible ── */}
+                {/* ── Section 3: Verification - collapsible ── */}
                 <details
                     className={styles.collapsible}
                     open={hasVerificationContent || undefined}
@@ -953,7 +953,7 @@ export default function SeoPanel({
                     </div>
                 </details>
 
-                {/* ── Section 4: Tracking & Analytics — collapsible ── */}
+                {/* ── Section 4: Tracking & Analytics - collapsible ── */}
                 <details
                     className={styles.collapsible}
                     open={hasTrackingContent || undefined}
@@ -1020,7 +1020,7 @@ export default function SeoPanel({
                     </div>
                 </details>
 
-                {/* ── Section 5: Structured Data — collapsible ── */}
+                {/* ── Section 5: Structured Data - collapsible ── */}
                 <details
                     className={styles.collapsible}
                     open={hasJsonLdContent || undefined}
@@ -1081,7 +1081,7 @@ export default function SeoPanel({
                             open={hadJsonLdOnEntry || undefined}
                         >
                             <summary className={styles.collapsibleTrigger}>
-                                מתקדם — עריכה ידנית
+                                מתקדם - עריכה ידנית
                             </summary>
                             <div className={styles.collapsibleContent}>
                                 <div className={styles.row}>

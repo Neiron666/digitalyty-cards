@@ -45,7 +45,7 @@ async function checkDuplicates(verbose) {
         if (code === 26 || codeName === "NamespaceNotFound") {
             if (verbose) {
                 console.log(
-                    "collection does not exist yet — no duplicates possible",
+                    "collection does not exist yet - no duplicates possible",
                 );
             }
             return false;
@@ -55,7 +55,7 @@ async function checkDuplicates(verbose) {
 
     if (dupes.length > 0) {
         console.log(
-            "DUPLICATES FOUND — unique index cannot be created safely:",
+            "DUPLICATES FOUND - unique index cannot be created safely:",
         );
         for (const d of dupes) {
             console.log(
@@ -99,7 +99,7 @@ async function ensureIndexes({ dryRun, verbose }) {
     const wantName = "userId_1_feature_1_periodKey_1";
 
     if (byName.has(wantName)) {
-        console.log(`${wantName} already exists — no-op`);
+        console.log(`${wantName} already exists - no-op`);
         return;
     }
 
@@ -109,11 +109,11 @@ async function ensureIndexes({ dryRun, verbose }) {
     if (hasDuplicates) {
         if (dryRun) {
             console.log(
-                `[dry-run] duplicates detected — apply would be BLOCKED until duplicates are resolved`,
+                `[dry-run] duplicates detected - apply would be BLOCKED until duplicates are resolved`,
             );
         } else {
             console.error(
-                `BLOCKED: cannot create unique index ${wantName} — resolve duplicate { userId, feature, periodKey } documents first`,
+                `BLOCKED: cannot create unique index ${wantName} - resolve duplicate { userId, feature, periodKey } documents first`,
             );
             process.exitCode = 2;
         }
@@ -140,7 +140,7 @@ async function ensureIndexes({ dryRun, verbose }) {
         const created = postByName.get(wantName);
 
         if (created && created.unique) {
-            console.log(`created unique index ${wantName} — verified`);
+            console.log(`created unique index ${wantName} - verified`);
         } else {
             console.error(
                 `WARNING: createIndex returned but ${wantName} not found in post-check`,

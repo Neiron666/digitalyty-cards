@@ -1,5 +1,5 @@
 /**
- * Guides — public read-only controller.
+ * Guides - public read-only controller.
  *
  * Only published guides are returned.
  * Draft / unpublished / missing → 404 (anti-enumeration).
@@ -56,7 +56,7 @@ function pickPublicDTO(post) {
         updatedAt: post.updatedAt || null,
         ogPath: `/og/guides/${post.slug}`,
 
-        // Author (optional — empty strings when not set)
+        // Author (optional - empty strings when not set)
         authorName: post.authorName || "",
         authorImageUrl: post.authorImageUrl || "",
         authorImageAlt: post.authorImageAlt || "",

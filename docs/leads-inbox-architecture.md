@@ -1,10 +1,10 @@
-# Leads & Inbox — Architecture & Specification (SSoT)
+# Leads & Inbox - Architecture & Specification (SSoT)
 
 > **Owner:** Full-stack (Backend + Frontend).  
 > **Last updated:** 2026-03-03.  
 > **Related docs:** [Ops Runbook → docs/runbooks/leads-inbox-ops.md](runbooks/leads-inbox-ops.md)
 
-> **⚠ Security:** Never paste real secrets, tokens, or credentials into documentation, scripts, logs, or chat. Use placeholders (`$JWT`, `$CARD_ID`, `$LEAD_ID`, etc.). Obtain test tokens via browser DevTools after a normal login — never via `jwt.sign()` or by exposing `JWT_SECRET`.
+> **⚠ Security:** Never paste real secrets, tokens, or credentials into documentation, scripts, logs, or chat. Use placeholders (`$JWT`, `$CARD_ID`, `$LEAD_ID`, etc.). Obtain test tokens via browser DevTools after a normal login - never via `jwt.sign()` or by exposing `JWT_SECRET`.
 
 ---
 
@@ -14,12 +14,12 @@ Cardigo provides a **Lead Form** on public card pages and a unified **Inbox** in
 
 ### Account-level Inbox
 
-The Inbox aggregates leads across **all active cards** owned by the authenticated user — personal and org cards alike. A single **unread badge** (rendered in the sidebar/nav) reflects total unread count across all cards.
+The Inbox aggregates leads across **all active cards** owned by the authenticated user - personal and org cards alike. A single **unread badge** (rendered in the sidebar/nav) reflects total unread count across all cards.
 
 This is intentional:
 
 - Users rarely own more than 5–10 cards; a global badge avoids per-card navigation overhead.
-- `UnreadCountContext` polls a single `GET /api/leads/unread-count` endpoint (60 s, visibility-aware) — one query, one badge.
+- `UnreadCountContext` polls a single `GET /api/leads/unread-count` endpoint (60 s, visibility-aware) - one query, one badge.
 - The Inbox list enriches each lead row with `cardLabel` (business name or slug) and `cardKind` ("personal" / "org") so the user can immediately identify which card a lead came from.
 
 ### Data lifecycle
@@ -42,7 +42,7 @@ DELETE hard-delete (trash-only guard)
 
 **Collection:** `leads`  
 **Source:** `backend/src/models/Lead.model.js`  
-**autoIndex:** OFF (project index governance — manual migration only).
+**autoIndex:** OFF (project index governance - manual migration only).
 
 ### 2.1 Schema fields
 
@@ -50,9 +50,9 @@ DELETE hard-delete (trash-only guard)
 | ------------- | ------------------- | -------- | --------------------------------------------------- |
 | `card`        | ObjectId (ref Card) | required | FK to the card that received the lead               |
 | `name`        | String              | required | Sender name (trim, maxlength 100)                   |
-| `email`       | String              | —        | Optional, trim + lowercase, maxlength 254           |
-| `phone`       | String              | —        | Optional, trim, maxlength 20                        |
-| `message`     | String              | —        | Optional, trim, maxlength 1000                      |
+| `email`       | String              | -        | Optional, trim + lowercase, maxlength 254           |
+| `phone`       | String              | -        | Optional, trim, maxlength 20                        |
+| `message`     | String              | -        | Optional, trim, maxlength 1000                      |
 | `readAt`      | Date                | `null`   | `null` = unread; `Date` = when owner read           |
 | `isImportant` | Boolean             | `false`  | Starred/important flag                              |
 | `archivedAt`  | Date                | `null`   | `null` = active; `Date` = archived                  |
@@ -64,7 +64,7 @@ DELETE hard-delete (trash-only guard)
 
 | #   | Key                                                       | Purpose                                          | Notes                          |
 | --- | --------------------------------------------------------- | ------------------------------------------------ | ------------------------------ |
-| 1   | `{ card: 1, createdAt: -1 }`                              | Base list + cascade deleteMany                   | —                              |
+| 1   | `{ card: 1, createdAt: -1 }`                              | Base list + cascade deleteMany                   | -                              |
 | 2   | `{ card: 1, readAt: 1, createdAt: -1 }`                   | Unread-count + filtered lists                    | Additive (does not replace #1) |
 | 3   | `{ card: 1, deletedAt: 1, archivedAt: 1, createdAt: -1 }` | Mailbox view tabs                                | Additive                       |
 | 4   | `{ deletedAt: 1 }`                                        | **TTL: 90 days** (`expireAfterSeconds: 7776000`) | Auto-purge trash; skips `null` |
@@ -73,7 +73,7 @@ DELETE hard-delete (trash-only guard)
 
 ### 2.3 PERSONAL_ORG pattern
 
-All cards — including personal ones — have an `orgId`. Personal cards point to a sentinel org document with `slug: "personal"` (`PERSONAL_ORG_SLUG`).
+All cards - including personal ones - have an `orgId`. Personal cards point to a sentinel org document with `slug: "personal"` (`PERSONAL_ORG_SLUG`).
 
 **Why:** The multi-tenant model requires every card to belong to an org for consistent query patterns. The sentinel org avoids null-checks and partial indexes on `orgId`.
 
@@ -93,7 +93,7 @@ Source: `backend/src/utils/personalOrg.util.js` (L3: `PERSONAL_ORG_SLUG`, L59–
 
 Base path: `/api/leads` (mounted via `backend/src/routes/lead.routes.js`).
 
-### 3.1 POST /api/leads — Public lead submission
+### 3.1 POST /api/leads - Public lead submission
 
 **Auth:** None (public).  
 **Rate limits:** IP-level (15 req / 15 min) + IP:cardId composite (5 req / 15 min).  
@@ -117,13 +117,13 @@ Base path: `/api/leads` (mounted via `backend/src/routes/lead.routes.js`).
 
 `sanitizeLeadInput(body)` in `leadSanitize.js` (L44–83):
 
-1. `cardId` — trim, `isValidObjectId()` check.
-2. `website` (honeypot) — extracted as `hp`.
-3. `name` — `stripTags(max 100)`, required.
-4. `email` — `stripTags(max 254)`, lowercase, RFC regex if present.
-5. `phone` — `stripTags(max 20)`, optional.
-6. `message` — `stripTags(max 1000, allowNewlines: true)`, optional.
-7. `consent` — strict: `raw.consent === true` (not truthy — must be boolean `true`).
+1. `cardId` - trim, `isValidObjectId()` check.
+2. `website` (honeypot) - extracted as `hp`.
+3. `name` - `stripTags(max 100)`, required.
+4. `email` - `stripTags(max 254)`, lowercase, RFC regex if present.
+5. `phone` - `stripTags(max 20)`, optional.
+6. `message` - `stripTags(max 1000, allowNewlines: true)`, optional.
+7. `consent` - strict: `raw.consent === true` (not truthy - must be boolean `true`).
 
 `stripTags` (L14–37): removes HTML/XML tags, control chars, collapses whitespace, enforces maxLen.
 
@@ -145,19 +145,19 @@ Base path: `/api/leads` (mounted via `backend/src/routes/lead.routes.js`).
 
 | HTTP | Code                    | When                                              |
 | ---- | ----------------------- | ------------------------------------------------- |
-| 201  | —                       | Lead created (or honeypot fake success)           |
-| 400  | —                       | Invalid cardId or name missing                    |
+| 201  | -                       | Lead created (or honeypot fake success)           |
+| 400  | -                       | Invalid cardId or name missing                    |
 | 400  | `INVALID_EMAIL`         | Email present but fails RFC check                 |
 | 400  | `CONSENT_REQUIRED`      | `consent !== true`                                |
 | 403  | `TRIAL_EXPIRED`         | Card owner's trial/billing expired                |
 | 403  | `FEATURE_NOT_AVAILABLE` | Plan does not include leads (`canUseLeads` false) |
-| 404  | —                       | Card not found or inactive                        |
-| 429  | —                       | Rate limit exceeded (IP or IP:cardId)             |
-| 500  | —                       | Unexpected error (PII-safe log)                   |
+| 404  | -                       | Card not found or inactive                        |
+| 429  | -                       | Rate limit exceeded (IP or IP:cardId)             |
+| 500  | -                       | Unexpected error (PII-safe log)                   |
 
 ---
 
-### 3.2 GET /api/leads/mine — Inbox list (cursor-paginated)
+### 3.2 GET /api/leads/mine - Inbox list (cursor-paginated)
 
 **Auth:** `requireAuth` + `authRateLimit` (60 req / 15 min per IP:userId).  
 **Controller:** `getMyLeads` (`lead.controller.js` L128–253).
@@ -167,7 +167,7 @@ Base path: `/api/leads` (mounted via `backend/src/routes/lead.routes.js`).
 | Param    | Type                                               | Default    | Notes                                  |
 | -------- | -------------------------------------------------- | ---------- | -------------------------------------- |
 | `view`   | `"active" \| "important" \| "archived" \| "trash"` | `"active"` | Tab filter                             |
-| `cursor` | ISO 8601 date string                               | —          | `createdAt` of last item for next page |
+| `cursor` | ISO 8601 date string                               | -          | `createdAt` of last item for next page |
 | `limit`  | integer 1–50                                       | 20         | Page size                              |
 
 #### View filters (MongoDB query)
@@ -213,7 +213,7 @@ All views add: `card: { $in: [ownerCardIds] }` and optional `createdAt: { $lt: c
 
 - `cardLabel`: resolved from `card.business.name || card.business.businessName || card.slug`.
 - `cardKind`: `"personal"` if `orgId` is null or matches `PERSONAL_ORG`, else `"org"`.
-- Field names are **explicit pick** — no raw Mongoose document leaks.
+- Field names are **explicit pick** - no raw Mongoose document leaks.
 
 ---
 
@@ -254,13 +254,13 @@ Only these keys are accepted in the body: `readAt`, `isImportant`, `archivedAt`,
 
 | Key           | Input  | $set value     | Side effect                                 |
 | ------------- | ------ | -------------- | ------------------------------------------- |
-| `readAt`      | truthy | `new Date()`   | —                                           |
-| `readAt`      | falsy  | `null`         | —                                           |
-| `isImportant` | any    | `Boolean(val)` | —                                           |
+| `readAt`      | truthy | `new Date()`   | -                                           |
+| `readAt`      | falsy  | `null`         | -                                           |
+| `isImportant` | any    | `Boolean(val)` | -                                           |
 | `archivedAt`  | truthy | `new Date()`   | Forces `deletedAt = null` (out of trash)    |
-| `archivedAt`  | falsy  | `null`         | —                                           |
+| `archivedAt`  | falsy  | `null`         | -                                           |
 | `deletedAt`   | truthy | `new Date()`   | Forces `archivedAt = null` (out of archive) |
-| `deletedAt`   | falsy  | `null`         | —                                           |
+| `deletedAt`   | falsy  | `null`         | -                                           |
 
 **Mutual exclusion enforced:** a lead cannot be simultaneously archived and trashed. Setting one clears the other.
 
@@ -268,14 +268,14 @@ Only these keys are accepted in the body: `readAt`, `isImportant`, `archivedAt`,
 
 ---
 
-### 3.6 DELETE /api/leads/:id — Hard delete
+### 3.6 DELETE /api/leads/:id - Hard delete
 
 **Auth:** `requireAuth` + `authRateLimit`.  
 **Controller:** `hardDeleteLead` (`lead.controller.js` L421–456).
 
 - **Guard:** `lead.deletedAt` must be set (trash only). Non-trashed leads → 400.
 - Ownership check + anti-enumeration 404.
-- `Lead.deleteOne({ _id })` — permanent removal.
+- `Lead.deleteOne({ _id })` - permanent removal.
 
 ---
 
@@ -313,13 +313,13 @@ Non-owners and non-existent resources both return `404 { message: "Not found" }`
 
 ### 4.3 PII-safe logging
 
-All catch blocks log `err?.message` only — never `req.body`, lead content, or user data.
+All catch blocks log `err?.message` only - never `req.body`, lead content, or user data.
 
 ### 4.4 Field exposure control
 
-- Inbox DTO uses **explicit field pick** (`lead.controller.js` L213–228) — no raw `.lean()` pass-through.
+- Inbox DTO uses **explicit field pick** (`lead.controller.js` L213–228) - no raw `.lean()` pass-through.
 - Internal fields (`__v`, `updatedAt`) are not exposed.
-- `cardLabel` / `cardKind` are **computed server-side** — the client receives only derived values, not raw `orgId`.
+- `cardLabel` / `cardKind` are **computed server-side** - the client receives only derived values, not raw `orgId`.
 
 ### 4.5 Honeypot semantics
 
@@ -340,14 +340,14 @@ All catch blocks log `err?.message` only — never `req.body`, lead content, or 
 #### Public vs owner/editor surface behavior
 
 - On **owner/editor** surfaces, when leads are unavailable (`!canUseLeads`), the component may render locked/premium upgrade UI.
-- On **public** surfaces (`mode="public"`), when leads are unavailable (`!canUseLeads`), LeadForm returns `null` — the form is hidden entirely.
+- On **public** surfaces (`mode="public"`), when leads are unavailable (`!canUseLeads`), LeadForm returns `null` - the form is hidden entirely.
 - Public visitors do **not** see owner-facing premium paywall or upgrade UI for leads.
 
 #### Consent checkbox
 
 - Required: both FE (`form.consent` checked) and BE (`consent === true`).
 - Contains inline links to `/privacy` and `/terms` (`target="_blank"`).
-- **Specificity fix:** Links inside `.consentRow .consentText :global(a)` at `(0,2,1)` override CardLayout's `.sectionWrap :global(a)` at `(0,1,1)` — prevents pill-button appearance.
+- **Specificity fix:** Links inside `.consentRow .consentText :global(a)` at `(0,2,1)` override CardLayout's `.sectionWrap :global(a)` at `(0,1,1)` - prevents pill-button appearance.
 
 #### Notice component
 
@@ -473,17 +473,17 @@ Flag changes update local state immediately via `updateLeadFlags` + `adjustUnrea
 
 ### Problem
 
-All cards — including personal ones — have a non-null `orgId` pointing to either:
+All cards - including personal ones - have a non-null `orgId` pointing to either:
 
-- **PERSONAL_ORG** (sentinel org, `slug: "personal"`) — for personal cards.
-- A real business org — for org cards.
+- **PERSONAL_ORG** (sentinel org, `slug: "personal"`) - for personal cards.
+- A real business org - for org cards.
 
 Naively checking `orgId != null` marks everything as "org".
 
 ### Solution
 
 ```js
-// lead.controller.js — getMyLeads (L193–202)
+// lead.controller.js - getMyLeads (L193–202)
 const personalOrgId = await getPersonalOrgId(); // cached String
 cardKind =
     !c.orgId || String(c.orgId) === String(personalOrgId) ? "personal" : "org";

@@ -60,7 +60,7 @@ const leadSchema = new mongoose.Schema(
     { timestamps: true },
 );
 
-// ── Governed index declarations (autoIndex OFF — migration is manual) ──
+// ── Governed index declarations (autoIndex OFF - migration is manual) ──
 
 // Mailbox views: active / archived / trash filtered lists + cursor pagination.
 leadSchema.index(
@@ -69,7 +69,7 @@ leadSchema.index(
 );
 
 // TTL: auto-purge soft-deleted leads after 90 days (7 776 000 s).
-// MongoDB TTL skips documents where the field is null/missing — safe for active leads.
+// MongoDB TTL skips documents where the field is null/missing - safe for active leads.
 leadSchema.index(
     { deletedAt: 1 },
     { name: "idx_leads_deletedAt_ttl", expireAfterSeconds: 7_776_000 },

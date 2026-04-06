@@ -16,15 +16,15 @@ It does **not** cover user-owned card deletion, admin-initiated deletion, or inl
 | ----------------- | --------------------------- | ---------------- | ---------------------------------------------------------------- |
 | Inactivity TTL    | `ANON_CARD_TTL_DAYS`        | `14`             | Days since last `updatedAt` before card is eligible for deletion |
 | Schedule interval | `TRIAL_CLEANUP_INTERVAL_MS` | `3600000` (1 h)  | Interval between cleanup sweeps                                  |
-| First-run delay   | —                           | 15 000 ms (15 s) | Hardcoded delay after server boot before first sweep             |
+| First-run delay   | -                           | 15 000 ms (15 s) | Hardcoded delay after server boot before first sweep             |
 
 **Exclusions (card is never deleted by this job):**
 
-- `status = "published"` — published cards are unconditionally excluded.
-- `user != null` — user-owned cards are excluded (query filter `user: null`).
-- `anonymousId` missing or null — only cards with a truthy `anonymousId` qualify.
-- `isActive = false` — only active cards qualify.
-- `updatedAt > anonCutoff` — card was updated within the TTL window.
+- `status = "published"` - published cards are unconditionally excluded.
+- `user != null` - user-owned cards are excluded (query filter `user: null`).
+- `anonymousId` missing or null - only cards with a truthy `anonymousId` qualify.
+- `isActive = false` - only active cards qualify.
+- `updatedAt > anonCutoff` - card was updated within the TTL window.
 
 **Safety skip (billing/admin):**
 
@@ -57,19 +57,19 @@ Card.find({
 ### 3-step deletion order (per card)
 
 ```text
-Step 1 — Supabase media removal
+Step 1 - Supabase media removal
   ├─ collectSupabasePathsFromCard(card)
   ├─ normalizeSupabasePaths(rawPaths)   → keeps only "cards/" prefix
   └─ removeObjects({ paths, buckets })
   FAIL → log, increment failedStorageDeletesCount, SKIP card (continue)
 
-Step 2 — Cascade delete (Mongo related docs)
+Step 2 - Cascade delete (Mongo related docs)
   └─ deleteCardCascade({ cardId })
       ├─ Lead.deleteMany({ card: cardId })
       └─ CardAnalyticsDaily.deleteMany({ cardId })
   FAIL → log, SKIP card (continue)
 
-Step 3 — Card document deletion
+Step 3 - Card document deletion
   └─ Card.deleteOne({ _id: card._id })
   Only reached if Steps 1 + 2 succeeded.
 ```
@@ -214,7 +214,7 @@ For Render or Docker: replace file path with `docker logs <container> 2>&1 | Sel
 1. Verify `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` are set and valid.
 2. Verify `SUPABASE_STORAGE_BUCKET` exists in Supabase dashboard.
 3. If using a separate anon bucket: verify `SUPABASE_STORAGE_BUCKET_ANON_PRIVATE` exists.
-4. Cards are preserved — once creds are fixed, next sweep will retry.
+4. Cards are preserved - once creds are fixed, next sweep will retry.
 
 ### Mongo connectivity
 

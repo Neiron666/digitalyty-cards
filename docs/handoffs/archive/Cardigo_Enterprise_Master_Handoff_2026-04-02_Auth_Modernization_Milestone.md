@@ -1,4 +1,4 @@
-# Cardigo — Enterprise Master Handoff
+# Cardigo - Enterprise Master Handoff
 
 ## 2026-04-02 · Auth Modernization Milestone
 
@@ -9,7 +9,7 @@
 > **Supersedes:** Предыдущий handoff `Cardigo_Enterprise_Master_Handoff_2026-04-01_FreshCluster_Cutover_Gated` (внешний).
 >
 > Предыдущий файл остаётся историческим reference, но актуальная операционная/auth/security правда описана здесь.
-> Этот файл — главный документ для передачи в следующее ChatGPT-окно.
+> Этот файл - главный документ для передачи в следующее ChatGPT-окно.
 
 ---
 
@@ -17,10 +17,10 @@
 
 ### 1.1 Продукт
 
-- **Cardigo** — SaaS-платформа цифровых визитных карточек.
+- **Cardigo** - SaaS-платформа цифровых визитных карточек.
 - Таргет-рынок: Израиль (Israel-first, Israel-only на текущем этапе).
 - Каноническое доменное имя: **https://cardigo.co.il** (non-www).
-- **Cardigo и Digitalyty — разные бренды.** Не смешивать в продуктовой логике, URL, SEO, naming, public surfaces.
+- **Cardigo и Digitalyty - разные бренды.** Не смешивать в продуктовой логике, URL, SEO, naming, public surfaces.
 
 ### 1.2 Роли инструментов
 
@@ -33,16 +33,16 @@
 
 Для КАЖДОЙ задачи:
 
-- **Phase 1 — READ-ONLY AUDIT:** Flow map, PROOF file:line, Risk/Gaps, Minimal Change Surface. Никаких изменений кода.
-- **Phase 2 — MINIMAL FIX:** Наименьший безопасный changeset, 1–3 файла, backward compatible. Без drive-by refactor.
-- **Phase 3 — VERIFICATION:** Raw stdout + EXIT code, static proof, scope-control, final verdict.
+- **Phase 1 - READ-ONLY AUDIT:** Flow map, PROOF file:line, Risk/Gaps, Minimal Change Surface. Никаких изменений кода.
+- **Phase 2 - MINIMAL FIX:** Наименьший безопасный changeset, 1–3 файла, backward compatible. Без drive-by refactor.
+- **Phase 3 - VERIFICATION:** Raw stdout + EXIT code, static proof, scope-control, final verdict.
 
 ### 1.4 Hard constraints (код)
 
 ```
 - No git commands
 - No inline styles (CSS Modules only)
-- Flex only — no CSS Grid (hard ban)
+- Flex only - no CSS Grid (hard ban)
 - Mobile-first mandatory
 - Typography:
   - font-size only via var(--fs-*)
@@ -73,7 +73,7 @@
 
 - Новый чистый Atlas-кластер **cardigo-dev-eu** принят намеренно.
 - Target database: **cardigo_prod**.
-- Старые данные НЕ мигрированы — это сознательное решение (fresh start).
+- Старые данные НЕ мигрированы - это сознательное решение (fresh start).
 - Render backend уже переключён на новый кластер.
 - Старый кластер (`cards-db`) сохранён как rollback/reference.
 - Manual index governance остаётся truth (schema-level автоматика отключена).
@@ -88,7 +88,7 @@
 
 ## 3. Завершённые Auth/Security Modernization Steps
 
-### 3.1 Cookie-backed auth — ACTIVE
+### 3.1 Cookie-backed auth - ACTIVE
 
 Полная миграция на httpOnly cookie auth выполнена и верифицирована.
 
@@ -101,33 +101,33 @@
 
 IS_PROD определяется через `process.env.NODE_ENV === "production"` в auth.routes.js, invites.routes.js, auth.middleware.js, admin.middleware.js, csrf.middleware.js.
 
-### 3.2 Admin middleware regression — FIXED
+### 3.2 Admin middleware regression - FIXED
 
 - `requireAdmin` ранее использовал header-only extraction (не находил cookie в prod).
 - Исправлено: admin middleware имеет cookie-fallback, согласованный с requireAuth.
 
-### 3.3 CSRF hardening (first step) — IMPLEMENTED
+### 3.3 CSRF hardening (first step) - IMPLEMENTED
 
 - Файл: `backend/src/middlewares/csrf.middleware.js` (NEW, 17 lines).
 - Mounted в `app.js` после `cookieParser()`.
-- Логика: для мутационных запросов (не GET/HEAD/OPTIONS) при наличии auth cookie — требуется заголовок `X-Requested-With: XMLHttpRequest`, иначе 403.
+- Логика: для мутационных запросов (не GET/HEAD/OPTIONS) при наличии auth cookie - требуется заголовок `X-Requested-With: XMLHttpRequest`, иначе 403.
 - Bearer-only / public / webhook / no-cookie потоки не затронуты.
 - Frontend: `api.js` отправляет `X-Requested-With: XMLHttpRequest` по умолчанию.
 
-### 3.4 CORS hardening (bounded step) — IMPLEMENTED
+### 3.4 CORS hardening (bounded step) - IMPLEMENTED
 
 - Файл: `backend/src/app.js`.
 - Убран permissive fallback `cors(undefined)` (давал `origin: '*'` при отсутствии `CORS_ORIGINS`).
 - Теперь: always-explicit `cors({origin(...), credentials: true})`.
 - Dev fallback: `["http://localhost:5173"]`.
-- No-origin requests (server-to-server, curl, mobile) — пропускаются.
+- No-origin requests (server-to-server, curl, mobile) - пропускаются.
 
-### 3.5 Frontend legacy Bearer/localStorage cleanup — COMPLETED
+### 3.5 Frontend legacy Bearer/localStorage cleanup - COMPLETED
 
 - `AuthContext.jsx`: удалены 4× `localStorage.removeItem("token")`, 2× `delete api.defaults.headers.common.Authorization`, удалён unused `import api`.
 - `account.service.js`: JSDoc обновлён с "Requires valid JWT" на "Requires active session (httpOnly auth cookie)".
 
-### 3.6 Response-body token decommission — FULLY COMPLETED
+### 3.6 Response-body token decommission - FULLY COMPLETED
 
 Все три auth-endpoints decommissioned в правильной последовательности:
 
@@ -139,10 +139,10 @@ IS_PROD определяется через `process.env.NODE_ENV === "productio
 
 Порядок rollout invite-accept:
 
-1. Сначала refactored sanity scripts (sanity-org-access.mjs, sanity-org-membership.mjs) — убрана зависимость от `body.token`.
+1. Сначала refactored sanity scripts (sanity-org-access.mjs, sanity-org-membership.mjs) - убрана зависимость от `body.token`.
 2. Затем изменён endpoint response.
 
-**Cookie — единственный session carrier для browser runtime.**
+**Cookie - единственный session carrier для browser runtime.**
 
 ### 3.7 Файлы, изменённые в этом цикле
 
@@ -163,7 +163,7 @@ IS_PROD определяется через `process.env.NODE_ENV === "productio
 
 ## 4. Index / Data-Governance Truth
 
-### Card index debt — CLOSED
+### Card index debt - CLOSED
 
 - Критический named index `orgId_1_user_1` восстановлен.
 - `sanity:card-index-drift` и `sanity:org-access` зелёные.
@@ -175,11 +175,11 @@ IS_PROD определяется через `process.env.NODE_ENV === "productio
     - `adminTier_1`
 - Активная коллекция `cards` имеет ожидаемый практический набор индексов для текущего контура.
 
-### Index governance — без изменений
+### Index governance - без изменений
 
 - `autoIndex: false`, `autoCreate: false`.
 - Drift detection через sanity scripts.
-- Миграции — manual only.
+- Миграции - manual only.
 
 ---
 
@@ -204,7 +204,7 @@ IS_PROD определяется через `process.env.NODE_ENV === "productio
 
 ### Frontend build
 
-- `npm run build` — EXIT: 0, 339 modules, built successfully.
+- `npm run build` - EXIT: 0, 339 modules, built successfully.
 
 ---
 
@@ -219,11 +219,11 @@ IS_PROD определяется через `process.env.NODE_ENV === "productio
 | Broader auth redesign               | Out of scope     | Не открывать без отдельного решения                              |
 | Backend dual-mode Bearer middleware | Intentional      | Существует для sanity/tooling совместимости. НЕ удалять случайно |
 | DB bootstrap / runtime contour      | CLOSED           | Не переоткрывать                                                 |
-| Old cluster data migration          | Not planned      | Fresh start — сознательное решение                               |
+| Old cluster data migration          | Not planned      | Fresh start - сознательное решение                               |
 
 **ВАЖНО:**
 
-- Не удалять backend Bearer support случайно — sanity scripts используют Bearer через `signToken` + `Authorization` header.
+- Не удалять backend Bearer support случайно - sanity scripts используют Bearer через `signToken` + `Authorization` header.
 - Не переоткрывать закрытые DB/bootstrap/runtime контуры без явного запроса.
 
 ---
@@ -234,7 +234,7 @@ IS_PROD определяется через `process.env.NODE_ENV === "productio
 
 **Это НЕ немедленная имплементация.** Это следующий вероятный bounded architectural decision contour.
 
-**Вопрос:** Должен ли backend dual-mode Bearer support (`requireAuth`, `optionalAuth`, `requireAdmin` — header-first + cookie-fallback) остаться как intentional tooling compatibility layer, или его следует decommission в отдельном workstream?
+**Вопрос:** Должен ли backend dual-mode Bearer support (`requireAuth`, `optionalAuth`, `requireAdmin` - header-first + cookie-fallback) остаться как intentional tooling compatibility layer, или его следует decommission в отдельном workstream?
 
 **Контекст:**
 
@@ -247,15 +247,15 @@ IS_PROD определяется через `process.env.NODE_ENV === "productio
 
 1. Phase 1 audit: map все Bearer usage sites в sanity scripts.
 2. Определить: переводить scripts на cookie-auth или оставить Bearer как tooling-only path.
-3. Если решение — decommission: отдельный bounded workstream (scripts refactor → middleware simplification).
-4. Если решение — оставить: задокументировать как intentional architecture decision.
+3. Если решение - decommission: отдельный bounded workstream (scripts refactor → middleware simplification).
+4. Если решение - оставить: задокументировать как intentional architecture decision.
 
 ---
 
 ## 8. Ready-to-Paste Bootstrap для следующего ChatGPT-окна
 
 ```text
-Ты — Senior Project Architect / Senior Full-Stack Engineer / Enterprise Consultant
+Ты - Senior Project Architect / Senior Full-Stack Engineer / Enterprise Consultant
 для проекта Cardigo (Israel-first SaaS, цифровые визитные карточки).
 
 CANONICAL HANDOFF: docs/handoffs/Cardigo_Enterprise_Master_Handoff_2026-04-02_Auth_Modernization_Milestone.md
@@ -270,16 +270,16 @@ CANONICAL HANDOFF: docs/handoffs/Cardigo_Enterprise_Master_Handoff_2026-04-02_Au
 Auth / Security (завершённый milestone):
 - Cookie-backed auth ACTIVE (httpOnly, Secure in prod, SameSite=lax).
   prod: __Host-cardigo_auth, dev: cardigo_auth.
-- CSRF first-step: csrfGuard middleware — X-Requested-With: XMLHttpRequest для cookie-auth мутаций.
+- CSRF first-step: csrfGuard middleware - X-Requested-With: XMLHttpRequest для cookie-auth мутаций.
 - CORS: always-explicit whitelist, dev fallback ["http://localhost:5173"], no permissive fallback.
-- Response-body tokens ПОЛНОСТЬЮ УДАЛЕНЫ: login, signup-consume, invite-accept — все возвращают { ok: true }.
-- Frontend: zero legacy Bearer/localStorage residue. Cookie — единственный session carrier.
+- Response-body tokens ПОЛНОСТЬЮ УДАЛЕНЫ: login, signup-consume, invite-accept - все возвращают { ok: true }.
+- Frontend: zero legacy Bearer/localStorage residue. Cookie - единственный session carrier.
 - Backend dual-mode Bearer middleware INTENTIONALLY EXISTS для tooling/sanity scripts compatibility.
 
 Hard constraints:
 - No git commands (Copilot)
-- No inline styles — CSS Modules only
-- Flex only — no CSS Grid (hard ban)
+- No inline styles - CSS Modules only
+- Flex only - no CSS Grid (hard ban)
 - Mobile-first
 - Typography: var(--fs-*) rem-only, no px/em/%/vw/clamp/fluid/calc(non-rem)
 - Skins = token-only (no structure/layout/background)
@@ -302,21 +302,21 @@ Cardigo ≠ Digitalyty (разные бренды, не смешивать).
 
 ---
 
-## 9. Closing Guidance — как продолжать безопасно
+## 9. Closing Guidance - как продолжать безопасно
 
-1. **Не смешивать контуры.** Каждый workstream — bounded. Fresh-cluster, auth modernization, gate/launch, billing — отдельные контуры. Не «заодно».
+1. **Не смешивать контуры.** Каждый workstream - bounded. Fresh-cluster, auth modernization, gate/launch, billing - отдельные контуры. Не «заодно».
 
-2. **Prove first, fix minimally, verify, then document.** Фазовый протокол — не бюрократия, а защита от регрессий. Каждая фаза обязательна.
+2. **Prove first, fix minimally, verify, then document.** Фазовый протокол - не бюрократия, а защита от регрессий. Каждая фаза обязательна.
 
 3. **Blast-radius discipline.** Предпочитать 1–3 файла. Не делать drive-by refactors. Не менять то, что не запрошено.
 
-4. **Safest mature path > fastest hack.** Если есть выбор между быстрым hack и зрелым bounded решением — выбирать зрелое.
+4. **Safest mature path > fastest hack.** Если есть выбор между быстрым hack и зрелым bounded решением - выбирать зрелое.
 
-5. **PROOF standard.** Для каждого важного утверждения — file:line. Для «not found» — repo-wide search с видимым exit code.
+5. **PROOF standard.** Для каждого важного утверждения - file:line. Для «not found» - repo-wide search с видимым exit code.
 
-6. **Санитарные скрипты — truth gate.** Все sanity scripts должны быть зелёными после каждого meaningful change. Не утверждать зелёность без запуска.
+6. **Санитарные скрипты - truth gate.** Все sanity scripts должны быть зелёными после каждого meaningful change. Не утверждать зелёность без запуска.
 
-7. **Не удалять то, что непонятно.** Если файл/код/config выглядит неиспользуемым, но это не доказано — не удалять. Сначала PROOF.
+7. **Не удалять то, что непонятно.** Если файл/код/config выглядит неиспользуемым, но это не доказано - не удалять. Сначала PROOF.
 
 ---
 

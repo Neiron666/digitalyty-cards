@@ -416,7 +416,7 @@
 }
 
 /* ══════════════════════════════════════════════════════════
-   SECTIONS — Post-hero page body
+   SECTIONS - Post-hero page body
    ══════════════════════════════════════════════════════════ */
 
 /* ── Section shells + text helpers + headings:
@@ -1011,7 +1011,7 @@
     line-height: 1.4;
 }
 
-/* ── 5. Editability / Control — checklist + editor image ── */
+/* ── 5. Editability / Control - checklist + editor image ── */
 
 .editChecklist {
     list-style: none;
@@ -1283,7 +1283,7 @@
     --_delay: 0.05;
 }
 
-/* step 3 slides up from bottom — higher delay so it animates when in view */
+/* step 3 slides up from bottom - higher delay so it animates when in view */
 .step:nth-child(3) {
     --_dy: 10rem;
     --_delay: 0.25;
@@ -1421,7 +1421,7 @@
 }
 
 /* ══════════════════════════════════════════════════════════
-   RESPONSIVE — Desktop enhancements
+   RESPONSIVE - Desktop enhancements
    ══════════════════════════════════════════════════════════ */
 
 @media (min-width: 48rem) {

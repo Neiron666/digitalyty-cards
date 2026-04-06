@@ -35,7 +35,7 @@
     gap: 14px;
 }
 
-/* Each share anchor — circular icon button */
+/* Each share anchor - circular icon button */
 .shareIcon {
     display: inline-flex;
     align-items: center;
@@ -61,7 +61,7 @@
     box-shadow: var(--focus-ring);
 }
 
-/* Mask-based icons — same technique as ContactButtons.module.css */
+/* Mask-based icons - same technique as ContactButtons.module.css */
 .iconFacebook,
 .iconEmail,
 .iconWhatsapp {

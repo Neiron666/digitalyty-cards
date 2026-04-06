@@ -1,5 +1,5 @@
 /* ══════════════════════════════════════════════════════════
-   Pricing page — /pricing (premium public)
+   Pricing page - /pricing (premium public)
    Hero composition + product visual stage.
    Shared layer: pub.sectionDark, pub.sectionWrap,
                  pub.sectionLight, pub.sectionLeadLight
@@ -616,7 +616,7 @@
     text-decoration-color: var(--gold);
 }
 
-/* ── Responsive — Desktop enhancements ──────────────── */
+/* ── Responsive - Desktop enhancements ──────────────── */
 
 @media (min-width: 48rem) {
     .heroActions {

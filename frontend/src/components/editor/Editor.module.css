@@ -116,7 +116,7 @@
 }
 
 .sidebarSlot {
-    /* Tabs rail (right column) — visually separated */
+    /* Tabs rail (right column) - visually separated */
     flex: 0 0 280px;
     min-width: 0;
     min-height: 0;

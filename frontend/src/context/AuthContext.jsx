@@ -66,7 +66,7 @@ export function AuthProvider({ children }) {
         try {
             await logoutRequest();
         } catch {
-            // Best effort — clear local session regardless
+            // Best effort - clear local session regardless
         }
         setUser(null);
     }

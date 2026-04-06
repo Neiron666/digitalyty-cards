@@ -1,6 +1,6 @@
-Cardigo — Enterprise Master Handoff / Next Chat Full Playbook
+Cardigo - Enterprise Master Handoff / Next Chat Full Playbook
 
-Обновлено: 2026-04-04 (после полного закрытия analytics contour: code + verification + docs aligned; следующий рекомендуемый контур — homepage holistic audit)
+Обновлено: 2026-04-04 (после полного закрытия analytics contour: code + verification + docs aligned; следующий рекомендуемый контур - homepage holistic audit)
 
 0. Что это за документ
 
@@ -34,9 +34,9 @@ operational truth;
 1. Что собой представляет проект
    1.1 Продукт
 
-Cardigo — это зрелый Israel-first SaaS-продукт для создания, управления, публикации и распространения цифровых визитных карточек.
+Cardigo - это зрелый Israel-first SaaS-продукт для создания, управления, публикации и распространения цифровых визитных карточек.
 
-Но по факту Cardigo — это не “просто визитка”.
+Но по факту Cardigo - это не “просто визитка”.
 
 Текущая продуктовая формула:
 
@@ -63,11 +63,11 @@ blog / guides public content surfaces;
 premium public marketing surfaces.
 1.2 Рынок и продуктовая ориентация
 
-Cardigo — Israel-first / Israel-only baseline.
+Cardigo - Israel-first / Israel-only baseline.
 
 Это означает:
 
-иврит / RTL — product default;
+иврит / RTL - product default;
 product assumptions строятся под Израиль;
 multi-locale пока не является базовой product truth;
 использование IL как trusted default допустимо там, где это не ломает contracts и truth.
@@ -75,8 +75,8 @@ multi-locale пока не является базовой product truth;
 
 Критический инвариант:
 
-Cardigo — отдельный продукт;
-Digitalyty — отдельный бренд / сайт / маркетинговый слой.
+Cardigo - отдельный продукт;
+Digitalyty - отдельный бренд / сайт / маркетинговый слой.
 
 Их нельзя смешивать в:
 
@@ -96,7 +96,7 @@ https://cardigo.co.il
 
 Политика:
 
-canonical — non-www;
+canonical - non-www;
 Cardigo и Digitalyty не смешивать в canonical / OG / sitemap / URL logic / product copy / structured data.
 1.5 Что проект уже умеет и куда должен расти дальше
 
@@ -148,7 +148,7 @@ MONGOOSE_AUTO_CREATE=false
 
 production structural truth не должна рождаться хаотично на runtime;
 критичные индексы поднимаются вручную;
-миграции и sanity scripts — канонический путь;
+миграции и sanity scripts - канонический путь;
 drift должен выявляться и исправляться осознанно, а не “сам создался и ладно”. 3) Текущая runtime / DB truth
 3.1 Что произошло с базой
 
@@ -259,7 +259,7 @@ next-chat handoffs,
 anti-drift guidance.
 4.3 Роль Copilot Agent
 
-Copilot Agent — исполнитель, а не архитектор.
+Copilot Agent - исполнитель, а не архитектор.
 
 Его роль:
 
@@ -274,9 +274,9 @@ Copilot Agent — исполнитель, а не архитектор.
 Всегда соблюдать:
 
 Architecture / intent clarification
-Phase 1 — Read-Only Audit with PROOF
-Phase 2 — Minimal Fix
-Phase 3 — Verification with RAW stdout + EXIT
+Phase 1 - Read-Only Audit with PROOF
+Phase 2 - Minimal Fix
+Phase 3 - Verification with RAW stdout + EXIT
 Documentation / Handoff
 
 Никаких code changes до audit.
@@ -293,7 +293,7 @@ Hard constraints:
 No git commands
 No inline styles
 CSS Modules only
-Flex only — no grid
+Flex only - no grid
 Mobile-first mandatory
 Typography policy:
 font-size only via var(--fs-_)
@@ -311,7 +311,7 @@ boundaries сначала доказывать, потом трогать;
 broad refactor запрещён, пока он не доказан как safest path;
 verification важнее уверенного тона;
 в high-blast-radius зоны входить только при явной необходимости;
-smoke/manual проверки — через PowerShell + curl.exe, где уместно;
+smoke/manual проверки - через PowerShell + curl.exe, где уместно;
 если речь о “двух фазах”, помнить, что для Cardigo verification всегда отдельная обязательная фаза;
 никогда не переходить к следующей задаче, пока в текущей не убраны / не улажены все хвосты;
 хвост считается закрытым только если он:
@@ -347,10 +347,10 @@ backend index governance только вручную.
 skins token-only;
 никаких structural styles в skins;
 никаких url(), background images и layout-решений в token layer;
-app shell, public pages, editor shell, preview wrapper и card boundary — разные контуры, их нельзя смешивать “по чувству”.
+app shell, public pages, editor shell, preview wrapper и card boundary - разные контуры, их нельзя смешивать “по чувству”.
 6.2 Typography law
 
-Typography policy — корпоративный закон:
+Typography policy - корпоративный закон:
 
 font-size только через var(--fs-_);
 --fs-_ только rem-only;
@@ -395,7 +395,7 @@ fresh-cluster DB/bootstrap contour;
 docs + anti-drift closure для этого contour-а;
 self-delete permanent blocked re-registration contour;
 booking lifecycle correction + docs alignment + pending-index replacement contour;
-internal linking strengthening contour. 8) Большая auth/security migration program — что было сделано
+internal linking strengthening contour. 8) Большая auth/security migration program - что было сделано
 8.1 Что было целью
 
 Не “переписать auth ради красоты”, а перевести проект на более зрелую browser/session/security модель, не сломав runtime, tooling, admin, uploads и связанные поверхности.
@@ -462,7 +462,7 @@ misconfiguration переведена из fail-open/fail-late в fail-fast.
 8.3 Что именно теперь считается auth/security truth
 Browser auth contract
 
-Browser auth теперь — это:
+Browser auth теперь - это:
 
 cookie-backed
 httpOnly
@@ -543,7 +543,7 @@ Enforcement:
 /auth/register
 /auth/signup-link
 /auth/signup-consume
-/invites/accept — только new-user branch
+/invites/accept - только new-user branch
 9.4 Что считать закрытым truth
 
 Теперь в Cardigo self-delete означает:
@@ -552,7 +552,7 @@ Enforcement:
 связанные сущности удалены по текущему cascade truth;
 тот же email не может создать новый аккаунт снова;
 система enforce’ит это без раскрытия blocked-email history;
-product UX заранее предупреждает пользователя об этой финальности. 10) Booking contour — текущая canonical truth
+product UX заранее предупреждает пользователя об этой финальности. 10) Booking contour - текущая canonical truth
 10.1 Главная booking truth
 
 Текущая canonical truth такая:
@@ -599,7 +599,7 @@ history/completed meetings tab;
 broader archive/hide logic;
 reschedule flow;
 hard delete strategy;
-отдельный governance contour по card_1/status_1 schema-vs-production drift, если вообще возникнет практический смысл его открывать. 11) Public / marketing / discoverability contours — high-level truth
+отдельный governance contour по card_1/status_1 schema-vs-production drift, если вообще возникнет практический смысл его открывать. 11) Public / marketing / discoverability contours - high-level truth
 
 Считаются закрытыми или зрелыми:
 
@@ -618,7 +618,7 @@ several premium public UX cycles.
 
 нельзя casually переделывать;
 нельзя открывать broad public redesign без product need;
-нельзя ломать общий public canon и SEO invariants ради мелкой локальной задачи. 12) Workstream: internal linking strengthening — что было сделано и почему контур закрыт
+нельзя ломать общий public canon и SEO invariants ради мелкой локальной задачи. 12) Workstream: internal linking strengthening - что было сделано и почему контур закрыт
 12.1 Что было целью
 
 Усилить внутреннюю перелинковку сайта до более зрелого enterprise-уровня, не превращая public layer в SEO-spam, не размывая CTA, не создавая forced links и не ломая существующие closed contours.
@@ -632,7 +632,7 @@ homepage была conversion-only dead end и почти не ссылалась
 /blog и /guides были content silos и не отдавали link equity в продуктовые public hubs;
 /cards де-факто уже служила examples hub;
 /pricing уже была сильной conversion page и не требовала раннего разбавления дополнительными outbound-links.
-12.3 Batch 1 — Footer remediation / sitewide link layer
+12.3 Batch 1 - Footer remediation / sitewide link layer
 
 Было сделано:
 
@@ -651,7 +651,7 @@ homepage была conversion-only dead end и почти не ссылалась
 footer стал надёжным sitewide internal-link layer;
 cross-page anchors на Home (/#features, /#how, /#faq) стали работать корректно;
 sitewide dead links были устранены.
-12.4 Batch 2 — Homepage hub strengthening
+12.4 Batch 2 - Homepage hub strengthening
 
 Было сделано:
 
@@ -666,7 +666,7 @@ sitewide dead links были устранены.
 homepage перестала быть pure conversion dead end;
 Home стала реальным semantic / commercial hub;
 /cards и /pricing получили сильную поддержку именно с Home body, а не только из header/footer.
-12.5 Batch 3 — Blog + Guides silo-breaking
+12.5 Batch 3 - Blog + Guides silo-breaking
 
 Было сделано:
 
@@ -732,7 +732,7 @@ cross-link blog ↔ guides без user-journey justification;
     booking pending-index replacement contour
     internal linking strengthening contour
     docs + anti-drift closure для этих контуров
-14. Analytics contour — что было закрыто сейчас
+14. Analytics contour - что было закрыто сейчас
     14.1 Что было сломано
 
 Был обнаружен production-facing regression contour по аналитике карточек:
@@ -885,7 +885,7 @@ truthfully подтверждено runtime, если речь идёт о lifec
 “скорее всего” вместо line-range и stdout;
 broad refactor “на всякий случай”;
 улучшения, которые открывают новый contour, но скрывают это под видом маленького fix. 17) Практический skeleton хорошего Copilot prompt
-Ты — Copilot Agent, acting as senior <relevant specialty> engineer with strong <relevant domain awareness> and enterprise discipline.
+Ты - Copilot Agent, acting as senior <relevant specialty> engineer with strong <relevant domain awareness> and enterprise discipline.
 
 PROJECT MODE: Cardigo enterprise workflow.
 
@@ -894,7 +894,7 @@ Hard constraints:
 - No git commands
 - No inline styles
 - CSS Modules only
-- Flex only — no grid
+- Flex only - no grid
 - Mobile-first mandatory
 - Typography policy:
     - font-size only via var(--fs-\*)
@@ -906,9 +906,9 @@ Hard constraints:
     - no calc(non-rem)
 
 Canonical workflow:
-Phase 1 — Read-Only Audit
-Phase 2 — Minimal Fix
-Phase 3 — Verification
+Phase 1 - Read-Only Audit
+Phase 2 - Minimal Fix
+Phase 3 - Verification
 STOP after the requested phase
 
 Дальше в prompt всегда должно быть:
@@ -921,8 +921,8 @@ STOP after the requested phase
 
 Следующий чат должен помнить:
 
-ChatGPT здесь — архитектор, не code monkey;
-Copilot — исполнитель;
+ChatGPT здесь - архитектор, не code monkey;
+Copilot - исполнитель;
 всё делается bounded contours;
 сначала доказать truth;
 потом minimal fix;
@@ -930,7 +930,7 @@ Copilot — исполнитель;
 потом handoff/documentation;
 не invent-ить новые задачи, если реального blocking residual нет;
 не смешивать соседние contours ради ощущения прогресса;
-если contour реально закрыт — лучше остановиться, чем искусственно “добивать до идеала”. 19) Следующий рекомендуемый bounded workstream
+если contour реально закрыт - лучше остановиться, чем искусственно “добивать до идеала”. 19) Следующий рекомендуемый bounded workstream
 19.1 Что НЕ нужно делать следующим шагом
 
 Не нужно пытаться “докрутить ещё немного” внутреннюю перелинковку.
@@ -963,7 +963,7 @@ Schema / JSON-LD / structured assist
 оправдано ли это;
 есть ли semantic gaps;
 нет ли over-claim risk;
-нужен ли вообще следующий schema tweak или mature решение — пока ничего не трогать.
+нужен ли вообще следующий schema tweak или mature решение - пока ничего не трогать.
 Information scent / CTA architecture
 primary vs secondary CTA hierarchy;
 repeated CTA fatigue;
@@ -977,16 +977,16 @@ Homepage support of public IA
 Потому что:
 
 Home уже усилена как link hub и теперь готова к следующему уровню maturity;
-следующий зрелый шаг — не ещё одна случайная ссылка, а семантическая / SEO / CTA / schema проверка Home как главной страницы продукта;
+следующий зрелый шаг - не ещё одна случайная ссылка, а семантическая / SEO / CTA / schema проверка Home как главной страницы продукта;
 это логичное продолжение уже выполненного internal-linking contour-а, но новый отдельный контур, а не хвост старого.
 19.4 Как вести этот contour правильно
 
 Только так:
 
-сначала Phase 1 — homepage-only holistic audit;
+сначала Phase 1 - homepage-only holistic audit;
 потом выбрать 1 минимальный homepage batch, если он реально оправдан;
 потом verification;
-и только после closure homepage — переходить к следующей public page.
+и только после closure homepage - переходить к следующей public page.
 19.5 Что нельзя смешивать в первый homepage batch
 
 Не смешивать:
@@ -1002,7 +1002,7 @@ docs updates.
 Сначала только главная.
 
 20. Ready-to-paste bootstrap для нового окна ChatGPT
-    Ты — Senior Project Architect / Senior Full-Stack Engineer / Enterprise Consultant для Cardigo. Работаем enterprise-grade. Copilot — исполнитель.
+    Ты - Senior Project Architect / Senior Full-Stack Engineer / Enterprise Consultant для Cardigo. Работаем enterprise-grade. Copilot - исполнитель.
 
 Работаем строго фазами:
 Phase 1 Read-Only Audit с PROOF (file:line-range) → STOP;
@@ -1017,7 +1017,7 @@ Hard constraints:
 - No git commands
 - No inline styles
 - CSS Modules only
-- Flex only — no grid
+- Flex only - no grid
 - Mobile-first mandatory
 - Typography policy:
     - font-size only via var(--fs-\*)
@@ -1101,7 +1101,7 @@ Do not move to the next task until all tails in the current one are either fixed
 
 Choose safest mature path over fastest hack. 21) Итоговый текущий статус проекта в одной выжимке
 
-Если совсем коротко, то сегодня Cardigo — это:
+Если совсем коротко, то сегодня Cardigo - это:
 
 зрелый Israel-first SaaS для цифровых визиток;
 с сильной архитектурной дисциплиной;
@@ -1117,7 +1117,7 @@ write-path fixed,
 normalization parity fixed,
 malformed-JSON parity fixed,
 docs aligned;
-и с clear doctrine, где ChatGPT — архитектор, а Copilot — исполнитель. 22) Финальное напутствие
+и с clear doctrine, где ChatGPT - архитектор, а Copilot - исполнитель. 22) Финальное напутствие
 
 Проект находится в хорошей зрелой точке.
 
@@ -1134,7 +1134,7 @@ booking lifecycle, docs и index governance выровнены;
 analytics contour закрыт полностью;
 internal linking strengthening доведён до зрелого баланса и остановлен вовремя.
 
-Главный риск дальше — не отсутствие ещё одной фичи, а неосторожное смешивание контуров и “улучшения ради улучшений”.
+Главный риск дальше - не отсутствие ещё одной фичи, а неосторожное смешивание контуров и “улучшения ради улучшений”.
 
 Главное правило продолжения
 
@@ -1151,13 +1151,13 @@ internal linking strengthening доведён до зрелого баланса
 
 ChatGPT здесь не “помогатор по коду”.
 
-ChatGPT здесь — архитектор, который:
+ChatGPT здесь - архитектор, который:
 
 защищает invariants;
 держит discipline;
 следит за blast radius;
 не даёт проекту скатиться в хаотичные патчи;
-не создаёт новые задачи там, где mature decision — это остановиться.
+не создаёт новые задачи там, где mature decision - это остановиться.
 Главная установка проекта
 
 Не искать самый быстрый путь.

@@ -141,7 +141,7 @@ export default function LeadForm({
                     className={formStyles.input}
                 />
 
-                {/* Honeypot — hidden from real users, bots fill it */}
+                {/* Honeypot - hidden from real users, bots fill it */}
                 <input
                     name="website"
                     value={form.website}

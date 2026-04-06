@@ -157,7 +157,7 @@ export default function SettingsPanel({
             ? window.location.origin
             : "";
 
-    // SSoT: publicPath comes ONLY from backend DTO — no fallback guessing.
+    // SSoT: publicPath comes ONLY from backend DTO - no fallback guessing.
     const publicPath = card?.publicPath || null;
     const publicUrl = publicPath ? `${origin}${publicPath}` : "";
     const isPublished = card?.status === "published";
@@ -340,7 +340,7 @@ export default function SettingsPanel({
                                 פרסום זמין רק בפרימיום
                             </div>
                             <div className={styles.lockedText}>
-                                כדי לפרסם את הכרטיס — צריך מסלול פרימיום.
+                                כדי לפרסם את הכרטיס - צריך מסלול פרימיום.
                             </div>
                             <a href="/pricing" className={styles.lockedCta}>
                                 שדרג לפרימיום
@@ -419,7 +419,7 @@ export default function SettingsPanel({
                                         שינוי כתובת קצרה זמין רק בפרימיום
                                     </div>
                                     <div className={styles.lockedText}>
-                                        כדי לשנות את הכתובת הקצרה של הכרטיס —
+                                        כדי לשנות את הכתובת הקצרה של הכרטיס -
                                         צריך מסלול פרימיום.
                                     </div>
                                     <a
@@ -465,7 +465,7 @@ export default function SettingsPanel({
                                             }
                                         >
                                             {slugRemaining === null
-                                                ? `—/${slugLimit}`
+                                                ? `-/${slugLimit}`
                                                 : `${slugRemaining}/${slugLimit}`}
                                         </span>{" "}
                                         שינויים החודש.
@@ -542,7 +542,7 @@ export default function SettingsPanel({
                                             className={styles.accountValue}
                                             dir="ltr"
                                         >
-                                            {account.email || "—"}
+                                            {account.email || "-"}
                                         </span>
                                     </div>
 
@@ -585,7 +585,7 @@ export default function SettingsPanel({
                                 isExpired;
 
                             const providerLabel =
-                                provider === "tranzila" ? "Tranzila" : "—";
+                                provider === "tranzila" ? "Tranzila" : "-";
 
                             async function handlePayment(plan) {
                                 setBillingBusy(true);
@@ -681,7 +681,7 @@ export default function SettingsPanel({
                                                 >
                                                     {expiresAt
                                                         ? formatDate(expiresAt)
-                                                        : "—"}
+                                                        : "-"}
                                                 </span>
                                             </div>
 
@@ -724,7 +724,7 @@ export default function SettingsPanel({
                                                             )
                                                         }
                                                     >
-                                                        חודשי — ₪39.90/חודש
+                                                        חודשי - ₪39.90/חודש
                                                     </Button>
                                                     <Button
                                                         variant="secondary"
@@ -741,7 +741,7 @@ export default function SettingsPanel({
                                                             )
                                                         }
                                                     >
-                                                        שנתי — ₪399.90/שנה (חוסך
+                                                        שנתי - ₪399.90/שנה (חוסך
                                                         ₪78.90)
                                                     </Button>
                                                 </div>

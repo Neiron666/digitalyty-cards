@@ -1,4 +1,4 @@
-// Guide subsystem — SSoT caps & limits.
+// Guide subsystem - SSoT caps & limits.
 // All length checks reference these constants (model validators + controller normalization).
 
 export const GUIDE_TITLE_MAX = 200;

@@ -321,7 +321,7 @@ export async function suggestAbout(req, res) {
         return res.status(429).json({
             ok: false,
             code: "RATE_LIMITED",
-            message: "Too many requests — please try again later",
+            message: "Too many requests - please try again later",
         });
     }
 
@@ -439,7 +439,7 @@ export async function suggestAbout(req, res) {
         });
     }
 
-    // 10. Increment monthly usage (success only, atomic — per-feature telemetry)
+    // 10. Increment monthly usage (success only, atomic - per-feature telemetry)
     try {
         await incrementMonthlyUsage(userId, FEATURE_AI_ABOUT, periodKey);
     } catch (incErr) {
@@ -711,7 +711,7 @@ export async function suggestSeo(req, res) {
         return res.status(429).json({
             ok: false,
             code: "RATE_LIMITED",
-            message: "Too many requests — please try again later",
+            message: "Too many requests - please try again later",
         });
     }
 
@@ -834,7 +834,7 @@ export async function suggestSeo(req, res) {
         });
     }
 
-    // 10. Increment monthly usage (success only, atomic — per-feature telemetry)
+    // 10. Increment monthly usage (success only, atomic - per-feature telemetry)
     try {
         await incrementMonthlyUsage(userId, FEATURE_AI_SEO, periodKey);
     } catch (incErr) {
@@ -1014,7 +1014,7 @@ export async function suggestFaq(req, res) {
         return res.status(429).json({
             ok: false,
             code: "RATE_LIMITED",
-            message: "Too many requests — please try again later",
+            message: "Too many requests - please try again later",
         });
     }
 
@@ -1038,7 +1038,7 @@ export async function suggestFaq(req, res) {
         });
     }
 
-    // 8. Derive trusted card context (server-side only — never trust client)
+    // 8. Derive trusted card context (server-side only - never trust client)
     const businessName =
         typeof card.business?.name === "string"
             ? card.business.name.trim()
@@ -1128,7 +1128,7 @@ export async function suggestFaq(req, res) {
         });
     }
 
-    // 10. Increment monthly usage (success only, atomic — per-feature telemetry)
+    // 10. Increment monthly usage (success only, atomic - per-feature telemetry)
     try {
         await incrementMonthlyUsage(userId, FEATURE_AI_FAQ, periodKey);
     } catch (incErr) {

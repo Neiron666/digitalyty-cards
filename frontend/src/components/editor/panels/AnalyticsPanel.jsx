@@ -62,13 +62,13 @@ function SectionHeader({ title, subtitle, tooltip }) {
 
 function formatInt(value) {
     const n = Number(value);
-    if (!Number.isFinite(n)) return "—";
+    if (!Number.isFinite(n)) return "-";
     return new Intl.NumberFormat().format(Math.round(n));
 }
 
 function formatPct(value) {
     const n = Number(value);
-    if (!Number.isFinite(n)) return "—";
+    if (!Number.isFinite(n)) return "-";
     return `${(n * 100).toFixed(1)}%`;
 }
 
@@ -249,7 +249,7 @@ export default function AnalyticsPanel({ card }) {
                         אנליטיקה זמינה רק בפרימיום
                     </div>
                     <div className={styles.lockedText}>
-                        כדי לראות נתוני צפיות, קליקים ומקורות תנועה — צריך מסלול
+                        כדי לראות נתוני צפיות, קליקים ומקורות תנועה - צריך מסלול
                         פרימיום.
                     </div>
                     <a href="/pricing" className={styles.lockedCta}>
@@ -456,7 +456,7 @@ export default function AnalyticsPanel({ card }) {
                                 <div className={styles.kpiValue}>
                                     {uniqueToday === null ||
                                     uniqueToday === undefined
-                                        ? "—"
+                                        ? "-"
                                         : formatInt(uniqueToday)}
                                 </div>
                                 <div className={styles.small}>
@@ -613,7 +613,7 @@ export default function AnalyticsPanel({ card }) {
                                                         <td>
                                                             {r.conversion ===
                                                             null
-                                                                ? "—"
+                                                                ? "-"
                                                                 : formatPct(
                                                                       r.conversion,
                                                                   )}

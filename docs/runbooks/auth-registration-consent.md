@@ -1,4 +1,4 @@
-# Auth: Account-Creation Consent — Runbook
+# Auth: Account-Creation Consent - Runbook
 
 ## Purpose
 
@@ -25,10 +25,10 @@ All three consent-bearing flows follow the same truth chain:
     - `/signup-consume` → neutral `400` (anti-enumeration)
     - `/invites/accept` (new-user) → `404` (anti-enumeration)
 4. **Persistence:** on successful account creation the User document receives:
-    - `termsAcceptedAt` — timestamp of acceptance
-    - `privacyAcceptedAt` — timestamp of acceptance
-    - `termsVersion` — version string from SSoT constants
-    - `privacyVersion` — version string from SSoT constants
+    - `termsAcceptedAt` - timestamp of acceptance
+    - `privacyAcceptedAt` - timestamp of acceptance
+    - `termsVersion` - version string from SSoT constants
+    - `privacyVersion` - version string from SSoT constants
 
 ### Flow-specific notes
 
@@ -54,11 +54,11 @@ Exports: `CURRENT_TERMS_VERSION`, `CURRENT_PRIVACY_VERSION`.
 
 When the legal text of `/privacy` or `/terms` is materially updated:
 
-1. Edit `backend/src/utils/consentVersions.js` — update the relevant version string.
+1. Edit `backend/src/utils/consentVersions.js` - update the relevant version string.
 2. Deploy backend.
 3. All new registrations will record the new version string.
 
-Existing users are **not affected** — consent fields are additive and null-safe.
+Existing users are **not affected** - consent fields are additive and null-safe.
 
 ---
 
@@ -100,7 +100,7 @@ curl.exe -s -X POST http://localhost:5000/api/auth/register `
   -H "Content-Type: application/json" `
   -d '{"email":"smoke4@example.com","password":"Test1234!","consent":true}'
 # expect: 200 { "registered": true, "isVerified": false }
-# No auth cookie is set — user must verify email first.
+# No auth cookie is set - user must verify email first.
 ```
 
 After test 4, verify the User document in MongoDB contains `termsAcceptedAt`, `privacyAcceptedAt`, `termsVersion`, and `privacyVersion` populated.
@@ -110,8 +110,8 @@ After test 4, verify the User document in MongoDB contains `termsAcceptedAt`, `p
 ## Limits / Caveats
 
 - `/privacy` and `/terms` pages are **engineering baseline content**, not lawyer-reviewed final legal text.
-- Card editor / card-data consent is **out of scope** — deferred to a separate future task.
-- Existing users have `null` consent fields — backward compatible, no migration required.
+- Card editor / card-data consent is **out of scope** - deferred to a separate future task.
+- Existing users have `null` consent fields - backward compatible, no migration required.
 - Retroactive consent backfill for legacy null-consent users is intentionally deferred.
 - Re-consent / version-bump flow is intentionally deferred.
 

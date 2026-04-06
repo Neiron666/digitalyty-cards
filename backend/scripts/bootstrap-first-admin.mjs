@@ -13,9 +13,9 @@
  *   node scripts/bootstrap-first-admin.mjs --email=user@example.com --apply   (apply)
  *
  * Governance rules:
- *   - Requires --apply flag for writes (dry-run by default — safe to inspect first).
+ *   - Requires --apply flag for writes (dry-run by default - safe to inspect first).
  *   - Idempotent: re-run is safe if user is already admin.
- *   - Writes only: role="admin", isVerified=true — no other fields touched.
+ *   - Writes only: role="admin", isVerified=true - no other fields touched.
  *   - Post-check re-reads from DB to confirm the write.
  *   - No JWT is issued. The admin must login via the normal /api/auth/login flow.
  *   - Full audit: prints before/after state for operator record.
@@ -73,7 +73,7 @@ async function main() {
 
     await connectDB(process.env.MONGO_URI);
 
-    // Access the users collection directly — no model import to avoid any
+    // Access the users collection directly - no model import to avoid any
     // unexpected schema-level side effects (e.g. virtual validators).
     const users = mongoose.connection.db.collection("users");
 
@@ -99,7 +99,7 @@ async function main() {
     console.log(`  createdAt:  ${user.createdAt?.toISOString() ?? "n/a"}`);
 
     if (user.role === "admin") {
-        console.log("\nUser is already admin — no-op. No writes applied.");
+        console.log("\nUser is already admin - no-op. No writes applied.");
         return;
     }
 
@@ -122,7 +122,7 @@ async function main() {
 
     if (result.modifiedCount !== 1) {
         console.error(
-            `\nERROR: updateOne modifiedCount=${result.modifiedCount} — expected 1`,
+            `\nERROR: updateOne modifiedCount=${result.modifiedCount} - expected 1`,
         );
         process.exitCode = 2;
         return;
@@ -142,7 +142,7 @@ async function main() {
 
     if (updated.role !== "admin") {
         console.error(
-            "\nERROR: post-check FAILED — role is not admin after write",
+            "\nERROR: post-check FAILED - role is not admin after write",
         );
         process.exitCode = 2;
         return;
@@ -150,13 +150,13 @@ async function main() {
 
     if (!updated.isVerified) {
         console.error(
-            "\nERROR: post-check FAILED — isVerified is not true after write",
+            "\nERROR: post-check FAILED - isVerified is not true after write",
         );
         process.exitCode = 2;
         return;
     }
 
-    console.log("\nAdmin promotion complete — POST-CHECK PASS");
+    console.log("\nAdmin promotion complete - POST-CHECK PASS");
     console.log(
         "The user can now login via /api/auth/login and access /api/admin/* routes.",
     );

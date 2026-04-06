@@ -72,7 +72,7 @@ async function checkEmailDuplicates(col, verbose) {
         const code = err?.code;
         const codeName = err?.codeName;
         if (code === 26 || codeName === "NamespaceNotFound") {
-            if (verbose) console.log("  users collection not found — skip");
+            if (verbose) console.log("  users collection not found - skip");
             return false;
         }
         throw err;
@@ -80,7 +80,7 @@ async function checkEmailDuplicates(col, verbose) {
 
     if (dupes.length > 0) {
         console.log(
-            "CANONICALIZED EMAIL DUPLICATES FOUND — unique index BLOCKED:",
+            "CANONICALIZED EMAIL DUPLICATES FOUND - unique index BLOCKED:",
         );
         for (const d of dupes) {
             console.log(
@@ -121,7 +121,7 @@ async function checkNonCanonicalEmails(col, verbose) {
         const code = err?.code;
         const codeName = err?.codeName;
         if (code === 26 || codeName === "NamespaceNotFound") {
-            if (verbose) console.log("  users collection not found — skip");
+            if (verbose) console.log("  users collection not found - skip");
             return false;
         }
         throw err;
@@ -129,7 +129,7 @@ async function checkNonCanonicalEmails(col, verbose) {
 
     if (rows.length > 0) {
         console.log(
-            "NON-CANONICAL PERSISTED EMAILS FOUND — unique index BLOCKED:",
+            "NON-CANONICAL PERSISTED EMAILS FOUND - unique index BLOCKED:",
         );
         for (const r of rows) {
             console.log(
@@ -168,7 +168,7 @@ async function checkCardIdDuplicates(col, verbose) {
         const codeName = err?.codeName;
         if (code === 26 || codeName === "NamespaceNotFound") {
             if (verbose)
-                console.log("  users collection not found — skip cardId check");
+                console.log("  users collection not found - skip cardId check");
             return false;
         }
         throw err;
@@ -176,7 +176,7 @@ async function checkCardIdDuplicates(col, verbose) {
 
     if (dupes.length > 0) {
         console.log(
-            "DUPLICATE cardId VALUES FOUND — unique sparse index BLOCKED:",
+            "DUPLICATE cardId VALUES FOUND - unique sparse index BLOCKED:",
         );
         for (const d of dupes) {
             console.log(
@@ -215,7 +215,7 @@ async function checkTokenHashDuplicates(col, colName, verbose) {
         const codeName = err?.codeName;
         if (code === 26 || codeName === "NamespaceNotFound") {
             if (verbose)
-                console.log(`  ${colName} collection not found — skip`);
+                console.log(`  ${colName} collection not found - skip`);
             return false;
         }
         throw err;
@@ -223,7 +223,7 @@ async function checkTokenHashDuplicates(col, colName, verbose) {
 
     if (dupes.length > 0) {
         console.log(
-            `DUPLICATE tokenHash in ${colName} — unique index BLOCKED:`,
+            `DUPLICATE tokenHash in ${colName} - unique index BLOCKED:`,
         );
         for (const d of dupes) {
             console.log(
@@ -242,7 +242,7 @@ async function checkTokenHashDuplicates(col, colName, verbose) {
 async function ensureIndex(col, byName, key, opts, { dryRun, verbose }) {
     const name = opts.name;
     if (byName.has(name)) {
-        if (verbose) console.log(`  ${name} already exists — skip`);
+        if (verbose) console.log(`  ${name} already exists - skip`);
         return;
     }
 
@@ -297,11 +297,11 @@ async function ensureUsersIndexes({ dryRun, verbose }) {
 
         if (dryRun) {
             console.log(
-                `[dry-run] users index creation would be BLOCKED — reasons: ${reasons.join(", ")}`,
+                `[dry-run] users index creation would be BLOCKED - reasons: ${reasons.join(", ")}`,
             );
         } else {
             console.error(
-                `BLOCKED: users index creation skipped — reasons: ${reasons.join(", ")}`,
+                `BLOCKED: users index creation skipped - reasons: ${reasons.join(", ")}`,
             );
             process.exitCode = 2;
         }
@@ -368,11 +368,11 @@ async function ensureTokenCollectionIndexes(
     if (tokenDupes) {
         if (dryRun) {
             console.log(
-                `[dry-run] duplicates detected — apply would be BLOCKED for tokenHash_1 unique in ${colName}`,
+                `[dry-run] duplicates detected - apply would be BLOCKED for tokenHash_1 unique in ${colName}`,
             );
         } else {
             console.error(
-                `BLOCKED: cannot create unique tokenHash_1 in ${colName} — resolve duplicates first`,
+                `BLOCKED: cannot create unique tokenHash_1 in ${colName} - resolve duplicates first`,
             );
             process.exitCode = 2;
         }

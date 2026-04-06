@@ -1,4 +1,4 @@
-# Runbook: SEO & Scripts (GTM / GA4 / Meta Pixel) — Cardigo
+# Runbook: SEO & Scripts (GTM / GA4 / Meta Pixel) - Cardigo
 
 Этот документ описывает **как правильно заполнять вкладку** `/edit/card/seo` (“SEO וסקריפטים”),  
 какие поля реально влияют на публичную карточку, **какой приоритет трекеров**, как включать трекинг в dev, и как проверять, что всё подключилось.
@@ -9,7 +9,7 @@
 - Публичная карточка (`/card/:slug`, `/c/:orgSlug/:slug`) применяет SEO meta и скрипты **после загрузки JS** (SPA + Helmet).
 - Preview (`/preview/...`) всегда `noindex,nofollow,noarchive` и **без трекеров**.
 - Editor (`/edit/...`) **без трекеров**.
-- На этапе разработки в `frontend/index.html` может стоять глобальный `<meta name="robots" content="noindex, nofollow">` — это осознанный “рубильник” (пока проект в разработке).
+- На этапе разработки в `frontend/index.html` может стоять глобальный `<meta name="robots" content="noindex, nofollow">` - это осознанный “рубильник” (пока проект в разработке).
 
 ---
 
@@ -67,7 +67,7 @@
 
 - Если указан валидный **GTM ID**, то **GA4 и Pixel напрямую НЕ подключаем** (их настраивают внутри GTM).
 - Если GTM не задан, можно включить GA4.
-- Если GTM не задан и GA4 не задан — можно включить Meta Pixel.
+- Если GTM не задан и GA4 не задан - можно включить Meta Pixel.
 
 #### GTM ID
 

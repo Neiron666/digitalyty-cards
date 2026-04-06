@@ -327,7 +327,7 @@ const IMPORTANT_ACTIONS_SET = new Set([
  * Non-blocking visit-layer upsert.
  * - Skips silently when deviceId or visitId are absent/empty.
  * - First-touch attribution (channel, source, landingPage, UTM) is immutable
- *   via $setOnInsert — never overwritten on subsequent events.
+ *   via $setOnInsert - never overwritten on subsequent events.
  * - pageViewsCount / clicksCount are incremented per event.
  * - importantActions accumulates only allowlisted action keys via $addToSet.
  * - Any failure is swallowed; it must not affect the 204 response.
@@ -553,7 +553,7 @@ export async function trackSiteAnalytics(req, res) {
             Object.assign($inc, bumpMapUpdate("referrerCounts", key) || {});
         }
 
-        // sourceCounts (capped) — normalized source attribution
+        // sourceCounts (capped) - normalized source attribution
         {
             const sourceKey = safeKey(normalizedSource, { maxLen: 40 });
             if (sourceKey) {
@@ -601,7 +601,7 @@ export async function trackSiteAnalytics(req, res) {
             deviceIdRaw: req.body?.deviceId,
             visitIdRaw: req.body?.visitId,
         }).catch(() => {
-            /* swallowed — visit layer must never surface */
+            /* swallowed - visit layer must never surface */
         });
 
         return res.sendStatus(204);

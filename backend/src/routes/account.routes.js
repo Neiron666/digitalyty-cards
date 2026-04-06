@@ -81,7 +81,7 @@ function rateLimitByIpForMap(req, map, limit, windowMs) {
 /**
  * GET /api/account/me
  * Self-service read-only account summary.
- * Returns shaped DTO — never exposes passwordHash, admin internals, or raw billing.
+ * Returns shaped DTO - never exposes passwordHash, admin internals, or raw billing.
  */
 router.get("/me", requireAuth, async (req, res) => {
     try {
@@ -156,7 +156,7 @@ router.get("/me", requireAuth, async (req, res) => {
 /**
  * POST /api/account/change-password
  * Self-service password change. Requires valid JWT.
- * 204 on success — no body.
+ * 204 on success - no body.
  * 400 generic on any failure (wrong/missing fields, bad current pw, update fail).
  * 429 on rate limit.
  */
@@ -229,7 +229,7 @@ router.post("/change-password", requireAuth, async (req, res) => {
                 { $set: { usedAt: now } },
             );
         } catch (_) {
-            // Ignore — must not break the 204.
+            // Ignore - must not break the 204.
         }
 
         return res.status(204).end();
@@ -278,7 +278,7 @@ router.post("/delete-account", requireAuth, async (req, res) => {
                 .json({ message: "Unable to delete account" });
         }
 
-        // Load user — minimal fields + email for tombstone.
+        // Load user - minimal fields + email for tombstone.
         const user = await User.findById(req.userId)
             .select("email role passwordHash")
             .lean();
@@ -381,7 +381,7 @@ router.post("/delete-account", requireAuth, async (req, res) => {
         const cards = await Card.find({ user: req.userId });
 
         for (const card of cards) {
-            // Supabase media first — abort entirely on failure.
+            // Supabase media first - abort entirely on failure.
             const rawPaths = collectSupabasePathsFromCard(card);
             const paths = normalizeSupabasePaths(rawPaths);
 
@@ -404,7 +404,7 @@ router.post("/delete-account", requireAuth, async (req, res) => {
                 try {
                     await removeObjects({ paths, buckets });
                 } catch (_) {
-                    // Supabase failed — abort. Keep user + cards for retry.
+                    // Supabase failed - abort. Keep user + cards for retry.
                     return res
                         .status(400)
                         .json({ message: "Unable to delete account" });

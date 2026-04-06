@@ -17,7 +17,7 @@ const DeletedEmailBlockSchema = new mongoose.Schema(
         },
     },
     {
-        // No updatedAt — tombstones are write-once.
+        // No updatedAt - tombstones are write-once.
         timestamps: false,
     },
 );

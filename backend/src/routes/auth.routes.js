@@ -28,12 +28,12 @@ const AUTH_COOKIE_OPTIONS = {
     secure: IS_PROD,
     sameSite: "lax",
     path: "/",
-    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days in ms — matches JWT expiresIn:"7d"
+    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days in ms - matches JWT expiresIn:"7d"
 };
 
 const RESET_TOKEN_TTL_MS = 30 * 60 * 1000;
 const FORGOT_RESEND_COOLDOWN_MS = 180 * 1000; // 3-minute per-user resend cooldown
-const FORGOT_RESPONSE_FLOOR_MS = 50; // minimum ms before any 204 — closes user-existence timing oracle
+const FORGOT_RESPONSE_FLOOR_MS = 50; // minimum ms before any 204 - closes user-existence timing oracle
 const SIGNUP_TOKEN_TTL_MS = 30 * 60 * 1000;
 const VERIFY_TOKEN_TTL_MS = 24 * 60 * 60 * 1000; // 24h for email verification
 
@@ -310,7 +310,7 @@ router.post("/register", async (req, res) => {
         );
     }
 
-    // Do NOT issue auth cookie/session — user must verify email first.
+    // Do NOT issue auth cookie/session - user must verify email first.
     res.json({ registered: true, isVerified: false });
 });
 
@@ -366,7 +366,7 @@ router.post("/login", async (req, res) => {
 // FORGOT PASSWORD (anti-enumeration)
 router.post("/forgot", async (req, res) => {
     // Shared floor: every 204 branch awaits this before responding.
-    // Decouples response timing from DB/Mailjet latency — closes user-existence oracle.
+    // Decouples response timing from DB/Mailjet latency - closes user-existence oracle.
     const floorPromise = new Promise((resolve) =>
         setTimeout(resolve, FORGOT_RESPONSE_FLOOR_MS),
     );
@@ -402,19 +402,19 @@ router.post("/forgot", async (req, res) => {
 
     // DB-backed per-user cooldown (cross-IP safe). Fail-closed.
     // Two independent status-scoped lookups enforce different suppression semantics:
-    //   1. active APR — suppress unconditionally for the full remaining validity window.
+    //   1. active APR - suppress unconditionally for the full remaining validity window.
     //      Hotfix: removed updatedAt gate from this branch. The prior single-query approach
     //      gated active-APR suppression to the 3-minute cooldown window, allowing a second
     //      /forgot to silently replace (findOneAndReplace) a still-valid APR's tokenHash,
     //      invalidating the previously emailed link within the 30-minute TTL window.
-    //   2. pending-delivery APR — suppress within the cooldown window AND only when a live
+    //   2. pending-delivery APR - suppress within the cooldown window AND only when a live
     //      MailJob is in flight. No live MailJob => self-heal path remains open.
     // Fail-closed: any DB error during either lookup returns 204 without writes.
     try {
         const now = new Date();
 
         // 1. Active APR: a usable link has already been delivered.
-        //    Suppress for the full remaining validity window — no updatedAt gate.
+        //    Suppress for the full remaining validity window - no updatedAt gate.
         const activeAPR = await ActivePasswordReset.findOne({
             userId: user._id,
             status: "active",
@@ -437,7 +437,7 @@ router.post("/forgot", async (req, res) => {
 
         // 2. Pending-delivery APR: delivery pipeline may still be in flight.
         //    Suppress only within the resend cooldown window AND only if a live MailJob
-        //    exists. No live MailJob => partial-write self-heal — fall through and re-issue.
+        //    exists. No live MailJob => partial-write self-heal - fall through and re-issue.
         const cooldownCutoff = new Date(Date.now() - FORGOT_RESEND_COOLDOWN_MS);
         const pendingAPR = await ActivePasswordReset.findOne({
             userId: user._id,
@@ -468,11 +468,11 @@ router.post("/forgot", async (req, res) => {
                 await floorPromise;
                 return res.sendStatus(204);
             }
-            // No live MailJob: partial-write self-heal — fall through and re-issue.
+            // No live MailJob: partial-write self-heal - fall through and re-issue.
         }
     } catch (err) {
         // Fail-closed: cooldown check error suppresses intent writes and email send.
-        // Anti-enumeration preserved — still returns generic 204.
+        // Anti-enumeration preserved - still returns generic 204.
         console.error(
             "[auth] forgot cooldown check failed",
             err?.message || err,
@@ -499,7 +499,7 @@ router.post("/forgot", async (req, res) => {
             },
             { upsert: true, new: true },
         );
-        // Durable delivery intent: userId only — no token, no email snapshot.
+        // Durable delivery intent: userId only - no token, no email snapshot.
         // Worker resolves User.email at send time via indexed findById.
         await MailJob.create({
             userId: user._id,
@@ -738,7 +738,7 @@ router.post("/reset", async (req, res) => {
     const tokenHash = sha256Hex(rawToken);
     const now = new Date();
 
-    // Primary path: new flow — worker has set tokenHash + status:'active'.
+    // Primary path: new flow - worker has set tokenHash + status:'active'.
     let reset = await ActivePasswordReset.findOneAndUpdate(
         { tokenHash, status: "active", usedAt: null, expiresAt: { $gt: now } },
         { $set: { usedAt: now, status: "used" } },
@@ -914,7 +914,7 @@ router.post("/resend-verification", requireAuth, async (req, res) => {
     return res.json({ message: "Verification email sent" });
 });
 
-// LOGOUT — clears auth cookie unconditionally; no auth required
+// LOGOUT - clears auth cookie unconditionally; no auth required
 router.post("/logout", (req, res) => {
     res.clearCookie(AUTH_COOKIE_NAME, {
         httpOnly: true,

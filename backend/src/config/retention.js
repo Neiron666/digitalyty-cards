@@ -1,4 +1,4 @@
-// Retention purge configuration — post-trial premium data cleanup.
+// Retention purge configuration - post-trial premium data cleanup.
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 

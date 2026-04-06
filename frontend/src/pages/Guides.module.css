@@ -1,5 +1,5 @@
 /* ══════════════════════════════════════════════════════════
-   Guides list — /guides (premium public marketing surface)
+   Guides list - /guides (premium public marketing surface)
    Hero composition + card grid (flex-wrap, mobile-first).
    Shared layer: pub.sectionDark, pub.sectionWrap,
                  pub.sectionLight, pub.sectionLeadLight,
@@ -269,14 +269,14 @@
     outline-offset: 2px;
 }
 
-/* Responsive — tablet: 2 columns */
+/* Responsive - tablet: 2 columns */
 @media (min-width: 40rem) {
     .card {
         flex: 0 1 calc(50% - 12px);
     }
 }
 
-/* Responsive — desktop: 3 columns */
+/* Responsive - desktop: 3 columns */
 @media (min-width: 60rem) {
     .card {
         flex: 0 1 calc(33.333% - 16px);

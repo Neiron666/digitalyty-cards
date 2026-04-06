@@ -74,7 +74,7 @@ exports.handler = async function handler(event) {
             return { statusCode: 413, body: "ERROR" };
         }
 
-        // 3. nt query token (Layer 1 — defense-in-depth)
+        // 3. nt query token (Layer 1 - defense-in-depth)
         const expected = String(process.env.CARDIGO_NOTIFY_TOKEN || "").trim();
         if (!expected) {
             return { statusCode: 500, body: "ERROR" };

@@ -1,6 +1,6 @@
 # frontend.instructions.md
 
-# Frontend Instructions (React / Vite / CSS Modules) — Cardigo Enterprise (RTL-first)
+# Frontend Instructions (React / Vite / CSS Modules) - Cardigo Enterprise (RTL-first)
 
 You are working on the **frontend** of Cardigo in a monorepo with `frontend/` and `backend/`.
 
@@ -69,18 +69,18 @@ Frontend must **not** guess routes or reconstruct public URLs from assumptions l
 
 ## 1) Mandatory Copilot Operating Mode (Project Law)
 
-## 1.1 Mandatory prompt prefix — copy verbatim
+## 1.1 Mandatory prompt prefix - copy verbatim
 
 Every future Copilot run for this project must start with this exact prefix block:
 
 ```text
-Ты — Copilot Agent, acting as senior full-stack engineer with strong SEO/information-architecture awareness and enterprise discipline.
+Ты - Copilot Agent, acting as senior full-stack engineer with strong SEO/information-architecture awareness and enterprise discipline.
 
 PROJECT MODE: Cardigo enterprise workflow. Hard constraints:
 - No git commands
 - No inline styles
 - CSS Modules only
-- Flex only — no grid
+- Flex only - no grid
 - Mobile-first mandatory
 - Typography policy:
   - font-size only via var(--fs-*)
@@ -102,8 +102,8 @@ Verification is mandatory.
 If someone informally says “two phases”, treat that only as shorthand.
 The real project law is three explicit phases.
 
-1.3 Phase protocol — mandatory
-Phase 1 — Read-Only Audit → STOP
+1.3 Phase protocol - mandatory
+Phase 1 - Read-Only Audit → STOP
 
 On Phase 1 you must:
 
@@ -132,7 +132,7 @@ preview-only scope if relevant
 smallest safe fix
 provide PROOF for every key claim using exact file:line-range
 stop after the audit
-Phase 2 — Minimal Fix → STOP
+Phase 2 - Minimal Fix → STOP
 
 On Phase 2 you must:
 
@@ -143,7 +143,7 @@ keep behavior backward compatible
 preserve existing SSoT render chain and project boundaries
 provide post-change PROOF using exact file:line-range
 stop after the implementation
-Phase 3 — Verification → STOP
+Phase 3 - Verification → STOP
 
 On Phase 3 you must:
 
@@ -176,7 +176,7 @@ no inline spacing
 no inline color overrides
 no dynamic per-render style objects
 CSS Modules only
-Flex only — no CSS Grid
+Flex only - no CSS Grid
 forbidden:
 display: grid
 inline-grid
@@ -332,7 +332,7 @@ Rules:
 - API client must send `X-Requested-With: XMLHttpRequest` on every request (CSRF contract). Do not remove it.
 - Do **not** store auth tokens in `localStorage` or `sessionStorage`.
 - Do **not** write `Authorization` headers in browser runtime code. Bearer auth is reserved for backend tooling/sanity scripts only.
-- Login / signup-consume / invite-accept responses contain `{ ok: true }` — they do **not** return JWT tokens in the body. Auth credential arrives as a Set-Cookie header handled by the browser automatically.
+- Login / signup-consume / invite-accept responses contain `{ ok: true }` - they do **not** return JWT tokens in the body. Auth credential arrives as a Set-Cookie header handled by the browser automatically.
 - Auth bootstrap uses `GET /auth/me` with cookie credentials. Do not replace this with token-based bootstrap.
 
 4) Styling Governance
@@ -347,7 +347,7 @@ global CSS for local component hacks
 CSS-in-JS bypasses
 ad-hoc style attributes
 utility-class drift that bypasses project styling doctrine
-4.2 Flex only — no grid
+4.2 Flex only - no grid
 
 This repository uses Flexbox only for layout.
 
@@ -377,7 +377,7 @@ default styles should target smallest practical viewport first
 upscale progressively via rem-based breakpoints
 avoid desktop-first rollback styling
 do not “fix mobile later”
-4.4 Typography policy — hard law
+4.4 Typography policy - hard law
 
 Typography must follow project policy:
 
@@ -394,7 +394,7 @@ Approved token scope rule:
 - `var(--fs-*)` means only **approved existing** tokens from the relevant canonical SSoT scope
 - app / public / auth / admin / site-shell surfaces: only tokens defined in `frontend/src/styles/globals.css` `#root {}`
 - card-boundary surfaces (`src/templates/`): only tokens from `frontend/src/templates/layout/CardLayout.module.css`
-- page-local and shared CSS **consume** tokens — they must not invent new `--fs-*` names
+- page-local and shared CSS **consume** tokens - they must not invent new `--fs-*` names
 - card-scope tokens (e.g. `--fs-14`, `--fs-16`, `--fs-h1`) must not leak into app-context CSS
 - `check:typography` enforces both format and semantic/scope validity
 
@@ -419,7 +419,7 @@ Public marketing / SEO pages (Home, /cards, future public pages) share a common 
 Rules:
 
 when building or modifying a public marketing page, check the shared public module first for reusable section primitives before creating page-local classes
-global token layer (`globals.css`, `variables.module.css`) remains SSoT for colors, radius, shadows, and typography tokens — the shared public module consumes tokens, it does not define them
+global token layer (`globals.css`, `variables.module.css`) remains SSoT for colors, radius, shadows, and typography tokens - the shared public module consumes tokens, it does not define them
 page-local CSS is allowed only after confirming no suitable class exists in global tokens + shared public module
 do not copy public section primitives from `Home.module.css` if they already exist in the shared module
 the shared public module is NOT for editor-shell, preview wrapper, card-boundary, admin, or auth surfaces
@@ -537,7 +537,7 @@ Do not introduce AI-assisted robots filling.
 
 Inheritance model (pre-launch):
 - A global `<meta name="robots" content="noindex, nofollow">` in `index.html` is the centralized pre-launch kill switch for all SPA routes.
-- Ordinary pages (Home, /cards, and other normal public pages) must NOT pass a `robots` prop to `SeoHelmet` — they inherit the global policy by default.
+- Ordinary pages (Home, /cards, and other normal public pages) must NOT pass a `robots` prop to `SeoHelmet` - they inherit the global policy by default.
 - Page-level `robots` via `SeoHelmet` is reserved for intentional overrides only (e.g. dynamic public-card SEO policy from backend, or stricter preview `noindex,noarchive`).
 - When the project goes live: remove the global meta from `index.html`; only explicit per-page overrides should remain where actually needed.
 
@@ -685,7 +685,7 @@ do not solve UI issues by layering more data fetching unless needed
 
 Enterprise frontend should stay predictable and cheap to render.
 
-14) Stop Conditions — When You Must Escalate Instead of Guessing
+14) Stop Conditions - When You Must Escalate Instead of Guessing
 
 Stop and report before implementation if the change would require:
 

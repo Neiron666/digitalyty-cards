@@ -32,7 +32,7 @@ async function checkDuplicates(verbose) {
 
     if (dupes.length > 0) {
         console.log(
-            "DUPLICATES FOUND — unique index cannot be created safely:",
+            "DUPLICATES FOUND - unique index cannot be created safely:",
         );
         for (const d of dupes) {
             console.log(`  providerTxnId="${d._id}"  count=${d.count}`);
@@ -67,7 +67,7 @@ async function ensureIndexes({ dryRun, verbose }) {
     const wantName = "providerTxnId_1";
 
     if (byName.has(wantName)) {
-        console.log(`${wantName} already exists — no-op`);
+        console.log(`${wantName} already exists - no-op`);
         return;
     }
 
@@ -77,11 +77,11 @@ async function ensureIndexes({ dryRun, verbose }) {
     if (hasDuplicates) {
         if (dryRun) {
             console.log(
-                `[dry-run] duplicates detected — apply would be BLOCKED until duplicates are resolved`,
+                `[dry-run] duplicates detected - apply would be BLOCKED until duplicates are resolved`,
             );
         } else {
             console.error(
-                `BLOCKED: cannot create unique index ${wantName} — resolve duplicate providerTxnId values first`,
+                `BLOCKED: cannot create unique index ${wantName} - resolve duplicate providerTxnId values first`,
             );
             process.exitCode = 2;
         }

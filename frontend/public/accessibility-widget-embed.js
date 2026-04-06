@@ -21,7 +21,7 @@
     font-weight:400; font-style:normal; font-display:swap;
   }
 
-  /* Readable stacks — system-first so the change is visible over app default Heebo */
+  /* Readable stacks - system-first so the change is visible over app default Heebo */
   :root.${NS}--readable-font,
   html.${NS}--readable-font,
   body.${NS}--readable-font,
@@ -41,7 +41,7 @@
     outline-offset:2px;
   }
 
-  /* Mark headings — enterprise-safe accent outline + underline */
+  /* Mark headings - enterprise-safe accent outline + underline */
   html.${NS}--underline-headings #root :is(h1,h2,h3,h4,h5,h6,[role="heading"]){
     outline:2px dashed rgba(79,110,247,.9) !important;
     outline-offset:0.25rem !important;
@@ -51,7 +51,7 @@
     text-decoration-color:rgba(79,110,247,.9) !important;
   }
 
-  /* Highlight links/buttons — accent outline, no palette corruption */
+  /* Highlight links/buttons - accent outline, no palette corruption */
   :root.${NS}--highlight-links a,
   :root.${NS}--highlight-links button,
   :root.${NS}--highlight-links [role="button"]{
@@ -689,7 +689,7 @@
         }
     });
 
-    // Font size — class-based (no inline style mutation on :root)
+    // Font size - class-based (no inline style mutation on :root)
     const FS_PREFIX = `${NS}--fs-`;
     function applyFontSizeClass(pct) {
         const html = document.documentElement;
@@ -932,7 +932,7 @@
         /* Class-based: CSS rule in globalCSS handles animation/transition disable */
         document.documentElement.classList.toggle(`${NS}--no-anim`, on);
 
-        /* Media pause/play — targeted selector, no querySelectorAll("*") */
+        /* Media pause/play - targeted selector, no querySelectorAll("*") */
         const widgetHost = document.getElementById("accessibility-widget-host");
         const media = Array.from(
             document.querySelectorAll("video, audio"),
@@ -969,6 +969,6 @@
             }
         }
     } catch {
-        /* matchMedia not supported — skip */
+        /* matchMedia not supported - skip */
     }
 })();

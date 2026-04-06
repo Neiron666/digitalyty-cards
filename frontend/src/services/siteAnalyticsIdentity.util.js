@@ -1,10 +1,10 @@
 /**
- * Site-analytics identity helpers — site analytics scope only.
+ * Site-analytics identity helpers - site analytics scope only.
  *
  * Two independent truths:
- *   deviceId  — stable per-browser (localStorage), cross-tab, cross-visit.
+ *   deviceId  - stable per-browser (localStorage), cross-tab, cross-visit.
  *               Answers "best-effort unique visitor".
- *   visitId   — localStorage-backed with 30-min inactivity timeout.
+ *   visitId   - localStorage-backed with 30-min inactivity timeout.
  *               Shared across all tabs of the same browser.
  *               Answers "visit / session".
  *
@@ -17,7 +17,7 @@
  *   (i.e. until page reload), NOT regenerated on every function call.
  *
  * DO NOT import from analytics.client.js (card analytics runtime).
- * DO NOT use sessionStorage-based identity — rejected by architecture audit.
+ * DO NOT use sessionStorage-based identity - rejected by architecture audit.
  * DO NOT use cookies in this module.
  */
 
@@ -25,11 +25,11 @@ const STORAGE_KEY_DEVICE = "digitalyty_deviceId";
 const STORAGE_KEY_VISIT = "digitalyty_visitId";
 const STORAGE_KEY_VISIT_ACTIVITY = "digitalyty_visitActivity";
 
-/** 30-minute inactivity timeout — industry-standard visit boundary. */
+/** 30-minute inactivity timeout - industry-standard visit boundary. */
 const SESSION_TIMEOUT_MS = 30 * 60 * 1000;
 
 // ---------------------------------------------------------------------------
-// In-memory fallbacks — stable per page runtime when localStorage is blocked.
+// In-memory fallbacks - stable per page runtime when localStorage is blocked.
 // Initialised lazily (null until first getOrCreateDeviceId/getOrCreateVisitId
 // call) so they are not re-generated across successive calls in the same page.
 // ---------------------------------------------------------------------------
@@ -38,7 +38,7 @@ let _fallbackVisitId = null;
 let _fallbackVisitActivity = 0; // timestamp of last activity (in-memory)
 
 // ---------------------------------------------------------------------------
-// UUID generation — crypto.randomUUID when available, RFC4122-ish otherwise.
+// UUID generation - crypto.randomUUID when available, RFC4122-ish otherwise.
 // ---------------------------------------------------------------------------
 function generateUuid() {
     try {
@@ -70,7 +70,7 @@ function generateUuid() {
 }
 
 // ---------------------------------------------------------------------------
-// localStorage helpers — safe wrappers that never throw.
+// localStorage helpers - safe wrappers that never throw.
 // ---------------------------------------------------------------------------
 function lsGet(key) {
     try {
@@ -88,7 +88,7 @@ function lsSet(key, value) {
             window.localStorage?.setItem(key, String(value));
         }
     } catch {
-        // ignore — caller falls back to in-memory
+        // ignore - caller falls back to in-memory
     }
 }
 
@@ -118,7 +118,7 @@ export function getOrCreateDeviceId() {
     // Verify write succeeded; if not, use/create module-scoped fallback.
     if (lsGet(STORAGE_KEY_DEVICE) === id) return id;
 
-    // localStorage blocked — stable in-memory fallback.
+    // localStorage blocked - stable in-memory fallback.
     if (!_fallbackDeviceId) _fallbackDeviceId = id;
     return _fallbackDeviceId;
 }

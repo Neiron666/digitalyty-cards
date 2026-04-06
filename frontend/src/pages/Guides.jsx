@@ -8,7 +8,7 @@ import styles from "./Guides.module.css";
 const ORIGIN = import.meta.env.VITE_PUBLIC_ORIGIN || "https://cardigo.co.il";
 const PAGE_LIMIT = 12;
 
-/** Guide cover fallback — reuses blog fallback asset (temporary). */
+/** Guide cover fallback - reuses blog fallback asset (temporary). */
 const GUIDE_COVER_FALLBACK = `${ORIGIN}/images/guides/fallback/hero-cardigo-bussines-img-fallback.webp`;
 
 /* ── FAQ ──────────────────────────────────────────────────────── */
@@ -28,7 +28,7 @@ const GUIDES_FAQ = [
     },
     {
         q: "מה ההבדל בין המדריכים לבלוג?",
-        a: "הבלוג עוסק בתובנות, רעיונות ומגמות. המדריכים מתמקדים בהדרכה מעשית — שלב אחרי שלב — עם דוגמאות ופעולות קונקרטיות שאפשר ליישם מיד.",
+        a: "הבלוג עוסק בתובנות, רעיונות ומגמות. המדריכים מתמקדים בהדרכה מעשית - שלב אחרי שלב - עם דוגמאות ופעולות קונקרטיות שאפשר ליישם מיד.",
     },
     {
         q: "האם צריך ידע טכני כדי לעקוב אחרי המדריכים?",
@@ -36,7 +36,7 @@ const GUIDES_FAQ = [
     },
     {
         q: "איך לבחור מאיזה מדריך להתחיל?",
-        a: "בחרו את הנושא שהכי קרוב לצורך שלכם כרגע — בניית כרטיס, עיצוב, שיתוף, SEO, או ניהול נוכחות עסקית — ועקבו אחרי ההוראות צעד אחרי צעד.",
+        a: "בחרו את הנושא שהכי קרוב לצורך שלכם כרגע - בניית כרטיס, עיצוב, שיתוף, SEO, או ניהול נוכחות עסקית - ועקבו אחרי ההוראות צעד אחרי צעד.",
     },
 ];
 
@@ -177,7 +177,7 @@ export default function Guides() {
                         <img
                             className={styles.heroImg}
                             src="/images/guides/hero/hero-cardigo-digital-bussines-card.webp"
-                            alt="מדריכים של Cardigo — הדרכות מעשיות לכרטיס ביקור דיגיטלי"
+                            alt="מדריכים של Cardigo - הדרכות מעשיות לכרטיס ביקור דיגיטלי"
                             width="600"
                             height="400"
                             loading="eager"
@@ -185,7 +185,7 @@ export default function Guides() {
 
                         <p className={pub.sectionLeadLight}>
                             מדריכים מעשיים, צעד אחרי צעד, שיעזרו לכם לבנות, לעצב
-                            ולשתף כרטיס ביקור דיגיטלי שעובד נכון — החל מהגדרות
+                            ולשתף כרטיס ביקור דיגיטלי שעובד נכון - החל מהגדרות
                             בסיסיות ועד טיפים מתקדמים.
                         </p>
                     </div>

@@ -51,7 +51,7 @@ export default function ensureHttpUrl(value, opts) {
     }
 
     // If the string contains some other scheme (e.g. "ftp://", "file://")
-    // we do NOT allow it — return empty.
+    // we do NOT allow it - return empty.
     if (/^[a-z][a-z0-9+.-]*:/i.test(s)) {
         return "";
     }

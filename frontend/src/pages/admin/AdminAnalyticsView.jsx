@@ -132,7 +132,7 @@ export default function AdminAnalyticsView({ refreshKey = 0 } = {}) {
             }
         }
 
-        // Secondary path: visit intelligence. Failure is isolated — only the
+        // Secondary path: visit intelligence. Failure is isolated - only the
         // visits block degrades; summary/sources are unaffected.
         async function runVisits() {
             try {
@@ -190,7 +190,7 @@ export default function AdminAnalyticsView({ refreshKey = 0 } = {}) {
         ? sources.topActions
         : [];
 
-    // Visit intelligence (C4/C5) — derived from /admin/site-analytics/visits
+    // Visit intelligence (C4/C5) - derived from /admin/site-analytics/visits
     const totalUniqueVisitors =
         typeof visits?.totalUniqueVisitors === "number"
             ? visits.totalUniqueVisitors
@@ -230,7 +230,7 @@ export default function AdminAnalyticsView({ refreshKey = 0 } = {}) {
 
     const formatPct = (value) => {
         const n = Number(value);
-        if (!Number.isFinite(n)) return "—";
+        if (!Number.isFinite(n)) return "-";
         return `${Math.round(n * 1000) / 10}%`;
     };
 
@@ -315,7 +315,7 @@ export default function AdminAnalyticsView({ refreshKey = 0 } = {}) {
                             <div className={styles.kpiValue}>
                                 {typeof kpi?.views === "number"
                                     ? kpi.views
-                                    : "—"}
+                                    : "-"}
                             </div>
                         </div>
                         <div className={styles.kpiCard}>
@@ -323,7 +323,7 @@ export default function AdminAnalyticsView({ refreshKey = 0 } = {}) {
                             <div className={styles.kpiValue}>
                                 {typeof kpi?.clicksTotal === "number"
                                     ? kpi.clicksTotal
-                                    : "—"}
+                                    : "-"}
                             </div>
                         </div>
                         <div className={styles.kpiCard}>
@@ -331,7 +331,7 @@ export default function AdminAnalyticsView({ refreshKey = 0 } = {}) {
                             <div className={styles.kpiValue}>
                                 {typeof kpi?.conversion === "number"
                                     ? formatPct(kpi.conversion)
-                                    : "—"}
+                                    : "-"}
                             </div>
                         </div>
                     </div>
@@ -364,7 +364,7 @@ export default function AdminAnalyticsView({ refreshKey = 0 } = {}) {
                                     ))}
                                 </div>
                             ) : (
-                                <p className={styles.muted}>—</p>
+                                <p className={styles.muted}>-</p>
                             )}
                         </div>
 
@@ -389,7 +389,7 @@ export default function AdminAnalyticsView({ refreshKey = 0 } = {}) {
                                     ))}
                                 </div>
                             ) : (
-                                <p className={styles.muted}>—</p>
+                                <p className={styles.muted}>-</p>
                             )}
                         </div>
 
@@ -414,7 +414,7 @@ export default function AdminAnalyticsView({ refreshKey = 0 } = {}) {
                                     ))}
                                 </div>
                             ) : (
-                                <p className={styles.muted}>—</p>
+                                <p className={styles.muted}>-</p>
                             )}
                         </div>
 
@@ -437,7 +437,7 @@ export default function AdminAnalyticsView({ refreshKey = 0 } = {}) {
                                     ))}
                                 </div>
                             ) : (
-                                <p className={styles.muted}>—</p>
+                                <p className={styles.muted}>-</p>
                             )}
                         </div>
 
@@ -462,7 +462,7 @@ export default function AdminAnalyticsView({ refreshKey = 0 } = {}) {
                                     ))}
                                 </div>
                             ) : (
-                                <p className={styles.muted}>—</p>
+                                <p className={styles.muted}>-</p>
                             )}
                         </div>
                     </div>
@@ -492,7 +492,7 @@ export default function AdminAnalyticsView({ refreshKey = 0 } = {}) {
                                     ))}
                                 </div>
                             ) : (
-                                <p className={styles.muted}>—</p>
+                                <p className={styles.muted}>-</p>
                             )}
                         </div>
 
@@ -518,7 +518,7 @@ export default function AdminAnalyticsView({ refreshKey = 0 } = {}) {
                                     ))}
                                 </div>
                             ) : (
-                                <p className={styles.muted}>—</p>
+                                <p className={styles.muted}>-</p>
                             )}
                         </div>
 
@@ -543,7 +543,7 @@ export default function AdminAnalyticsView({ refreshKey = 0 } = {}) {
                                     ))}
                                 </div>
                             ) : (
-                                <p className={styles.muted}>—</p>
+                                <p className={styles.muted}>-</p>
                             )}
                         </div>
                     </div>
@@ -560,7 +560,7 @@ export default function AdminAnalyticsView({ refreshKey = 0 } = {}) {
                             <div className={styles.kpiValue}>
                                 {totalUniqueVisitors !== null
                                     ? totalUniqueVisitors
-                                    : "—"}
+                                    : "-"}
                             </div>
                             <p className={styles.visitApproxNote}>
                                 כפיל דפדפן בלבד · לא מייצג אנשים · ביקורים
@@ -596,7 +596,7 @@ export default function AdminAnalyticsView({ refreshKey = 0 } = {}) {
                                     <span className={styles.visitCellNum}>
                                         {r.uniqueVisitors !== null
                                             ? r.uniqueVisitors
-                                            : "—"}
+                                            : "-"}
                                     </span>
                                 </div>
                             ))}

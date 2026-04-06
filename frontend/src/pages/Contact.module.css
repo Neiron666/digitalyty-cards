@@ -1,5 +1,5 @@
 /* ══════════════════════════════════════════════════════════
-   Contact page — /contact (premium public)
+   Contact page - /contact (premium public)
    Hero composition.
    Shared layer: pub.sectionDark, pub.sectionWrap,
                  pub.sectionLeadLight, pub.goldUnderline
@@ -139,7 +139,7 @@
     line-height: 1.7;
 }
 
-/* ── Responsive — Desktop enhancements ──────────────── */
+/* ── Responsive - Desktop enhancements ──────────────── */
 
 @media (min-width: 48rem) {
     .heroActions {
@@ -155,7 +155,7 @@
 }
 
 /* ═══════════════════════════════════════════════════════
-   §2  Value Bridge — light section, 3 image-top cards
+   §2  Value Bridge - light section, 3 image-top cards
    Pattern: mirrors Home §4 (shareCard) adapted for light bg
    ═══════════════════════════════════════════════════════ */
 
@@ -267,7 +267,7 @@
 }
 
 /* ═══════════════════════════════════════════════════════
-   §3  Contact — form + info two-column
+   §3  Contact - form + info two-column
    Dark section, mobile stacked, desktop side-by-side
    ═══════════════════════════════════════════════════════ */
 .sectionFormWrap {

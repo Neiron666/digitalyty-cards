@@ -4,8 +4,8 @@ Cardigo is a Digital Business Cards SaaS (RTL-first, Israel).
 
 Monorepo:
 
-- `frontend/` — React + Vite (CSS Modules)
-- `backend/` — Node/Express + MongoDB
+- `frontend/` - React + Vite (CSS Modules)
+- `backend/` - Node/Express + MongoDB
 
 ## Engineering Policies (must-read)
 

@@ -1,6 +1,6 @@
 # backend.instructions.md
 
-# Backend Instructions (Node / Express / Mongo) — Cardigo Enterprise
+# Backend Instructions (Node / Express / Mongo) - Cardigo Enterprise
 
 You are working on the **backend** of Cardigo in a monorepo with `backend/` and `frontend/`.
 
@@ -57,18 +57,18 @@ Never design backend changes as if frontend can “guess” routes or reconstruc
 
 ## 1) Mandatory Copilot Operating Mode (Project Law)
 
-## 1.1 Mandatory prompt prefix — copy verbatim
+## 1.1 Mandatory prompt prefix - copy verbatim
 
 Every future Copilot run for this project must start with this exact prefix block:
 
 ```text
-Ты — Copilot Agent, acting as senior full-stack engineer with strong SEO/information-architecture awareness and enterprise discipline.
+Ты - Copilot Agent, acting as senior full-stack engineer with strong SEO/information-architecture awareness and enterprise discipline.
 
 PROJECT MODE: Cardigo enterprise workflow. Hard constraints:
 - No git commands
 - No inline styles
 - CSS Modules only
-- Flex only — no grid
+- Flex only - no grid
 - Mobile-first mandatory
 - Typography policy:
   - font-size only via var(--fs-*)
@@ -90,8 +90,8 @@ Verification is mandatory.
 If someone informally says “two phases”, treat that as shorthand only.
 The real project law is three explicit phases.
 
-1.3 Phase protocol — mandatory
-Phase 1 — Read-Only Audit → STOP
+1.3 Phase protocol - mandatory
+Phase 1 - Read-Only Audit → STOP
 
 On Phase 1 you must:
 
@@ -107,7 +107,7 @@ write path behavior
 smallest safe fix
 provide PROOF for every important claim using exact file:line-range
 stop after the audit
-Phase 2 — Minimal Fix → STOP
+Phase 2 - Minimal Fix → STOP
 
 On Phase 2 you must:
 
@@ -117,7 +117,7 @@ avoid refactors, formatting churn, drive-by cleanup, renaming sprees, or “whil
 preserve backward compatibility unless an explicit breaking change is approved
 provide post-change PROOF using exact file:line-range
 stop after the implementation
-Phase 3 — Verification → STOP
+Phase 3 - Verification → STOP
 
 On Phase 3 you must:
 
@@ -481,7 +481,7 @@ Browser auth uses **httpOnly cookies** (`__Host-cardigo_auth` in production, `ca
 
 Rules:
 
-- `login`, `signup-consume`, `invite-accept` set the auth cookie via `res.cookie()` and return `{ ok: true }` — they do **not** return a JWT token in the response body.
+- `login`, `signup-consume`, `invite-accept` set the auth cookie via `res.cookie()` and return `{ ok: true }` - they do **not** return a JWT token in the response body.
 - Backend auth middleware is **dual-mode** (header-first → cookie-fallback). This is intentional for tooling/sanity-script compatibility. Do not remove either mode without an explicit bounded audit.
 - CSRF guard (`csrfGuard`) is mounted globally and requires `X-Requested-With: XMLHttpRequest` on cookie-auth mutation requests. Do not bypass or remove it. **Bounded exception:** `POST /api/analytics/track` and `POST /api/site-analytics/track` are CSRF-exempt (path-matched, POST-only) because `sendBeacon` cannot set custom headers. This exemption is intentional and must not be widened.
 - CORS is configured with an explicit origin allowlist from `CORS_ORIGINS` env, `credentials: true`, no wildcard. Do not weaken it.
@@ -598,7 +598,7 @@ mention operational status clearly in verification
 
 Index governance is part of production safety, not an optional extra.
 
-11) Stop Conditions — When You Must Escalate Instead of Guessing
+11) Stop Conditions - When You Must Escalate Instead of Guessing
 
 Stop and report before implementation if the change would require any of the following:
 

@@ -55,7 +55,7 @@ async function ensureActivePasswordResetIndexes({ dryRun, verbose }) {
     const col = ActivePasswordReset.collection;
     const byName = await getIndexNames(col);
 
-    // 1. Unique userId index — the one-active guarantee.
+    // 1. Unique userId index - the one-active guarantee.
     const wantUserId = "userId_1_unique";
     if (!byName.has(wantUserId)) {
         if (dryRun || verbose) {
@@ -73,7 +73,7 @@ async function ensureActivePasswordResetIndexes({ dryRun, verbose }) {
         }
     }
 
-    // 2. Unique PARTIAL tokenHash index — only covers documents where tokenHash
+    // 2. Unique PARTIAL tokenHash index - only covers documents where tokenHash
     //    is a non-null string (i.e. worker has set it). Documents in
     //    pending-delivery state (tokenHash absent/undefined) are excluded from
     //    this index, so no DuplicateKey error occurs for the absent state.
@@ -100,7 +100,7 @@ async function ensureActivePasswordResetIndexes({ dryRun, verbose }) {
         }
     }
 
-    // 3. expiresAt index — worker filter + future TTL cleanup sweep.
+    // 3. expiresAt index - worker filter + future TTL cleanup sweep.
     const wantExpiresAt = "expiresAt_1";
     if (!byName.has(wantExpiresAt)) {
         if (dryRun || verbose) {
@@ -115,7 +115,7 @@ async function ensureActivePasswordResetIndexes({ dryRun, verbose }) {
         }
     }
 
-    // 4. status index — worker polling and admin queries.
+    // 4. status index - worker polling and admin queries.
     const wantStatus = "status_1";
     if (!byName.has(wantStatus)) {
         if (dryRun || verbose) {
@@ -130,7 +130,7 @@ async function ensureActivePasswordResetIndexes({ dryRun, verbose }) {
         }
     }
 
-    // 5. usedAt index — cleanup sweep / audit queries.
+    // 5. usedAt index - cleanup sweep / audit queries.
     const wantUsedAt = "usedAt_1";
     if (!byName.has(wantUsedAt)) {
         if (dryRun || verbose) {
@@ -158,7 +158,7 @@ async function ensureMailJobIndexes({ dryRun, verbose }) {
     const col = MailJob.collection;
     const byName = await getIndexNames(col);
 
-    // 1. userId index — per-user admin/worker lookup.
+    // 1. userId index - per-user admin/worker lookup.
     const wantUserId = "userId_1";
     if (!byName.has(wantUserId)) {
         if (dryRun || verbose) {
@@ -173,7 +173,7 @@ async function ensureMailJobIndexes({ dryRun, verbose }) {
         }
     }
 
-    // 2. Compound status+expiresAt index — covers the primary worker poll:
+    // 2. Compound status+expiresAt index - covers the primary worker poll:
     //    MailJob.findOneAndUpdate({status:'pending', expiresAt:{$gt:now}}, ...)
     const wantStatusExpires = "status_1_expiresAt_1";
     if (!byName.has(wantStatusExpires)) {
@@ -192,7 +192,7 @@ async function ensureMailJobIndexes({ dryRun, verbose }) {
         }
     }
 
-    // 3. Standalone expiresAt index — cleanup sweep (expired jobs independent of status).
+    // 3. Standalone expiresAt index - cleanup sweep (expired jobs independent of status).
     const wantExpiresAt = "expiresAt_1";
     if (!byName.has(wantExpiresAt)) {
         if (dryRun || verbose) {

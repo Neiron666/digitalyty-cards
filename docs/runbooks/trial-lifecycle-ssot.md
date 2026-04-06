@@ -1,6 +1,6 @@
 # Trial Lifecycle SSoT
 
-**Scope:** End-to-end reference for the Cardigo premium trial feature — eligibility, activation, billing resolution, frontend UX, expiry, reconciliation, retention, and purge.
+**Scope:** End-to-end reference for the Cardigo premium trial feature - eligibility, activation, billing resolution, frontend UX, expiry, reconciliation, retention, and purge.
 
 **Status:** Active.
 
@@ -29,23 +29,23 @@ A user is eligible when **all** conditions hold:
 
 Trial activates through one of two canonical paths:
 
-1. **First card creation** — eligible user creates their first personal card (`card.controller.js` → `createCard`).
-2. **Anonymous card claim** — eligible user registers and claims an anonymous card as their first legitimate card acquisition (`claimCard.service.js` → `claimAnonymousCardForUser`).
+1. **First card creation** - eligible user creates their first personal card (`card.controller.js` → `createCard`).
+2. **Anonymous card claim** - eligible user registers and claims an anonymous card as their first legitimate card acquisition (`claimCard.service.js` → `claimAnonymousCardForUser`).
 
 Both paths mirror the same canonical activation truth. The following fields are set:
 
 **User-side:**
 
-- `user.trialActivatedAt` — current timestamp.
-- `user.trialEndsAt` — `now + TRIAL_DURATION_DAYS` days.
+- `user.trialActivatedAt` - current timestamp.
+- `user.trialEndsAt` - `now + TRIAL_DURATION_DAYS` days.
 
 **Card-side:**
 
-- `card.trialStartedAt` — current timestamp.
-- `card.trialEndsAt` — `now + TRIAL_DURATION_DAYS` days.
-- `card.billing.status` — `"trial"`.
-- `card.billing.plan` — `"monthly"`.
-- `card.billing.paidUntil` — `null`.
+- `card.trialStartedAt` - current timestamp.
+- `card.trialEndsAt` - `now + TRIAL_DURATION_DAYS` days.
+- `card.billing.status` - `"trial"`.
+- `card.billing.plan` - `"monthly"`.
+- `card.billing.paidUntil` - `null`.
 
 After successful activation, `user.trialEligibilityClosedAt` is set to close eligibility permanently (anti-abuse law).
 
@@ -53,7 +53,7 @@ After successful activation, `user.trialEligibilityClosedAt` is set to close eli
 
 ---
 
-## 4) Billing Resolution — trial-premium Source
+## 4) Billing Resolution - trial-premium Source
 
 **SSoT:** `backend/src/utils/trial.js` → `resolveBilling()`
 
@@ -92,7 +92,7 @@ Trial-premium users receive the same feature gates as `monthly` plan:
 
 ---
 
-## 6) Frontend UX — Editor Sidebar
+## 6) Frontend UX - Editor Sidebar
 
 **SSoT files:**
 
@@ -118,7 +118,7 @@ Visible when `isTrial && trialDaysLeft != null`:
 
 CTA: `<a href="/pricing">עבור למסלולים</a>`
 
-**Computation:** `computeTrialDaysLeft(billingUntil)` — `Math.ceil((trialEndsAt - now) / DAY_MS)`, null-safe, NaN-safe.
+**Computation:** `computeTrialDaysLeft(billingUntil)` - `Math.ceil((trialEndsAt - now) / DAY_MS)`, null-safe, NaN-safe.
 
 ---
 
@@ -161,7 +161,7 @@ The retention purge job removes all premium-only surplus data, including:
 - Extra paragraphs beyond free truth
 - Services, videoUrl, businessHours, bookingSettings (card-side)
 - Premium contact fields
-- **Gallery: full removal** — gallery is premium-only on free; retention purge removes **all** gallery items (not a partial trim)
+- **Gallery: full removal** - gallery is premium-only on free; retention purge removes **all** gallery items (not a partial trim)
 - Uploads ledger cleanup for purged gallery paths
 - Best-effort Supabase storage cleanup for removable gallery objects
 
@@ -173,7 +173,7 @@ Storage-first ordering: if storage deletion fails, DB purge is skipped for that 
 
 | Variable                                | Required | Default    | Purpose                         |
 | --------------------------------------- | -------- | ---------- | ------------------------------- |
-| `TRIAL_ROLLOUT_DATE`                    | Yes      | —          | ISO 8601 cutoff for eligibility |
+| `TRIAL_ROLLOUT_DATE`                    | Yes      | -          | ISO 8601 cutoff for eligibility |
 | `TRIAL_DURATION_DAYS`                   | No       | `10`       | Trial length in days            |
 | `TRIAL_LIFECYCLE_RECONCILE_INTERVAL_MS` | No       | `21600000` | Reconcile job interval          |
 | `TRIAL_LIFECYCLE_HEARTBEAT_MS`          | No       | `43200000` | Reconcile heartbeat interval    |
@@ -183,7 +183,7 @@ Storage-first ordering: if storage deletion fails, DB purge is skipped for that 
 
 ---
 
-## 11) Smoke Checklist — CONFIRMED (2026-04-06)
+## 11) Smoke Checklist - CONFIRMED (2026-04-06)
 
 Final Controlled Smoke Under Gate passed. All scenarios confirmed:
 

@@ -36,7 +36,7 @@ import { HttpError } from "./httpError.js";
 const ALLOWED_FORMATS = new Set(["jpeg", "png", "webp"]);
 
 /**
- * @param {Buffer} inputBuffer  — raw file bytes from multer
+ * @param {Buffer} inputBuffer  - raw file bytes from multer
  * @param {{ kind: string, inputMime?: string }} opts
  * @returns {Promise<{ buffer: Buffer, mime: string, width: number, height: number }>}
  */
@@ -55,7 +55,7 @@ export async function processImage(inputBuffer, { kind }) {
     } catch (err) {
         throw new HttpError(
             422,
-            "Could not process image — unsupported or corrupt file",
+            "Could not process image - unsupported or corrupt file",
             "IMAGE_DECODE_FAILED",
         );
     }
@@ -130,7 +130,7 @@ export async function processImage(inputBuffer, { kind }) {
                 if (outBuf.length <= TARGET_BYTES) break;
             }
 
-            // If still over budget — step-down maxLongSide (15 % per step).
+            // If still over budget - step-down maxLongSide (15 % per step).
             const MAX_SHRINK_STEPS = 4;
             let step = 0;
             while (
@@ -175,7 +175,7 @@ export async function processImage(inputBuffer, { kind }) {
         });
         throw new HttpError(
             422,
-            "Could not process image — unsupported or corrupt file",
+            "Could not process image - unsupported or corrupt file",
             "IMAGE_DECODE_FAILED",
         );
     }

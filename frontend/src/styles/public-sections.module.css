@@ -1,5 +1,5 @@
 /* ══════════════════════════════════════════════════════════
-   Public-Sections — Shared marketing section primitives
+   Public-Sections - Shared marketing section primitives
    ──────────────────────────────────────────────────────────
    Reusable across public marketing pages (Home, /cards, etc.).
    Not for card-boundary, editor, preview, auth, or admin.
@@ -242,7 +242,7 @@
     margin-top: 0.625rem;
 }
 
-/* ── Responsive — Desktop enhancements ──────────────────── */
+/* ── Responsive - Desktop enhancements ──────────────────── */
 
 @media (min-width: 48rem) {
     .sectionLight,

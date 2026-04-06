@@ -1,4 +1,4 @@
-/* Blog post — article layout, mobile-first */
+/* Blog post - article layout, mobile-first */
 
 /*
    Layout:  <main .blogWrap data-page="site">  →  .article (paper)  →  .articleInner (text column)
@@ -56,9 +56,9 @@
     }
 }
 
-/* Inner text column — readable width, always centered */
+/* Inner text column - readable width, always centered */
 .articleInner {
-    max-width: 48rem; /* ~768px — comfortable reading */
+    max-width: 48rem; /* ~768px - comfortable reading */
     margin-inline: auto;
     padding-inline: 18px;
 }

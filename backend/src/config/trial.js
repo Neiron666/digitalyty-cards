@@ -1,4 +1,4 @@
-// Trial rollout configuration — user-premium-trial lifecycle.
+// Trial rollout configuration - user-premium-trial lifecycle.
 // Separate from anonymous trial semantics in utils/trial.js.
 
 export const TRIAL_DURATION_DAYS = 10;
