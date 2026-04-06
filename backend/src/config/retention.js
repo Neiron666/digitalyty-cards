@@ -16,9 +16,6 @@ export const RETENTION_GRACE_DAYS = parsePositiveInt(
 
 export const RETENTION_GRACE_MS = RETENTION_GRACE_DAYS * DAY_MS;
 
-/** Gallery items allowed on the free plan. */
-export const FREE_GALLERY_LIMIT = 4;
-
 /** Premium-only contact/social fields to $unset during purge. */
 export const PREMIUM_CONTACT_FIELDS = [
     "contact.facebook",

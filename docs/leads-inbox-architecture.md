@@ -337,6 +337,12 @@ All catch blocks log `err?.message` only — never `req.body`, lead content, or 
 **Source:** `frontend/src/components/card/sections/LeadForm.jsx` (216 lines).  
 **CSS:** `frontend/src/components/card/sections/LeadForm.module.css` (136 lines).
 
+#### Public vs owner/editor surface behavior
+
+- On **owner/editor** surfaces, when leads are unavailable (`!canUseLeads`), the component may render locked/premium upgrade UI.
+- On **public** surfaces (`mode="public"`), when leads are unavailable (`!canUseLeads`), LeadForm returns `null` — the form is hidden entirely.
+- Public visitors do **not** see owner-facing premium paywall or upgrade UI for leads.
+
 #### Consent checkbox
 
 - Required: both FE (`form.consent` checked) and BE (`consent === true`).

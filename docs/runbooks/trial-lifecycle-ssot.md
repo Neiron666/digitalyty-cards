@@ -154,6 +154,19 @@ After trial expiry, cards enter a retention grace period before purge eligibilit
 | `RETENTION_PURGE_INTERVAL_MS`  | `21600000` | Purge job interval (6 hours)  |
 | `RETENTION_PURGE_HEARTBEAT_MS` | `43200000` | Purge heartbeat log interval  |
 
+### Retention purge scope
+
+The retention purge job removes all premium-only surplus data, including:
+
+- Extra paragraphs beyond free truth
+- Services, videoUrl, businessHours, bookingSettings (card-side)
+- Premium contact fields
+- **Gallery: full removal** — gallery is premium-only on free; retention purge removes **all** gallery items (not a partial trim)
+- Uploads ledger cleanup for purged gallery paths
+- Best-effort Supabase storage cleanup for removable gallery objects
+
+Storage-first ordering: if storage deletion fails, DB purge is skipped for that card (retry on next run). `retentionPurgedAt` is stamped only after successful completion.
+
 ---
 
 ## 10) Environment Variables (complete)
@@ -170,15 +183,21 @@ After trial expiry, cards enter a retention grace period before purge eligibilit
 
 ---
 
-## 11) Smoke Checklist
+## 11) Smoke Checklist — CONFIRMED (2026-04-06)
 
-- [ ] `TRIAL_ROLLOUT_DATE` is set in `.env` / Render.
-- [ ] New user created after rollout date → `isUserTrialEligible` returns `true`.
-- [ ] After trial activation → `effectiveBilling.source === "trial-premium"`, `isPaid: true`.
-- [ ] Editor sidebar shows "פרמיום ניסיון" badge + countdown.
-- [ ] After `TRIAL_DURATION_DAYS` → card falls back to free; countdown disappears.
-- [ ] AI quota respects free profile (10/mo) during trial.
-- [ ] SEO AI is gated for trial-premium users.
+Final Controlled Smoke Under Gate passed. All scenarios confirmed:
+
+- [x] `TRIAL_ROLLOUT_DATE` is set in `.env` / Render.
+- [x] New user created after rollout date → `isUserTrialEligible` returns `true`.
+- [x] After trial activation → `effectiveBilling.source === "trial-premium"`, `isPaid: true`.
+- [x] Editor sidebar shows "פרמיום ניסיון" badge + countdown.
+- [x] After `TRIAL_DURATION_DAYS` → card falls back to free; countdown disappears.
+- [x] AI quota respects free profile (10/mo) during trial.
+- [x] SEO AI is gated for trial-premium users.
+- [x] Claim-path trial activation (anonymous → register → claim → trial) confirmed.
+- [x] Create-path trial activation (new user → first card → trial) confirmed.
+- [x] Free fallback: public free truth confirmed (no premium paywall on public surfaces).
+- [x] Retention purge: full gallery removal + premium data purge confirmed.
 
 ---
 

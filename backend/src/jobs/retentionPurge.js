@@ -7,7 +7,6 @@ import {
 import { normalizeSupabasePaths } from "../utils/supabasePaths.js";
 import {
     RETENTION_GRACE_MS,
-    FREE_GALLERY_LIMIT,
     PREMIUM_CONTACT_FIELDS,
 } from "../config/retention.js";
 import * as Sentry from "@sentry/node";
@@ -133,26 +132,24 @@ async function purgeOnce() {
                 }
             }
 
-            // 7) gallery overflow beyond FREE_GALLERY_LIMIT
+            // 7) gallery is premium-only — purge all items on free.
             const gallery = card?.gallery;
-            let keptGallery = gallery;
-            let overflowItems = [];
-            if (Array.isArray(gallery) && gallery.length > FREE_GALLERY_LIMIT) {
-                keptGallery = gallery.slice(0, FREE_GALLERY_LIMIT);
-                overflowItems = gallery.slice(FREE_GALLERY_LIMIT);
-                $set.gallery = keptGallery;
+            let purgedGalleryItems = [];
+            if (Array.isArray(gallery) && gallery.length > 0) {
+                purgedGalleryItems = gallery;
+                $set.gallery = [];
             }
 
             // 8) uploads[] ledger cleanup for purged gallery items
-            const overflowPathSet =
-                collectGalleryOverflowPathSet(overflowItems);
+            const purgedPathSet =
+                collectGalleryOverflowPathSet(purgedGalleryItems);
             const uploads = card?.uploads;
-            if (overflowPathSet.size > 0 && Array.isArray(uploads)) {
+            if (purgedPathSet.size > 0 && Array.isArray(uploads)) {
                 const keptUploads = uploads.filter((u) => {
                     if (!u || typeof u !== "object") return true;
                     const p = typeof u.path === "string" ? u.path.trim() : "";
                     if (!p) return true;
-                    return !overflowPathSet.has(p);
+                    return !purgedPathSet.has(p);
                 });
                 if (keptUploads.length !== uploads.length) {
                     $set.uploads = keptUploads;
@@ -163,8 +160,9 @@ async function purgeOnce() {
             // If removable storage paths exist, deletion MUST succeed before
             // DB purge proceeds. Failure → skip this card, retry next run.
             let storageDeleteFailed = false;
-            if (overflowItems.length > 0) {
-                const storagePaths = collectGalleryOverflowPaths(overflowItems);
+            if (purgedGalleryItems.length > 0) {
+                const storagePaths =
+                    collectGalleryOverflowPaths(purgedGalleryItems);
                 if (storagePaths.length > 0) {
                     try {
                         // User-owned cards use the public bucket.

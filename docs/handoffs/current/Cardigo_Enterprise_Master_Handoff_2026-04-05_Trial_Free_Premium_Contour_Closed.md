@@ -584,7 +584,7 @@ Job:
 - purge businessHours;
 - purge bookingSettings (card-side toggle/config only);
 - purge premium contact fields;
-- trim gallery overflow / hidden premium gallery data according to current retention logic;
+- purge **all** gallery items (gallery is premium-only on free — full removal, not partial trim);
 - clean uploads ledger for purged gallery paths;
 - best-effort Supabase cleanup for removable gallery objects;
 - stamp `retentionPurgedAt`.
@@ -787,9 +787,9 @@ Job:
 
 ### 11.2 Production stance
 
-На момент closure этого contour-а rollout уже можно считать:
+Final Controlled Smoke Under Gate **PASSED** (2026-04-06). Gate is ready to open.
 
-> **READY TO OPEN GATE AFTER FINAL CONTROLLED SMOKE**
+> **FINAL CONTROLLED SMOKE PASSED — GATE READY TO OPEN**
 
 ### 11.3 Monitoring stance
 
@@ -837,20 +837,15 @@ Job:
 
 ---
 
-## 14) Что логично делать следующим шагом
+## 14) Final Controlled Smoke — COMPLETED
 
-Следующий зрелый шаг — **не новый кодовый большой contour**, а:
+Final Controlled Smoke Under Gate was executed and **PASSED** (2026-04-06).
 
-## Final Controlled Smoke Under Gate
+All scenarios confirmed end-to-end in production-like environment under gate.
 
-Цель:
+### 14.1 Smoke checklist — CONFIRMED
 
-- подтвердить end-to-end truth в production-like environment под gate;
-- потом открыть gate.
-
-### 14.1 Минимальный smoke checklist
-
-#### A. Trial activation
+#### A. Trial activation — ✅ CONFIRMED
 
 На новом пользователе после rollout date:
 
@@ -861,7 +856,12 @@ Job:
 - `card.trialStartedAt` есть
 - `card.trialEndsAt` есть
 
-#### B. Trial UX
+Confirmed via both paths:
+
+- anonymous → register → login → claim recovery → trial activation
+- ordinary new user → first card create → trial activation
+
+#### B. Trial UX — ✅ CONFIRMED
 
 У active trial user:
 
@@ -869,7 +869,7 @@ Job:
 - compact trial countdown card visible
 - premium features доступны
 
-#### C. Downgrade
+#### C. Downgrade — ✅ CONFIRMED
 
 После forced expiry + restart:
 
@@ -878,7 +878,7 @@ Job:
 - `billing.paidUntil = null`
 - `downgradedAt` есть
 
-#### D. Free UX truth
+#### D. Free UX truth — ✅ CONFIRMED
 
 У downgraded/free user:
 
@@ -888,20 +888,19 @@ Job:
 - AI in Content → locked block
 - AI in FAQ → locked block
 - public premium-only surfaces hidden
+- public visitors do NOT see owner-facing premium paywall UI
 
-#### E. Retention
+#### E. Retention — ✅ CONFIRMED
 
 После forced old `downgradedAt` + restart:
 
 - `retentionPurgedAt` есть
-- premium-only stored data purged
+- premium-only stored data purged (including full gallery removal)
 - booking records untouched
 
-### 14.2 После smoke
+### 14.2 Post-smoke status
 
-Если всё подтверждено:
-
-- gate можно открывать.
+All smoke scenarios confirmed. Gate is ready to open.
 
 ---
 
@@ -1004,7 +1003,7 @@ Project truth:
 
 Current major closed contour:
 - trial / free / premium lifecycle + anti-bypass + UX + docs is CLOSED
-- rollout contour is READY TO OPEN GATE AFTER FINAL CONTROLLED SMOKE
+- Final Controlled Smoke PASSED — gate is ready to open
 
 Working rule:
 Do not move to the next task until all tails in the current one are either fixed or explicitly classified as non-blocking/deferred/intentional.
