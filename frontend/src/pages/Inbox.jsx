@@ -148,18 +148,57 @@ export default function Inbox() {
         [activeView, adjustUnreadCount],
     );
 
-    const handleFlag = useCallback(async (leadId, patch) => {
-        const id = safeStr(leadId);
-        if (!id) return;
-        setLeads((prev) =>
-            prev.map((l) => (safeStr(l._id) === id ? { ...l, ...patch } : l)),
-        );
-        try {
-            await updateLeadFlags(id, patch);
-        } catch {
-            setLeads((prev) => prev);
-        }
-    }, []);
+    const handleFlag = useCallback(
+        async (leadId, patch) => {
+            const id = safeStr(leadId);
+            if (!id) return;
+
+            const prevLead = leads.find((l) => safeStr(l._id) === id);
+
+            // Optimistic merge
+            setLeads((prev) =>
+                prev.map((l) =>
+                    safeStr(l._id) === id ? { ...l, ...patch } : l,
+                ),
+            );
+
+            try {
+                await updateLeadFlags(id, patch);
+
+                // After success: remove lead from local list if it moved to another tab
+                const shouldRemove =
+                    (patch.archivedAt && activeView !== "archived") ||
+                    (!patch.archivedAt &&
+                        "archivedAt" in patch &&
+                        activeView === "archived") ||
+                    (patch.deletedAt && activeView !== "trash") ||
+                    (patch.isImportant === false && activeView === "important");
+
+                if (shouldRemove) {
+                    setLeads((prev) =>
+                        prev.filter((l) => safeStr(l._id) !== id),
+                    );
+                    if (
+                        prevLead &&
+                        !prevLead.readAt &&
+                        (activeView === "active" || activeView === "important")
+                    ) {
+                        adjustUnreadCount(-1);
+                    }
+                }
+            } catch {
+                // Rollback optimistic merge
+                setLeads((prev) =>
+                    prevLead
+                        ? prev.map((l) =>
+                              safeStr(l._id) === id ? prevLead : l,
+                          )
+                        : prev,
+                );
+            }
+        },
+        [leads, activeView, adjustUnreadCount],
+    );
 
     const handleHardDelete = useCallback(
         async (leadId) => {
