@@ -385,7 +385,8 @@ export default function Inbox() {
                                         <div className={styles.row}>
                                             <div className={styles.meta}>
                                                 <div className={styles.name}>
-                                                    {lead.name || "(ללא שם)"}
+                                                    {lead.senderName ||
+                                                        "(ללא שם)"}
                                                 </div>
                                                 <div className={styles.date}>
                                                     {formatDate(lead.createdAt)}
@@ -399,29 +400,29 @@ export default function Inbox() {
                                         </div>
                                         <div className={styles.preview}>
                                             {lead.message ||
-                                                lead.email ||
-                                                lead.phone}
+                                                lead.senderEmail ||
+                                                lead.senderPhone}
                                         </div>
                                     </button>
 
                                     {isExpanded ? (
                                         <div className={styles.details}>
-                                            {lead.email ? (
+                                            {lead.senderEmail ? (
                                                 <div
                                                     className={
                                                         styles.detailLine
                                                     }
                                                 >
-                                                    אימייל: {lead.email}
+                                                    אימייל: {lead.senderEmail}
                                                 </div>
                                             ) : null}
-                                            {lead.phone ? (
+                                            {lead.senderPhone ? (
                                                 <div
                                                     className={
                                                         styles.detailLine
                                                     }
                                                 >
-                                                    טלפון: {lead.phone}
+                                                    טלפון: {lead.senderPhone}
                                                 </div>
                                             ) : null}
                                             {lead.message ? (
@@ -460,12 +461,12 @@ export default function Inbox() {
                                                             }
                                                             onClick={() =>
                                                                 handleFlag(id, {
-                                                                    isArchived:
-                                                                        !lead.isArchived,
+                                                                    archivedAt:
+                                                                        !lead.archivedAt,
                                                                 })
                                                             }
                                                         >
-                                                            {lead.isArchived
+                                                            {lead.archivedAt
                                                                 ? "בטל ארכיון"
                                                                 : "העבר לארכיון"}
                                                         </button>
@@ -476,7 +477,7 @@ export default function Inbox() {
                                                             }
                                                             onClick={() =>
                                                                 handleFlag(id, {
-                                                                    isTrash: true,
+                                                                    deletedAt: true,
                                                                 })
                                                             }
                                                         >
