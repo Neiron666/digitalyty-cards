@@ -314,6 +314,12 @@
     display: none;
 }
 
+.drawerBtnIcon {
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+}
+
 .drawerActions {
     margin-top: auto;
     display: flex;
