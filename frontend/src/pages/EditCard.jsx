@@ -9,6 +9,7 @@ import { deleteCard, updateCardSlug } from "../services/cards.service";
 import api, { getAnonymousId, clearAnonymousId } from "../services/api";
 import { useAuth } from "../context/AuthContext";
 import { TEMPLATES } from "../templates/templates.config";
+import CrownIcon from "../components/icons/CrownIcon";
 import styles from "./EditCard.module.css";
 
 const REFETCH_THROTTLE_MS = 15_000;
@@ -2329,7 +2330,8 @@ function EditCard() {
                                 to="/register"
                                 className={styles.anonConsentLink}
                             >
-                                ניסיון פרימיום חינם.
+                                ניסיון פרימיום חינם
+                                <CrownIcon className={styles.anonCrown} />
                             </Link>
                         </div>
                         <div className={styles.anonCtaActions}>

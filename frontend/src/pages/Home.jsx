@@ -10,6 +10,7 @@ import { SITE_ACTIONS } from "../services/siteAnalytics.actions";
 import scroll from "../styles/motion-scroll.module.css";
 import useScrollProgress from "../hooks/useScrollProgress";
 import pub from "../styles/public-sections.module.css";
+import CrownIcon from "../components/icons/CrownIcon";
 import styles from "./Home.module.css";
 import {
     GalleryIcon,
@@ -485,8 +486,12 @@ export default function Home() {
                                 })
                             }
                         >
-                            צרו כרטיס בחינם
+                            צרו כרטיס דיגיטלי בחינם
                         </Button>
+                        <span className={styles.heroTrialNote}>
+                            כולל 10 ימי פרימיום למשתמשים חדשים
+                            <CrownIcon className={styles.heroTrialCrown} />
+                        </span>
                     </div>
                 </div>
             </section>
@@ -980,7 +985,7 @@ export default function Home() {
                     <div className={styles.ctaInner}>
                         <h2 className={styles.ctaTitle}>
                             {" "}
-                            צרו כרטיס בחינם{" "}
+                            צרו כרטיס דיגיטלי בחינם{" "}
                             <span
                                 className={`${pub.goldHilight} ${pub.goldUnderline}`}
                             >
@@ -1017,7 +1022,7 @@ export default function Home() {
                                 })
                             }
                         >
-                            צרו כרטיס בחינם
+                            צרו כרטיס דיגיטלי בחינם
                         </Button>
                     </div>
                 </div>
