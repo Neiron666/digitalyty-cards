@@ -171,6 +171,7 @@
     flex-direction: column;
     justify-content: center;
     flex-wrap: wrap;
+    align-items: center;
     margin-top: 10px;
     gap: 14px;
 }
