@@ -101,6 +101,48 @@
     color: var(--text-muted);
 }
 
+/* --- Locked / premium upsell --- */
+.lockedBlock {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 14px 16px;
+    border: 1px dashed rgba(255, 215, 0, 0.35);
+    border-radius: var(--radius-md);
+    background: rgba(255, 215, 0, 0.04);
+}
+
+.lockedTitle {
+    font-weight: 700;
+    font-size: var(--fs-body-sm);
+    color: var(--gold, #d4a017);
+}
+
+.lockedText {
+    opacity: 0.85;
+    font-size: var(--fs-ui);
+    line-height: 1.5;
+}
+
+.lockedCta {
+    display: inline-flex;
+    align-items: center;
+    font-weight: 700;
+    font-size: var(--fs-body-sm);
+    color: var(--gold, #d4a017);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+}
+
+.lockedCta:hover {
+    opacity: 0.85;
+}
+
+.lockedCta:focus-visible {
+    outline: 2px solid var(--gold, #d4a017);
+    outline-offset: 2px;
+}
+
 .overLimitWarning {
     display: flex;
     flex-direction: column;

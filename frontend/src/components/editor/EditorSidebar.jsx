@@ -83,15 +83,14 @@ function isPremiumTab(tabId, entitlements) {
     if (tabId === "analytics") {
         return entitlements.canUseAnalyticsPremium !== true;
     }
+    if (tabId === PANEL_SERVICES) return !entitlements.canUseServices;
+    if (tabId === PANEL_BUSINESS_HOURS)
+        return !entitlements.canUseBusinessHours;
     return false;
 }
 
 /** Tabs that should be completely hidden (not just crown-badged) on free. */
-function isHiddenTab(tabId, entitlements) {
-    if (!entitlements) return false;
-    if (tabId === PANEL_SERVICES) return !entitlements.canUseServices;
-    if (tabId === PANEL_BUSINESS_HOURS)
-        return !entitlements.canUseBusinessHours;
+function isHiddenTab(/* tabId, entitlements */) {
     return false;
 }
 

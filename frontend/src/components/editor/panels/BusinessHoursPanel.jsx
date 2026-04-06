@@ -201,8 +201,22 @@ export default function BusinessHoursPanel({
     const bh = useMemo(() => coerceBusinessHours(value), [value]);
     const timeOptions = useMemo(() => buildTimeOptions30m(), []);
 
-    // Defense-in-depth: hidden via sidebar, but guard if mounted through other path.
-    if (entitlements && !entitlements.canUseBusinessHours) return null;
+    // Defense-in-depth: if entitlements say locked, show premium CTA.
+    if (entitlements && !entitlements.canUseBusinessHours) {
+        return (
+            <Panel title="שעות פעילות">
+                <div className={styles.lockedBlock}>
+                    <div className={styles.lockedTitle}>שעות פעילות</div>
+                    <div className={styles.lockedText}>
+                        כדי להשתמש בשעות פעילות צריך מנוי פרימיום.
+                    </div>
+                    <a href="/pricing" className={styles.lockedCta}>
+                        שדרג לפרימיום
+                    </a>
+                </div>
+            </Panel>
+        );
+    }
 
     const bookingEnabled =
         bookingSettings != null &&

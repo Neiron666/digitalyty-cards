@@ -76,8 +76,22 @@ export default function ServicesPanel({
         setDraftItems(nextNormalized.items);
     }, [services]);
 
-    // Defense-in-depth: hidden via sidebar, but guard if mounted through other path.
-    if (entitlements && !entitlements.canUseServices) return null;
+    // Defense-in-depth: if entitlements say locked, show premium CTA.
+    if (entitlements && !entitlements.canUseServices) {
+        return (
+            <Panel title="שירותים">
+                <div className={styles.lockedBlock}>
+                    <div className={styles.lockedTitle}>שירותים</div>
+                    <div className={styles.lockedText}>
+                        כדי להשתמש בשירותים צריך מנוי פרימיום.
+                    </div>
+                    <a href="/pricing" className={styles.lockedCta}>
+                        שדרג לפרימיום
+                    </a>
+                </div>
+            </Panel>
+        );
+    }
 
     function commit(nextTitle, nextItems) {
         const committed = buildCommittedServices(nextTitle, nextItems);
