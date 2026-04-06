@@ -431,6 +431,14 @@ export default function Inbox() {
                                                     {formatDate(lead.createdAt)}
                                                 </div>
                                             </div>
+                                            {lead.isImportant ? (
+                                                <span
+                                                    className={styles.starBadge}
+                                                    aria-label="חשוב"
+                                                >
+                                                    ★
+                                                </span>
+                                            ) : null}
                                             {isUnread ? (
                                                 <span className={styles.badge}>
                                                     חדש
