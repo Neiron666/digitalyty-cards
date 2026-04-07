@@ -37,12 +37,18 @@ let _deferredPrompt = null;
 let _canPrompt = false;
 let _isInstalled = checkStandalone();
 
-let _snapshot = Object.freeze({ canPrompt: _canPrompt, isInstalled: _isInstalled });
+let _snapshot = Object.freeze({
+    canPrompt: _canPrompt,
+    isInstalled: _isInstalled,
+});
 
 const _listeners = new Set();
 
 function _emit() {
-    _snapshot = Object.freeze({ canPrompt: _canPrompt, isInstalled: _isInstalled });
+    _snapshot = Object.freeze({
+        canPrompt: _canPrompt,
+        isInstalled: _isInstalled,
+    });
     for (const fn of _listeners) fn();
 }
 
@@ -87,7 +93,10 @@ if (typeof window !== "undefined") {
 
 // ── public API ───────────────────────────────────────────────────────
 
-const _SERVER_SNAPSHOT = Object.freeze({ canPrompt: false, isInstalled: false });
+const _SERVER_SNAPSHOT = Object.freeze({
+    canPrompt: false,
+    isInstalled: false,
+});
 
 export function subscribe(callback) {
     _listeners.add(callback);
