@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 /**
  * Detects install-prompt availability, installed state, and platform hints.
@@ -6,25 +6,36 @@ import { useEffect, useRef, useState } from "react";
  * Chromium path: captures `beforeinstallprompt`, exposes `triggerPrompt()`.
  * iOS Safari path: exposes `showIOSGuide`.
  * In-app / unsupported: exposes `isInAppBrowser`.
- * Already installed: `isInstalled` is true → consumer should render nothing.
+ * Already installed: `isInstalled` derived from real browser signals.
+ *
+ * Lifecycle: installed state is re-synced from real browser signals on
+ * display-mode changes, tab visibility, pageshow, and focus so that
+ * uninstall→return-to-site correctly resets the latch.
  */
+
+function checkStandalone() {
+    if (typeof window === "undefined") return false;
+    if (typeof navigator !== "undefined" && navigator.standalone === true) {
+        return true;
+    }
+    if (
+        window.matchMedia &&
+        window.matchMedia("(display-mode: standalone)").matches
+    ) {
+        return true;
+    }
+    return false;
+}
+
 export default function useInstallPrompt() {
     const deferredPrompt = useRef(null);
 
     const [canPrompt, setCanPrompt] = useState(false);
-    const [isInstalled, setIsInstalled] = useState(() => {
-        if (typeof window === "undefined") return false;
-        // iOS standalone check
-        if (navigator.standalone === true) return true;
-        // Chromium / Firefox standalone check
-        if (
-            window.matchMedia &&
-            window.matchMedia("(display-mode: standalone)").matches
-        ) {
-            return true;
-        }
-        return false;
-    });
+    const [isInstalled, setIsInstalled] = useState(checkStandalone);
+
+    const syncInstalledState = useCallback(() => {
+        setIsInstalled(checkStandalone());
+    }, []);
 
     const [platform] = useState(() => {
         if (typeof navigator === "undefined") {
@@ -50,6 +61,8 @@ export default function useInstallPrompt() {
             e.preventDefault();
             deferredPrompt.current = e;
             setCanPrompt(true);
+            // If browser fires this event the app is not currently installed
+            setIsInstalled(false);
         }
 
         function onAppInstalled() {
@@ -61,28 +74,38 @@ export default function useInstallPrompt() {
         window.addEventListener("beforeinstallprompt", onBeforeInstall);
         window.addEventListener("appinstalled", onAppInstalled);
 
-        // Also listen for display-mode changes (e.g. user installed while page open)
+        // Display-mode: handle BOTH directions (install AND uninstall)
         const mql = window.matchMedia?.("(display-mode: standalone)");
         function onDisplayModeChange(e) {
-            if (e.matches) setIsInstalled(true);
+            setIsInstalled(e.matches);
         }
         mql?.addEventListener?.("change", onDisplayModeChange);
+
+        // Re-sync installed truth when user returns to the tab/page
+        function onResync() {
+            syncInstalledState();
+        }
+        window.addEventListener("pageshow", onResync);
+        document.addEventListener("visibilitychange", onResync);
+        window.addEventListener("focus", onResync);
 
         return () => {
             window.removeEventListener("beforeinstallprompt", onBeforeInstall);
             window.removeEventListener("appinstalled", onAppInstalled);
             mql?.removeEventListener?.("change", onDisplayModeChange);
+            window.removeEventListener("pageshow", onResync);
+            document.removeEventListener("visibilitychange", onResync);
+            window.removeEventListener("focus", onResync);
         };
-    }, []);
+    }, [syncInstalledState]);
 
     async function triggerPrompt() {
         const prompt = deferredPrompt.current;
         if (!prompt) return;
         prompt.prompt();
         const result = await prompt.userChoice;
-        if (result.outcome === "accepted") {
-            setIsInstalled(true);
-        }
+        // Do NOT optimistically set isInstalled here.
+        // Let the appinstalled event / syncInstalledState establish real truth.
         deferredPrompt.current = null;
         setCanPrompt(false);
     }
