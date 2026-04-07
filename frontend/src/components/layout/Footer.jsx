@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import styles from "./Footer.module.css";
+import InstallCta from "./InstallCta";
 
 export default function Footer({ onOpenPrivacyPrefs }) {
     return (
@@ -92,6 +93,8 @@ export default function Footer({ onOpenPrivacyPrefs }) {
                     </div>
                 </div>
             </div>
+
+            <InstallCta />
 
             <div className={styles.bottom}>
                 © {new Date().getFullYear()} Cardigo. כל הזכויות שמורות.

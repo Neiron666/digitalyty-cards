@@ -279,7 +279,7 @@ export default function Cards() {
                     </div>
 
                     <p className={styles.heroNote}>
-                        הדוגמאות בעמוד זה מיועדות להמחשה בלבד.
+                        הדוגמאות בעמוד זה מיועדות להמחשה
                     </p>
                 </div>
             </section>

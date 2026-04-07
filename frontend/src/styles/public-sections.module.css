@@ -59,6 +59,12 @@
 
 /* ── Text helpers ───────────────────────────────────────── */
 
+.illustrationOnlyTxt {
+    font-size: var(--fs-body-sm);
+    color: #64748b;
+    max-width: 30rem;
+}
+
 .goldHilight {
     background: linear-gradient(
         105deg,

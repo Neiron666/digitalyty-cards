@@ -1,0 +1,50 @@
+.wrap {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 10px 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.25rem;
+    border-top: 1px solid var(--gold-fade);
+}
+
+.installBtn {
+    appearance: none;
+    border: 1px solid var(--gold);
+    border-radius: 6px;
+    background: transparent;
+    color: var(--gold);
+    font: inherit;
+    font-size: var(--fs-ui);
+    font-weight: 600;
+    padding: 6px 18px;
+    cursor: pointer;
+    transition:
+        background 0.15s,
+        color 0.15s;
+}
+
+.installBtn:hover {
+    background: var(--gold);
+    color: var(--bg, #020617);
+}
+
+.installBtn:focus-visible {
+    outline: 2px solid var(--gold-soft);
+    outline-offset: 2px;
+}
+
+.helpText {
+    color: var(--text-muted);
+    font-size: var(--fs-ui);
+    margin: 0;
+    text-align: center;
+    line-height: 1.6;
+    transition: color 0.15s;
+}
+
+.helpHighlight {
+    color: var(--gold);
+}

@@ -492,6 +492,10 @@ export default function Home() {
                             כולל 10 ימי פרימיום למשתמשים חדשים
                             <CrownIcon className={styles.heroTrialCrown} />
                         </span>
+                        <p className={pub.illustrationOnlyTxt}>
+                            {" "}
+                            הדוגמאות בעמוד זה מוצגות להמחשה
+                        </p>
                     </div>
                 </div>
             </section>
