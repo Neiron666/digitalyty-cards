@@ -151,7 +151,7 @@
     flex-direction: column;
     align-items: center;
     gap: 4px;
-    width: 100%;
+    padding: 10px 16px;
 }
 
 .installBtn {
@@ -191,8 +191,14 @@
 }
 
 .installHelpHl {
-    color: var(--primary);
+    color: var(--text-main);
     opacity: 1;
+}
+
+.installRow:has(.installHelp) {
+    border: 1px solid var(--primary);
+    border-radius: 6px;
+    padding: 0.5rem 1rem;
 }
 
 /* Hide install row inside editor preview */
