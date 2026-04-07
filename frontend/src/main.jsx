@@ -5,6 +5,7 @@ import { RouterProvider } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
 import { UnreadCountProvider } from "./context/UnreadCountContext";
 import router from "./app/router";
+import "./lib/installPromptStore"; // early init — capture beforeinstallprompt before lazy routes
 import "./styles/globals.css";
 
 createRoot(document.getElementById("root")).render(
