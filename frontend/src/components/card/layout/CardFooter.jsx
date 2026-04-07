@@ -1,6 +1,7 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import styles from "./CardFooter.module.css";
 import { trackClick } from "../../../services/analytics.client";
+import useInstallPrompt from "../../../hooks/useInstallPrompt";
 
 // SSoT: same field priority as getDisplayName in CardLayout.jsx
 function getBrandName(card) {
@@ -46,6 +47,18 @@ function tryCopyToClipboard(url) {
 
 function CardFooter({ card }) {
     const brandName = getBrandName(card);
+
+    const {
+        canPrompt,
+        triggerPrompt,
+        isInstalled,
+        isIOS,
+        isSafari,
+        isInAppBrowser,
+        showIOSGuide,
+    } = useInstallPrompt();
+
+    const [installHelpHl, setInstallHelpHl] = useState(false);
 
     const shareUrl = useMemo(
         () => buildShareUrl(card?.publicPath),
@@ -164,7 +177,70 @@ function CardFooter({ card }) {
                 </a>
                 {" - הדרך החכמה לכרטיס ביקור דיגיטלי מקצועי"}
             </p>
+
+            <InstallRow
+                canPrompt={canPrompt}
+                triggerPrompt={triggerPrompt}
+                isInstalled={isInstalled}
+                isIOS={isIOS}
+                isSafari={isSafari}
+                isInAppBrowser={isInAppBrowser}
+                showIOSGuide={showIOSGuide}
+                highlighted={installHelpHl}
+                onToggleHighlight={() => setInstallHelpHl((v) => !v)}
+            />
         </footer>
+    );
+}
+
+function InstallRow({
+    canPrompt,
+    triggerPrompt,
+    isInstalled,
+    isIOS,
+    isSafari,
+    isInAppBrowser,
+    showIOSGuide,
+    highlighted,
+    onToggleHighlight,
+}) {
+    let helpText;
+    if (isInstalled) {
+        helpText = "✓ Cardigo מותקן במכשיר שלכם";
+    } else if (canPrompt) {
+        helpText = null;
+    } else if (showIOSGuide) {
+        helpText = "להתקנה: לחצו על שיתוף ▸ הוסף למסך הבית";
+    } else if (isInAppBrowser || (isIOS && !isSafari)) {
+        helpText = "פתחו ב־Safari להתקנה כאפליקציה";
+    } else {
+        helpText = "אם חלון ההתקנה לא נפתח, אפשר להתקין דרך תפריט הדפדפן";
+    }
+
+    function handleClick() {
+        if (canPrompt) {
+            triggerPrompt();
+            return;
+        }
+        onToggleHighlight();
+    }
+
+    const helpClass =
+        highlighted && helpText
+            ? `${styles.installHelp} ${styles.installHelpHl}`
+            : styles.installHelp;
+
+    return (
+        <div className={styles.installRow}>
+            <button
+                type="button"
+                className={styles.installBtn}
+                onClick={handleClick}
+            >
+                התקינו את Cardigo
+            </button>
+            {helpText && <p className={helpClass}>{helpText}</p>}
+        </div>
     );
 }
 
