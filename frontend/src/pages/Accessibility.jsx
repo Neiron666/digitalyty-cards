@@ -9,6 +9,7 @@ export default function Accessibility() {
                 title="הצהרת נגישות | Cardigo"
                 description="הצהרת הנגישות של Cardigo - מחויבותנו לנגישות דיגיטלית, ההתאמות שבוצעו באתר, מצב הנגישות הנוכחי ואופן הפנייה אלינו בנושא."
                 canonicalUrl="https://cardigo.co.il/accessibility-statement"
+                url="https://cardigo.co.il/accessibility-statement"
             />
 
             {/* ── Hero ─────────────────────────────────────────────── */}

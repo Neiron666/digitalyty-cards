@@ -376,6 +376,28 @@ function buildHomeFaqJsonLd() {
     };
 }
 
+function buildHomeWebSiteJsonLd() {
+    return {
+        "@context": "https://schema.org",
+        "@type": "WebSite",
+        "@id": `${ORIGIN}/#website`,
+        name: "Cardigo",
+        url: `${ORIGIN}/`,
+        inLanguage: "he",
+    };
+}
+
+function buildHomeOrganizationJsonLd() {
+    return {
+        "@context": "https://schema.org",
+        "@type": "Organization",
+        "@id": `${ORIGIN}/#organization`,
+        name: "Cardigo",
+        url: `${ORIGIN}/`,
+        logo: `${ORIGIN}/images/brand-logo/cardigo-logo.png`,
+    };
+}
+
 const HERO_CARDS = [
     {
         src: "/images/home-page/hero/\u05DB\u05E8\u05D8\u05D9\u05E1 \u05D1\u05D9\u05E7\u05D5\u05E8 \u05D3\u05D9\u05D2\u05D9\u05D8\u05DC\u05D9 \u05DC\u05D0\u05D3\u05E8\u05D9\u05DB\u05DC\u05D9\u05EA \u05D7\u05D5\u05E5 \u05D5\u05E0\u05D5\u05E3  \u05DB\u05E8\u05D3\u05D9\u05D2\u05D5.webp",
@@ -413,6 +435,8 @@ export default function Home() {
     const shareScroll = useScrollProgress();
     const stepsScroll = useScrollProgress();
 
+    const homeWebSiteJsonLd = buildHomeWebSiteJsonLd();
+    const homeOrganizationJsonLd = buildHomeOrganizationJsonLd();
     const homeFaqJsonLd = buildHomeFaqJsonLd();
 
     return (
@@ -423,7 +447,11 @@ export default function Home() {
                 canonicalUrl={`${ORIGIN}/`}
                 url={`${ORIGIN}/`}
                 image={`${ORIGIN}/images/og/cardigo-home-og-1200x630.jpg`}
-                jsonLdItems={[homeFaqJsonLd]}
+                jsonLdItems={[
+                    homeWebSiteJsonLd,
+                    homeOrganizationJsonLd,
+                    homeFaqJsonLd,
+                ]}
             />
             {/* HERO - unchanged */}
             <section className={styles.hero}>

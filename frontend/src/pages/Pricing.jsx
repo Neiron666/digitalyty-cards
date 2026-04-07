@@ -227,6 +227,28 @@ const PAYMENT_FLASH = {
     },
 };
 
+function buildPricingFaqJsonLd() {
+    return {
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        "@id": `${ORIGIN}/pricing#faq`,
+        url: `${ORIGIN}/pricing`,
+        inLanguage: "he",
+        mainEntity: PRICING_FAQ.filter(
+            (item) => typeof item.a === "string",
+        ).map((item) => ({
+            "@type": "Question",
+            name: item.q,
+            acceptedAnswer: {
+                "@type": "Answer",
+                text: item.a,
+            },
+        })),
+    };
+}
+
+const pricingFaqJsonLd = buildPricingFaqJsonLd();
+
 export default function Pricing() {
     const [searchParams, setSearchParams] = useSearchParams();
     const payment = searchParams.get("payment");
@@ -255,6 +277,7 @@ export default function Pricing() {
                 canonicalUrl={`${ORIGIN}/pricing`}
                 url={`${ORIGIN}/pricing`}
                 image={`${ORIGIN}/images/og/cardigo-home-og-1200x630.jpg`}
+                jsonLdItems={[pricingFaqJsonLd]}
             />
 
             {/* ── Payment flash banner (preserved) ──────────── */}

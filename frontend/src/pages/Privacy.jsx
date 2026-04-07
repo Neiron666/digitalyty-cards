@@ -9,6 +9,7 @@ export default function Privacy() {
                 title="מדיניות פרטיות | Cardigo"
                 description="מדיניות הפרטיות של Cardigo - מה מידע אנו אוספים, כיצד משתמשים בו, מי עשוי לקבלו, אבטחת מידע, זכויותיכם וכיצד ניתן ליצור קשר."
                 canonicalUrl="https://cardigo.co.il/privacy"
+                url="https://cardigo.co.il/privacy"
             />
 
             {/* ── Hero ─────────────────────────────────────────────── */}

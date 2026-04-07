@@ -157,7 +157,7 @@ function PublicCard() {
     const image =
         card.design?.coverImage ||
         card.design?.logo ||
-        "https://cardigo.co.il/og-default.jpg";
+        "https://cardigo.co.il/images/og/cardigo-home-og-1200x630.jpg";
 
     const publicOrigin = getPublicOrigin();
     const seoCanonicalCandidate =

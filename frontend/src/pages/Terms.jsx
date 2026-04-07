@@ -9,6 +9,7 @@ export default function Terms() {
                 title="תנאי שימוש | Cardigo"
                 description="תנאי השימוש של Cardigo - גישה לשירות, שימוש מותר, תכנים ופרסום, מסלולים ותשלומים, קניין רוחני, הגבלת אחריות, שיפוי, פרטיות ויצירת קשר."
                 canonicalUrl="https://cardigo.co.il/terms"
+                url="https://cardigo.co.il/terms"
             />
 
             {/* ── Hero ─────────────────────────────────────────────── */}
