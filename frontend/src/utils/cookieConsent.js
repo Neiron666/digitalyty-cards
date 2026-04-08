@@ -1,5 +1,20 @@
 const CONSENT_KEY = "cardigo_cookie_consent_v1";
 
+export function pushConsentToDataLayer(state) {
+    try {
+        if (typeof window === "undefined" || !Array.isArray(window.dataLayer))
+            return;
+        window.dataLayer.push({
+            event: "cardigo_consent_update",
+            cardigo_consent_version: state.version,
+            cardigo_consent_acknowledged: state.acknowledged,
+            cardigo_consent_optional_tracking: state.optionalTrackingAllowed,
+        });
+    } catch {
+        /* dataLayer push failed – non-fatal */
+    }
+}
+
 function safeParse(raw) {
     try {
         const parsed = JSON.parse(raw);
@@ -38,6 +53,7 @@ export function saveConsent(optionalTrackingAllowed) {
     } catch {
         /* storage blocked – banner will reappear next visit */
     }
+    pushConsentToDataLayer(state);
     return state;
 }
 

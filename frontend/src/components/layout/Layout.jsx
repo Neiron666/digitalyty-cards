@@ -1,5 +1,9 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Outlet } from "react-router-dom";
+import {
+    getConsentState,
+    pushConsentToDataLayer,
+} from "../../utils/cookieConsent";
 import Header from "./Header";
 import Footer from "./Footer";
 import ScrollToTop from "./ScrollToTop";
@@ -12,6 +16,11 @@ export default function Layout() {
         () => setReopenPrefs((n) => n + 1),
         [],
     );
+
+    useEffect(() => {
+        const state = getConsentState();
+        if (state) pushConsentToDataLayer(state);
+    }, []);
 
     return (
         <>
