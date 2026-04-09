@@ -2,6 +2,12 @@ import { Helmet } from "react-helmet-async";
 
 const EXACT_PLACEHOLDERS = new Set(["GTM-XXXXXXX", "G-XXXXXXX"]);
 
+// Platform-owned IDs that must never be accepted as per-card owner trackers.
+// Using these would load Cardigo's own GTM container or Meta Pixel on card routes,
+// contaminating site-level retargeting audiences with third-party card visitors.
+const BLOCKED_GTM_IDS = new Set(["GTM-W6Q8DP6R"]);
+const BLOCKED_PIXEL_IDS = new Set(["1901625820558020"]);
+
 function toTrimmedString(value) {
     if (value === null || value === undefined) return "";
     return String(value).trim();
@@ -35,6 +41,7 @@ export function normalizeGtmId(value) {
     if (EXACT_PLACEHOLDERS.has(raw)) return "";
     const normalized = raw.toUpperCase();
     if (!/^GTM-[A-Z0-9]+$/.test(normalized)) return "";
+    if (BLOCKED_GTM_IDS.has(normalized)) return "";
     return normalized;
 }
 
@@ -51,6 +58,7 @@ export function normalizeMetaPixelId(value) {
     const raw = toTrimmedString(value);
     if (!raw) return "";
     if (!/^[0-9]{5,20}$/.test(raw)) return "";
+    if (BLOCKED_PIXEL_IDS.has(raw)) return "";
     return raw;
 }
 

@@ -1,0 +1,128 @@
+.overlay {
+    position: fixed;
+    inset-inline: 0;
+    bottom: 0;
+    z-index: 9000;
+    display: flex;
+    justify-content: center;
+    padding: 12px;
+    pointer-events: none;
+}
+
+.banner {
+    pointer-events: auto;
+    max-width: 720px;
+    width: 100%;
+
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 14px;
+
+    padding: 16px 20px;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--gold-fade);
+
+    background: rgba(11, 18, 32, 0.93);
+    color: var(--text-main);
+
+    box-shadow: var(--shadow-soft);
+    backdrop-filter: blur(8px);
+}
+
+.text {
+    flex: 1 1 0;
+    min-width: 0;
+    font-size: var(--fs-caption);
+    line-height: 1.55;
+    color: var(--text-muted);
+}
+
+.actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+}
+
+.accept {
+    appearance: none;
+    border: 0;
+    cursor: pointer;
+
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    padding: 8px 22px;
+    border-radius: var(--radius-sm);
+
+    background: var(--gold);
+    color: #0f172a;
+    font-weight: 700;
+    font-size: var(--fs-caption);
+    line-height: 1;
+    white-space: nowrap;
+
+    transition: background var(--duration-fast) var(--ease-default);
+}
+
+.accept:hover {
+    background: var(--gold-soft);
+}
+
+.accept:focus-visible {
+    outline: 2px solid var(--gold);
+    outline-offset: 2px;
+}
+
+.decline {
+    appearance: none;
+    cursor: pointer;
+
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    padding: 7px 16px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--gold-fade);
+
+    background: transparent;
+    color: var(--text-muted);
+    font-size: var(--fs-caption);
+    line-height: 1;
+    white-space: nowrap;
+
+    transition:
+        color var(--duration-fast) var(--ease-default),
+        border-color var(--duration-fast) var(--ease-default);
+}
+
+.decline:hover {
+    color: var(--text-main);
+    border-color: var(--text-muted);
+}
+
+.decline:focus-visible {
+    outline: 2px solid var(--gold-soft);
+    outline-offset: 2px;
+}
+
+.link {
+    color: var(--gold);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    text-decoration-thickness: 1px;
+    transition: color var(--duration-fast) var(--ease-default);
+}
+
+.link:hover {
+    color: var(--gold-soft);
+}
+
+.link:focus-visible {
+    outline: 2px solid var(--gold);
+    outline-offset: 2px;
+    border-radius: 2px;
+}

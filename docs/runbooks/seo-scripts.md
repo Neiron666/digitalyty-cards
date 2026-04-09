@@ -109,12 +109,12 @@
 **Этот runbook описывает per-card owner-configured tracking** через `card.seo.*`.  
 Это **не то же самое**, что site-level Cardigo marketing tracking.
 
-|              | Per-card tracking                   | Site-level Cardigo tracking                                                                   |
-| ------------ | ----------------------------------- | --------------------------------------------------------------------------------------------- |
-| Scope        | Только публичная карточка           | Весь сайт Cardigo                                                                             |
-| Управление   | Владелец карточки (`card.seo.*`)    | GTM container `GTM-W6Q8DP6R` (в `index.html`)                                                 |
-| Consent gate | ❌ НЕ проверяется (только env-gate) | ✅ Consent-gated через `cardigo_consent_update`                                               |
-| Документация | Этот runbook                        | `docs/handoffs/current/Cardigo_Enterprise_Master_Handoff_2026-04-08_TRACKING_AND_NEXTCHAT.md` |
+|              | Per-card tracking                                                                                                                   | Site-level Cardigo tracking                                                                   |
+| ------------ | ----------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| Scope        | Только публичная карточка                                                                                                           | Только main public pages — `/`, `/cards`, `/pricing`, `/contact`, `/blog`, `/guides`          |
+| Управление   | Владелец карточки (`card.seo.*`)                                                                                                    | GTM container `GTM-W6Q8DP6R` (в `index.html`)                                                 |
+| Consent gate | Owner GTM + Pixel + GA4: ✅ `cardigo_card_consent_v1` (`CardOwnerConsentBanner`). Все три owner third-party trackers consent-gated. | ✅ Consent-gated через `cardigo_consent_update`                                               |
+| Документация | Этот runbook                                                                                                                        | `docs/handoffs/current/Cardigo_Enterprise_Master_Handoff_2026-04-08_TRACKING_AND_NEXTCHAT.md` |
 
 ---
 
@@ -123,16 +123,29 @@
 - Владелец карточки указывает `G-XXXXXXX` в поле `card.seo.gaMeasurementId`.
 - При загрузке публичной карточки инжектируется `gtag/js` loader + `gtag('config', id)` (base config only).
 - **Только base config** — custom events не используются.
-- Gate: `import.meta.env.PROD || VITE_SEO_DEBUG=1` — **не зависит от consent пользователя**.
+- Gate: `cardConsentAllowed === true` (card-route consent via `cardigo_card_consent_v1`) **и** `import.meta.env.PROD || VITE_SEO_DEBUG=1` — GA4 инжектируется только при выполнении обоих условий. Consent gate идентичен owner GTM и Pixel.
 - Если задан GTM ID — GA4 напрямую не подключается (GTM имеет приоритет; GA4/Pixel настраиваются внутри GTM).
 
 ---
 
-### Per-card tracking consent gap (текущий known gap)
+### Per-card owner consent subsystem — ЗАКРЫТЫЙ КОНТУР
 
-Per-card tracking (GTM, GA4, Pixel через `card.seo.*`) инжектируется **без проверки consent пользователя**.
+> **Статус: CLOSED и верифицирован (2026-04-09, все gates EXIT:0, 348 модулей).**
 
-- Маршруты `/card/:slug` и `/c/:orgSlug/:slug` рендерятся без `Layout` wrapper.
-- GTM не получает событие `cardigo_consent_update` при прямом заходе на публичную карточку.
-- Это **задокументированный known gap**, классифицированный как separate privacy hardening contour.
-- **Не исправлять в рамках этого runbook** — требует отдельного bounded workstream.
+Owner-configured GTM и Meta Pixel теперь consent-gated через `cardigo_card_consent_v1`:
+
+- `CardOwnerConsentBanner` монтируется в `PublicCard.jsx` при наличии хотя бы одного валидного owner tracker.
+- До accept: `trackingMode = "none"` — owner GTM + Pixel не инжектируются.
+- `saveCardConsent()` **не вызывает** `pushConsentToDataLayer` — card consent не влияет на Cardigo GTM dataLayer.
+- First-party `trackView` (внутренняя карточная аналитика) остаётся **ungated** по дизайну — это не сторонний трекер.
+- Owner GA4 (`gaMeasurementId`) — теперь также consent-gated: prop передаётся как `undefined` в `SeoHelmet` при `cardConsentAllowed === false`. Все три owner third-party trackers (GTM + Pixel + GA4) теперь consent-gated через `cardigo_card_consent_v1`.
+
+**Per-card platform-ID blocklist (ЗАКРЫТ):**
+
+- `GTM-W6Q8DP6R` и `1901625820558020` заблокированы на двух уровнях:
+    - Runtime: `SeoHelmet.jsx` normalizers возвращают `""` для этих ID.
+    - DB: `Card.model.js` validators отклоняют эти значения при сохранении.
+
+**Остаток (deferred, отдельный contour):**
+
+- Card-route GTM signal bootstrap через `main.jsx` (push `cardigo_consent_update` в GTM с card routes) — это **отдельный** future contour, не является частью этого runbook. ОБЯЗАН включать route guard.

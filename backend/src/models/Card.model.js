@@ -550,7 +550,9 @@ const CardSchema = new mongoose.Schema(
                 default: null,
                 uppercase: true,
                 validate: {
-                    validator: (v) => !v || /^GTM-[A-Z0-9]+$/.test(v),
+                    validator: (v) =>
+                        !v ||
+                        (/^GTM-[A-Z0-9]+$/.test(v) && v !== "GTM-W6Q8DP6R"),
                     message: "seo.gtmId must match GTM-XXXX",
                 },
             },
@@ -569,7 +571,9 @@ const CardSchema = new mongoose.Schema(
                 trim: true,
                 default: null,
                 validate: {
-                    validator: (v) => !v || /^[0-9]{5,20}$/.test(v),
+                    validator: (v) =>
+                        !v ||
+                        (/^[0-9]{5,20}$/.test(v) && v !== "1901625820558020"),
                     message: "seo.metaPixelId must be a numeric string",
                 },
             },

@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
 import { getCardBySlug, getCompanyCardBySlug } from "../services/cards.service";
 import { trackView } from "../services/analytics.client";
+import { getCardConsentState } from "../utils/cookieConsent";
+import CardOwnerConsentBanner from "../components/ui/CardOwnerConsentBanner/CardOwnerConsentBanner";
 import CardRenderer from "../components/card/CardRenderer";
 import SeoHelmet, {
     getAllowTracking,
@@ -108,6 +110,9 @@ function PublicCard() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const trackedRef = useRef(false);
+    const [cardConsentAllowed, setCardConsentAllowed] = useState(
+        () => getCardConsentState()?.ownerTrackingAllowed ?? false,
+    );
 
     useEffect(() => {
         async function loadCard() {
@@ -184,69 +189,87 @@ function PublicCard() {
     );
     const metaPixelIdNormalized = normalizeMetaPixelId(card.seo?.metaPixelId);
 
-    const trackingMode = allowTracking
-        ? gtmIdNormalized
-            ? "gtm"
-            : gaMeasurementIdNormalized
-              ? "ga"
-              : metaPixelIdNormalized
-                ? "pixel"
-                : "none"
-        : "none";
+    const hasOwnerThirdPartyTracker = Boolean(
+        gtmIdNormalized || gaMeasurementIdNormalized || metaPixelIdNormalized,
+    );
+
+    const trackingMode =
+        allowTracking && cardConsentAllowed
+            ? gtmIdNormalized
+                ? "gtm"
+                : gaMeasurementIdNormalized
+                  ? "ga"
+                  : metaPixelIdNormalized
+                    ? "pixel"
+                    : "none"
+            : "none";
 
     return (
-        <div className={styles.publicPage}>
-            <SeoHelmet
-                title={title}
-                description={description}
-                robots={card.seo?.robots}
-                googleSiteVerification={card.seo?.googleSiteVerification}
-                facebookDomainVerification={
-                    card.seo?.facebookDomainVerification
-                }
-                canonicalUrl={canonicalUrl}
-                url={url}
-                image={image}
-                jsonLd={card.seo?.jsonLd}
-                jsonLdItems={faqJsonLd ? [faqJsonLd] : []}
-                gtmId={card.seo?.gtmId}
-                gaMeasurementId={card.seo?.gaMeasurementId}
-                metaPixelId={card.seo?.metaPixelId}
-            />
-
-            {trackingMode === "gtm" ? (
-                <noscript>
-                    <iframe
-                        title="GTM"
-                        src={`https://www.googletagmanager.com/ns.html?id=${gtmIdNormalized}`}
-                        height="0"
-                        width="0"
-                        frameBorder="0"
-                        hidden
-                        aria-hidden="true"
-                    />
-                </noscript>
-            ) : null}
-
-            {trackingMode === "pixel" ? (
-                <noscript>
-                    <img
-                        alt=""
-                        height="1"
-                        width="1"
-                        src={`https://www.facebook.com/tr?id=${metaPixelIdNormalized}&ev=PageView&noscript=1`}
-                    />
-                </noscript>
-            ) : null}
-
-            <div className={styles.publicContainer}>
-                <CardRenderer
-                    card={card}
-                    onUpgrade={handleUpgrade}
-                    mode="public"
+        <>
+            {hasOwnerThirdPartyTracker ? (
+                <CardOwnerConsentBanner
+                    onConsentChange={setCardConsentAllowed}
                 />
+            ) : null}
+            <div className={styles.publicPage}>
+                <SeoHelmet
+                    title={title}
+                    description={description}
+                    robots={card.seo?.robots}
+                    googleSiteVerification={card.seo?.googleSiteVerification}
+                    facebookDomainVerification={
+                        card.seo?.facebookDomainVerification
+                    }
+                    canonicalUrl={canonicalUrl}
+                    url={url}
+                    image={image}
+                    jsonLd={card.seo?.jsonLd}
+                    jsonLdItems={faqJsonLd ? [faqJsonLd] : []}
+                    gtmId={cardConsentAllowed ? card.seo?.gtmId : undefined}
+                    gaMeasurementId={
+                        cardConsentAllowed
+                            ? card.seo?.gaMeasurementId
+                            : undefined
+                    }
+                    metaPixelId={
+                        cardConsentAllowed ? card.seo?.metaPixelId : undefined
+                    }
+                />
+
+                {trackingMode === "gtm" ? (
+                    <noscript>
+                        <iframe
+                            title="GTM"
+                            src={`https://www.googletagmanager.com/ns.html?id=${gtmIdNormalized}`}
+                            height="0"
+                            width="0"
+                            frameBorder="0"
+                            hidden
+                            aria-hidden="true"
+                        />
+                    </noscript>
+                ) : null}
+
+                {trackingMode === "pixel" ? (
+                    <noscript>
+                        <img
+                            alt=""
+                            height="1"
+                            width="1"
+                            src={`https://www.facebook.com/tr?id=${metaPixelIdNormalized}&ev=PageView&noscript=1`}
+                        />
+                    </noscript>
+                ) : null}
+
+                <div className={styles.publicContainer}>
+                    <CardRenderer
+                        card={card}
+                        onUpgrade={handleUpgrade}
+                        mode="public"
+                    />
+                </div>
             </div>
-        </div>
+        </>
     );
 }
 

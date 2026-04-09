@@ -1,4 +1,4 @@
-# Cardigo — Enterprise Master Handoff / Next Chat Full Playbook
+﻿# Cardigo — Enterprise Master Handoff / Next Chat Full Playbook
 
 _Обновлено: 2026-04-08 (после настройки GTM base container, privacy-aware Meta Pixel base setup и подготовки следующего tracking contour)_
 
@@ -464,7 +464,9 @@ Hard constraints:
 - **Cardigo Pixel creation**;
 - **site-level GTM base container installation**;
 - **consent-to-dataLayer wiring for GTM gating**;
-- **site-level Meta Pixel base setup via GTM with consent gating**.
+- **site-level Meta Pixel base setup via GTM with consent gating**;
+- **per-card platform-ID blocklist** (`SeoHelmet.jsx` runtime normalizers + `Card.model.js` validators: `GTM-W6Q8DP6R` и `1901625820558020` заблокированы на уровне runtime и DB);
+- **per-card owner consent subsystem** (`cardigo_card_consent_v1` + `CardOwnerConsentBanner` + `PublicCard.jsx` gating — owner GTM и Pixel consent-gated, EXIT:0 verified).
 
 Важно: закрыт именно **base setup contour**, а не весь будущий marketing-tracking roadmap.
 
@@ -709,7 +711,12 @@ Hard constraints:
 - site-level GTM base shell installation;
 - separate Cardigo Pixel;
 - consent-aware GTM gating via dataLayer;
-- site-level Meta Pixel base PageView after consent.
+- site-level Meta Pixel base PageView after consent;
+- site-level consent push is now allowlisted to main public marketing pages only: `/`, `/cards`, `/pricing`, `/contact`, `/blog`, `/guides`;
+- per-card platform-ID blocklist: `GTM-W6Q8DP6R` + `1901625820558020` blocked at runtime (`SeoHelmet.jsx`) and DB (`Card.model.js`);
+- per-card owner consent subsystem: owner GTM + Pixel + GA4 all consent-gated via `cardigo_card_consent_v1` (`CardOwnerConsentBanner` in `PublicCard.jsx`);
+- banner mounts only when card has at least one valid non-blocklisted owner tracker;
+- first-party `trackView` (internal card analytics) remains ungated by design;
 
 ---
 
@@ -736,6 +743,8 @@ Hard constraints:
     - `cardigo_cookie_consent_v1`
 - теперь consent state ещё и сигнализируется в GTM через:
     - `cardigo_consent_update`
+- consent state pushes в GTM только с одобренных marketing-маршрутов (`/`, `/cards`, `/pricing`, `/contact`, `/blog`, `/guides`); excluded routes (auth, product, legal, admin) этот event **не эмитят**.
+- **второй consent key** `cardigo_card_consent_v1` существует для card-route owner trackers; полностью независим от main-site модели; `saveCardConsent()` **не** вызывает `pushConsentToDataLayer` и **не** взаимодействует с Cardigo GTM dataLayer.
 
 ### 10.3 Search/indexability prelaunch truth
 
@@ -814,9 +823,9 @@ Hard constraints:
 - Владелец карточки сам указывает `G-XXXXXXX` в `card.seo.gaMeasurementId`.
 - Inject — через react-helmet-async на публичных маршрутах `/card/:slug`, `/c/:orgSlug/:slug`.
 - Только base config: `gtag('config', id)` — custom events не используются.
-- Gate: `PROD || VITE_SEO_DEBUG=1` — **не gated за consent**.
+- Gate: owner GA4 (`gaMeasurementId`) — `cardConsentAllowed === true` (card-route consent via `cardigo_card_consent_v1`) + `PROD || VITE_SEO_DEBUG=1` — **consent-gated** (same gate as owner GTM + Pixel).
+- Owner GTM (`gtmId`) и owner Meta Pixel (`metaPixelId`) — **consent-gated** через `cardigo_card_consent_v1` (см. 11.10 — contour закрыт).
 - Priority: GTM > GA4 > Pixel (если указан GTM ID — GA4 напрямую не подключается).
-- Это отдельный privacy hardening target, аудит завершён, gap задокументирован в 11.10.
 
 ### 11.9 Meta event taxonomy beyond PageView
 
@@ -824,32 +833,42 @@ Hard constraints:
 
 Завершённый read-only audit выявил следующих кандидатов:
 
-| Candidate event        | Code location                      | Status                                        |
-| ---------------------- | ---------------------------------- | --------------------------------------------- |
-| `CompleteRegistration` | `SignupConsume.jsx`                | Технически SAFE — Layout-wrapped route        |
-| `Contact`              | `Contact.jsx`                      | Технически SAFE — Layout-wrapped route        |
-| `Lead`                 | `LeadForm.jsx` (public card)       | BLOCKED — нет consent signal на `/card/:slug` |
-| `Schedule`             | `BookingSection.jsx` (public card) | BLOCKED — нет consent signal на `/card/:slug` |
+| Candidate event        | Code location                      | Status                                                                      |
+| ---------------------- | ---------------------------------- | --------------------------------------------------------------------------- |
+| `CompleteRegistration` | `SignupConsume.jsx`                | Технически SAFE — Layout-wrapped route                                      |
+| `Contact`              | `Contact.jsx`                      | Технически SAFE — Layout-wrapped route                                      |
+| `Lead`                 | `LeadForm.jsx` (public card)       | UNBLOCKED на consent grounds — требуется явное product/architecture решение |
+| `Schedule`             | `BookingSection.jsx` (public card) | UNBLOCKED на consent grounds — требуется явное product/architecture решение |
 
-`Lead` и `Schedule` заблокированы pending исправления public card consent gap (см. 11.10).  
+`Lead` и `Schedule` разблокированы по consent grounds: consent contour на card routes закрыт (см. 11.10).  
 **Ни одно из этих событий не одобрено для реализации в текущем contour.**  
 Для открытия этого contour необходимо явное product/architecture решение.
 
-### 11.10 Per-card tracking consent gap
+### 11.10 Per-card owner consent subsystem — ЗАКРЫТЫЙ КОНТУР
 
-Доказано, что per-card tracking currently ignores consent.  
-Это **отдельный privacy hardening contour**, а не хвост site-level Meta base setup.
+> **Статус: CLOSED и verified (2026-04-09, все gates EXIT:0, 348 модулей).**
 
-**Scope этого gap включает:**
+**Что было реализовано:**
 
-- Per-card GTM, GA4, Meta Pixel через `SeoHelmet.jsx` — инжектятся без проверки consent.
-- `Layout.jsx` consent init push НЕ запускается на public card routes (`/card/:slug`, `/c/:orgSlug/:slug`) — эти маршруты рендерятся без Layout ancestor.
-- GTM не получает `cardigo_consent_update` при прямом заходе на `/card/:slug`.
-- Из-за этого `Lead` и `Schedule` из section 11.9 технически заблокированы pending gap fix.
+- `cardigo_card_consent_v1` — отдельный localStorage key для card-route owner tracker consent.
+- `CardOwnerConsentBanner.jsx` / `.module.css` — баннер монтируется в `PublicCard.jsx` только при наличии хотя бы одного валидного non-blocklisted owner tracker.
+- `PublicCard.jsx` — `trackingMode` теперь гейтирован через `allowTracking && cardConsentAllowed`: owner GTM и Pixel не инжектируются до explicit accept.
+- Default: `ownerTrackingAllowed = false` (trackers off until accept).
+- `saveCardConsent()` **не** вызывает `pushConsentToDataLayer` — card consent не взаимодействует с Cardigo GTM dataLayer.
+- First-party `trackView` (внутренняя аналитика) — ungated по дизайну, не является owner tracker.
+- Owner GA4 (`gaMeasurementId`) — теперь также consent-gated: `gaMeasurementId` передаётся как `undefined` в `SeoHelmet` при `cardConsentAllowed === false`. Все три owner third-party trackers (GTM + Pixel + GA4) consent-gated.
 
-**Минимально необходимый fix (когда contour открывается):**  
-Одна строка в `main.jsx` — вызов `pushConsentToDataLayer(getConsentState())` до монтирования RouterProvider.  
-Это prerequisite для разблокировки Meta event contour (11.9) и для consent compliance per-card tracking.
+**Per-card platform-ID blocklist (закрыт вместе):**
+
+- `GTM-W6Q8DP6R` и `1901625820558020` заблокированы в `SeoHelmet.jsx` (runtime normalizers) и `Card.model.js` (schema validators).
+
+**Route-isolation hardening (закрыт ранее):**
+
+- `Layout.jsx` имеет `AD_MEASUREMENT_PATHS` allowlist + `isApprovedAdPath()` guard: site-level `cardigo_consent_update` push срабатывает только на marketing routes.
+
+**Оставшееся (deferred — отдельный будущий contour):**
+
+- Card-route GTM signal bootstrap: push `cardigo_consent_update` на card routes через `main.jsx` (для передачи consent state в Cardigo GTM). Это **отдельный** future contour, не связанный с per-card owner consent. ОБЯЗАН включать route guard (`isApprovedAdPath()` или эквивалент).
 
 ---
 
@@ -863,15 +882,14 @@ Hard constraints:
 
 - `CompleteRegistration` — audit: SAFE; статус: не реализован, нет одобрения
 - `Contact` — audit: SAFE; статус: не реализован, нет одобрения
-- `Lead` — audit: BLOCKED (public card consent gap); статус: не реализован
-- `Schedule` — audit: BLOCKED (public card consent gap); статус: не реализован
+- `Lead` — audit: consent contour на card routes закрыт; остаётся blocklist: **явное product/architecture решение**
+- `Schedule` — audit: consent contour на card routes закрыт; остаётся blocklist: **явное product/architecture решение**
 
-Для открытия этого contour необходимы два предварительных шага:
+Для открытия этого contour необходимо:
 
-1. Fix public card consent gap (`main.jsx` single line — см. 11.10).
-2. Явное product/architecture решение с одобрением конкретных событий.
+1. Явное product/architecture решение с одобрением конкретных событий.
 
-Нельзя переходить к реализации без решения обоих шагов.
+_(Per-card owner consent contour закрыт. Prerequisite по gap больше не является blocker-ом.)_
 
 ### Вариант B — Google tracking contour
 
@@ -883,13 +901,13 @@ Hard constraints:
 
 Но не смешивать это с Meta next steps.
 
-### Вариант C — Privacy hardening contour for per-card tracking
+### Вариант C — Оставшийся deferred: card-route GTM signal bootstrap
 
-Если приоритет privacy correctness:
+Per-card owner consent contour закрыт. Оставшийся privacy/tracking deferred item:
 
-- провести read-only audit per-card GTM/GA/Pixel logic;
-- доказать, как именно он сейчас обходит consent;
-- спроектировать bounded hardening.
+- Card-route GTM signal: push `cardigo_consent_update` на `/card/:slug` маршрутах через `main.jsx` — чтобы Cardigo GTM получал consent state при прямом заходе на карточку.
+- **ОБЯЗАН** включать route guard (`isApprovedAdPath()` или эквивалент) — без него site-level tracking откроется на card routes.
+- Это отдельный bounded contour, не связанный с per-card owner consent.
 
 ### Вариант D — Monitoring / observability contour
 
@@ -959,11 +977,13 @@ Current important truths:
 - DLV = cardigo_consent_optional_tracking
 - automatic advanced matching is intentionally OFF
 - site-level Google tag / GA4 / Google Ads are intentionally deferred (separate bounded workstream)
-- per-card GA4 exists as owner-configured feature in SeoHelmet.jsx — base config only, NOT site-level, NOT consent-gated
+- per-card GA4 exists as owner-configured feature in SeoHelmet.jsx — base config only, NOT site-level, consent-gated via cardigo_card_consent_v1
 - Meta event mapping audit completed — 4 candidates audited (CompleteRegistration, Contact, Lead, Schedule)
-- Meta event candidates are NOT approved for implementation; Lead + Schedule blocked by public card consent gap
-- public card consent gap proven — /card/:slug routes do not receive cardigo_consent_update signal
-- pending main.jsx consent bootstrap (1 line) — prerequisite before Meta event contour can open
+- Meta event candidates are NOT approved for implementation; Lead + Schedule now unblocked on consent grounds — remaining blocker: explicit product/architecture decision only
+- route-isolation hardening DONE: Layout.jsx consent push is now allowlisted to approved ad-measurement paths only (/, /cards, /pricing, /contact, /blog, /guides); all excluded Layout routes skip the push
+- per-card owner consent subsystem CLOSED: cardigo_card_consent_v1 + CardOwnerConsentBanner + PublicCard.jsx gating — owner GTM + Pixel + GA4 all consent-gated, first-party trackView ungated
+- per-card platform-ID blocklist CLOSED: GTM-W6Q8DP6R + 1901625820558020 blocked in SeoHelmet.jsx normalizers and Card.model.js validators
+- card-route GTM signal bootstrap (main.jsx pushConsentToDataLayer for /card/* routes) remains deferred — separate future contour, MUST include route guard
 
 Working rule:
 Do not move to the next task until all tails in the current one are either fixed or explicitly classified as non-blocking / deferred / intentional.
@@ -1005,4 +1025,4 @@ Choose safest mature path over fastest hack.
 
 ## 15) Финальная выжимка в одном абзаце
 
-Cardigo сейчас находится в сильной зрелой точке: это enterprise-minded Israel-first SaaS для цифровых визиток с ручной DB/index governance, строгой архитектурной дисциплиной, закрытым trial/free/premium lifecycle contour, корректным claim/recovery path, working install/installability contour, закрытым structured-data baseline contour, чистым cookie-backed auth runtime, отдельным business portfolio Cardigo в Meta, отдельным Cardigo Pixel `1901625820558020`, отдельным GTM container `GTM-W6Q8DP6R`, корректной установкой GTM в shared HTML shell, consent signal через `cardigo_consent_update`, consent-gated site-level Meta Pixel base setup через GTM и подтверждённым runtime `PageView` после consent. Следующий GPT должен не “накидывать трекинг везде”, а идти bounded contour-ами, держать architecture truth, уважать privacy/consent model, не смешивать Cardigo с Digitalyty и выбирать safest mature path over fastest hack.
+Cardigo сейчас находится в сильной зрелой точке: это enterprise-minded Israel-first SaaS для цифровых визиток с ручной DB/index governance, строгой архитектурной дисциплиной, закрытым trial/free/premium lifecycle contour, корректным claim/recovery path, working install/installability contour, закрытым structured-data baseline contour, чистым cookie-backed auth runtime, отдельным business portfolio Cardigo в Meta, отдельным Cardigo Pixel `1901625820558020`, отдельным GTM container `GTM-W6Q8DP6R`, корректной установкой GTM в shared HTML shell, consent signal через `cardigo_consent_update`, consent-gated site-level Meta Pixel base setup через GTM и подтверждённым runtime `PageView` после consent и закрытым route-isolation hardening contour (site-level consent push теперь allowlisted только на main public marketing pages, все excluded routes изолированы), закрытым per-card platform-ID blocklist contour (`GTM-W6Q8DP6R` и `1901625820558020` заблокированы на уровне runtime и DB) и закрытым per-card owner consent subsystem contour (`cardigo_card_consent_v1` + `CardOwnerConsentBanner` — owner GTM и Pixel consent-gated, first-party analytics остаётся ungated, EXIT:0 verified). Следующий GPT должен не “накидывать трекинг везде”, а идти bounded contour-ами, держать architecture truth, уважать privacy/consent model, не смешивать Cardigo с Digitalyty и выбирать safest mature path over fastest hack.
