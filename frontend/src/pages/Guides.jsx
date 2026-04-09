@@ -1,7 +1,11 @@
 import { useEffect, useState } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
 import SeoHelmet from "../components/seo/SeoHelmet";
-import { trackSitePageView } from "../services/siteAnalytics.client";
+import {
+    trackSitePageView,
+    trackSiteClick,
+} from "../services/siteAnalytics.client";
+import { SITE_ACTIONS } from "../services/siteAnalytics.actions";
 import pub from "../styles/public-sections.module.css";
 import styles from "./Guides.module.css";
 
@@ -248,6 +252,12 @@ export default function Guides() {
                                         <Link
                                             to={`/guides/${post.slug}`}
                                             className={styles.cardCta}
+                                            onClick={() =>
+                                                trackSiteClick({
+                                                    action: SITE_ACTIONS.guide_article_click,
+                                                    pagePath: "/guides",
+                                                })
+                                            }
                                         >
                                             קרא עוד
                                         </Link>

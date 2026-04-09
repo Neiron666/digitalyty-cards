@@ -318,6 +318,8 @@ const IMPORTANT_ACTIONS_SET = new Set([
     "cards_bottom_cta",
     "cards_showcase_card_cta",
     "cards_showcase_view_all_cta",
+    "blog_article_click",
+    "guide_article_click",
     "contact_email_click",
     "contact_form_submit",
     "contact_whatsapp_click",

@@ -1,7 +1,11 @@
 import { useEffect, useState } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
 import SeoHelmet from "../components/seo/SeoHelmet";
-import { trackSitePageView } from "../services/siteAnalytics.client";
+import {
+    trackSitePageView,
+    trackSiteClick,
+} from "../services/siteAnalytics.client";
+import { SITE_ACTIONS } from "../services/siteAnalytics.actions";
 import pub from "../styles/public-sections.module.css";
 import styles from "./Blog.module.css";
 
@@ -254,6 +258,12 @@ export default function Blog() {
                                         <Link
                                             to={`/blog/${post.slug}`}
                                             className={styles.cardCta}
+                                            onClick={() =>
+                                                trackSiteClick({
+                                                    action: SITE_ACTIONS.blog_article_click,
+                                                    pagePath: "/blog",
+                                                })
+                                            }
                                         >
                                             קרא עוד
                                         </Link>
