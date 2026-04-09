@@ -99,3 +99,40 @@
 ```json
 { "@context": "https://schema.org", "@type": "LocalBusiness" }
 ```
+
+---
+
+## Важные разграничения
+
+### Per-card tracking vs site-level Cardigo marketing tracking
+
+**Этот runbook описывает per-card owner-configured tracking** через `card.seo.*`.  
+Это **не то же самое**, что site-level Cardigo marketing tracking.
+
+|              | Per-card tracking                   | Site-level Cardigo tracking                                                                   |
+| ------------ | ----------------------------------- | --------------------------------------------------------------------------------------------- |
+| Scope        | Только публичная карточка           | Весь сайт Cardigo                                                                             |
+| Управление   | Владелец карточки (`card.seo.*`)    | GTM container `GTM-W6Q8DP6R` (в `index.html`)                                                 |
+| Consent gate | ❌ НЕ проверяется (только env-gate) | ✅ Consent-gated через `cardigo_consent_update`                                               |
+| Документация | Этот runbook                        | `docs/handoffs/current/Cardigo_Enterprise_Master_Handoff_2026-04-08_TRACKING_AND_NEXTCHAT.md` |
+
+---
+
+### Per-card GA4 — текущая operational truth
+
+- Владелец карточки указывает `G-XXXXXXX` в поле `card.seo.gaMeasurementId`.
+- При загрузке публичной карточки инжектируется `gtag/js` loader + `gtag('config', id)` (base config only).
+- **Только base config** — custom events не используются.
+- Gate: `import.meta.env.PROD || VITE_SEO_DEBUG=1` — **не зависит от consent пользователя**.
+- Если задан GTM ID — GA4 напрямую не подключается (GTM имеет приоритет; GA4/Pixel настраиваются внутри GTM).
+
+---
+
+### Per-card tracking consent gap (текущий known gap)
+
+Per-card tracking (GTM, GA4, Pixel через `card.seo.*`) инжектируется **без проверки consent пользователя**.
+
+- Маршруты `/card/:slug` и `/c/:orgSlug/:slug` рендерятся без `Layout` wrapper.
+- GTM не получает событие `cardigo_consent_update` при прямом заходе на публичную карточку.
+- Это **задокументированный known gap**, классифицированный как separate privacy hardening contour.
+- **Не исправлять в рамках этого runbook** — требует отдельного bounded workstream.
