@@ -98,6 +98,20 @@ function send(payload, { preferFetch = false } = {}) {
     }
 }
 
+function pushToDataLayer(eventName, pagePath) {
+    try {
+        if (typeof window === "undefined") return;
+        window.dataLayer = window.dataLayer || [];
+        window.dataLayer.push({
+            event: "cardigo_event",
+            event_name: eventName,
+            page_path: pagePath,
+        });
+    } catch {
+        // ignore — non-fatal
+    }
+}
+
 export function trackSitePageView({ siteKey = "main" } = {}) {
     try {
         if (isOptedOut()) return;
@@ -169,6 +183,7 @@ export function trackSiteClick({
             },
             { preferFetch: true },
         );
+        pushToDataLayer(a, pagePath);
     } catch {
         // ignore
     }
