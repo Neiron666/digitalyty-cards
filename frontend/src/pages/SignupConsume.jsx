@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import AuthLayout from "../components/auth/AuthLayout";
 import Input from "../components/ui/Input";
@@ -22,6 +22,16 @@ export default function SignupConsume() {
     });
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
+
+    // Strip the token query param from the URL so that third-party pixels / GTM
+    // variables observing window.location do not record the raw token value.
+    // history.replaceState is used (not navigate) to avoid updating React Router
+    // location state, which would clear the in-memory token value.
+    useEffect(() => {
+        if (token) {
+            window.history.replaceState(null, "", window.location.pathname);
+        }
+    }, []);
 
     function update(field, value) {
         setForm((p) => ({ ...p, [field]: value }));

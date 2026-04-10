@@ -19,6 +19,17 @@ export default function VerifyEmail() {
     const [resendDone, setResendDone] = useState(false);
     const [errorMsg, setErrorMsg] = useState("");
 
+    // Strip the token query param from the URL as early as possible so that
+    // third-party pixels / GTM variables observing window.location do not record
+    // the raw token value. Must be declared before the verify effect.
+    // history.replaceState is used (not navigate) to avoid updating React Router
+    // location state, which would clear the in-memory token value.
+    useEffect(() => {
+        if (token) {
+            window.history.replaceState(null, "", window.location.pathname);
+        }
+    }, []);
+
     // Guard: prevent StrictMode double-mount from firing a second destructive POST.
     const attempted = useRef(false);
 
