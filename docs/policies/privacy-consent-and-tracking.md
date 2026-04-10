@@ -199,3 +199,85 @@ Result: a card owner cannot configure Cardigo's own platform IDs as per-card tra
 
 - **Preview routes** (`/preview/*`): separate component, separate router entries — completely outside this contour and unaffected.
 - **Site-level Cardigo GTM/Pixel**: unaffected — card-route consent lives on a separate key and does not interact with GTM dataLayer.
+
+---
+
+## 10) registration_complete Consent-Inline Exception
+
+> **Status: CLOSED and verified (2026-04-10, all gates EXIT:0, 348 modules).**
+
+### Why this exception exists
+
+The standard consent signal path for site-level GTM is:
+
+1. User visits an approved marketing route (`/`, `/cards`, `/pricing`, `/contact`, `/blog`, `/guides`).
+2. `Layout.jsx` fires a `useEffect` that calls `pushConsentToDataLayer(state)`.
+3. GTM receives `cardigo_consent_update` with `cardigo_consent_optional_tracking: true|false`.
+4. Consent-gated GTM triggers evaluate against that DLV.
+
+`registration_complete` fires from `/verify-email` and `/signup` — auth routes that are **excluded** from `AD_MEASUREMENT_PATHS` in `Layout.jsx` by design. These routes must not allow site-level marketing tracking contamination from product-use paths. The exclusion is intentional and must not be removed.
+
+This creates a gap: when a user follows an email verification link directly (fresh browser session, no prior marketing page visit), `cardigo_consent_update` has never been pushed to dataLayer. Any GTM trigger that reads `cardigo_consent_optional_tracking` finds it undefined, not `false`. A naive GTM approach would either always-fire or never-fire.
+
+### Solution: inline consent read
+
+`trackRegistrationComplete()` in `frontend/src/services/siteAnalytics.client.js` resolves this by reading consent state directly from `localStorage` at the moment of emission and embedding the value in the dataLayer push payload:
+
+```json
+{
+  "event": "cardigo_event",
+  "event_name": "registration_complete",
+  "cardigo_consent_optional_tracking": true | false | null
+}
+```
+
+`null` means the user has never interacted with the consent banner. GTM must treat `null` identically to `false` — the consent-gated trigger condition `cardigo_consent_optional_tracking equals true` naturally excludes `null`.
+
+### Invariants
+
+- `trackRegistrationComplete()` reads `cardigo_cookie_consent_v1` from `window.localStorage` directly. It does **not** import or call any function from `cookieConsent.js`.
+- The hard rule in Section 1 — "internal first-party analytics must never reference consent utilities" — is **not violated** because `trackRegistrationComplete` is **not** an internal first-party analytics function. It pushes exclusively to GTM `dataLayer` and does not interact with the internal `siteAnalytics` backend pipeline.
+- The `trackRegistrationComplete` function is the **only** tracking function in the codebase permitted to read `cardigo_cookie_consent_v1` outside of `cookieConsent.js`. This exception must not be casually replicated.
+- Callers (`VerifyEmail.jsx`, `SignupConsume.jsx`) do not need to pass consent — the function resolves it internally.
+
+---
+
+## 11) Auth URL Token Sanitization
+
+> **Status: CLOSED and verified (2026-04-10, all gates EXIT:0, 348 modules).**
+
+### Problem
+
+Auth flows deliver single-use tokens in URL query params:
+
+- `/verify-email?token=<value>`
+- `/signup?token=<value>`
+
+Even though tokens are single-use server-side, the raw token value would appear in Meta Events Manager URL fields, GTM `{{Page URL}}` variables, and analytics platform logs — permanently, as a third-party record.
+
+### Solution
+
+Both `VerifyEmail.jsx` and `SignupConsume.jsx` strip the query string from the browser URL on component mount using `window.history.replaceState`:
+
+```js
+useEffect(() => {
+    if (token) {
+        window.history.replaceState(null, "", window.location.pathname);
+    }
+}, []);
+```
+
+This effect is declared before any API call effect in both components.
+
+### Why `history.replaceState` and not `navigate(..., { replace: true })`
+
+`navigate` (React Router) would update the `location` object and cause `useSearchParams()` to re-evaluate. This would clear the in-memory `token` value derived via `useMemo`, breaking the API call. `history.replaceState` does not dispatch a `popstate` event, does not notify React Router, and does not affect any React state. The token remains available in memory for the POST body of `verifyEmail(token)` and `consumeSignupToken(token, ...)`.
+
+### Invariants
+
+- Sanitization happens at mount, before the API call, before any GTM trigger fires.
+- After sanitization, `window.location.href` and `window.location.search` contain no token value.
+- The token in the React component's `useMemo` closure is unaffected.
+- `trackRegistrationComplete()` fires after the API call succeeds. By that point the URL has already been clean since mount.
+- `auth.service.js` is unchanged. Tokens travel only in POST request bodies.
+- `SignupConsume.jsx` additionally calls `window.location.replace("/edit")` after success, which further ensures the token URL never appears in browser history.
