@@ -4,6 +4,7 @@ import AuthLayout from "../components/auth/AuthLayout";
 import Input from "../components/ui/Input";
 import Button from "../components/ui/Button";
 import { consumeSignupToken } from "../services/auth.service";
+import { trackRegistrationComplete } from "../services/siteAnalytics.client";
 import styles from "./SignupConsume.module.css";
 
 export default function SignupConsume() {
@@ -57,6 +58,7 @@ export default function SignupConsume() {
                 return;
             }
 
+            trackRegistrationComplete();
             window.location.replace("/edit");
         } catch {
             setError("לא ניתן להשלים הרשמה. בקשו קישור חדש.");

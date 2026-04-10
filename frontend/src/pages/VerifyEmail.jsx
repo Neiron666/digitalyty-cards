@@ -3,6 +3,7 @@ import { Link, useSearchParams } from "react-router-dom";
 import AuthLayout from "../components/auth/AuthLayout";
 import Button from "../components/ui/Button";
 import { verifyEmail, resendVerification } from "../services/auth.service";
+import { trackRegistrationComplete } from "../services/siteAnalytics.client";
 import styles from "./VerifyEmail.module.css";
 
 export default function VerifyEmail() {
@@ -29,6 +30,7 @@ export default function VerifyEmail() {
 
         verifyEmail(token)
             .then(() => {
+                trackRegistrationComplete();
                 setStatus("success");
             })
             .catch(() => {

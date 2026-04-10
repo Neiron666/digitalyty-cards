@@ -112,6 +112,54 @@ function pushToDataLayer(eventName, pagePath) {
     }
 }
 
+/**
+ * Emits a registration_complete event directly to GTM dataLayer.
+ * This is a product completion event — it is intentionally NOT routed through
+ * shouldTrackSitePagePath or the site action registry, because it must fire
+ * from auth routes (/verify-email, /signup) which are excluded from marketing
+ * page tracking. Non-fatal: safe if window or dataLayer is unavailable.
+ *
+ * The payload includes cardigo_consent_optional_tracking read directly from
+ * localStorage so that GTM can consent-gate the Meta CompleteRegistration tag
+ * on auth routes where Layout.jsx never pushes a cardigo_consent_update event.
+ * Emits null if consent has never been acknowledged (banner not yet interacted).
+ */
+export function trackRegistrationComplete() {
+    try {
+        if (typeof window === "undefined") return;
+
+        let consentOptionalTracking = null;
+        try {
+            const raw = window.localStorage?.getItem(
+                "cardigo_cookie_consent_v1",
+            );
+            if (raw) {
+                const parsed = JSON.parse(raw);
+                if (
+                    parsed &&
+                    typeof parsed === "object" &&
+                    parsed.version === 1
+                ) {
+                    consentOptionalTracking = Boolean(
+                        parsed.optionalTrackingAllowed,
+                    );
+                }
+            }
+        } catch {
+            // storage blocked or corrupted — emit null
+        }
+
+        window.dataLayer = window.dataLayer || [];
+        window.dataLayer.push({
+            event: "cardigo_event",
+            event_name: "registration_complete",
+            cardigo_consent_optional_tracking: consentOptionalTracking,
+        });
+    } catch {
+        // ignore — non-fatal
+    }
+}
+
 export function trackSitePageView({ siteKey = "main" } = {}) {
     try {
         if (isOptedOut()) return;
