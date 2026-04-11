@@ -196,9 +196,9 @@
 }
 
 .installRow:has(.installHelp) {
-    border: 1px solid var(--primary);
-    border-radius: 6px;
-    padding: 0.5rem 1rem;
+    border-top: 1px solid var(--primary);
+    margin-top: 1rem;
+    padding-top: 2rem;
 }
 
 /* Hide install row inside editor preview */

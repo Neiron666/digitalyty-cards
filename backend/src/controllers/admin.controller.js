@@ -262,10 +262,18 @@ export async function listUsers(req, res) {
         typeof req.query.cohort === "string" ? req.query.cohort.trim() : "";
 
     const filter = q ? { email: q } : {};
-    if (cohort === "paying") {
+    const now = new Date();
+    if (cohort === "trial") {
+        filter.trialActivatedAt = { $ne: null };
+        filter.trialEndsAt = { $gt: now };
+        filter["subscription.status"] = { $ne: "active" };
+    } else if (cohort === "paying") {
         filter["subscription.status"] = "active";
     } else if (cohort === "non-paying") {
         filter["subscription.status"] = { $ne: "active" };
+        filter.$nor = [
+            { trialActivatedAt: { $ne: null }, trialEndsAt: { $gt: now } },
+        ];
     }
 
     const [items, total] = await Promise.all([
@@ -371,6 +379,48 @@ export async function listCards(req, res) {
         filter.user = userIdRaw;
     }
 
+    const cohort =
+        typeof req.query.cohort === "string" ? req.query.cohort.trim() : "";
+    const now = new Date();
+    if (cohort === "trial") {
+        if (!filter.user) filter.user = { $exists: true, $ne: null };
+        filter["billing.status"] = "trial";
+        filter.trialEndsAt = { $gt: now };
+        filter.$nor = [
+            {
+                "adminOverride.plan": { $exists: true, $ne: null },
+                "adminOverride.until": { $gt: now },
+            },
+        ];
+    } else if (cohort === "paid") {
+        if (!filter.user) filter.user = { $exists: true, $ne: null };
+        filter.$or = [
+            {
+                "adminOverride.plan": { $exists: true, $ne: null },
+                "adminOverride.until": { $gt: now },
+            },
+            {
+                "billing.status": { $in: ["active", "paid"] },
+                "billing.paidUntil": { $gt: now },
+            },
+        ];
+    } else if (cohort === "free") {
+        if (!filter.user) filter.user = { $exists: true, $ne: null };
+        filter.$nor = [
+            {
+                "adminOverride.plan": { $exists: true, $ne: null },
+                "adminOverride.until": { $gt: now },
+            },
+            {
+                "billing.status": { $in: ["active", "paid"] },
+                "billing.paidUntil": { $gt: now },
+            },
+            { "billing.status": "trial", trialEndsAt: { $gt: now } },
+        ];
+    } else if (cohort === "anonymous") {
+        filter.anonymousId = { $exists: true, $ne: null };
+    }
+
     const [items, total] = await Promise.all([
         Card.find(filter)
             .sort({ updatedAt: -1 })
@@ -410,7 +460,6 @@ export async function listCards(req, res) {
         }
     }
 
-    const now = new Date();
     const dtoItems = items.map((c) => {
         const userId = c?.user ? String(c.user) : "";
         const userTier = userId ? userById.get(userId) || null : null;

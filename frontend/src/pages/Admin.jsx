@@ -435,6 +435,12 @@ export default function Admin() {
     const selectedTabListRef = useRef(null);
     const selectedTabListRefMobile = useRef(null);
     const selectedUserTabListRef = useRef(null);
+    // Pending pin: set synchronously on card-slug click so Effect B can restore
+    // the clicked card selection after the selectedUser-driven billingCardId reset.
+    const pendingBillingCardIdRef = useRef(null);
+    // Intent guard: holds the id of the most-recent loadUser call so stale
+    // in-flight responses can be discarded before they overwrite billing state.
+    const loadUserRequestIdRef = useRef(null);
 
     const [loading, setLoading] = useState(false);
     const [accessDenied, setAccessDenied] = useState(false);
@@ -615,19 +621,7 @@ export default function Admin() {
     }, [selectedCard]);
 
     const filteredCards = useMemo(() => {
-        let list = Array.isArray(cards) ? cards : [];
-
-        if (cardsCohort === "paid") {
-            list = list.filter((c) => c?.effectiveBilling?.isPaid === true);
-        } else if (cardsCohort === "free") {
-            list = list.filter(
-                (c) =>
-                    c?.effectiveBilling?.isPaid !== true &&
-                    c?.ownerSummary?.type !== "anonymous",
-            );
-        } else if (cardsCohort === "anonymous") {
-            list = list.filter((c) => c?.ownerSummary?.type === "anonymous");
-        }
+        const list = Array.isArray(cards) ? cards : [];
 
         const q = String(cardsQuery || "")
             .trim()
@@ -639,7 +633,7 @@ export default function Admin() {
             const email = String(c?.ownerSummary?.email || "").toLowerCase();
             return slug.includes(q) || email.includes(q);
         });
-    }, [cards, cardsQuery, cardsCohort]);
+    }, [cards, cardsQuery]);
 
     function toDateInputUtc(value) {
         if (!value) return "";
@@ -692,7 +686,11 @@ export default function Admin() {
                     ...(usersAppliedQ ? { q: usersAppliedQ } : {}),
                     ...(usersCohort ? { cohort: usersCohort } : {}),
                 }),
-                listAdminCards({ page: cardsPage, limit: CARDS_PAGE_LIMIT }),
+                listAdminCards({
+                    page: cardsPage,
+                    limit: CARDS_PAGE_LIMIT,
+                    ...(cardsCohort ? { cohort: cardsCohort } : {}),
+                }),
             ]);
             setStats(s.data);
             setUsers(u.data?.items || []);
@@ -710,7 +708,9 @@ export default function Admin() {
         }
     }
 
-    async function loadCardsPage(nextPage) {
+    async function loadCardsPage(nextPage, explicitCohort) {
+        const cohort =
+            typeof explicitCohort === "string" ? explicitCohort : cardsCohort;
         setCardsPage(nextPage);
         setLoading(true);
         setError("");
@@ -718,6 +718,7 @@ export default function Admin() {
             const c = await listAdminCards({
                 page: nextPage,
                 limit: CARDS_PAGE_LIMIT,
+                ...(cohort ? { cohort } : {}),
             });
             setCards(c.data?.items || []);
             setCardsTotal(Number(c.data?.total) || 0);
@@ -807,6 +808,7 @@ export default function Admin() {
     }
 
     async function loadUser(id) {
+        loadUserRequestIdRef.current = id;
         setSelectedUserId(id);
         setSelectedUser(null);
         setSelectedUserTab("general");
@@ -818,6 +820,7 @@ export default function Admin() {
         setLoading(true);
         try {
             const res = await getAdminUserById(id);
+            if (loadUserRequestIdRef.current !== id) return;
             setSelectedUser(res.data);
         } catch (err) {
             if (isAccessDenied(err)) {
@@ -827,6 +830,23 @@ export default function Admin() {
             }
         } finally {
             setLoading(false);
+        }
+    }
+
+    // Cards-tab slug click: deterministic billing hydration for user-owned cards.
+    // Always clears the pending pin first to prevent stale pins from prior clicks.
+    // For user-owned cards, pins the clicked cardId synchronously before starting
+    // the user-hydration path, so Effect B can restore it after billingCardId reset.
+    function handleCardSlugClick(c) {
+        pendingBillingCardIdRef.current = null;
+        // Invalidate any in-flight loadUser so its response cannot hydrate billing
+        // after this click (covers the user-owned -> anonymous/no-owner case).
+        loadUserRequestIdRef.current = null;
+        loadCard(c._id);
+        if (c.ownerSummary?.type === "user" && c.ownerSummary?.userId) {
+            pendingBillingCardIdRef.current = String(c._id);
+            loadUser(c.ownerSummary.userId);
+            // loadUser sets loadUserRequestIdRef.current = userId synchronously.
         }
     }
 
@@ -1351,6 +1371,23 @@ export default function Admin() {
                     : [];
                 setBillingCards(items);
                 setBillingCardsStatus("ready");
+
+                // Consume the slug-click pin deterministically.
+                // Must run before the auto-select checks so a multi-card owner
+                // never falls through to prevId=="" logic and loses the selection.
+                const pendingId = pendingBillingCardIdRef.current;
+                if (pendingId) {
+                    pendingBillingCardIdRef.current = null;
+                    const inList = items.some(
+                        (c) => String(c?._id || "") === pendingId,
+                    );
+                    if (inList) {
+                        setBillingCardId(pendingId);
+                        setBillingCardResult(null);
+                        return;
+                    }
+                    // Pending card not in this owner's list — fall through.
+                }
 
                 if (items.length === 1 && items[0]?._id) {
                     setBillingCardId(String(items[0]._id));
@@ -1955,6 +1992,10 @@ export default function Admin() {
                                             {[
                                                 { key: "", label: "הכל" },
                                                 {
+                                                    key: "trial",
+                                                    label: "ניסיון",
+                                                },
+                                                {
                                                     key: "paid",
                                                     label: "משלמים",
                                                 },
@@ -1976,17 +2017,17 @@ export default function Admin() {
                                                     }
                                                     size="small"
                                                     disabled={loading}
-                                                    onClick={() =>
-                                                        setCardsCohort(c.key)
-                                                    }
+                                                    onClick={() => {
+                                                        setCardsCohort(c.key);
+                                                        loadCardsPage(1, c.key);
+                                                    }}
                                                 >
                                                     {c.label}
                                                 </Button>
                                             ))}
                                         </div>
                                         <p className={styles.muted}>
-                                            {String(cardsQuery || "").trim() ||
-                                            cardsCohort
+                                            {String(cardsQuery || "").trim()
                                                 ? `מסנן ${filteredCards.length} מתוך ${cards.length} בעמוד`
                                                 : `עמוד ${cardsPage} · ${cards.length} מתוך ${cardsTotal}`}
                                         </p>
@@ -2011,7 +2052,9 @@ export default function Admin() {
                                                                 styles.rowBtn
                                                             }
                                                             onClick={() =>
-                                                                loadCard(c._id)
+                                                                handleCardSlugClick(
+                                                                    c,
+                                                                )
                                                             }
                                                             type="button"
                                                             disabled={loading}
@@ -2198,34 +2241,39 @@ export default function Admin() {
                                             ) : null}
                                         </div>
                                         <div className={styles.searchRow}>
-                                            {["", "paying", "non-paying"].map(
-                                                (c) => (
-                                                    <Button
-                                                        key={c || "all"}
-                                                        variant={
-                                                            usersCohort === c
-                                                                ? "primary"
-                                                                : "secondary"
-                                                        }
-                                                        size="small"
-                                                        disabled={loading}
-                                                        onClick={() => {
-                                                            setUsersCohort(c);
-                                                            loadUsersPage(
-                                                                1,
-                                                                undefined,
-                                                                c,
-                                                            );
-                                                        }}
-                                                    >
-                                                        {c === "paying"
-                                                            ? "משלמים"
-                                                            : c === "non-paying"
-                                                              ? "לא משלמים"
-                                                              : "הכל"}
-                                                    </Button>
-                                                ),
-                                            )}
+                                            {[
+                                                "",
+                                                "trial",
+                                                "paying",
+                                                "non-paying",
+                                            ].map((c) => (
+                                                <Button
+                                                    key={c || "all"}
+                                                    variant={
+                                                        usersCohort === c
+                                                            ? "primary"
+                                                            : "secondary"
+                                                    }
+                                                    size="small"
+                                                    disabled={loading}
+                                                    onClick={() => {
+                                                        setUsersCohort(c);
+                                                        loadUsersPage(
+                                                            1,
+                                                            undefined,
+                                                            c,
+                                                        );
+                                                    }}
+                                                >
+                                                    {c === "trial"
+                                                        ? "ניסיון"
+                                                        : c === "paying"
+                                                          ? "משלמים"
+                                                          : c === "non-paying"
+                                                            ? "לא משלמים"
+                                                            : "הכל"}
+                                                </Button>
+                                            ))}
                                         </div>
                                         <p className={styles.muted}>
                                             {`עמוד ${usersPage} · ${users.length} מתוך ${usersTotal}`}

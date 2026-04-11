@@ -237,7 +237,7 @@ function InstallRow({
                 className={styles.installBtn}
                 onClick={handleClick}
             >
-                התקינו את Cardigo
+                התקינו את Cardigo לאנדרואיד
             </button>
             {helpText && <p className={helpClass}>{helpText}</p>}
         </div>
