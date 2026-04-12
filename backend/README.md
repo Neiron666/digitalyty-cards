@@ -29,6 +29,26 @@
 | `RETENTION_PURGE_INTERVAL_MS`           | `21600000` | Retention purge job interval (6 h)                             |
 | `RETENTION_PURGE_HEARTBEAT_MS`          | `43200000` | Purge heartbeat log interval (12 h)                            |
 
+### Trial Reminder (pre-expiry lifecycle email)
+
+Sends one reminder email to each trial user ~day 9 of the trial. Technically implemented and smoke-tested; compliance/unsubscribe contour is still open — see `docs/runbooks/trial-lifecycle-ssot.md` §13.9.
+
+| Variable                                  | Default         | Purpose                                         |
+| ----------------------------------------- | --------------- | ----------------------------------------------- |
+| `TRIAL_REMINDER_INTERVAL_MS`              | `7200000`       | Job tick interval (ms)                          |
+| `TRIAL_REMINDER_WINDOW_START_HOURS`       | `20`            | Lower bound of expiry window (h from now)       |
+| `TRIAL_REMINDER_WINDOW_END_HOURS`         | `32`            | Upper bound of expiry window (h from now)       |
+| `TRIAL_REMINDER_SEND_HOUR_MIN`            | `9`             | Earliest Asia/Jerusalem hour to send            |
+| `TRIAL_REMINDER_SEND_HOUR_MAX`            | `18`            | Latest Asia/Jerusalem hour (exclusive)          |
+| `TRIAL_REMINDER_STALE_CLAIM_THRESHOLD_MS` | `14400000`      | Age after which a claim is treated as abandoned |
+| `TRIAL_REMINDER_HEARTBEAT_MS`             | `43200000`      | Heartbeat log interval (ms)                     |
+| `MAILJET_TRIAL_REMINDER_SUBJECT`          | Hebrew fallback | Email subject                                   |
+| `MAILJET_TRIAL_REMINDER_TEXT_PREFIX`      | Hebrew fallback | Plain-text opening line                         |
+| `MAILJET_TRIAL_REMINDER_LOGO_URL`         | `""`            | Contour-specific logo URL                       |
+| `MAILJET_BRAND_LOGO_URL`                  | `""`            | Shared brand logo fallback                      |
+
+All vars are optional (in-code defaults apply). None trigger startup failure if absent.
+
 See `docs/runbooks/trial-lifecycle-ssot.md` for the full lifecycle runbook.
 
 ## AI Feature Flags
@@ -64,6 +84,7 @@ Runtime ≠ Sanity ≠ Migration:
     - Details: `docs/runbooks/docs_blog_seo_og_runbook.md` §10.
 - Migration (`migrate:user-auth-indexes`): **canonical** index-apply path for all auth token collections (`users`, `emailverificationtokens`, `emailsignuptokens`, `passwordresets`).
     - Covers `passwordresets` indexes: `tokenHash_1` (unique), `userId_1`, `expiresAt_1`, `usedAt_1`.
+    - Also creates `trialReminderSentAt_1_trialEndsAt_1` compound index on `users` (supports reminder candidate query). Confirmed applied 2026-04-12.
     - Dry-run by default. Apply: `npm.cmd run migrate:user-auth-indexes -- --apply`
     - Includes per-collection duplicate precheck before creating unique index.
     - Runs post-check after apply to verify all critical unique indexes are present.
