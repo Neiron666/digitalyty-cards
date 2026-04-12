@@ -86,6 +86,17 @@ const UserSchema = new mongoose.Schema(
         // future trial eligibility after card deletion + re-creation.
         // Null = eligibility not closed externally.
         trialEligibilityClosedAt: { type: Date, default: null },
+
+        // --- Trial reminder email lifecycle (pre-expiry reminder contour) ---
+        // Atomically stamped by the reminder job when it claims a candidate
+        // for sending. Guards against concurrent duplicate sends.
+        // Null = not yet claimed. Stale claims (older than threshold) are
+        // treated as abandoned and re-eligible.
+        trialReminderClaimedAt: { type: Date, default: null },
+        // Stamped after the reminder email was successfully delivered.
+        // Once set, reminder is permanently consumed — job skips this user.
+        // Null = reminder not yet sent.
+        trialReminderSentAt: { type: Date, default: null },
     },
     { timestamps: true },
 );

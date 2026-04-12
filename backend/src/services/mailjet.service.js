@@ -91,6 +91,25 @@ function getMailjetConfig() {
         verifyTextPrefix:
             verifyTextPrefixRaw ||
             "כדי להשלים את ההרשמה, נא לאמת את כתובת האימייל על ידי לחיצה על הקישור.",
+
+        trialReminderSubject:
+            (typeof process.env.MAILJET_TRIAL_REMINDER_SUBJECT === "string"
+                ? process.env.MAILJET_TRIAL_REMINDER_SUBJECT.trim()
+                : "") || "הטריאל הפרימיום שלך מסתיים בקרוב",
+        trialReminderTextPrefix:
+            (typeof process.env.MAILJET_TRIAL_REMINDER_TEXT_PREFIX === "string"
+                ? process.env.MAILJET_TRIAL_REMINDER_TEXT_PREFIX.trim()
+                : "") ||
+            "תזכורת: תקופת הניסיון הפרימיום שלך ב-Cardigo עומדת להסתיים.",
+        // Logo URL: prefer contour-specific, fall back to shared brand logo.
+        // Empty string = no logo → email renders branded text heading instead.
+        trialReminderLogoUrl:
+            (typeof process.env.MAILJET_TRIAL_REMINDER_LOGO_URL === "string"
+                ? process.env.MAILJET_TRIAL_REMINDER_LOGO_URL.trim()
+                : "") ||
+            (typeof process.env.MAILJET_BRAND_LOGO_URL === "string"
+                ? process.env.MAILJET_BRAND_LOGO_URL.trim()
+                : ""),
     };
 }
 
@@ -427,6 +446,142 @@ export async function sendVerificationEmailMailjetBestEffort({
         console.error("[mailjet] verify send error", {
             userId: String(userId || ""),
             tokenId: String(tokenId || ""),
+            error: err?.message || err,
+        });
+        return { ok: false };
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Trial reminder email — multipart (TextPart + HTMLPart).
+// Sends a branded pre-expiry reminder with a CTA to /pricing.
+// Logo is sourced from env (MAILJET_TRIAL_REMINDER_LOGO_URL or
+// MAILJET_BRAND_LOGO_URL). If neither is set the HTML heading renders as
+// plain text — no broken image tags.
+// ---------------------------------------------------------------------------
+export async function sendTrialReminderEmailMailjetBestEffort({
+    toEmail,
+    trialEndsAt,
+    pricingUrl,
+    userId,
+}) {
+    const cfg = getMailjetConfig();
+    const toEmailNormalized = normalizeEmail(toEmail);
+
+    if (!cfg.enabled) {
+        return { ok: true, skipped: true, reason: "MAILJET_NOT_CONFIGURED" };
+    }
+
+    if (!toEmailNormalized || !pricingUrl) {
+        return { ok: false, skipped: true, reason: "INVALID_INPUT" };
+    }
+
+    const auth = Buffer.from(`${cfg.apiKey}:${cfg.apiSecret}`).toString(
+        "base64",
+    );
+
+    // --- Text part -----------------------------------------------------------
+    const subject = cfg.trialReminderSubject;
+    const prefix = cfg.trialReminderTextPrefix;
+    const text = [
+        prefix,
+        "",
+        "כדי לשמור על הגישה לכל תכונות הפרימיום, שדרגו את התוכנית שלכם:",
+        pricingUrl,
+        "",
+        "צוות Cardigo",
+    ].join("\n");
+
+    // --- HTML part -----------------------------------------------------------
+    // Inline CSS only (email-client compatibility).
+    // Logo block is conditionally rendered — no broken img if no URL.
+    const logoBlock = cfg.trialReminderLogoUrl
+        ? `<img src="${cfg.trialReminderLogoUrl}" alt="Cardigo" width="120" height="auto" style="display:block;margin:0 auto 24px auto;border:0;" />`
+        : `<p style="margin:0 0 24px 0;font-size:20px;font-weight:bold;color:#1a1a1a;text-align:center;">Cardigo</p>`;
+
+    const htmlPart = `<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width,initial-scale=1" /></head>
+<body style="margin:0;padding:0;background-color:#f4f4f5;font-family:Arial,sans-serif;direction:rtl;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#f4f4f5;padding:32px 16px;">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="100%" style="max-width:520px;background-color:#ffffff;border-radius:8px;padding:40px 32px;">
+          <tr><td style="text-align:center;padding-bottom:8px;">
+            ${logoBlock}
+          </td></tr>
+          <tr><td style="padding-bottom:16px;">
+            <h1 style="margin:0;font-size:22px;font-weight:bold;color:#1a1a1a;text-align:center;">${subject}</h1>
+          </td></tr>
+          <tr><td style="padding-bottom:24px;">
+            <p style="margin:0;font-size:15px;line-height:1.6;color:#444444;text-align:center;">
+              ${prefix}
+            </p>
+          </td></tr>
+          <tr><td style="padding-bottom:24px;">
+            <p style="margin:0;font-size:15px;line-height:1.6;color:#444444;text-align:center;">
+              כדי לשמור על הגישה לכל תכונות הפרימיום, שדרגו את התוכנית שלכם עכשיו.
+            </p>
+          </td></tr>
+          <tr><td style="text-align:center;padding-bottom:24px;">
+            <a href="${pricingUrl}" style="display:inline-block;padding:14px 32px;background-color:#6c47ff;color:#ffffff;font-size:16px;font-weight:bold;text-decoration:none;border-radius:6px;">עברו לפרימיום</a>
+          </td></tr>
+          <tr><td style="text-align:center;padding-bottom:16px;">
+            <p style="margin:0;font-size:13px;color:#888888;">או פתחו את הקישור: <a href="${pricingUrl}" style="color:#6c47ff;">${pricingUrl}</a></p>
+          </td></tr>
+          <tr><td style="border-top:1px solid #e5e7eb;padding-top:16px;text-align:center;">
+            <p style="margin:0;font-size:12px;color:#aaaaaa;">צוות Cardigo</p>
+          </td></tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
+
+    const payload = {
+        Messages: [
+            {
+                From: {
+                    Email: cfg.fromEmail,
+                    Name: cfg.fromName,
+                },
+                To: [{ Email: toEmailNormalized }],
+                Subject: subject,
+                TextPart: text,
+                HTMLPart: htmlPart,
+            },
+        ],
+    };
+
+    const body = JSON.stringify(payload);
+
+    try {
+        const res = await httpsRequestJson({
+            hostname: "api.mailjet.com",
+            path: "/v3.1/send",
+            method: "POST",
+            timeoutMs: 10_000,
+            headers: {
+                Authorization: `Basic ${auth}`,
+                "Content-Type": "application/json",
+                "Content-Length": Buffer.byteLength(body),
+            },
+            body,
+        });
+
+        const ok = res.statusCode >= 200 && res.statusCode < 300;
+        if (!ok) {
+            console.error("[mailjet] trial-reminder send failed", {
+                statusCode: res.statusCode,
+                userId: String(userId || ""),
+            });
+        }
+
+        return { ok };
+    } catch (err) {
+        console.error("[mailjet] trial-reminder send error", {
+            userId: String(userId || ""),
             error: err?.message || err,
         });
         return { ok: false };

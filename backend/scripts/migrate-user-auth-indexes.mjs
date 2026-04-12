@@ -343,6 +343,19 @@ async function ensureUsersIndexes({ dryRun, verbose }) {
         { name: "adminTier_1" },
         { dryRun, verbose },
     );
+
+    // P3: trial reminder candidate query support.
+    // Covers the candidate query in trialReminderJob:
+    //   { trialReminderSentAt: null, trialEndsAt: { $gt: wStart, $lte: wEnd } }
+    // trialReminderSentAt as leading key eliminates already-reminded users cheaply;
+    // trialEndsAt range then narrows to the current 12-hour expiry window.
+    await ensureIndex(
+        col,
+        byName,
+        { trialReminderSentAt: 1, trialEndsAt: 1 },
+        { name: "trialReminderSentAt_1_trialEndsAt_1" },
+        { dryRun, verbose },
+    );
 }
 
 async function ensureTokenCollectionIndexes(

@@ -5,6 +5,7 @@ import { startTrialCleanupJob } from "./jobs/trialCleanup.js";
 import { startResetMailWorker } from "./jobs/resetMailWorker.js";
 import { startTrialLifecycleReconcileJob } from "./jobs/trialLifecycleReconcile.js";
 import { startRetentionPurgeJob } from "./jobs/retentionPurge.js";
+import { startTrialReminderJob } from "./jobs/trialReminderJob.js";
 
 // --- Sentry early init (before Express app loads) ---
 // Must run before app.js is imported so Sentry can instrument Express/http.
@@ -112,6 +113,13 @@ async function start() {
         intervalMs:
             Number(process.env.RETENTION_PURGE_INTERVAL_MS) ||
             6 * 60 * 60 * 1000,
+    });
+
+    // Pre-expiry trial reminder: sends reminder email ~day-9, daytime window (Asia/Jerusalem), claim/send idempotency.
+    startTrialReminderJob({
+        intervalMs:
+            Number(process.env.TRIAL_REMINDER_INTERVAL_MS) ||
+            2 * 60 * 60 * 1000,
     });
 
     app.listen(PORT, () => {
