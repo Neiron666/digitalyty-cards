@@ -1,0 +1,11 @@
+/*
+ * Mirrors exactly what Input.module.css .errorText rendered.
+ * display:block ensures correct stacking both inside flex columns (Input.jsx)
+ * and in standalone usage alongside non-Input controls.
+ */
+.message {
+    display: block;
+    margin-top: 2px;
+    color: #ef4444;
+    font-size: var(--fs-body-sm);
+}

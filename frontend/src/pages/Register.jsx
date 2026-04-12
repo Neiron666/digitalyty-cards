@@ -1,9 +1,11 @@
-import { useState } from "react";
+import { useState, useId } from "react";
 import { Link } from "react-router-dom";
 import { register as registerUser } from "../services/auth.service";
 import AuthLayout from "../components/auth/AuthLayout";
 import Input from "../components/ui/Input";
 import Button from "../components/ui/Button";
+import Notice from "../components/ui/Notice/Notice";
+import FieldValidationMessage from "../components/ui/FieldValidationMessage";
 import styles from "./Register.module.css";
 
 const PASSWORD_MIN_LENGTH = 8;
@@ -18,30 +20,60 @@ function Register() {
     const [error, setError] = useState("");
     const [loading, setLoading] = useState(false);
     const [registered, setRegistered] = useState(false);
+    const [fieldErrors, setFieldErrors] = useState({
+        email: "",
+        password: "",
+        confirmPassword: "",
+        consent: "",
+    });
+    const consentErrorId = useId();
 
     function update(field, value) {
         setForm((prev) => ({ ...prev, [field]: value }));
+        setFieldErrors((prev) => ({ ...prev, [field]: "" }));
+    }
+
+    function validate() {
+        const errs = {
+            email: "",
+            password: "",
+            confirmPassword: "",
+            consent: "",
+        };
+        if (!form.email.trim()) {
+            errs.email = "שדה האימייל הוא חובה";
+        } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) {
+            errs.email = "כתובת האימייל אינה תקינה";
+        }
+        if (!form.password) {
+            errs.password = "שדה הסיסמה הוא חובה";
+        } else if (form.password.length < PASSWORD_MIN_LENGTH) {
+            errs.password = `הסיסמה חייבת לכלול לפחות ${PASSWORD_MIN_LENGTH} תווים`;
+        }
+        if (!form.confirmPassword) {
+            errs.confirmPassword = "שדה אימות הסיסמה הוא חובה";
+        } else if (form.password !== form.confirmPassword) {
+            errs.confirmPassword = "הסיסמאות לא תואמות";
+        }
+        if (!form.consent) {
+            errs.consent = "חובה להסכים למדיניות הפרטיות ולתנאי השימוש";
+        }
+        return errs;
     }
 
     async function handleSubmit(e) {
         e.preventDefault();
+        const errs = validate();
+        if (
+            errs.email ||
+            errs.password ||
+            errs.confirmPassword ||
+            errs.consent
+        ) {
+            setFieldErrors(errs);
+            return;
+        }
         setError("");
-
-        if (form.password.length < PASSWORD_MIN_LENGTH) {
-            setError(`הסיסמה חייבת לכלול לפחות ${PASSWORD_MIN_LENGTH} תווים`);
-            return;
-        }
-
-        if (form.password !== form.confirmPassword) {
-            setError("הסיסמאות לא תואמות");
-            return;
-        }
-
-        if (!form.consent) {
-            setError("חובה להסכים למדיניות הפרטיות ולתנאי השימוש");
-            return;
-        }
-
         setLoading(true);
         try {
             await registerUser(form.email, form.password, form.consent);
@@ -96,7 +128,7 @@ function Register() {
                 </>
             }
         >
-            <form onSubmit={handleSubmit}>
+            <form onSubmit={handleSubmit} noValidate>
                 <Input
                     label="אימייל"
                     type="email"
@@ -104,6 +136,7 @@ function Register() {
                     value={form.email}
                     onChange={(e) => update("email", e.target.value)}
                     required
+                    error={fieldErrors.email}
                 />
 
                 <Input
@@ -114,6 +147,7 @@ function Register() {
                     onChange={(e) => update("password", e.target.value)}
                     required
                     minLength={PASSWORD_MIN_LENGTH}
+                    error={fieldErrors.password}
                 />
 
                 <Input
@@ -123,6 +157,7 @@ function Register() {
                     value={form.confirmPassword}
                     onChange={(e) => update("confirmPassword", e.target.value)}
                     required
+                    error={fieldErrors.confirmPassword}
                 />
 
                 <label className={styles.consentRow}>
@@ -131,6 +166,10 @@ function Register() {
                         checked={form.consent}
                         onChange={(e) => update("consent", e.target.checked)}
                         required
+                        aria-invalid={fieldErrors.consent ? true : undefined}
+                        aria-describedby={
+                            fieldErrors.consent ? consentErrorId : undefined
+                        }
                     />
                     <span className={styles.consentText}>
                         אני מסכים ל
@@ -154,7 +193,13 @@ function Register() {
                     </span>
                 </label>
 
-                {error && <p className={styles.error}>{error}</p>}
+                {fieldErrors.consent && (
+                    <FieldValidationMessage id={consentErrorId}>
+                        {fieldErrors.consent}
+                    </FieldValidationMessage>
+                )}
+
+                {error && <Notice variant="error">{error}</Notice>}
 
                 <Button
                     type="submit"

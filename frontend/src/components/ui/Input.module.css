@@ -42,12 +42,6 @@
     border-color: #ef4444;
 }
 
-.errorText {
-    margin-top: 2px;
-    color: #ef4444;
-    font-size: var(--fs-body-sm);
-}
-
 .meta {
     margin-top: 2px;
     font-size: var(--fs-body-sm);

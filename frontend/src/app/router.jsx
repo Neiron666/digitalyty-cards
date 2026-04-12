@@ -19,17 +19,17 @@ import Terms from "../pages/Terms";
 import Accessibility from "../pages/Accessibility";
 
 // auth
-import Login from "../pages/Login";
-import Register from "../pages/Register";
-import InviteAccept from "../pages/InviteAccept";
-import ForgotPassword from "../pages/ForgotPassword";
-import ResetPassword from "../pages/ResetPassword";
-import SignupLinkRequest from "../pages/SignupLinkRequest";
-import SignupConsume from "../pages/SignupConsume";
-import VerifyEmail from "../pages/VerifyEmail";
+const Login = lazy(() => import("../pages/Login"));
+const Register = lazy(() => import("../pages/Register"));
+const InviteAccept = lazy(() => import("../pages/InviteAccept"));
+const ForgotPassword = lazy(() => import("../pages/ForgotPassword"));
+const ResetPassword = lazy(() => import("../pages/ResetPassword"));
+const SignupLinkRequest = lazy(() => import("../pages/SignupLinkRequest"));
+const SignupConsume = lazy(() => import("../pages/SignupConsume"));
+const VerifyEmail = lazy(() => import("../pages/VerifyEmail"));
 
 // product
-import Dashboard from "../pages/Dashboard";
+const Dashboard = lazy(() => import("../pages/Dashboard"));
 const EditCard = lazy(() => import("../pages/EditCard"));
 const Admin = lazy(() => import("../pages/Admin"));
 const OrgInvites = lazy(() => import("../pages/OrgInvites"));
@@ -101,17 +101,100 @@ const router = createBrowserRouter([
             { path: "accessibility-statement", element: <Accessibility /> },
 
             // auth
-            { path: "login", element: <Login /> },
-            { path: "register", element: <Register /> },
-            { path: "invite", element: <InviteAccept /> },
-            { path: "forgot-password", element: <ForgotPassword /> },
-            { path: "reset-password", element: <ResetPassword /> },
-            { path: "signup-link", element: <SignupLinkRequest /> },
-            { path: "signup", element: <SignupConsume /> },
-            { path: "verify-email", element: <VerifyEmail /> },
+            {
+                path: "login",
+                element: (
+                    <ChunkErrorBoundary label="שגיאת טעינה בכניסה">
+                        <Suspense fallback={<RouteFallback label="טוען…" />}>
+                            <Login />
+                        </Suspense>
+                    </ChunkErrorBoundary>
+                ),
+            },
+            {
+                path: "register",
+                element: (
+                    <ChunkErrorBoundary label="שגיאת טעינה בהרשמה">
+                        <Suspense fallback={<RouteFallback label="טוען…" />}>
+                            <Register />
+                        </Suspense>
+                    </ChunkErrorBoundary>
+                ),
+            },
+            {
+                path: "invite",
+                element: (
+                    <ChunkErrorBoundary label="שגיאת טעינה בהזמנה">
+                        <Suspense fallback={<RouteFallback label="טוען…" />}>
+                            <InviteAccept />
+                        </Suspense>
+                    </ChunkErrorBoundary>
+                ),
+            },
+            {
+                path: "forgot-password",
+                element: (
+                    <ChunkErrorBoundary label="שגיאת טעינה">
+                        <Suspense fallback={<RouteFallback label="טוען…" />}>
+                            <ForgotPassword />
+                        </Suspense>
+                    </ChunkErrorBoundary>
+                ),
+            },
+            {
+                path: "reset-password",
+                element: (
+                    <ChunkErrorBoundary label="שגיאת טעינה">
+                        <Suspense fallback={<RouteFallback label="טוען…" />}>
+                            <ResetPassword />
+                        </Suspense>
+                    </ChunkErrorBoundary>
+                ),
+            },
+            {
+                path: "signup-link",
+                element: (
+                    <ChunkErrorBoundary label="שגיאת טעינה">
+                        <Suspense fallback={<RouteFallback label="טוען…" />}>
+                            <SignupLinkRequest />
+                        </Suspense>
+                    </ChunkErrorBoundary>
+                ),
+            },
+            {
+                path: "signup",
+                element: (
+                    <ChunkErrorBoundary label="שגיאת טעינה">
+                        <Suspense fallback={<RouteFallback label="טוען…" />}>
+                            <SignupConsume />
+                        </Suspense>
+                    </ChunkErrorBoundary>
+                ),
+            },
+            {
+                path: "verify-email",
+                element: (
+                    <ChunkErrorBoundary label="שגיאת טעינה">
+                        <Suspense fallback={<RouteFallback label="טוען…" />}>
+                            <VerifyEmail />
+                        </Suspense>
+                    </ChunkErrorBoundary>
+                ),
+            },
 
             // product
-            { path: "dashboard", element: <Dashboard /> },
+            {
+                path: "dashboard",
+                element: (
+                    <ChunkErrorBoundary label="שגיאת טעינה בלוח הבקרה">
+                        <Suspense
+                            fallback={<RouteFallback label="טוען לוח בקרה…" />}
+                        >
+                            <Dashboard />
+                        </Suspense>
+                    </ChunkErrorBoundary>
+                ),
+            },
             {
                 path: "inbox",
                 element: (

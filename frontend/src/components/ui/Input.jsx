@@ -1,4 +1,6 @@
+import { useId } from "react";
 import styles from "./Input.module.css";
+import FieldValidationMessage from "./FieldValidationMessage";
 
 export default function Input({
     label,
@@ -12,6 +14,9 @@ export default function Input({
     className = "",
     ...props
 }) {
+    const uid = useId();
+    const errorId = error ? `${uid}-err` : undefined;
+
     const inputClass = [styles.input, error ? styles.error : "", className]
         .filter(Boolean)
         .join(" ");
@@ -32,9 +37,15 @@ export default function Input({
                 placeholder={placeholder}
                 required={required}
                 {...props}
+                aria-invalid={error ? true : undefined}
+                aria-describedby={errorId}
             />
             {meta ? <span className={styles.meta}>{meta}</span> : null}
-            {error && <span className={styles.errorText}>{error}</span>}
+            {error && (
+                <FieldValidationMessage id={errorId}>
+                    {error}
+                </FieldValidationMessage>
+            )}
         </label>
     );
 }

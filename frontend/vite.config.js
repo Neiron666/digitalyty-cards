@@ -44,5 +44,35 @@ export default defineConfig(({ mode }) => {
                 },
             },
         },
+
+        build: {
+            rollupOptions: {
+                output: {
+                    manualChunks(id) {
+                        // Normalize path separators for Windows compatibility.
+                        const normalized = id.replace(/\\/g, "/");
+                        // Explicit allowlist of proven entry-path vendor packages.
+                        // Path-boundary matching (/node_modules/<pkg>/) prevents
+                        // false matches (e.g. "react" matching "react-easy-crop").
+                        const VENDOR_PACKAGES = [
+                            "react",
+                            "react-dom",
+                            "react-router-dom",
+                            "react-router",
+                            "scheduler",
+                            "axios",
+                            "react-helmet-async",
+                        ];
+                        if (
+                            VENDOR_PACKAGES.some((pkg) =>
+                                normalized.includes(`/node_modules/${pkg}/`),
+                            )
+                        ) {
+                            return "vendor";
+                        }
+                    },
+                },
+            },
+        },
     };
 });
