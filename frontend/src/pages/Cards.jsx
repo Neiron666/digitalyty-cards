@@ -9,7 +9,7 @@ import {
 import { SITE_ACTIONS } from "../services/siteAnalytics.actions";
 import pub from "../styles/public-sections.module.css";
 import styles from "./Cards.module.css";
-
+import CrownIcon from "../components/icons/CrownIcon";
 const ORIGIN = import.meta.env.VITE_PUBLIC_ORIGIN || "https://cardigo.co.il";
 
 const SAMPLE_IMG = "/images/sample-card-page";
@@ -277,7 +277,10 @@ export default function Cards() {
                             </Button>
                         </div>
                     </div>
-
+                    <span className={styles.heroTrialNote}>
+                        כולל 10 ימי פרימיום למשתמשים חדשים
+                        <CrownIcon className={styles.heroTrialCrown} />
+                    </span>
                     <p className={styles.heroNote}>
                         הדוגמאות בעמוד זה מיועדות להמחשה
                     </p>

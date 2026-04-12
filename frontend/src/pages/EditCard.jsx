@@ -2325,7 +2325,8 @@ function EditCard() {
                 {shouldShowAnonCta ? (
                     <section className={styles.anonCta} dir="rtl" role="note">
                         <div className={styles.anonCtaText}>
-                            ללא רישום, המידע נשמר ל-14 ימים. הירשמו עכשיו וקבלו{" "}
+                            זאת טיוטה. ללא רישום, המידע נשמר עד-14 ימים. הירשמו
+                            עכשיו וקבלו{" "}
                             <Link
                                 to="/register"
                                 className={styles.anonConsentLink}

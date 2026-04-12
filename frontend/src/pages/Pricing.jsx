@@ -8,7 +8,7 @@ import { trackSiteClick } from "../services/siteAnalytics.client";
 import { SITE_ACTIONS } from "../services/siteAnalytics.actions";
 import pub from "../styles/public-sections.module.css";
 import styles from "./Pricing.module.css";
-
+import CrownIcon from "../components/icons/CrownIcon";
 const ORIGIN = import.meta.env.VITE_PUBLIC_ORIGIN || "https://cardigo.co.il";
 
 /* ── Pricing FAQ data ────────────────────────────── */
@@ -348,10 +348,12 @@ export default function Pricing() {
                             </Button>
                         </div>
                     </div>
-
+                    <span className={styles.heroTrialNote}>
+                        כולל 10 ימי פרימיום למשתמשים חדשים
+                        <CrownIcon className={styles.heroTrialCrown} />
+                    </span>
                     <p className={styles.trustLine}>
-                        בלי סיבוך, בלי עומס - לעסק שרוצה להיראות מקצועי כבר
-                        מהיום הראשון.
+                        לעסק שרוצה להיראות מקצועי כבר מהיום הראשון.
                     </p>
                 </div>
             </section>
