@@ -1,7 +1,11 @@
+import crypto from "crypto";
 import User from "../models/User.model.js";
 import Card from "../models/Card.model.js";
+import EmailUnsubscribeToken from "../models/EmailUnsubscribeToken.model.js";
 import { sendTrialReminderEmailMailjetBestEffort } from "../services/mailjet.service.js";
 import { getSiteUrl } from "../utils/siteUrl.util.js";
+import { isMarketingOptOut } from "../utils/marketingOptOut.util.js";
+import { UNSUBSCRIBE_TOKEN_TTL_MS } from "../utils/unsubscribeTokenTtl.util.js";
 import * as Sentry from "@sentry/node";
 
 // ---------------------------------------------------------------------------
@@ -103,12 +107,13 @@ async function reminderOnce() {
         const staleBefore = new Date(now.getTime() - STALE_CLAIM_THRESHOLD_MS);
 
         // Find candidates: active trial users nearing expiry, not yet reminded,
-        // verified, and either not yet claimed or with a stale claim.
+        // verified, consented to marketing, and either not yet claimed or with a stale claim.
         const candidates = await User.find({
             trialActivatedAt: { $ne: null },
             trialEndsAt: { $gt: windowStart, $lte: windowEnd },
             trialReminderSentAt: null,
             isVerified: true,
+            emailMarketingConsent: true,
             $or: [
                 { trialReminderClaimedAt: null },
                 { trialReminderClaimedAt: { $lte: staleBefore } },
@@ -121,6 +126,8 @@ async function reminderOnce() {
         let skippedUpgraded = 0;
         let skippedExpired = 0;
         let skippedClaimRace = 0;
+        let skippedSuppressed = 0;
+        let failedTokenCreate = 0;
         let failedSend = 0;
 
         for (const candidate of candidates) {
@@ -182,24 +189,72 @@ async function reminderOnce() {
                 continue;
             }
 
-            // --- 4. Send email ------------------------------------------------
+            // --- 4. Defense-in-depth: suppression check ----------------------
+            // Guards against users who opted out after the candidate query
+            // (e.g. via SettingsPanel or unsubscribe link from a prior email).
+            const emailNormalized = candidate.email.trim().toLowerCase();
+            const suppressed = await isMarketingOptOut(emailNormalized);
+            if (suppressed) {
+                await User.updateOne(
+                    { _id: candidate._id },
+                    { $set: { trialReminderClaimedAt: null } },
+                );
+                skippedSuppressed += 1;
+                continue;
+            }
+
+            // --- 5. Generate one-time unsubscribe token ----------------------
+            // Token must be created before sending. If creation fails, release
+            // the claim and skip — we must not send without an unsubscribe link.
+            let unsubscribeUrl = "";
+            try {
+                const rawToken = crypto.randomBytes(32).toString("hex");
+                const tokenHash = crypto
+                    .createHash("sha256")
+                    .update(rawToken)
+                    .digest("hex");
+                const expiresAt = new Date(
+                    Date.now() + UNSUBSCRIBE_TOKEN_TTL_MS,
+                );
+                await EmailUnsubscribeToken.create({
+                    emailNormalized,
+                    tokenHash,
+                    expiresAt,
+                    usedAt: null,
+                });
+                unsubscribeUrl = `${getSiteUrl()}/unsubscribe?token=${rawToken}`;
+            } catch (tokenErr) {
+                Sentry.captureException(tokenErr, {
+                    tags: { job: "trial-reminder", step: "token-create" },
+                    extra: { userId: String(candidate._id) },
+                });
+                await User.updateOne(
+                    { _id: candidate._id },
+                    { $set: { trialReminderClaimedAt: null } },
+                );
+                failedTokenCreate += 1;
+                continue;
+            }
+
+            // --- 6. Send email ------------------------------------------------
             const pricingUrl = `${getSiteUrl()}/pricing`;
             const result = await sendTrialReminderEmailMailjetBestEffort({
                 toEmail: candidate.email,
                 trialEndsAt: candidate.trialEndsAt,
                 pricingUrl,
+                unsubscribeUrl,
                 userId: String(candidate._id),
             });
 
             if (result.ok && !result.skipped) {
-                // --- 5a. Success: stamp sentAt (idempotent update guard) ----------
+                // --- 6a. Success: stamp sentAt (idempotent update guard) ----------
                 await User.updateOne(
                     { _id: candidate._id, trialReminderSentAt: null },
                     { $set: { trialReminderSentAt: now } },
                 );
                 sentCount += 1;
             } else {
-                // --- 5b. Failure / Mailjet not configured: release claim ----------
+                // --- 6b. Failure / Mailjet not configured: release claim ----------
                 // Allows a retry on the next job tick.
                 await User.updateOne(
                     { _id: candidate._id },
@@ -227,6 +282,8 @@ async function reminderOnce() {
                 skippedUpgraded,
                 skippedExpired,
                 skippedClaimRace,
+                skippedSuppressed,
+                failedTokenCreate,
                 failedSend,
             });
         } else {
@@ -284,6 +341,14 @@ async function reminderOnce() {
 export function startTrialReminderJob({
     intervalMs = 2 * 60 * 60 * 1000,
 } = {}) {
+    const _raw = String(process.env.TRIAL_REMINDER_ENABLED ?? "").trim();
+    const _enabled =
+        _raw && ["1", "true", "on", "yes"].includes(_raw.toLowerCase());
+    if (!_enabled) {
+        console.log("[trial-reminder] disabled (TRIAL_REMINDER_ENABLED=false)");
+        return;
+    }
+
     monitorIntervalMs = intervalMs;
 
     // First run staggered after the existing 4 jobs (+15 s, +30 s, +45 s, +60 s).

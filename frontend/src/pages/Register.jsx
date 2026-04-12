@@ -16,6 +16,7 @@ function Register() {
         password: "",
         confirmPassword: "",
         consent: false,
+        marketingConsent: false,
     });
     const [error, setError] = useState("");
     const [loading, setLoading] = useState(false);
@@ -76,7 +77,12 @@ function Register() {
         setError("");
         setLoading(true);
         try {
-            await registerUser(form.email, form.password, form.consent);
+            await registerUser(
+                form.email,
+                form.password,
+                form.consent,
+                form.marketingConsent,
+            );
 
             // Show "check your email" message.
             setRegistered(true);
@@ -198,6 +204,26 @@ function Register() {
                         {fieldErrors.consent}
                     </FieldValidationMessage>
                 )}
+
+                <label className={styles.marketingRow}>
+                    <input
+                        type="checkbox"
+                        checked={form.marketingConsent}
+                        onChange={(e) =>
+                            setForm((prev) => ({
+                                ...prev,
+                                marketingConsent: e.target.checked,
+                            }))
+                        }
+                    />
+                    <span className={styles.consentText}>
+                        אני רוצה לקבל עדכונים מ-Cardigo על trial, פרימיום
+                        ועדכונים חשובים
+                        <span className={styles.marketingHint}>
+                            ניתן לבטל בכל עת
+                        </span>
+                    </span>
+                </label>
 
                 {error && <Notice variant="error">{error}</Notice>}
 

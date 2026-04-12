@@ -7,6 +7,7 @@ import {
     getAccountSummary,
     changePassword,
     deleteAccount,
+    updateEmailPreferences,
 } from "../../../services/account.service";
 import { createPayment } from "../../../services/payment.service";
 import styles from "./SettingsPanel.module.css";
@@ -48,6 +49,9 @@ export default function SettingsPanel({
 
     const [billingBusy, setBillingBusy] = useState(false);
     const [billingMsg, setBillingMsg] = useState("");
+
+    const [mktBusy, setMktBusy] = useState(false);
+    const [mktError, setMktError] = useState("");
 
     const [delCardConfirm, setDelCardConfirm] = useState("");
 
@@ -238,6 +242,45 @@ export default function SettingsPanel({
             setSlugError(mapSlugError(err));
         } finally {
             setSlugBusy(false);
+        }
+    }
+
+    async function handleMarketingToggle(nextValue) {
+        if (mktBusy || !account) return;
+        const currentChecked = account.emailMarketingConsent === true;
+        if (nextValue === currentChecked) return;
+
+        const prevConsent = account.emailMarketingConsent;
+        setMktError("");
+        setMktBusy(true);
+        // Optimistic update
+        setAccount((prev) => ({
+            ...prev,
+            emailMarketingConsent: nextValue,
+        }));
+        try {
+            const data = await updateEmailPreferences({
+                emailMarketingConsent: nextValue,
+            });
+            // Sync with server-returned truth for all four consent fields
+            setAccount((prev) => ({
+                ...prev,
+                emailMarketingConsent: data?.emailMarketingConsent ?? nextValue,
+                emailMarketingConsentAt: data?.emailMarketingConsentAt ?? null,
+                emailMarketingConsentVersion:
+                    data?.emailMarketingConsentVersion ?? null,
+                emailMarketingConsentSource:
+                    data?.emailMarketingConsentSource ?? null,
+            }));
+        } catch {
+            // Revert to pre-toggle truth
+            setAccount((prev) => ({
+                ...prev,
+                emailMarketingConsent: prevConsent,
+            }));
+            setMktError("לא הצלחנו לשמור את ההעדפה. נסו שוב.");
+        } finally {
+            setMktBusy(false);
         }
     }
 
@@ -778,6 +821,52 @@ export default function SettingsPanel({
                                 </div>
                             );
                         })()}
+
+                        {/* ── Section 5: העדפות תקשורת ── */}
+                        <div className={styles.section}>
+                            <div className={styles.sectionTitle}>
+                                העדפות תקשורת
+                            </div>
+
+                            {accountLoading && (
+                                <div className={styles.accountNote}>
+                                    טוען...
+                                </div>
+                            )}
+
+                            {!accountLoading && account && (
+                                <label className={styles.commPrefRow}>
+                                    <input
+                                        type="checkbox"
+                                        checked={
+                                            account.emailMarketingConsent ===
+                                            true
+                                        }
+                                        disabled={mktBusy}
+                                        onChange={(e) =>
+                                            handleMarketingToggle(
+                                                e.target.checked,
+                                            )
+                                        }
+                                    />
+                                    <span className={styles.commPrefInfo}>
+                                        <span>
+                                            קבלת תזכורות ועדכונים רלוונטיים
+                                            מ-Cardigo על הניסיון והפרימיום
+                                        </span>
+                                        <span className={styles.commPrefHint}>
+                                            ניתן לשנות בכל עת
+                                        </span>
+                                    </span>
+                                </label>
+                            )}
+
+                            {mktError && (
+                                <div className={styles.accountError}>
+                                    {mktError}
+                                </div>
+                            )}
+                        </div>
 
                         {/* ── Section 4: פעולות ── */}
                         <div className={styles.section}>

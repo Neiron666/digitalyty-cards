@@ -18,6 +18,11 @@ import {
 } from "../services/supabaseStorage.js";
 import { deleteCardCascade } from "../utils/cardDeleteCascade.js";
 import { createEmailBlock } from "../utils/emailBlock.util.js";
+import {
+    createMarketingOptOut,
+    removeMarketingOptOut,
+} from "../utils/marketingOptOut.util.js";
+import { CURRENT_MARKETING_CONSENT_VERSION } from "../utils/consentVersions.js";
 
 const router = Router();
 
@@ -30,6 +35,10 @@ const changePwRateMap = new Map();
 const DELETE_ACCT_WINDOW_MS = 10 * 60 * 1000;
 const DELETE_ACCT_LIMIT = 5;
 const deleteAcctRateMap = new Map();
+
+const EMAIL_PREF_WINDOW_MS = 10 * 60 * 1000;
+const EMAIL_PREF_LIMIT = 20;
+const emailPrefRateMap = new Map();
 
 let accountSweepTick = 0;
 const SWEEP_EVERY = 200;
@@ -66,6 +75,7 @@ function rateLimitByIpForMap(req, map, limit, windowMs) {
     if (accountSweepTick % SWEEP_EVERY === 0) {
         sweepRateMap(changePwRateMap, now);
         sweepRateMap(deleteAcctRateMap, now);
+        sweepRateMap(emailPrefRateMap, now);
     }
 
     const entry = map.get(ip);
@@ -88,7 +98,9 @@ router.get("/me", requireAuth, async (req, res) => {
         const userId = req.userId;
 
         const user = await User.findById(userId)
-            .select("email role plan subscription createdAt")
+            .select(
+                "email role plan subscription createdAt emailMarketingConsent emailMarketingConsentAt emailMarketingConsentVersion emailMarketingConsentSource",
+            )
             .lean();
 
         if (!user) {
@@ -146,9 +158,125 @@ router.get("/me", requireAuth, async (req, res) => {
             },
             orgMemberships,
             createdAt: user.createdAt || null,
+            emailMarketingConsent: user.emailMarketingConsent ?? null,
+            emailMarketingConsentAt: user.emailMarketingConsentAt || null,
+            emailMarketingConsentVersion:
+                user.emailMarketingConsentVersion || null,
+            emailMarketingConsentSource:
+                user.emailMarketingConsentSource || null,
         });
     } catch (err) {
         console.error("[account] GET /me failed", err?.message || err);
+        return res.status(500).json({ message: "Internal error" });
+    }
+});
+
+/**
+ * PATCH /api/account/email-preferences
+ * Update the authenticated user's marketing email consent.
+ * 200 { emailMarketingConsent, emailMarketingConsentAt, emailMarketingConsentVersion, emailMarketingConsentSource }
+ * 400 on invalid payload.
+ * 429 on rate limit.
+ *
+ * Allowed sources: "settings_panel" (default when absent), "editor_sidebar".
+ * Opt-out (false) → creates suppression tombstone.
+ * Opt-in (true)   → removes suppression tombstone.
+ */
+router.patch("/email-preferences", requireAuth, async (req, res) => {
+    try {
+        if (
+            !rateLimitByIpForMap(
+                req,
+                emailPrefRateMap,
+                EMAIL_PREF_LIMIT,
+                EMAIL_PREF_WINDOW_MS,
+            )
+        ) {
+            return res
+                .status(429)
+                .json({ code: "RATE_LIMITED", message: "Too many requests" });
+        }
+
+        const { emailMarketingConsent, source } = req.body || {};
+
+        if (typeof emailMarketingConsent !== "boolean") {
+            return res
+                .status(400)
+                .json({ message: "emailMarketingConsent must be a boolean" });
+        }
+
+        const ALLOWED_SOURCES = new Set(["settings_panel", "editor_sidebar"]);
+
+        let resolvedSource;
+        if (source === undefined || source === null) {
+            resolvedSource = "settings_panel";
+        } else if (typeof source === "string" && ALLOWED_SOURCES.has(source)) {
+            resolvedSource = source;
+        } else {
+            return res.status(400).json({ message: "Invalid source value" });
+        }
+
+        const now = new Date();
+
+        const updated = await User.findByIdAndUpdate(
+            req.userId,
+            {
+                $set: {
+                    emailMarketingConsent,
+                    emailMarketingConsentAt: now,
+                    emailMarketingConsentVersion:
+                        CURRENT_MARKETING_CONSENT_VERSION,
+                    emailMarketingConsentSource: resolvedSource,
+                },
+            },
+            {
+                new: true,
+                select: "email emailMarketingConsent emailMarketingConsentAt emailMarketingConsentVersion emailMarketingConsentSource",
+            },
+        );
+
+        if (!updated) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        const normalizedEmail = (updated.email || "").trim().toLowerCase();
+
+        if (emailMarketingConsent === false) {
+            try {
+                await createMarketingOptOut({
+                    normalizedEmail,
+                    userId: req.userId,
+                });
+            } catch (err) {
+                console.error(
+                    "[account] PATCH /email-preferences: suppression write failed",
+                    err?.message || err,
+                );
+                // Non-fatal: preference is saved; log and continue.
+            }
+        } else {
+            try {
+                await removeMarketingOptOut({ normalizedEmail });
+            } catch (err) {
+                console.error(
+                    "[account] PATCH /email-preferences: suppression remove failed",
+                    err?.message || err,
+                );
+                // Non-fatal: preference is saved; log and continue.
+            }
+        }
+
+        return res.json({
+            emailMarketingConsent: updated.emailMarketingConsent,
+            emailMarketingConsentAt: updated.emailMarketingConsentAt,
+            emailMarketingConsentVersion: updated.emailMarketingConsentVersion,
+            emailMarketingConsentSource: updated.emailMarketingConsentSource,
+        });
+    } catch (err) {
+        console.error(
+            "[account] PATCH /email-preferences failed",
+            err?.message || err,
+        );
         return res.status(500).json({ message: "Internal error" });
     }
 });

@@ -19,6 +19,7 @@ export default function SignupConsume() {
         password: "",
         confirmPassword: "",
         consent: false,
+        marketingConsent: false,
     });
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
@@ -62,6 +63,7 @@ export default function SignupConsume() {
                 token,
                 form.password,
                 form.consent,
+                form.marketingConsent,
             );
             if (!res?.data?.ok) {
                 setError("לא ניתן להשלים הרשמה. נסו שוב.");
@@ -150,6 +152,23 @@ export default function SignupConsume() {
                         >
                             תנאי השימוש באתר
                         </a>
+                    </span>
+                </label>
+
+                <label className={styles.marketingRow}>
+                    <input
+                        type="checkbox"
+                        checked={form.marketingConsent}
+                        onChange={(e) =>
+                            update("marketingConsent", e.target.checked)
+                        }
+                    />
+                    <span className={styles.consentText}>
+                        אני רוצה לקבל עדכונים מ-Cardigo על trial, פרימיום
+                        ועדכונים חשובים
+                        <span className={styles.marketingHint}>
+                            ניתן לבטל בכל עת
+                        </span>
                     </span>
                 </label>
 

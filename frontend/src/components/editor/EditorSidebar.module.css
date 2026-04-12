@@ -344,3 +344,92 @@ a.publicLinkUrl:focus-visible {
     pointer-events: none;
     line-height: 1;
 }
+
+/* ── Marketing consent nudge ── */
+.consentNudge {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    padding-block: 0.5rem;
+    padding-inline: 0.75rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+}
+
+.consentNudgeText {
+    margin: 0;
+    font-size: var(--fs-caption);
+    font-weight: 600;
+    color: var(--text-main);
+    line-height: 1.4;
+    text-align: center;
+}
+
+.consentNudgeActions {
+    display: flex;
+    gap: 0.5rem;
+    justify-content: center;
+}
+
+.consentBtnYes {
+    flex: 1 1 0;
+    padding-block: 0.35rem;
+    padding-inline: 0.5rem;
+    border: 1px solid var(--gold-soft);
+    border-radius: var(--radius-md);
+    background: var(--gold-fade);
+    color: var(--gold);
+    font-family: inherit;
+    font-size: var(--fs-caption);
+    font-weight: 800;
+    cursor: pointer;
+    transition:
+        background 0.15s,
+        border-color 0.15s;
+}
+
+.consentBtnYes:hover {
+    background: var(--gold-soft);
+    border-color: var(--gold);
+}
+
+.consentBtnYes:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+.consentBtnYes:focus-visible {
+    outline: 2px solid var(--gold);
+    outline-offset: 2px;
+}
+
+.consentBtnNo {
+    flex: 1 1 0;
+    padding-block: 0.35rem;
+    padding-inline: 0.5rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    background: transparent;
+    color: var(--text-main);
+    font-family: inherit;
+    font-size: var(--fs-caption);
+    font-weight: 700;
+    cursor: pointer;
+    transition:
+        background 0.15s,
+        border-color 0.15s;
+}
+
+.consentBtnNo:hover {
+    border-color: var(--gold-soft);
+}
+
+.consentBtnNo:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+.consentBtnNo:focus-visible {
+    outline: 2px solid var(--gold);
+    outline-offset: 2px;
+}

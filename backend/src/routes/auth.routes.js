@@ -16,6 +16,7 @@ import { sendVerificationEmailMailjetBestEffort } from "../services/mailjet.serv
 import {
     CURRENT_TERMS_VERSION,
     CURRENT_PRIVACY_VERSION,
+    CURRENT_MARKETING_CONSENT_VERSION,
 } from "../utils/consentVersions.js";
 import { isEmailBlocked } from "../utils/emailBlock.util.js";
 
@@ -230,6 +231,7 @@ router.post("/register", async (req, res) => {
     let user;
     try {
         const now = new Date();
+        const mktConsent = req.body.marketingConsent === true;
         user = await User.create({
             email,
             passwordHash,
@@ -237,6 +239,15 @@ router.post("/register", async (req, res) => {
             privacyAcceptedAt: now,
             termsVersion: CURRENT_TERMS_VERSION,
             privacyVersion: CURRENT_PRIVACY_VERSION,
+            ...(mktConsent
+                ? {
+                      emailMarketingConsent: true,
+                      emailMarketingConsentAt: now,
+                      emailMarketingConsentVersion:
+                          CURRENT_MARKETING_CONSENT_VERSION,
+                      emailMarketingConsentSource: "register",
+                  }
+                : {}),
         });
     } catch (err) {
         // Preserve current API shape; avoid leaking DB/index details.
@@ -689,6 +700,7 @@ router.post("/signup-consume", async (req, res) => {
         let user;
         try {
             const consentNow = new Date();
+            const mktConsent = req.body.marketingConsent === true;
             user = await User.create({
                 email: emailNormalized,
                 passwordHash,
@@ -697,6 +709,15 @@ router.post("/signup-consume", async (req, res) => {
                 privacyAcceptedAt: consentNow,
                 termsVersion: CURRENT_TERMS_VERSION,
                 privacyVersion: CURRENT_PRIVACY_VERSION,
+                ...(mktConsent
+                    ? {
+                          emailMarketingConsent: true,
+                          emailMarketingConsentAt: consentNow,
+                          emailMarketingConsentVersion:
+                              CURRENT_MARKETING_CONSENT_VERSION,
+                          emailMarketingConsentSource: "signup_consume",
+                      }
+                    : {}),
             });
         } catch (err) {
             if (err && (err.code === 11000 || err.code === 11001)) {

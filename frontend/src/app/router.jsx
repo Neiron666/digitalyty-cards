@@ -27,6 +27,7 @@ const ResetPassword = lazy(() => import("../pages/ResetPassword"));
 const SignupLinkRequest = lazy(() => import("../pages/SignupLinkRequest"));
 const SignupConsume = lazy(() => import("../pages/SignupConsume"));
 const VerifyEmail = lazy(() => import("../pages/VerifyEmail"));
+const Unsubscribe = lazy(() => import("../pages/Unsubscribe"));
 
 // product
 const Dashboard = lazy(() => import("../pages/Dashboard"));
@@ -177,6 +178,16 @@ const router = createBrowserRouter([
                     <ChunkErrorBoundary label="שגיאת טעינה">
                         <Suspense fallback={<RouteFallback label="טוען…" />}>
                             <VerifyEmail />
+                        </Suspense>
+                    </ChunkErrorBoundary>
+                ),
+            },
+            {
+                path: "unsubscribe",
+                element: (
+                    <ChunkErrorBoundary label="שגיאת טעינה">
+                        <Suspense fallback={<RouteFallback label="טוען…" />}>
+                            <Unsubscribe />
                         </Suspense>
                     </ChunkErrorBoundary>
                 ),

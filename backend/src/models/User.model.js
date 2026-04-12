@@ -97,6 +97,21 @@ const UserSchema = new mongoose.Schema(
         // Once set, reminder is permanently consumed — job skips this user.
         // Null = reminder not yet sent.
         trialReminderSentAt: { type: Date, default: null },
+
+        // --- Marketing email consent ---
+        // Explicit opt-in/opt-out for marketing/trial-reminder emails.
+        // null = undecided (never asked, or skipped).  true = opted in.  false = opted out.
+        // null is NOT consent — reminder sending requires emailMarketingConsent === true.
+        emailMarketingConsent: { type: Boolean, default: null },
+        // Timestamp of the last consent state change.
+        emailMarketingConsentAt: { type: Date, default: null },
+        // Version of the consent copy that was active when the user chose.
+        // Known values: "2026-04-12" (initial). Bump CURRENT_MARKETING_CONSENT_VERSION when copy changes.
+        emailMarketingConsentVersion: { type: String, default: null },
+        // How the consent was recorded.
+        // Known values: "register" | "signup_consume" | "invite_accept" |
+        //               "editor_sidebar" | "settings_panel" | "unsubscribe_link"
+        emailMarketingConsentSource: { type: String, default: null },
     },
     { timestamps: true },
 );

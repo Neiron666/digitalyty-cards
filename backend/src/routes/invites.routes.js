@@ -13,6 +13,7 @@ import { getOrgSeatUsage } from "../utils/orgSeats.util.js";
 import {
     CURRENT_TERMS_VERSION,
     CURRENT_PRIVACY_VERSION,
+    CURRENT_MARKETING_CONSENT_VERSION,
 } from "../utils/consentVersions.js";
 import { isEmailBlocked } from "../utils/emailBlock.util.js";
 
@@ -164,6 +165,7 @@ router.post("/accept", optionalAuth, async (req, res) => {
 
         try {
             const consentNow = new Date();
+            const mktConsent = req.body.marketingConsent === true;
             user = await User.create({
                 email,
                 passwordHash,
@@ -172,6 +174,15 @@ router.post("/accept", optionalAuth, async (req, res) => {
                 privacyAcceptedAt: consentNow,
                 termsVersion: CURRENT_TERMS_VERSION,
                 privacyVersion: CURRENT_PRIVACY_VERSION,
+                ...(mktConsent
+                    ? {
+                          emailMarketingConsent: true,
+                          emailMarketingConsentAt: consentNow,
+                          emailMarketingConsentVersion:
+                              CURRENT_MARKETING_CONSENT_VERSION,
+                          emailMarketingConsentSource: "invite_accept",
+                      }
+                    : {}),
             });
         } catch (err) {
             if (err && (err.code === 11000 || err.code === 11001)) {

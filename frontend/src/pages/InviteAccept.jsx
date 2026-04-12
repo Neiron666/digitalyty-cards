@@ -19,6 +19,7 @@ function InviteAccept() {
 
     const [password, setPassword] = useState("");
     const [consent, setConsent] = useState(false);
+    const [marketingConsent, setMarketingConsent] = useState(false);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
     const [loginRequired, setLoginRequired] = useState(false);
@@ -42,7 +43,7 @@ function InviteAccept() {
         setLoginRequired(false);
 
         if (!token) {
-            setError("Ссылка недействительна или истекла");
+            setError("הקישור אינו תקין או שפג תוקפו");
             return;
         }
 
@@ -50,17 +51,13 @@ function InviteAccept() {
 
         // New-user flow requires a password. Existing-user flow requires login.
         if (!isLoggedIn && !password) {
-            setError(
-                "Введите пароль для нового аккаунта или войдите, если аккаунт уже существует",
-            );
+            setError("הזינו סיסמא ליצירת חשבון חדש");
             return;
         }
 
         // New-user flow requires explicit consent.
         if (!isLoggedIn && !consent) {
-            setError(
-                "Необходимо принять условия использования и политику конфиденциальности",
-            );
+            setError("חובה להסכים למדיניות הפרטיות ולתנאי השימוש");
             return;
         }
 
@@ -68,7 +65,7 @@ function InviteAccept() {
         try {
             const payload = {
                 token,
-                ...(isNewUser ? { password, consent } : null),
+                ...(isNewUser ? { password, consent, marketingConsent } : null),
             };
             const res = await api.post("/invites/accept", payload);
             const orgSlug = String(res?.data?.orgSlug || "").trim();
@@ -91,15 +88,13 @@ function InviteAccept() {
 
             if (status === 409 && code === "INVITE_LOGIN_REQUIRED") {
                 setLoginRequired(true);
-                setError(
-                    "У вас уже есть аккаунт. Войдите, чтобы принять приглашение.",
-                );
+                setError("כבר יש לך חשבון. התחברו כדי לקבל את ההזמנה.");
             } else if (status === 404) {
-                setError("Ссылка недействительна или истекла");
+                setError("הקישור אינו תקין או שפג תוקפו");
             } else if (status === 400) {
-                setError("Нужно задать пароль, чтобы принять приглашение");
+                setError("נדרשת סיסמא לקבלת ההזמנה");
             } else {
-                setError("Ошибка сервера, попробуйте позже");
+                setError("שגיאת שרת, נסו שוב מאוחר יותר");
             }
         } finally {
             setLoading(false);
@@ -108,12 +103,12 @@ function InviteAccept() {
 
     return (
         <AuthLayout
-            title="Принять приглашение"
-            subtitle="Если у вас уже есть аккаунт - войдите. Если нет - задайте пароль для создания аккаунта."
+            title="קבלת הזמנה"
+            subtitle="אם יש לכם כבר חשבון, התחברו. אם לא — הגדירו סיסמא ליצירת חשבון."
         >
             <form onSubmit={handleSubmit}>
                 <Input
-                    label="Пароль (только для нового аккаунта)"
+                    label="סיסמא (רק לחשבון חדש)"
                     type="password"
                     autoComplete="new-password"
                     value={password}
@@ -121,45 +116,64 @@ function InviteAccept() {
                 />
 
                 {isNewUser ? (
-                    <label className={styles.consentRow}>
-                        <input
-                            type="checkbox"
-                            checked={consent}
-                            onChange={(e) => setConsent(e.target.checked)}
-                        />
-                        <span className={styles.consentText}>
-                            Я принимаю{" "}
-                            <a
-                                href="/privacy"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className={styles.consentLink}
-                            >
-                                политику конфиденциальности
-                            </a>{" "}
-                            и{" "}
-                            <a
-                                href="/terms"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className={styles.consentLink}
-                            >
-                                условия использования
-                            </a>
-                        </span>
-                    </label>
+                    <>
+                        <label className={styles.consentRow}>
+                            <input
+                                type="checkbox"
+                                checked={consent}
+                                onChange={(e) => setConsent(e.target.checked)}
+                                required
+                            />
+                            <span className={styles.consentText}>
+                                אני מסכים ל
+                                <a
+                                    href="/privacy"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className={styles.consentLink}
+                                >
+                                    מדיניות הפרטיות
+                                </a>{" "}
+                                וגם ל
+                                <a
+                                    href="/terms"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className={styles.consentLink}
+                                >
+                                    תנאי השימוש באתר
+                                </a>
+                            </span>
+                        </label>
+                        <label className={styles.marketingRow}>
+                            <input
+                                type="checkbox"
+                                checked={marketingConsent}
+                                onChange={(e) =>
+                                    setMarketingConsent(e.target.checked)
+                                }
+                            />
+                            <span className={styles.consentText}>
+                                אני רוצה לקבל עדכונים מ-Cardigo על trial,
+                                פרימיום ועדכונים חשובים
+                                <span className={styles.marketingHint}>
+                                    ניתן לבטל בכל עת
+                                </span>
+                            </span>
+                        </label>
+                    </>
                 ) : null}
 
                 {error && <p className={styles.error}>{error}</p>}
 
                 {loginRequired ? (
                     <p className={styles.error}>
-                        <a href={loginHref}>Войти</a>
+                        <a href={loginHref}>התחברו</a>
                     </p>
                 ) : null}
 
                 <Button type="submit" fullWidth loading={loading}>
-                    Принять приглашение
+                    קבל הזמנה
                 </Button>
             </form>
         </AuthLayout>

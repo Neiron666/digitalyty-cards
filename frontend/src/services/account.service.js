@@ -37,3 +37,18 @@ export async function deleteAccount({ confirm, password }) {
         throw err;
     }
 }
+
+/**
+ * PATCH /api/account/email-preferences - update marketing email consent.
+ * Returns the updated consent fields from the backend.
+ */
+export async function updateEmailPreferences({
+    emailMarketingConsent,
+    source = "settings_panel",
+}) {
+    const res = await api.patch("/account/email-preferences", {
+        emailMarketingConsent,
+        source,
+    });
+    return res.data;
+}

@@ -1,7 +1,7 @@
 import api from "./api";
 
-export const register = (email, password, consent) =>
-    api.post("/auth/register", { email, password, consent });
+export const register = (email, password, consent, marketingConsent = false) =>
+    api.post("/auth/register", { email, password, consent, marketingConsent });
 
 export const login = (email, password) =>
     api.post("/auth/login", { email, password });
@@ -25,8 +25,18 @@ export const resetPassword = (token, password) =>
 export const requestSignupLink = (email) =>
     api.post("/auth/signup-link", { email });
 
-export const consumeSignupToken = (token, password, consent) =>
-    api.post("/auth/signup-consume", { token, password, consent });
+export const consumeSignupToken = (
+    token,
+    password,
+    consent,
+    marketingConsent = false,
+) =>
+    api.post("/auth/signup-consume", {
+        token,
+        password,
+        consent,
+        marketingConsent,
+    });
 
 export const verifyEmail = (token) => api.post("/auth/verify-email", { token });
 

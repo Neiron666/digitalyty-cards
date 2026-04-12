@@ -1,5 +1,9 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import styles from "./EditorSidebar.module.css";
+import {
+    getAccountSummary,
+    updateEmailPreferences,
+} from "../../services/account.service";
 import CrownIcon from "../icons/CrownIcon";
 import {
     TemplatesIcon,
@@ -149,6 +153,45 @@ export default function EditorSidebar({
         }
     }, [canCopy, publicUrl]);
 
+    const [account, setAccount] = useState(null);
+    const [mktBusy, setMktBusy] = useState(false);
+    const accountFetched = useRef(false);
+
+    useEffect(() => {
+        if (accountFetched.current) return;
+        accountFetched.current = true;
+        getAccountSummary()
+            .then((data) => setAccount(data))
+            .catch(() => {});
+    }, []);
+
+    const handleNudgeConsent = useCallback(
+        async (value) => {
+            if (mktBusy) return;
+            setMktBusy(true);
+            try {
+                const data = await updateEmailPreferences({
+                    emailMarketingConsent: value,
+                    source: "editor_sidebar",
+                });
+                setAccount((prev) =>
+                    prev
+                        ? {
+                              ...prev,
+                              emailMarketingConsent:
+                                  data?.emailMarketingConsent ?? value,
+                          }
+                        : prev,
+                );
+            } catch {
+                // silent — nudge stays visible so user can retry
+            } finally {
+                setMktBusy(false);
+            }
+        },
+        [mktBusy],
+    );
+
     return (
         <aside className={styles.sidebar}>
             {showContextBar ? (
@@ -270,6 +313,37 @@ export default function EditorSidebar({
                     </a>
                 </div>
             )}
+
+            {account !== null &&
+                account.emailMarketingConsent === null &&
+                isTrial &&
+                trialDaysLeft != null &&
+                trialDaysLeft > 0 && (
+                    <div className={styles.consentNudge} dir="rtl">
+                        <p className={styles.consentNudgeText}>
+                            רוצה לקבל תזכורות ועדכונים רלוונטיים על הניסיון
+                            והפרימיום?
+                        </p>
+                        <div className={styles.consentNudgeActions}>
+                            <button
+                                type="button"
+                                className={styles.consentBtnYes}
+                                disabled={mktBusy}
+                                onClick={() => handleNudgeConsent(true)}
+                            >
+                                כן, שלחו לי
+                            </button>
+                            <button
+                                type="button"
+                                className={styles.consentBtnNo}
+                                disabled={mktBusy}
+                                onClick={() => handleNudgeConsent(false)}
+                            >
+                                לא תודה
+                            </button>
+                        </div>
+                    </div>
+                )}
 
             <div className={styles.title}>עריכת כרטיס</div>
 

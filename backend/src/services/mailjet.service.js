@@ -463,6 +463,7 @@ export async function sendTrialReminderEmailMailjetBestEffort({
     toEmail,
     trialEndsAt,
     pricingUrl,
+    unsubscribeUrl = "",
     userId,
 }) {
     const cfg = getMailjetConfig();
@@ -490,6 +491,9 @@ export async function sendTrialReminderEmailMailjetBestEffort({
         pricingUrl,
         "",
         "צוות Cardigo",
+        ...(unsubscribeUrl
+            ? ["", "---", "לביטול הרשמה לקבלת עדכונים:", unsubscribeUrl]
+            : []),
     ].join("\n");
 
     // --- HTML part -----------------------------------------------------------
@@ -532,6 +536,13 @@ export async function sendTrialReminderEmailMailjetBestEffort({
           <tr><td style="border-top:1px solid #e5e7eb;padding-top:16px;text-align:center;">
             <p style="margin:0;font-size:12px;color:#aaaaaa;">צוות Cardigo</p>
           </td></tr>
+          ${
+              unsubscribeUrl
+                  ? `<tr><td style="padding-top:12px;text-align:center;">
+            <p style="margin:0;font-size:11px;color:#bbbbbb;">לביטול הרשמה לקבלת עדכונים: <a href="${unsubscribeUrl}" style="color:#aaaaaa;">${unsubscribeUrl}</a></p>
+          </td></tr>`
+                  : ""
+          }
         </table>
       </td>
     </tr>
