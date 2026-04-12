@@ -217,8 +217,7 @@ function Register() {
                         }
                     />
                     <span className={styles.consentText}>
-                        אני רוצה לקבל מ-Cardigo תזכורות ועדכונים רלוונטיים על
-                        הניסיון והפרימיום
+                        אני רוצה לקבל מ-Cardigo תזכורות ועדכונים בדוא"ל
                         <span className={styles.marketingHint}>
                             ניתן לבטל בכל עת
                         </span>
