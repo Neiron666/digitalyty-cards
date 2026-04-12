@@ -16,7 +16,7 @@ function Register() {
         password: "",
         confirmPassword: "",
         consent: false,
-        marketingConsent: false,
+        emailMarketingConsent: false,
     });
     const [error, setError] = useState("");
     const [loading, setLoading] = useState(false);
@@ -81,7 +81,7 @@ function Register() {
                 form.email,
                 form.password,
                 form.consent,
-                form.marketingConsent,
+                form.emailMarketingConsent,
             );
 
             // Show "check your email" message.
@@ -208,17 +208,17 @@ function Register() {
                 <label className={styles.marketingRow}>
                     <input
                         type="checkbox"
-                        checked={form.marketingConsent}
+                        checked={form.emailMarketingConsent}
                         onChange={(e) =>
                             setForm((prev) => ({
                                 ...prev,
-                                marketingConsent: e.target.checked,
+                                emailMarketingConsent: e.target.checked,
                             }))
                         }
                     />
                     <span className={styles.consentText}>
-                        אני רוצה לקבל עדכונים מ-Cardigo על trial, פרימיום
-                        ועדכונים חשובים
+                        אני רוצה לקבל מ-Cardigo תזכורות ועדכונים רלוונטיים על
+                        הניסיון והפרימיום
                         <span className={styles.marketingHint}>
                             ניתן לבטל בכל עת
                         </span>
