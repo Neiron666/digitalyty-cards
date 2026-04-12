@@ -31,21 +31,22 @@
 
 ### Trial Reminder (pre-expiry lifecycle email)
 
-Sends one reminder email to each trial user ~day 9 of the trial. Technically implemented and smoke-tested; compliance/unsubscribe contour is still open — see `docs/runbooks/trial-lifecycle-ssot.md` §13.9.
+Sends one reminder email to each trial user ~day 9 of the trial. Compliance contour implemented and verified (2026-04-12); rollout deliberately gated off pending explicit operator action — see `docs/runbooks/trial-lifecycle-ssot.md` §13.11.
 
-| Variable                                  | Default         | Purpose                                         |
-| ----------------------------------------- | --------------- | ----------------------------------------------- |
-| `TRIAL_REMINDER_INTERVAL_MS`              | `7200000`       | Job tick interval (ms)                          |
-| `TRIAL_REMINDER_WINDOW_START_HOURS`       | `20`            | Lower bound of expiry window (h from now)       |
-| `TRIAL_REMINDER_WINDOW_END_HOURS`         | `32`            | Upper bound of expiry window (h from now)       |
-| `TRIAL_REMINDER_SEND_HOUR_MIN`            | `9`             | Earliest Asia/Jerusalem hour to send            |
-| `TRIAL_REMINDER_SEND_HOUR_MAX`            | `18`            | Latest Asia/Jerusalem hour (exclusive)          |
-| `TRIAL_REMINDER_STALE_CLAIM_THRESHOLD_MS` | `14400000`      | Age after which a claim is treated as abandoned |
-| `TRIAL_REMINDER_HEARTBEAT_MS`             | `43200000`      | Heartbeat log interval (ms)                     |
-| `MAILJET_TRIAL_REMINDER_SUBJECT`          | Hebrew fallback | Email subject                                   |
-| `MAILJET_TRIAL_REMINDER_TEXT_PREFIX`      | Hebrew fallback | Plain-text opening line                         |
-| `MAILJET_TRIAL_REMINDER_LOGO_URL`         | `""`            | Contour-specific logo URL                       |
-| `MAILJET_BRAND_LOGO_URL`                  | `""`            | Shared brand logo fallback                      |
+| Variable                                  | Default         | Purpose                                           |
+| ----------------------------------------- | --------------- | ------------------------------------------------- |
+| `TRIAL_REMINDER_ENABLED`                  | `false`         | Production gate — set to `true` to enable sending |
+| `TRIAL_REMINDER_INTERVAL_MS`              | `7200000`       | Job tick interval (ms)                            |
+| `TRIAL_REMINDER_WINDOW_START_HOURS`       | `20`            | Lower bound of expiry window (h from now)         |
+| `TRIAL_REMINDER_WINDOW_END_HOURS`         | `32`            | Upper bound of expiry window (h from now)         |
+| `TRIAL_REMINDER_SEND_HOUR_MIN`            | `9`             | Earliest Asia/Jerusalem hour to send              |
+| `TRIAL_REMINDER_SEND_HOUR_MAX`            | `18`            | Latest Asia/Jerusalem hour (exclusive)            |
+| `TRIAL_REMINDER_STALE_CLAIM_THRESHOLD_MS` | `14400000`      | Age after which a claim is treated as abandoned   |
+| `TRIAL_REMINDER_HEARTBEAT_MS`             | `43200000`      | Heartbeat log interval (ms)                       |
+| `MAILJET_TRIAL_REMINDER_SUBJECT`          | Hebrew fallback | Email subject                                     |
+| `MAILJET_TRIAL_REMINDER_TEXT_PREFIX`      | Hebrew fallback | Plain-text opening line                           |
+| `MAILJET_TRIAL_REMINDER_LOGO_URL`         | `""`            | Contour-specific logo URL                         |
+| `MAILJET_BRAND_LOGO_URL`                  | `""`            | Shared brand logo fallback                        |
 
 All vars are optional (in-code defaults apply). None trigger startup failure if absent.
 
@@ -90,6 +91,11 @@ Runtime ≠ Sanity ≠ Migration:
     - Runs post-check after apply to verify all critical unique indexes are present.
     - **No TTL index is created by default.** TTL on `expiresAt` is a separate operator decision (see `docs/runbooks/auth-forgot-reset-runbook.md` §Index governance).
     - **Do NOT use `autoIndex`/`autoCreate` as a substitute** - runtime has both disabled by default.
+- Migration (`migrate:email-marketing-indexes`): governs indexes for the marketing consent/unsubscribe collections (`marketingoptouts`, `emailunsubscribetokens`).
+    - `marketingoptouts.emailKey_1` (unique) — suppression tombstone lookup key.
+    - `emailunsubscribetokens.tokenHash_1` (unique), `emailNormalized_1`, `expiresAt_1`, `usedAt_1`.
+    - All five indexes confirmed applied 2026-04-12.
+    - Dry-run by default. Apply: `npm.cmd run migrate:email-marketing-indexes -- --apply`
 
 Do NOT run `--apply` automatically in CI.
 

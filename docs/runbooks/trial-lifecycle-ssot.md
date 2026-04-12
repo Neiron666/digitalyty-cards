@@ -216,9 +216,9 @@ Final Controlled Smoke Under Gate passed. All scenarios confirmed:
 
 ## 13) Pre-Expiry Reminder Email Contour
 
-**Status:** Technically implemented and smoke-tested (2026-04-12). Compliance contour still open — see §13.5.
+**Status:** Technically implemented, verified, and compliance-contour closed (2026-04-12). Rollout remains deliberately gated OFF — see §13.11.
 
-**Scope:** One pre-expiry lifecycle email sent to each trial user approximately on day 9 of the 10-day trial. This is a transactional lifecycle notification, not a marketing broadcast.
+**Scope:** One pre-expiry lifecycle email sent to each trial user approximately on day 9 of the 10-day trial. Includes explicit opt-in gating, suppression defense, one-time unsubscribe token, and a public `/unsubscribe` page.
 
 ---
 
@@ -244,9 +244,10 @@ The job queries for:
 - `trialEndsAt` inside the rolling window
 - `trialReminderSentAt: null` — reminder not yet sent
 - `isVerified: true` — unverified users excluded
+- `emailMarketingConsent: true` — **explicit opt-in required** (null and false are excluded)
 - `trialReminderClaimedAt: null` or stale (older than `TRIAL_REMINDER_STALE_CLAIM_THRESHOLD_MS`, default 4 h)
 
-Defense-in-depth after claim: job re-checks that `trialEndsAt` is still in the future and that the user still has at least one card with `billing.status: "trial"`. Users who upgraded between query and claim are silently skipped.
+Defense-in-depth after claim: job re-checks that `trialEndsAt` is still in the future, that the user still has at least one card with `billing.status: "trial"`, and that the user is not in the marketing suppression list.
 
 ---
 
@@ -268,25 +269,51 @@ On send failure the claim is released (`trialReminderClaimedAt` reset to `null`)
 ### 13.4 Email Delivery Shape
 
 - **Transport:** Mailjet v3.1 API via raw HTTPS (`api.mailjet.com/v3.1/send`).
-- **Parts:** Both `TextPart` (Hebrew plain text + pricing URL) and `HTMLPart` (branded RTL table layout, conditional logo, CTA button `#6c47ff`) are sent. This is the only multipart send function in the service; other mail functions are text-only.
+- **Parts:** Both `TextPart` (Hebrew plain text + pricing URL + conditional unsubscribe footer) and `HTMLPart` (branded RTL table layout, conditional logo, CTA button `#6c47ff`, conditional unsubscribe row) are sent.
 - **CTA:** `getSiteUrl() + "/pricing"` — uses `SITE_URL || PUBLIC_ORIGIN || PUBLIC_URL || "https://cardigo.co.il"` as the base.
+- **Unsubscribe footer:** A one-time tokenized unsubscribe URL is generated before each send and appended to both TextPart and HTMLPart. Neither part is sent if token generation fails (see §13.9).
 - **Logo:** resolved as `MAILJET_TRIAL_REMINDER_LOGO_URL` → `MAILJET_BRAND_LOGO_URL` → no logo (falls back to branded `<p>` heading, no broken image).
 - **Subject / prefix:** configurable via `MAILJET_TRIAL_REMINDER_SUBJECT` / `MAILJET_TRIAL_REMINDER_TEXT_PREFIX` with Hebrew fallbacks.
 - **When Mailjet is not configured:** returns `{ ok: true, skipped: true }` — claim is silently released, no error logged (dev-env behavior).
 
 ---
 
-### 13.5 Governed Index
+### 13.5 Governed Indexes
 
-A compound index on the `users` collection supports the reminder candidate query:
+#### Users collection
+
+A compound index supports the reminder candidate query:
 
 | Name                                  | Key                                          | Options |
 | ------------------------------------- | -------------------------------------------- | ------- |
 | `trialReminderSentAt_1_trialEndsAt_1` | `{ trialReminderSentAt: 1, trialEndsAt: 1 }` | none    |
 
-**Applied via:** `npm run migrate:user-auth-indexes --apply` — part of the existing user auth index migration script, idempotent, dry-run by default.
+**Applied via:** `npm run migrate:user-auth-indexes --apply`
 
-**Status:** Index confirmed live as of 2026-04-12.
+**Status:** Confirmed live as of 2026-04-12.
+
+#### EmailUnsubscribeTokens collection
+
+| Name                | Key                      | Options |
+| ------------------- | ------------------------ | ------- |
+| `tokenHash_1`       | `{ tokenHash: 1 }`       | unique  |
+| `emailNormalized_1` | `{ emailNormalized: 1 }` | none    |
+| `expiresAt_1`       | `{ expiresAt: 1 }`       | none    |
+| `usedAt_1`          | `{ usedAt: 1 }`          | none    |
+
+**Applied via:** `npm run migrate:email-marketing-indexes --apply`
+
+**Status:** All four indexes confirmed live as of 2026-04-12.
+
+#### MarketingOptOuts collection
+
+| Name         | Key               | Options |
+| ------------ | ----------------- | ------- |
+| `emailKey_1` | `{ emailKey: 1 }` | unique  |
+
+**Applied via:** `npm run migrate:email-marketing-indexes --apply`
+
+**Status:** Confirmed live as of 2026-04-12.
 
 ---
 
@@ -300,21 +327,22 @@ Registered in `backend/src/server.js` as the 5th and final job after `startReten
 
 ### 13.7 Environment Variables
 
-| Variable                                  | Default           | Purpose                                                |
-| ----------------------------------------- | ----------------- | ------------------------------------------------------ |
-| `TRIAL_REMINDER_INTERVAL_MS`              | `7200000` (2 h)   | Job tick interval                                      |
-| `TRIAL_REMINDER_WINDOW_START_HOURS`       | `20`              | Lower bound of expiry window (hours from now)          |
-| `TRIAL_REMINDER_WINDOW_END_HOURS`         | `32`              | Upper bound of expiry window (hours from now)          |
-| `TRIAL_REMINDER_SEND_HOUR_MIN`            | `9`               | Earliest local hour to send (Asia/Jerusalem)           |
-| `TRIAL_REMINDER_SEND_HOUR_MAX`            | `18`              | Latest local hour (exclusive) to send                  |
-| `TRIAL_REMINDER_STALE_CLAIM_THRESHOLD_MS` | `14400000` (4 h)  | Age after which a claim is considered abandoned        |
-| `TRIAL_REMINDER_HEARTBEAT_MS`             | `43200000` (12 h) | Heartbeat log interval when no candidates found        |
-| `MAILJET_TRIAL_REMINDER_SUBJECT`          | Hebrew fallback   | Email subject line                                     |
-| `MAILJET_TRIAL_REMINDER_TEXT_PREFIX`      | Hebrew fallback   | Opening line of plain-text body                        |
-| `MAILJET_TRIAL_REMINDER_LOGO_URL`         | `""`              | Contour-specific logo image URL                        |
-| `MAILJET_BRAND_LOGO_URL`                  | `""`              | Shared brand logo fallback (also used by this contour) |
+| Variable                                  | Default           | Purpose                                                                  |
+| ----------------------------------------- | ----------------- | ------------------------------------------------------------------------ |
+| `TRIAL_REMINDER_ENABLED`                  | `false`           | **Production gate — must be explicitly set to `true` to enable sending** |
+| `TRIAL_REMINDER_INTERVAL_MS`              | `7200000` (2 h)   | Job tick interval                                                        |
+| `TRIAL_REMINDER_WINDOW_START_HOURS`       | `20`              | Lower bound of expiry window (hours from now)                            |
+| `TRIAL_REMINDER_WINDOW_END_HOURS`         | `32`              | Upper bound of expiry window (hours from now)                            |
+| `TRIAL_REMINDER_SEND_HOUR_MIN`            | `9`               | Earliest local hour to send (Asia/Jerusalem)                             |
+| `TRIAL_REMINDER_SEND_HOUR_MAX`            | `18`              | Latest local hour (exclusive) to send                                    |
+| `TRIAL_REMINDER_STALE_CLAIM_THRESHOLD_MS` | `14400000` (4 h)  | Age after which a claim is considered abandoned                          |
+| `TRIAL_REMINDER_HEARTBEAT_MS`             | `43200000` (12 h) | Heartbeat log interval when no candidates found                          |
+| `MAILJET_TRIAL_REMINDER_SUBJECT`          | Hebrew fallback   | Email subject line                                                       |
+| `MAILJET_TRIAL_REMINDER_TEXT_PREFIX`      | Hebrew fallback   | Opening line of plain-text body                                          |
+| `MAILJET_TRIAL_REMINDER_LOGO_URL`         | `""`              | Contour-specific logo image URL                                          |
+| `MAILJET_BRAND_LOGO_URL`                  | `""`              | Shared brand logo fallback (also used by this contour)                   |
 
-All vars are optional — all have in-code defaults. None trigger startup failure if absent.
+All vars are optional — all have in-code defaults. `TRIAL_REMINDER_ENABLED` defaults to `false`; the job exits immediately at startup unless it is set to one of `"1"`, `"true"`, `"on"`, `"yes"`.
 
 ---
 
@@ -322,26 +350,88 @@ All vars are optional — all have in-code defaults. None trigger startup failur
 
 - [x] Reminder job schedules on server start, appears in startup logs.
 - [x] Candidate query correctly excludes unverified, already-reminded, and upgraded users.
+- [x] Candidate query excludes users with `emailMarketingConsent` null or false.
 - [x] Atomic claim prevents duplicate processing across concurrent ticks.
-- [x] TextPart + HTMLPart email delivered via Mailjet.
+- [x] Suppression check (Step 4) blocks opted-out users even after candidate query passes.
+- [x] Unsubscribe token generated and stored before each send attempt.
+- [x] Token generation failure releases claim and skips send (no email without unsubscribe link).
+- [x] TextPart + HTMLPart email delivered via Mailjet, including unsubscribe footer.
 - [x] `trialReminderSentAt` stamped after successful send.
 - [x] Failed sends release claim for retry.
-- [x] Governed index `trialReminderSentAt_1_trialEndsAt_1` confirmed live in users collection.
+- [x] Governed indexes confirmed live: `trialReminderSentAt_1_trialEndsAt_1` on users, `tokenHash_1` (unique) + `emailNormalized_1` + `expiresAt_1` + `usedAt_1` on emailunsubscribetokens, `emailKey_1` (unique) on marketingoptouts.
+- [x] Frontend gates (check:inline-styles, check:skins, check:contract) EXIT 0.
+- [x] `sanity:imports` EXIT 0.
 
 ---
 
-### 13.9 Compliance Boundary — OPEN
+### 13.9 Unsubscribe Delivery Flow
 
-> **This contour is technically implemented and smoke-tested. It is NOT yet cleared for broad production rollout at marketing scale.**
+**Token issuance (job):**
 
-The following compliance mechanisms do **not yet exist**:
+1. After passing all candidate guards, the job generates a 32-byte cryptographically random raw token (`crypto.randomBytes(32).toString("hex")`).
+2. A SHA-256 hash of the raw token is stored in `EmailUnsubscribeToken` (emailNormalized, tokenHash, expiresAt = now + 90 days, usedAt = null).
+3. The raw token (not the hash) is embedded in the unsubscribe URL: `${getSiteUrl()}/unsubscribe?token=<rawToken>`.
+4. If token creation fails, the claim is released and the send is skipped. No email is ever sent without an unsubscribe link.
 
-- No explicit opt-in / marketing-email consent checkbox at registration or in the user profile.
-- No unsubscribe link in the reminder email body.
-- No opt-out / suppression list mechanism.
+**Consume endpoint (`POST /api/unsubscribe/consume`):**
 
-Until a bounded compliance / marketing-consent contour is designed, reviewed, and closed, this reminder job should be treated as a **controlled lifecycle email** in limited deployment, not a broadly approved marketing send. Broad activation to the full user base requires that contour to be resolved first.
+- Accepts `{ token }` in the request body.
+- Looks up `tokenHash` (SHA-256 of the submitted token) in `EmailUnsubscribeToken`.
+- Atomic `findOneAndUpdate` stamps `usedAt`; tokens already used or expired return 400.
+- On success: creates a `MarketingOptOut` tombstone (HMAC-SHA256 of `emailNormalized`) and sets `user.emailMarketingConsent = false`.
+- Returns `{ ok: true }` on success, 400 on invalid/expired/used token.
+- Rate-limited (in-memory, IP-keyed).
+
+**Frontend page (`/unsubscribe`):**
+
+- File: `frontend/src/pages/Unsubscribe.jsx`
+- Route: `unsubscribe` under root `/` Layout in `frontend/src/app/router.jsx`.
+- On load: strips token from URL bar (`history.replaceState`), then POSTs to `/api/unsubscribe/consume`.
+- States: `loading` → `success` | `error`. Missing token renders directly (no loading flash).
+- Uses `AuthLayout` shell, CSS Modules, no inline styles.
+
+**Suppression list (`MarketingOptOut`):**
+
+- Model: `backend/src/models/MarketingOptOut.model.js`
+- Key: `HMAC-SHA256("cardigo-email-opt-out-v1:" + normalizedEmail)` using `EMAIL_BLOCK_SECRET`.
+- Checked by `isMarketingOptOut()` in the reminder job (Step 4) and in `PATCH /api/account/email-preferences`.
+- Created on: unsubscribe consume, SettingsPanel toggle off.
+- Deleted on: SettingsPanel toggle on (re-opt-in).
+
+---
+
+### 13.10 Consent Collection Points
+
+Explicit marketing email consent (`emailMarketingConsent` on the User model) is collected at:
+
+| Surface                                                         | Source tag         | Default                                        |
+| --------------------------------------------------------------- | ------------------ | ---------------------------------------------- |
+| Registration form (`/register`)                                 | `"register"`       | unchecked (false → field not written)          |
+| Magic-link signup consume (`/signup`)                           | `"signup_consume"` | unchecked (false → field not written)          |
+| Invite accept (`/invite`) — new user path only                  | `"invite_accept"`  | unchecked (false → field not written)          |
+| EditorSidebar trial nudge (trial + null consent + daysLeft > 0) | `"editor_sidebar"` | shows "כן/לא" buttons; hidden after any choice |
+| SettingsPanel "העדפות תקשורת" toggle                            | `"settings_panel"` | reflects current DB truth                      |
+
+**Backend endpoint:** `PATCH /api/account/email-preferences` — accepts `{ emailMarketingConsent: boolean, source? }`. Opt-out creates suppression tombstone; opt-in removes it.
+
+---
+
+### 13.11 Production Rollout Gate
+
+> **`TRIAL_REMINDER_ENABLED` is currently `false` in production. The reminder job starts up but exits immediately without scheduling.**
+
+This is the deliberate production gate. Changing it to `true` requires explicit operator action and is not a code change.
+
+**Pre-conditions before enabling in production:**
+
+1. Verify `sanity:imports` EXIT 0 on the production build.
+2. Run `migrate:email-marketing-indexes --apply` on the production DB (or confirm all five indexes are already live).
+3. Complete local unsubscribe smoke (token consume, replay, suppression write).
+4. Optional: local reminder end-to-end smoke (temp enable + test user + revert).
+5. Set `TRIAL_REMINDER_ENABLED=true` in production env and redeploy.
+6. Monitor first sweep log: `[trial-reminder] sweep done { sentCount, ... }`.
 
 ---
 
 _Created as part of the documentation truth-alignment audit. June 2025._
+_§13 substantially updated 2026-04-12: compliance contour implemented and verified; §13.5, §13.8–§13.11 added._
