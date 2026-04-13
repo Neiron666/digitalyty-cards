@@ -266,6 +266,8 @@ The Gemini integration uses target-specific output budgets, structured JSON sche
 
 **Current posture**: The token economy has been audited and is considered operationally mature. Per-target schemas, bounded context, and output caps are in place. No urgent further optimization pass is currently recommended.
 
+**Variation-hint addition (April 2026)**: The `title` and `paragraph` prompt builders now append a compact server-side variation-angle directive (~30 tokens per call) drawn from a small bounded enum (`ABOUT_TITLE_VARIATION_HINTS` / `ABOUT_PARAGRAPH_VARIATION_HINTS`). This is About-AI-local; the `full` target prompt is unaffected. FAQ AI, SEO AI, quota/limiter logic, provider settings, temperature, and `maxOutputTokens` were not changed.
+
 ---
 
 ## 4. Frontend Architecture
@@ -594,6 +596,12 @@ These are logical next steps. No design or implementation work has been started.
 
 - **Strict validation evolution**: The current `mode`/`language` defaulting may be tightened to strict rejection if new API consumers (CLI, third-party integrations) are introduced. This would be a backend change with minimal frontend impact since the current frontend always sends valid values.
 
+### 12.2 Completed improvement (April 2026)
+
+- **About AI title/paragraph diversity (V1 — closed)**: Backend-only variation-hint mechanism added to `buildTitlePrompt` and `buildParagraphPrompt` in `gemini.service.js`. Consecutive generations for the same card now receive a randomly selected framing-angle directive. The `full` target, FAQ AI, SEO AI, quota, limiter, provider settings, and frontend request contract were not changed.
+
+    **Residual deferred tail**: A non-blocking title-quality tail remains — the anti-generic variation instruction may not be sharp enough to force visually distinct title _phrasing_ in all cases. This is explicitly deferred for a possible future micro-contour (instruction wording sharpening only, no contour expansion).
+
 ### 12.1 Optional low-priority refinements (not currently planned)
 
 Identified during token economy audit. Not required for current operational posture:
@@ -603,4 +611,4 @@ Identified during token economy audit. Not required for current operational post
 
 ---
 
-_Document created as part of the About AI workstream closure. Updated to reflect current implementation state including all three AI surfaces (About, FAQ V1, SEO), shared monthly AI budget (free=10, premium=30), unified AiQuotaHint component, and feature flags. March 2026._
+_Document created as part of the About AI workstream closure. Updated to reflect current implementation state including all three AI surfaces (About, FAQ V1, SEO), shared monthly AI budget (free=10, premium=30), unified AiQuotaHint component, and feature flags. March 2026. Updated April 2026: About AI title/paragraph diversity improvement (V1 closed) and deferred title-quality tail note added (§3.10, §12.2)._
