@@ -143,6 +143,32 @@ function buildBusinessContext({ businessName, category, slogan, language }) {
     return parts;
 }
 
+// --- About AI variation hints (About-AI-local) --------------------------------
+
+const ABOUT_TITLE_VARIATION_HINTS = [
+    "customer benefit",
+    "professional image",
+    "modern simplicity",
+    "digital presence",
+    "practical convenience",
+];
+
+const ABOUT_PARAGRAPH_VARIATION_HINTS = [
+    "customer value",
+    "trust and professionalism",
+    "convenience and speed",
+    "digital visibility",
+    "memorable positioning",
+];
+
+function pickAboutVariationHint(target) {
+    const hints =
+        target === "title"
+            ? ABOUT_TITLE_VARIATION_HINTS
+            : ABOUT_PARAGRAPH_VARIATION_HINTS;
+    return hints[Math.floor(Math.random() * hints.length)];
+}
+
 function buildFullPrompt({
     businessName,
     category,
@@ -189,6 +215,7 @@ function buildTitlePrompt({
     language,
     mode,
     existingAbout,
+    variationHint,
 }) {
     const parts = buildBusinessContext({
         businessName,
@@ -212,6 +239,14 @@ function buildTitlePrompt({
         );
     }
 
+    if (variationHint) {
+        parts.push("");
+        parts.push(`Variation angle for this version: ${variationHint}.`);
+        parts.push(
+            "Make this version noticeably different in framing, opening wording, and emphasis from a generic default output.",
+        );
+    }
+
     return parts.join("\n");
 }
 
@@ -223,6 +258,7 @@ function buildParagraphPrompt({
     mode,
     existingAbout,
     paragraphIndex,
+    variationHint,
 }) {
     const parts = buildBusinessContext({
         businessName,
@@ -260,6 +296,14 @@ function buildParagraphPrompt({
         parts.push("");
         parts.push(
             `Create a new paragraph (paragraph ${paragraphIndex + 1} of the About section) based on the business information above.`,
+        );
+    }
+
+    if (variationHint) {
+        parts.push("");
+        parts.push(`Variation angle for this version: ${variationHint}.`);
+        parts.push(
+            "Make this version noticeably different in framing, opening wording, and emphasis from a generic default output.",
         );
     }
 
@@ -394,6 +438,11 @@ export async function generateAboutSuggestion({
         },
     });
 
+    const variationHint =
+        target === "title" || target === "paragraph"
+            ? pickAboutVariationHint(target)
+            : undefined;
+
     const prompt = buildPrompt({
         businessName,
         category,
@@ -402,6 +451,7 @@ export async function generateAboutSuggestion({
         mode,
         existingAbout,
         paragraphIndex,
+        ...(variationHint !== undefined ? { variationHint } : {}),
     });
 
     // Hard timeout via AbortController.

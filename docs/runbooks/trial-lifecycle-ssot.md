@@ -271,7 +271,7 @@ On send failure the claim is released (`trialReminderClaimedAt` reset to `null`)
 - **Transport:** Mailjet v3.1 API via raw HTTPS (`api.mailjet.com/v3.1/send`).
 - **Parts:** Both `TextPart` (Hebrew plain text + pricing URL + conditional unsubscribe footer) and `HTMLPart` (branded RTL table layout, conditional logo, CTA button `#6c47ff`, conditional unsubscribe row) are sent.
 - **CTA:** `getSiteUrl() + "/pricing"` — uses `SITE_URL || PUBLIC_ORIGIN || PUBLIC_URL || "https://cardigo.co.il"` as the base.
-- **Unsubscribe footer:** A one-time tokenized unsubscribe URL is generated before each send and appended to both TextPart and HTMLPart. Neither part is sent if token generation fails (see §13.9).
+- **Unsubscribe footer:** A one-time tokenized unsubscribe URL is generated before each send. In `TextPart`, the raw URL is appended as plain text (required for plain-text email clients). In `HTMLPart`, the unsubscribe row renders as a human-readable Hebrew link (`לחצו כאן לביטול הרשמה`) with the token in the `href` only — the raw token is not exposed as visible copy. Neither part is sent if token generation fails (see §13.9).
 - **Logo:** resolved as `MAILJET_TRIAL_REMINDER_LOGO_URL` → `MAILJET_BRAND_LOGO_URL` → no logo (falls back to branded `<p>` heading, no broken image).
 - **Subject / prefix:** configurable via `MAILJET_TRIAL_REMINDER_SUBJECT` / `MAILJET_TRIAL_REMINDER_TEXT_PREFIX` with Hebrew fallbacks.
 - **firstName personalization:** `User.firstName` is fetched as part of the candidate query and passed to the Mailjet helper. If set, both TextPart and HTMLPart open with the greeting `שלום, {firstName},`; if firstName is null or empty, the fallback `שלום,` is used. The value is HTML-escaped before insertion into HTMLPart.
