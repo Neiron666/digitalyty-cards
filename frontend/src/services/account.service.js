@@ -52,3 +52,8 @@ export async function updateEmailPreferences({
     });
     return res.data;
 }
+
+export async function updateAccountName({ firstName }) {
+    const res = await api.patch("/account/name", { firstName });
+    return res.data;
+}

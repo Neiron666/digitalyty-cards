@@ -16,6 +16,7 @@ export default function SignupConsume() {
     }, [searchParams]);
 
     const [form, setForm] = useState({
+        firstName: "",
         password: "",
         confirmPassword: "",
         consent: false,
@@ -47,6 +48,16 @@ export default function SignupConsume() {
             return;
         }
 
+        if (!form.firstName.trim()) {
+            setError("שדה השם הפרטי הוא חובה");
+            return;
+        }
+
+        if (form.firstName.trim().length > 100) {
+            setError("השם הפרטי ארוך מדי (מקסימום 100 תווים)");
+            return;
+        }
+
         if (form.password !== form.confirmPassword) {
             setError("הסיסמאות לא תואמות.");
             return;
@@ -61,6 +72,7 @@ export default function SignupConsume() {
         try {
             const res = await consumeSignupToken(
                 token,
+                form.firstName,
                 form.password,
                 form.consent,
                 form.marketingConsent,
@@ -108,6 +120,15 @@ export default function SignupConsume() {
             }
         >
             <form className={styles.form} onSubmit={handleSubmit}>
+                <Input
+                    label="שם פרטי"
+                    type="text"
+                    autoComplete="given-name"
+                    value={form.firstName}
+                    onChange={(e) => update("firstName", e.target.value)}
+                    required
+                />
+
                 <Input
                     label="סיסמה"
                     type="password"

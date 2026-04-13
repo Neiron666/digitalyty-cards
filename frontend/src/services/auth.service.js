@@ -1,7 +1,19 @@
 import api from "./api";
 
-export const register = (email, password, consent, marketingConsent = false) =>
-    api.post("/auth/register", { email, password, consent, marketingConsent });
+export const register = (
+    email,
+    firstName,
+    password,
+    consent,
+    marketingConsent = false,
+) =>
+    api.post("/auth/register", {
+        email,
+        firstName,
+        password,
+        consent,
+        marketingConsent,
+    });
 
 export const login = (email, password) =>
     api.post("/auth/login", { email, password });
@@ -27,12 +39,14 @@ export const requestSignupLink = (email) =>
 
 export const consumeSignupToken = (
     token,
+    firstName,
     password,
     consent,
     marketingConsent = false,
 ) =>
     api.post("/auth/signup-consume", {
         token,
+        firstName,
         password,
         consent,
         marketingConsent,

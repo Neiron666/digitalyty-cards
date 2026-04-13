@@ -119,7 +119,7 @@ async function reminderOnce() {
                 { trialReminderClaimedAt: { $lte: staleBefore } },
             ],
         })
-            .select("_id email trialEndsAt")
+            .select("_id email trialEndsAt firstName")
             .lean();
 
         let sentCount = 0;
@@ -241,6 +241,7 @@ async function reminderOnce() {
             const result = await sendTrialReminderEmailMailjetBestEffort({
                 toEmail: candidate.email,
                 trialEndsAt: candidate.trialEndsAt,
+                firstName: candidate.firstName ?? null,
                 pricingUrl,
                 unsubscribeUrl,
                 userId: String(candidate._id),

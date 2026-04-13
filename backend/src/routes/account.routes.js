@@ -40,6 +40,10 @@ const EMAIL_PREF_WINDOW_MS = 10 * 60 * 1000;
 const EMAIL_PREF_LIMIT = 20;
 const emailPrefRateMap = new Map();
 
+const NAME_UPDATE_WINDOW_MS = 10 * 60 * 1000;
+const NAME_UPDATE_LIMIT = 10;
+const nameUpdateRateMap = new Map();
+
 let accountSweepTick = 0;
 const SWEEP_EVERY = 200;
 
@@ -76,6 +80,7 @@ function rateLimitByIpForMap(req, map, limit, windowMs) {
         sweepRateMap(changePwRateMap, now);
         sweepRateMap(deleteAcctRateMap, now);
         sweepRateMap(emailPrefRateMap, now);
+        sweepRateMap(nameUpdateRateMap, now);
     }
 
     const entry = map.get(ip);
@@ -99,7 +104,7 @@ router.get("/me", requireAuth, async (req, res) => {
 
         const user = await User.findById(userId)
             .select(
-                "email role plan subscription createdAt emailMarketingConsent emailMarketingConsentAt emailMarketingConsentVersion emailMarketingConsentSource",
+                "firstName email role plan subscription createdAt emailMarketingConsent emailMarketingConsentAt emailMarketingConsentVersion emailMarketingConsentSource",
             )
             .lean();
 
@@ -148,6 +153,7 @@ router.get("/me", requireAuth, async (req, res) => {
         const sub = user.subscription || {};
 
         return res.json({
+            firstName: user.firstName ?? null,
             email: user.email,
             role: user.role,
             plan: user.plan || "free",
@@ -277,6 +283,57 @@ router.patch("/email-preferences", requireAuth, async (req, res) => {
             "[account] PATCH /email-preferences failed",
             err?.message || err,
         );
+        return res.status(500).json({ message: "Internal error" });
+    }
+});
+
+/**
+ * PATCH /api/account/name
+ * Update the authenticated user's first name.
+ * 200 { firstName } on success.
+ * 400 on validation failure.
+ * 429 on rate limit.
+ */
+router.patch("/name", requireAuth, async (req, res) => {
+    try {
+        if (
+            !rateLimitByIpForMap(
+                req,
+                nameUpdateRateMap,
+                NAME_UPDATE_LIMIT,
+                NAME_UPDATE_WINDOW_MS,
+            )
+        ) {
+            return res
+                .status(429)
+                .json({ code: "RATE_LIMITED", message: "Too many requests" });
+        }
+
+        const rawFirstName = req.body?.firstName;
+        if (typeof rawFirstName !== "string") {
+            return res.status(400).json({ message: "Invalid first name" });
+        }
+        const firstName = rawFirstName.trim();
+        if (!firstName) {
+            return res.status(400).json({ message: "First name is required" });
+        }
+        if (firstName.length > 100) {
+            return res.status(400).json({ message: "First name too long" });
+        }
+
+        const updated = await User.findByIdAndUpdate(
+            req.userId,
+            { $set: { firstName } },
+            { new: true, select: "firstName" },
+        );
+
+        if (!updated) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        return res.json({ firstName: updated.firstName });
+    } catch (err) {
+        console.error("[account] PATCH /name failed", err?.message || err);
         return res.status(500).json({ message: "Internal error" });
     }
 });

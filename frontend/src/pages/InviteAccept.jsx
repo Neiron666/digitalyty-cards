@@ -17,6 +17,7 @@ function InviteAccept() {
         return String(params.get("token") || "").trim();
     }, [location?.search]);
 
+    const [firstName, setFirstName] = useState("");
     const [password, setPassword] = useState("");
     const [consent, setConsent] = useState(false);
     const [marketingConsent, setMarketingConsent] = useState(false);
@@ -49,6 +50,17 @@ function InviteAccept() {
 
         const isLoggedIn = isAuthenticated;
 
+        // New-user flow requires firstName.
+        if (!isLoggedIn && !firstName.trim()) {
+            setError("שדה השם הפרטי הוא חובה");
+            return;
+        }
+
+        if (!isLoggedIn && firstName.trim().length > 100) {
+            setError("השם הפרטי ארוך מדי (מקסימום 100 תווים)");
+            return;
+        }
+
         // New-user flow requires a password. Existing-user flow requires login.
         if (!isLoggedIn && !password) {
             setError("הזינו סיסמא ליצירת חשבון חדש");
@@ -65,7 +77,14 @@ function InviteAccept() {
         try {
             const payload = {
                 token,
-                ...(isNewUser ? { password, consent, marketingConsent } : null),
+                ...(isNewUser
+                    ? {
+                          firstName: firstName.trim(),
+                          password,
+                          consent,
+                          marketingConsent,
+                      }
+                    : null),
             };
             const res = await api.post("/invites/accept", payload);
             const orgSlug = String(res?.data?.orgSlug || "").trim();
@@ -107,6 +126,17 @@ function InviteAccept() {
             subtitle="אם יש לכם כבר חשבון, התחברו. אם לא — הגדירו סיסמא ליצירת חשבון."
         >
             <form onSubmit={handleSubmit}>
+                {isNewUser && (
+                    <Input
+                        label="שם פרטי"
+                        type="text"
+                        autoComplete="given-name"
+                        value={firstName}
+                        onChange={(e) => setFirstName(e.target.value)}
+                        required
+                    />
+                )}
+
                 <Input
                     label="סיסמא (רק לחשבון חדש)"
                     type="password"

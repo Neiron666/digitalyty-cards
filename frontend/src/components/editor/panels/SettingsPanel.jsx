@@ -8,6 +8,7 @@ import {
     changePassword,
     deleteAccount,
     updateEmailPreferences,
+    updateAccountName,
 } from "../../../services/account.service";
 import { createPayment } from "../../../services/payment.service";
 import styles from "./SettingsPanel.module.css";
@@ -52,6 +53,11 @@ export default function SettingsPanel({
 
     const [mktBusy, setMktBusy] = useState(false);
     const [mktError, setMktError] = useState("");
+
+    const [nameDraft, setNameDraft] = useState("");
+    const [nameBusy, setNameBusy] = useState(false);
+    const [nameError, setNameError] = useState("");
+    const [nameOk, setNameOk] = useState("");
 
     const [delCardConfirm, setDelCardConfirm] = useState("");
 
@@ -184,6 +190,12 @@ export default function SettingsPanel({
         setSlugOk("");
     }, [slug]);
 
+    useEffect(() => {
+        setNameDraft(String(account?.firstName || ""));
+        setNameError("");
+        setNameOk("");
+    }, [account?.firstName]);
+
     const canEditSlug = useMemo(() => {
         return (
             isAuthenticated &&
@@ -242,6 +254,38 @@ export default function SettingsPanel({
             setSlugError(mapSlugError(err));
         } finally {
             setSlugBusy(false);
+        }
+    }
+
+    async function handleNameSave() {
+        const next = nameDraft.trim();
+        if (!next) {
+            setNameError("שדה השם הפרטי הוא חובה");
+            return;
+        }
+        if (next.length > 100) {
+            setNameError("השם הפרטי ארוך מדי (מקסימום 100 תווים)");
+            return;
+        }
+        setNameBusy(true);
+        setNameError("");
+        setNameOk("");
+        try {
+            const data = await updateAccountName({ firstName: next });
+            setAccount((prev) => ({
+                ...prev,
+                firstName: data?.firstName ?? next,
+            }));
+            setNameOk("השם עודכן.");
+        } catch (err) {
+            const status = err?.response?.status;
+            if (status === 429) {
+                setNameError("יותר מדי ניסיונות, נסה שוב מאוחר יותר.");
+            } else {
+                setNameError("לא הצלחנו לעדכן את השם.");
+            }
+        } finally {
+            setNameBusy(false);
         }
     }
 
@@ -577,6 +621,43 @@ export default function SettingsPanel({
 
                             {account && !accountLoading && (
                                 <div className={styles.accountFields}>
+                                    <Input
+                                        label="שם פרטי"
+                                        type="text"
+                                        autoComplete="given-name"
+                                        value={nameDraft}
+                                        onChange={(e) => {
+                                            setNameDraft(e.target.value);
+                                            setNameError("");
+                                            setNameOk("");
+                                        }}
+                                        error={nameError}
+                                        disabled={nameBusy}
+                                    />
+                                    {nameOk && (
+                                        <div className={styles.slugOk}>
+                                            {nameOk}
+                                        </div>
+                                    )}
+                                    <div className={styles.slugActions}>
+                                        <Button
+                                            variant="secondary"
+                                            loading={nameBusy}
+                                            disabled={
+                                                nameBusy ||
+                                                !nameDraft.trim() ||
+                                                nameDraft.trim() ===
+                                                    String(
+                                                        account?.firstName ||
+                                                            "",
+                                                    )
+                                            }
+                                            onClick={handleNameSave}
+                                        >
+                                            שמירה
+                                        </Button>
+                                    </div>
+
                                     <div className={styles.accountRow}>
                                         <span className={styles.accountLabel}>
                                             אימייל
@@ -852,7 +933,7 @@ export default function SettingsPanel({
                                     <span className={styles.commPrefInfo}>
                                         <span>
                                             קבלת תזכורות ועדכונים רלוונטיים
-                                            מ-Cardigo על הניסיון והפרימיום
+                                            מ-Cardigo בדוא"ל
                                         </span>
                                         <span className={styles.commPrefHint}>
                                             ניתן לשנות בכל עת

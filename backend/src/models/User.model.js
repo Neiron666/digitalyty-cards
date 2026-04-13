@@ -14,6 +14,10 @@ const UserSchema = new mongoose.Schema(
         // Email verification status: false until user clicks verification link.
         isVerified: { type: Boolean, default: false },
 
+        // User's first name. Optional at schema level; required at input-validation
+        // layer for all new-account creation flows. Null for existing users.
+        firstName: { type: String, trim: true, default: null },
+
         role: {
             type: String,
             enum: ["user", "admin"],

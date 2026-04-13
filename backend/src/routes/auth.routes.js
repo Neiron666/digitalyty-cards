@@ -208,6 +208,19 @@ router.post("/register", async (req, res) => {
             .json({ message: "Invalid request", code: "CONSENT_REQUIRED" });
     }
 
+    // ── First name enforcement ──
+    const rawFirstName = req.body?.firstName;
+    if (typeof rawFirstName !== "string") {
+        return res.status(400).json({ message: "First name is required" });
+    }
+    const firstName = rawFirstName.trim();
+    if (!firstName) {
+        return res.status(400).json({ message: "First name is required" });
+    }
+    if (firstName.length > 100) {
+        return res.status(400).json({ message: "First name too long" });
+    }
+
     // Blocked-email guard: permanently deleted accounts cannot re-register.
     if (await isEmailBlocked(email)) {
         return res.status(409).json({ message: "Unable to register" });
@@ -235,6 +248,7 @@ router.post("/register", async (req, res) => {
         user = await User.create({
             email,
             passwordHash,
+            firstName,
             termsAcceptedAt: now,
             privacyAcceptedAt: now,
             termsVersion: CURRENT_TERMS_VERSION,
@@ -685,6 +699,19 @@ router.post("/signup-consume", async (req, res) => {
             return fail();
         }
 
+        // ── First name enforcement ──
+        const rawFirstNameConsume = req.body?.firstName;
+        if (
+            typeof rawFirstNameConsume !== "string" ||
+            !rawFirstNameConsume.trim()
+        ) {
+            return fail();
+        }
+        const firstName = rawFirstNameConsume.trim();
+        if (firstName.length > 100) {
+            return fail();
+        }
+
         // Blocked-email guard: permanently deleted accounts cannot re-register.
         if (await isEmailBlocked(emailNormalized)) {
             return fail();
@@ -704,6 +731,7 @@ router.post("/signup-consume", async (req, res) => {
             user = await User.create({
                 email: emailNormalized,
                 passwordHash,
+                firstName,
                 isVerified: true, // Magic link already proves email ownership.
                 termsAcceptedAt: consentNow,
                 privacyAcceptedAt: consentNow,

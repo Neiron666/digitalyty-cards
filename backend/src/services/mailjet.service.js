@@ -462,6 +462,7 @@ export async function sendVerificationEmailMailjetBestEffort({
 export async function sendTrialReminderEmailMailjetBestEffort({
     toEmail,
     trialEndsAt,
+    firstName = null,
     pricingUrl,
     unsubscribeUrl = "",
     userId,
@@ -484,7 +485,26 @@ export async function sendTrialReminderEmailMailjetBestEffort({
     // --- Text part -----------------------------------------------------------
     const subject = cfg.trialReminderSubject;
     const prefix = cfg.trialReminderTextPrefix;
+    const trimmedFirstName =
+        typeof firstName === "string" ? firstName.trim() : "";
+    const greeting = trimmedFirstName ? `שלום, ${trimmedFirstName},` : "שלום,";
+
+    // --- HTML output safety --------------------------------------------------
+    // Escape user-controlled firstName before inserting into HTMLPart.
+    // TextPart uses the unescaped greeting (plain text, no risk).
+    const escapeHtmlAttr = (str) =>
+        str
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#39;");
+    const greetingHtml = trimmedFirstName
+        ? `שלום, ${escapeHtmlAttr(trimmedFirstName)},`
+        : "שלום,";
     const text = [
+        greeting,
+        "",
         prefix,
         "",
         "כדי לשמור על הגישה לכל תכונות הפרימיום, שדרגו את התוכנית שלכם:",
@@ -513,6 +533,9 @@ export async function sendTrialReminderEmailMailjetBestEffort({
         <table role="presentation" width="100%" style="max-width:520px;background-color:#ffffff;border-radius:8px;padding:40px 32px;">
           <tr><td style="text-align:center;padding-bottom:8px;">
             ${logoBlock}
+          </td></tr>
+          <tr><td style="padding-bottom:16px;">
+            <p style="margin:0;font-size:16px;font-weight:bold;color:#1a1a1a;text-align:right;">${greetingHtml}</p>
           </td></tr>
           <tr><td style="padding-bottom:16px;">
             <h1 style="margin:0;font-size:22px;font-weight:bold;color:#1a1a1a;text-align:center;">${subject}</h1>

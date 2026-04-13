@@ -138,6 +138,15 @@ router.post("/accept", optionalAuth, async (req, res) => {
         return notFound(res);
     }
 
+    // Enterprise first-name requirement for new-user creation via invite.
+    const inviteFirstName =
+        typeof req.body?.firstName === "string"
+            ? req.body.firstName.trim()
+            : "";
+    if (!user && (!inviteFirstName || inviteFirstName.length > 100)) {
+        return notFound(res);
+    }
+
     // Claim invite (single-use): only after the preflight checks.
     const invite = await OrgInvite.findOneAndUpdate(
         {
@@ -169,6 +178,7 @@ router.post("/accept", optionalAuth, async (req, res) => {
             user = await User.create({
                 email,
                 passwordHash,
+                firstName: inviteFirstName,
                 isVerified: true,
                 termsAcceptedAt: consentNow,
                 privacyAcceptedAt: consentNow,

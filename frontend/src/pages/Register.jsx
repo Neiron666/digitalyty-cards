@@ -12,6 +12,7 @@ const PASSWORD_MIN_LENGTH = 8;
 
 function Register() {
     const [form, setForm] = useState({
+        firstName: "",
         email: "",
         password: "",
         confirmPassword: "",
@@ -22,6 +23,7 @@ function Register() {
     const [loading, setLoading] = useState(false);
     const [registered, setRegistered] = useState(false);
     const [fieldErrors, setFieldErrors] = useState({
+        firstName: "",
         email: "",
         password: "",
         confirmPassword: "",
@@ -36,11 +38,17 @@ function Register() {
 
     function validate() {
         const errs = {
+            firstName: "",
             email: "",
             password: "",
             confirmPassword: "",
             consent: "",
         };
+        if (!form.firstName.trim()) {
+            errs.firstName = "שדה השם הפרטי הוא חובה";
+        } else if (form.firstName.trim().length > 100) {
+            errs.firstName = "השם הפרטי ארוך מדי (מקסימום 100 תווים)";
+        }
         if (!form.email.trim()) {
             errs.email = "שדה האימייל הוא חובה";
         } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) {
@@ -66,6 +74,7 @@ function Register() {
         e.preventDefault();
         const errs = validate();
         if (
+            errs.firstName ||
             errs.email ||
             errs.password ||
             errs.confirmPassword ||
@@ -79,6 +88,7 @@ function Register() {
         try {
             await registerUser(
                 form.email,
+                form.firstName,
                 form.password,
                 form.consent,
                 form.emailMarketingConsent,
@@ -135,6 +145,16 @@ function Register() {
             }
         >
             <form onSubmit={handleSubmit} noValidate>
+                <Input
+                    label="שם פרטי"
+                    type="text"
+                    autoComplete="given-name"
+                    value={form.firstName}
+                    onChange={(e) => update("firstName", e.target.value)}
+                    required
+                    error={fieldErrors.firstName}
+                />
+
                 <Input
                     label="אימייל"
                     type="email"
