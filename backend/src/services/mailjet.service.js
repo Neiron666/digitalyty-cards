@@ -553,16 +553,13 @@ export async function sendTrialReminderEmailMailjetBestEffort({
           <tr><td style="text-align:center;padding-bottom:24px;">
             <a href="${pricingUrl}" style="display:inline-block;padding:14px 32px;background-color:#6c47ff;color:#ffffff;font-size:16px;font-weight:bold;text-decoration:none;border-radius:6px;">עברו לפרימיום</a>
           </td></tr>
-          <tr><td style="text-align:center;padding-bottom:16px;">
-            <p style="margin:0;font-size:13px;color:#888888;">או פתחו את הקישור: <a href="${pricingUrl}" style="color:#6c47ff;">${pricingUrl}</a></p>
-          </td></tr>
           <tr><td style="border-top:1px solid #e5e7eb;padding-top:16px;text-align:center;">
             <p style="margin:0;font-size:12px;color:#aaaaaa;">צוות Cardigo</p>
           </td></tr>
           ${
               unsubscribeUrl
                   ? `<tr><td style="padding-top:12px;text-align:center;">
-            <p style="margin:0;font-size:11px;color:#bbbbbb;">לביטול הרשמה לקבלת עדכונים: <a href="${unsubscribeUrl}" style="color:#aaaaaa;">${unsubscribeUrl}</a></p>
+            <p style="margin:0;font-size:11px;color:#bbbbbb;">לביטול הרשמה לקבלת עדכונים: <a href="${unsubscribeUrl}" style="color:#aaaaaa;">לחצו כאן לביטול הרשמה</a></p>
           </td></tr>`
                   : ""
           }
