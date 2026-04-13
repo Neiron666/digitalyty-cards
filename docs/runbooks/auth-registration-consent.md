@@ -18,9 +18,9 @@ Consent-bearing flows:
 
 All three consent-bearing flows follow the same truth chain:
 
-1. **UI:** A required consent checkbox linking to `/privacy` and `/terms`.
-2. **Payload:** `consent: true` is included in the request body.
-3. **Backend:** enforces `consent === true` (strict boolean). Rejection behavior per flow:
+1. **UI:** A required `firstName` field (given name) and a required consent checkbox linking to `/privacy` and `/terms`.
+2. **Payload:** `firstName` (non-empty string, max 100 chars) and `consent: true` are both required in the request body.
+3. **Backend:** enforces `firstName` non-empty (max 100 chars) and `consent === true` (strict boolean). Rejection behavior per flow:
     - `/register` → `400 { code: "CONSENT_REQUIRED" }`
     - `/signup-consume` → neutral `400` (anti-enumeration)
     - `/invites/accept` (new-user) → `404` (anti-enumeration)
@@ -71,7 +71,7 @@ Run from the repo root (PowerShell + `curl.exe`).
 ```powershell
 curl.exe -s -X POST http://localhost:5000/api/auth/register `
   -H "Content-Type: application/json" `
-  -d '{"email":"smoke1@example.com","password":"Test1234!"}'
+  -d '{"email":"smoke1@example.com","firstName":"Test","password":"Test1234!"}'
 # expect: 400 { "code": "CONSENT_REQUIRED" }
 ```
 
@@ -80,7 +80,7 @@ curl.exe -s -X POST http://localhost:5000/api/auth/register `
 ```powershell
 curl.exe -s -X POST http://localhost:5000/api/auth/register `
   -H "Content-Type: application/json" `
-  -d '{"email":"smoke2@example.com","password":"Test1234!","consent":false}'
+  -d '{"email":"smoke2@example.com","firstName":"Test","password":"Test1234!","consent":false}'
 # expect: 400 { "code": "CONSENT_REQUIRED" }
 ```
 
@@ -89,7 +89,7 @@ curl.exe -s -X POST http://localhost:5000/api/auth/register `
 ```powershell
 curl.exe -s -X POST http://localhost:5000/api/auth/register `
   -H "Content-Type: application/json" `
-  -d '{"email":"smoke3@example.com","password":"Test1234!","consent":"true"}'
+  -d '{"email":"smoke3@example.com","firstName":"Test","password":"Test1234!","consent":"true"}'
 # expect: 400 { "code": "CONSENT_REQUIRED" }
 ```
 
@@ -98,7 +98,7 @@ curl.exe -s -X POST http://localhost:5000/api/auth/register `
 ```powershell
 curl.exe -s -X POST http://localhost:5000/api/auth/register `
   -H "Content-Type: application/json" `
-  -d '{"email":"smoke4@example.com","password":"Test1234!","consent":true}'
+  -d '{"email":"smoke4@example.com","firstName":"Test","password":"Test1234!","consent":true}'
 # expect: 200 { "registered": true, "isVerified": false }
 # No auth cookie is set - user must verify email first.
 ```
@@ -119,18 +119,18 @@ After test 4, verify the User document in MongoDB contains `termsAcceptedAt`, `p
 
 ## Related Files
 
-| File                                          | Role                                            |
-| --------------------------------------------- | ----------------------------------------------- |
-| `frontend/src/pages/Register.jsx`             | Consent checkbox UI (register)                  |
-| `frontend/src/pages/Register.module.css`      | Consent row styles (register)                   |
-| `frontend/src/pages/SignupConsume.jsx`        | Consent checkbox UI (signup-consume)            |
-| `frontend/src/pages/SignupConsume.module.css` | Consent row styles (signup-consume)             |
-| `frontend/src/pages/InviteAccept.jsx`         | Consent checkbox UI (invite-accept, new-user)   |
-| `frontend/src/pages/InviteAccept.module.css`  | Consent row styles (invite-accept)              |
-| `frontend/src/services/auth.service.js`       | Sends `consent` param to backend                |
-| `backend/src/routes/auth.routes.js`           | Consent enforcement (register + signup-consume) |
-| `backend/src/routes/invites.routes.js`        | Consent enforcement (invite-accept new-user)    |
-| `backend/src/models/User.model.js`            | Consent fields on User schema                   |
-| `backend/src/utils/consentVersions.js`        | Version SSoT constants                          |
-| `frontend/src/pages/Privacy.jsx`              | Privacy policy page                             |
-| `frontend/src/pages/Terms.jsx`                | Terms of use page                               |
+| File                                          | Role                                              |
+| --------------------------------------------- | ------------------------------------------------- |
+| `frontend/src/pages/Register.jsx`             | Consent checkbox UI (register)                    |
+| `frontend/src/pages/Register.module.css`      | Consent row styles (register)                     |
+| `frontend/src/pages/SignupConsume.jsx`        | Consent checkbox UI (signup-consume)              |
+| `frontend/src/pages/SignupConsume.module.css` | Consent row styles (signup-consume)               |
+| `frontend/src/pages/InviteAccept.jsx`         | Consent checkbox UI (invite-accept, new-user)     |
+| `frontend/src/pages/InviteAccept.module.css`  | Consent row styles (invite-accept)                |
+| `frontend/src/services/auth.service.js`       | Sends `firstName` and `consent` params to backend |
+| `backend/src/routes/auth.routes.js`           | Consent enforcement (register + signup-consume)   |
+| `backend/src/routes/invites.routes.js`        | Consent enforcement (invite-accept new-user)      |
+| `backend/src/models/User.model.js`            | Consent fields on User schema                     |
+| `backend/src/utils/consentVersions.js`        | Version SSoT constants                            |
+| `frontend/src/pages/Privacy.jsx`              | Privacy policy page                               |
+| `frontend/src/pages/Terms.jsx`                | Terms of use page                                 |

@@ -274,6 +274,7 @@ On send failure the claim is released (`trialReminderClaimedAt` reset to `null`)
 - **Unsubscribe footer:** A one-time tokenized unsubscribe URL is generated before each send and appended to both TextPart and HTMLPart. Neither part is sent if token generation fails (see §13.9).
 - **Logo:** resolved as `MAILJET_TRIAL_REMINDER_LOGO_URL` → `MAILJET_BRAND_LOGO_URL` → no logo (falls back to branded `<p>` heading, no broken image).
 - **Subject / prefix:** configurable via `MAILJET_TRIAL_REMINDER_SUBJECT` / `MAILJET_TRIAL_REMINDER_TEXT_PREFIX` with Hebrew fallbacks.
+- **firstName personalization:** `User.firstName` is fetched as part of the candidate query and passed to the Mailjet helper. If set, both TextPart and HTMLPart open with the greeting `שלום, {firstName},`; if firstName is null or empty, the fallback `שלום,` is used. The value is HTML-escaped before insertion into HTMLPart.
 - **When Mailjet is not configured:** returns `{ ok: true, skipped: true }` — claim is silently released, no error logged (dev-env behavior).
 
 ---
@@ -361,6 +362,11 @@ All vars are optional — all have in-code defaults. `TRIAL_REMINDER_ENABLED` de
 - [x] Governed indexes confirmed live: `trialReminderSentAt_1_trialEndsAt_1` on users, `tokenHash_1` (unique) + `emailNormalized_1` + `expiresAt_1` + `usedAt_1` on emailunsubscribetokens, `emailKey_1` (unique) on marketingoptouts.
 - [x] Frontend gates (check:inline-styles, check:skins, check:contract) EXIT 0.
 - [x] `sanity:imports` EXIT 0.
+
+**firstName personalization — verify on next reminder smoke run (`TRIAL_REMINDER_ENABLED=true`):**
+
+- [ ] Email greeting shows `שלום, {firstName},` when user has a non-empty firstName.
+- [ ] Email greeting falls back to `שלום,` when user firstName is null or empty.
 
 ---
 

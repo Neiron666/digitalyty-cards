@@ -660,7 +660,7 @@ export default function SettingsPanel({
 
                                     <div className={styles.accountRow}>
                                         <span className={styles.accountLabel}>
-                                            אימייל
+                                            אימייל:
                                         </span>
                                         <span
                                             className={styles.accountValue}
@@ -675,7 +675,7 @@ export default function SettingsPanel({
                                             <span
                                                 className={styles.accountLabel}
                                             >
-                                                ארגונים
+                                                ארגונים:
                                             </span>
                                             <ul className={styles.orgList}>
                                                 {account.orgMemberships.map(
@@ -751,7 +751,7 @@ export default function SettingsPanel({
                                                         styles.billingLabel
                                                     }
                                                 >
-                                                    תוכנית
+                                                    תוכנית:
                                                 </span>
                                                 <span
                                                     className={
@@ -772,7 +772,7 @@ export default function SettingsPanel({
                                                         styles.billingLabel
                                                     }
                                                 >
-                                                    סטטוס מנוי
+                                                    סטטוס מנוי:
                                                 </span>
                                                 <span
                                                     className={
@@ -796,7 +796,7 @@ export default function SettingsPanel({
                                                         styles.billingLabel
                                                     }
                                                 >
-                                                    בתוקף עד
+                                                    בתוקף עד:
                                                 </span>
                                                 <span
                                                     className={
@@ -815,7 +815,7 @@ export default function SettingsPanel({
                                                         styles.billingLabel
                                                     }
                                                 >
-                                                    ספק תשלום
+                                                    ספק תשלום:
                                                 </span>
                                                 <span
                                                     className={

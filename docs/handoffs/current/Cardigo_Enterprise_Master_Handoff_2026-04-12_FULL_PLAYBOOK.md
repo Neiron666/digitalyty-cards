@@ -686,6 +686,20 @@ Vite build ругался на oversized entry chunk:
 
 ---
 
+### 8.5 firstName contour — CLOSED
+
+- `User.firstName` — canonical flat nullable field on User schema (optional at schema level; required at input-validation layer for all new-account creation paths; null for existing users).
+- Required on all three creation flows: `POST /api/auth/register`, `POST /api/auth/signup-consume`, `POST /api/invites/accept` (new-user branch). Backend enforces non-empty string, max 100 chars on all three.
+- Editable in SettingsPanel via `PATCH /api/account/name` (auth-required, rate-limited in-memory).
+- Premium trial reminder email fetches `firstName` from User and passes it to the Mailjet helper. Greeting is personalized (`שלום, {firstName},`) when set; falls back to generic `שלום,` when null/empty. Value is HTML-escaped before HTMLPart insertion.
+- Public `Privacy.jsx` updated: section 2.1 corrected (firstName described as mandatory, account-management / service-personalization purpose, editability disclosed); section 7.4 added (consent-gated lifecycle reminder emails disclosed, firstName personalization disclosed, unsubscribe right preserved).
+- `CURRENT_PRIVACY_VERSION` bumped to `"2026-04-13"` atomically with Privacy.jsx text update.
+- `docs/runbooks/auth-registration-consent.md` updated: "How It Works" steps 1–3, smoke test payloads 1–4, and auth.service.js related-files row all reflect firstName-required truth.
+- `docs/runbooks/trial-lifecycle-ssot.md §13.4` updated: firstName personalization and null-safe fallback documented in email delivery shape; §13.8 firstName smoke items added.
+- Contour fully closed. No further implementation needed.
+
+---
+
 ## 9) Что сейчас считается свежей актуальной truth по последним workstream-ам
 
 ### Admin
@@ -708,6 +722,15 @@ Vite build ругался на oversized entry chunk:
 - explicit vendor chunk extracted
 - pre-existing 500 kB Vite warning fully resolved
 - current bundle state accepted
+
+### firstName / account / privacy
+
+- `User.firstName` required on all new-account creation paths (register, signup-consume, invite-accept new-user branch)
+- editable in SettingsPanel via `PATCH /api/account/name`
+- used for personalization in premium trial reminder email (null-safe fallback)
+- `Privacy.jsx` sections 2.1 and 7.4 updated
+- `CURRENT_PRIVACY_VERSION = "2026-04-13"`
+- `auth-registration-consent.md` runbook accurate and current
 
 ---
 
@@ -854,6 +877,7 @@ Copilot Agent — исполнитель, не архитектор.
   - explicit vendor manualChunks extraction
   - 500 kB Vite warning resolved
   - premium trial reminder contour (technically implemented; compliance contour closed 2026-04-12; rollout deliberately gated off — see §16)
+  - firstName contour — required on all creation paths; editable in settings; reminder personalization with null-safe fallback; Privacy.jsx updated; CURRENT_PRIVACY_VERSION = "2026-04-13"; auth-registration-consent.md updated
 ```
 
 ---
@@ -944,6 +968,7 @@ Cardigo — зрелый Israel-first SaaS для цифровых визито�
 - explicit vendor manualChunks extraction
 - 500k Vite warning gone
 - **premium trial reminder contour — technically implemented, smoke-tested, compliance contour closed, rollout gated off** (see §16)
+- **firstName contour — fully closed** (required on all creation paths; editable in settings; reminder personalization with null-safe fallback; Privacy.jsx updated; CURRENT_PRIVACY_VERSION = "2026-04-13"; auth-registration-consent.md updated)
 
 ### Что нельзя ломать
 
