@@ -384,6 +384,17 @@ router.post("/login", async (req, res) => {
     }
 
     const loginToken = signToken(user._id);
+    try {
+        await User.updateOne(
+            { _id: user._id },
+            { $set: { lastLoginAt: new Date() } },
+        );
+    } catch (stampErr) {
+        console.warn(
+            "[auth] lastLoginAt stamp failed (login)",
+            stampErr?.message || stampErr,
+        );
+    }
     res.cookie(AUTH_COOKIE_NAME, loginToken, AUTH_COOKIE_OPTIONS);
     res.json({ ok: true });
 });
@@ -755,6 +766,17 @@ router.post("/signup-consume", async (req, res) => {
         }
 
         const consumeToken = signToken(user._id);
+        try {
+            await User.updateOne(
+                { _id: user._id },
+                { $set: { lastLoginAt: new Date() } },
+            );
+        } catch (stampErr) {
+            console.warn(
+                "[auth] lastLoginAt stamp failed (signup-consume)",
+                stampErr?.message || stampErr,
+            );
+        }
         res.cookie(AUTH_COOKIE_NAME, consumeToken, AUTH_COOKIE_OPTIONS);
         return res.json({ ok: true });
     } catch (err) {

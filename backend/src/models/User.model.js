@@ -78,6 +78,12 @@ const UserSchema = new mongoose.Schema(
         // Null means no password event has occurred - all existing tokens are treated as fresh.
         passwordChangedAt: { type: Date, default: null },
 
+        // Auth-activity signal for retention/inactivity policy.
+        // Stamped on every successful credential issuance (login, signup-consume, invite-accept).
+        // NOT used in auth validation. NOT used for token freshness. Signal only.
+        // Null = user predates this field or has not logged in since rollout.
+        lastLoginAt: { type: Date, default: null },
+
         // --- User-premium-trial lifecycle (Foundation Batch) ---
         // When the 10-day premium trial was actually activated (first card creation).
         // One-time stamp, never resets. Null = trial never started.

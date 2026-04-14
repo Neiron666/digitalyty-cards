@@ -246,6 +246,17 @@ router.post("/accept", optionalAuth, async (req, res) => {
     }
 
     const acceptToken = signToken(user._id);
+    try {
+        await User.updateOne(
+            { _id: user._id },
+            { $set: { lastLoginAt: new Date() } },
+        );
+    } catch (stampErr) {
+        console.warn(
+            "[invites] lastLoginAt stamp failed (accept)",
+            stampErr?.message || stampErr,
+        );
+    }
     res.cookie(AUTH_COOKIE_NAME, acceptToken, AUTH_COOKIE_OPTIONS);
     return res.json({
         ok: true,

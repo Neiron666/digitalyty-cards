@@ -18,6 +18,8 @@
         "migrate:user-auth-indexes": "node scripts/migrate-user-auth-indexes.mjs",
         "migrate:active-password-reset-indexes": "node scripts/migrate-active-password-reset-indexes.mjs",
         "migrate:email-marketing-indexes": "node scripts/migrate-email-marketing-indexes.mjs",
+        "migrate:user-lastloginat:dry-run": "node scripts/migrate-user-lastloginat-index.mjs",
+        "migrate:user-lastloginat:apply": "node scripts/migrate-user-lastloginat-index.mjs --apply --i-understand-index-downtime",
         "sanity:ownership-consistency": "node scripts/sanity-ownership-consistency.mjs",
         "sanity:slug-policy": "node scripts/sanity-slug-policy.mjs",
         "sanity:org-membership": "node scripts/sanity-org-membership.mjs",
