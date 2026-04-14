@@ -17,6 +17,7 @@ import Cards from "../pages/Cards";
 import Privacy from "../pages/Privacy";
 import Terms from "../pages/Terms";
 import Accessibility from "../pages/Accessibility";
+import PaymentPolicy from "../pages/PaymentPolicy";
 
 // auth
 const Login = lazy(() => import("../pages/Login"));
@@ -100,6 +101,7 @@ const router = createBrowserRouter([
             { path: "privacy", element: <Privacy /> },
             { path: "terms", element: <Terms /> },
             { path: "accessibility-statement", element: <Accessibility /> },
+            { path: "payment-policy", element: <PaymentPolicy /> },
 
             // auth
             {

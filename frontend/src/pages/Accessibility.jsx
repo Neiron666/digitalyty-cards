@@ -148,15 +148,15 @@ export default function Accessibility() {
                         <p>- האם נעשה שימוש בטכנולוגיה מסייעת כלשהי.</p>
                         <p>
                             ניתן לפנות אלינו בדוא״ל:{" "}
-                            <a href="mailto:cardigo.app@gmail.com">
-                                cardigo.app@gmail.com
+                            <a href="mailto:support@cardigo.co.il">
+                                support@cardigo.co.il
                             </a>
                         </p>
                         <p>
                             אנו נעשה מאמץ לטפל בפניות בנושא נגישות באופן ענייני,
                             מקצועי ובזמן סביר.
                         </p>
-                        <p>תאריך עדכון אחרון: 29.03.2026</p>
+                        <p>תאריך עדכון אחרון: 14.04.2026</p>
                     </div>
                 </div>
             </section>

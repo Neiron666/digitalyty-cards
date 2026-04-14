@@ -11,7 +11,7 @@ import pub from "../styles/public-sections.module.css";
 import styles from "./Contact.module.css";
 
 const ORIGIN = import.meta.env.VITE_PUBLIC_ORIGIN || "https://cardigo.co.il";
-const EMAIL = "cardigo.app@gmail.com";
+const EMAIL = "support@cardigo.co.il";
 const PHONE_DISPLAY = "054-581-1900";
 const PHONE_TEL = "tel:+972545811900";
 const WHATSAPP_URL = "https://wa.me/972545811900";

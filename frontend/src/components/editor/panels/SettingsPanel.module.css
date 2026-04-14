@@ -184,6 +184,35 @@
     margin-top: 2px;
 }
 
+.billingDisclosure {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    font-size: var(--fs-caption);
+    opacity: 0.65;
+    line-height: 1.5;
+    padding: 0.6rem 0;
+}
+
+.billingDisclosureLink {
+    color: rgba(212, 175, 55, 0.8);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+}
+
+.billingOptIn {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    cursor: pointer;
+}
+
+.billingOptInLabel {
+    font-size: var(--fs-caption);
+    line-height: 1.5;
+    opacity: 0.85;
+}
+
 /* ── Password change form ── */
 
 .pwSuccess {

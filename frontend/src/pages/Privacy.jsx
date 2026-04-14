@@ -551,8 +551,8 @@ export default function Privacy() {
                         </p>
                         <p>
                             דוא״ל:{" "}
-                            <a href="mailto:cardigo.app@gmail.com">
-                                cardigo.app@gmail.com
+                            <a href="mailto:support@cardigo.co.il">
+                                support@cardigo.co.il
                             </a>
                         </p>
                         <p>תאריך עדכון אחרון: 13.04.2026</p>

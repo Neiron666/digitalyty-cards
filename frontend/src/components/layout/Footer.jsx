@@ -81,6 +81,9 @@ export default function Footer({ onOpenPrivacyPrefs }) {
                     <Link to="/accessibility-statement" className={styles.link}>
                         הצהרת נגישות
                     </Link>
+                    <Link to="/payment-policy" className={styles.link}>
+                        תנאי תשלום, חידוש, ביטול והחזרים
+                    </Link>
                     <button
                         type="button"
                         className={styles.linkButton}
@@ -89,7 +92,7 @@ export default function Footer({ onOpenPrivacyPrefs }) {
                         העדפות פרטיות
                     </button>
                     <div className={styles.text}>
-                        אימייל: cardigo.app@gmail.com
+                        אימייל: support@cardigo.co.il
                     </div>
                 </div>
             </div>

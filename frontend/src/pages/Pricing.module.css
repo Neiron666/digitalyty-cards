@@ -367,7 +367,23 @@
     color: var(--gold);
     font-weight: 700;
 }
+/* ── Legal note below plans ────────────────────────────────────── */
+.plansLegalNote {
+    font-size: var(--fs-caption);
+    color: #64748b;
+    line-height: 1.6;
+    margin: 0;
+    text-align: center;
+    align-self: center;
+    max-width: 44rem;
+    width: 95%;
+}
 
+.plansLegalNoteLink {
+    color: #8b6914;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+}
 /* ── B2B enterprise card (inside light section) ──────── */
 
 .b2bBlock {

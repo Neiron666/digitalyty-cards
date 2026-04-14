@@ -148,7 +148,7 @@ const MONTHLY_ACCORDIONS = [
         title: "למי זה מתאים",
         items: [
             "לעסק שרוצה גמישות מלאה",
-            "למי שרוצה להתחיל, להפסיק ולחדש לפי הצורך",
+            "מסלול מתחדש אוטומטית — ניתן לבטל לפני החיוב הבא",
             "מתאים לעבודה שוטפת בלי התחייבות לשנה",
         ],
     },
@@ -408,7 +408,9 @@ export default function Pricing() {
                             <span className={styles.planPrice}>₪39.90</span>
                             <span className={styles.planCadence}>לחודש</span>
                             <p className={styles.planNote}>
-                                גמישות מלאה - אפשר להתחיל, להפסיק ולחדש בכל רגע.
+                                חיוב חודשי מתחדש אוטומטית עד לביטול. ניתן לבטל
+                                לפני מועד החיוב הבא, והביטול ייכנס לתוקף בסוף
+                                התקופה שכבר שולמה.
                             </p>
                             <GroupedAccordions groups={MONTHLY_ACCORDIONS} />
                             <Button
@@ -442,7 +444,9 @@ export default function Pricing() {
                             </span>
                             <span className={styles.planCadence}>לשנה</span>
                             <p className={styles.planNote}>
-                                חיסכון של ₪78.90 לעומת חודשי
+                                תשלום שנתי מראש עבור 12 חודשים. חידוש שנתי
+                                אוטומטי יתבצע רק אם תופעל בחירה מפורשת מראש.
+                                תישלח תזכורת 14 ימים לפני חידוש שנתי אוטומטי.
                             </p>
                             <GroupedAccordions groups={ANNUAL_ACCORDIONS} />
                             <Button
@@ -462,7 +466,19 @@ export default function Pricing() {
                         </div>
                     </div>
 
-                    {/* ── B2B: חברות וארגונים ─────────── */}
+                    {/* ── Legal note below plans ──────── */}
+                    <p className={styles.plansLegalNote}>
+                        השירותים בתשלום מיועדים לשימוש עסקי או מסחרי בלבד. לא
+                        יינתנו החזרים כספיים, למעט אם הדין החל מחייב אחרת.{" "}
+                        <Link
+                            to="/payment-policy"
+                            className={styles.plansLegalNoteLink}
+                        >
+                            תנאי תשלום, חידוש, ביטול והחזרים
+                        </Link>
+                    </p>
+
+                    {/* ── B2B: חברות וארגונים ───────────────── */}
                     <div className={styles.b2bBlock}>
                         <div className={styles.b2bHeader}>
                             <span className={styles.b2bKicker}>

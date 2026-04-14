@@ -50,6 +50,7 @@ export default function SettingsPanel({
 
     const [billingBusy, setBillingBusy] = useState(false);
     const [billingMsg, setBillingMsg] = useState("");
+    const [yearlyOptIn, setYearlyOptIn] = useState(false);
 
     const [mktBusy, setMktBusy] = useState(false);
     const [mktError, setMktError] = useState("");
@@ -712,6 +713,12 @@ export default function SettingsPanel({
                                 provider === "tranzila" ? "Tranzila" : "-";
 
                             async function handlePayment(plan) {
+                                if (plan === "yearly" && !yearlyOptIn) {
+                                    setBillingMsg(
+                                        "יש לסמן אישור חידוש שנתי כדי להמשיך",
+                                    );
+                                    return;
+                                }
                                 setBillingBusy(true);
                                 setBillingMsg("");
                                 try {
@@ -828,47 +835,112 @@ export default function SettingsPanel({
                                             </div>
 
                                             {showCta && (
-                                                <div
-                                                    className={
-                                                        styles.billingActions
-                                                    }
-                                                >
-                                                    <Button
-                                                        variant="secondary"
-                                                        loading={billingBusy}
-                                                        disabled={
-                                                            billingBusy ||
-                                                            Boolean(
-                                                                accountError,
-                                                            )
-                                                        }
-                                                        onClick={() =>
-                                                            handlePayment(
-                                                                "monthly",
-                                                            )
+                                                <>
+                                                    <div
+                                                        className={
+                                                            styles.billingDisclosure
                                                         }
                                                     >
-                                                        חודשי - ₪39.90/חודש
-                                                    </Button>
-                                                    <Button
-                                                        variant="secondary"
-                                                        loading={billingBusy}
-                                                        disabled={
-                                                            billingBusy ||
-                                                            Boolean(
-                                                                accountError,
-                                                            )
-                                                        }
-                                                        onClick={() =>
-                                                            handlePayment(
-                                                                "yearly",
-                                                            )
+                                                        <span>
+                                                            מסלול חודשי: חיוב
+                                                            אוטומטי עד לביטול.
+                                                            ניתן לבטל לפני מועד
+                                                            החיוב הבא.
+                                                        </span>
+                                                        <span>
+                                                            מסלול שנתי: תשלום
+                                                            ₪399.90 מראש. חידוש
+                                                            שנתי אוטומטי רק אם
+                                                            תסמן/י את האפשרות
+                                                            למטה.
+                                                        </span>
+                                                        <a
+                                                            href="/payment-policy"
+                                                            target="_blank"
+                                                            rel="noreferrer"
+                                                            className={
+                                                                styles.billingDisclosureLink
+                                                            }
+                                                        >
+                                                            תנאי תשלום, חידוש,
+                                                            ביטול והחזרים
+                                                        </a>
+                                                    </div>
+                                                    <div
+                                                        className={
+                                                            styles.billingActions
                                                         }
                                                     >
-                                                        שנתי - ₪399.90/שנה (חוסך
-                                                        ₪78.90)
-                                                    </Button>
-                                                </div>
+                                                        <Button
+                                                            variant="secondary"
+                                                            loading={
+                                                                billingBusy
+                                                            }
+                                                            disabled={
+                                                                billingBusy ||
+                                                                Boolean(
+                                                                    accountError,
+                                                                )
+                                                            }
+                                                            onClick={() =>
+                                                                handlePayment(
+                                                                    "monthly",
+                                                                )
+                                                            }
+                                                        >
+                                                            חודשי - ₪39.90/חודש
+                                                        </Button>
+                                                        <Button
+                                                            variant="secondary"
+                                                            loading={
+                                                                billingBusy
+                                                            }
+                                                            disabled={
+                                                                billingBusy ||
+                                                                Boolean(
+                                                                    accountError,
+                                                                ) ||
+                                                                !yearlyOptIn
+                                                            }
+                                                            onClick={() =>
+                                                                handlePayment(
+                                                                    "yearly",
+                                                                )
+                                                            }
+                                                        >
+                                                            שנתי - ₪399.90/שנה
+                                                            (חוסך ₪78.90)
+                                                        </Button>
+                                                    </div>
+                                                    <label
+                                                        className={
+                                                            styles.billingOptIn
+                                                        }
+                                                    >
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={
+                                                                yearlyOptIn
+                                                            }
+                                                            onChange={(e) =>
+                                                                setYearlyOptIn(
+                                                                    e.target
+                                                                        .checked,
+                                                                )
+                                                            }
+                                                        />
+                                                        <span
+                                                            className={
+                                                                styles.billingOptInLabel
+                                                            }
+                                                        >
+                                                            אני מאשר/ת חידוש
+                                                            שנתי אוטומטי של
+                                                            ₪399.90 לפני תחילת
+                                                            שנה שנייה
+                                                        </span>
+                                                    </label>
+                                                </>
                                             )}
 
                                             {billingMsg && (
