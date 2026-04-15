@@ -31,7 +31,15 @@
         "migrate:orgmember-indexes": "node scripts/migrate-orgmember-indexes.mjs",
         "migrate:analytics-daily-indexes": "node scripts/migrate-analytics-daily-indexes.mjs",
         "migrate:card-anonymousid-index": "node scripts/migrate-card-anonymousid-index.mjs",
-        "bootstrap:first-admin": "node scripts/bootstrap-first-admin.mjs"
+        "bootstrap:first-admin": "node scripts/bootstrap-first-admin.mjs",
+        "classify:retention:dry-run": "node scripts/classify-retention-buckets.mjs --run",
+        "classify:retention:help": "node scripts/classify-retention-buckets.mjs",
+        "retention:b1:dry-run": "node scripts/retention-b1-cleanup.mjs --run",
+        "retention:b1:apply": "node scripts/retention-b1-cleanup.mjs --run --apply --i-understand-deletion",
+        "retention:b2:warn:dry-run": "node scripts/retention-b2-warn.mjs --run",
+        "retention:b2:warn:apply": "node scripts/retention-b2-warn.mjs --run --apply --i-understand-sending",
+        "retention:b2:cleanup:dry-run": "node scripts/retention-b2-cleanup.mjs --run",
+        "retention:b2:cleanup:apply": "node scripts/retention-b2-cleanup.mjs --run --apply --i-understand-deletion"
     },
     "keywords": [],
     "author": "",

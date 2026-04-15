@@ -110,6 +110,16 @@ function getMailjetConfig() {
             (typeof process.env.MAILJET_BRAND_LOGO_URL === "string"
                 ? process.env.MAILJET_BRAND_LOGO_URL.trim()
                 : ""),
+        deletionWarningSubject:
+            (typeof process.env.MAILJET_DELETION_WARNING_SUBJECT === "string"
+                ? process.env.MAILJET_DELETION_WARNING_SUBJECT.trim()
+                : "") || "הודעה מוקדמת: חשבון Cardigo שלא נעשה בו שימוש",
+        deletionWarningTextPrefix:
+            (typeof process.env.MAILJET_DELETION_WARNING_TEXT_PREFIX ===
+            "string"
+                ? process.env.MAILJET_DELETION_WARNING_TEXT_PREFIX.trim()
+                : "") ||
+            "הודעה זו נשלחת אליך כהודעה מוקדמת לפי מדיניות הפרטיות ותנאי השימוש של Cardigo.",
     };
 }
 
@@ -612,6 +622,184 @@ export async function sendTrialReminderEmailMailjetBestEffort({
         return { ok };
     } catch (err) {
         console.error("[mailjet] trial-reminder send error", {
+            userId: String(userId || ""),
+            error: err?.message || err,
+        });
+        return { ok: false };
+    }
+}
+
+// ---------------------------------------------------------------------------
+// B2 deletion warning email — transactional.
+// Sent to verified / no-card / inactive users as advance notice before possible
+// account removal. This is a transactional notification, NOT a marketing email.
+// Must NOT be gated on emailMarketingConsent.
+// Must NOT use isMarketingOptOut or any unsubscribe logic.
+// ---------------------------------------------------------------------------
+export async function sendDeletionWarningEmailMailjetBestEffort({
+    toEmail,
+    loginUrl,
+    graceUntil,
+    firstName = null,
+    userId,
+}) {
+    const cfg = getMailjetConfig();
+    const toEmailNormalized = normalizeEmail(toEmail);
+
+    if (!cfg.enabled) {
+        return { ok: true, skipped: true, reason: "MAILJET_NOT_CONFIGURED" };
+    }
+
+    if (
+        !toEmailNormalized ||
+        !loginUrl ||
+        !(graceUntil instanceof Date) ||
+        isNaN(graceUntil.getTime())
+    ) {
+        return { ok: false, skipped: true, reason: "INVALID_INPUT" };
+    }
+
+    const auth = Buffer.from(`${cfg.apiKey}:${cfg.apiSecret}`).toString(
+        "base64",
+    );
+
+    const subject = cfg.deletionWarningSubject;
+    const prefix = cfg.deletionWarningTextPrefix;
+
+    let formattedGrace;
+    try {
+        formattedGrace = graceUntil.toLocaleDateString("he-IL", {
+            timeZone: "Asia/Jerusalem",
+            day: "numeric",
+            month: "long",
+            year: "numeric",
+        });
+    } catch {
+        formattedGrace = graceUntil.toISOString().slice(0, 10);
+    }
+
+    const trimmedFirstName =
+        typeof firstName === "string" ? firstName.trim() : "";
+    const greeting = trimmedFirstName ? `שלום, ${trimmedFirstName},` : "שלום,";
+
+    const escapeHtml = (str) =>
+        str
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#39;");
+
+    const greetingHtml = trimmedFirstName
+        ? `שלום, ${escapeHtml(trimmedFirstName)},`
+        : "שלום,";
+
+    // --- Text part -----------------------------------------------------------
+    const text = [
+        greeting,
+        "",
+        prefix,
+        "",
+        "חשבונך ב-Cardigo אומת אך לא נעשה בו שימוש פעיל.",
+        "בהתאם למדיניות הפרטיות ותנאי השירות, חשבונות כאלה עשויים להיות מוסרים לאחר תקופת אי-שימוש.",
+        "",
+        `כדי למנוע את ההסרה, יש להיכנס לחשבון לפני ${formattedGrace}:`,
+        loginUrl,
+        "",
+        "אם כבר התחברת לאחרונה, אפשר להתעלם מהודעה זו.",
+        "",
+        "הודעה זו נשלחת מסיבות תפעוליות.",
+        "צוות Cardigo",
+    ].join("\n");
+
+    // --- HTML part -----------------------------------------------------------
+    const htmlPart = `<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width,initial-scale=1" /></head>
+<body style="margin:0;padding:0;background-color:#f4f4f5;font-family:Arial,sans-serif;direction:rtl;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#f4f4f5;padding:32px 16px;">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="100%" style="max-width:520px;background-color:#ffffff;border-radius:8px;padding:40px 32px;">
+          <tr><td style="padding-bottom:16px;">
+            <p style="margin:0;font-size:16px;font-weight:bold;color:#1a1a1a;text-align:right;">${greetingHtml}</p>
+          </td></tr>
+          <tr><td style="padding-bottom:16px;">
+            <h1 style="margin:0;font-size:20px;font-weight:bold;color:#1a1a1a;text-align:center;">${escapeHtml(subject)}</h1>
+          </td></tr>
+          <tr><td style="padding-bottom:16px;">
+            <p style="margin:0;font-size:14px;line-height:1.6;color:#444444;text-align:center;">${escapeHtml(prefix)}</p>
+          </td></tr>
+          <tr><td style="padding-bottom:16px;">
+            <p style="margin:0;font-size:14px;line-height:1.6;color:#444444;text-align:center;">
+              חשבונך ב-Cardigo אומת אך לא נעשה בו שימוש פעיל.<br />בהתאם למדיניות הפרטיות ותנאי השירות, חשבונות כאלה עשויים להיות מוסרים לאחר תקופת אי-שימוש.
+            </p>
+          </td></tr>
+          <tr><td style="padding-bottom:24px;">
+            <p style="margin:0;font-size:14px;line-height:1.6;color:#444444;text-align:center;">
+              כדי למנוע את ההסרה, יש להיכנס לחשבון לפני <strong>${escapeHtml(formattedGrace)}</strong>.
+            </p>
+          </td></tr>
+          <tr><td style="text-align:center;padding-bottom:24px;">
+            <a href="${loginUrl}" style="display:inline-block;padding:14px 32px;background-color:#6c47ff;color:#ffffff;font-size:16px;font-weight:bold;text-decoration:none;border-radius:6px;">כניסה לחשבון</a>
+          </td></tr>
+          <tr><td style="padding-bottom:16px;">
+            <p style="margin:0;font-size:13px;line-height:1.6;color:#666666;text-align:center;">
+              אם כבר התחברת לאחרונה, אפשר להתעלם מהודעה זו.
+            </p>
+          </td></tr>
+          <tr><td style="border-top:1px solid #e5e7eb;padding-top:16px;text-align:center;">
+            <p style="margin:0;font-size:12px;color:#aaaaaa;">הודעה זו נשלחת מסיבות תפעוליות. צוות Cardigo</p>
+          </td></tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
+
+    const payload = {
+        Messages: [
+            {
+                From: {
+                    Email: cfg.fromEmail,
+                    Name: cfg.fromName,
+                },
+                To: [{ Email: toEmailNormalized }],
+                Subject: subject,
+                TextPart: text,
+                HTMLPart: htmlPart,
+            },
+        ],
+    };
+
+    const body = JSON.stringify(payload);
+
+    try {
+        const res = await httpsRequestJson({
+            hostname: "api.mailjet.com",
+            path: "/v3.1/send",
+            method: "POST",
+            timeoutMs: 10_000,
+            headers: {
+                Authorization: `Basic ${auth}`,
+                "Content-Type": "application/json",
+                "Content-Length": Buffer.byteLength(body),
+            },
+            body,
+        });
+
+        const ok = res.statusCode >= 200 && res.statusCode < 300;
+        if (!ok) {
+            console.error("[mailjet] deletion-warning send failed", {
+                statusCode: res.statusCode,
+                userId: String(userId || ""),
+            });
+        }
+
+        return { ok };
+    } catch (err) {
+        console.error("[mailjet] deletion-warning send error", {
             userId: String(userId || ""),
             error: err?.message || err,
         });

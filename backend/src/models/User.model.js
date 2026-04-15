@@ -108,6 +108,22 @@ const UserSchema = new mongoose.Schema(
         // Null = reminder not yet sent.
         trialReminderSentAt: { type: Date, default: null },
 
+        // --- B2 warning lifecycle (warning-first inactivity retention contour) ---
+        // Atomically stamped by the warn pass when it claims a candidate for sending.
+        // Guards against concurrent duplicate sends. Stale claims (older than threshold)
+        // are treated as abandoned and re-eligible on the next sweep.
+        // Null = not yet claimed.
+        b2WarningClaimedAt: { type: Date, default: null },
+        // Stamped after the B2 warning email was successfully delivered.
+        // Once set, warn pass skips this user permanently.
+        // Cleanup pass uses this together with b2GraceUntil and lastLoginAt
+        // to determine deletion eligibility. Null = warning not yet sent.
+        b2WarningSentAt: { type: Date, default: null },
+        // Grace deadline stored explicitly at send time (= sentAt + GRACE_DAYS).
+        // Prevents env-drift between warn and cleanup runs.
+        // Null = warning not yet sent.
+        b2GraceUntil: { type: Date, default: null },
+
         // --- Marketing email consent ---
         // Explicit opt-in/opt-out for marketing/trial-reminder emails.
         // null = undecided (never asked, or skipped).  true = opted in.  false = opted out.

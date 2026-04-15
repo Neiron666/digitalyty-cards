@@ -5,6 +5,7 @@ import mongoose from "mongoose";
 import Card from "../src/models/Card.model.js";
 import Lead from "../src/models/Lead.model.js";
 import CardAnalyticsDaily from "../src/models/CardAnalyticsDaily.model.js";
+import Booking from "../src/models/Booking.model.js";
 import { connectDB } from "../src/config/db.js";
 import { deleteCardCascade } from "../src/utils/cardDeleteCascade.js";
 
@@ -37,14 +38,23 @@ async function main() {
             clicksTotal: 1,
         });
 
+        // Raw insert bypasses 17 required booking fields — correct here because
+        // this sanity tests cascade infrastructure, not booking creation logic.
+        await Booking.collection.insertOne({ card: card._id });
+
         const leadsBefore = await Lead.countDocuments({ card: card._id });
         const analyticsBefore = await CardAnalyticsDaily.countDocuments({
             cardId: card._id,
         });
+        const bookingsBefore = await Booking.countDocuments({ card: card._id });
 
-        if (leadsBefore !== 1 || analyticsBefore !== 1) {
+        if (
+            leadsBefore !== 1 ||
+            analyticsBefore !== 1 ||
+            bookingsBefore !== 1
+        ) {
             throw new Error(
-                `Fixture counts unexpected: leads=${leadsBefore} analytics=${analyticsBefore}`,
+                `Fixture counts unexpected: leads=${leadsBefore} analytics=${analyticsBefore} bookings=${bookingsBefore}`,
             );
         }
 
@@ -54,10 +64,11 @@ async function main() {
         const analyticsAfter = await CardAnalyticsDaily.countDocuments({
             cardId: card._id,
         });
+        const bookingsAfter = await Booking.countDocuments({ card: card._id });
 
-        if (leadsAfter !== 0 || analyticsAfter !== 0) {
+        if (leadsAfter !== 0 || analyticsAfter !== 0 || bookingsAfter !== 0) {
             throw new Error(
-                `Cascade failed: leads=${leadsAfter} analytics=${analyticsAfter} (meta: ${JSON.stringify(
+                `Cascade failed: leads=${leadsAfter} analytics=${analyticsAfter} bookings=${bookingsAfter} (meta: ${JSON.stringify(
                     cascade,
                 )})`,
             );
