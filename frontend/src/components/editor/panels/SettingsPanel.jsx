@@ -481,7 +481,9 @@ export default function SettingsPanel({
                             <div className={styles.urlTitle}>קישור עתידי</div>
                             <div>{publicUrl}</div>
                             <div className={styles.urlNote}>
-                                יהפוך לציבורי אחרי הרשמה + שדרוג לפרמיום.
+                                {isAuthenticated
+                                    ? "הקישור יהפוך לציבורי לאחר פרסום הכרטיס."
+                                    : "הקישור יהפוך לציבורי אחרי הרשמה ופרסום הכרטיס."}
                             </div>
                         </div>
                     )}
