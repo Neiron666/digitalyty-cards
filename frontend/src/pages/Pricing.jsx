@@ -1,5 +1,7 @@
-import { useEffect } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
+import { createPayment } from "../services/payment.service";
 import Button from "../components/ui/Button";
 import SeoHelmet from "../components/seo/SeoHelmet";
 import FlashBanner from "../components/ui/FlashBanner/FlashBanner";
@@ -254,9 +256,51 @@ export default function Pricing() {
     const payment = searchParams.get("payment");
     const flash = PAYMENT_FLASH[payment] || null;
 
+    const { isAuthenticated } = useAuth();
+    const navigate = useNavigate();
+    const [payBusy, setPayBusy] = useState(false);
+
     useEffect(() => {
         trackSitePageView();
     }, []);
+
+    async function handlePricingCta(plan) {
+        if (!isAuthenticated) {
+            navigate("/register");
+            return;
+        }
+        if (payBusy) return;
+        setPayBusy(true);
+        try {
+            const res = await createPayment(plan);
+            const url = res?.paymentUrl;
+            if (url && /^\//.test(url)) {
+                navigate(url);
+            } else if (url && /^https?:\/\//i.test(url)) {
+                window.location.assign(url);
+            } else {
+                setSearchParams(
+                    (prev) => {
+                        const next = new URLSearchParams(prev);
+                        next.set("payment", "fail");
+                        return next;
+                    },
+                    { replace: true },
+                );
+            }
+        } catch {
+            setSearchParams(
+                (prev) => {
+                    const next = new URLSearchParams(prev);
+                    next.set("payment", "fail");
+                    return next;
+                },
+                { replace: true },
+            );
+        } finally {
+            setPayBusy(false);
+        }
+    }
 
     function dismissBanner() {
         setSearchParams(
@@ -414,16 +458,16 @@ export default function Pricing() {
                             </p>
                             <GroupedAccordions groups={MONTHLY_ACCORDIONS} />
                             <Button
-                                as={Link}
-                                to="/register"
                                 variant="secondary"
                                 className={styles.planCta}
-                                onClick={() =>
+                                disabled={payBusy}
+                                onClick={() => {
                                     trackSiteClick({
                                         action: SITE_ACTIONS.pricing_monthly_start,
                                         pagePath: "/pricing",
-                                    })
-                                }
+                                    });
+                                    handlePricingCta("monthly");
+                                }}
                             >
                                 לבחור במסלול חודשי
                             </Button>
@@ -450,16 +494,16 @@ export default function Pricing() {
                             </p>
                             <GroupedAccordions groups={ANNUAL_ACCORDIONS} />
                             <Button
-                                as={Link}
-                                to="/register"
                                 variant="primary"
                                 className={styles.planCtaFeatured}
-                                onClick={() =>
+                                disabled={payBusy}
+                                onClick={() => {
                                     trackSiteClick({
                                         action: SITE_ACTIONS.pricing_annual_start,
                                         pagePath: "/pricing",
-                                    })
-                                }
+                                    });
+                                    handlePricingCta("yearly");
+                                }}
                             >
                                 לבחור במסלול שנתי
                             </Button>
