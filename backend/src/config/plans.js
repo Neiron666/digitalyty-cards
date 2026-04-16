@@ -69,6 +69,8 @@ export const PLANS = {
 };
 
 export const PRICES_AGOROT = {
-    monthly: 3990,
-    yearly: 39990,
+    // monthly: 3990,
+    // yearly: 39990,
+    monthly: 500,
+    yearly: 5000,
 };
