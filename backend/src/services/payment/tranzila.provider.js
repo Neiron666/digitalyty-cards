@@ -183,7 +183,9 @@ export default {
             String(data.supplier || "").trim() ===
             String(TRANZILA_CONFIG.terminal || "").trim();
         const currencyOk = data.currency === "1";
-        const tranmodeOk = data.tranmode === "AK";
+        // tranmode is observability-only — DirectNG echoes "A" for token-capable
+        // payments even when checkout was initiated with tranmode=AK.
+        // It is NOT used as a blocking trust signal.
         const indexPresent =
             typeof data.index === "string" && data.index.trim() !== "";
         const directNgTrustOk =
@@ -193,7 +195,6 @@ export default {
             sumOk &&
             supplierOk &&
             currencyOk &&
-            tranmodeOk &&
             indexPresent;
         const trustOk = hasLegacySignature ? legacySigOk : directNgTrustOk;
 
@@ -236,7 +237,6 @@ export default {
             if (!sumOk) failReason = failReason || "amount_mismatch";
             if (!supplierOk) failReason = failReason || "supplier_mismatch";
             if (!currencyOk) failReason = failReason || "currency_mismatch";
-            if (!tranmodeOk) failReason = failReason || "tranmode_mismatch";
             if (!indexPresent) failReason = failReason || "missing_index";
         }
 
