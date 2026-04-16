@@ -104,23 +104,24 @@ export default {
         const sumStr = `${Math.floor(ag / 100)}.${String(ag % 100).padStart(2, "0")}`;
         const description = `Cardigo – ${plan} plan`;
 
-        const payload = [
-            `terminal=${TRANZILA_CONFIG.terminal}`,
+        // DirectNG: terminal lives in the URL path, not as a query param.
+        // tranmode=AK: standard debit + create token — required for TranzilaTK to be returned.
+        // No outbound signature: DirectNG hosted checkout does not use a request signature.
+        const params = [
             `sum=${sumStr}`,
             `currency=1`,
             `lang=il`,
+            `tranmode=AK`,
             `description=${encodeURIComponent(description)}`,
-            `notify_url=${encodeURIComponent(TRANZILA_CONFIG.notifyUrl)}`,
-            `success_url=${encodeURIComponent(TRANZILA_CONFIG.successUrl)}`,
-            `fail_url=${encodeURIComponent(TRANZILA_CONFIG.failUrl)}`,
-            `udf1=${userId}`, // userId
-            `udf2=${plan}`, // plan
+            `notify_url_address=${encodeURIComponent(TRANZILA_CONFIG.notifyUrl)}`,
+            `success_url_address=${encodeURIComponent(TRANZILA_CONFIG.successUrl)}`,
+            `fail_url_address=${encodeURIComponent(TRANZILA_CONFIG.failUrl)}`,
+            `udf1=${userId}`,
+            `udf2=${plan}`,
         ].join("&");
 
-        const signature = sign(payload);
-
         return {
-            paymentUrl: `${TRANZILA_CONFIG.baseUrl}?${payload}&signature=${signature}`,
+            paymentUrl: `${TRANZILA_CONFIG.checkoutBase}/${TRANZILA_CONFIG.terminal}/iframenew.php?${params}`,
         };
     },
 
