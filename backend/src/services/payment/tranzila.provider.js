@@ -149,17 +149,53 @@ export default {
         const payloadAllowlisted = allowlistPayload(payload);
         const rawPayloadHash = computeRawPayloadHash(payload);
 
-        // ── 3. Signature verification (MUST NOT throw) ──
-        const signaturePayload = [
-            `terminal=${TRANZILA_CONFIG.terminal}`,
-            `sum=${data.sum}`,
-            `Response=${data.Response}`,
-            `udf1=${data.udf1}`,
-            `udf2=${data.udf2}`,
-        ].join("&");
+        // ── 3. Resolve fields safely (moved before trust — DirectNG trust needs these) ──
+        const rawUserId = data.udf1;
+        const plan = data.udf2;
+        const userId = looksLikeObjectId(rawUserId) ? rawUserId : null;
+        const validPlan = plan === "monthly" || plan === "yearly" ? plan : null;
+        const amountAgorot = parseAmountAgorot(data.sum);
 
-        const expectedSignature = sign(signaturePayload);
-        const sigOk = signature === expectedSignature;
+        // ── 4. Dual-mode trust model ──
+        // Legacy path: payload contains `signature` (legacy Tranzila notify endpoint).
+        // DirectNG path: no `signature` in payload; use bounded correlated field trust.
+        const hasLegacySignature =
+            typeof signature === "string" && signature.length > 0;
+        let legacySigOk = false;
+        if (hasLegacySignature) {
+            const signaturePayload = [
+                `terminal=${TRANZILA_CONFIG.terminal}`,
+                `sum=${data.sum}`,
+                `Response=${data.Response}`,
+                `udf1=${data.udf1}`,
+                `udf2=${data.udf2}`,
+            ].join("&");
+            legacySigOk = signature === sign(signaturePayload);
+        }
+
+        const responseOk = data.Response === "000";
+        const expectedAgorot = PRICES_AGOROT[validPlan] ?? null;
+        const sumOk =
+            amountAgorot !== null &&
+            expectedAgorot !== null &&
+            amountAgorot === expectedAgorot;
+        const supplierOk =
+            String(data.supplier || "").trim() ===
+            String(TRANZILA_CONFIG.terminal || "").trim();
+        const currencyOk = data.currency === "1";
+        const tranmodeOk = data.tranmode === "AK";
+        const indexPresent =
+            typeof data.index === "string" && data.index.trim() !== "";
+        const directNgTrustOk =
+            responseOk &&
+            Boolean(userId) &&
+            Boolean(validPlan) &&
+            sumOk &&
+            supplierOk &&
+            currencyOk &&
+            tranmodeOk &&
+            indexPresent;
+        const trustOk = hasLegacySignature ? legacySigOk : directNgTrustOk;
 
         // [BATCH-0-PROBE] Temporary sandbox observability — remove after sandbox verification.
         // Logs field names and booleans only. Never logs token value or raw payload values.
@@ -168,7 +204,9 @@ export default {
             JSON.stringify({
                 keys: Object.keys(payload).sort(),
                 Response: data.Response,
-                sigOk,
+                hasLegacySignature,
+                directNgTrustOk,
+                trustOk,
                 hasToken: Boolean(capturedToken),
                 candidateFields: {
                     index: Boolean(data.index),
@@ -184,24 +222,23 @@ export default {
             }),
         );
 
-        // ── 4. Determine status ──
-        const isPaid = sigOk && data.Response === "000";
+        // ── 5. Determine status ──
+        const isPaid = trustOk && responseOk;
         const status = isPaid ? "paid" : "failed";
 
         let failReason = null;
-        if (!sigOk) failReason = "bad_signature";
-        else if (data.Response !== "000")
-            failReason = `response_${data.Response || "unknown"}`;
-
-        // ── 5. Resolve fields safely ──
-        const rawUserId = data.udf1;
-        const plan = data.udf2;
-        const userId = looksLikeObjectId(rawUserId) ? rawUserId : null;
-        const validPlan = plan === "monthly" || plan === "yearly" ? plan : null;
-        const amountAgorot = parseAmountAgorot(data.sum);
-
+        if (!responseOk) failReason = `response_${data.Response || "unknown"}`;
         if (!userId) failReason = failReason || "invalid_userId";
         if (!validPlan) failReason = failReason || "invalid_plan";
+        if (hasLegacySignature && !legacySigOk)
+            failReason = failReason || "legacy_bad_signature";
+        if (!hasLegacySignature) {
+            if (!sumOk) failReason = failReason || "amount_mismatch";
+            if (!supplierOk) failReason = failReason || "supplier_mismatch";
+            if (!currencyOk) failReason = failReason || "currency_mismatch";
+            if (!tranmodeOk) failReason = failReason || "tranmode_mismatch";
+            if (!indexPresent) failReason = failReason || "missing_index";
+        }
 
         // ── 6. Ledger insert (idempotency via unique providerTxnId) ──
         try {
