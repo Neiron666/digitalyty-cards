@@ -29,6 +29,8 @@ const STRIP_KEYS = new Set([
     "cvv",
     "cc_number",
     "cred_type",
+    // [BATCH-0] Token field — must be lowercase to match k.toLowerCase() in allowlistPayload.
+    "tranzilatk",
 ]);
 
 /**
@@ -134,6 +136,11 @@ export default {
     async handleNotify(payload) {
         const { signature, ...data } = payload;
 
+        // [BATCH-0] Extract token BEFORE allowlist/strip so it is never
+        // written into payloadAllowlisted. "tranzilatk" in STRIP_KEYS ensures
+        // allowlistPayload(payload) drops it even if called with full payload.
+        const capturedToken = data.TranzilaTK ?? null;
+
         // ── 1. Derive idempotency key ──
         const providerTxnId = deriveProviderTxnId(payload);
 
@@ -152,6 +159,29 @@ export default {
 
         const expectedSignature = sign(signaturePayload);
         const sigOk = signature === expectedSignature;
+
+        // [BATCH-0-PROBE] Temporary sandbox observability — remove after sandbox verification.
+        // Logs field names and booleans only. Never logs token value or raw payload values.
+        console.log(
+            "[batch0-probe]",
+            JSON.stringify({
+                keys: Object.keys(payload).sort(),
+                Response: data.Response,
+                sigOk,
+                hasToken: Boolean(capturedToken),
+                candidateFields: {
+                    index: Boolean(data.index),
+                    authnr: Boolean(data.authnr),
+                    ConfirmationCode: Boolean(data.ConfirmationCode),
+                },
+                expiryFields: {
+                    expmonth: Boolean(data.expmonth),
+                    expyear: Boolean(data.expyear),
+                    expdate: Boolean(data.expdate),
+                    myexpdate: Boolean(data.myexpdate),
+                },
+            }),
+        );
 
         // ── 4. Determine status ──
         const isPaid = sigOk && data.Response === "000";
@@ -214,6 +244,12 @@ export default {
             provider: "tranzila",
             expiresAt,
         };
+
+        // [BATCH-0] Persist token only on successful paid path.
+        // tranzilaToken is not logged and not stored in audit payload.
+        if (capturedToken) {
+            user.tranzilaToken = capturedToken;
+        }
 
         await user.save();
 

@@ -67,6 +67,10 @@ const UserSchema = new mongoose.Schema(
             },
         },
 
+        // [BATCH-0] Tranzila recurring token — populated on first successful paid notify.
+        // Used by Batch 1 (STO create). Never stored in logs or audit payload.
+        tranzilaToken: { type: String, default: null },
+
         // Consent / legal acceptance (additive, null-safe for existing users).
         termsAcceptedAt: { type: Date, default: null },
         privacyAcceptedAt: { type: Date, default: null },
