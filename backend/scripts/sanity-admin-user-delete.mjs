@@ -349,6 +349,14 @@ async function main() {
             `Expected POST /uploads/asset 200, got ${assetRes.status}`,
         );
 
+        // Sanity precondition: gallery upload is premium-only. Grant temporary premium
+        // entitlement on the test card via admin tier override so the gallery upload
+        // route passes the canUseGallery gate. The card is cascade-deleted at step (6).
+        await Card.findByIdAndUpdate(created.cardId, {
+            adminTier: "premium",
+            adminTierUntil: new Date(Date.now() + 60 * 60 * 1000),
+        });
+
         const galleryForm = new FormData();
         galleryForm.append("cardId", created.cardId);
         galleryForm.append("image", jpegBlob, "tiny.jpg");
