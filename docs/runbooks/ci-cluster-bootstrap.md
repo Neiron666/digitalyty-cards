@@ -309,6 +309,80 @@ If the CI cluster is broken, unreachable, or recreated:
 
 ---
 
+## 11. Workstream Closure Status
+
+_Last updated: 2026-04-18_
+
+### 11.1 CI-only Atlas cluster rollout — CLOSED
+
+- CI-only Atlas cluster is live and operational.
+- CI DB name: `cardigo_ci`.
+- `MONGO_URI_DRIFT_CHECK` is the GitHub Actions CI-only Mongo truth, pointing to the CI cluster.
+- `MONGO_URI` remains production/runtime truth and is not used by ordinary Mongo-backed CI jobs.
+
+### 11.2 GitHub Actions workflow hardening — CLOSED
+
+Both Mongo-backed workflows have been hardened:
+
+- `MONGO_URI` removed from all Mongo-backed CI workflow `env:` blocks (both workflows).
+- Old fallback chain `${MONGO_URI_DRIFT_CHECK:-${MONGO_URI:-}}` eliminated from both workflows.
+- No fallback to production `MONGO_URI` remains in any CI step.
+- PR drift check: warns + skips (exit 0) if `MONGO_URI_DRIFT_CHECK` is missing.
+- push / `workflow_dispatch` drift gate: hard-fails (exit 1) if `MONGO_URI_DRIFT_CHECK` is missing.
+- Admin sanity (nightly/manual): hard-fails (exit 1) if `MONGO_URI_DRIFT_CHECK` is missing.
+
+**Verified workflows post-hardening:**
+
+- Backend Index Governance: passed.
+- Backend Admin Sanity: passed.
+
+### 11.3 Accepted drift warnings — confirmed
+
+`sanity:card-index-drift` reports 5 non-blocking warnings on the CI cluster (`ok: true`, `missing: []`, `mismatches: []`):
+
+| Warning key       |
+| ----------------- |
+| `tenantKey:1`     |
+| `orgId:1`         |
+| `status:1`        |
+| `trialDeleteAt:1` |
+| `adminTier:1`     |
+
+### 11.4 Production Atlas hardening — CLOSED
+
+- `0.0.0.0/0` removed from the production Atlas cluster.
+- Production allowlist: `74.220.51.0/24` and `74.220.59.0/24` (Render backend outbound ranges only).
+- Render backend logs confirmed `MongoDB connected` after hardening.
+
+**Production verification:**
+
+- Frontend smoke: `https://cardigo.co.il` returned `200 OK`.
+- Direct `/api/health` curl may return `403 PROXY_FORBIDDEN` — this is the proxy gate, not a Mongo failure. See §3.
+
+### 11.5 Governance obligation
+
+Every production Mongo index, collection, migration, or Mongo-related script change requires an explicit CI-only impact assessment before workstream closure. See §8.1 for the full law.
+
+### 11.6 Deferred open security contour — Production Mongo credential rotation
+
+**Status: open / deferred — not part of this workstream.**
+
+The production Mongo connection string value was exposed in chat/log context during this workstream. Credential rotation must be handled as a separate, bounded security contour.
+
+**Do not execute rotation as part of this docs closure.**
+
+Rotation outline (for the future contour only):
+
+1. Rotate Atlas DB user password.
+2. Update `MONGO_URI` in Render environment variables.
+3. Update the value in any local operator secure notes.
+4. Verify Render reconnects and backend logs show `MongoDB connected`.
+5. Run frontend smoke: `https://cardigo.co.il` → 200.
+
+No application code changes are expected for this rotation.
+
+---
+
 ## Cross-references
 
 - `backend/README.md` §CI policy — GitHub Actions secret split summary
