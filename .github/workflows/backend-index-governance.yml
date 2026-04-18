@@ -1,6 +1,7 @@
 name: Backend Index Governance
 
 on:
+    workflow_dispatch:
     pull_request:
     push:
         branches:
@@ -65,7 +66,7 @@ jobs:
 
             # main/release policy: fail the workflow on drift
             - name: Sanity (main/release gate) - card index drift
-              if: github.event_name == 'push'
+              if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
               env:
                   MONGO_URI_DRIFT_CHECK: ${{ secrets.MONGO_URI_DRIFT_CHECK }}
                   MONGO_URI: ${{ secrets.MONGO_URI }}
