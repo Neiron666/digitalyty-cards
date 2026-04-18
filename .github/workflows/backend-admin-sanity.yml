@@ -39,7 +39,6 @@ jobs:
             - name: Check required secrets
               env:
                   MONGO_URI_DRIFT_CHECK: ${{ secrets.MONGO_URI_DRIFT_CHECK }}
-                  MONGO_URI: ${{ secrets.MONGO_URI }}
                   JWT_SECRET: ${{ secrets.JWT_SECRET }}
                   SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
                   SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
@@ -47,12 +46,9 @@ jobs:
               run: |
                   set -euo pipefail
 
-                  # Prefer dedicated CI/staging DB secret; fallback to legacy secret if present.
-                  EFFECTIVE_MONGO_URI="${MONGO_URI_DRIFT_CHECK:-${MONGO_URI:-}}"
-
-                  if [ -z "$EFFECTIVE_MONGO_URI" ]; then
-                    echo "SKIP: missing MONGO_URI_DRIFT_CHECK/MONGO_URI"
-                    exit 0
+                  if [ -z "${MONGO_URI_DRIFT_CHECK:-}" ]; then
+                    echo "ERROR: MONGO_URI_DRIFT_CHECK secret is missing; refusing to fallback to production."
+                    exit 1
                   fi
 
                   if [ -z "${JWT_SECRET:-}" ]; then
@@ -80,13 +76,15 @@ jobs:
             - name: Sanity - admin user delete
               env:
                   MONGO_URI_DRIFT_CHECK: ${{ secrets.MONGO_URI_DRIFT_CHECK }}
-                  MONGO_URI: ${{ secrets.MONGO_URI }}
                   JWT_SECRET: ${{ secrets.JWT_SECRET }}
                   SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
                   SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
                   SUPABASE_STORAGE_BUCKET: ${{ secrets.SUPABASE_STORAGE_BUCKET }}
               run: |
                   set -euo pipefail
-                  EFFECTIVE_MONGO_URI="${MONGO_URI_DRIFT_CHECK:-${MONGO_URI:-}}"
-                  export MONGO_URI="$EFFECTIVE_MONGO_URI"
+                  if [ -z "${MONGO_URI_DRIFT_CHECK:-}" ]; then
+                    echo "ERROR: MONGO_URI_DRIFT_CHECK secret is missing; refusing to fallback to production."
+                    exit 1
+                  fi
+                  export MONGO_URI="$MONGO_URI_DRIFT_CHECK"
                   npm run sanity:admin-user-delete

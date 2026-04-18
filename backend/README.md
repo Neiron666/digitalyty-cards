@@ -6,7 +6,8 @@
     - It must not require secrets and must never start the HTTP server.
 - `sanity:admin-user-delete` is a **mutating integration sanity** (Mongo + Supabase Storage).
     - Run **manual/nightly only** (not on every PR).
-    - Requires staging secrets: `MONGO_URI` (or `MONGO_URI_DRIFT_CHECK`), `JWT_SECRET`, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_STORAGE_BUCKET`.
+    - Requires CI secrets: `MONGO_URI_DRIFT_CHECK` (CI-only Atlas cluster — required, no fallback to production), `JWT_SECRET`, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_STORAGE_BUCKET`.
+    - `MONGO_URI_DRIFT_CHECK` is **not** an interchangeable alias for `MONGO_URI`. It points to the dedicated CI-only Atlas cluster (`cardigo_ci` DB, separate Atlas project, no production data). See `docs/runbooks/ci-cluster-bootstrap.md`.
 
 - `sanity:ownership-consistency` checks User↔Card ownership invariants (A–E) and prints a JSON report.
 - Exit codes: `0` = clean, `2` = issues found, `1` = runtime error.
@@ -96,8 +97,33 @@ Runtime ≠ Sanity ≠ Migration:
     - `emailunsubscribetokens.tokenHash_1` (unique), `emailNormalized_1`, `expiresAt_1`, `usedAt_1`.
     - All five indexes confirmed applied 2026-04-12.
     - Dry-run by default. Apply: `npm.cmd run migrate:email-marketing-indexes -- --apply`
+- Migration (`migrate-tenantkey-slug.mjs`): governs `tenantKey_1_slug_1` compound unique partial index on `cards`. **No npm script** — invoke via `node` directly.
+    - Dry-run by default. Apply: `node scripts/migrate-tenantkey-slug.mjs --apply --create-index`
+    - `--create-index` is required; omitting it runs the backfill only without creating the index.
+    - Required as part of CI-only cluster bootstrap — see `docs/runbooks/ci-cluster-bootstrap.md` §5.
 
 Do NOT run `--apply` automatically in CI.
+
+**Mandatory CI-only impact assessment:** Before applying any production migration (`--apply`) or accepting any workstream that changes a Mongo index, collection, migration script, or Mongo-related script, the developer or Copilot/ChatGPT agent must explicitly record:
+
+- **YES** — CI cluster is affected: update CI bootstrap path, run `sanity:card-index-drift` against CI cluster, trigger Backend Index Governance `workflow_dispatch`, update `docs/runbooks/ci-cluster-bootstrap.md`.
+- **NO** — CI cluster is not affected: state this explicitly. Silent omission is not acceptable.
+
+See `docs/runbooks/ci-cluster-bootstrap.md` §8 for the full law.
+
+### Accepted non-blocking warnings
+
+After a correct `cards` index migration, `sanity:card-index-drift` reports **5 non-blocking warnings**. These do not fail the drift gate when `ok: true, missing: [], mismatches: []`:
+
+| Warning key       | Source                                                            |
+| ----------------- | ----------------------------------------------------------------- |
+| `tenantKey:1`     | `Card.model.js` path-level `index: true` on `tenantKey` field     |
+| `orgId:1`         | `Card.model.js` path-level `index: true` on `orgId` field         |
+| `status:1`        | `Card.model.js` path-level `index: true` on `status` field        |
+| `trialDeleteAt:1` | `Card.model.js` path-level `index: true` on `trialDeleteAt` field |
+| `adminTier:1`     | `Card.model.js` path-level `index: true` on `adminTier` field     |
+
+Only `anonymousId:1` is a critical unnamed index. See `docs/runbooks/ci-cluster-bootstrap.md` §6.
 
 ## Runbooks” / “Operational docs
 

@@ -140,3 +140,33 @@ npm.cmd start
 
 - `EXIT:<code>` is not applicable to long-running processes.
 - Capture and attach the startup log lines above as the operational proof.
+
+## F) Production Mongo connectivity (post CI-only cluster rollout)
+
+**Production Atlas Network Access (post-hardening):**
+
+The production Atlas cluster no longer allows `0.0.0.0/0`. It allowlists only the two Render backend outbound ranges:
+
+- `74.220.51.0/24`
+- `74.220.59.0/24`
+
+**Verification method:** Render service logs — confirm `MongoDB connected` line appears in the startup log. This is the authoritative proof of production Mongo connectivity.
+
+**Why direct `/api/health` curl returns 403:**
+
+A direct `curl` to the production backend URL may return:
+
+```
+HTTP/2 403  {"code":"PROXY_FORBIDDEN"}
+```
+
+This is the **proxy gate** (`CARDIGO_PROXY_SHARED_SECRET`) rejecting a non-proxied request. It is **not** a MongoDB connectivity failure. Do not diagnose `PROXY_FORBIDDEN` as a Mongo error.
+
+Correct production verification path:
+
+1. Render logs — confirm `MongoDB connected`
+2. Frontend smoke — `curl -I https://cardigo.co.il` → 200
+
+**GitHub Actions Mongo checks:**
+
+GitHub Actions workflows use the dedicated CI-only cluster via `MONGO_URI_DRIFT_CHECK`. They do not reach the production cluster under normal steady-state. See `docs/runbooks/ci-cluster-bootstrap.md` for the full CI cluster runbook.

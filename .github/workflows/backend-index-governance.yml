@@ -49,19 +49,15 @@ jobs:
               continue-on-error: true
               env:
                   MONGO_URI_DRIFT_CHECK: ${{ secrets.MONGO_URI_DRIFT_CHECK }}
-                  MONGO_URI: ${{ secrets.MONGO_URI }}
               run: |
                   set -euo pipefail
 
-                  # Prefer dedicated CI/staging DB secret; fallback to legacy secret if present.
-                  EFFECTIVE_MONGO_URI="${MONGO_URI_DRIFT_CHECK:-${MONGO_URI:-}}"
-
-                  if [ -z "$EFFECTIVE_MONGO_URI" ]; then
-                    echo "WARN: MONGO_URI_DRIFT_CHECK/MONGO_URI secret is missing; skipping sanity:card-index-drift on PR."
+                  if [ -z "${MONGO_URI_DRIFT_CHECK:-}" ]; then
+                    echo "WARN: MONGO_URI_DRIFT_CHECK secret is missing; skipping sanity:card-index-drift on PR. No fallback to production."
                     exit 0
                   fi
 
-                  export MONGO_URI="$EFFECTIVE_MONGO_URI"
+                  export MONGO_URI="$MONGO_URI_DRIFT_CHECK"
                   npm run sanity:card-index-drift
 
             # main/release policy: fail the workflow on drift
@@ -69,17 +65,13 @@ jobs:
               if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
               env:
                   MONGO_URI_DRIFT_CHECK: ${{ secrets.MONGO_URI_DRIFT_CHECK }}
-                  MONGO_URI: ${{ secrets.MONGO_URI }}
               run: |
                   set -euo pipefail
 
-                  # Prefer dedicated CI/staging DB secret; fallback to legacy secret if present.
-                  EFFECTIVE_MONGO_URI="${MONGO_URI_DRIFT_CHECK:-${MONGO_URI:-}}"
-
-                  if [ -z "$EFFECTIVE_MONGO_URI" ]; then
-                    echo "ERROR: MONGO_URI_DRIFT_CHECK/MONGO_URI secret is missing; cannot gate sanity:card-index-drift."
+                  if [ -z "${MONGO_URI_DRIFT_CHECK:-}" ]; then
+                    echo "ERROR: MONGO_URI_DRIFT_CHECK secret is missing; cannot run drift gate. No fallback to production."
                     exit 1
                   fi
 
-                  export MONGO_URI="$EFFECTIVE_MONGO_URI"
+                  export MONGO_URI="$MONGO_URI_DRIFT_CHECK"
                   npm run sanity:card-index-drift
