@@ -170,3 +170,13 @@ Correct production verification path:
 **GitHub Actions Mongo checks:**
 
 GitHub Actions workflows use the dedicated CI-only cluster via `MONGO_URI_DRIFT_CHECK`. They do not reach the production cluster under normal steady-state. See `docs/runbooks/ci-cluster-bootstrap.md` for the full CI cluster runbook.
+
+## G) Scheduled / background jobs
+
+All background jobs run in-process inside this web service. There are no Render Cron Jobs or Render Background Workers.
+
+For the full scheduled-jobs inventory, readiness status, Sentry monitoring state, and production rollout requirements see:
+
+- `docs/runbooks/scheduled-jobs-readiness.md`
+
+**Critical note:** The backend is currently a Render Free / sleeping service. In-process Node timers stop when the service sleeps. Sentry Cron missed check-ins under a sleeping free tier are expected, not indicative of code failure. Production-grade job scheduling requires an always-on paid instance or a dedicated scheduler architecture — see the runbook above.
