@@ -39,8 +39,8 @@
  *   If all whitelisted combinations return 401, next step is provider confirmation.
  *
  * SECRETS POLICY:
- *   Never prints: TranzilaTK value, APP_KEY, PRIVATE_KEY, PW, raw HMAC/access-token.
- *   Prints only:  tokenPresent boolean, terminal, auth diagnostics, price, dates, HTTP status, raw response.
+ *   Never prints: TranzilaTK value, APP_KEY, PRIVATE_KEY, PW, raw HMAC/access-token, API username.
+ *   Prints only:  tokenPresent boolean, apiUsernamePresent boolean, terminal, auth diagnostics, price, dates, HTTP status, raw response.
  *
  * Usage:
  *   node scripts/probe-tranzila-sto-create.mjs --help
@@ -103,6 +103,16 @@ OPTIONAL
   --allow-prod                   Allow probe against production-like terminals (fxp*)
   --help                         Print this usage and exit 0
 
+USERNAME INVESTIGATION (for resolving 401 when provider requires API username)
+  --api-username=<value>         API username from Tranzila (never printed in output)
+  --username-mode=<mode>         Where to include the API username (default: none)
+                                   none    Do not include username — preserves existing behavior
+                                   header  Add X-tranzila-api-username request header
+                                   body    Add api_username field to request body
+                                   both    Add both header and body field
+  Note: --api-username is required when --username-mode is not "none".
+        Username value is never printed; only apiUsernamePresent: true/false is reported.
+
 AUTH INVESTIGATION (bounded whitelist — for resolving 401)
   --auth-variant=<variant>       Auth formula variant (default: current)
     Colon-delimited variants (originally probed):
@@ -116,9 +126,16 @@ AUTH INVESTIGATION (bounded whitelist — for resolving 401)
     Provider-literal variants (interpretation B — PHP hash_hmac literal key-concat):
       literal_php_interp_hex        HMAC(key=privateKey+requestTime+nonce, msg=appKey) hex
       literal_php_interp_base64     HMAC(key=privateKey+requestTime+nonce, msg=appKey) base64
+    Postman-canonical alias (same topology as literal_php_interp_hex):
+      postman_canonical             HMAC(key=privateKey+requestTime+nonce, msg=appKey) hex
+                                    Use with --request-time-unit=seconds --nonce-format=postman
   --nonce-format=<format>        Nonce generation format (default: current)
                                    current      crypto.randomBytes(40).toString("hex") — 80-char hex
                                    uuid         crypto.randomUUID() — 36-char UUID
+                                   postman      80-char alphanumeric (A-Za-z0-9) — matches Tranzila Postman example
+  --request-time-unit=<unit>     Request time unit for X-tranzila-api-request-time (default: ms)
+                                   ms           String(Date.now()) — 13-digit milliseconds [existing behavior]
+                                   seconds      String(Math.round(Date.now()/1000)) — 10-digit Unix seconds [Postman canonical]
 
   Each run tests exactly ONE combination. No auto-iteration.
   If a non-401 response is received, record the winning variant and stop.
@@ -143,7 +160,7 @@ VERDICT CODES
 
 // ── Arg parsing ───────────────────────────────────────────────────────────────
 
-// Whitelisted auth variants and nonce formats — do NOT extend without a new contour.
+// Whitelisted auth variants, nonce formats, and time units — do NOT extend without a new contour.
 const AUTH_VARIANTS = [
     // Colon-delimited variants (probed in run 1-3)
     "current",
@@ -156,8 +173,12 @@ const AUTH_VARIANTS = [
     // Provider-literal variants (interpretation B: HMAC(key=privateKey+requestTime+nonce, msg=appKey))
     "literal_php_interp_hex",
     "literal_php_interp_base64",
+    // Postman-canonical alias — same topology as literal_php_interp_hex, use with seconds+postman nonce
+    "postman_canonical",
 ];
-const NONCE_FORMATS = ["current", "uuid"];
+const NONCE_FORMATS = ["current", "uuid", "postman"];
+const TIME_UNITS = ["ms", "seconds"];
+const USERNAME_MODES = ["none", "header", "body", "both"];
 
 function parseArgs(argv) {
     const args = {
@@ -170,29 +191,62 @@ function parseArgs(argv) {
         cardHolderId: null,
         cardHolderName: null,
         allowProd: false,
-        dryRun: true,   // safe-by-default: must explicitly pass --execute
+        dryRun: true, // safe-by-default: must explicitly pass --execute
         execute: false,
         help: false,
-        authVariant: "current",   // default preserves existing behavior exactly
-        nonceFormat: "current",   // default preserves existing behavior exactly
+        authVariant: "current", // default preserves existing behavior exactly
+        nonceFormat: "current", // default preserves existing behavior exactly
+        requestTimeUnit: "ms", // default preserves existing 13-digit ms behavior
+        apiUsername: null, // never printed; used only when usernameMode != none
+        usernameMode: "none", // default: do not send username — preserves prior behavior
     };
 
     for (const tok of argv.slice(2)) {
-        if (tok === "--help" || tok === "-h")            { args.help = true; }
-        else if (tok === "--dry-run")                    { args.dryRun = true; args.execute = false; }
-        else if (tok === "--execute")                    { args.execute = true; args.dryRun = false; }
-        else if (tok === "--allow-prod")                 { args.allowProd = true; }
-        else if (tok.startsWith("--user-email="))        { args.userEmail = tok.slice("--user-email=".length).trim(); }
-        else if (tok.startsWith("--user-id="))           { args.userId = tok.slice("--user-id=".length).trim(); }
-        else if (tok.startsWith("--exp-month="))         { args.expMonth = tok.slice("--exp-month=".length).trim(); }
-        else if (tok.startsWith("--exp-year="))          { args.expYear = tok.slice("--exp-year=".length).trim(); }
-        else if (tok.startsWith("--plan="))              { args.plan = tok.slice("--plan=".length).trim(); }
-        else if (tok.startsWith("--first-charge-date=")) { args.firstChargeDate = tok.slice("--first-charge-date=".length).trim(); }
-        else if (tok.startsWith("--card-holder-id="))    { args.cardHolderId = tok.slice("--card-holder-id=".length).trim(); }
-        else if (tok.startsWith("--card-holder-name="))  { args.cardHolderName = tok.slice("--card-holder-name=".length).trim(); }
-        else if (tok.startsWith("--auth-variant="))      { args.authVariant = tok.slice("--auth-variant=".length).trim(); }
-        else if (tok.startsWith("--nonce-format="))      { args.nonceFormat = tok.slice("--nonce-format=".length).trim(); }
-        else                                             { console.error(`[WARN] Unknown argument: ${tok}`); }
+        if (tok === "--help" || tok === "-h") {
+            args.help = true;
+        } else if (tok === "--dry-run") {
+            args.dryRun = true;
+            args.execute = false;
+        } else if (tok === "--execute") {
+            args.execute = true;
+            args.dryRun = false;
+        } else if (tok === "--allow-prod") {
+            args.allowProd = true;
+        } else if (tok.startsWith("--user-email=")) {
+            args.userEmail = tok.slice("--user-email=".length).trim();
+        } else if (tok.startsWith("--user-id=")) {
+            args.userId = tok.slice("--user-id=".length).trim();
+        } else if (tok.startsWith("--exp-month=")) {
+            args.expMonth = tok.slice("--exp-month=".length).trim();
+        } else if (tok.startsWith("--exp-year=")) {
+            args.expYear = tok.slice("--exp-year=".length).trim();
+        } else if (tok.startsWith("--plan=")) {
+            args.plan = tok.slice("--plan=".length).trim();
+        } else if (tok.startsWith("--first-charge-date=")) {
+            args.firstChargeDate = tok
+                .slice("--first-charge-date=".length)
+                .trim();
+        } else if (tok.startsWith("--card-holder-id=")) {
+            args.cardHolderId = tok.slice("--card-holder-id=".length).trim();
+        } else if (tok.startsWith("--card-holder-name=")) {
+            args.cardHolderName = tok
+                .slice("--card-holder-name=".length)
+                .trim();
+        } else if (tok.startsWith("--auth-variant=")) {
+            args.authVariant = tok.slice("--auth-variant=".length).trim();
+        } else if (tok.startsWith("--nonce-format=")) {
+            args.nonceFormat = tok.slice("--nonce-format=".length).trim();
+        } else if (tok.startsWith("--api-username=")) {
+            args.apiUsername = tok.slice("--api-username=".length).trim();
+        } else if (tok.startsWith("--username-mode=")) {
+            args.usernameMode = tok.slice("--username-mode=".length).trim();
+        } else if (tok.startsWith("--request-time-unit=")) {
+            args.requestTimeUnit = tok
+                .slice("--request-time-unit=".length)
+                .trim();
+        } else {
+            console.error(`[WARN] Unknown argument: ${tok}`);
+        }
     }
 
     // Enforce safe-by-default: if neither flag explicitly passed, treat as dry-run.
@@ -213,18 +267,43 @@ function validateArgs(args) {
         errs.push("--user-email and --user-id are mutually exclusive.");
     }
     if (!args.expMonth) errs.push("--exp-month is required.");
-    if (!args.expYear)  errs.push("--exp-year is required.");
+    if (!args.expYear) errs.push("--exp-year is required.");
+
+    // Integer validation for card expiry — fail fast before request construction.
+    if (args.expMonth) {
+        const m = parseInt(args.expMonth, 10);
+        if (!Number.isInteger(m) || m < 1 || m > 12) {
+            errs.push(
+                `--exp-month must be an integer 1–12. Got: "${args.expMonth}"`,
+            );
+        }
+    }
+    if (args.expYear) {
+        const y = parseInt(args.expYear, 10);
+        if (!Number.isInteger(y) || y < 2020 || y > 2040) {
+            errs.push(
+                `--exp-year must be an integer 2020–2040. Got: "${args.expYear}"`,
+            );
+        }
+    }
 
     const validPlans = ["monthly", "yearly"];
     if (!validPlans.includes(args.plan)) {
-        errs.push(`--plan must be one of: ${validPlans.join(", ")}. Got: "${args.plan}"`);
+        errs.push(
+            `--plan must be one of: ${validPlans.join(", ")}. Got: "${args.plan}"`,
+        );
     }
 
     if (args.execute && !args.firstChargeDate) {
-        errs.push("--first-charge-date=YYYY-MM-DD is required when using --execute.");
+        errs.push(
+            "--first-charge-date=YYYY-MM-DD is required when using --execute.",
+        );
     }
 
-    if (args.firstChargeDate && !/^\d{4}-\d{2}-\d{2}$/.test(args.firstChargeDate)) {
+    if (
+        args.firstChargeDate &&
+        !/^\d{4}-\d{2}-\d{2}$/.test(args.firstChargeDate)
+    ) {
         errs.push("--first-charge-date must be in YYYY-MM-DD format.");
     }
 
@@ -239,6 +318,24 @@ function validateArgs(args) {
             `--nonce-format must be one of: ${NONCE_FORMATS.join(", ")}. Got: "${args.nonceFormat}"`,
         );
     }
+    if (!TIME_UNITS.includes(args.requestTimeUnit)) {
+        errs.push(
+            `--request-time-unit must be one of: ${TIME_UNITS.join(", ")}. Got: "${args.requestTimeUnit}"`,
+        );
+    }
+
+    // Username mode validation.
+    if (!USERNAME_MODES.includes(args.usernameMode)) {
+        errs.push(
+            `--username-mode must be one of: ${USERNAME_MODES.join(", ")}. Got: "${args.usernameMode}"`,
+        );
+    }
+    // When username-mode is active, api-username is required.
+    if (args.usernameMode !== "none" && !args.apiUsername) {
+        errs.push(
+            `--api-username is required when --username-mode is "${args.usernameMode}".`,
+        );
+    }
 
     return errs;
 }
@@ -250,16 +347,18 @@ function validateConfig(args) {
     const cfg = TRANZILA_CONFIG;
 
     const requiredFields = [
-        ["stoTerminal",   "TRANZILA_STO_TERMINAL"],
-        ["stoApiUrl",     "TRANZILA_STO_API_URL"],
-        ["apiAppKey",     "TRANZILA_API_APP_KEY"],
+        ["stoTerminal", "TRANZILA_STO_TERMINAL"],
+        ["stoApiUrl", "TRANZILA_STO_API_URL"],
+        ["apiAppKey", "TRANZILA_API_APP_KEY"],
         ["apiPrivateKey", "TRANZILA_API_PRIVATE_KEY"],
     ];
 
     for (const [field, envName] of requiredFields) {
         const v = cfg[field];
         if (!v || v === "_TODO_") {
-            errs.push(`${envName} is missing or not configured (current value: ${JSON.stringify(v ?? null)})`);
+            errs.push(
+                `${envName} is missing or not configured (current value: ${JSON.stringify(v ?? null)})`,
+            );
         }
     }
 
@@ -268,10 +367,14 @@ function validateConfig(args) {
     }
 
     // Production safety gate — blocks accidental probes against production terminals.
-    if (cfg.stoTerminal && PROD_TERMINAL_PATTERN.test(cfg.stoTerminal) && !args.allowProd) {
+    if (
+        cfg.stoTerminal &&
+        PROD_TERMINAL_PATTERN.test(cfg.stoTerminal) &&
+        !args.allowProd
+    ) {
         errs.push(
             `stoTerminal "${cfg.stoTerminal}" looks production-like (matches /^fxp/i). ` +
-            "Pass --allow-prod to override. This probe is intended for sandbox use only."
+                "Pass --allow-prod to override. This probe is intended for sandbox use only.",
         );
     }
 
@@ -285,19 +388,38 @@ function validateConfig(args) {
  *
  * @param {string} appKey
  * @param {string} privateKey
- * @param {string} authVariant  — one of AUTH_VARIANTS
- * @param {string} nonceFormat  — one of NONCE_FORMATS
+ * @param {string} authVariant    — one of AUTH_VARIANTS
+ * @param {string} nonceFormat    — one of NONCE_FORMATS
+ * @param {string} requestTimeUnit — one of TIME_UNITS
+ * @param {{ usernameMode: string, apiUsername: string|null }} usernameOpts
  * @returns {{ headers: object, diagnostics: object }}
- *   diagnostics contains non-secret observables only (lengths, encoding, variant names).
- *   Never include secret values in diagnostics.
+ *   diagnostics contains non-secret observables only.
+ *   Never include secret values (username, key, token, HMAC) in diagnostics.
  */
-function buildAuthHeaders(appKey, privateKey, authVariant, nonceFormat) {
-    const requestTime = String(Date.now()); // always milliseconds
+function buildAuthHeaders(
+    appKey,
+    privateKey,
+    authVariant,
+    nonceFormat,
+    requestTimeUnit,
+    usernameOpts,
+) {
+    // ── Request time (unit-controlled) ────────────────────────────────────────
+    const requestTime =
+        requestTimeUnit === "seconds"
+            ? String(Math.round(Date.now() / 1000)) // 10-digit Unix seconds — Postman canonical
+            : String(Date.now()); // 13-digit milliseconds — original behavior
 
     // ── Nonce generation (whitelisted formats only) ────────────────────────────
     let nonce;
     if (nonceFormat === "uuid") {
         nonce = crypto.randomUUID(); // 36-char UUID
+    } else if (nonceFormat === "postman") {
+        // 80 alphanumeric chars — matches Tranzila Postman makeid(80) example
+        const charset =
+            "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+        const bytes = crypto.randomBytes(80);
+        nonce = Array.from(bytes, (b) => charset[b % charset.length]).join("");
     } else {
         // "current" — preserve original 80-char hex behavior
         nonce = crypto.randomBytes(40).toString("hex");
@@ -355,6 +477,14 @@ function buildAuthHeaders(appKey, privateKey, authVariant, nonceFormat) {
             message = appKey;
             digestEncoding = "base64";
             break;
+        case "postman_canonical":
+            // Alias for literal_php_interp_hex — intended for use with
+            // --request-time-unit=seconds --nonce-format=postman
+            // Produces identical HMAC topology: data=appKey, key=privateKey+requestTime+nonce
+            hmacKey = `${privateKey}${requestTime}${nonce}`;
+            message = appKey;
+            digestEncoding = "hex";
+            break;
         case "current":
         default:
             // Original formula — default; must remain unchanged
@@ -375,16 +505,28 @@ function buildAuthHeaders(appKey, privateKey, authVariant, nonceFormat) {
         "X-tranzila-api-nonce": nonce,
         "X-tranzila-api-access-token": accessToken,
         "Content-Type": "application/json",
-        "Accept": "application/json",
+        Accept: "application/json",
     };
 
-    // Non-secret diagnostics only — never include key/token/HMAC values.
+    // Username header — added only when mode requires it. Value is never logged.
+    if (
+        (usernameOpts.usernameMode === "header" ||
+            usernameOpts.usernameMode === "both") &&
+        usernameOpts.apiUsername
+    ) {
+        headers["X-tranzila-api-username"] = usernameOpts.apiUsername;
+    }
+
+    // Non-secret diagnostics only — never include key/token/HMAC/username values.
     const diagnostics = {
         authVariant,
         nonceFormat,
+        requestTimeUnit,
         requestTimeLength: requestTime.length,
         nonceLength: nonce.length,
         digestEncoding,
+        usernameMode: usernameOpts.usernameMode,
+        apiUsernamePresent: Boolean(usernameOpts.apiUsername),
     };
 
     return { headers, diagnostics };
@@ -417,18 +559,18 @@ function buildRequestBody(args, token, user) {
         charge_frequency: args.plan,
         currency_code: "ILS",
         response_language: "english",
-        created_by_user: "cardigo-sto-portability-probe",
+        created_by_user: args.apiUsername || "cardigo-sto-portability-probe",
         items: [
             {
                 name: planLabel,
-                quantity: 1,
+                units_number: 1,
                 unit_price: unitPrice,
             },
         ],
         card: {
-            token: token,   // TranzilaTK — never printed; inserted directly
-            expire_month: String(args.expMonth).padStart(2, "0"),
-            expire_year: String(args.expYear),
+            token: token, // TranzilaTK — never printed; inserted directly
+            expire_month: parseInt(args.expMonth, 10),
+            expire_year: parseInt(args.expYear, 10),
         },
     };
 
@@ -440,18 +582,25 @@ function buildRequestBody(args, token, user) {
     }
 
     // Optional card fields — included only when operator provides them.
-    if (args.cardHolderId)   body.card.card_holder_id   = args.cardHolderId;
+    if (args.cardHolderId) body.card.card_holder_id = args.cardHolderId;
     if (args.cardHolderName) body.card.card_holder_name = args.cardHolderName;
+
+    // Username body field — added only when mode requires it. Value is never logged.
+    if (
+        (args.usernameMode === "body" || args.usernameMode === "both") &&
+        args.apiUsername
+    ) {
+        body.api_username = args.apiUsername;
+    }
 
     // Client block: minimal safe fields from DB.
     const client = {};
     if (user.email) client.email = user.email;
     // name — try common variants defensively; User.model fields may vary.
-    const name = (
+    const name =
         user.name ||
         [user.firstName, user.lastName].filter(Boolean).join(" ").trim() ||
-        null
-    );
+        null;
     if (name) client.name = name;
     if (Object.keys(client).length > 0) {
         body.client = client;
@@ -467,15 +616,21 @@ function printSummary(args, user, body, diagnostics) {
     console.log("\n────────────────────────────────────────────────────────");
     console.log("  PROBE SUMMARY (secrets redacted)");
     console.log("────────────────────────────────────────────────────────");
-    console.log(`  mode:              ${args.execute ? "EXECUTE — real HTTP call" : "DRY-RUN — no HTTP call"}`);
+    console.log(
+        `  mode:              ${args.execute ? "EXECUTE — real HTTP call" : "DRY-RUN — no HTTP call"}`,
+    );
     console.log(`  stoTerminal:       ${TRANZILA_CONFIG.stoTerminal}`);
     console.log(`  stoApiUrl:         ${TRANZILA_CONFIG.stoApiUrl}`);
     console.log(`  userId:            ${user._id}`);
     console.log(`  userEmail:         ${user.email ?? "(not set)"}`);
     console.log(`  tokenPresent:      true`);
+    // ── Username diagnostics (value never printed) ─────────────────────────────
+    console.log(`  usernameMode:      ${diagnostics.usernameMode}`);
+    console.log(`  apiUsernamePresent: ${diagnostics.apiUsernamePresent}`);
     // ── Auth diagnostics (non-secret) ─────────────────────────────────────────
     console.log(`  authVariant:       ${diagnostics.authVariant}`);
     console.log(`  nonceFormat:       ${diagnostics.nonceFormat}`);
+    console.log(`  requestTimeUnit:   ${diagnostics.requestTimeUnit}`);
     console.log(`  requestTimeLength: ${diagnostics.requestTimeLength}`);
     console.log(`  nonceLength:       ${diagnostics.nonceLength}`);
     console.log(`  digestEncoding:    ${diagnostics.digestEncoding}`);
@@ -484,15 +639,23 @@ function printSummary(args, user, body, diagnostics) {
     console.log(`  price (agorot):    ${agorot}`);
     console.log(`  price (ILS):       ₪${(agorot / 100).toFixed(2)}`);
     console.log(`  charge_frequency:  ${body.charge_frequency}`);
-    console.log(`  first_charge_date: ${body.first_charge_date ?? "(not set — required for --execute)"}`);
+    console.log(
+        `  first_charge_date: ${body.first_charge_date ?? "(not set — required for --execute)"}`,
+    );
     console.log(`  charge_dom:        ${body.charge_dom ?? "(not set)"}`);
     console.log(`  expire_month:      ${body.card.expire_month}`);
     console.log(`  expire_year:       ${body.card.expire_year}`);
-    if (body.card.card_holder_id)   console.log(`  card_holder_id:    ${body.card.card_holder_id}`);
-    if (body.card.card_holder_name) console.log(`  card_holder_name:  ${body.card.card_holder_name}`);
-    if (body.client?.email)         console.log(`  client.email:      ${body.client.email}`);
-    if (body.client?.name)          console.log(`  client.name:       ${body.client.name}`);
-    console.log("  [redacted: TranzilaTK, API_APP_KEY, API_PRIVATE_KEY, PW, raw HMAC]");
+    if (body.card.card_holder_id)
+        console.log(`  card_holder_id:    ${body.card.card_holder_id}`);
+    if (body.card.card_holder_name)
+        console.log(`  card_holder_name:  ${body.card.card_holder_name}`);
+    if (body.client?.email)
+        console.log(`  client.email:      ${body.client.email}`);
+    if (body.client?.name)
+        console.log(`  client.name:       ${body.client.name}`);
+    console.log(
+        "  [redacted: TranzilaTK, API_APP_KEY, API_PRIVATE_KEY, PW, raw HMAC, API_USERNAME]",
+    );
     console.log("────────────────────────────────────────────────────────\n");
 }
 
@@ -502,50 +665,83 @@ function emitVerdict(status, rawBody, args) {
     const lower = rawBody.toLowerCase();
 
     if (status === 401 || status === 403) {
-        console.log(`\n[VERDICT] AUTH FAILURE — Tranzila rejected the request with HTTP ${status}.`);
-        console.log("          Verify v2 HMAC formula or provider-side API key enablement.");
-        console.log("          Raw response above contains provider error detail.");
-        console.log("          If all whitelisted variants return 401, next step is provider confirmation — not runtime coding.");
+        console.log(
+            `\n[VERDICT] AUTH FAILURE — Tranzila rejected the request with HTTP ${status}.`,
+        );
+        console.log(
+            "          Verify v2 HMAC formula or provider-side API key enablement.",
+        );
+        console.log(
+            "          Raw response above contains provider error detail.",
+        );
+        console.log(
+            "          If all whitelisted variants return 401, next step is provider confirmation — not runtime coding.",
+        );
         return "auth_failure";
     }
 
     if (status >= 200 && status < 300) {
         // Check whether 2xx body signals an application-level error.
         const bodyIndicatesError =
-            lower.includes('"error"')        ||
-            lower.includes("error_code")     ||
+            lower.includes('"error"') ||
+            lower.includes("error_code") ||
             lower.includes('"status":"error"') ||
             lower.includes('"status": "error"');
 
         if (!bodyIndicatesError) {
-            console.log(`\n[VERDICT] U1 RESOLVED — Tranzila accepted the STO create request (HTTP ${status}).`);
-            console.log(`          WINNING VARIANT: authVariant=${args.authVariant} nonceFormat=${args.nonceFormat}`);
-            console.log("          Token is portable across terminals. Record this combination before proceeding.");
+            console.log(
+                `\n[VERDICT] U1 RESOLVED — Tranzila accepted the STO create request (HTTP ${status}).`,
+            );
+            console.log(
+                `          WINNING VARIANT: authVariant=${args.authVariant} nonceFormat=${args.nonceFormat}`,
+            );
+            console.log(
+                "          Token is portable across terminals. Record this combination before proceeding.",
+            );
             return "resolved";
         }
 
-        console.log(`\n[VERDICT] INCONCLUSIVE — HTTP ${status} but response body signals an application error.`);
-        console.log("          Inspect raw response above for provider-level detail.");
+        console.log(
+            `\n[VERDICT] INCONCLUSIVE — HTTP ${status} but response body signals an application error.`,
+        );
+        console.log(
+            "          Inspect raw response above for provider-level detail.",
+        );
         return "inconclusive";
     }
 
     if (status >= 400 && status < 500) {
         const portabilitySignals = [
-            "token", "tranzilaTK", "card", "payment", "terminal",
-            "invalid", "not found", "not supported", "mismatch",
+            "token",
+            "tranzilaTK",
+            "card",
+            "payment",
+            "terminal",
+            "invalid",
+            "not found",
+            "not supported",
+            "mismatch",
         ];
         const isPortabilityRejection = portabilitySignals.some((s) =>
-            lower.includes(s.toLowerCase())
+            lower.includes(s.toLowerCase()),
         );
 
         if (isPortabilityRejection) {
-            console.log(`\n[VERDICT] U1 REJECTED — Token not portable or terminal mismatch (HTTP ${status}).`);
-            console.log("          The STO terminal rejected the token captured on the clearing terminal.");
-            console.log("          Raw response above contains the provider rejection reason.");
+            console.log(
+                `\n[VERDICT] U1 REJECTED — Token not portable or terminal mismatch (HTTP ${status}).`,
+            );
+            console.log(
+                "          The STO terminal rejected the token captured on the clearing terminal.",
+            );
+            console.log(
+                "          Raw response above contains the provider rejection reason.",
+            );
             return "rejected";
         }
 
-        console.log(`\n[VERDICT] INCONCLUSIVE — HTTP ${status} with unclear rejection reason.`);
+        console.log(
+            `\n[VERDICT] INCONCLUSIVE — HTTP ${status} with unclear rejection reason.`,
+        );
         console.log("          Inspect raw response above.");
         return "inconclusive";
     }
@@ -601,7 +797,7 @@ async function main() {
 
     if (!user) {
         console.error(
-            `[ERROR] User not found: ${args.userEmail ?? args.userId}`
+            `[ERROR] User not found: ${args.userEmail ?? args.userId}`,
         );
         await mongoose.disconnect();
         process.exit(1);
@@ -609,10 +805,12 @@ async function main() {
 
     // ── Token check (fail closed) ──────────────────────────────────────────────
     if (!user.tranzilaToken) {
-        console.error(`[ERROR] user.tranzilaToken is absent for ${user.email ?? String(user._id)}.`);
+        console.error(
+            `[ERROR] user.tranzilaToken is absent for ${user.email ?? String(user._id)}.`,
+        );
         console.error(
             "        U1 cannot be tested — this user has not completed a first payment" +
-            " that captured a TranzilaTK on the clearing terminal."
+                " that captured a TranzilaTK on the clearing terminal.",
         );
         await mongoose.disconnect();
         process.exit(1);
@@ -621,12 +819,14 @@ async function main() {
     // ── Build request body ─────────────────────────────────────────────────────
     const body = buildRequestBody(args, user.tranzilaToken, user);
 
-    // ── Build auth headers (with selected variant) ────────────────────────────
+    // ── Build auth headers (with selected variant + username opts) ────────────
     const { headers, diagnostics } = buildAuthHeaders(
         TRANZILA_CONFIG.apiAppKey,
         TRANZILA_CONFIG.apiPrivateKey,
         args.authVariant,
         args.nonceFormat,
+        args.requestTimeUnit,
+        { usernameMode: args.usernameMode, apiUsername: args.apiUsername },
     );
 
     // ── Print redacted summary ─────────────────────────────────────────────────
@@ -635,7 +835,9 @@ async function main() {
     // ── Dry-run: stop before HTTP ──────────────────────────────────────────────
     if (!args.execute) {
         console.log("[DRY-RUN] No HTTP call made.");
-        console.log("          Pass --execute (with --first-charge-date) to run the real probe.");
+        console.log(
+            "          Pass --execute (with --first-charge-date) to run the real probe.",
+        );
         await mongoose.disconnect();
         process.exit(0);
     }
@@ -643,7 +845,9 @@ async function main() {
     // ── Execute: real HTTP call to Tranzila STO API ────────────────────────────
     console.log(`[PROBE] POST ${TRANZILA_CONFIG.stoApiUrl}`);
     console.log(`        terminal:    ${TRANZILA_CONFIG.stoTerminal}`);
-    console.log(`        authVariant: ${args.authVariant}  nonceFormat: ${args.nonceFormat}`);
+    console.log(
+        `        authVariant: ${args.authVariant}  nonceFormat: ${args.nonceFormat}`,
+    );
 
     let httpStatus;
     let rawBody;
