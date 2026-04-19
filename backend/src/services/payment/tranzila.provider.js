@@ -142,6 +142,26 @@ export default {
         // allowlistPayload(payload) drops it even if called with full payload.
         const capturedToken = data.TranzilaTK ?? null;
 
+        // [BATCH-1] Extract expiry BEFORE allowlist/strip.
+        // expmonth/expyear are in STRIP_KEYS — they are stripped by allowlistPayload().
+        // Values are parsed here, before stripping, and never logged.
+        const _rawExpMonth = parseInt(data.expmonth, 10);
+        const _rawExpYear = parseInt(data.expyear, 10);
+        const capturedExpMonth =
+            Number.isInteger(_rawExpMonth) &&
+            _rawExpMonth >= 1 &&
+            _rawExpMonth <= 12
+                ? _rawExpMonth
+                : null;
+        const _expYearNorm =
+            _rawExpYear < 100 ? 2000 + _rawExpYear : _rawExpYear;
+        const capturedExpYear =
+            Number.isInteger(_rawExpYear) &&
+            _expYearNorm >= 2020 &&
+            _expYearNorm <= 2099
+                ? _expYearNorm
+                : null;
+
         // ── 1. Derive idempotency key ──
         const providerTxnId = deriveProviderTxnId(payload);
 
@@ -287,6 +307,15 @@ export default {
         // tranzilaToken is not logged and not stored in audit payload.
         if (capturedToken) {
             user.tranzilaToken = capturedToken;
+            // [BATCH-1] Persist expiry metadata alongside token.
+            // Only stored when both values are valid and a token is present.
+            // Do not store partial metadata. Does not block fulfillment if absent.
+            if (capturedExpMonth !== null && capturedExpYear !== null) {
+                user.tranzilaTokenMeta = {
+                    expMonth: capturedExpMonth,
+                    expYear: capturedExpYear,
+                };
+            }
         }
 
         await user.save();

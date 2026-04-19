@@ -681,10 +681,49 @@ function emitVerdict(status, rawBody, args) {
     }
 
     if (status >= 200 && status < 300) {
-        // Check whether 2xx body signals an application-level error.
+        // Parse JSON first to check error_code by value, not by key-name presence.
+        let parsed = null;
+        try {
+            parsed = JSON.parse(rawBody);
+        } catch (_) {
+            // Non-JSON body — fall through to conservative string-scan below.
+        }
+
+        if (parsed !== null && parsed.error_code !== undefined) {
+            if (Number(parsed.error_code) === 0) {
+                // Tranzila v2 canonical success: error_code === 0.
+                console.log(
+                    `\n[VERDICT] U1 RESOLVED — Tranzila accepted the STO create request (HTTP ${status}).`,
+                );
+                console.log(
+                    `          WINNING VARIANT: authVariant=${args.authVariant} nonceFormat=${args.nonceFormat}`,
+                );
+                if (parsed.sto_id) {
+                    console.log(`          sto_id: ${parsed.sto_id}`);
+                }
+                console.log(
+                    "          Token is portable across terminals. Record this combination before proceeding.",
+                );
+                return "resolved";
+            }
+
+            // Non-zero error_code — application-level error, not auth failure.
+            console.log(
+                `\n[VERDICT] INCONCLUSIVE — HTTP ${status} application-level error (error_code: ${parsed.error_code}).`,
+            );
+            if (parsed.message) {
+                console.log(`          Provider message: ${parsed.message}`);
+            }
+            console.log(
+                "          Auth passed (HTTP 2xx). Inspect raw response above for provider-level detail.",
+            );
+            return "inconclusive";
+        }
+
+        // Fallback for non-JSON bodies or JSON without error_code field.
+        // Conservative string-scan — avoids false positives from key names.
         const bodyIndicatesError =
             lower.includes('"error"') ||
-            lower.includes("error_code") ||
             lower.includes('"status":"error"') ||
             lower.includes('"status": "error"');
 

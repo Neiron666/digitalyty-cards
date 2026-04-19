@@ -71,6 +71,50 @@ const UserSchema = new mongoose.Schema(
         // Used by Batch 1 (STO create). Never stored in logs or audit payload.
         tranzilaToken: { type: String, default: null },
 
+        // [BATCH-1] Tranzila payment token expiry metadata — server-only.
+        // Populated during first-payment notify alongside tranzilaToken.
+        // Required for STO create (card.expire_month, card.expire_year).
+        // Must NEVER appear in client DTOs, logs, or audit payloads.
+        // Explicitly excluded from getUserById admin endpoint.
+        tranzilaTokenMeta: {
+            expMonth: { type: Number, default: null }, // integer 1–12
+            expYear: { type: Number, default: null }, // integer full year e.g. 2030
+        },
+
+        // [BATCH-2] Tranzila STO schedule lifecycle — server-side operational data only.
+        // Populated by runtime STO create service (NOT implemented in this batch — Batch 3).
+        // Visible to admin via getUserById (operational, non-credential data).
+        // Excluded from self/account DTOs by existing explicit allowlist selects.
+        //
+        // Idempotency guard (runtime, Batch 3):
+        //   tranzilaSto.stoId && tranzilaSto.status === "created" → skip duplicate create.
+        //
+        // Write-ahead pattern (runtime, Batch 3):
+        //   set status = "pending" before API call;
+        //   set status = "failed" + error fields on non-zero error_code;
+        //   set stoId + status = "created" only on confirmed error_code === 0.
+        //
+        // Retry policy (runtime, Batch 3):
+        //   status === "failed" → allow retry; overwrite lastAttemptAt/lastError* fields.
+        //   status === "pending" older than threshold → treat as stale, allow retry.
+        //
+        // Security: Do NOT store tokens, keys, HMACs, passwords, or secrets here.
+        // lastErrorMessage MUST be sanitized and truncated (≤500 chars) at the service write path.
+        // stoId is a provider schedule reference — not a secret, safe for operator visibility.
+        tranzilaSto: {
+            stoId: { type: String, default: null }, // sto_id returned by Tranzila /v2/sto/create
+            status: {
+                type: String,
+                enum: [null, "pending", "created", "failed", "cancelled"],
+                default: null,
+            },
+            createdAt: { type: Date, default: null }, // when first successfully created
+            lastAttemptAt: { type: Date, default: null }, // when last attempt was made (any outcome)
+            lastErrorCode: { type: Number, default: null }, // error_code from failed response
+            lastErrorMessage: { type: String, default: null, maxlength: 500 }, // sanitized at write path
+            lastErrorAt: { type: Date, default: null }, // when last error was recorded
+        },
+
         // Consent / legal acceptance (additive, null-safe for existing users).
         termsAcceptedAt: { type: Date, default: null },
         privacyAcceptedAt: { type: Date, default: null },
