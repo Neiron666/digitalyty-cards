@@ -31,6 +31,29 @@ const STRIP_KEYS = new Set([
     "cred_type",
     // [BATCH-0] Token field — must be lowercase to match k.toLowerCase() in allowlistPayload.
     "tranzilatk",
+    // [STO-BATCH-1] STO recurring notify: PII, customer data, and card/bank metadata.
+    // These fields are not needed for V1 recurring renewal processing.
+    // Lookup will be by sto_external_id, not by customer email/name/ID.
+    // This remains a strip-list, not a strict allowlist; stricter STO-only allowlisting is a future contour if needed.
+    // myid: Israeli national ID — critical PII, must never be stored.
+    // contact/email: customer name/email — PII.
+    // cardtype/dbfcard/dbfcardtype: card type/reference metadata.
+    // responsecvv: CVV check result code — card security metadata.
+    // json_purchase_data: opaque nested JSON — unknown content, strip in V1.
+    // cardaquirer/cardissuer: acquirer/issuer metadata — not needed for renewal.
+    // dbfisforeign/imaam: card/tax flags — not needed for renewal logic.
+    "myid",
+    "contact",
+    "email",
+    "cardtype",
+    "dbfcard",
+    "dbfcardtype",
+    "responsecvv",
+    "json_purchase_data",
+    "cardaquirer",
+    "cardissuer",
+    "dbfisforeign",
+    "imaam",
 ]);
 
 /**
@@ -71,6 +94,42 @@ function deriveProviderTxnId(payload) {
 
     const hash = computeRawPayloadHash(payload);
     return `tranzila:hash:${hash}`;
+}
+
+/**
+ * Derive providerTxnId for a Tranzila STO recurring notify.
+ *
+ * Namespace:  sto:<stoId>:<index>
+ *             sto:<stoId>:tempref:<Tempref>  (fallback when index absent)
+ *
+ * V1 policy — hard constraints (anti-drift):
+ *   - No hash fallback: hash instability on field reorder would create
+ *     silent duplicate subscription extensions on retries.
+ *   - No ConfirmationCode fallback: absent or zero for failed charges —
+ *     the cases where idempotency matters most.
+ *   - "sto:" prefix guarantees namespace isolation from DirectNG
+ *     "tranzila:" and "tranzila:hash:" keys produced by deriveProviderTxnId.
+ *
+ * Returns null when:
+ *   - sto_external_id is absent or empty: payload cannot be grouped.
+ *   - Both index and Tempref are absent or empty: no stable replay key exists.
+ *
+ * Callers MUST treat null as: cannot process — ACK 200 + log, no transaction.
+ *
+ * @param {object} payload — raw STO notify body (pre-allowlist)
+ * @returns {string|null}
+ */
+function deriveStoProviderTxnId(payload) {
+    const stoId = String(payload.sto_external_id ?? "").trim();
+    if (!stoId) return null;
+
+    const index = String(payload.index ?? "").trim();
+    if (index) return `sto:${stoId}:${index}`;
+
+    const tempref = String(payload.Tempref ?? "").trim();
+    if (tempref) return `sto:${stoId}:tempref:${tempref}`;
+
+    return null;
 }
 
 /**
