@@ -68,7 +68,19 @@ Before any billing action:
 
 ### 4.1 “Cancel subscription”
 
-Given Tranzila single‑payment:
+> ⚠️ **P0 OPERATOR GATE — Active Tranzila STO check**
+>
+> Before executing the Cardigo-side downgrade steps below, check the user's `tranzilaSto` state.
+>
+> - If `tranzilaSto.status === "created"` AND `tranzilaSto.stoId` is present, the user has an active recurring standing order at Tranzila. Downgrading Cardigo alone will NOT stop the recurring charge.
+> - Admin revoke / Cardigo-side downgrade is not complete cancellation for STO users. Provider-side STO must be deactivated separately.
+> - Until `sto-cancel.mjs` or an admin STO cancel flow exists, the operator must manually deactivate the STO in the Tranzila portal and document the action: ticket ID, operator, date/time, and Tranzila STO ID.
+> - `/v2/sto/update` with `sto_status: "inactive"` is the identified provider path, but implementation is blocked until sandbox module confirmation.
+> - Never mark `tranzilaSto.status = "cancelled"` in Mongo before provider-side cancellation is confirmed.
+> - Never use ad-hoc DB mutation as the normal cancellation flow.
+> - If `tranzilaSto.status` is `"pending"` or `"failed"`, do NOT assume there is no provider-side STO. This can represent an interrupted or ambiguous create attempt. Inspect Tranzila portal / logs before downgrade.
+> - If `tranzilaSto.status` is `null` and `tranzilaSto.stoId` is absent, no active STO is known in Cardigo. The standard downgrade steps below may proceed.
+>   Given Tranzila single‑payment:
 
 - “Cancel” usually means **do not renew next cycle**.
 - If the user demands immediate removal of access, Support can **downgrade** in admin panel:

@@ -739,3 +739,10 @@ export default {
         }
     },
 };
+
+// ── Named exports for operator tooling ──────────────────────────────────────
+// createTranzilaStoForUser: used by sto-retry-failed.mjs operator script.
+// STO_PENDING_STALE_MS: re-exported so the script uses the same threshold
+//   as the runtime, preventing stale-threshold drift.
+// Neither is added to export default — the payment service facade is unchanged.
+export { createTranzilaStoForUser, STO_PENDING_STALE_MS };

@@ -113,6 +113,30 @@ const UserSchema = new mongoose.Schema(
             lastErrorCode: { type: Number, default: null }, // error_code from failed response
             lastErrorMessage: { type: String, default: null, maxlength: 500 }, // sanitized at write path
             lastErrorAt: { type: Date, default: null }, // when last error was recorded
+
+            // Cancellation audit fields (additive, all null-default, no migration required).
+            // Populated by cancelTranzilaStoForUser (5.6c) and operator script (5.6d).
+            // Security: do NOT store raw response body, tokens, HMAC, headers, or request payload here.
+            cancelledAt: { type: Date, default: null }, // when provider confirmed STO inactive
+            cancellationAttemptAt: { type: Date, default: null }, // when cancel API was last attempted
+            cancellationErrorCode: { type: Number, default: null }, // error_code from failed cancel attempt
+            cancellationErrorMessage: {
+                type: String,
+                default: null,
+                maxlength: 500,
+            }, // sanitized at write path
+            cancellationSource: {
+                type: String,
+                enum: [
+                    null,
+                    "operator_script",
+                    "admin",
+                    "webhook",
+                    "manual_portal",
+                ],
+                default: null,
+            },
+            cancellationReason: { type: String, default: null, maxlength: 500 }, // ticket ID / operator note
         },
 
         // Consent / legal acceptance (additive, null-safe for existing users).
