@@ -41,7 +41,9 @@
         "retention:b2:cleanup:dry-run": "node scripts/retention-b2-cleanup.mjs --run",
         "retention:b2:cleanup:apply": "node scripts/retention-b2-cleanup.mjs --run --apply --i-understand-deletion",
         "sto:retry:dry-run": "node scripts/sto-retry-failed.mjs --run",
-        "sto:retry:execute": "node scripts/sto-retry-failed.mjs --run --execute"
+        "sto:retry:execute": "node scripts/sto-retry-failed.mjs --run --execute",
+        "sto:cancel:dry-run": "node scripts/sto-cancel.mjs --run",
+        "sto:cancel:execute": "node scripts/sto-cancel.mjs --run --execute"
     },
     "keywords": [],
     "author": "",

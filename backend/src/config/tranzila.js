@@ -10,11 +10,16 @@ export const TRANZILA_CONFIG = {
 
     // ── STO / token / recurring terminal ─────────────────────────────────────────────────
     // stoTerminal is a separate token/STO terminal, NOT a hosted checkout terminal.
-    // stoTerminal, stoApiUrl, apiAppKey, apiPrivateKey are used by createTranzilaStoForUser,
-    // gated by TRANZILA_STO_CREATE_ENABLED.
-    // pw and stoNotifyUrl are not used by STO create path; reserved for future contours.
+    // stoApiUrl       = /v2/sto/create endpoint. Used by createTranzilaStoForUser.
+    //                   Gated by TRANZILA_STO_CREATE_ENABLED.
+    // stoUpdateApiUrl = /v2/sto/update endpoint. Reserved for future cancelTranzilaStoForUser.
+    //                   NOT gated by TRANZILA_STO_CREATE_ENABLED.
+    //                   NOT startup-required. Validated at call time by cancel function.
+    // apiAppKey, apiPrivateKey are used for API v2 HMAC auth (both create and cancel paths).
+    // pw and stoNotifyUrl are not used by STO create/cancel path today; reserved for future contours.
     stoTerminal: process.env.TRANZILA_STO_TERMINAL,
     stoApiUrl: process.env.TRANZILA_STO_API_URL,
+    stoUpdateApiUrl: process.env.TRANZILA_STO_UPDATE_API_URL,
     apiAppKey: process.env.TRANZILA_API_APP_KEY,
     apiPrivateKey: process.env.TRANZILA_API_PRIVATE_KEY,
     pw: process.env.TRANZILA_PW,

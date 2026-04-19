@@ -259,6 +259,36 @@ function buildStoCreateBody(user, plan, firstChargeDate) {
 }
 
 /**
+ * Build the Tranzila /v2/sto/update request body for STO deactivation.
+ * Returns a status-only body — exactly 5 keys, no pricing or schedule fields.
+ * Throws on validation failure — caller wraps in try/catch.
+ *
+ * @param {string} stoTerminal
+ * @param {string|number} stoId — provider STO schedule ID (stored as String in schema)
+ * @returns {object}
+ */
+function buildStoDeactivateBody(stoTerminal, stoId) {
+    if (!stoTerminal || typeof stoTerminal !== "string") {
+        throw new Error("sto_deactivate_build_error: invalid stoTerminal");
+    }
+    const stoIdNum = Number(stoId);
+    if (
+        !Number.isFinite(stoIdNum) ||
+        stoIdNum <= 0 ||
+        !Number.isInteger(stoIdNum)
+    ) {
+        throw new Error("sto_deactivate_build_error: invalid stoId");
+    }
+    return {
+        terminal_name: stoTerminal,
+        sto_id: stoIdNum,
+        sto_status: "inactive",
+        updated_by_user: "cardigo_cancel_script",
+        response_language: "english",
+    };
+}
+
+/**
  * Create a Tranzila STO schedule for a user who has a confirmed token.
  * [BATCH-3] PRIVATE — NOT exported. Not wired into handleNotify yet (Batch 4).
  *
@@ -431,6 +461,205 @@ async function createTranzilaStoForUser(user, plan, firstChargeDate) {
     user.tranzilaSto.lastErrorAt = new Date();
     await user.save();
     return { ok: false, errorCode: errCode, errorMessage: errMessage };
+}
+
+/**
+ * Deactivate a user's Tranzila STO schedule via /v2/sto/update.
+ * [BATCH-3] PRIVATE — exported for operator tooling only (see sto-cancel.mjs, contour 5.6c).
+ *
+ * Provider-first: Mongo status="cancelled" only after HTTP 2xx + error_code === 0.
+ * Write-ahead: cancellationAttemptAt is set before the API call; status is NOT changed pre-confirm.
+ *
+ * @param {object} user — Mongoose User document
+ * @param {{ source?: string, reason?: string|null }} [options]
+ * @returns {Promise<object>}
+ */
+async function cancelTranzilaStoForUser(
+    user,
+    { source = "operator_script", reason = null } = {},
+) {
+    const ALLOWED_CANCEL_SOURCES = [
+        "operator_script",
+        "admin",
+        "webhook",
+        "manual_portal",
+    ];
+    const normalizedSource = ALLOWED_CANCEL_SOURCES.includes(source)
+        ? source
+        : "operator_script";
+    const sanitizedReason = sanitizeStoErrorMessage(reason);
+
+    const currentSto = ensureTranzilaStoState(user);
+
+    // ── A. Cancelled guard ──
+    if (currentSto.status === "cancelled") {
+        return {
+            ok: true,
+            skipped: true,
+            reason: "already_cancelled",
+            stoIdPresent: Boolean(currentSto.stoId),
+        };
+    }
+
+    // ── B. No stoId guard ──
+    if (!currentSto.stoId) {
+        return {
+            ok: false,
+            skipped: true,
+            reason: "no_sto_id",
+        };
+    }
+
+    // ── C. Invalid state guard ──
+    if (currentSto.status !== "created") {
+        return {
+            ok: false,
+            skipped: true,
+            reason: "invalid_state",
+            stoIdPresent: Boolean(currentSto.stoId),
+        };
+    }
+
+    // ── D. Config guard ──
+    const missingConfig =
+        !TRANZILA_CONFIG.stoTerminal ||
+        !TRANZILA_CONFIG.stoUpdateApiUrl ||
+        !TRANZILA_CONFIG.apiAppKey ||
+        !TRANZILA_CONFIG.apiPrivateKey;
+    if (missingConfig) {
+        user.tranzilaSto.cancellationAttemptAt = new Date();
+        user.tranzilaSto.cancellationErrorCode = null;
+        user.tranzilaSto.cancellationErrorMessage = "config_incomplete";
+        await user.save();
+        return {
+            ok: false,
+            errorMessage: "config_incomplete",
+            stoIdPresent: true,
+        };
+    }
+
+    // ── E. HTTPS guard ──
+    if (!TRANZILA_CONFIG.stoUpdateApiUrl.startsWith("https://")) {
+        user.tranzilaSto.cancellationAttemptAt = new Date();
+        user.tranzilaSto.cancellationErrorCode = null;
+        user.tranzilaSto.cancellationErrorMessage = "invalid_sto_update_url";
+        await user.save();
+        return {
+            ok: false,
+            errorMessage: "invalid_sto_update_url",
+            stoIdPresent: true,
+        };
+    }
+
+    // ── F. Write-ahead audit ──
+    // Set cancellationAttemptAt before API call. Do NOT change status pre-confirm.
+    user.tranzilaSto.cancellationAttemptAt = new Date();
+    user.tranzilaSto.cancellationErrorCode = null;
+    user.tranzilaSto.cancellationErrorMessage = null;
+    await user.save();
+
+    // ── G. Build body ──
+    let body;
+    try {
+        body = buildStoDeactivateBody(
+            TRANZILA_CONFIG.stoTerminal,
+            currentSto.stoId,
+        );
+    } catch (buildErr) {
+        user.tranzilaSto.cancellationErrorCode = null;
+        user.tranzilaSto.cancellationErrorMessage =
+            sanitizeStoErrorMessage(buildErr.message) || "build_error";
+        await user.save();
+        return {
+            ok: false,
+            errorMessage: user.tranzilaSto.cancellationErrorMessage,
+            stoIdPresent: true,
+        };
+    }
+
+    const headers = buildTranzilaApiAuthHeaders();
+
+    // ── H. Fetch ──
+    let res;
+    let rawText;
+    try {
+        res = await fetch(TRANZILA_CONFIG.stoUpdateApiUrl, {
+            method: "POST",
+            headers,
+            body: JSON.stringify(body),
+            signal: AbortSignal.timeout(15000),
+        });
+        // Read once — never re-read or log raw response text.
+        rawText = await res.text();
+    } catch (_fetchErr) {
+        user.tranzilaSto.cancellationErrorCode = null;
+        user.tranzilaSto.cancellationErrorMessage = "network_error";
+        await user.save();
+        return { ok: false, errorMessage: "network_error", stoIdPresent: true };
+    }
+
+    // ── I. Parse response ──
+    let responseBody;
+    try {
+        responseBody = JSON.parse(rawText);
+    } catch (_parseErr) {
+        user.tranzilaSto.cancellationErrorCode = null;
+        user.tranzilaSto.cancellationErrorMessage = "parse_error";
+        await user.save();
+        return { ok: false, errorMessage: "parse_error", stoIdPresent: true };
+    }
+
+    const httpStatus = res.status;
+    const isHttp2xx = httpStatus >= 200 && httpStatus < 300;
+
+    // ── L. HTTP non-2xx ──
+    if (!isHttp2xx) {
+        const errMsg =
+            httpStatus === 401 || httpStatus === 403
+                ? "auth_failure"
+                : httpStatus === 404
+                  ? "provider_not_found"
+                  : "http_error";
+        user.tranzilaSto.cancellationErrorCode = httpStatus;
+        user.tranzilaSto.cancellationErrorMessage = errMsg;
+        await user.save();
+        return {
+            ok: false,
+            errorCode: httpStatus,
+            errorMessage: errMsg,
+            stoIdPresent: true,
+        };
+    }
+
+    // ── J. Success — provider confirmed STO inactive ──
+    if (Number(responseBody.error_code) === 0) {
+        user.tranzilaSto.status = "cancelled";
+        user.tranzilaSto.cancelledAt = new Date();
+        user.tranzilaSto.cancellationAttemptAt = new Date();
+        user.tranzilaSto.cancellationSource = normalizedSource;
+        user.tranzilaSto.cancellationReason = sanitizedReason;
+        user.tranzilaSto.cancellationErrorCode = null;
+        user.tranzilaSto.cancellationErrorMessage = null;
+        await user.save();
+        return { ok: true, cancelled: true, stoIdPresent: true };
+    }
+
+    // ── K. Application failure (HTTP 2xx but non-zero error_code) ──
+    const errCode = Number.isFinite(Number(responseBody.error_code))
+        ? Number(responseBody.error_code)
+        : null;
+    const errMessage =
+        sanitizeStoErrorMessage(responseBody.message) || "sto_cancel_failed";
+
+    user.tranzilaSto.cancellationErrorCode = errCode;
+    user.tranzilaSto.cancellationErrorMessage = errMessage;
+    await user.save();
+    return {
+        ok: false,
+        errorCode: errCode,
+        errorMessage: errMessage,
+        stoIdPresent: true,
+    };
 }
 
 // ── STO observability ──────────────────────────────────────────────────────
@@ -742,7 +971,13 @@ export default {
 
 // ── Named exports for operator tooling ──────────────────────────────────────
 // createTranzilaStoForUser: used by sto-retry-failed.mjs operator script.
+// cancelTranzilaStoForUser: used by sto-cancel.mjs operator script (contour 5.6c).
 // STO_PENDING_STALE_MS: re-exported so the script uses the same threshold
 //   as the runtime, preventing stale-threshold drift.
-// Neither is added to export default — the payment service facade is unchanged.
-export { createTranzilaStoForUser, STO_PENDING_STALE_MS };
+// Neither cancelTranzilaStoForUser nor createTranzilaStoForUser is added to
+// export default — the payment service facade is unchanged.
+export {
+    createTranzilaStoForUser,
+    cancelTranzilaStoForUser,
+    STO_PENDING_STALE_MS,
+};
