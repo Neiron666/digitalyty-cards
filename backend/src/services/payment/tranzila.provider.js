@@ -91,6 +91,320 @@ function looksLikeObjectId(v) {
     return typeof v === "string" && /^[a-f0-9]{24}$/i.test(v);
 }
 
+// ── [BATCH-3] STO private service ─────────────────────────────────────────────
+// Not wired. Not exported. Called only from the wiring contour (Batch 4).
+
+/** Stale pending threshold: treat pending records older than 5 min as retryable. */
+const STO_PENDING_STALE_MS = 5 * 60 * 1000;
+
+/**
+ * Build Tranzila v2 API auth headers.
+ * Winning formula (postman_canonical): requestTime=Unix_seconds,
+ * nonce=80_alphanumeric, HMAC(key=privateKey+requestTime+nonce, msg=appKey) hex.
+ * Never logs any header value.
+ *
+ * @returns {Record<string, string>}
+ */
+function buildTranzilaApiAuthHeaders() {
+    const appKey = TRANZILA_CONFIG.apiAppKey;
+    const privateKey = TRANZILA_CONFIG.apiPrivateKey;
+
+    const requestTime = String(Math.round(Date.now() / 1000));
+
+    const charset =
+        "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+    const bytes = crypto.randomBytes(80);
+    const nonce = Array.from(bytes, (b) => charset[b % charset.length]).join(
+        "",
+    );
+
+    const accessToken = crypto
+        .createHmac("sha256", privateKey + requestTime + nonce)
+        .update(appKey)
+        .digest("hex");
+
+    return {
+        "X-tranzila-api-app-key": appKey,
+        "X-tranzila-api-request-time": requestTime,
+        "X-tranzila-api-nonce": nonce,
+        "X-tranzila-api-access-token": accessToken,
+        Accept: "application/json",
+        "Content-Type": "application/json",
+    };
+}
+
+/**
+ * Sanitize provider error message before DB storage.
+ * Truncates to schema maxlength (500). Never logs the value.
+ *
+ * @param {unknown} message
+ * @returns {string|null}
+ */
+function sanitizeStoErrorMessage(message) {
+    if (typeof message !== "string") return null;
+    return message.slice(0, 500);
+}
+
+/**
+ * Build the Tranzila /v2/sto/create request body.
+ * Uses only the proven probe body shape (U1 success: HTTP 200 error_code=0).
+ * Throws on validation failure — caller wraps in try/catch.
+ *
+ * @param {object} user           — Mongoose User document
+ * @param {"monthly"|"yearly"} plan
+ * @param {Date} firstChargeDate  — must be in the future
+ * @returns {object}              — JSON-serialisable body
+ */
+function buildStoCreateBody(user, plan, firstChargeDate) {
+    // ── Input validation (throw → createTranzilaStoForUser maps to failed state) ──
+    if (!user.tranzilaToken) {
+        throw new Error("sto_build_error: missing tranzilaToken");
+    }
+    const expMonth = user.tranzilaTokenMeta?.expMonth;
+    const expYear = user.tranzilaTokenMeta?.expYear;
+    if (!Number.isInteger(expMonth) || expMonth < 1 || expMonth > 12) {
+        throw new Error("sto_build_error: invalid expMonth");
+    }
+    if (!Number.isInteger(expYear) || expYear < 2020 || expYear > 2099) {
+        throw new Error("sto_build_error: invalid expYear");
+    }
+    if (plan !== "monthly" && plan !== "yearly") {
+        throw new Error(`sto_build_error: invalid plan ${plan}`);
+    }
+    if (
+        !(firstChargeDate instanceof Date) ||
+        !Number.isFinite(firstChargeDate.getTime())
+    ) {
+        throw new Error("sto_build_error: invalid firstChargeDate");
+    }
+    if (firstChargeDate.getTime() <= Date.now()) {
+        throw new Error(
+            "sto_build_error: firstChargeDate must be in the future",
+        );
+    }
+
+    // ── first_charge_date: YYYY-MM-DD ──
+    const firstChargeDateStr = firstChargeDate.toISOString().slice(0, 10);
+
+    // ── charge_dom: day of month clamped 1–28 (avoids Feb 29/30/31 edge cases) ──
+    const rawDay = firstChargeDate.getUTCDate();
+    const chargeDom = Math.min(Math.max(rawDay, 1), 28);
+
+    // ── item label ──
+    const itemName =
+        plan === "yearly"
+            ? "Cardigo Premium - Yearly"
+            : "Cardigo Premium - Monthly";
+
+    // ── unit_price: agorot → ILS shekels ──
+    const unitPrice = PRICES_AGOROT[plan] / 100;
+
+    // ── client block ──
+    const clientName = user.firstName?.trim() || null;
+    const client = { email: user.email };
+    if (clientName) client.name = clientName;
+
+    return {
+        terminal_name: TRANZILA_CONFIG.stoTerminal,
+        sto_payments_number: 9999,
+        charge_frequency: plan,
+        first_charge_date: firstChargeDateStr,
+        charge_dom: chargeDom,
+        currency_code: "ILS",
+        response_language: "english",
+        created_by_user: "cardigo-service",
+        items: [
+            {
+                name: itemName,
+                units_number: 1,
+                unit_price: unitPrice,
+            },
+        ],
+        // card.token is never logged; stored only at the point of use here.
+        card: {
+            token: user.tranzilaToken,
+            expire_month: expMonth,
+            expire_year: expYear,
+        },
+        client,
+    };
+}
+
+/**
+ * Create a Tranzila STO schedule for a user who has a confirmed token.
+ * [BATCH-3] PRIVATE — NOT exported. Not wired into handleNotify yet (Batch 4).
+ *
+ * Idempotency:  stoId + status="created"  → skip.
+ * Write-ahead:  status="pending"          → before HTTP call.
+ * Stale guard:  pending older than STO_PENDING_STALE_MS → allow retry.
+ *
+ * @param {object} user             — Mongoose User document (must be fetched, not plain object)
+ * @param {"monthly"|"yearly"} plan
+ * @param {Date} firstChargeDate    — typically user.subscription.expiresAt
+ * @returns {Promise<{ok:boolean, [skipped]:boolean, [created]:boolean, [stoId]:string, [reason]:string, [errorCode]:number|null, [errorMessage]:string}>}
+ */
+async function createTranzilaStoForUser(user, plan, firstChargeDate) {
+    const currentSto = user.tranzilaSto ?? {};
+
+    // ── A. Idempotency guard ──
+    if (currentSto.stoId && currentSto.status === "created") {
+        return {
+            ok: true,
+            skipped: true,
+            reason: "already_created",
+            stoId: currentSto.stoId,
+        };
+    }
+
+    // ── B. Cancelled guard ──
+    if (currentSto.status === "cancelled") {
+        return { ok: false, skipped: true, reason: "cancelled" };
+    }
+
+    // ── C. Pending guard (stale check) ──
+    if (
+        currentSto.status === "pending" &&
+        currentSto.lastAttemptAt instanceof Date
+    ) {
+        const age = Date.now() - currentSto.lastAttemptAt.getTime();
+        if (age < STO_PENDING_STALE_MS) {
+            return { ok: false, skipped: true, reason: "pending" };
+        }
+        // Stale — fall through to retry.
+    }
+
+    // ── D. Config validation ──
+    const missingConfig =
+        !TRANZILA_CONFIG.stoTerminal ||
+        !TRANZILA_CONFIG.stoApiUrl ||
+        !TRANZILA_CONFIG.apiAppKey ||
+        !TRANZILA_CONFIG.apiPrivateKey;
+    if (missingConfig) {
+        user.tranzilaSto.status = "failed";
+        user.tranzilaSto.lastAttemptAt = new Date();
+        user.tranzilaSto.lastErrorCode = null;
+        user.tranzilaSto.lastErrorMessage = "config_incomplete";
+        user.tranzilaSto.lastErrorAt = new Date();
+        await user.save();
+        return { ok: false, errorMessage: "config_incomplete" };
+    }
+
+    // ── E. HTTPS guard ──
+    if (!TRANZILA_CONFIG.stoApiUrl.startsWith("https://")) {
+        user.tranzilaSto.status = "failed";
+        user.tranzilaSto.lastAttemptAt = new Date();
+        user.tranzilaSto.lastErrorCode = null;
+        user.tranzilaSto.lastErrorMessage = "invalid_sto_api_url";
+        user.tranzilaSto.lastErrorAt = new Date();
+        await user.save();
+        return { ok: false, errorMessage: "invalid_sto_api_url" };
+    }
+
+    // ── F. Write-ahead pending ──
+    user.tranzilaSto.status = "pending";
+    user.tranzilaSto.lastAttemptAt = new Date();
+    user.tranzilaSto.lastErrorCode = null;
+    user.tranzilaSto.lastErrorMessage = null;
+    user.tranzilaSto.lastErrorAt = null;
+    await user.save();
+
+    // ── G. Build headers/body ──
+    // Body contains card.token — must never be logged.
+    let body;
+    try {
+        body = buildStoCreateBody(user, plan, firstChargeDate);
+    } catch (buildErr) {
+        user.tranzilaSto.status = "failed";
+        user.tranzilaSto.lastErrorCode = null;
+        user.tranzilaSto.lastErrorMessage =
+            sanitizeStoErrorMessage(buildErr.message) || "build_error";
+        user.tranzilaSto.lastErrorAt = new Date();
+        await user.save();
+        return { ok: false, errorMessage: user.tranzilaSto.lastErrorMessage };
+    }
+
+    const headers = buildTranzilaApiAuthHeaders();
+
+    // ── H. Fetch ──
+    let res;
+    let rawText;
+    try {
+        // AbortSignal.timeout is available from Node 17.3 / Node 18+.
+        res = await fetch(TRANZILA_CONFIG.stoApiUrl, {
+            method: "POST",
+            headers,
+            body: JSON.stringify(body),
+            signal: AbortSignal.timeout(15000),
+        });
+        // Read once — never re-read or log raw text.
+        rawText = await res.text();
+    } catch (_fetchErr) {
+        // Network error, timeout, or DNS failure.
+        user.tranzilaSto.status = "failed";
+        user.tranzilaSto.lastErrorCode = null;
+        user.tranzilaSto.lastErrorMessage = "network_error";
+        user.tranzilaSto.lastErrorAt = new Date();
+        await user.save();
+        return { ok: false, errorMessage: "network_error" };
+    }
+
+    // ── I. Parse JSON response ──
+    let responseBody;
+    try {
+        responseBody = JSON.parse(rawText);
+    } catch (_parseErr) {
+        user.tranzilaSto.status = "failed";
+        user.tranzilaSto.lastErrorCode = null;
+        user.tranzilaSto.lastErrorMessage = "parse_error";
+        user.tranzilaSto.lastErrorAt = new Date();
+        await user.save();
+        return { ok: false, errorMessage: "parse_error" };
+    }
+
+    const httpStatus = res.status;
+    const isHttp2xx = httpStatus >= 200 && httpStatus < 300;
+
+    // ── L. HTTP auth / non-2xx ──
+    if (!isHttp2xx) {
+        const errMsg =
+            httpStatus === 401 || httpStatus === 403
+                ? "auth_failure"
+                : "http_error";
+        user.tranzilaSto.status = "failed";
+        user.tranzilaSto.lastErrorCode = httpStatus;
+        user.tranzilaSto.lastErrorMessage = errMsg;
+        user.tranzilaSto.lastErrorAt = new Date();
+        await user.save();
+        return { ok: false, errorMessage: errMsg };
+    }
+
+    // ── J. Success ──
+    if (Number(responseBody.error_code) === 0 && responseBody.sto_id) {
+        user.tranzilaSto.stoId = String(responseBody.sto_id);
+        user.tranzilaSto.status = "created";
+        user.tranzilaSto.createdAt = new Date();
+        user.tranzilaSto.lastErrorCode = null;
+        user.tranzilaSto.lastErrorMessage = null;
+        user.tranzilaSto.lastErrorAt = null;
+        await user.save();
+        return { ok: true, created: true, stoId: user.tranzilaSto.stoId };
+    }
+
+    // ── K. Application failure (HTTP 2xx but non-zero error_code) ──
+    const errCode = Number.isFinite(Number(responseBody.error_code))
+        ? Number(responseBody.error_code)
+        : null;
+    const errMessage =
+        sanitizeStoErrorMessage(responseBody.message) || "sto_create_failed";
+
+    user.tranzilaSto.status = "failed";
+    user.tranzilaSto.lastErrorCode = errCode;
+    user.tranzilaSto.lastErrorMessage = errMessage;
+    user.tranzilaSto.lastErrorAt = new Date();
+    await user.save();
+    return { ok: false, errorCode: errCode, errorMessage: errMessage };
+}
+
 export default {
     /**
      * Создание платежа (redirect пользователя на Tranzila)
@@ -217,31 +531,6 @@ export default {
             currencyOk &&
             indexPresent;
         const trustOk = hasLegacySignature ? legacySigOk : directNgTrustOk;
-
-        // [BATCH-0-PROBE] Temporary sandbox observability — remove after sandbox verification.
-        // Logs field names and booleans only. Never logs token value or raw payload values.
-        console.log(
-            "[batch0-probe]",
-            JSON.stringify({
-                keys: Object.keys(payload).sort(),
-                Response: data.Response,
-                hasLegacySignature,
-                directNgTrustOk,
-                trustOk,
-                hasToken: Boolean(capturedToken),
-                candidateFields: {
-                    index: Boolean(data.index),
-                    authnr: Boolean(data.authnr),
-                    ConfirmationCode: Boolean(data.ConfirmationCode),
-                },
-                expiryFields: {
-                    expmonth: Boolean(data.expmonth),
-                    expyear: Boolean(data.expyear),
-                    expdate: Boolean(data.expdate),
-                    myexpdate: Boolean(data.myexpdate),
-                },
-            }),
-        );
 
         // ── 5. Determine status ──
         const isPaid = trustOk && responseOk;
