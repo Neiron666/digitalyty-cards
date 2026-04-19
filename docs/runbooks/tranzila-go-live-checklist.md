@@ -34,16 +34,29 @@
 
 ### Render (backend)
 
-НУЖНО:
+НУЖНО (чекаут / clearing):
 
-- `PAYMENT_PROVIDER` = `mock` (пока разработка) / `tranzila` (только при go‑live)
+- `PAYMENT_PROVIDER` = `mock` (пока разработка) / `tranzila` (только при go-live)
 - `CARDIGO_NOTIFY_TOKEN` - **тот же**, что на Netlify
 - `CARDIGO_PROXY_SHARED_SECRET` - **тот же**, что на Netlify
-- `TRANZILA_TERMINAL` - реальный ID терминала (только для go‑live)
-- `TRANZILA_SECRET` - реальный секрет подписи (только для go‑live)
+- `TRANZILA_TERMINAL` - clearing / DirectNG terminal ID (только для go-live)
+- `TRANZILA_SECRET` - реальный секрет подписи (только для go-live)
 - `TRANZILA_NOTIFY_URL` - `https://cardigo.co.il/api/payments/notify?nt=<CARDIGO_NOTIFY_TOKEN>`
 - `TRANZILA_SUCCESS_URL` - `https://cardigo.co.il/pricing?payment=success`
 - `TRANZILA_FAIL_URL` - `https://cardigo.co.il/pricing?payment=fail`
+
+НУЖНО (STO / token / MyBilling — для STO create):
+
+- `TRANZILA_STO_TERMINAL` - token / MyBilling terminal ID (**not** a hosted checkout terminal)
+- `TRANZILA_STO_API_URL` - Tranzila `/v2/sto/create` endpoint URL
+- `TRANZILA_API_APP_KEY` - Tranzila API v2 public app key (HMAC auth)
+- `TRANZILA_API_PRIVATE_KEY` - Tranzila API v2 private key (HMAC key base — **never log**)
+- `TRANZILA_STO_CREATE_ENABLED` = `false` (default safe state; `true` only for approved rollout window)
+
+НЕ НУЖНО ещё (future STO notify contour):
+
+- `TRANZILA_STO_NOTIFY_URL` - future STO notify handler URL; not required for STO create
+- `CARDIGO_STO_NOTIFY_TOKEN` - future STO notify auth token; not required for STO create
 
 ### Local backend (.env локально, не в git)
 
@@ -145,3 +158,58 @@
 - `CARDIGO_NOTIFY_TOKEN` не совпадает Netlify vs Render → notify будет отбрасываться на одном из уровней.
 - `_redirects` правило стоит ниже `/api/*` → Tranzila попадает в gate proxy и не может пройти.
 - В Tranzila dashboard notify URL без `?nt=` → Netlify function вернёт 403.
+
+---
+
+## 7) STO Recurring Schedule — Pre-Production Checklist
+
+> **SSoT:** `docs/runbooks/billing-flow-ssot.md` §14.
+> Этот раздел — операторский чеклист только.
+
+### Pre-flight (до включения STO create)
+
+- [ ] Подтвердить dual terminal model: `TRANZILA_TERMINAL` ≠ `TRANZILA_STO_TERMINAL` (разные терминалы).
+- [ ] Подтвердить, что STO vars на Render заполнены (не `_TODO_`):
+    - `TRANZILA_STO_TERMINAL`
+    - `TRANZILA_STO_API_URL`
+    - `TRANZILA_API_APP_KEY`
+    - `TRANZILA_API_PRIVATE_KEY`
+- [ ] `TRANZILA_STO_CREATE_ENABLED=false` на Render перед началом тестового окна.
+- [ ] Выбрать тестового пользователя с `tranzilaSto.status=null` и `tranzilaToken` есть (чистое состояние). Не использовать пользователя с `tranzilaSto.status="created"` без явного сброса DB state.
+
+### Controlled enable procedure (тестовое окно)
+
+1. Убедиться, что выбранный тестовый пользователь прошёл pre-flight sanity (нет existing STO, есть token).
+2. Выставить `TRANZILA_STO_CREATE_ENABLED=true` на Render.
+3. Провести тестовую оплату через выбранного пользователя.
+4. Проверить в Mongo: `user.tranzilaSto.status === "created"` и `stoId` ненулевой.
+5. Проверить в Tranzila portal: STO создан.
+6. **Немедленно** выставить `TRANZILA_STO_CREATE_ENABLED=false` на Render.
+7. Деактивировать тестовые STO в Tranzila portal.
+
+### Rollback
+
+- [ ] Render: выставить `TRANZILA_STO_CREATE_ENABLED=false`.
+- Первый платёж уже завершён и не откатывается — STO create является post-fulfillment non-blocking операцией.
+
+### Portal cleanup (после тестового окна)
+
+- [ ] Деактивировать / отменить все тестовые STO в Tranzila `testcardstok` portal.
+- [ ] Не оставлять активные тестовые STOs — это создаёт будущие recurring charges.
+
+### Production blockers (до production STO rollout)
+
+- [ ] STO notify handler (Tranzila recurring charge webhook) — **не реализован**.
+- [ ] Failed-STO retry/recovery script или job — **не реализован**.
+- [ ] Cancellation/deactivation runbook и/или script — **не реализован**.
+- [ ] Non-sensitive structured observability — **не реализована**.
+- [ ] Gated startup validation при `TRANZILA_STO_CREATE_ENABLED=true` — **не реализована**.
+- [ ] Production terminal cutover (замена sandbox terminal vars на production values) — **не выполнен**.
+- [ ] Handshake / `thtk` amount locking — отдельный будущий контур.
+- [ ] YeshInvoice / קבלה — явно отложен (см. `billing-flow-ssot.md` §9).
+
+### Частые ошибки при STO
+
+- Использование пользователя с уже созданным STO → Guard A в `createTranzilaStoForUser` тихо пропустит операцию. Всегда проверять `tranzilaSto.status` перед тестом.
+- Повторное использование тестовых пользователей без проверки DB state → Guard A скроет операцию. См. pre-flight чеклист выше.
+- `TRANZILA_STO_CREATE_ENABLED=true` не выставлен на Render (но выставлен локально в `.env`) → STO create молча пропускается на Render.

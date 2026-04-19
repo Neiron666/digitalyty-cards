@@ -433,6 +433,44 @@ async function createTranzilaStoForUser(user, plan, firstChargeDate) {
     return { ok: false, errorCode: errCode, errorMessage: errMessage };
 }
 
+// ── STO observability ──────────────────────────────────────────────────────
+// Private. Centralized at the handleNotify call site only.
+// Never called inside createTranzilaStoForUser guard branches.
+/**
+ * @param {{ userId: unknown, plan: string, result?: object, unexpectedError?: boolean }} opts
+ */
+function logStoCreateOutcome({
+    userId,
+    plan,
+    result,
+    unexpectedError = false,
+}) {
+    const logObject = {
+        event: "sto_create",
+        userId: String(userId),
+        plan,
+        ok: Boolean(result?.ok),
+        created: Boolean(result?.created),
+        skipped: Boolean(result?.skipped),
+        reason: result?.reason ?? null,
+        errorCode: result?.errorCode ?? null,
+        errorMessage: result?.errorMessage ?? null,
+        stoIdPresent: Boolean(result?.stoId),
+    };
+
+    if (unexpectedError) {
+        console.error("[sto]", logObject);
+        return;
+    }
+
+    if (result?.ok === false && result?.skipped !== true) {
+        console.warn("[sto]", logObject);
+        return;
+    }
+
+    console.info("[sto]", logObject);
+}
+
 export default {
     /**
      * Создание платежа (redirect пользователя на Tranzila)
@@ -676,12 +714,26 @@ export default {
             );
         }
 
-        // ── 9. [BATCH-3] STO schedule create — non-blocking, after full fulfillment ──
+        // ── 9. [BATCH-3/5.4] STO schedule create — non-blocking, after full fulfillment ──
         // STO is a follow-on lifecycle operation and must not block first-payment fulfillment.
         if (isStoCreateEnabled()) {
             try {
-                await createTranzilaStoForUser(user, validPlan, expiresAt);
+                const stoResult = await createTranzilaStoForUser(
+                    user,
+                    validPlan,
+                    expiresAt,
+                );
+                logStoCreateOutcome({
+                    userId,
+                    plan: validPlan,
+                    result: stoResult,
+                });
             } catch (_stoErr) {
+                logStoCreateOutcome({
+                    userId,
+                    plan: validPlan,
+                    unexpectedError: true,
+                });
                 // Swallow — first payment is already fulfilled. Do not rethrow.
             }
         }

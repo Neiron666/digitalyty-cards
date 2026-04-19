@@ -27,8 +27,8 @@ All internal amounts are **integers in agorot** (1/100 of ₪). No floats anywhe
 
 **Stale price locations (must be removed/aligned):**
 
-- `backend/src/services/payment/tranzila.provider.js` - local `PRICES` (29.9 / 299).
-- `backend/src/controllers/payment.controller.js` - dead code, local `PRICES` (29.9 / 200).
+- ~~`backend/src/services/payment/tranzila.provider.js` - local `PRICES` (29.9 / 299).~~ **RESOLVED:** provider now imports canonical `PRICES_AGOROT` from `backend/src/config/plans.js`.
+- `backend/src/controllers/payment.controller.js` - dead code, local `PRICES` (29.9 / 200). Still present; must be deleted when billing code is updated.
 - `frontend/src/components/pricing/PricingPlans.jsx` - hardcoded ₪29.99 / ₪299.
 
 ---
@@ -94,8 +94,10 @@ User clicks "Upgrade"
   │  d. Persist PaymentTransaction to ledger
   │     - If duplicate (E11000) → return 200 (idempotent)
   │  e. Update User.subscription + Card.billing
-  │  f. Best-effort: create receipt (YeshInvoice) + send email (Mailjet)
-  │     - Receipt/email failure does NOT cause 5xx
+  │  f. Best-effort: STO recurring schedule create (post-fulfillment, non-blocking — see §14)
+  │     - STO failure does NOT roll back first-payment activation
+  │  g. Receipt (YeshInvoice) + email (Mailjet): DEFERRED — not active in current runtime.
+  │     See §9 for deferral gate and YeshInvoice/קבלה policy.
   ▼
 ⑦ Return 200 "OK" (generic body)
 ```
@@ -189,9 +191,11 @@ Key fields:
 
 Strategy: **discover-then-derive**.
 
-1. Check Tranzila payload for a provider-assigned transaction identifier (e.g., `index`, `authnr`, `ConfirmationCode`). Use the first non-empty value.
+1. Check Tranzila payload for a provider-assigned transaction identifier in priority order: `index` (preferred) → `authnr` → `ConfirmationCode`. Use the first non-empty value.
 2. If none found (edge case): compute `sha256(normalized_payload_string)` as fallback.
 3. Prefix with provider name: `tranzila:<value>` / `mock:<value>`.
+
+**RESOLVED.** Implemented in `backend/src/services/payment/tranzila.provider.js` → `deriveProviderTxnId()`. Priority order confirmed via real DirectNG sandbox payment.
 
 ### Duplicate handling
 
@@ -228,13 +232,13 @@ Precedence (highest → lowest):
 
 ### User.subscription (existing + new)
 
-| Field              | Type        | Status   | Purpose                          |
-| ------------------ | ----------- | -------- | -------------------------------- |
-| `status`           | String enum | existing | inactive/active/expired          |
-| `expiresAt`        | Date        | existing | Current period end               |
-| `provider`         | String      | existing | "mock"/"tranzila"                |
-| `autoRenew`        | Boolean     | **new**  | Whether subscription auto-renews |
-| `currentPeriodEnd` | Date        | **new**  | Explicit renewal boundary        |
+| Field              | Type        | Status                  | Purpose                          |
+| ------------------ | ----------- | ----------------------- | -------------------------------- |
+| `status`           | String enum | existing                | inactive/active/expired          |
+| `expiresAt`        | Date        | existing                | Current period end               |
+| `provider`         | String      | existing                | "mock"/"tranzila"                |
+| `autoRenew`        | Boolean     | **not yet implemented** | Whether subscription auto-renews |
+| `currentPeriodEnd` | Date        | **not yet implemented** | Explicit renewal boundary        |
 
 ### Reconciliation (planned)
 
@@ -245,34 +249,40 @@ Two planned reconciliation jobs:
 
 ---
 
-## 9) Receipt & Email (planned)
+## 9) Receipt & Email (DEFERRED)
 
-### Receipt provider
+### Deferral policy
 
-**YeshInvoice** (REST API). Environment-driven:
+**YeshInvoice / קבלה integration is explicitly deferred.** It must NOT begin until the Tranzila billing lifecycle is secure, observable, recoverable, and production-ready end-to-end.
 
-- `YESH_INVOICE_API_URL` - sandbox vs production endpoint.
-- `YESH_INVOICE_API_TOKEN` - API authentication.
+**Business context:**
 
-Receipt creation is **best-effort**: failure does not block the 200 ACK to Tranzila. On failure, `Receipt.receiptStatus` is set to `"failed"` for later reconciliation/retry (see §8).
+- The operator is **עוסק פטור** (VAT-exempt small business).
+- Future target: every paying user should receive a **קבלה** (receipt) after a successful payment.
+- Receipt issuance must be based on confirmed backend ledger/webhook truth — never on browser success redirect.
+- Receipt must cover both first-payment AND recurring charges, so YeshInvoice cannot be wired before the recurring webhook notify handler exists.
 
-### Email
+**YeshInvoice integration must NOT begin until ALL of the following are closed:**
 
-**Mailjet** plaintext receipt notification via existing `mailjet.service.js` pattern.
+1. STO notify handler (recurring charge webhook received and processed).
+2. Failed-STO retry/recovery script or job.
+3. STO cancellation/deactivation runbook and/or script.
+4. Non-sensitive structured observability for STO create result.
+5. Gated startup validation when `TRANZILA_STO_CREATE_ENABLED=true`.
+6. Production terminal cutover completed.
+7. Tranzila recurring lifecycle proven end-to-end in production.
 
-- New env vars: `MAILJET_RECEIPT_SUBJECT`, `MAILJET_RECEIPT_TEXT_PREFIX`.
-- Fire-and-forget (best-effort). Failure logged but does not affect billing state.
+**When YeshInvoice integration begins (future contour):**
 
-### Frontend (cabinet)
+- Receipt provider: **YeshInvoice** (REST API). Environment-driven: `YESH_INVOICE_API_URL`, `YESH_INVOICE_API_TOKEN`.
+- Receipt creation is **best-effort**: failure must not block the 200 ACK to Tranzila.
+- On failure: `Receipt.receiptStatus` is set to `"failed"` for later reconciliation/retry.
+- Receipt must be issued for: first payment, every recurring charge, and any manual renewal.
+- Email notification via Mailjet (`MAILJET_RECEIPT_SUBJECT`, `MAILJET_RECEIPT_TEXT_PREFIX`).
+- Cabinet endpoint: `GET /api/account/receipts` + `GET /api/account/receipts/:id/download`.
+- Ledger (`PaymentTransaction`) is not exposed to the cabinet directly; cabinet reads Receipt model only.
 
-Receipts list replaces the placeholder text "היסטוריית תשלומים אינה זמינה כעת" in `SettingsPanel.jsx` billing section.
-
-**Cabinet endpoints (canonical):**
-
-- `GET /api/account/receipts` (requireAuth) - returns list of Receipt documents for the authenticated user.
-- `GET /api/account/receipts/:id/download` (requireAuth + ownership + 404 anti-enum) - signed URL / redirect to receipt PDF.
-
-Ledger (PaymentTransaction) is not exposed to the cabinet directly. Cabinet reads Receipt model only.
+**Do not add YeshInvoice env vars to Render or begin API integration before the deferral gate is lifted.**
 
 ---
 
@@ -307,17 +317,30 @@ Ledger (PaymentTransaction) is not exposed to the cabinet directly. Cabinet read
 | `MAILJET_FROM_NAME`           | `services/mailjet.service.js` | Sender name                        |
 | `SITE_URL`                    | `utils/siteUrl.util.js`       | Canonical domain                   |
 
-### Backend (Render) - new
+### Backend (Render) - STO recurring terminal (active, feature-flag gated)
 
-| Var                                       | Purpose                                                      |
-| ----------------------------------------- | ------------------------------------------------------------ |
-| `CARDIGO_NOTIFY_TOKEN`                    | Verify `?nt=` token from Netlify function (defense-in-depth) |
-| `YESH_INVOICE_API_URL`                    | YeshInvoice endpoint (sandbox / production)                  |
-| `YESH_INVOICE_API_TOKEN`                  | YeshInvoice API authentication                               |
-| `MAILJET_RECEIPT_SUBJECT`                 | Receipt email subject line                                   |
-| `MAILJET_RECEIPT_TEXT_PREFIX`             | Receipt email body prefix                                    |
-| `RECEIPT_RECONCILIATION_INTERVAL_MS`      | Receipt retry job interval (planned, default 3600000)        |
-| `SUBSCRIPTION_RECONCILIATION_INTERVAL_MS` | Subscription expiry job interval (planned, default 3600000)  |
+| Var                           | Purpose                                                                                              |
+| ----------------------------- | ---------------------------------------------------------------------------------------------------- |
+| `TRANZILA_STO_TERMINAL`       | Token / MyBilling / STO terminal ID. **Not** a hosted checkout terminal.                             |
+| `TRANZILA_STO_API_URL`        | Tranzila `/v2/sto/create` endpoint URL                                                               |
+| `TRANZILA_API_APP_KEY`        | Tranzila API v2 public app key (used in HMAC auth header)                                            |
+| `TRANZILA_API_PRIVATE_KEY`    | Tranzila API v2 private key (used as HMAC key base — **never log**)                                  |
+| `TRANZILA_STO_CREATE_ENABLED` | Feature flag. `false` = disabled (default safe state). `true` only during approved rollout window.   |
+| `TRANZILA_PW`                 | Not used by STO v2 auth path. Reserved/unused.                                                       |
+| `TRANZILA_STO_NOTIFY_URL`     | Future STO notify handler URL — **not required for STO create**. Reserved for future notify contour. |
+| `CARDIGO_STO_NOTIFY_TOKEN`    | Future STO notify auth token — **not required for STO create**. Reserved for future notify contour.  |
+
+### Backend (Render) - new (receipt / email — DEFERRED, see §9)
+
+| Var                                       | Purpose                                                          |
+| ----------------------------------------- | ---------------------------------------------------------------- |
+| `CARDIGO_NOTIFY_TOKEN`                    | Verify `?nt=` token from Netlify function (defense-in-depth)     |
+| `YESH_INVOICE_API_URL`                    | YeshInvoice endpoint (sandbox / production) — DEFERRED (see §9)  |
+| `YESH_INVOICE_API_TOKEN`                  | YeshInvoice API authentication — DEFERRED (see §9)               |
+| `MAILJET_RECEIPT_SUBJECT`                 | Receipt email subject line — DEFERRED (see §9)                   |
+| `MAILJET_RECEIPT_TEXT_PREFIX`             | Receipt email body prefix — DEFERRED (see §9)                    |
+| `RECEIPT_RECONCILIATION_INTERVAL_MS`      | Receipt retry job interval (planned, default 3600000) — DEFERRED |
+| `SUBSCRIPTION_RECONCILIATION_INTERVAL_MS` | Subscription expiry job interval (planned, default 3600000)      |
 
 ### Netlify - existing (billing-relevant subset)
 
@@ -348,17 +371,17 @@ Ledger (PaymentTransaction) is not exposed to the cabinet directly. Cabinet read
 
 ## Open Questions
 
-1. **Tranzila providerTxnId field:** Which field in the Tranzila notify payload is the canonical unique transaction identifier? Candidates: `index`, `authnr`, `ConfirmationCode`. Must be confirmed against real Tranzila sandbox payload.
+1. ~~**Tranzila providerTxnId field:** Which field in the Tranzila notify payload is the canonical unique transaction identifier?~~ **RESOLVED:** `index` (preferred) → `authnr` → `ConfirmationCode` → `sha256(payload)` fallback. Implemented in `deriveProviderTxnId()` in `tranzila.provider.js`. Priority order confirmed via real DirectNG sandbox payment.
 
-2. **Tranzila notify Content-Type:** Does Tranzila send `application/x-www-form-urlencoded` exclusively, or can it send JSON? The Netlify function handles both, but the primary path must be confirmed.
+2. ~~**Tranzila notify Content-Type:** Does Tranzila send `application/x-www-form-urlencoded` exclusively, or can it send JSON?~~ **RESOLVED:** Tranzila DirectNG sends `application/x-www-form-urlencoded`. Netlify function handles both (best-effort cascade). Confirmed in production DirectNG flow.
 
-3. **Tranzila retry behavior:** How many times and at what intervals does Tranzila retry on 5xx? This affects idempotency window and reconciliation timing.
+3. **Tranzila retry behavior:** How many times and at what intervals does Tranzila retry on 5xx? This affects idempotency window and reconciliation timing. Still open.
 
-4. **YeshInvoice API specifics:** Exact endpoint paths, required fields, response shape, and sandbox credentials. Must be confirmed before receipt integration task.
+4. **YeshInvoice API specifics:** Exact endpoint paths, required fields, response shape, and sandbox credentials. Must be confirmed before receipt integration task. **DEFERRED — see §9.**
 
-5. **YeshInvoice document type:** Receipt (קבלה) vs. invoice (חשבונית מס / קבלה). Israeli tax law requirements for digital service subscriptions must be confirmed.
+5. **YeshInvoice document type:** Receipt (קבלה) vs. invoice (חשבונית מס / קבלה). Israeli tax law requirements for digital service subscriptions must be confirmed. **DEFERRED — see §9.**
 
-6. **Tranzila `TRANZILA_NOTIFY_URL` value:** Must be updated to `https://cardigo.co.il/api/payments/notify?nt=<token>` (routed through the dedicated Netlify function). Current value in env is unknown.
+6. ~~**Tranzila `TRANZILA_NOTIFY_URL` value:** Must be updated to `https://cardigo.co.il/api/payments/notify?nt=<token>`.~~ **RESOLVED:** `TRANZILA_NOTIFY_URL` is set to `https://cardigo.co.il/api/payments/notify?nt=<CARDIGO_NOTIFY_TOKEN>` on Render. Confirmed working in production DirectNG flow.
 
 ---
 
@@ -367,3 +390,69 @@ Ledger (PaymentTransaction) is not exposed to the cabinet directly. Cabinet read
 Before switching `PAYMENT_PROVIDER=tranzila` in production, complete the operational checklist:
 
 → [Tranzila Go-Live Checklist](./tranzila-go-live-checklist.md)
+
+---
+
+## 14) STO Recurring Schedule
+
+### Dual terminal model (confirmed)
+
+| Terminal role                                                | Sandbox ID     | Used for                        |
+| ------------------------------------------------------------ | -------------- | ------------------------------- |
+| Clearing / hosted DirectNG first-payment checkout            | `testcards`    | `createPayment`, `handleNotify` |
+| Token / MyBilling / STO — **not** a hosted checkout terminal | `testcardstok` | `createTranzilaStoForUser`      |
+
+**U1 token portability confirmed:** `TranzilaTK` captured by the clearing terminal (`testcards`) is accepted by the STO API on the token terminal (`testcardstok`). Cross-terminal token portability is proven in sandbox.
+
+### Winning STO v2 auth formula (confirmed)
+
+- `requestTime` = `String(Math.round(Date.now() / 1000))` (Unix seconds — **not** milliseconds)
+- `nonce` = 80 cryptographically random alphanumeric characters
+- HMAC: SHA-256, key = `privateKey + requestTime + nonce`, message = `appKey`, digest = lowercase hex
+- API username in request body: **not required** for `/v2/sto/create`
+- `TRANZILA_PW`: **not used** by STO v2 auth path
+
+Implementation: `buildTranzilaApiAuthHeaders()` in `backend/src/services/payment/tranzila.provider.js`.
+
+### Feature flag
+
+- `TRANZILA_STO_CREATE_ENABLED === "true"` (strict string equality — no truthy coercion)
+- **Default safe state: `false`** — absent, `"false"`, or any other value disables STO creation
+- Set to `"true"` **only** during an approved controlled test window or production rollout
+- **Rollback:** set `TRANZILA_STO_CREATE_ENABLED=false` on Render — takes effect on next request (no restart needed)
+
+### Lifecycle / non-blocking guarantee
+
+- STO create runs **after** first-payment fulfillment: `user.save()`, both `Card.updateOne()` calls, and billing activation are all complete before STO is attempted
+- STO failure is fully swallowed — first-payment activation is never rolled back
+- `user.tranzilaSto.status` write-ahead: `"pending"` before API call → `"created"` on success → `"failed"` on any error
+
+### Security / redaction rules
+
+- **Never log:** `TranzilaTK` (tranzilaToken), HMAC key, HMAC value, STO request body (contains card token), raw Tranzila API response body
+- `stoId` (e.g., `429105`) is a provider schedule reference — **not a secret**; safe for operator visibility via admin API
+- `tranzilaSto` subdoc is visible to admin via admin `getUserById` endpoint; excluded from self/account-facing DTOs
+
+### Sandbox e2e result (2026-04-19)
+
+- Test user: `sales@cardigo.co.il`
+- Runtime-created STO: `stoId=429105` — confirmed in MongoDB (`tranzilaSto.status="created"`) and Tranzila `testcardstok` portal
+- Old probe-created STO: `428938` — created by probe script only, never written to MongoDB
+- Both test STOs deactivated in Tranzila `testcardstok` portal after test window
+- `TRANZILA_STO_CREATE_ENABLED` set back to `false` on Render immediately after test
+
+### Idempotency guard
+
+- Guard A: if `user.tranzilaSto.stoId` exists and `status === "created"` → skip, return `{ ok: true, skipped: true }`
+- A user with `tranzilaSto.status === "created"` cannot be used for a clean e2e re-test without explicit DB state reset or a fresh test user
+
+### Production blockers (must close before production STO rollout)
+
+1. **STO notify handler** — Tranzila recurring charge webhook not yet implemented (`TRANZILA_STO_NOTIFY_URL` / future contour)
+2. **Failed-STO retry/recovery** — no script or job exists; users with `tranzilaSto.status="failed"` remain in failed state
+3. **Cancellation/deactivation runbook** — no operator procedure to cancel active STO and sync DB state
+4. **Non-sensitive observability** — no structured log on STO create result (success / skip / failure)
+5. **Gated startup validation** — if `TRANZILA_STO_CREATE_ENABLED=true`, STO config vars should be validated at startup (fail-fast)
+6. **Production terminal cutover** — Render STO env vars must be switched from sandbox terminal to production terminal values
+7. **Handshake / `thtk` amount locking** — separate future contour (STO amount locked at create time; price change reconciliation not yet designed)
+8. **YeshInvoice / קבלה** — explicitly deferred until all above are closed (see §9)
