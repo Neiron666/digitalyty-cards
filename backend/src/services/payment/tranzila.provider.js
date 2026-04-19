@@ -98,6 +98,34 @@ function looksLikeObjectId(v) {
 const STO_PENDING_STALE_MS = 5 * 60 * 1000;
 
 /**
+ * Ensure user.tranzilaSto is a writable Mongoose-tracked object before any read/write.
+ * Required for old User documents where the tranzilaSto inline nested path was never
+ * materialized in MongoDB (created before the Batch-2 schema field was added).
+ * Uses Mongoose canonical user.set() so the path is registered in the change-tracking
+ * system and leaf defaults (null) are applied via schema caster.
+ * Returns the live subdoc reference so the caller needs no ?? fallback.
+ *
+ * @param {object} user — Mongoose User document
+ * @returns {object} user.tranzilaSto — guaranteed writable object
+ */
+function ensureTranzilaStoState(user) {
+    if (!user.tranzilaSto) {
+        user.set("tranzilaSto", {});
+    }
+
+    return user.tranzilaSto;
+}
+
+/**
+ * Returns true only when TRANZILA_STO_CREATE_ENABLED is explicitly set to the
+ * string "true". Absent, "false", or any other value disables STO creation.
+ * Strict string equality — no truthy coercion.
+ */
+function isStoCreateEnabled() {
+    return process.env.TRANZILA_STO_CREATE_ENABLED === "true";
+}
+
+/**
  * Build Tranzila v2 API auth headers.
  * Winning formula (postman_canonical): requestTime=Unix_seconds,
  * nonce=80_alphanumeric, HMAC(key=privateKey+requestTime+nonce, msg=appKey) hex.
@@ -244,7 +272,7 @@ function buildStoCreateBody(user, plan, firstChargeDate) {
  * @returns {Promise<{ok:boolean, [skipped]:boolean, [created]:boolean, [stoId]:string, [reason]:string, [errorCode]:number|null, [errorMessage]:string}>}
  */
 async function createTranzilaStoForUser(user, plan, firstChargeDate) {
-    const currentSto = user.tranzilaSto ?? {};
+    const currentSto = ensureTranzilaStoState(user);
 
     // ── A. Idempotency guard ──
     if (currentSto.stoId && currentSto.status === "created") {
@@ -646,6 +674,16 @@ export default {
                     },
                 },
             );
+        }
+
+        // ── 9. [BATCH-3] STO schedule create — non-blocking, after full fulfillment ──
+        // STO is a follow-on lifecycle operation and must not block first-payment fulfillment.
+        if (isStoCreateEnabled()) {
+            try {
+                await createTranzilaStoForUser(user, validPlan, expiresAt);
+            } catch (_stoErr) {
+                // Swallow — first payment is already fulfilled. Do not rethrow.
+            }
         }
     },
 };
