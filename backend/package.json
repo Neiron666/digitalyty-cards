@@ -43,7 +43,9 @@
         "sto:retry:dry-run": "node scripts/sto-retry-failed.mjs --run",
         "sto:retry:execute": "node scripts/sto-retry-failed.mjs --run --execute",
         "sto:cancel:dry-run": "node scripts/sto-cancel.mjs --run",
-        "sto:cancel:execute": "node scripts/sto-cancel.mjs --run --execute"
+        "sto:cancel:execute": "node scripts/sto-cancel.mjs --run --execute",
+        "sto:create-custom-date:dry-run": "node scripts/sto-create-custom-date.mjs --run",
+        "sto:create-custom-date:execute": "node scripts/sto-create-custom-date.mjs --run --execute"
     },
     "keywords": [],
     "author": "",

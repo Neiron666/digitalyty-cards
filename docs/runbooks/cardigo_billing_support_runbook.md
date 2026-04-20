@@ -8,7 +8,7 @@
     2. **Initiate payment** via `POST /api/payments/create` (in dev: mock URL; in prod: Tranzila URL)
 - Any cancel/refund/payment‑method change is handled by **Support / Admin**.
 
-**Why:** Tranzila (single‑payment) has no Stripe‑like customer portal, and the system currently has **no persistent transaction ledger** (no Payment/Invoice model).  
+**Why:** Tranzila (single‑payment) has no Stripe‑like customer portal, and self‑service cancel/refund/payment‑method change is not yet exposed in the product UI.
 This is intentional to avoid fake UX and security/finance drift.
 
 ---
@@ -124,24 +124,23 @@ If the user is mid‑cycle and wants future renewals: currently **manual** only 
 
 ## 6) Known Product Limitations (documented)
 
-- No payment history / invoices in product (no ledger model).
-- `/api/payments/notify` replay/idempotency is limited (no transaction ID stored).  
-  This is acceptable for dev / early stage but must be hardened before full production billing.
+- Payment history is not exposed in the product UI (operator-visible only via admin API / DB query).
+- Self-service cancel/refund remains support-mediated (no product UI button).
+- STO admin UI/button for cancellation is deferred; use `sto-cancel.mjs` operator script.
+- Non-atomic User + Card billing updates (crash between saves can leave inconsistency; reconciliation job planned, not yet implemented).
+- Tranzila retry behavior (how many retries, intervals) is not confirmed; idempotency window and reconciliation timing are therefore not fully specified.
 
 ---
 
 ## 7) Upgrade Path (when Tranzila is fully integrated)
 
-When you connect Tranzila for real:
+PaymentTransaction ledger (providerTxnId, idempotency via E11000 unique index, PayloadAllowlist) exists and is used by both `handleNotify` and `handleStoNotify`. The upgrade items still pending:
 
-1. Add a **PaymentEvent / Transaction** collection (append‑only ledger):
-    - provider, transactionId, amount, currency, plan, userId/cardId, createdAt, raw payload hash
-2. Implement **idempotency key** for notify:
-    - ignore duplicates by providerTxnId
-3. Consider “extend from max(now, currentExpiresAt)” instead of resetting from now.
-4. Revisit support vs self‑service:
-    - If Tranzila offers any portal capabilities, link to it.
-    - Otherwise self‑service remains limited; keep the runbook.
+1. **Self-service portal** — if Tranzila offers any portal capabilities, link to it; otherwise support remains manual.
+2. **Receipt / YeshInvoice** — explicitly deferred until STO notify real-provider E2E and production lifecycle policies are closed.
+3. **STO failed-state retry/recovery** — no job or script yet for users with `tranzilaSto.status="failed"`.
+4. **Non-atomic User + Card updates** — reconciliation job planned but not implemented.
+5. Consider “extend from max(now, currentExpiresAt)” instead of resetting from now.
 
 ---
 
@@ -151,3 +150,58 @@ When you connect Tranzila for real:
 - Payment initiation works in prod; in dev it’s dev‑safe (no crash).
 - A runbook exists in repo docs (this file).
 - Operators have a consistent audit trail (reason/ticket ID) for any manual billing changes.
+
+---
+
+## 9) STO Recurring Notify — Operator Reference
+
+> **Status (2026-04-20):** Implemented (5.8a–5.8e). Production-domain edge smoke passed. Real provider-generated webhook E2E is still pending. Portal URL not yet registered in Tranzila My Billing.
+
+### Endpoint
+
+```
+POST https://cardigo.co.il/api/payments/sto-notify?snk=<STO_NOTIFY_TOKEN>
+```
+
+The portal URL pattern (for reference only — never paste real token):
+
+```
+https://cardigo.co.il/api/payments/sto-notify?snk=<STO_NOTIFY_TOKEN>
+```
+
+### Token locations (never in code/docs/chat)
+
+- `CARDIGO_STO_NOTIFY_TOKEN` — Netlify production env (validates `?snk=`)
+- `CARDIGO_STO_NOTIFY_TOKEN` — Render backend env (route fail-closes 503 if missing)
+- Tranzila My Billing portal — embedded as `?snk=` query param in Transaction Notification Endpoint field
+
+### Failure classification table
+
+| Status                         | Source       | Meaning                                                                                 |
+| ------------------------------ | ------------ | --------------------------------------------------------------------------------------- |
+| `403`                          | Netlify edge | Wrong or missing `?snk=` token                                                          |
+| `500`                          | Netlify edge | Netlify env token missing / function error                                              |
+| `503`                          | Backend      | Render `CARDIGO_STO_NOTIFY_TOKEN` env missing (fail-closed)                             |
+| `502`                          | Netlify edge | Netlify cannot reach backend (Render down/cold start)                                   |
+| `500`                          | Backend      | Infra / DB / handler throw                                                              |
+| `200` + no transaction written | Backend      | `no_provider_txn_id` — payload missing `sto_external_id` / identifiers                  |
+| `200` + `failed` transaction   | Backend      | `supplier_mismatch` — terminal ID does not match expected                               |
+| `200` + `failed` transaction   | Backend      | `amount_mismatch` — notify amount ≠ `PRICES_AGOROT`; check sandbox/prod price alignment |
+| `200` + `failed` transaction   | Backend      | `user_not_found` — STO external ID does not map to a known user                         |
+| `200` + `failed` transaction   | Backend      | `sto_cancelled` — user’s STO status is cancelled in Cardigo                             |
+| `200` + `paid` transaction     | Backend      | Renewal success — subscription extended                                                 |
+| Duplicate replay               | Backend      | Idempotent success — no double extension (providerTxnId unique index)                   |
+
+### Rollback / disable
+
+- **Fastest rollback:** clear the “Transaction Notification Endpoint” field in Tranzila My Billing portal. Instant disable, no code or env change required.
+- Do NOT rotate the token without simultaneously updating the portal URL. A mismatch will 403 all incoming notifies.
+- Do NOT remove env tokens during an active test window unless intentionally forcing fail-closed.
+
+### Price-change warning
+
+STO schedule amounts are locked at creation time in the Tranzila system. If `PRICES_AGOROT` changes in `backend/src/config/plans.js` while active STO schedules still charge the old amount, every recurring notify will fail with `amount_mismatch`. Before changing prices:
+
+1. Cancel all active STO schedules at the old price.
+2. Update `PRICES_AGOROT` in production.
+3. Recreate STO schedules at the new price on next user payment.

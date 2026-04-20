@@ -27,6 +27,7 @@
 
 - `CARDIGO_NOTIFY_TOKEN` - секрет для `?nt=`
 - `CARDIGO_PROXY_SHARED_SECRET` - секрет для origin‑lock (proxy → backend)
+- `CARDIGO_STO_NOTIFY_TOKEN` - `?snk=` token для `payment-sto-notify.js`. **Обязательно** в production. Должно совпадать с Render. Никогда не логировать, не коммитить.
 
 НЕ НУЖНО:
 
@@ -53,10 +54,10 @@
 - `TRANZILA_API_PRIVATE_KEY` - Tranzila API v2 private key (HMAC key base — **never log**)
 - `TRANZILA_STO_CREATE_ENABLED` = `false` (default safe state; `true` only for approved rollout window)
 
-НЕ НУЖНО ещё (future STO notify contour):
+НУЖНО (для STO recurring notify):
 
-- `TRANZILA_STO_NOTIFY_URL` - future STO notify handler URL; not required for STO create
-- `CARDIGO_STO_NOTIFY_TOKEN` - future STO notify auth token; not required for STO create
+- `TRANZILA_STO_NOTIFY_URL` - operator/reference value only; not read at runtime. Portal URL pattern: `https://cardigo.co.il/api/payments/sto-notify?snk=<STO_NOTIFY_TOKEN>`. Никогда не вставлять реальный токен в док.
+- `CARDIGO_STO_NOTIFY_TOKEN` - **Обязательно** в production на Render (backend fail-closed 503 если отсутствует). Должно совпадать с Netlify. Никогда не логировать, не коммитить.
 
 ### Local backend (.env локально, не в git)
 
@@ -199,14 +200,15 @@
 
 ### Production blockers (до production STO rollout)
 
-- [ ] STO notify handler (Tranzila recurring charge webhook) — **не реализован**.
-- [ ] Failed-STO retry/recovery script или job — **не реализован**.
-- [ ] Cancellation/deactivation runbook и/или script — **не реализован**.
-- [ ] Non-sensitive structured observability — **не реализована**.
-- [ ] Gated startup validation при `TRANZILA_STO_CREATE_ENABLED=true` — **не реализована**.
-- [ ] Production terminal cutover (замена sandbox terminal vars на production values) — **не выполнен**.
+- [x] ~~STO notify handler~~ — **РЕАЛИЗОВАН (5.8a–5.8e).** `handleStoNotify` имплементирован; Netlify `payment-sto-notify.js` + backend `POST /api/payments/sto-notify` деплоены с token gates; production-domain edge smoke пройдён. **Реальный provider-generated webhook E2E ещё не выполнен; portal URL (Транзила My Billing) ещё не зарегистрирован** (pending contour 5.8f.2–5.8f.4 approval).
+- [ ] ⚠️ **Price gate** — `PRICES_AGOROT` должно совпадать с суммой, на которую созданы STO-расписания. Текущее значение: `500/500` (сандбокс). Production: `3990/39990`. Несовпадение → `amount_mismatch` на каждом recurring notify. Прежде смены production терминала — отменить/пересоздать активные STO-расписания.
+- [ ] Failed-STO retry/recovery script или job — не реализован.
+- [x] ~~Cancellation/deactivation runbook~~ — **ЧАСТИЧНО РЕАЛИЗОВАНО (5.6).** `sto-cancel.mjs` операторский скрипт существует; sandbox active→inactive proof пройдён (`truestory.factory@gmail.com`, Tranzila portal подтвердил inactive). Admin UI/button остаётся deferred. Production rollout policy/runbook ещё требуется.
+- [ ] Non-sensitive structured observability — не реализована.
+- [ ] Gated startup validation при `TRANZILA_STO_CREATE_ENABLED=true` — не реализована.
+- [ ] Production terminal cutover (замена sandbox terminal vars на production values) — не выполнен.
 - [ ] Handshake / `thtk` amount locking — отдельный будущий контур.
-- [ ] YeshInvoice / קבלה — явно отложен (см. `billing-flow-ssot.md` §9).
+- [ ] YeshInvoice / קבלה — явно отложен; не начинать до закрытия real-provider STO notify E2E и production lifecycle policies.
 
 ### Частые ошибки при STO
 

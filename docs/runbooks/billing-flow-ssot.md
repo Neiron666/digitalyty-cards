@@ -16,7 +16,9 @@ All internal amounts are **integers in agorot** (1/100 of ₪). No floats anywhe
 | `monthly` | 3990   | ₪39.90      |
 | `yearly`  | 39990  | ₪399.90     |
 
-**Canonical location:** `backend/src/config/plans.js` → `PRICES` export.
+**Canonical location:** `backend/src/config/plans.js` → `PRICES_AGOROT` export.
+
+> **⚠️ Sandbox/test price notice:** `PRICES_AGOROT` currently contains temporary sandbox values (`monthly: 500, yearly: 500` — ₪5.00 each) for STO testing. Production canonical values (`monthly: 3990, yearly: 39990`) are commented out in `plans.js`. **Before connecting production-priced STO schedules or switching to the production terminal, restore production prices and review all active STO schedules.** STO schedules lock the charge amount at creation time — if `PRICES_AGOROT` changes while active STO schedules still charge the old amount, every recurring notify will fail with `amount_mismatch`. Existing active schedules must be cancelled and recreated at the new price.
 
 **Conversion rules:**
 
@@ -319,16 +321,16 @@ Two planned reconciliation jobs:
 
 ### Backend (Render) - STO recurring terminal (active, feature-flag gated)
 
-| Var                           | Purpose                                                                                              |
-| ----------------------------- | ---------------------------------------------------------------------------------------------------- |
-| `TRANZILA_STO_TERMINAL`       | Token / MyBilling / STO terminal ID. **Not** a hosted checkout terminal.                             |
-| `TRANZILA_STO_API_URL`        | Tranzila `/v2/sto/create` endpoint URL                                                               |
-| `TRANZILA_API_APP_KEY`        | Tranzila API v2 public app key (used in HMAC auth header)                                            |
-| `TRANZILA_API_PRIVATE_KEY`    | Tranzila API v2 private key (used as HMAC key base — **never log**)                                  |
-| `TRANZILA_STO_CREATE_ENABLED` | Feature flag. `false` = disabled (default safe state). `true` only during approved rollout window.   |
-| `TRANZILA_PW`                 | Not used by STO v2 auth path. Reserved/unused.                                                       |
-| `TRANZILA_STO_NOTIFY_URL`     | Future STO notify handler URL — **not required for STO create**. Reserved for future notify contour. |
-| `CARDIGO_STO_NOTIFY_TOKEN`    | Future STO notify auth token — **not required for STO create**. Reserved for future notify contour.  |
+| Var                           | Purpose                                                                                                                                                                                                          |
+| ----------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `TRANZILA_STO_TERMINAL`       | Token / MyBilling / STO terminal ID. **Not** a hosted checkout terminal.                                                                                                                                         |
+| `TRANZILA_STO_API_URL`        | Tranzila `/v2/sto/create` endpoint URL                                                                                                                                                                           |
+| `TRANZILA_API_APP_KEY`        | Tranzila API v2 public app key (used in HMAC auth header)                                                                                                                                                        |
+| `TRANZILA_API_PRIVATE_KEY`    | Tranzila API v2 private key (used as HMAC key base — **never log**)                                                                                                                                              |
+| `TRANZILA_STO_CREATE_ENABLED` | Feature flag. `false` = disabled (default safe state). `true` only during approved rollout window.                                                                                                               |
+| `TRANZILA_PW`                 | Not used by STO v2 auth path. Reserved/unused.                                                                                                                                                                   |
+| `TRANZILA_STO_NOTIFY_URL`     | Operator/reference value only — not read at runtime. Documents the portal URL pattern. Use placeholder: `https://cardigo.co.il/api/payments/sto-notify?snk=<STO_NOTIFY_TOKEN>`. Never embed real token.          |
+| `CARDIGO_STO_NOTIFY_TOKEN`    | **Required** in production for STO recurring notify. Validated per-request at the `/api/payments/sto-notify` route (fail-closed 503 if missing). Must also be set in Netlify env (see Netlify table). Never log. |
 
 ### Backend (Render) - new (receipt / email — DEFERRED, see §9)
 
@@ -351,9 +353,10 @@ Two planned reconciliation jobs:
 
 ### Netlify - new
 
-| Var                    | Purpose                                 |
-| ---------------------- | --------------------------------------- |
-| `CARDIGO_NOTIFY_TOKEN` | `?nt=` token check in payment-notify.js |
+| Var                        | Purpose                                                                                                             |
+| -------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| `CARDIGO_NOTIFY_TOKEN`     | `?nt=` token check in `payment-notify.js`                                                                           |
+| `CARDIGO_STO_NOTIFY_TOKEN` | `?snk=` token check in `payment-sto-notify.js`. **Required** in production. Must match Render env value. Never log. |
 
 ---
 
@@ -448,11 +451,11 @@ Implementation: `buildTranzilaApiAuthHeaders()` in `backend/src/services/payment
 
 ### Production blockers (must close before production STO rollout)
 
-1. **STO notify handler** — Tranzila recurring charge webhook not yet implemented (`TRANZILA_STO_NOTIFY_URL` / future contour)
+1. ~~**STO notify handler**~~ — **RESOLVED (5.8a–5.8e):** `handleStoNotify` implemented; Netlify `payment-sto-notify.js` and backend `POST /api/payments/sto-notify` route deployed with token gates; production-domain edge smoke passed. **First real provider-generated Tranzila My Billing webhook E2E is still pending; portal URL not yet registered** (pending contour 5.8f.2–5.8f.4 approval).
 2. **Failed-STO retry/recovery** — no script or job exists; users with `tranzilaSto.status="failed"` remain in failed state
-3. **Cancellation/deactivation runbook** — no operator procedure to cancel active STO and sync DB state
+3. ~~**Cancellation/deactivation runbook — no operator procedure**~~ — **PARTIALLY RESOLVED (5.6):** `sto-cancel.mjs` operator script exists and sandbox active→inactive proof passed (`truestory.factory@gmail.com`, Tranzila portal confirmed inactive). Admin UI/button remains deferred. Production rollout policy/discipline still required before broad production use.
 4. **Non-sensitive observability** — no structured log on STO create result (success / skip / failure)
 5. **Gated startup validation** — if `TRANZILA_STO_CREATE_ENABLED=true`, STO config vars should be validated at startup (fail-fast)
-6. **Production terminal cutover** — Render STO env vars must be switched from sandbox terminal to production terminal values
+6. **Production terminal cutover** — Render STO env vars must be switched from sandbox terminal to production terminal values; `PRICES_AGOROT` must be restored to production values (`3990`/`39990`) and active STO schedules reviewed/migrated before cutover
 7. **Handshake / `thtk` amount locking** — separate future contour (STO amount locked at create time; price change reconciliation not yet designed)
-8. **YeshInvoice / קבלה** — explicitly deferred until all above are closed (see §9)
+8. **YeshInvoice / קבלה** — explicitly deferred; must not start until real-provider STO notify E2E and production lifecycle policies are closed (see §9)
