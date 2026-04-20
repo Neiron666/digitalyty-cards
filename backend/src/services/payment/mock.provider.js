@@ -10,4 +10,9 @@ export default {
         // Testing payment flow → use POST /api/admin/billing/simulate-payment.
         console.warn("[mock] handleNotify called - NO-OP for security");
     },
+
+    async handleStoNotify(/* body */) {
+        // Security: public mock STO notify is a deliberate NO-OP.
+        console.warn("[mock] handleStoNotify called - NO-OP for security");
+    },
 };

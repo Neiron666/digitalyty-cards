@@ -1026,6 +1026,315 @@ export default {
             }
         }
     },
+
+    /**
+     * Process a Tranzila My Billing STO recurring charge notification (server-to-server).
+     *
+     * ACK policy: business/validation failures do NOT throw (caller returns 200).
+     * Only infra failures (DB unreachable) throw → route returns 500 → Tranzila retries.
+     *
+     * Core invariant: no User/Card mutation before successful PaymentTransaction.create.
+     * Success path: validate user fully FIRST, then create paid txn, then extend.
+     * Duplicate (E11000): return without any User/Card mutation.
+     *
+     * @param {object} payload — raw STO My Billing notify body (pre-sanitized by caller)
+     * @returns {Promise<object>} — bounded structured result (see return shapes below)
+     */
+    async handleStoNotify(payload) {
+        // ── 0. Common field extraction (no DB, no side effects) ──────────────────
+        const payloadAllowlisted = allowlistPayload(payload);
+        const rawPayloadHash = computeRawPayloadHash(payload);
+        const providerTxnId = deriveStoProviderTxnId(payload);
+        const amountAgorot = parseAmountAgorot(payload.sum);
+        const stoId = String(payload.sto_external_id ?? "").trim();
+        const supplier = String(payload.supplier ?? "").trim();
+        const expectedSupplier = String(
+            TRANZILA_CONFIG.stoTerminal ?? "",
+        ).trim();
+        // STO My Billing uses ISO 4217 "ILS" string.
+        // DirectNG first-payment numeric "1" must NOT be reused here (anti-drift).
+        const currency = String(payload.currency ?? "")
+            .trim()
+            .toUpperCase();
+        const responseCode = String(payload.Response ?? "").trim();
+        const isPaid = responseCode === "000";
+
+        // ── 1. Stable replay key guard ────────────────────────────────────────────
+        // No stable replay key: cannot safely create ledger record or extend subscription.
+        if (!providerTxnId) {
+            return { ok: false, reason: "no_provider_txn_id" };
+        }
+
+        // ── 2. Early validation failures (pre-user-lookup, userId:null) ──────────
+        if (supplier !== expectedSupplier) {
+            try {
+                await PaymentTransaction.create({
+                    providerTxnId,
+                    provider: "tranzila",
+                    status: "failed",
+                    userId: null,
+                    cardId: null,
+                    plan: null,
+                    amountAgorot,
+                    currency,
+                    payloadAllowlisted,
+                    rawPayloadHash,
+                    failReason: "supplier_mismatch",
+                    idempotencyNote: "sto_recurring_notify",
+                });
+            } catch (e) {
+                if (e.code === 11000) {
+                    return { ok: true, duplicate: true, providerTxnId };
+                }
+                throw e;
+            }
+            return { ok: false, reason: "supplier_mismatch", providerTxnId };
+        }
+
+        // Anti-drift: STO My Billing uses ISO 4217 "ILS"; DirectNG numeric "1" is wrong here.
+        if (currency !== "ILS") {
+            try {
+                await PaymentTransaction.create({
+                    providerTxnId,
+                    provider: "tranzila",
+                    status: "failed",
+                    userId: null,
+                    cardId: null,
+                    plan: null,
+                    amountAgorot,
+                    currency,
+                    payloadAllowlisted,
+                    rawPayloadHash,
+                    failReason: "currency_mismatch",
+                    idempotencyNote: "sto_recurring_notify",
+                });
+            } catch (e) {
+                if (e.code === 11000) {
+                    return { ok: true, duplicate: true, providerTxnId };
+                }
+                throw e;
+            }
+            return { ok: false, reason: "currency_mismatch", providerTxnId };
+        }
+
+        // ── 3. User lookup ────────────────────────────────────────────────────────
+        const user = await User.findOne({ "tranzilaSto.stoId": stoId });
+        if (!user) {
+            try {
+                await PaymentTransaction.create({
+                    providerTxnId,
+                    provider: "tranzila",
+                    status: "failed",
+                    userId: null,
+                    cardId: null,
+                    plan: null,
+                    amountAgorot,
+                    currency,
+                    payloadAllowlisted,
+                    rawPayloadHash,
+                    failReason: "user_not_found",
+                    idempotencyNote: "sto_recurring_notify",
+                });
+            } catch (e) {
+                if (e.code === 11000) {
+                    return { ok: true, duplicate: true, providerTxnId };
+                }
+                throw e;
+            }
+            return { ok: false, reason: "user_not_found", providerTxnId };
+        }
+
+        // ── 4. Materialize tranzilaSto subdoc ─────────────────────────────────────
+        // Required before any tranzilaSto read/write.
+        // Materializes the subdoc for User docs created before the Batch-2 schema field was added.
+        const sto = ensureTranzilaStoState(user);
+
+        // ── Local helper: record failed txn + update lastError* (post-user-lookup) ─
+        // Does NOT overwrite cancellation audit fields.
+        // Returns { duplicate: true } on E11000, throws on infra error.
+        const recordFailure = async (failReason, lastErrorCode) => {
+            try {
+                await PaymentTransaction.create({
+                    providerTxnId,
+                    provider: "tranzila",
+                    status: "failed",
+                    userId: user._id,
+                    cardId: user.cardId ?? null,
+                    plan:
+                        user.plan === "monthly" || user.plan === "yearly"
+                            ? user.plan
+                            : null,
+                    amountAgorot,
+                    currency,
+                    payloadAllowlisted,
+                    rawPayloadHash,
+                    failReason,
+                    idempotencyNote: "sto_recurring_notify",
+                });
+            } catch (e) {
+                if (e.code === 11000) {
+                    return { duplicate: true };
+                }
+                throw e;
+            }
+            // Only after successful create: update lastError*.
+            // Do NOT touch: cancelledAt, cancellationAttemptAt, cancellationErrorCode,
+            //               cancellationErrorMessage, cancellationSource, cancellationReason.
+            sto.lastErrorCode = lastErrorCode ?? null;
+            sto.lastErrorMessage = sanitizeStoErrorMessage(failReason);
+            sto.lastErrorAt = new Date();
+            await user.save();
+            return { duplicate: false };
+        };
+
+        // ── 5. Post-user-lookup validation failures ───────────────────────────────
+
+        // A. Failed charge (Response !== "000")
+        if (!isPaid) {
+            const failReason = `response_${responseCode || "unknown"}`;
+            const rawCode = Number(responseCode);
+            const lastErrorCode =
+                responseCode !== "" && Number.isInteger(rawCode)
+                    ? rawCode
+                    : null;
+            const { duplicate } = await recordFailure(
+                failReason,
+                lastErrorCode,
+            );
+            if (duplicate) return { ok: true, duplicate: true, providerTxnId };
+            return { ok: false, reason: failReason, providerTxnId };
+        }
+
+        // B. STO cancelled — notify arrives after operator/user cancellation
+        if (sto.status === "cancelled") {
+            const { duplicate } = await recordFailure("sto_cancelled", null);
+            if (duplicate) return { ok: true, duplicate: true, providerTxnId };
+            return { ok: false, reason: "sto_cancelled", providerTxnId };
+        }
+
+        // C. Invalid plan — user.plan is DB SSoT; do NOT parse payload.pdesc (anti-drift).
+        if (user.plan !== "monthly" && user.plan !== "yearly") {
+            const { duplicate } = await recordFailure("invalid_plan", null);
+            if (duplicate) return { ok: true, duplicate: true, providerTxnId };
+            return { ok: false, reason: "invalid_plan", providerTxnId };
+        }
+
+        // D. Amount mismatch — strict equality, no tolerance.
+        // P0 operator note: price change in PRICES_AGOROT breaks existing STOs;
+        // requires cancel+recreate migration for all active STO users (see 5.8e runbook).
+        if (
+            amountAgorot === null ||
+            amountAgorot !== PRICES_AGOROT[user.plan]
+        ) {
+            const { duplicate } = await recordFailure("amount_mismatch", null);
+            if (duplicate) return { ok: true, duplicate: true, providerTxnId };
+            return { ok: false, reason: "amount_mismatch", providerTxnId };
+        }
+
+        // ── 6. Success path ───────────────────────────────────────────────────────
+        // All validations passed. Create paid ledger record FIRST.
+        // Invariant: no User/Card mutation before successful PaymentTransaction.create.
+        try {
+            await PaymentTransaction.create({
+                providerTxnId,
+                provider: "tranzila",
+                status: "paid",
+                userId: user._id,
+                cardId: user.cardId ?? null,
+                plan: user.plan,
+                amountAgorot,
+                currency: "ILS",
+                payloadAllowlisted,
+                rawPayloadHash,
+                failReason: null,
+                idempotencyNote: "sto_recurring_notify",
+            });
+        } catch (e) {
+            if (e.code === 11000) {
+                // Duplicate providerTxnId — idempotent replay, no extension.
+                return { ok: true, duplicate: true, providerTxnId };
+            }
+            throw e;
+        }
+
+        // ── 7. Subscription renewal ───────────────────────────────────────────────
+        // Use max(now, current paidUntil): do NOT use Date.now()+period alone.
+        // Early webhook delivery must not cause paid-time loss (anti-drift).
+        const now = new Date();
+        const currentExpiry = user.subscription?.expiresAt;
+        const baseDate =
+            currentExpiry instanceof Date && currentExpiry > now
+                ? currentExpiry
+                : now;
+        const newExpiresAt =
+            user.plan === "monthly"
+                ? new Date(baseDate.getTime() + 30 * 24 * 60 * 60 * 1000)
+                : new Date(baseDate.getTime() + 365 * 24 * 60 * 60 * 1000);
+
+        // Clear last error on successful renewal.
+        sto.lastErrorCode = null;
+        sto.lastErrorMessage = null;
+        sto.lastErrorAt = null;
+
+        // plan: explicit no-op assignment — plan is DB SSoT, not payload.pdesc (anti-drift).
+        user.plan = user.plan;
+        user.subscription = {
+            status: "active",
+            provider: "tranzila",
+            expiresAt: newExpiresAt,
+        };
+
+        await user.save();
+
+        // ── 8. Card billing dual-path update ─────────────────────────────────────
+        // Never overwrite billing wholesale (preserve billing.features + billing.payer).
+        if (user.cardId) {
+            const paidUntil = newExpiresAt;
+
+            // 1) Dot-path update for normal cases (billing missing or object).
+            await Card.updateOne(
+                {
+                    _id: user.cardId,
+                    $or: [
+                        { billing: { $exists: false } },
+                        { billing: { $type: "object" } },
+                    ],
+                },
+                {
+                    $set: {
+                        plan: user.plan,
+                        "billing.status": "active",
+                        "billing.plan": user.plan,
+                        "billing.paidUntil": paidUntil,
+                    },
+                },
+            );
+
+            // 2) Fallback for billing === null (dot-path would fail). Do NOT set payer/features.
+            await Card.updateOne(
+                { _id: user.cardId, billing: null },
+                {
+                    $set: {
+                        plan: user.plan,
+                        billing: {
+                            status: "active",
+                            plan: user.plan,
+                            paidUntil: paidUntil,
+                        },
+                    },
+                },
+            );
+        }
+
+        return {
+            ok: true,
+            providerTxnId,
+            userId: String(user._id),
+            cardIdPresent: Boolean(user.cardId),
+            plan: user.plan,
+            paidUntil: newExpiresAt,
+        };
+    },
 };
 
 // ── Named exports for operator tooling ──────────────────────────────────────

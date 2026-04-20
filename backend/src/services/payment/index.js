@@ -43,4 +43,5 @@ const provider = isTranjila ? tranzilaProvider : mockProvider;
 export default {
     createPayment: provider.createPayment,
     handleNotify: provider.handleNotify,
+    handleStoNotify: provider.handleStoNotify,
 };

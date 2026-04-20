@@ -49,4 +49,37 @@ router.post("/notify", async (req, res) => {
     }
 });
 
+/**
+ * STO server-to-server notify (Tranzila recurring)
+ * БЕЗ requireAuth - fail-closed via CARDIGO_STO_NOTIFY_TOKEN (must be set, else 503)
+ */
+router.post("/sto-notify", async (req, res) => {
+    try {
+        // A. Read expected token — fail-closed: 503 if not configured
+        const expectedStoToken = process.env.CARDIGO_STO_NOTIFY_TOKEN?.trim();
+        if (!expectedStoToken) {
+            console.error(
+                "[sto-notify] CARDIGO_STO_NOTIFY_TOKEN is not configured",
+            );
+            return res.status(503).send("ERROR");
+        }
+
+        // B. Validate provided token from header
+        const provided = req.header("x-cardigo-sto-notify-token")?.trim();
+        if (provided !== expectedStoToken) {
+            // Anti-oracle: do not reveal mismatch to caller
+            return res.status(200).send("OK");
+        }
+
+        // C. Token matched — call handler
+        await paymentProvider.handleStoNotify(req.body);
+        res.status(200).send("OK");
+    } catch (err) {
+        // Only infra failures (DB down, network) reach here.
+        // Business failures are handled inside handleStoNotify (no throw).
+        console.error("[sto-notify] infra failure:", err.message);
+        res.status(500).send("ERROR");
+    }
+});
+
 export default router;
