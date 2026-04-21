@@ -130,7 +130,9 @@ RULES - follow strictly:
 - Do NOT exaggerate, invent credentials, or make unverifiable claims.
 - Do NOT include contact details, phone numbers, or URLs.
 - If existing content is provided for improvement, preserve factual accuracy while improving style and clarity.
-- If information is minimal, write a brief but professional placeholder text.`;
+- If information is minimal, write a brief but professional placeholder text.
+- Do not start the paragraph with the business name; mention it naturally later if relevant.
+- If existing paragraphs are shown, vary the sentence opening — avoid repeating the same first word, phrase, or subject.`;
 
 // --- Prompt builders (target-specific) ---------------------------------------
 
