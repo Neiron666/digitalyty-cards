@@ -195,6 +195,18 @@ function assertDateWithinHorizon({ card, dateKeyIl }) {
     }
 }
 
+function assertSlotNotInPast({ startAt }) {
+    const slotStartIl = toIsrael(startAt);
+    const nowIl = toIsrael(new Date());
+    if (slotStartIl.toMillis() <= nowIl.toMillis()) {
+        throw new HttpError(
+            400,
+            "Requested slot is in the past",
+            "BOOKING_SLOT_IN_PAST",
+        );
+    }
+}
+
 // ── Availability read (public, anonymous) ───────────────────────────
 
 const AVAIL_WEEKDAY_MAP = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];
@@ -420,6 +432,7 @@ export async function createPublicBooking(req, res) {
 
         // Reject requests whose date falls outside the card's booking horizon.
         assertDateWithinHorizon({ card, dateKeyIl: input.dateKeyIl });
+        assertSlotNotInPast({ startAt: input.startAt });
 
         const now = new Date();
         const { expiresAt, purgeAt } = computeBookingTimers({
