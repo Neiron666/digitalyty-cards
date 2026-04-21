@@ -108,6 +108,23 @@ const FREE_ACCORDIONS = [
         ],
     },
     {
+        title: "מה לא כלול במסלול",
+        tone: "negative",
+        items: [
+            "הופעת כרטיס בתוצאות גוגל",
+            "גלריית תמונות מורחבת",
+            "סרטון YouTube בכרטיס",
+            "טופס לידים ואיסוף פניות",
+            "מעקב פעילות ואנליטיקה",
+            "SEO ונוכחות דיגיטלית מתקדמת",
+            "כתובת אישית ועיצוב מתקדם",
+            "הזמנת תורים (booking)",
+            "שירותים",
+            "שעות פעילות של העסק",
+            "יצירת תוכן עם AI",
+        ],
+    },
+    {
         title: "למי זה מתאים",
         items: [
             "לעסק שרוצה נוכחות דיגיטלית בלי עלות",
@@ -211,7 +228,14 @@ function GroupedAccordions({ groups }) {
                     </summary>
                     <ul className={styles.accordionList}>
                         {g.items.map((item) => (
-                            <li key={item} className={styles.accordionItem}>
+                            <li
+                                key={item}
+                                className={
+                                    g.tone === "negative"
+                                        ? `${styles.accordionItem} ${styles.accordionItemNegative}`
+                                        : styles.accordionItem
+                                }
+                            >
                                 {item}
                             </li>
                         ))}

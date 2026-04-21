@@ -367,6 +367,15 @@
     color: var(--gold);
     font-weight: 700;
 }
+
+.accordionItemNegative {
+    color: var(--c-danger-soft);
+}
+
+.accordionItemNegative::before {
+    content: "\00D7";
+    color: var(--c-danger-soft);
+}
 /* ── Legal note below plans ────────────────────────────────────── */
 .plansLegalNote {
     font-size: var(--fs-caption);
