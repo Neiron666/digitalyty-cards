@@ -1,7 +1,7 @@
 # Bookings & Owner Inbox - Architecture & Specification (SSoT)
 
 > **Owner:** Full-stack (Backend + Frontend).  
-> **Last updated:** 2026-04-03.  
+> **Last updated:** 2026-04-21.  
 > **Related docs:** [Ops Runbook → docs/runbooks/bookings-indexes-ops.md](runbooks/bookings-indexes-ops.md)
 
 ---
@@ -150,10 +150,10 @@ Base path: `/api/bookings` (mounted via `backend/src/routes/booking.routes.js`).
 
 ### 5.1 Public endpoints (unauthenticated)
 
-| Method | Path                     | Purpose                                                                                                                            |
-| ------ | ------------------------ | ---------------------------------------------------------------------------------------------------------------------------------- |
-| `GET`  | `/availability?cardId=…` | Returns per-day slot availability for 1–14 days. Slots marked available/unavailable based on blocking bookings and business hours. |
-| `POST` | `/`                      | Submit a booking **request**. Creates a `pending` booking - this is not a confirmed appointment. Returns `{ success, bookingId }`. |
+| Method | Path                     | Purpose                                                                                                                                                                                                                                                                                                                                  |
+| ------ | ------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `GET`  | `/availability?cardId=…` | Returns per-day slot availability for the card's effective booking horizon (7, 14, 30, or 60 days; default 14). The window cannot be expanded by `days` or `startDate` query params. Past slots on the current day are returned as `available: false`. Slots marked available/unavailable based on blocking bookings and business hours. |
+| `POST` | `/`                      | Submit a booking **request**. Creates a `pending` booking - this is not a confirmed appointment. Returns `{ success, bookingId }`.                                                                                                                                                                                                       |
 
 **Rate limits (public):**
 
@@ -166,6 +166,25 @@ Base path: `/api/bookings` (mounted via `backend/src/routes/booking.routes.js`).
 
 - `409 SLOT_TAKEN` - slot already has a blocking booking
 - `409 PERSON_REPEAT_BLOCKED` - visitor already has an active booking on this card
+
+### 5.1.1 Booking Submit Validation Sequence
+
+Guards on `POST /` fire in this order. The **first failing guard terminates the request**.
+
+| #   | Guard                                                       | HTTP | Code                                      |
+| --- | ----------------------------------------------------------- | ---- | ----------------------------------------- |
+| 1   | `bookingSettings.enabled === true`                          | 400  | `BOOKING_NOT_AVAILABLE`                   |
+| 2   | Card owner has active booking entitlement                   | 403  | `FEATURE_NOT_AVAILABLE` / `TRIAL_EXPIRED` |
+| 3   | Slot falls within configured business hours                 | 400  | `BOOKING_NOT_AVAILABLE`                   |
+| 4   | Date is within the card's effective booking horizon         | 400  | `DATE_OUT_OF_HORIZON`                     |
+| 5   | Slot start time is not in the past (`Asia/Jerusalem`)       | 400  | `BOOKING_SLOT_IN_PAST`                    |
+| 6   | Slot not already taken by a blocking booking                | 409  | `SLOT_TAKEN`                              |
+| 7   | Person does not already have an active booking on this card | 409  | `PERSON_REPEAT_BLOCKED`                   |
+
+**Notes:**
+
+- The availability endpoint's `available: false` is a UI advisory. The submit endpoint enforces guards #3–#5 independently; a direct `POST` cannot bypass them.
+- To observe `BOOKING_SLOT_IN_PAST` in isolation during testing, the past slot must fall inside the card's configured business hours; otherwise guard #3 fires first (`BOOKING_NOT_AVAILABLE`).
 
 ### 5.2 Owner endpoints (authenticated)
 
@@ -192,6 +211,20 @@ The owner list endpoint returns enriched booking objects with card metadata:
 - `cardMeta.cardKind` - `"personal"` or `"org"` (uses the PERSONAL_ORG sentinel pattern)
 - `phone` - alias for `customerPhoneRaw`
 - Status, timing, and customer fields as stored
+
+### 5.5 Booking Settings — horizonDays
+
+`card.bookingSettings.horizonDays` controls how far ahead customers can book. Used by both the availability endpoint and the submit endpoint.
+
+| Stored value             | Effective horizon                                  |
+| ------------------------ | -------------------------------------------------- |
+| `7` / `14` / `30` / `60` | That many calendar days from today (today = day 1) |
+| `null`                   | Default: 14 days                                   |
+| missing or invalid       | Default: 14 days                                   |
+
+**Absolute max:** 60 days.  
+Owner update with an explicit value outside `[7, 14, 30, 60]` returns `400 INVALID_BOOKING_HORIZON`.  
+The effective horizon is resolved identically for both endpoints via `resolveEffectiveBookingHorizon(card)` (`backend/src/utils/bookingHorizon.util.js`).
 
 ---
 
