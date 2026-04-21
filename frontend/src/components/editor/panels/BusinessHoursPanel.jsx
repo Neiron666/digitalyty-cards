@@ -189,6 +189,15 @@ function TimeListbox({ label, value, options, onChange, disabled, invalid }) {
     );
 }
 
+const BOOKING_HORIZON_OPTIONS = [
+    { value: 7, label: "שבוע" },
+    { value: 14, label: "שבועיים" },
+    { value: 30, label: "חודש" },
+    { value: 60, label: "חודשיים" },
+];
+
+const BOOKING_HORIZON_DEFAULT = 14;
+
 export default function BusinessHoursPanel({
     value,
     disabled,
@@ -222,6 +231,17 @@ export default function BusinessHoursPanel({
         bookingSettings != null &&
         typeof bookingSettings === "object" &&
         bookingSettings.enabled === true;
+
+    const safeBookingSettings =
+        bookingSettings != null && typeof bookingSettings === "object"
+            ? bookingSettings
+            : {};
+
+    const effectiveHorizonDays = BOOKING_HORIZON_OPTIONS.some(
+        (option) => option.value === Number(bookingSettings?.horizonDays),
+    )
+        ? Number(bookingSettings.horizonDays)
+        : BOOKING_HORIZON_DEFAULT;
 
     function commit(next) {
         onChange?.(next);
@@ -289,6 +309,7 @@ export default function BusinessHoursPanel({
                                     checked={bookingEnabled}
                                     onChange={(e) =>
                                         onBookingChange?.({
+                                            ...safeBookingSettings,
                                             enabled: e.target.checked,
                                         })
                                     }
@@ -303,6 +324,33 @@ export default function BusinessHoursPanel({
                             כאשר מופעל, לקוחות יוכלו לשלוח בקשות לתורים דרך
                             הכרטיס.
                         </div>
+                        <TimeListbox
+                            label="כמה זמן קדימה ניתן להזמין?"
+                            value={
+                                BOOKING_HORIZON_OPTIONS.find(
+                                    (o) => o.value === effectiveHorizonDays,
+                                )?.label ?? ""
+                            }
+                            options={BOOKING_HORIZON_OPTIONS.map(
+                                (o) => o.label,
+                            )}
+                            disabled={disabled || !bookingEnabled}
+                            invalid={false}
+                            onChange={(selectedLabel) => {
+                                const opt = BOOKING_HORIZON_OPTIONS.find(
+                                    (o) => o.label === selectedLabel,
+                                );
+                                if (!opt) return;
+                                onBookingChange?.({
+                                    ...safeBookingSettings,
+                                    enabled: bookingEnabled,
+                                    horizonDays: opt.value,
+                                });
+                            }}
+                        />
+                        <span className={styles.hint}>
+                            קובע עד כמה זמן קדימה לקוחות יוכלו לבחור תור בכרטיס.
+                        </span>
                     </div>
                 ) : (
                     <div className={styles.lockedBlock}>

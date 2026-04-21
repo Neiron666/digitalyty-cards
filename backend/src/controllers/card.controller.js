@@ -45,6 +45,7 @@ import { toIsrael } from "../utils/time.util.js";
 import { DEFAULT_TENANT_KEY } from "../utils/tenant.util.js";
 import { getPersonalOrgId } from "../utils/personalOrg.util.js";
 import { assertActiveOrgAndMembershipOrNotFound } from "../utils/orgMembership.util.js";
+import { normalizeBookingHorizonInput } from "../utils/bookingHorizon.util.js";
 import {
     CURRENT_TERMS_VERSION,
     CURRENT_PRIVACY_VERSION,
@@ -1966,6 +1967,22 @@ export async function updateCard(req, res) {
         const incomingBs = isPlainObject(patch.bookingSettings)
             ? patch.bookingSettings
             : {};
+
+        // Validate and normalise horizonDays if explicitly provided.
+        // Silently absent = no change; null = reset; valid number/string = store as Number; invalid = 400.
+        if (Object.prototype.hasOwnProperty.call(incomingBs, "horizonDays")) {
+            const hResult = normalizeBookingHorizonInput(
+                incomingBs.horizonDays,
+            );
+            if (!hResult.ok && !hResult.skipped) {
+                return res
+                    .status(400)
+                    .json({ ok: false, code: "INVALID_BOOKING_HORIZON" });
+            }
+            if (hResult.ok) {
+                incomingBs.horizonDays = hResult.value; // normalise string → number, or keep null
+            }
+        }
 
         patch.bookingSettings = { ...baseBs, ...incomingBs };
     }

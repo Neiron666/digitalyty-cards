@@ -1,6 +1,7 @@
 import mongoose from "mongoose";
 
 import { normalizeReviews } from "../utils/reviews.util.js";
+import { BOOKING_HORIZON_ALLOWED } from "../utils/bookingHorizon.util.js";
 import { ABOUT_PARAGRAPHS_MAX } from "../config/about.js";
 import { REVIEWS_MAX } from "../config/reviews.js";
 import {
@@ -466,7 +467,20 @@ const CardSchema = new mongoose.Schema(
         // Additive: booking feature enablement (separate from businessHours).
         bookingSettings: {
             type: new mongoose.Schema(
-                { enabled: { type: Boolean, default: false } },
+                {
+                    enabled: { type: Boolean, default: false },
+                    horizonDays: {
+                        type: Number,
+                        default: null,
+                        validate: {
+                            validator: (v) =>
+                                v == null ||
+                                BOOKING_HORIZON_ALLOWED.includes(v),
+                            message:
+                                "horizonDays must be null or one of 7, 14, 30, 60",
+                        },
+                    },
+                },
                 { _id: false },
             ),
             default: null,

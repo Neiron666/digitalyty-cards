@@ -15,6 +15,7 @@ import {
 import { assertSlotLegalAgainstBusinessHoursOrThrow } from "../utils/bookingBusinessHours.util.js";
 import { getPersonalOrgId } from "../utils/personalOrg.util.js";
 import { toIsrael, addIsraelDaysFromNow } from "../utils/time.util.js";
+import { resolveEffectiveBookingHorizon } from "../utils/bookingHorizon.util.js";
 
 const FAKE_BOOKING_ID = "000000000000000000000000";
 
@@ -180,11 +181,25 @@ function assertSlotInBusinessHoursOrInvalidRequest({
     });
 }
 
+function assertDateWithinHorizon({ card, dateKeyIl }) {
+    const effectiveHorizon = resolveEffectiveBookingHorizon(card);
+    // horizonDays = total days from today (inclusive): today is day 1.
+    // max selectable date = today + (effectiveHorizon - 1).
+    const maxDateKeyIl = addIsraelDaysFromNow(new Date(), effectiveHorizon - 1);
+    if (String(dateKeyIl) > maxDateKeyIl) {
+        throw new HttpError(
+            400,
+            "Date is outside booking horizon",
+            "DATE_OUT_OF_HORIZON",
+        );
+    }
+}
+
 // ── Availability read (public, anonymous) ───────────────────────────
 
 const AVAIL_WEEKDAY_MAP = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];
 const AVAIL_SLOT_DURATION = 30;
-const AVAIL_MAX_DAYS = 14;
+const AVAIL_MAX_DAYS = 60; // absolute ceiling — per-card effective horizon is resolved via resolveEffectiveBookingHorizon()
 
 function parseHHmm(hhmm) {
     if (typeof hhmm !== "string") return null;
@@ -230,10 +245,11 @@ export async function getPublicAvailability(req, res) {
         }
 
         // ── Parse days param ──
+        const effectiveHorizon = resolveEffectiveBookingHorizon(card);
         const daysRaw = parseInt(req.query.days, 10);
         const daysCount = Number.isFinite(daysRaw)
-            ? Math.min(Math.max(daysRaw, 1), AVAIL_MAX_DAYS)
-            : 7;
+            ? Math.min(Math.max(daysRaw, 1), effectiveHorizon)
+            : effectiveHorizon;
 
         // ── Resolve date range (Israel-local) ──
         const nowUtcDate = new Date();
@@ -272,10 +288,21 @@ export async function getPublicAvailability(req, res) {
             dateKeys.push(addIsraelDaysFromNow(baseUtc, i));
         }
 
+        // ── Intersect with booking horizon window ──
+        // Enforces: todayKey <= dateKeyIl <= maxDateKeyIl.
+        // Prevents startDate or days query param from exposing dates outside the card's effective horizon.
+        const maxDateKeyIl = addIsraelDaysFromNow(
+            nowUtcDate,
+            effectiveHorizon - 1,
+        );
+        const horizonDateKeys = dateKeys.filter(
+            (dk) => dk >= todayKey && dk <= maxDateKeyIl,
+        );
+
         // ── Fetch blocking bookings in one query ──
         const blockingBookings = await Booking.find({
             card: cardId,
-            dateKeyIl: { $in: dateKeys },
+            dateKeyIl: { $in: horizonDateKeys },
             status: { $in: ["pending", "approved"] },
         })
             .select("dateKeyIl localStartHHmm")
@@ -290,7 +317,7 @@ export async function getPublicAvailability(req, res) {
         }
 
         // ── Generate per-day availability ──
-        const result = dateKeys.map((dateKey) => {
+        const result = horizonDateKeys.map((dateKey) => {
             const wdIdx = new Date(`${dateKey}T00:00:00Z`).getUTCDay();
             const weekdayKey = AVAIL_WEEKDAY_MAP[wdIdx] || "sun";
 
@@ -390,6 +417,9 @@ export async function createPublicBooking(req, res) {
             dateKeyIl: input.dateKeyIl,
             localHHmm: input.localStartHHmm,
         });
+
+        // Reject requests whose date falls outside the card's booking horizon.
+        assertDateWithinHorizon({ card, dateKeyIl: input.dateKeyIl });
 
         const now = new Date();
         const { expiresAt, purgeAt } = computeBookingTimers({

@@ -35,6 +35,9 @@ const MONTH_LABELS = [
     "דצמבר",
 ];
 
+const BOOKING_HORIZON_ALLOWED = [7, 14, 30, 60];
+const BOOKING_HORIZON_DEFAULT = 14;
+
 function formatDateShort(dateKeyIl) {
     const [, m, d] = (dateKeyIl || "").split("-");
     if (!m || !d) return "";
@@ -132,6 +135,12 @@ export default function BookingSection({ card }) {
     const cardId = card?._id;
     const slug = card?.slug;
 
+    const effectiveHorizonDays = BOOKING_HORIZON_ALLOWED.includes(
+        Number(card?.bookingSettings?.horizonDays),
+    )
+        ? Number(card.bookingSettings.horizonDays)
+        : BOOKING_HORIZON_DEFAULT;
+
     // ── State ──
     const [days, setDays] = useState(null);
     const [loadError, setLoadError] = useState("");
@@ -160,7 +169,9 @@ export default function BookingSection({ card }) {
         setSubmitStatus("idle");
         setSubmitError("");
         try {
-            const data = await getPublicAvailability(cardId, { days: 14 });
+            const data = await getPublicAvailability(cardId, {
+                days: effectiveHorizonDays,
+            });
             setDays(Array.isArray(data?.days) ? data.days : []);
         } catch (err) {
             const code = err.response?.data?.code;
@@ -175,7 +186,7 @@ export default function BookingSection({ card }) {
                 setLoadError("לא ניתן לטעון זמינות כרגע.");
             }
         }
-    }, [cardId]);
+    }, [cardId, effectiveHorizonDays]);
 
     useEffect(() => {
         fetchAvailability();
@@ -199,7 +210,7 @@ export default function BookingSection({ card }) {
             : null;
     const availableSlots = selectedDay?.slots?.filter((s) => s.available) || [];
 
-    // ── Derived months present in the 14-day window ──
+    // ── Derived months present in the booking horizon window ──
     const monthList = useMemo(() => deriveMonths(days), [days]);
 
     // ── Sync active month when fetch completes or resets ──
