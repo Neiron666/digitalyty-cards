@@ -376,6 +376,22 @@
     content: "\00D7";
     color: var(--c-danger-soft);
 }
+
+.accordionBlockHighlight {
+    border-color: var(--gold-soft);
+}
+
+.accordionBlockHighlight > .accordionTitle {
+    color: var(--gold);
+}
+
+.accordionBody {
+    padding: 0 1rem 0.75rem;
+    font-size: var(--fs-body-sm);
+    color: rgba(255, 255, 255, 0.68);
+    line-height: 1.7;
+    margin: 0;
+}
 /* ── Legal note below plans ────────────────────────────────────── */
 .plansLegalNote {
     font-size: var(--fs-caption);

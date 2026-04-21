@@ -170,9 +170,14 @@ const MONTHLY_ACCORDIONS = [
         title: "למי זה מתאים",
         items: [
             "לעסק שרוצה גמישות מלאה",
-            "מסלול מתחדש אוטומטית — ניתן לבטל לפני החיוב הבא",
+            "מסלול מתחדש אוטומטית - ניתן לבטל לפני החיוב הבא",
             "מתאים לעבודה שוטפת בלי התחייבות לשנה",
         ],
+    },
+    {
+        title: "איך עובד החיוב",
+        tone: "highlight",
+        body: "חיוב חודשי מתחדש אוטומטית עד לביטול. ניתן לבטל לפני מועד החיוב הבא, והביטול ייכנס לתוקף בסוף התקופה שכבר שולמה.",
     },
 ];
 
@@ -216,30 +221,45 @@ const ANNUAL_ACCORDIONS = [
             "שקט בלי חידוש חודשי מתמשך",
         ],
     },
+    {
+        title: "איך עובד החיוב",
+        tone: "highlight",
+        body: "תשלום שנתי מראש עבור 12 חודשים. חידוש שנתי אוטומטי יתבצע רק אם תופעל בחירה מפורשת מראש. תישלח תזכורת 14 ימים לפני חידוש שנתי אוטומטי.",
+    },
 ];
 
 function GroupedAccordions({ groups }) {
     return (
         <div className={styles.accordionStack}>
             {groups.map((g) => (
-                <details key={g.title} className={styles.accordionBlock}>
+                <details
+                    key={g.title}
+                    className={
+                        g.tone === "highlight"
+                            ? `${styles.accordionBlock} ${styles.accordionBlockHighlight}`
+                            : styles.accordionBlock
+                    }
+                >
                     <summary className={styles.accordionTitle}>
                         {g.title}
                     </summary>
-                    <ul className={styles.accordionList}>
-                        {g.items.map((item) => (
-                            <li
-                                key={item}
-                                className={
-                                    g.tone === "negative"
-                                        ? `${styles.accordionItem} ${styles.accordionItemNegative}`
-                                        : styles.accordionItem
-                                }
-                            >
-                                {item}
-                            </li>
-                        ))}
-                    </ul>
+                    {g.body && <p className={styles.accordionBody}>{g.body}</p>}
+                    {g.items && (
+                        <ul className={styles.accordionList}>
+                            {g.items.map((item) => (
+                                <li
+                                    key={item}
+                                    className={
+                                        g.tone === "negative"
+                                            ? `${styles.accordionItem} ${styles.accordionItemNegative}`
+                                            : styles.accordionItem
+                                    }
+                                >
+                                    {item}
+                                </li>
+                            ))}
+                        </ul>
+                    )}
                 </details>
             ))}
         </div>
@@ -481,9 +501,8 @@ export default function Pricing() {
                             <span className={styles.planPrice}>₪39.90</span>
                             <span className={styles.planCadence}>לחודש</span>
                             <p className={styles.planNote}>
-                                חיוב חודשי מתחדש אוטומטית עד לביטול. ניתן לבטל
-                                לפני מועד החיוב הבא, והביטול ייכנס לתוקף בסוף
-                                התקופה שכבר שולמה.
+                                כל יכולות הפרימיום בתשלום חודשי גמיש - בלי
+                                התחייבות שנתית.
                             </p>
                             <GroupedAccordions groups={MONTHLY_ACCORDIONS} />
                             <Button
@@ -517,9 +536,10 @@ export default function Pricing() {
                             </span>
                             <span className={styles.planCadence}>לשנה</span>
                             <p className={styles.planNote}>
-                                תשלום שנתי מראש עבור 12 חודשים. חידוש שנתי
-                                אוטומטי יתבצע רק אם תופעל בחירה מפורשת מראש.
-                                תישלח תזכורת 14 ימים לפני חידוש שנתי אוטומטי.
+                                המסלול המשתלם: פרימיום מלא לשנה שלמה -{" "}
+                                <span className={pub.goldHilight}>
+                                    חיסכון של כ-80שח.
+                                </span>
                             </p>
                             <GroupedAccordions groups={ANNUAL_ACCORDIONS} />
                             <Button
