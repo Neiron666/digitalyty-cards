@@ -9,8 +9,10 @@ import {
     deleteAccount,
     updateEmailPreferences,
     updateAccountName,
+    cancelRenewal,
 } from "../../../services/account.service";
 import { createPayment } from "../../../services/payment.service";
+import CancelRenewalModal from "../CancelRenewalModal";
 import styles from "./SettingsPanel.module.css";
 
 function formatDate(value) {
@@ -51,6 +53,10 @@ export default function SettingsPanel({
     const [billingBusy, setBillingBusy] = useState(false);
     const [billingMsg, setBillingMsg] = useState("");
     const [yearlyOptIn, setYearlyOptIn] = useState(false);
+
+    const [cancelModalOpen, setCancelModalOpen] = useState(false);
+    const [cancelBusy, setCancelBusy] = useState(false);
+    const [cancelError, setCancelError] = useState("");
 
     const [mktBusy, setMktBusy] = useState(false);
     const [mktError, setMktError] = useState("");
@@ -149,6 +155,31 @@ export default function SettingsPanel({
             }
         } finally {
             setPwSubmitting(false);
+        }
+    }
+
+    async function handleCancelRenewal() {
+        setCancelError("");
+        setCancelBusy(true);
+        try {
+            const res = await cancelRenewal();
+            setAccount((prev) => ({
+                ...prev,
+                autoRenewal: res?.autoRenewal ?? prev?.autoRenewal,
+            }));
+            setCancelModalOpen(false);
+        } catch (err) {
+            const status = err?.response?.status;
+            if (status === 429) {
+                setCancelError("בוצעו יותר מדי ניסיונות. נסו שוב מאוחר יותר.");
+            } else {
+                setCancelError(
+                    "לא ניתן לבטל את החידוש כרגע. נסו שוב מאוחר יותר.",
+                );
+            }
+            setCancelModalOpen(false);
+        } finally {
+            setCancelBusy(false);
         }
     }
 
@@ -714,6 +745,14 @@ export default function SettingsPanel({
                             const providerLabel =
                                 provider === "tranzila" ? "Tranzila" : "-";
 
+                            const autoRenewal = account?.autoRenewal ?? {
+                                status: "none",
+                                canCancel: false,
+                            };
+                            const renewalStatus = autoRenewal.status ?? "none";
+                            const renewalPaidUntil =
+                                autoRenewal.subscriptionExpiresAt ?? null;
+
                             async function handlePayment(plan) {
                                 if (plan === "yearly" && !yearlyOptIn) {
                                     setBillingMsg(
@@ -955,9 +994,126 @@ export default function SettingsPanel({
                                                 </div>
                                             )}
 
+                                            {/* ── Cancel renewal block ── */}
+                                            {renewalStatus !== "none" && (
+                                                <div
+                                                    className={
+                                                        styles.cancelRenewalBlock
+                                                    }
+                                                >
+                                                    {renewalStatus ===
+                                                        "active" &&
+                                                        autoRenewal.canCancel && (
+                                                            <>
+                                                                <div
+                                                                    className={
+                                                                        styles.billingRow
+                                                                    }
+                                                                >
+                                                                    <span
+                                                                        className={
+                                                                            styles.billingLabel
+                                                                        }
+                                                                    >
+                                                                        חידוש
+                                                                        אוטומטי:
+                                                                    </span>
+                                                                    <span
+                                                                        className={
+                                                                            styles.billingValue
+                                                                        }
+                                                                    >
+                                                                        פעיל
+                                                                    </span>
+                                                                </div>
+
+                                                                {renewalPaidUntil && (
+                                                                    <div
+                                                                        className={
+                                                                            styles.billingNote
+                                                                        }
+                                                                    >
+                                                                        הכרטיס
+                                                                        יישאר
+                                                                        Premium
+                                                                        עד{" "}
+                                                                        {formatDate(
+                                                                            renewalPaidUntil,
+                                                                        )}
+                                                                    </div>
+                                                                )}
+
+                                                                <div
+                                                                    className={
+                                                                        styles.billingActions
+                                                                    }
+                                                                >
+                                                                    <Button
+                                                                        variant="secondary"
+                                                                        disabled={
+                                                                            cancelBusy
+                                                                        }
+                                                                        onClick={() => {
+                                                                            setCancelError(
+                                                                                "",
+                                                                            );
+                                                                            setCancelModalOpen(
+                                                                                true,
+                                                                            );
+                                                                        }}
+                                                                    >
+                                                                        ביטול
+                                                                        חידוש
+                                                                        אוטומטי
+                                                                    </Button>
+                                                                </div>
+                                                            </>
+                                                        )}
+
+                                                    {renewalStatus ===
+                                                        "cancelled" && (
+                                                        <div
+                                                            className={
+                                                                styles.pwSuccess
+                                                            }
+                                                        >
+                                                            החידוש האוטומטי
+                                                            בוטל.{" "}
+                                                            {renewalPaidUntil
+                                                                ? `הגישה Premium פעילה עד ${formatDate(renewalPaidUntil)}.`
+                                                                : ""}
+                                                        </div>
+                                                    )}
+
+                                                    {(renewalStatus ===
+                                                        "pending" ||
+                                                        renewalStatus ===
+                                                            "failed") && (
+                                                        <div
+                                                            className={
+                                                                styles.billingNote
+                                                            }
+                                                        >
+                                                            החידוש האוטומטי
+                                                            עדיין לא הופעל.
+                                                        </div>
+                                                    )}
+
+                                                    {cancelError && (
+                                                        <div
+                                                            className={
+                                                                styles.billingError
+                                                            }
+                                                        >
+                                                            {cancelError}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            )}
+
                                             <div className={styles.billingNote}>
-                                                ביטול או שינוי אמצעי תשלום? פנה
-                                                לתמיכה: support@cardigo.co.il
+                                                שינוי אמצעי תשלום? פנה לתמיכה:
+                                                support@cardigo.co.il
                                             </div>
                                             <div className={styles.billingNote}>
                                                 היסטוריית תשלומים אינה זמינה
@@ -1208,6 +1364,12 @@ export default function SettingsPanel({
                     </>
                 )}
             </div>
+            <CancelRenewalModal
+                open={cancelModalOpen}
+                busy={cancelBusy}
+                onConfirm={handleCancelRenewal}
+                onClose={() => setCancelModalOpen(false)}
+            />
         </Panel>
     );
 }

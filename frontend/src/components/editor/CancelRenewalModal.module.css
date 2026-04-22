@@ -1,0 +1,162 @@
+/* ── CancelRenewalModal ─────────────────────────────────────── */
+/* Flex-only. No grid. Mobile-first. font-size via var(--fs-*). */
+/* RTL-safe: logical spacing properties throughout.             */
+
+.backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    padding: 16px;
+    background: rgba(0, 0, 0, 0.6);
+}
+
+.modal {
+    width: min(480px, 100%);
+    border-radius: 18px;
+
+    background: var(--bg-card, #0f172a);
+    color: var(--text-main, #eaf0ff);
+
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    box-shadow: 0 18px 60px rgba(0, 0, 0, 0.55);
+    overflow: hidden;
+    text-align: center;
+}
+
+/* ── Header ── */
+
+.header {
+    padding: 20px 20px 8px;
+}
+
+.title {
+    margin: 0;
+    font-size: var(--fs-h6);
+    font-weight: 900;
+    letter-spacing: 0.01em;
+    color: var(--gold, #d4af37);
+    line-height: 1.3;
+}
+
+/* ── Body ── */
+
+.body {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 8px 20px 16px;
+}
+
+.bodyLine {
+    margin: 0;
+    color: var(--text-muted, #c8d2ea);
+    font-size: var(--fs-body-sm);
+    font-weight: 600;
+    line-height: 1.55;
+}
+
+/* ── Actions (2-button column) ── */
+
+.actions {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+
+    padding: 14px 20px 20px;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* ── Base button ── */
+
+.button {
+    appearance: none;
+    width: 100%;
+    border-radius: 12px;
+    padding-block: 12px;
+    padding-inline: 14px;
+    font-weight: 900;
+    font-size: var(--fs-body-sm);
+    font-family: inherit;
+    cursor: pointer;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    background: rgba(255, 255, 255, 0.06);
+    color: inherit;
+    transition:
+        background 120ms ease,
+        border-color 120ms ease,
+        filter 120ms ease;
+}
+
+.button:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+
+.button:focus-visible {
+    outline: 2px solid rgba(255, 215, 0, 0.65);
+    outline-offset: 2px;
+}
+
+/* ── Primary: destructive confirm ── */
+
+.primary {
+    outline: 1px solid rgba(245, 159, 11, 0.5);
+    outline-offset: -4px;
+    box-shadow: 0 0 0 1px var(--gold-soft, rgba(212, 175, 55, 0.18));
+}
+
+.primary:hover:not(:disabled) {
+    filter: brightness(1.06);
+    border-color: var(--gold-fade, rgba(212, 175, 55, 0.4));
+    color: var(--gold, #d4af37);
+    background: linear-gradient(
+        90deg,
+        transparent,
+        var(--gold-soft, rgba(212, 175, 55, 0.1)),
+        transparent
+    );
+}
+
+/* ── Secondary: safe back ── */
+
+.secondary {
+    background: rgba(255, 255, 255, 0.04);
+    border-color: rgba(255, 255, 255, 0.1);
+}
+
+.secondary:hover:not(:disabled) {
+    filter: brightness(1.05);
+    border-color: rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.07);
+}
+
+/* ── Busy / loading row ── */
+
+.busyRow {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.spinner {
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    border-radius: 999px;
+    border: 2px solid rgba(234, 240, 255, 0.25);
+    border-top-color: rgba(255, 215, 0, 0.75);
+    animation: spin 0.9s linear infinite;
+    flex-shrink: 0;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}

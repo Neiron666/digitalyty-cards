@@ -57,3 +57,13 @@ export async function updateAccountName({ firstName }) {
     const res = await api.patch("/account/name", { firstName });
     return res.data;
 }
+
+/**
+ * POST /api/account/cancel-renewal — self-service cancellation of automatic STO renewal.
+ * No request body — backend derives user from req.userId (httpOnly cookie auth).
+ * Returns safe autoRenewal DTO: { ok, renewalStatus, autoRenewal, messageKey }
+ */
+export async function cancelRenewal() {
+    const res = await api.post("/account/cancel-renewal");
+    return res.data;
+}

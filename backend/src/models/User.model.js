@@ -133,6 +133,7 @@ const UserSchema = new mongoose.Schema(
                     "admin",
                     "webhook",
                     "manual_portal",
+                    "self_service",
                 ],
                 default: null,
             },

@@ -23,6 +23,7 @@ import {
     removeMarketingOptOut,
 } from "../utils/marketingOptOut.util.js";
 import { CURRENT_MARKETING_CONSENT_VERSION } from "../utils/consentVersions.js";
+import { cancelTranzilaStoForUser } from "../services/payment/tranzila.provider.js";
 
 const router = Router();
 
@@ -43,6 +44,10 @@ const emailPrefRateMap = new Map();
 const NAME_UPDATE_WINDOW_MS = 10 * 60 * 1000;
 const NAME_UPDATE_LIMIT = 10;
 const nameUpdateRateMap = new Map();
+
+const CANCEL_RENEWAL_WINDOW_MS = 10 * 60 * 1000;
+const CANCEL_RENEWAL_LIMIT = 3;
+const cancelRenewalRateMap = new Map();
 
 let accountSweepTick = 0;
 const SWEEP_EVERY = 200;
@@ -70,6 +75,30 @@ function sweepRateMap(map, now) {
     }
 }
 
+/**
+ * Derive a safe, sanitized autoRenewal DTO from a user document.
+ * Never exposes stoId, token fields, or raw provider data.
+ * Accepts both lean and non-lean user documents (accesses plain JS properties).
+ */
+function buildAutoRenewalDto(user) {
+    const sto = user?.tranzilaSto ?? null;
+    const stoStatus = sto?.status ?? null;
+    const hasId = Boolean(sto?.stoId);
+
+    let status = "none";
+    if (stoStatus === "cancelled") status = "cancelled";
+    else if (stoStatus === "created" && hasId) status = "active";
+    else if (stoStatus === "pending") status = "pending";
+    else if (stoStatus === "failed") status = "failed";
+
+    return {
+        status,
+        canCancel: status === "active",
+        cancelledAtPresent: Boolean(sto?.cancelledAt),
+        subscriptionExpiresAt: user?.subscription?.expiresAt ?? null,
+    };
+}
+
 function rateLimitByIpForMap(req, map, limit, windowMs) {
     const ip = getClientIp(req);
     if (!ip) return true;
@@ -81,6 +110,7 @@ function rateLimitByIpForMap(req, map, limit, windowMs) {
         sweepRateMap(deleteAcctRateMap, now);
         sweepRateMap(emailPrefRateMap, now);
         sweepRateMap(nameUpdateRateMap, now);
+        sweepRateMap(cancelRenewalRateMap, now);
     }
 
     const entry = map.get(ip);
@@ -104,7 +134,7 @@ router.get("/me", requireAuth, async (req, res) => {
 
         const user = await User.findById(userId)
             .select(
-                "firstName email role plan subscription createdAt emailMarketingConsent emailMarketingConsentAt emailMarketingConsentVersion emailMarketingConsentSource",
+                "firstName email role plan subscription createdAt emailMarketingConsent emailMarketingConsentAt emailMarketingConsentVersion emailMarketingConsentSource tranzilaSto.status tranzilaSto.stoId tranzilaSto.cancelledAt",
             )
             .lean();
 
@@ -170,6 +200,7 @@ router.get("/me", requireAuth, async (req, res) => {
                 user.emailMarketingConsentVersion || null,
             emailMarketingConsentSource:
                 user.emailMarketingConsentSource || null,
+            autoRenewal: buildAutoRenewalDto(user),
         });
     } catch (err) {
         console.error("[account] GET /me failed", err?.message || err);
@@ -633,6 +664,135 @@ router.post("/delete-account", requireAuth, async (req, res) => {
             err?.message || err,
         );
         return res.status(400).json({ message: "Unable to delete account" });
+    }
+});
+
+/**
+ * POST /api/account/cancel-renewal
+ * Self-service cancellation of automatic premium renewal (Tranzila STO).
+ *
+ * Business behavior:
+ *   - Cancels future recurring STO charges only.
+ *   - Does NOT downgrade immediately.
+ *   - Does NOT change subscription.expiresAt or Card.billing.paidUntil.
+ *   - Does NOT create a PaymentTransaction.
+ *   - Does NOT refund.
+ *   - Idempotent: already-cancelled returns 200, not an error.
+ *
+ * Security:
+ *   - requireAuth mandatory; user derived from req.userId only.
+ *   - No userId/email/stoId accepted from request body.
+ *   - Response never contains stoId, token, providerTxnId, or raw provider data.
+ *
+ * Rate limit: 3 requests per 10 minutes per user (prevents STO provider abuse).
+ */
+router.post("/cancel-renewal", requireAuth, async (req, res) => {
+    try {
+        // ── Rate limit by userId (authenticated, not IP) ──────────────────────
+        const userId = String(req.userId);
+        const now = Date.now();
+
+        const rlEntry = cancelRenewalRateMap.get(userId);
+        if (!rlEntry || rlEntry.resetAt <= now) {
+            cancelRenewalRateMap.set(userId, {
+                count: 1,
+                resetAt: now + CANCEL_RENEWAL_WINDOW_MS,
+            });
+        } else {
+            rlEntry.count += 1;
+            if (rlEntry.count > CANCEL_RENEWAL_LIMIT) {
+                return res.status(429).json({
+                    ok: false,
+                    messageKey: "renewal_cancel_rate_limited",
+                });
+            }
+        }
+
+        // ── Load full Mongoose document (non-lean — cancelTranzilaStoForUser calls user.save()) ──
+        const user = await User.findById(req.userId);
+
+        if (!user) {
+            return res.status(404).json({
+                ok: false,
+                renewalStatus: "user_not_found",
+                messageKey: "account_not_found",
+            });
+        }
+
+        // ── Derive current renewal state ──────────────────────────────────────
+        const autoRenewal = buildAutoRenewalDto(user);
+
+        // ── State machine ─────────────────────────────────────────────────────
+
+        if (autoRenewal.status === "cancelled") {
+            return res.status(200).json({
+                ok: true,
+                renewalStatus: "already_cancelled",
+                autoRenewal,
+                messageKey: "renewal_already_cancelled",
+            });
+        }
+
+        if (autoRenewal.status === "none") {
+            return res.status(200).json({
+                ok: true,
+                renewalStatus: "no_active_renewal",
+                autoRenewal,
+                messageKey: "no_active_renewal",
+            });
+        }
+
+        if (
+            autoRenewal.status === "pending" ||
+            autoRenewal.status === "failed"
+        ) {
+            return res.status(409).json({
+                ok: false,
+                renewalStatus: "cancel_unavailable",
+                autoRenewal,
+                messageKey: "renewal_cancel_unavailable",
+            });
+        }
+
+        // ── Active STO — call provider cancellation ───────────────────────────
+        // cancelTranzilaStoForUser mutates user.tranzilaSto in-place and calls user.save()
+        // only after provider confirms cancellation. subscription.expiresAt and Card.billing
+        // are intentionally NOT touched.
+        const result = await cancelTranzilaStoForUser(user, {
+            source: "self_service",
+            reason: "user_cancel_renewal",
+        });
+
+        if (result.ok === true) {
+            return res.status(200).json({
+                ok: true,
+                renewalStatus: result.skipped
+                    ? "already_cancelled"
+                    : "cancelled",
+                autoRenewal: buildAutoRenewalDto(user),
+                messageKey: result.skipped
+                    ? "renewal_already_cancelled"
+                    : "renewal_cancelled",
+            });
+        }
+
+        // Provider returned ok:false (network/parse/HTTP error)
+        return res.status(502).json({
+            ok: false,
+            renewalStatus: "cancel_failed",
+            autoRenewal,
+            messageKey: "renewal_cancel_failed",
+        });
+    } catch (err) {
+        console.error(
+            "[account] POST /cancel-renewal failed",
+            err?.message || err,
+        );
+        return res.status(500).json({
+            ok: false,
+            renewalStatus: "cancel_failed",
+            messageKey: "renewal_cancel_failed",
+        });
     }
 });
 
