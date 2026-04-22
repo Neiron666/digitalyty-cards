@@ -137,10 +137,10 @@ If the user is mid‑cycle and wants future renewals: currently **manual** only 
 PaymentTransaction ledger (providerTxnId, idempotency via E11000 unique index, PayloadAllowlist) exists and is used by both `handleNotify` and `handleStoNotify`. The upgrade items still pending:
 
 1. **Self-service portal** — if Tranzila offers any portal capabilities, link to it; otherwise support remains manual.
-2. **Receipt / YeshInvoice** — explicitly deferred until STO notify real-provider E2E and production lifecycle policies are closed.
+2. **Receipt / YeshInvoice** — explicitly deferred. **YeshInvoice remains deferred** until all remaining billing lifecycle gates are closed (failed-STO retry, STO create observability, gated startup validation, production terminal cutover, production E2E). See `billing-flow-ssot.md` §9 for the full gate list.
 3. **STO failed-state retry/recovery** — no job or script yet for users with `tranzilaSto.status="failed"`.
 4. **Non-atomic User + Card updates** — reconciliation job planned but not implemented.
-5. Consider “extend from max(now, currentExpiresAt)” instead of resetting from now.
+5. ~~Consider "extend from max(now, currentExpiresAt)" instead of resetting from now.~~ — **IMPLEMENTED** in `tranzila.provider.js`. Proven in contour 5.8f.9: subscription extended exactly +30 days from previous `paidUntil` (`2026-05-20T16:05:50.657Z` → `2026-06-19T16:05:50.657Z`), not from webhook arrival date.
 
 ---
 
@@ -155,7 +155,30 @@ PaymentTransaction ledger (providerTxnId, idempotency via E11000 unique index, P
 
 ## 9) STO Recurring Notify — Operator Reference
 
-> **Status (2026-04-20):** Implemented (5.8a–5.8e). Production-domain edge smoke passed. Real provider-generated webhook E2E is still pending. Portal URL not yet registered in Tranzila My Billing.
+> **Status (2026-04-22 — UPDATED):** **Fully proven E2E.** Real Tranzila My Billing webhook received and fully verified (contour 5.8f.9, classification: `REAL_TRANZILA_STO_NOTIFY_E2E_SUCCESS_FULLY_VERIFIED`).
+>
+> **Proven E2E chain (2026-04-22, `valik@cardigo.co.il`, sandbox terminal `testcardstok`):**
+>
+> 1. Tranzila My Billing recurring charge fired automatically.
+> 2. Netlify `payment-sto-notify` received `POST` (`upstreamStatus=200 upstreamOk=true`).
+> 3. Render `/api/payments/sto-notify` received and validated request.
+> 4. `handleStoNotify` returned `{ ok: true, duplicate: false, plan: "monthly", providerTxnIdPresent: true, userIdPresent: true, cardIdPresent: true }`.
+> 5. `PaymentTransaction` created: `status="paid"`, `amountAgorot=500`, `currency="ILS"`, `idempotencyNote="sto_recurring_notify"`.
+> 6. User `subscription.expiresAt` extended from `2026-05-20T16:05:50.657Z` to `2026-06-19T16:05:50.657Z` (exact +30 days from prior `paidUntil`, **not** from webhook arrival date — `max(now, currentExpiry)` behavior confirmed).
+> 7. `card.billing.paidUntil` extended to `2026-06-19T16:05:50.657Z` (matches user `subscription.expiresAt`).
+>
+> **Ledger baseline after E2E:** `sto_recurring_notify_count=6`, `sto_prefix_txn_count=6`.
+>
+> **Safe observability logs** deployed (5.8f.LOG.1): Netlify edge and Render `/sto-notify` route. Logs are production-safe (no raw ids/tokens/payload values).
+>
+> **Operator notes:**
+>
+> - `valik@cardigo.co.il` and `neiron.player@gmail.com` are test artifacts. Test STOs/users will be cancelled/cleaned up in a dedicated contour.
+> - `neiron` UI-edit experiment charged ₪5 but no webhook was observed (portal notify URL was not registered at time of that charge). Test artifact only.
+> - Do not delete `PaymentTransaction` ledger records — they are an audit trail (manual smoke + real E2E webhook).
+> - Cancel/deactivate test STOs provider-side when sandbox testing is complete. Do not change `PRICES_AGOROT` while active sandbox STOs exist (`amount_mismatch` on every subsequent notify).
+> - `CARDIGO_STO_NOTIFY_TOKEN` must remain secret. Token rotation requires coordinated update of: (1) Render env, (2) Netlify env, (3) Tranzila portal Transaction Notification Endpoint URL — all three before the old token stops being valid.
+> - `TRANZILA_STO_NOTIFY_URL` in `.env` is operator/reference only (value `_TODO_` intentional); the actual portal URL contains the live token and must never be stored in docs or source.
 
 ### Endpoint
 

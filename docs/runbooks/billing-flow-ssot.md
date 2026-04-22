@@ -18,7 +18,7 @@ All internal amounts are **integers in agorot** (1/100 of ₪). No floats anywhe
 
 **Canonical location:** `backend/src/config/plans.js` → `PRICES_AGOROT` export.
 
-> **⚠️ Sandbox/test price notice:** `PRICES_AGOROT` currently contains temporary sandbox values (`monthly: 500, yearly: 500` — ₪5.00 each) for STO testing. Production canonical values (`monthly: 3990, yearly: 39990`) are commented out in `plans.js`. **Before connecting production-priced STO schedules or switching to the production terminal, restore production prices and review all active STO schedules.** STO schedules lock the charge amount at creation time — if `PRICES_AGOROT` changes while active STO schedules still charge the old amount, every recurring notify will fail with `amount_mismatch`. Existing active schedules must be cancelled and recreated at the new price.
+> **⚠️ Sandbox/test price notice:** `PRICES_AGOROT` currently contains intentional development/sandbox values (`monthly: 500, yearly: 500` — ₪5.00 each). These values are in active use during sandbox STO testing and must NOT be changed while active sandbox STO schedules exist — any change while a schedule is charging the old amount will cause every recurring notify to fail with `amount_mismatch`. Production canonical values (`monthly: 3990, yearly: 39990`) are commented out in `plans.js` and must be restored before production billing/cutover in a dedicated pre-production contour, **after** all active sandbox STO schedules (valik, neiron test accounts) have been cancelled/deactivated at the Tranzila portal.
 
 **Conversion rules:**
 
@@ -266,13 +266,15 @@ Two planned reconciliation jobs:
 
 **YeshInvoice integration must NOT begin until ALL of the following are closed:**
 
-1. STO notify handler (recurring charge webhook received and processed).
-2. Failed-STO retry/recovery script or job.
-3. STO cancellation/deactivation runbook and/or script.
-4. Non-sensitive structured observability for STO create result.
-5. Gated startup validation when `TRANZILA_STO_CREATE_ENABLED=true`.
-6. Production terminal cutover completed.
-7. Tranzila recurring lifecycle proven end-to-end in production.
+1. ~~STO notify handler (recurring charge webhook received and processed).~~ **CLOSED 2026-04-22** — Real Tranzila My Billing webhook received and fully verified (contour 5.8f.9, `REAL_TRANZILA_STO_NOTIFY_E2E_SUCCESS_FULLY_VERIFIED`).
+2. Failed-STO retry/recovery script or job. _(open)_
+3. STO cancellation/deactivation runbook and/or script. _(partially resolved — `sto-cancel.mjs` exists; production policy runbook still required)_
+4. Non-sensitive structured observability for STO create result. _(open — STO notify observability resolved in 5.8f.LOG.1; STO create observability is separate and still open)_
+5. Gated startup validation when `TRANZILA_STO_CREATE_ENABLED=true`. _(open)_
+6. Production terminal cutover completed. _(open)_
+7. Tranzila recurring lifecycle proven end-to-end in production (real customers, production terminal). _(open — only sandbox `testcardstok` proven to date)_
+
+**YeshInvoice remains deferred.** 1 of 7 gate items is closed. Do not begin YeshInvoice implementation until all remaining gates are satisfied.
 
 **When YeshInvoice integration begins (future contour):**
 
@@ -451,11 +453,11 @@ Implementation: `buildTranzilaApiAuthHeaders()` in `backend/src/services/payment
 
 ### Production blockers (must close before production STO rollout)
 
-1. ~~**STO notify handler**~~ — **RESOLVED (5.8a–5.8e):** `handleStoNotify` implemented; Netlify `payment-sto-notify.js` and backend `POST /api/payments/sto-notify` route deployed with token gates; production-domain edge smoke passed. **First real provider-generated Tranzila My Billing webhook E2E is still pending; portal URL not yet registered** (pending contour 5.8f.2–5.8f.4 approval).
-2. **Failed-STO retry/recovery** — no script or job exists; users with `tranzilaSto.status="failed"` remain in failed state
+1. ~~**STO notify handler**~~ — **FULLY RESOLVED (5.8a–5.8f.9):** `handleStoNotify` implemented; Netlify `payment-sto-notify.js` and backend `POST /api/payments/sto-notify` route deployed with token gates and safe observability logs (5.8f.LOG.1). **Real provider-generated Tranzila My Billing webhook received and fully verified on 2026-04-22** (`valik@cardigo.co.il`, contour 5.8f.9, classification: `REAL_TRANZILA_STO_NOTIFY_E2E_SUCCESS_FULLY_VERIFIED`). Ledger baseline after E2E: `sto_recurring_notify_count=6`, `sto_prefix_txn_count=6`. Portal URL configured for `testcardstok` terminal.
+2. **Failed-STO retry/recovery** — no script or job exists; users with `tranzilaSto.status="failed"` remain in failed state _(open)_
 3. ~~**Cancellation/deactivation runbook — no operator procedure**~~ — **PARTIALLY RESOLVED (5.6):** `sto-cancel.mjs` operator script exists and sandbox active→inactive proof passed (`truestory.factory@gmail.com`, Tranzila portal confirmed inactive). Admin UI/button remains deferred. Production rollout policy/discipline still required before broad production use.
-4. **Non-sensitive observability** — no structured log on STO create result (success / skip / failure)
-5. **Gated startup validation** — if `TRANZILA_STO_CREATE_ENABLED=true`, STO config vars should be validated at startup (fail-fast)
-6. **Production terminal cutover** — Render STO env vars must be switched from sandbox terminal to production terminal values; `PRICES_AGOROT` must be restored to production values (`3990`/`39990`) and active STO schedules reviewed/migrated before cutover
+4. **Non-sensitive STO notify observability** — ✅ **RESOLVED (5.8f.LOG.1):** Safe structured logs deployed to Netlify edge function and backend `/sto-notify` route; verified 54/54 PASS with no sensitive data. **STO create observability** (structured log on create result success/skip/failure) remains open _(separate item)_.
+5. **Gated startup validation** — if `TRANZILA_STO_CREATE_ENABLED=true`, STO config vars should be validated at startup (fail-fast) _(open)_
+6. **Production terminal cutover** — Render STO env vars must be switched from sandbox terminal to production terminal values; `PRICES_AGOROT` must be restored to production values (`3990`/`39990`) **after** all active sandbox STO schedules are cancelled/deactivated (changing prices while active schedules charge old amounts causes `amount_mismatch`). Operator decision: price restore is deferred to a dedicated pre-production contour. _(open)_
 7. **Handshake / `thtk` amount locking** — separate future contour (STO amount locked at create time; price change reconciliation not yet designed)
-8. **YeshInvoice / קבלה** — explicitly deferred; must not start until real-provider STO notify E2E and production lifecycle policies are closed (see §9)
+8. **YeshInvoice / קבלה** — explicitly deferred; must not start until remaining gates (2–7 above) are closed (see §9)
