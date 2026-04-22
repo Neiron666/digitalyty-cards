@@ -61,6 +61,7 @@ exports.handler = async function handler(event) {
         const method = String(
             event && event.httpMethod ? event.httpMethod : "",
         ).toUpperCase();
+        console.log(`[sto-notify-fn] received method=${method}`);
         if (method !== "POST") {
             return {
                 statusCode: 405,
@@ -79,6 +80,7 @@ exports.handler = async function handler(event) {
             process.env.CARDIGO_STO_NOTIFY_TOKEN || "",
         ).trim();
         if (!expected) {
+            console.error("[sto-notify-fn] tokenConfigured=false");
             return { statusCode: 500, body: "ERROR" };
         }
 
@@ -87,6 +89,8 @@ exports.handler = async function handler(event) {
                 "",
         ).trim();
         if (provided !== expected) {
+            const hasSnk = provided.length > 0;
+            console.warn(`[sto-notify-fn] tokenMatched=false hasSnk=${hasSnk}`);
             return { statusCode: 403, body: "ERROR" };
         }
 
@@ -120,11 +124,20 @@ exports.handler = async function handler(event) {
 
         // 6. ACK policy: upstream status code, generic body
         const status = response.status;
-        const outwardBody = status >= 200 && status < 300 ? "OK" : "ERROR";
+        const upstreamOk = status >= 200 && status < 300;
+        console.log(
+            `[sto-notify-fn] upstreamStatus=${status} upstreamOk=${upstreamOk}`,
+        );
+        const outwardBody = upstreamOk ? "OK" : "ERROR";
 
         return { statusCode: status, body: outwardBody };
-    } catch {
+    } catch (err) {
         // 7. Network / infra failure
+        const errorName = err?.name || "unknown";
+        const errorMessage = String(err?.message || "unknown").slice(0, 160);
+        console.error(
+            `[sto-notify-fn] network failure name=${errorName} message=${errorMessage}`,
+        );
         return { statusCode: 502, body: "ERROR" };
     }
 };

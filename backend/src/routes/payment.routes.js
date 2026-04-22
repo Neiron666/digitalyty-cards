@@ -55,6 +55,7 @@ router.post("/notify", async (req, res) => {
  */
 router.post("/sto-notify", async (req, res) => {
     try {
+        console.log("[sto-notify] received");
         // A. Read expected token — fail-closed: 503 if not configured
         const expectedStoToken = process.env.CARDIGO_STO_NOTIFY_TOKEN?.trim();
         if (!expectedStoToken) {
@@ -68,11 +69,24 @@ router.post("/sto-notify", async (req, res) => {
         const provided = req.header("x-cardigo-sto-notify-token")?.trim();
         if (provided !== expectedStoToken) {
             // Anti-oracle: do not reveal mismatch to caller
+            console.warn("[sto-notify] tokenMatched=false");
             return res.status(200).send("OK");
         }
 
         // C. Token matched — call handler
-        await paymentProvider.handleStoNotify(req.body);
+        const stoResult = await paymentProvider.handleStoNotify(req.body);
+        console.log("[sto-notify] handler result", {
+            ok: stoResult?.ok,
+            duplicate: stoResult?.duplicate ?? false,
+            reason: stoResult?.reason ?? null,
+            providerTxnIdPresent: Boolean(stoResult?.providerTxnId),
+            userIdPresent: Boolean(stoResult?.userId),
+            cardIdPresent: stoResult?.cardIdPresent ?? null,
+            plan:
+                stoResult?.plan === "monthly" || stoResult?.plan === "yearly"
+                    ? stoResult.plan
+                    : null,
+        });
         res.status(200).send("OK");
     } catch (err) {
         // Only infra failures (DB down, network) reach here.
