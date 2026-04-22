@@ -234,13 +234,26 @@ Precedence (highest → lowest):
 
 ### User.subscription (existing + new)
 
-| Field              | Type        | Status                  | Purpose                          |
-| ------------------ | ----------- | ----------------------- | -------------------------------- |
-| `status`           | String enum | existing                | inactive/active/expired          |
-| `expiresAt`        | Date        | existing                | Current period end               |
-| `provider`         | String      | existing                | "mock"/"tranzila"                |
-| `autoRenew`        | Boolean     | **not yet implemented** | Whether subscription auto-renews |
-| `currentPeriodEnd` | Date        | **not yet implemented** | Explicit renewal boundary        |
+| Field       | Type        | Status   | Purpose                 |
+| ----------- | ----------- | -------- | ----------------------- |
+| `status`    | String enum | existing | inactive/active/expired |
+| `expiresAt` | Date        | existing | Current period end      |
+| `provider`  | String      | existing | "mock"/"tranzila"       |
+
+> **`autoRenew` and `currentPeriodEnd` are NOT stored fields.** Auto-renewal state is tracked via the `User.tranzilaSto` subdocument and surfaced as a computed `autoRenewal` DTO by `GET /api/account/me` (see §15). `subscription.expiresAt` remains the canonical paid-until date.
+>
+> **`autoRenewal` DTO shape** (frontend-safe, no raw provider fields):
+>
+> ```
+> autoRenewal: {
+>   status: "active" | "cancelled" | "none" | "pending" | "failed",
+>   canCancel: boolean,
+>   cancelledAtPresent: boolean,
+>   subscriptionExpiresAt: Date | null
+> }
+> ```
+>
+> Derived by `buildAutoRenewalDto()` in `backend/src/routes/account.routes.js`. Does not expose `stoId`, `tranzilaToken`, or any raw provider response.
 
 ### Reconciliation (planned)
 
@@ -268,7 +281,7 @@ Two planned reconciliation jobs:
 
 1. ~~STO notify handler (recurring charge webhook received and processed).~~ **CLOSED 2026-04-22** — Real Tranzila My Billing webhook received and fully verified (contour 5.8f.9, `REAL_TRANZILA_STO_NOTIFY_E2E_SUCCESS_FULLY_VERIFIED`).
 2. Failed-STO retry/recovery script or job. _(open)_
-3. STO cancellation/deactivation runbook and/or script. _(partially resolved — `sto-cancel.mjs` exists; production policy runbook still required)_
+3. ~~STO cancellation/deactivation runbook and/or script.~~ **RESOLVED (5.6 + 5.9a.1):** Operator script `sto-cancel.mjs` exists (sandbox active→inactive proven). User self-service cancel-renewal shipped 2026-04-22 via `POST /api/account/cancel-renewal` (provider-first, idempotent, `cancellationSource: "self_service"`). Admin UI/button remains deferred but is not a YeshInvoice blocking gate.
 4. Non-sensitive structured observability for STO create result. _(open — STO notify observability resolved in 5.8f.LOG.1; STO create observability is separate and still open)_
 5. Gated startup validation when `TRANZILA_STO_CREATE_ENABLED=true`. _(open)_
 6. Production terminal cutover completed. _(open)_
@@ -455,9 +468,74 @@ Implementation: `buildTranzilaApiAuthHeaders()` in `backend/src/services/payment
 
 1. ~~**STO notify handler**~~ — **FULLY RESOLVED (5.8a–5.8f.9):** `handleStoNotify` implemented; Netlify `payment-sto-notify.js` and backend `POST /api/payments/sto-notify` route deployed with token gates and safe observability logs (5.8f.LOG.1). **Real provider-generated Tranzila My Billing webhook received and fully verified on 2026-04-22** (`valik@cardigo.co.il`, contour 5.8f.9, classification: `REAL_TRANZILA_STO_NOTIFY_E2E_SUCCESS_FULLY_VERIFIED`). Ledger baseline after E2E: `sto_recurring_notify_count=6`, `sto_prefix_txn_count=6`. Portal URL configured for `testcardstok` terminal.
 2. **Failed-STO retry/recovery** — no script or job exists; users with `tranzilaSto.status="failed"` remain in failed state _(open)_
-3. ~~**Cancellation/deactivation runbook — no operator procedure**~~ — **PARTIALLY RESOLVED (5.6):** `sto-cancel.mjs` operator script exists and sandbox active→inactive proof passed (`truestory.factory@gmail.com`, Tranzila portal confirmed inactive). Admin UI/button remains deferred. Production rollout policy/discipline still required before broad production use.
+3. ~~**Cancellation/deactivation runbook — no operator procedure**~~ — **FULLY RESOLVED (5.6 + 5.9a.1/5.9a.2):** `sto-cancel.mjs` operator script exists (sandbox proven). User self-service cancel-renewal shipped 2026-04-22: `POST /api/account/cancel-renewal` (requireAuth, provider-first via `cancelTranzilaStoForUser`, idempotent, rate-limited 3/10min). SettingsPanel UI shipped in 5.9a.2. Premium remains active until `subscription.expiresAt` / `Card.billing.paidUntil` — no immediate downgrade. Admin UI/button remains deferred and non-blocking.
 4. **Non-sensitive STO notify observability** — ✅ **RESOLVED (5.8f.LOG.1):** Safe structured logs deployed to Netlify edge function and backend `/sto-notify` route; verified 54/54 PASS with no sensitive data. **STO create observability** (structured log on create result success/skip/failure) remains open _(separate item)_.
 5. **Gated startup validation** — if `TRANZILA_STO_CREATE_ENABLED=true`, STO config vars should be validated at startup (fail-fast) _(open)_
 6. **Production terminal cutover** — Render STO env vars must be switched from sandbox terminal to production terminal values; `PRICES_AGOROT` must be restored to production values (`3990`/`39990`) **after** all active sandbox STO schedules are cancelled/deactivated (changing prices while active schedules charge old amounts causes `amount_mismatch`). Operator decision: price restore is deferred to a dedicated pre-production contour. _(open)_
 7. **Handshake / `thtk` amount locking** — separate future contour (STO amount locked at create time; price change reconciliation not yet designed)
 8. **YeshInvoice / קבלה** — explicitly deferred; must not start until remaining gates (2–7 above) are closed (see §9)
+
+---
+
+## 15) User Self-Service Cancel Renewal
+
+### Endpoint
+
+```
+POST /api/account/cancel-renewal
+```
+
+- `requireAuth` — user derived from `req.userId` (httpOnly cookie auth only).
+- No request body accepted. `userId`, `stoId`, `email` from the request body are ignored.
+- Rate limit: **3 attempts / 10 minutes per authenticated user** (userId-keyed in-memory map).
+
+### Response DTO
+
+```json
+{
+    "ok": true,
+    "renewalStatus": "cancelled",
+    "autoRenewal": {
+        "status": "cancelled",
+        "canCancel": false,
+        "cancelledAtPresent": true,
+        "subscriptionExpiresAt": "<ISO>"
+    },
+    "messageKey": "cancelled"
+}
+```
+
+`messageKey` values: `already_cancelled` | `no_active_renewal` | `cancel_unavailable` | `cancelled` | `cancel_failed`
+
+### Provider-First Architecture
+
+`cancelTranzilaStoForUser` (in `backend/src/services/payment/tranzila.provider.js`) is called **before** any Mongo write. Provider cancellation failure aborts the operation — Mongo `tranzilaSto.status` is never set to `"cancelled"` unless the provider confirms deactivation. The operation is idempotent: repeated calls with `status === "cancelled"` return `messageKey: "already_cancelled"` without a second provider call.
+
+`cancellationSource` is set to `"self_service"` in `User.tranzilaSto`.
+
+### Premium-Remains Policy
+
+User self-service cancel stops **future** recurring charges only. It does NOT trigger an immediate downgrade.
+
+- `subscription.expiresAt` is **not changed** by cancellation.
+- `Card.billing.paidUntil` is **not changed** by cancellation.
+- Premium access remains active until those dates expire naturally.
+- No refund is issued. No `PaymentTransaction` ledger record is created by cancellation.
+
+### UI (SettingsPanel, shipped 5.9a.2)
+
+- Button label: **ביטול חידוש אוטומטי** (shown only when `autoRenewal.status === "active" && autoRenewal.canCancel === true`).
+- After cancellation: button is hidden; status row shows "החידוש האוטומטי בוטל. הגישה Premium פעילה עד {date}."
+- `autoRenewal.canCancel` is `true` only when `status === "active"`.
+
+### `buildAutoRenewalDto()` Status Map
+
+| `tranzilaSto.status` | DTO `status`  | `canCancel` |
+| -------------------- | ------------- | ----------- |
+| `"created"` + stoId  | `"active"`    | `true`      |
+| `"cancelled"`        | `"cancelled"` | `false`     |
+| `"pending"`          | `"pending"`   | `false`     |
+| `"failed"`           | `"failed"`    | `false`     |
+| absent / other       | `"none"`      | `false`     |
+
+`autoRenewal` is not a stored field. It is derived on every `GET /api/account/me` request via `buildAutoRenewalDto()`. Does not expose `stoId`, `tranzilaToken`, or raw provider identifiers.

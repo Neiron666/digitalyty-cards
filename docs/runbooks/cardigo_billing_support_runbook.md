@@ -1,15 +1,15 @@
-# Cardigo Billing Support Runbook (Option A - Support‑Mediated)
+# Cardigo Billing Support Runbook
 
 **Scope (current reality):**
 
-- No self‑service “manage payment method / cancel subscription / refund” in the product UI.
-- Self‑service is limited to:
+- **Cancel-renewal** is available self-service in the product UI (SettingsPanel → billing section) via `POST /api/account/cancel-renewal` (shipped 5.9a.1/5.9a.2).
+- Self‑service also includes:
     1. **Read‑only** subscription status in **Settings → תשלומים**
     2. **Initiate payment** via `POST /api/payments/create` (in dev: mock URL; in prod: Tranzila URL)
-- Any cancel/refund/payment‑method change is handled by **Support / Admin**.
+- **Refunds and payment-method changes remain support / admin mediated.**
 
-**Why:** Tranzila (single‑payment) has no Stripe‑like customer portal, and self‑service cancel/refund/payment‑method change is not yet exposed in the product UI.
-This is intentional to avoid fake UX and security/finance drift.
+**Why:** Tranzila (single‑payment) has no Stripe‑like customer portal. Payment-method change and refunds are not exposed in the product UI.
+Self-service cancel-renewal is implemented separately and does not require a Tranzila portal.
 
 ---
 
@@ -17,9 +17,18 @@ This is intentional to avoid fake UX and security/finance drift.
 
 Use these texts in the **Settings → תשלומים** block.
 
+### Self-service cancel-renewal UX (SettingsPanel, shipped 5.9a.2)
+
+- **Button (shown when auto-renewal is active):** ביטול חידוש אוטומטי
+- **Modal explains:**
+    - הגישה Premium תמשיך עד סוף התקופה המשולמת (לא יבוטל המִשְׁתַּמֵּשׁ מידית)
+    - לא יחוייבו תשלומים נוספים לאחר הביטול
+    - ניתן לחדש מנוי בעתיד דרך עמוד התמחורה
+- **Cancelled state shown in UI:** החידוש האוטומטי בוטל. הגישה Premium פעילה עד {date}.
+
 ### Static support + limitations
 
-- **ביטול או שינוי אמצעי תשלום**: פנה לתמיכה: **support@cardigo.co.il**
+- **שינוי אמצעי תשלום**: פנה לתמיכה: **support@cardigo.co.il**
 - **היסטוריית תשלומים** אינה זמינה כעת.
 - **החזרים כספיים** אינם מתבצעים אוטומטית. במידת הצורך - דרך התמיכה בלבד.
 
@@ -29,7 +38,7 @@ Use these texts in the **Settings → תשלומים** block.
 
 ### Optional short disclaimer (if you want one line only)
 
-- לשינוי אמצעי תשלום/ביטול/החזר - תמיכה בלבד.
+- לשינוי אמצעי תשלום/החזר - תמיכה בלבד.
 
 ---
 
@@ -74,12 +83,15 @@ Before any billing action:
 >
 > - If `tranzilaSto.status === "created"` AND `tranzilaSto.stoId` is present, the user has an active recurring standing order at Tranzila. Downgrading Cardigo alone will NOT stop the recurring charge.
 > - Admin revoke / Cardigo-side downgrade is not complete cancellation for STO users. Provider-side STO must be deactivated separately.
-> - Until `sto-cancel.mjs` or an admin STO cancel flow exists, the operator must manually deactivate the STO in the Tranzila portal and document the action: ticket ID, operator, date/time, and Tranzila STO ID.
-> - `/v2/sto/update` with `sto_status: "inactive"` is the identified provider path, but implementation is blocked until sandbox module confirmation.
+> - **First, check `tranzilaSto.status`:**
+>     - If `"cancelled"` — the user has already self-service-cancelled via the product UI. Provider-side cancellation is already done. Do NOT cancel at the provider again. You may proceed with any Cardigo-side downgrade if still required.
+>     - If `"created"` AND a `stoId` is present — an active STO is registered at Tranzila. Downgrading Cardigo alone will NOT stop the recurring charge.
+>     - If `"pending"` or `"failed"` — do NOT assume there is no provider-side STO. Inspect Tranzila portal / logs before downgrade.
+>     - If `null` / no `stoId` — no active STO is known in Cardigo. Standard downgrade steps below may proceed.
+> - **User self-service cancel path (product UI):** `POST /api/account/cancel-renewal` calls `cancelTranzilaStoForUser`, which cancels provider-side before writing `tranzilaSto.status = "cancelled"` in Mongo. This P0 gate is fully satisfied by that path.
+> - **Operator manual cancel path:** Use `sto-cancel.mjs` script or Tranzila portal to deactivate provider-side STO. Document the action: ticket ID, operator, date/time.
 > - Never mark `tranzilaSto.status = "cancelled"` in Mongo before provider-side cancellation is confirmed.
 > - Never use ad-hoc DB mutation as the normal cancellation flow.
-> - If `tranzilaSto.status` is `"pending"` or `"failed"`, do NOT assume there is no provider-side STO. This can represent an interrupted or ambiguous create attempt. Inspect Tranzila portal / logs before downgrade.
-> - If `tranzilaSto.status` is `null` and `tranzilaSto.stoId` is absent, no active STO is known in Cardigo. The standard downgrade steps below may proceed.
 >   Given Tranzila single‑payment:
 
 - “Cancel” usually means **do not renew next cycle**.
@@ -125,8 +137,9 @@ If the user is mid‑cycle and wants future renewals: currently **manual** only 
 ## 6) Known Product Limitations (documented)
 
 - Payment history is not exposed in the product UI (operator-visible only via admin API / DB query).
-- Self-service cancel/refund remains support-mediated (no product UI button).
-- STO admin UI/button for cancellation is deferred; use `sto-cancel.mjs` operator script.
+- **Self-service cancel-renewal is available in the product UI** (SettingsPanel billing section, shipped 5.9a.2). User path: product UI button → `POST /api/account/cancel-renewal` → provider-first cancel via `cancelTranzilaStoForUser`.
+- Self-service **refunds** and **payment-method changes** remain support-mediated.
+- `sto-cancel.mjs` remains the **operator/admin** script path. It is not the user path.
 - Non-atomic User + Card billing updates (crash between saves can leave inconsistency; reconciliation job planned, not yet implemented).
 - Tranzila retry behavior (how many retries, intervals) is not confirmed; idempotency window and reconciliation timing are therefore not fully specified.
 
@@ -136,7 +149,7 @@ If the user is mid‑cycle and wants future renewals: currently **manual** only 
 
 PaymentTransaction ledger (providerTxnId, idempotency via E11000 unique index, PayloadAllowlist) exists and is used by both `handleNotify` and `handleStoNotify`. The upgrade items still pending:
 
-1. **Self-service portal** — if Tranzila offers any portal capabilities, link to it; otherwise support remains manual.
+1. ~~**Self-service portal**~~ — **RESOLVED (5.9a.1/5.9a.2, 2026-04-22):** User self-service cancel-renewal shipped in SettingsPanel billing section. Payment-method change and refunds remain support-mediated.
 2. **Receipt / YeshInvoice** — explicitly deferred. **YeshInvoice remains deferred** until all remaining billing lifecycle gates are closed (failed-STO retry, STO create observability, gated startup validation, production terminal cutover, production E2E). See `billing-flow-ssot.md` §9 for the full gate list.
 3. **STO failed-state retry/recovery** — no job or script yet for users with `tranzilaSto.status="failed"`.
 4. **Non-atomic User + Card updates** — reconciliation job planned but not implemented.
