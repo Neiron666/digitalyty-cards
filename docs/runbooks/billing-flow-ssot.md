@@ -30,8 +30,8 @@ All internal amounts are **integers in agorot** (1/100 of ₪). No floats anywhe
 **Stale price locations (must be removed/aligned):**
 
 - ~~`backend/src/services/payment/tranzila.provider.js` - local `PRICES` (29.9 / 299).~~ **RESOLVED:** provider now imports canonical `PRICES_AGOROT` from `backend/src/config/plans.js`.
-- `backend/src/controllers/payment.controller.js` - dead code, local `PRICES` (29.9 / 200). Still present; must be deleted when billing code is updated.
-- `frontend/src/components/pricing/PricingPlans.jsx` - hardcoded ₪29.99 / ₪299.
+- ~~`backend/src/controllers/payment.controller.js` - dead code, local `PRICES` (29.9 / 200).~~ **RESOLVED:** file absent from codebase.
+- ~~`frontend/src/components/pricing/PricingPlans.jsx` - hardcoded ₪29.99 / ₪299.~~ **RESOLVED:** file removed; current prices (₪39.90 / ₪399.90) live in `frontend/src/pages/Pricing.jsx`.
 
 ---
 
@@ -255,11 +255,11 @@ Precedence (highest → lowest):
 >
 > Derived by `buildAutoRenewalDto()` in `backend/src/routes/account.routes.js`. Does not expose `stoId`, `tranzilaToken`, or any raw provider response.
 
-### Reconciliation (planned)
+### Reconciliation
 
-Two planned reconciliation jobs:
+Two reconciliation jobs:
 
-1. **Subscription expiry:** checks subscriptions where `expiresAt < now` and `status === "active"` → sets `status: "expired"`, downgrades User.plan and Card.billing. Interval configurable via `SUBSCRIPTION_RECONCILIATION_INTERVAL_MS` env var (planned, default: 3600000).
+1. **Subscription expiry:** checks subscriptions where `expiresAt < now` and `status === "active"` → sets `status: "expired"`, downgrades User.plan and Card.billing. **Implemented** as `startBillingReconcileJob` in `backend/src/jobs/billingReconcile.js`, wired in `backend/src/server.js`. Interval configurable via `BILLING_RECONCILE_INTERVAL_MS` env var (default: 21600000 = 6h).
 2. **Receipt retry:** retries failed receipt creation (Receipt.receiptStatus === "failed"). Interval configurable via `RECEIPT_RECONCILIATION_INTERVAL_MS` env var (planned, default: 3600000).
 
 ---
@@ -280,14 +280,14 @@ Two planned reconciliation jobs:
 **YeshInvoice integration must NOT begin until ALL of the following are closed:**
 
 1. ~~STO notify handler (recurring charge webhook received and processed).~~ **CLOSED 2026-04-22** — Real Tranzila My Billing webhook received and fully verified (contour 5.8f.9, `REAL_TRANZILA_STO_NOTIFY_E2E_SUCCESS_FULLY_VERIFIED`).
-2. Failed-STO retry/recovery script or job. _(open)_
+2. ~~Failed-STO retry/recovery script or job.~~ **RESOLVED (5.12.H):** Operator script `backend/scripts/sto-retry-failed.mjs` — dry-run default, single-target (`--email`/`--user-id`), production-terminal block (`/^fxp/i` requires `--allow-prod`).
 3. ~~STO cancellation/deactivation runbook and/or script.~~ **RESOLVED (5.6 + 5.9a.1):** Operator script `sto-cancel.mjs` exists (sandbox active→inactive proven). User self-service cancel-renewal shipped 2026-04-22 via `POST /api/account/cancel-renewal` (provider-first, idempotent, `cancellationSource: "self_service"`). Admin UI/button remains deferred but is not a YeshInvoice blocking gate.
-4. Non-sensitive structured observability for STO create result. _(open — STO notify observability resolved in 5.8f.LOG.1; STO create observability is separate and still open)_
-5. Gated startup validation when `TRANZILA_STO_CREATE_ENABLED=true`. _(open)_
+4. ~~Non-sensitive structured observability for STO create result.~~ **RESOLVED (5.12.H):** `logStoCreateOutcome()` at `tranzila.provider.js:733–769` — structured `[sto]` event log (no sensitive fields: `stoIdPresent` boolean only, no token/expiry/raw response). Wired in `handleNotify()` at L1020–1029 on both success and unexpected-error paths.
+5. ~~Gated startup validation when `TRANZILA_STO_CREATE_ENABLED=true`.~~ **RESOLVED (5.11):** Implemented in `backend/src/services/payment/index.js` — fails fast on missing STO vars when `TRANZILA_STO_CREATE_ENABLED=true`.
 6. Production terminal cutover completed. _(open)_
 7. Tranzila recurring lifecycle proven end-to-end in production (real customers, production terminal). _(open — only sandbox `testcardstok` proven to date)_
 
-**YeshInvoice remains deferred.** 1 of 7 gate items is closed. Do not begin YeshInvoice implementation until all remaining gates are satisfied.
+**YeshInvoice remains deferred.** 5 of 7 gate items are closed (G1, G2, G3, G4b, G5). G6 (production terminal cutover) and G7 (production recurring lifecycle proof) remain open. Do not begin YeshInvoice implementation until all remaining gates are satisfied.
 
 **When YeshInvoice integration begins (future contour):**
 
@@ -300,6 +300,12 @@ Two planned reconciliation jobs:
 - Ledger (`PaymentTransaction`) is not exposed to the cabinet directly; cabinet reads Receipt model only.
 
 **Do not add YeshInvoice env vars to Render or begin API integration before the deferral gate is lifted.**
+
+**See also (groundwork package — created contour 5.12.0):**
+
+- `docs/runbooks/yeshinvoice-groundwork-architecture.md` — billing chain, trigger truth, receipt architecture, endpoint/DTO map, idempotency rules, production enablement boundary
+- `docs/runbooks/yeshinvoice-integration-runbook.md` — operator checklist, developer checklist, verification, rollback, contour log
+- `docs/runbooks/yeshinvoice-code-patterns-and-examples.md` — current grounded code examples (file:line), future proposed hook patterns, anti-drift rules
 
 ---
 
@@ -349,15 +355,15 @@ Two planned reconciliation jobs:
 
 ### Backend (Render) - new (receipt / email — DEFERRED, see §9)
 
-| Var                                       | Purpose                                                          |
-| ----------------------------------------- | ---------------------------------------------------------------- |
-| `CARDIGO_NOTIFY_TOKEN`                    | Verify `?nt=` token from Netlify function (defense-in-depth)     |
-| `YESH_INVOICE_API_URL`                    | YeshInvoice endpoint (sandbox / production) — DEFERRED (see §9)  |
-| `YESH_INVOICE_API_TOKEN`                  | YeshInvoice API authentication — DEFERRED (see §9)               |
-| `MAILJET_RECEIPT_SUBJECT`                 | Receipt email subject line — DEFERRED (see §9)                   |
-| `MAILJET_RECEIPT_TEXT_PREFIX`             | Receipt email body prefix — DEFERRED (see §9)                    |
-| `RECEIPT_RECONCILIATION_INTERVAL_MS`      | Receipt retry job interval (planned, default 3600000) — DEFERRED |
-| `SUBSCRIPTION_RECONCILIATION_INTERVAL_MS` | Subscription expiry job interval (planned, default 3600000)      |
+| Var                                  | Purpose                                                                  |
+| ------------------------------------ | ------------------------------------------------------------------------ |
+| `CARDIGO_NOTIFY_TOKEN`               | Verify `?nt=` token from Netlify function (defense-in-depth)             |
+| `YESH_INVOICE_API_URL`               | YeshInvoice endpoint (sandbox / production) — DEFERRED (see §9)          |
+| `YESH_INVOICE_API_TOKEN`             | YeshInvoice API authentication — DEFERRED (see §9)                       |
+| `MAILJET_RECEIPT_SUBJECT`            | Receipt email subject line — DEFERRED (see §9)                           |
+| `MAILJET_RECEIPT_TEXT_PREFIX`        | Receipt email body prefix — DEFERRED (see §9)                            |
+| `RECEIPT_RECONCILIATION_INTERVAL_MS` | Receipt retry job interval (planned, default 3600000) — DEFERRED         |
+| `BILLING_RECONCILE_INTERVAL_MS`      | `startBillingReconcileJob` interval (implemented, default 21600000 = 6h) |
 
 ### Netlify - existing (billing-relevant subset)
 
@@ -379,7 +385,7 @@ Two planned reconciliation jobs:
 
 1. **~~Gallery limit conflict~~ (RESOLVED):** Gallery limits are now per-plan via `planAccess.js` → `getGalleryLimit(featurePlan)` reading from `plans.js`. Free plan has `gallery: false` (upload fully gated). The old flat `GALLERY_LIMIT = 12` from `config/galleryLimit.js` is no longer used by `cardDTO.js`.
 
-2. **Dead code in payment.controller.js:** Contains stale `PRICES` and functions never called by routes (routes use the provider factory). Must be deleted when billing code is updated.
+2. ~~**Dead code in payment.controller.js** (RESOLVED):~~ `backend/src/controllers/payment.controller.js` no longer exists in the codebase — file was removed.
 
 3. **Mock provider security:** `mock.provider.js` handleNotify accepts any `{userId, plan}` with no verification. Safe only when `PAYMENT_PROVIDER` ≠ `"tranzila"` and the notify endpoint is not publicly reachable. In production: `PAYMENT_PROVIDER=tranzila` is mandatory.
 
@@ -467,10 +473,10 @@ Implementation: `buildTranzilaApiAuthHeaders()` in `backend/src/services/payment
 ### Production blockers (must close before production STO rollout)
 
 1. ~~**STO notify handler**~~ — **FULLY RESOLVED (5.8a–5.8f.9):** `handleStoNotify` implemented; Netlify `payment-sto-notify.js` and backend `POST /api/payments/sto-notify` route deployed with token gates and safe observability logs (5.8f.LOG.1). **Real provider-generated Tranzila My Billing webhook received and fully verified on 2026-04-22** (`valik@cardigo.co.il`, contour 5.8f.9, classification: `REAL_TRANZILA_STO_NOTIFY_E2E_SUCCESS_FULLY_VERIFIED`). Ledger baseline after E2E: `sto_recurring_notify_count=6`, `sto_prefix_txn_count=6`. Portal URL configured for `testcardstok` terminal.
-2. **Failed-STO retry/recovery** — no script or job exists; users with `tranzilaSto.status="failed"` remain in failed state _(open)_
+2. ~~**Failed-STO retry/recovery**~~ — **FULLY RESOLVED (5.12.H):** Operator script `backend/scripts/sto-retry-failed.mjs` — dry-run default, single-target (`--email`/`--user-id`), production-terminal block (`/^fxp/i` requires `--allow-prod`). Imports `createTranzilaStoForUser` and `STO_PENDING_STALE_MS` directly from the runtime for stale-threshold parity.
 3. ~~**Cancellation/deactivation runbook — no operator procedure**~~ — **FULLY RESOLVED (5.6 + 5.9a.1/5.9a.2):** `sto-cancel.mjs` operator script exists (sandbox proven). User self-service cancel-renewal shipped 2026-04-22: `POST /api/account/cancel-renewal` (requireAuth, provider-first via `cancelTranzilaStoForUser`, idempotent, rate-limited 3/10min). SettingsPanel UI shipped in 5.9a.2. Premium remains active until `subscription.expiresAt` / `Card.billing.paidUntil` — no immediate downgrade. Admin UI/button remains deferred and non-blocking.
-4. **Non-sensitive STO notify observability** — ✅ **RESOLVED (5.8f.LOG.1):** Safe structured logs deployed to Netlify edge function and backend `/sto-notify` route; verified 54/54 PASS with no sensitive data. **STO create observability** (structured log on create result success/skip/failure) remains open _(separate item)_.
-5. **Gated startup validation** — if `TRANZILA_STO_CREATE_ENABLED=true`, STO config vars should be validated at startup (fail-fast) _(open)_
+4. **Non-sensitive STO notify observability** — ✅ **RESOLVED (5.8f.LOG.1):** Safe structured logs deployed to Netlify edge function and backend `/sto-notify` route; verified 54/54 PASS with no sensitive data. ~~**STO create observability** (structured log on create result success/skip/failure) remains open _(separate item)_.~~ **RESOLVED (5.12.H):** `logStoCreateOutcome()` at `tranzila.provider.js:733–769`, wired in `handleNotify()` at L1020–1029.
+5. ~~**Gated startup validation**~~ — **FULLY RESOLVED (5.11):** `backend/src/services/payment/index.js` validates `TRANZILA_STO_TERMINAL`, `TRANZILA_STO_API_URL`, `TRANZILA_API_APP_KEY`, `TRANZILA_API_PRIVATE_KEY` at startup when `TRANZILA_STO_CREATE_ENABLED=true`. Throws fail-fast on missing vars.
 6. **Production terminal cutover** — Render STO env vars must be switched from sandbox terminal to production terminal values; `PRICES_AGOROT` must be restored to production values (`3990`/`39990`) **after** all active sandbox STO schedules are cancelled/deactivated (changing prices while active schedules charge old amounts causes `amount_mismatch`). Operator decision: price restore is deferred to a dedicated pre-production contour. _(open)_
 7. **Handshake / `thtk` amount locking** — separate future contour (STO amount locked at create time; price change reconciliation not yet designed)
 8. **YeshInvoice / קבלה** — explicitly deferred; must not start until remaining gates (2–7 above) are closed (see §9)
