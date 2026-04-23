@@ -752,6 +752,14 @@ export default function SettingsPanel({
                             const renewalStatus = autoRenewal.status ?? "none";
                             const renewalPaidUntil =
                                 autoRenewal.subscriptionExpiresAt ?? null;
+                            const renewalFailedAt =
+                                autoRenewal?.renewalFailedAt ?? null;
+                            const showRenewalFailedBanner =
+                                renewalFailedAt !== null &&
+                                renewalPaidUntil !== null &&
+                                new Date(renewalPaidUntil).getTime() >
+                                    Date.now() &&
+                                renewalStatus === "active";
 
                             async function handlePayment(plan) {
                                 if (plan === "yearly" && !yearlyOptIn) {
@@ -991,6 +999,60 @@ export default function SettingsPanel({
                                                     }
                                                 >
                                                     {billingMsg}
+                                                </div>
+                                            )}
+
+                                            {/* ── Renewal failed warning banner ── */}
+                                            {showRenewalFailedBanner && (
+                                                <div
+                                                    className={
+                                                        styles.renewalWarning
+                                                    }
+                                                >
+                                                    <div
+                                                        className={
+                                                            styles.renewalWarningTitle
+                                                        }
+                                                    >
+                                                        ניסיון חיוב חידוש
+                                                        Premium נכשל
+                                                    </div>
+                                                    <div
+                                                        className={
+                                                            styles.renewalWarningText
+                                                        }
+                                                    >
+                                                        גישת Premium פעילה עד{" "}
+                                                        <span dir="ltr">
+                                                            {formatDate(
+                                                                renewalPaidUntil,
+                                                            )}
+                                                        </span>
+                                                        . יש לחדש לפני תאריך זה
+                                                        כדי להמשיך.
+                                                    </div>
+                                                    <div
+                                                        className={
+                                                            styles.renewalWarningActions
+                                                        }
+                                                    >
+                                                        <a
+                                                            href="/pricing"
+                                                            className={
+                                                                styles.renewalWarningCta
+                                                            }
+                                                        >
+                                                            חדש Premium עכשיו
+                                                        </a>
+                                                        <a
+                                                            href="mailto:support@cardigo.co.il"
+                                                            className={
+                                                                styles.renewalWarningHelp
+                                                            }
+                                                        >
+                                                            לתמיכה
+                                                        </a>
+                                                    </div>
                                                 </div>
                                             )}
 

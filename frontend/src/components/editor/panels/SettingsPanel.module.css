@@ -422,3 +422,60 @@
     padding-block-start: 10px;
     border-block-start: 1px solid rgba(255, 255, 255, 0.08);
 }
+
+/* ── Renewal failed warning block (billing section) ── */
+
+.renewalWarning {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 14px 16px;
+    border: 1px solid rgba(255, 140, 0, 0.45);
+    border-radius: var(--radius-md);
+    background: rgba(255, 140, 0, 0.07);
+}
+
+.renewalWarningTitle {
+    font-weight: 700;
+    font-size: var(--fs-body-sm);
+    color: rgba(255, 160, 40, 1);
+}
+
+.renewalWarningText {
+    font-size: var(--fs-ui);
+    line-height: 1.5;
+    opacity: 0.9;
+}
+
+.renewalWarningActions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+}
+
+.renewalWarningCta {
+    display: inline-flex;
+    align-items: center;
+    font-weight: 700;
+    font-size: var(--fs-body-sm);
+    color: rgba(255, 160, 40, 1);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+}
+
+.renewalWarningCta:hover {
+    opacity: 0.85;
+}
+
+.renewalWarningCta:focus-visible {
+    outline: 2px solid rgba(255, 160, 40, 0.7);
+    outline-offset: 2px;
+}
+
+.renewalWarningHelp {
+    font-size: var(--fs-caption);
+    opacity: 0.75;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+}
