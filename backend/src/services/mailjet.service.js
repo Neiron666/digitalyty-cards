@@ -120,6 +120,15 @@ function getMailjetConfig() {
                 ? process.env.MAILJET_DELETION_WARNING_TEXT_PREFIX.trim()
                 : "") ||
             "הודעה זו נשלחת אליך כהודעה מוקדמת לפי מדיניות הפרטיות ותנאי השימוש של Cardigo.",
+        renewalFailedSubject:
+            (typeof process.env.MAILJET_RENEWAL_FAILED_SUBJECT === "string"
+                ? process.env.MAILJET_RENEWAL_FAILED_SUBJECT.trim()
+                : "") || "חיוב החידוש של Cardigo Premium נכשל",
+        renewalFailedTextPrefix:
+            (typeof process.env.MAILJET_RENEWAL_FAILED_TEXT_PREFIX === "string"
+                ? process.env.MAILJET_RENEWAL_FAILED_TEXT_PREFIX.trim()
+                : "") ||
+            "חיוב חידוש הפרימיום נכשל. הגישה שלך נשמרת עד סיום תקופת התשלום הנוכחית.",
     };
 }
 
@@ -800,6 +809,187 @@ export async function sendDeletionWarningEmailMailjetBestEffort({
         return { ok };
     } catch (err) {
         console.error("[mailjet] deletion-warning send error", {
+            userId: String(userId || ""),
+            error: err?.message || err,
+        });
+        return { ok: false };
+    }
+}
+
+// ---------------------------------------------------------------------------
+// [5.10a.3.2] Failed renewal email — transactional billing notification.
+// Sent best-effort when a genuine recurring STO charge is rejected by provider
+// (path 5.A, Response !== "000"). Must never block webhook ACK.
+// Primary CTA: self-serve renew via /pricing. Support is secondary only.
+// ---------------------------------------------------------------------------
+export async function sendRenewalFailedEmailMailjetBestEffort({
+    toEmail,
+    firstName = null,
+    expiresAt = null,
+    pricingUrl,
+    userId,
+}) {
+    const cfg = getMailjetConfig();
+    const toEmailNormalized = normalizeEmail(toEmail);
+
+    if (!cfg.enabled) {
+        return { ok: true, skipped: true, reason: "MAILJET_NOT_CONFIGURED" };
+    }
+
+    if (!toEmailNormalized || !pricingUrl) {
+        return { ok: false, skipped: true, reason: "INVALID_INPUT" };
+    }
+
+    const auth = Buffer.from(`${cfg.apiKey}:${cfg.apiSecret}`).toString(
+        "base64",
+    );
+
+    const subject = cfg.renewalFailedSubject;
+    const prefix = cfg.renewalFailedTextPrefix;
+
+    // --- expiresAt formatting ------------------------------------------------
+    // null → omit the date line entirely from both TextPart and HTMLPart.
+    let formattedExpiry = null;
+    if (expiresAt instanceof Date && !isNaN(expiresAt.getTime())) {
+        try {
+            formattedExpiry = expiresAt.toLocaleDateString("he-IL", {
+                timeZone: "Asia/Jerusalem",
+                day: "numeric",
+                month: "long",
+                year: "numeric",
+            });
+        } catch {
+            formattedExpiry = expiresAt.toISOString().slice(0, 10);
+        }
+    }
+
+    // --- HTML output safety --------------------------------------------------
+    // Escape user-controlled firstName and subject before inserting into HTMLPart.
+    // pricingUrl is server-built from getSiteUrl() — not user-supplied, not escaped.
+    const escapeHtml = (str) =>
+        str
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#39;");
+
+    const trimmedFirstName =
+        typeof firstName === "string" ? firstName.trim() : "";
+    const greeting = trimmedFirstName ? `שלום, ${trimmedFirstName},` : "שלום,";
+    const greetingHtml = trimmedFirstName
+        ? `שלום, ${escapeHtml(trimmedFirstName)},`
+        : "שלום,";
+
+    // --- Text part -----------------------------------------------------------
+    const expiryTextLine = formattedExpiry
+        ? `גישת Premium שלך פעילה עד ${formattedExpiry}.`
+        : null;
+
+    const text = [
+        greeting,
+        "",
+        prefix,
+        ...(expiryTextLine ? ["", expiryTextLine] : []),
+        "",
+        "לחידוש Premium, פתחו את הקישור:",
+        pricingUrl,
+        "",
+        "לשאלות, פנו לתמיכה: support@cardigo.co.il",
+        "",
+        "צוות Cardigo",
+    ].join("\n");
+
+    // --- HTML part -----------------------------------------------------------
+    const expiryHtmlBlock = formattedExpiry
+        ? `<tr><td style="padding-bottom:16px;">
+            <p style="margin:0;font-size:15px;line-height:1.6;color:#444444;text-align:center;">
+              גישת Premium שלך פעילה עד <strong>${escapeHtml(formattedExpiry)}</strong>.
+            </p>
+          </td></tr>`
+        : "";
+
+    const htmlPart = `<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width,initial-scale=1" /></head>
+<body style="margin:0;padding:0;background-color:#f4f4f5;font-family:Arial,sans-serif;direction:rtl;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#f4f4f5;padding:32px 16px;">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="100%" style="max-width:520px;background-color:#ffffff;border-radius:8px;padding:40px 32px;">
+          <tr><td style="padding-bottom:16px;">
+            <p style="margin:0;font-size:16px;font-weight:bold;color:#1a1a1a;text-align:right;">${greetingHtml}</p>
+          </td></tr>
+          <tr><td style="padding-bottom:16px;">
+            <h1 style="margin:0;font-size:22px;font-weight:bold;color:#1a1a1a;text-align:center;">${escapeHtml(subject)}</h1>
+          </td></tr>
+          <tr><td style="padding-bottom:16px;">
+            <p style="margin:0;font-size:15px;line-height:1.6;color:#444444;text-align:center;">
+              ${escapeHtml(prefix)}
+            </p>
+          </td></tr>
+          ${expiryHtmlBlock}
+          <tr><td style="text-align:center;padding-bottom:24px;">
+            <a href="${pricingUrl}" style="display:inline-block;padding:14px 32px;background-color:#6c47ff;color:#ffffff;font-size:16px;font-weight:bold;text-decoration:none;border-radius:6px;">חדש פרימיום עכשיו</a>
+          </td></tr>
+          <tr><td style="padding-bottom:16px;">
+            <p style="margin:0;font-size:13px;line-height:1.6;color:#666666;text-align:center;">
+              לשאלות, פנו לתמיכה:
+              <a href="mailto:support@cardigo.co.il" style="color:#6c47ff;text-decoration:none;">support@cardigo.co.il</a>
+            </p>
+          </td></tr>
+          <tr><td style="border-top:1px solid #e5e7eb;padding-top:16px;text-align:center;">
+            <p style="margin:0;font-size:12px;color:#aaaaaa;">צוות Cardigo</p>
+          </td></tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
+
+    const payload = {
+        Messages: [
+            {
+                From: {
+                    Email: cfg.fromEmail,
+                    Name: cfg.fromName,
+                },
+                To: [{ Email: toEmailNormalized }],
+                Subject: subject,
+                TextPart: text,
+                HTMLPart: htmlPart,
+            },
+        ],
+    };
+
+    const body = JSON.stringify(payload);
+
+    try {
+        const res = await httpsRequestJson({
+            hostname: "api.mailjet.com",
+            path: "/v3.1/send",
+            method: "POST",
+            timeoutMs: 10_000,
+            headers: {
+                Authorization: `Basic ${auth}`,
+                "Content-Type": "application/json",
+                "Content-Length": Buffer.byteLength(body),
+            },
+            body,
+        });
+
+        const ok = res.statusCode >= 200 && res.statusCode < 300;
+        if (!ok) {
+            console.error("[mailjet] renewal-failed send failed", {
+                statusCode: res.statusCode,
+                userId: String(userId || ""),
+            });
+        }
+
+        return { ok };
+    } catch (err) {
+        console.error("[mailjet] renewal-failed send error", {
             userId: String(userId || ""),
             error: err?.message || err,
         });

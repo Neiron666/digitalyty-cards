@@ -140,6 +140,13 @@ const UserSchema = new mongoose.Schema(
             cancellationReason: { type: String, default: null, maxlength: 500 }, // ticket ID / operator note
         },
 
+        // [5.10a.3.1] Billing failure signal.
+        // Stamped when a recurring STO charge is rejected by provider (Response !== "000").
+        // Null = no known renewal failure. Cleared on successful first payment or recurring renewal.
+        // Used by billingReconcile job (5.10a.3.3), autoRenewal DTO, and failure email (5.10a.3.2).
+        // NOT set for: sto_cancelled, invalid_plan, amount_mismatch, config/ordering failures.
+        renewalFailedAt: { type: Date, default: null },
+
         // Consent / legal acceptance (additive, null-safe for existing users).
         termsAcceptedAt: { type: Date, default: null },
         privacyAcceptedAt: { type: Date, default: null },

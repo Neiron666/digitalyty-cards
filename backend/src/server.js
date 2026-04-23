@@ -6,6 +6,7 @@ import { startResetMailWorker } from "./jobs/resetMailWorker.js";
 import { startTrialLifecycleReconcileJob } from "./jobs/trialLifecycleReconcile.js";
 import { startRetentionPurgeJob } from "./jobs/retentionPurge.js";
 import { startTrialReminderJob } from "./jobs/trialReminderJob.js";
+import { startBillingReconcileJob } from "./jobs/billingReconcile.js";
 
 // --- Sentry early init (before Express app loads) ---
 // Must run before app.js is imported so Sentry can instrument Express/http.
@@ -105,6 +106,13 @@ async function start() {
     startTrialLifecycleReconcileJob({
         intervalMs:
             Number(process.env.TRIAL_LIFECYCLE_RECONCILE_INTERVAL_MS) ||
+            6 * 60 * 60 * 1000,
+    });
+
+    // Billing reconcile: normalize expired paid subscription state, stamp downgradedAt to unblock retentionPurge.
+    startBillingReconcileJob({
+        intervalMs:
+            Number(process.env.BILLING_RECONCILE_INTERVAL_MS) ||
             6 * 60 * 60 * 1000,
     });
 

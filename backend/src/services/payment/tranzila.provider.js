@@ -4,6 +4,8 @@ import User from "../../models/User.model.js";
 import Card from "../../models/Card.model.js";
 import PaymentTransaction from "../../models/PaymentTransaction.model.js";
 import { PRICES_AGOROT } from "../../config/plans.js";
+import { sendRenewalFailedEmailMailjetBestEffort } from "../mailjet.service.js";
+import { getSiteUrl } from "../../utils/siteUrl.util.js";
 
 /**
  * Подпись Tranzila
@@ -962,6 +964,9 @@ export default {
             }
         }
 
+        // [5.10a.3.1] Clear renewal failure marker on successful first payment.
+        user.renewalFailedAt = null;
+
         await user.save();
 
         if (user.cardId) {
@@ -1153,7 +1158,11 @@ export default {
         // ── Local helper: record failed txn + update lastError* (post-user-lookup) ─
         // Does NOT overwrite cancellation audit fields.
         // Returns { duplicate: true } on E11000, throws on infra error.
-        const recordFailure = async (failReason, lastErrorCode) => {
+        const recordFailure = async (
+            failReason,
+            lastErrorCode,
+            { setRenewalFailedAt = false } = {},
+        ) => {
             try {
                 await PaymentTransaction.create({
                     providerTxnId,
@@ -1184,6 +1193,8 @@ export default {
             sto.lastErrorCode = lastErrorCode ?? null;
             sto.lastErrorMessage = sanitizeStoErrorMessage(failReason);
             sto.lastErrorAt = new Date();
+            // [5.10a.3.1] Set renewal failure marker only for genuine failed recurring charges.
+            if (setRenewalFailedAt) user.renewalFailedAt = new Date();
             await user.save();
             return { duplicate: false };
         };
@@ -1198,11 +1209,24 @@ export default {
                 responseCode !== "" && Number.isInteger(rawCode)
                     ? rawCode
                     : null;
+            // [5.10a.3.1] Genuine provider charge rejection — sets renewalFailedAt marker.
+            // Paths 5.B/C/D (sto_cancelled, invalid_plan, amount_mismatch) do NOT set this flag.
             const { duplicate } = await recordFailure(
                 failReason,
                 lastErrorCode,
+                { setRenewalFailedAt: true },
             );
             if (duplicate) return { ok: true, duplicate: true, providerTxnId };
+            // [5.10a.3.2] Best-effort failed renewal email — genuine charge rejection only.
+            // Fire-and-forget: must never delay webhook ACK.
+            // Duplicate replays are filtered above by providerTxnId E11000 guard.
+            sendRenewalFailedEmailMailjetBestEffort({
+                toEmail: user.email,
+                firstName: user.firstName ?? null,
+                expiresAt: user.subscription?.expiresAt ?? null,
+                pricingUrl: `${getSiteUrl()}/pricing`,
+                userId: String(user._id),
+            }).catch(() => {});
             return { ok: false, reason: failReason, providerTxnId };
         }
 
@@ -1276,6 +1300,8 @@ export default {
         sto.lastErrorCode = null;
         sto.lastErrorMessage = null;
         sto.lastErrorAt = null;
+        // [5.10a.3.1] Clear renewal failure marker on successful recurring renewal.
+        user.renewalFailedAt = null;
 
         // plan: explicit no-op assignment — plan is DB SSoT, not payload.pdesc (anti-drift).
         user.plan = user.plan;

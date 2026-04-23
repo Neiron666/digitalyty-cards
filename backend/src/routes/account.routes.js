@@ -96,6 +96,8 @@ function buildAutoRenewalDto(user) {
         canCancel: status === "active",
         cancelledAtPresent: Boolean(sto?.cancelledAt),
         subscriptionExpiresAt: user?.subscription?.expiresAt ?? null,
+        // [5.10a.3.1] Renewal failure signal. ISO timestamp or null. Never boolean.
+        renewalFailedAt: user?.renewalFailedAt ?? null,
     };
 }
 
@@ -134,7 +136,7 @@ router.get("/me", requireAuth, async (req, res) => {
 
         const user = await User.findById(userId)
             .select(
-                "firstName email role plan subscription createdAt emailMarketingConsent emailMarketingConsentAt emailMarketingConsentVersion emailMarketingConsentSource tranzilaSto.status tranzilaSto.stoId tranzilaSto.cancelledAt",
+                "firstName email role plan subscription createdAt emailMarketingConsent emailMarketingConsentAt emailMarketingConsentVersion emailMarketingConsentSource tranzilaSto.status tranzilaSto.stoId tranzilaSto.cancelledAt renewalFailedAt",
             )
             .lean();
 
