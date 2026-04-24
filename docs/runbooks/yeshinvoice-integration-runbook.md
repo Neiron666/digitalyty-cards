@@ -1,7 +1,7 @@
 # YeshInvoice Integration Runbook
 
-**Contour:** 5.12.x — YeshInvoice integration (FUTURE — not yet started)  
-**Status:** GROUNDWORK ONLY — do not proceed past §B until operator decisions resolved  
+**Contour:** 5.12.x — YeshInvoice integration (COMPLETE — sandbox-proven 2026-04-24)  
+**Status:** IMPLEMENTED — sandbox-proven. Production rollout NOT STARTED.  
 **Created:** 2026-04-23  
 **Dependencies:**
 
@@ -46,25 +46,23 @@
 - [x] `billing-flow-ssot.md` gate list corrected and current (5.11)
 - [x] `PaymentTransaction.receiptId` FK anchor confirmed in schema (`backend/src/models/PaymentTransaction.model.js:54–60`)
 
-### Level 2 — Operator decisions (must be resolved before any code)
+### Level 2 — Operator decisions (RESOLVED)
 
-- [ ] **OP-1: Document type confirmed.** עוסק פטור (קבלה) or עוסק מורשה (חשבונית מס קבלה)?
-- [ ] **OP-2: YeshInvoice account created.** Sandbox API URL and API token available.
-- [ ] **OP-3: PDF storage strategy decided.** YeshInvoice native download URL or Supabase bucket?
-- [ ] **OP-4: Receipt email language decided.** Hebrew only or bilingual?
-- [ ] **OP-5: Retroactive receipts decision.** Explicitly in-scope or explicitly deferred?
-- [ ] **OP-6: Receipt email timing.** On `PaymentTransaction.create(status="paid")` or after YeshInvoice API confirmation?
+- [x] **OP-1: Document type confirmed.** עוסק פטור — **קבלה** (document type 6).
+- [x] **OP-2: YeshInvoice account created.** Sandbox API credentials active: `YESH_INVOICE_SECRET`, `YESH_INVOICE_USERKEY`, `YESH_INVOICE_API_BASE`.
+- [x] **OP-3: PDF storage strategy.** YeshInvoice native `pdfurl` from response (no Supabase).
+- [x] **OP-4: Receipt email language.** Via YeshInvoice share API (`shareReceiptYeshInvoice`).
+- [x] **OP-5: Retroactive receipts.** Explicitly deferred to a separate operator contour.
+- [x] **OP-6: Receipt email timing.** After YeshInvoice API confirmation.
 
-None of the Level 3 technical work may begin until all Level 2 decisions are recorded in this runbook.
+### Level 3 — Billing gates (preconditions for production enablement)
 
-### Level 3 — Billing gates (must be closed before `YESH_INVOICE_ENABLED=true`)
+- [x] ~~Gate 2: Failed-STO retry / recovery (5.10h)~~ — **CLOSED (5.12.H)**
+- [x] ~~Gate 4b: STO create observability (5.10i)~~ — **CLOSED (5.12.H)**
+- [ ] **Gate 6: Production terminal cutover (5.10f) — OPEN**
+- [ ] **Gate 7: Production E2E lifecycle proof (5.10g) — OPEN**
 
-These gates are prerequisites for production enablement, but sandbox implementation may proceed once Level 2 is resolved:
-
-- [ ] Gate 2: Failed-STO retry / recovery (5.10h)
-- [ ] Gate 4b: STO create observability (5.10i)
-- [ ] Gate 6: Production terminal cutover (5.10f)
-- [ ] Gate 7: Production E2E lifecycle proof (5.10g)
+Sandbox implementation is complete. G6 and G7 block production enablement (`YESH_INVOICE_ENABLED=true` on production Render) only.
 
 ---
 
@@ -72,15 +70,14 @@ These gates are prerequisites for production enablement, but sandbox implementat
 
 Run through this checklist with the operator/business owner before writing any code.
 
-| #    | Question                                                                         | Answer (fill in)                           | Impact                                        |
-| ---- | -------------------------------------------------------------------------------- | ------------------------------------------ | --------------------------------------------- |
-| OP-1 | Are you registered as עוסק פטור or עוסק מורשה?                                   |                                            | Determines document type API call             |
-| OP-2 | YeshInvoice sandbox API URL?                                                     | `____________`                             | Set as `YESH_INVOICE_API_URL` (sandbox)       |
-| OP-2 | YeshInvoice sandbox API token?                                                   | `____________` (store in Render, not docs) | Set as `YESH_INVOICE_API_TOKEN` (sandbox)     |
-| OP-3 | PDF: native YeshInvoice URL (no storage cost) or Supabase (permanent copy, CDN)? |                                            | Affects `pdfPath` field and download endpoint |
-| OP-4 | Receipt email language: Hebrew only or bilingual?                                |                                            | Affects `mailjet.service.js` template         |
-| OP-5 | Issue retroactive receipts for ≈10 existing paid transactions?                   |                                            | Separate backfill contour required if yes     |
-| OP-6 | Receipt email timing: on paid txn creation or after YeshInvoice confirms?        |                                            | Affects email fire point in service           |
+| #    | Question                                                                         | Answer (fill in)                                                                               | Impact                                                     |
+| ---- | -------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- | ---------------------------------------------------------- |
+| OP-1 | Are you registered as עוסק פטור or עוסק מורשה?                                   |                                                                                                | Determines document type API call                          |
+| OP-2 | YeshInvoice sandbox credentials                                                  | Active: `YESH_INVOICE_SECRET`, `YESH_INVOICE_USERKEY`, `YESH_INVOICE_API_BASE` (set in `.env`) | Set as sandbox values on Render only during sandbox window |
+| OP-3 | PDF: native YeshInvoice URL (no storage cost) or Supabase (permanent copy, CDN)? |                                                                                                | Affects `pdfPath` field and download endpoint              |
+| OP-4 | Receipt email language: Hebrew only or bilingual?                                |                                                                                                | Affects `mailjet.service.js` template                      |
+| OP-5 | Issue retroactive receipts for ≈10 existing paid transactions?                   |                                                                                                | Separate backfill contour required if yes                  |
+| OP-6 | Receipt email timing: on paid txn creation or after YeshInvoice confirms?        |                                                                                                | Affects email fire point in service                        |
 
 > **Security:** Never write actual API tokens/secrets into this document or any source file. Tokens go in Render env vars only.
 
@@ -94,26 +91,11 @@ Complete in this order. Do not skip steps.
 
 Record answers in §C above before any code changes.
 
-### D2. Add startup validation to `backend/src/services/payment/index.js`
+### D2. ~~Add startup validation~~ — DONE
 
-Add gated startup validation for `YESH_INVOICE_ENABLED`:
+Startup validation for `YESH_INVOICE_ENABLED` is **already implemented** at `backend/src/services/payment/index.js:44–49`. When `YESH_INVOICE_ENABLED=true`, the startup gate validates `YESH_INVOICE_SECRET` and `YESH_INVOICE_USERKEY` (fail-fast if either is missing). No action required.
 
-```js
-// Following exact pattern of TRANZILA_STO_CREATE_ENABLED gate at lines 22–36
-const isYeshInvoiceEnabled = process.env.YESH_INVOICE_ENABLED === "true";
-if (isYeshInvoiceEnabled) {
-    if (!process.env.YESH_INVOICE_API_URL)
-        throw new Error(
-            "[startup] YESH_INVOICE_API_URL required when YESH_INVOICE_ENABLED=true",
-        );
-    if (!process.env.YESH_INVOICE_API_TOKEN)
-        throw new Error(
-            "[startup] YESH_INVOICE_API_TOKEN required when YESH_INVOICE_ENABLED=true",
-        );
-}
-```
-
-Default safe state: absent, `"false"`, or any value other than `"true"` → disabled.
+> Note: The original proposed code snippet used `YESH_INVOICE_API_URL` and `YESH_INVOICE_API_TOKEN` — those were design placeholders. The actual implementation uses `YESH_INVOICE_SECRET` and `YESH_INVOICE_USERKEY`.
 
 ### D3. Create `Receipt` model
 

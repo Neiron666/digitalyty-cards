@@ -98,8 +98,8 @@ User clicks "Upgrade"
   │  e. Update User.subscription + Card.billing
   │  f. Best-effort: STO recurring schedule create (post-fulfillment, non-blocking — see §14)
   │     - STO failure does NOT roll back first-payment activation
-  │  g. Receipt (YeshInvoice) + email (Mailjet): DEFERRED — not active in current runtime.
-  │     See §9 for deferral gate and YeshInvoice/קבלה policy.
+  │  g. Receipt (YeshInvoice) + email (Mailjet): IMPLEMENTED (sandbox-proven 2026-04-24).
+  │     Fire-and-forget IIFE after billing activation. See §9 for implementation details and open production gates.
   ▼
 ⑦ Return 200 "OK" (generic body)
 ```
@@ -264,20 +264,20 @@ Two reconciliation jobs:
 
 ---
 
-## 9) Receipt & Email (DEFERRED)
+## 9) Receipt & Email (IMPLEMENTED — sandbox-proven 2026-04-24)
 
-### Deferral policy
+### Implementation status
 
-**YeshInvoice / קבלה integration is explicitly deferred.** It must NOT begin until the Tranzila billing lifecycle is secure, observable, recoverable, and production-ready end-to-end.
+**YeshInvoice / קבלה integration is IMPLEMENTED and sandbox-proven.** All 5 pre-implementation gates (G1–G5) are closed. Production enablement gates (G6 production terminal cutover, G7 production recurring lifecycle proof) remain open — see §14 for the full gate list. **Production rollout has NOT started.**
 
-**Business context:**
+**Business context (unchanged):**
 
 - The operator is **עוסק פטור** (VAT-exempt small business).
-- Future target: every paying user should receive a **קבלה** (receipt) after a successful payment.
-- Receipt issuance must be based on confirmed backend ledger/webhook truth — never on browser success redirect.
-- Receipt must cover both first-payment AND recurring charges, so YeshInvoice cannot be wired before the recurring webhook notify handler exists.
+- Every paying user receives a **קבלה** (receipt) after a successful payment.
+- Receipt issuance is based on confirmed backend ledger/webhook truth — never on browser success redirect.
+- Receipt covers both first-payment AND recurring charges.
 
-**YeshInvoice integration must NOT begin until ALL of the following are closed:**
+**Implementation gate history (all pre-implementation gates now closed):**
 
 1. ~~STO notify handler (recurring charge webhook received and processed).~~ **CLOSED 2026-04-22** — Real Tranzila My Billing webhook received and fully verified (contour 5.8f.9, `REAL_TRANZILA_STO_NOTIFY_E2E_SUCCESS_FULLY_VERIFIED`).
 2. ~~Failed-STO retry/recovery script or job.~~ **RESOLVED (5.12.H):** Operator script `backend/scripts/sto-retry-failed.mjs` — dry-run default, single-target (`--email`/`--user-id`), production-terminal block (`/^fxp/i` requires `--allow-prod`).
@@ -287,25 +287,28 @@ Two reconciliation jobs:
 6. Production terminal cutover completed. _(open)_
 7. Tranzila recurring lifecycle proven end-to-end in production (real customers, production terminal). _(open — only sandbox `testcardstok` proven to date)_
 
-**YeshInvoice remains deferred.** 5 of 7 gate items are closed (G1, G2, G3, G4b, G5). G6 (production terminal cutover) and G7 (production recurring lifecycle proof) remain open. Do not begin YeshInvoice implementation until all remaining gates are satisfied.
+**What is now implemented (contour 5.12.x — COMPLETE):**
 
-**When YeshInvoice integration begins (future contour):**
-
-- Receipt provider: **YeshInvoice** (REST API). Environment-driven: `YESH_INVOICE_API_URL`, `YESH_INVOICE_API_TOKEN`.
-- Receipt creation is **best-effort**: failure must not block the 200 ACK to Tranzila.
-- On failure: `Receipt.receiptStatus` is set to `"failed"` for later reconciliation/retry.
-- Receipt must be issued for: first payment, every recurring charge, and any manual renewal.
-- Email notification via Mailjet (`MAILJET_RECEIPT_SUBJECT`, `MAILJET_RECEIPT_TEXT_PREFIX`).
-- Cabinet endpoint: `GET /api/account/receipts` + `GET /api/account/receipts/:id/download`.
+- `backend/src/models/Receipt.model.js` — `Receipt` model with `shareStatus` enum `["pending","sent","failed","skipped"]`, `shareFailReason`, `sharedAt`, index on `paymentTransactionId` (unique, applied via `migrate-receipt-indexes.mjs`).
+- `backend/src/services/yeshinvoice.service.js` — `createReceiptYeshInvoice` + `shareReceiptYeshInvoice`. Auth: `Authorization: JSON.stringify({ secret, userkey })` (literal JSON string). Response envelope: `{ Success: bool, ErrorMessage: string, ReturnValue: { id, docNumber, pdfurl, url } }` (uppercase). Never throws; returns `{ ok: bool, raw, error? }`.
+- Fire-and-forget IIFE hooks wired in `tranzila.provider.js` — both `handleNotify` (first-payment) and `handleStoNotify` (recurring). Pattern: `void (async () => { ... })()`. ACK path unblocked.
+- Idempotency: `Receipt.create()` with `catch (e) { if (e.code === 11000) return; throw e; }`.
+- Env vars: `YESH_INVOICE_ENABLED`, `YESH_INVOICE_SECRET`, `YESH_INVOICE_USERKEY`, `YESH_INVOICE_API_BASE`.
+- Startup validation: if `YESH_INVOICE_ENABLED=true`, `YESH_INVOICE_SECRET` and `YESH_INVOICE_USERKEY` are validated at startup (fail-fast). Implemented at `backend/src/services/payment/index.js:44–49`.
+- Receipt creation is **best-effort**: failure does not block the 200 ACK to Tranzila.
+- On share failure: `Receipt.shareStatus` set to `"failed"`; `shareFailReason` recorded.
+- Cabinet endpoint: `GET /api/account/receipts` + `GET /api/account/receipts/:id/download`. _(delivery status TBD — deferred to separate contour)_
 - Ledger (`PaymentTransaction`) is not exposed to the cabinet directly; cabinet reads Receipt model only.
 
-**Do not add YeshInvoice env vars to Render or begin API integration before the deferral gate is lifted.**
+**Sandbox proof (2026-04-24 — COMPLETE):** See `docs/handoffs/current/Cardigo_Enterprise_Handoff_YeshInvoice_Receipt_Sandbox_Proof_2026-04-24.md` for full evidence package.
 
-**See also (groundwork package — created contour 5.12.0):**
+**Production rollout: NOT STARTED.** G6 and G7 remain open. Do not enable `YESH_INVOICE_ENABLED=true` on the production Render deployment until G6 (production terminal cutover) and G7 (production lifecycle proof) are closed.
 
-- `docs/runbooks/yeshinvoice-groundwork-architecture.md` — billing chain, trigger truth, receipt architecture, endpoint/DTO map, idempotency rules, production enablement boundary
-- `docs/runbooks/yeshinvoice-integration-runbook.md` — operator checklist, developer checklist, verification, rollback, contour log
-- `docs/runbooks/yeshinvoice-code-patterns-and-examples.md` — current grounded code examples (file:line), future proposed hook patterns, anti-drift rules
+**See also:**
+
+- `docs/runbooks/yeshinvoice-groundwork-architecture.md` — billing chain, trigger truth, receipt architecture, endpoint/DTO map, idempotency rules
+- `docs/runbooks/yeshinvoice-integration-runbook.md` — operator checklist, developer checklist, verification, rollback
+- `docs/runbooks/yeshinvoice-code-patterns-and-examples.md` — grounded code examples (file:line)
 
 ---
 
@@ -353,17 +356,19 @@ Two reconciliation jobs:
 | `TRANZILA_STO_NOTIFY_URL`     | Operator/reference value only — not read at runtime. Documents the portal URL pattern. Use placeholder: `https://cardigo.co.il/api/payments/sto-notify?snk=<STO_NOTIFY_TOKEN>`. Never embed real token.          |
 | `CARDIGO_STO_NOTIFY_TOKEN`    | **Required** in production for STO recurring notify. Validated per-request at the `/api/payments/sto-notify` route (fail-closed 503 if missing). Must also be set in Netlify env (see Netlify table). Never log. |
 
-### Backend (Render) - new (receipt / email — DEFERRED, see §9)
+### Backend (Render) - receipt / email (IMPLEMENTED — sandbox active; production rollout NOT STARTED)
 
-| Var                                  | Purpose                                                                  |
-| ------------------------------------ | ------------------------------------------------------------------------ |
-| `CARDIGO_NOTIFY_TOKEN`               | Verify `?nt=` token from Netlify function (defense-in-depth)             |
-| `YESH_INVOICE_API_URL`               | YeshInvoice endpoint (sandbox / production) — DEFERRED (see §9)          |
-| `YESH_INVOICE_API_TOKEN`             | YeshInvoice API authentication — DEFERRED (see §9)                       |
-| `MAILJET_RECEIPT_SUBJECT`            | Receipt email subject line — DEFERRED (see §9)                           |
-| `MAILJET_RECEIPT_TEXT_PREFIX`        | Receipt email body prefix — DEFERRED (see §9)                            |
-| `RECEIPT_RECONCILIATION_INTERVAL_MS` | Receipt retry job interval (planned, default 3600000) — DEFERRED         |
-| `BILLING_RECONCILE_INTERVAL_MS`      | `startBillingReconcileJob` interval (implemented, default 21600000 = 6h) |
+| Var                                  | Purpose                                                                                                                                        |
+| ------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| `CARDIGO_NOTIFY_TOKEN`               | Verify `?nt=` token from Netlify function (defense-in-depth)                                                                                   |
+| `YESH_INVOICE_ENABLED`               | Feature flag. `"true"` enables receipt creation. Requires `YESH_INVOICE_SECRET` and `YESH_INVOICE_USERKEY` to also be set (startup fail-fast). |
+| `YESH_INVOICE_SECRET`                | YeshInvoice API secret (sandbox or production). Validated at startup when `YESH_INVOICE_ENABLED=true`. Never log.                              |
+| `YESH_INVOICE_USERKEY`               | YeshInvoice API user key (sandbox or production). Validated at startup when `YESH_INVOICE_ENABLED=true`. Never log.                            |
+| `YESH_INVOICE_API_BASE`              | YeshInvoice API base URL (e.g. `https://api.yeshinvoice.co.il`).                                                                               |
+| `MAILJET_RECEIPT_SUBJECT`            | Receipt email subject line.                                                                                                                    |
+| `MAILJET_RECEIPT_TEXT_PREFIX`        | Receipt email body prefix.                                                                                                                     |
+| `RECEIPT_RECONCILIATION_INTERVAL_MS` | Receipt retry job interval (planned, default 3600000).                                                                                         |
+| `BILLING_RECONCILE_INTERVAL_MS`      | `startBillingReconcileJob` interval (implemented, default 21600000 = 6h)                                                                       |
 
 ### Netlify - existing (billing-relevant subset)
 
@@ -401,9 +406,9 @@ Two reconciliation jobs:
 
 3. **Tranzila retry behavior:** How many times and at what intervals does Tranzila retry on 5xx? This affects idempotency window and reconciliation timing. Still open.
 
-4. **YeshInvoice API specifics:** Exact endpoint paths, required fields, response shape, and sandbox credentials. Must be confirmed before receipt integration task. **DEFERRED — see §9.**
+4. ~~**YeshInvoice API specifics:** Exact endpoint paths, required fields, response shape, and sandbox credentials.~~ **RESOLVED:** Auth: `Authorization: JSON.stringify({ secret, userkey })`. Response envelope: `{ Success: bool, ErrorMessage: string, ReturnValue: { id, docNumber, pdfurl, url } }`. Sandbox credentials confirmed active. See `yeshinvoice.service.js`.
 
-5. **YeshInvoice document type:** Receipt (קבלה) vs. invoice (חשבונית מס / קבלה). Israeli tax law requirements for digital service subscriptions must be confirmed. **DEFERRED — see §9.**
+5. ~~**YeshInvoice document type:** Receipt (קבלה) vs. invoice (חשבונית מס / קבלה).~~ **RESOLVED:** Operator confirmed עוסק פטור — document type 6 (קבלה). Implemented in `yeshinvoice.service.js`.
 
 6. ~~**Tranzila `TRANZILA_NOTIFY_URL` value:** Must be updated to `https://cardigo.co.il/api/payments/notify?nt=<token>`.~~ **RESOLVED:** `TRANZILA_NOTIFY_URL` is set to `https://cardigo.co.il/api/payments/notify?nt=<CARDIGO_NOTIFY_TOKEN>` on Render. Confirmed working in production DirectNG flow.
 
@@ -479,7 +484,7 @@ Implementation: `buildTranzilaApiAuthHeaders()` in `backend/src/services/payment
 5. ~~**Gated startup validation**~~ — **FULLY RESOLVED (5.11):** `backend/src/services/payment/index.js` validates `TRANZILA_STO_TERMINAL`, `TRANZILA_STO_API_URL`, `TRANZILA_API_APP_KEY`, `TRANZILA_API_PRIVATE_KEY` at startup when `TRANZILA_STO_CREATE_ENABLED=true`. Throws fail-fast on missing vars.
 6. **Production terminal cutover** — Render STO env vars must be switched from sandbox terminal to production terminal values; `PRICES_AGOROT` must be restored to production values (`3990`/`39990`) **after** all active sandbox STO schedules are cancelled/deactivated (changing prices while active schedules charge old amounts causes `amount_mismatch`). Operator decision: price restore is deferred to a dedicated pre-production contour. _(open)_
 7. **Handshake / `thtk` amount locking** — separate future contour (STO amount locked at create time; price change reconciliation not yet designed)
-8. **YeshInvoice / קבלה** — explicitly deferred; must not start until remaining gates (2–7 above) are closed (see §9)
+8. ~~**YeshInvoice / קבלה**~~ — **IMPLEMENTED AND SANDBOX-PROVEN (2026-04-24).** See §9 for full implementation details. Production enablement blocked on G6 (production terminal cutover) and G7 (production recurring lifecycle proof) only.
 
 ---
 
@@ -545,3 +550,38 @@ User self-service cancel stops **future** recurring charges only. It does NOT tr
 | absent / other       | `"none"`      | `false`     |
 
 `autoRenewal` is not a stored field. It is derived on every `GET /api/account/me` request via `buildAutoRenewalDto()`. Does not expose `stoId`, `tranzilaToken`, or raw provider identifiers.
+
+---
+
+## 16) YeshInvoice Receipt Lifecycle — Canonical Proof Truth (2026-04-24)
+
+**Status: IMPLEMENTED + SANDBOX-PROVEN. Production rollout: NOT STARTED.**
+
+### Final Accepted Proof Statement
+
+| Scenario                                                             | Result    | Date       | Classification                                                                 |
+| -------------------------------------------------------------------- | --------- | ---------- | ------------------------------------------------------------------------------ |
+| Real provider-originated first-payment webhook (Tranzila DirectNG)   | ✅ PROVED | 2026-04-24 | Tier 3 — real provider                                                         |
+| Real provider-originated STO recurring webhook (Tranzila My Billing) | ✅ PROVED | 2026-04-22 | Tier 3 — real provider (`REAL_TRANZILA_STO_NOTIFY_E2E_SUCCESS_FULLY_VERIFIED`) |
+| YeshInvoice `Receipt.create` (provider doc issued)                   | ✅ PROVED | 2026-04-24 | Tier 1 — sandbox API                                                           |
+| YeshInvoice `shareReceiptYeshInvoice` (email sent)                   | ✅ PROVED | 2026-04-24 | Tier 1 — sandbox API                                                           |
+| `Receipt.shareStatus` update (pending → sent)                        | ✅ PROVED | 2026-04-24 | Tier 1 — Mongo write verified                                                  |
+| First-payment replay / idempotency                                   | ✅ PROVED | 2026-04-24 | Tier 1 — E11000 idempotency confirmed                                          |
+| STO recurring replay / idempotency                                   | ✅ PROVED | 2026-04-24 | Tier 1 — E11000 idempotency confirmed                                          |
+| Synthetic direct-backend runtime proof (fire-and-forget hook)        | ✅ PROVED | 2026-04-24 | Tier 1 — synthetic handler                                                     |
+| Public relay smoke (cardigo.co.il → Netlify → Render)                | ✅ PROVED | 2026-04-24 | Tier 2 — relay (caveat: requires Render warm-up; see below)                    |
+
+### Known Caveats
+
+- **SANDBOX-STO-002:** Reserved failed public attempt (502). Cause: Render cold start + Netlify 9s timeout. Not a defect. Do not reuse this reference ID.
+- **Render cold-start / Netlify 9s timeout:** Public relay smoke may return 502 before Render backend warms up. Allow 30–60s warm-up time and retry. This is a false-negative infrastructure caveat, not a bug.
+- **Early polluted fake notify attempt:** One early direct-backend fake notify attempt was made before the real sandbox proof. It created no DB residue. Ledger is clean.
+- **Local sandbox env:** `TRANZILA_TERMINAL=testcards`, `TRANZILA_STO_TERMINAL=testcardstok` — these are sandbox values. Production terminal vars are commented out in `.env`.
+- **PRICES_AGOROT:** Current value is `500/500` (sandbox — intentional). Must NOT be changed while active sandbox STO schedules exist. Price restore (`3990/39990`) is a dedicated pre-production contour item.
+
+### Open Production Gates
+
+- **G6:** Production terminal cutover (`TRANZILA_TERMINAL`, `TRANZILA_SECRET`, `TRANZILA_STO_TERMINAL`, `PRICES_AGOROT` restore) — **OPEN**
+- **G7:** Production recurring lifecycle proof (real customers, production terminal) — **OPEN**
+
+Full evidence package: `docs/handoffs/current/Cardigo_Enterprise_Handoff_YeshInvoice_Receipt_Sandbox_Proof_2026-04-24.md`

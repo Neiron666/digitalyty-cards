@@ -150,8 +150,8 @@ If the user is mid‑cycle and wants future renewals: currently **manual** only 
 PaymentTransaction ledger (providerTxnId, idempotency via E11000 unique index, PayloadAllowlist) exists and is used by both `handleNotify` and `handleStoNotify`. The upgrade items still pending:
 
 1. ~~**Self-service portal**~~ — **RESOLVED (5.9a.1/5.9a.2, 2026-04-22):** User self-service cancel-renewal shipped in SettingsPanel billing section. Payment-method change and refunds remain support-mediated.
-2. **Receipt / YeshInvoice** — explicitly deferred. **YeshInvoice remains deferred** until all remaining billing lifecycle gates are closed (failed-STO retry, STO create observability, gated startup validation, production terminal cutover, production E2E). See `billing-flow-ssot.md` §9 for the full gate list.
-3. **STO failed-state retry/recovery** — no job or script yet for users with `tranzilaSto.status="failed"`.
+2. ~~**Receipt / YeshInvoice**~~ — **IMPLEMENTED AND SANDBOX-PROVEN (2026-04-24).** `yeshinvoice.service.js`, `Receipt.model.js`, and fire-and-forget hooks in `tranzila.provider.js` are live in the codebase. Sandbox receipt creation, share/email, and `Receipt.shareStatus` update all proved. `YESH_INVOICE_ENABLED=true` is active in the local sandbox env. Production Render deployment requires G6 (production terminal cutover) and G7 (production recurring lifecycle proof) before `YESH_INVOICE_ENABLED=true` is set there. See `billing-flow-ssot.md §9` and `§16`.
+3. ~~**STO failed-state retry/recovery**~~ — **RESOLVED (5.12.H).** `backend/scripts/sto-retry-failed.mjs` exists — dry-run default, single-target (`--email`/`--user-id`), production-terminal block (`/^fxp/i` requires `--allow-prod`).
 4. **Non-atomic User + Card updates** — reconciliation job planned but not implemented.
 5. ~~Consider "extend from max(now, currentExpiresAt)" instead of resetting from now.~~ — **IMPLEMENTED** in `tranzila.provider.js`. Proven in contour 5.8f.9: subscription extended exactly +30 days from previous `paidUntil` (`2026-05-20T16:05:50.657Z` → `2026-06-19T16:05:50.657Z`), not from webhook arrival date.
 

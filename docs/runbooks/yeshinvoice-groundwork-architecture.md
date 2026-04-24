@@ -1,9 +1,9 @@
 # YeshInvoice Groundwork Architecture
 
-**Contour:** 5.12.0 — YeshInvoice groundwork docs  
-**Status:** GROUNDWORK ONLY — no implementation exists  
+**Contour:** 5.12.0 — YeshInvoice groundwork docs; implementation completed in 5.12.x  
+**Status:** IMPLEMENTED — sandbox-proven 2026-04-24. Production rollout NOT STARTED.  
 **Created:** 2026-04-23  
-**See also:** `docs/runbooks/billing-flow-ssot.md` §9 (deferral policy and gate list)
+**See also:** `docs/runbooks/billing-flow-ssot.md` §9 and §16 (implementation status and proof truth)
 
 ---
 
@@ -22,33 +22,33 @@
 - `PaymentTransaction.status` enum includes `"paid"`, `"failed"`, `"pending"`, `"refunded"`. The canonical receipt trigger is `status === "paid"`.
 - **Mailjet service** pattern is established: best-effort fire-and-forget email functions, each returning `{ ok: true/false }`. PROOF: `backend/src/services/mailjet.service.js:825`
 
-### What is NOT implemented
+### What is NOW implemented (contour 5.12.x — COMPLETE)
 
-- `Receipt` model — does not exist
-- `yeshinvoice.service.js` — does not exist
-- `sendReceiptEmailMailjetBestEffort` — does not exist
-- Receipt retry job — does not exist
-- `GET /api/account/receipts` — does not exist
-- `GET /api/account/receipts/:id/download` — does not exist
-- Receipt section in admin API — does not exist
+- `Receipt` model — `backend/src/models/Receipt.model.js` — **EXISTS**
+- `yeshinvoice.service.js` — `backend/src/services/yeshinvoice.service.js` — **EXISTS**
+- `shareReceiptYeshInvoice` — **EXISTS** (in `yeshinvoice.service.js`)
+- `migrate-receipt-indexes.mjs` — `backend/scripts/migrate-receipt-indexes.mjs` — **EXISTS**
+- Fire-and-forget receipt hooks in `tranzila.provider.js` (`handleNotify` + `handleStoNotify`) — **IMPLEMENTED**
+- `GET /api/account/receipts` — deferred to separate contour (cabinet UI not yet built)
+- `GET /api/account/receipts/:id/download` — deferred to separate contour
+- Receipt section in admin API — deferred to separate contour
 
-### What is blocked for production
+### What is blocked for production (open gates)
 
-See `billing-flow-ssot.md §9` for the canonical gate list. Summary:
+See `billing-flow-ssot.md §9` and `§16` for the canonical gate list. Summary:
 
-- Gate 2: Failed-STO retry/recovery — open
-- Gate 4b: STO create observability structured log — open
-- Gate 6: Production terminal cutover — open
-- Gate 7: Tranzila recurring lifecycle proven in production — open
+- ~~Gate 2: Failed-STO retry/recovery~~ — **CLOSED (5.12.H)**
+- ~~Gate 4b: STO create observability structured log~~ — **CLOSED (5.12.H)**
+- **Gate 6: Production terminal cutover — OPEN**
+- **Gate 7: Tranzila recurring lifecycle proven in production — OPEN**
 
-All 4 remaining gates must close before YeshInvoice is enabled in production.  
-Behind-flag scaffolding (Receipt model, service, email) may begin once operator questions are answered (see §G below).
+G6 and G7 must close before `YESH_INVOICE_ENABLED=true` is set on the production Render deployment.
 
-### What this groundwork package does and does not mean
+### What this groundwork package documents
 
-**Does:** documents current billing chain, proposed future integration architecture, existing code patterns to reuse, runbook and checklist for future implementation contour.
+**Documents:** current billing chain, implemented integration architecture, code patterns used, runbook reference.
 
-**Does NOT:** constitute approval to implement YeshInvoice, create a Receipt model, add env vars to Render/Netlify, change billing runtime, or enable any production feature.
+**Production rollout:** NOT STARTED. Implementation is complete and sandbox-proven. Production enablement requires G6 + G7.
 
 ---
 
@@ -380,9 +380,7 @@ Returns a download URL or streamed PDF for a receipt belonging to the authentica
 > **PROPOSED EXAMPLE — NOT VERIFIED PROVIDER CONTRACT.**  
 > Exact endpoint paths, request/response shape, auth method, and required fields must be confirmed from YeshInvoice API documentation before implementation.
 
-The integration will use bearer-token auth via `YESH_INVOICE_API_TOKEN`. The client will be implemented in `backend/src/services/yeshinvoice.service.js`, following the pattern of `buildTranzilaApiAuthHeaders()` in `tranzila.provider.js`.
-
-**Do not implement before:** YeshInvoice sandbox credentials are obtained and exact API contract is confirmed.
+The integration uses auth: `Authorization: JSON.stringify({ secret, userkey })` — a literal JSON string containing `YESH_INVOICE_SECRET` and `YESH_INVOICE_USERKEY`. The client is implemented in `backend/src/services/yeshinvoice.service.js`.
 
 ---
 
@@ -428,7 +426,7 @@ Feature flag for YeshInvoice (design only — env var name TBD):
 - `YESH_INVOICE_ENABLED === "true"` (strict string equality — same pattern as `TRANZILA_STO_CREATE_ENABLED`)
 - Default safe state: `false` (absent, `"false"`, or any other value = disabled)
 - Rollback: set `YESH_INVOICE_ENABLED=false` on Render → takes effect immediately on next webhook (no restart required if read per-request)
-- Gated startup validation: if `YESH_INVOICE_ENABLED=true`, validate `YESH_INVOICE_API_URL` and `YESH_INVOICE_API_TOKEN` at startup (fail-fast), following pattern at `backend/src/services/payment/index.js:22–36`
+- Startup validation: if `YESH_INVOICE_ENABLED=true`, validates `YESH_INVOICE_SECRET` and `YESH_INVOICE_USERKEY` at startup (fail-fast). **IMPLEMENTED** at `backend/src/services/payment/index.js:44–49`.
 
 ---
 
@@ -443,31 +441,31 @@ Feature flag for YeshInvoice (design only — env var name TBD):
 - ✅ `billing-flow-ssot.md` gate list corrected (5.11)
 - ✅ Operator questions identified (see §G3 below)
 
-### Implementation ready (preconditions before any code is written)
+### Implementation complete (as of 2026-04-24)
 
-- [ ] Operator confirms Israeli tax document type: **קבלה** (receipt, for עוסק פטור) vs **חשבונית מס קבלה** (tax invoice + receipt, for עוסק מורשה)
-- [ ] YeshInvoice account created; sandbox credentials available (`YESH_INVOICE_API_URL`, `YESH_INVOICE_API_TOKEN` sandbox values)
-- [ ] Exact YeshInvoice API contract confirmed (endpoint, auth, required fields, response shape)
-- [ ] PDF storage strategy decided: YeshInvoice native PDF URL vs Supabase storage
-- [ ] Receipt email language decided: Hebrew only or bilingual
+- [x] Operator confirmed Israeli tax document type: **קבלה** (עוסק פטור, document type 6)
+- [x] YeshInvoice account created; sandbox credentials active (`YESH_INVOICE_SECRET`, `YESH_INVOICE_USERKEY`, `YESH_INVOICE_API_BASE` set in `.env`)
+- [x] YeshInvoice API contract confirmed (auth: JSON string `{ secret, userkey }`; response: `{ Success, ErrorMessage, ReturnValue: { id, docNumber, pdfurl, url } }`)
+- [x] PDF strategy: YeshInvoice native PDF URL (`pdfurl` from response)
+- [x] Receipt email via `shareReceiptYeshInvoice` (YeshInvoice share API)
+- [x] Fire-and-forget hooks in `tranzila.provider.js` wired for first-payment and recurring
+- [x] Sandbox E2E proven (receipt created + email sent — 2026-04-24)
 
-### Production ready (preconditions before `YESH_INVOICE_ENABLED=true` on Render)
+### Production ready (preconditions before `YESH_INVOICE_ENABLED=true` on production Render)
 
-All of the above PLUS all remaining billing-flow-ssot.md gates:
+- [x] ~~Gate 2: Failed-STO retry/recovery~~ — CLOSED (5.12.H)
+- [x] ~~Gate 4b: STO create observability~~ — CLOSED (5.12.H)
+- [ ] **Gate 6: Production terminal cutover (5.10f) — OPEN**
+- [ ] **Gate 7: Production E2E lifecycle proof (5.10g) — OPEN**
+- [x] ~~YeshInvoice sandbox E2E proven~~ — PROVED 2026-04-24 (receipt created + email sent)
+- [ ] Receipt env vars set on production Render (`YESH_INVOICE_SECRET`, `YESH_INVOICE_USERKEY`, `YESH_INVOICE_API_BASE`, `MAILJET_RECEIPT_SUBJECT`) — **pending production rollout contour**
+- [ ] `YESH_INVOICE_ENABLED=true` only in approved rollout window — **pending production rollout contour**
 
-- [ ] Gate 2: Failed-STO retry/recovery (5.10h)
-- [ ] Gate 4b: STO create observability (5.10i)
-- [ ] Gate 6: Production terminal cutover (5.10f)
-- [ ] Gate 7: Production E2E lifecycle proof (5.10g)
-- [ ] YeshInvoice sandbox E2E proven (receipt created + email sent for a test payment)
-- [ ] Receipt env vars set on Render (`YESH_INVOICE_API_URL`, `YESH_INVOICE_API_TOKEN`, `MAILJET_RECEIPT_SUBJECT`)
-- [ ] `YESH_INVOICE_ENABLED=true` only in approved rollout window
+### Resolved Operator Decisions (answered during implementation)
 
-### Open Operator Decisions (must answer before implementation begins)
-
-1. **Document type:** עוסק פטור (קבלה) or עוסק מורשה (חשבונית מס קבלה)?
-2. **YeshInvoice account:** Sandbox credentials available?
-3. **PDF strategy:** YeshInvoice native download URL or Supabase?
-4. **Receipt email language:** Hebrew only or bilingual?
-5. **Retroactive receipts:** Issue receipts for the 10 existing paid `PaymentTransaction` records once live?
-6. **Receipt email timing:** Immediately on `PaymentTransaction` creation or after YeshInvoice confirmation?
+1. **Document type:** עוסק פטור — **קבלה** (document type 6)
+2. **YeshInvoice account:** Sandbox credentials confirmed active (`YESH_INVOICE_SECRET`, `YESH_INVOICE_USERKEY`, `YESH_INVOICE_API_BASE`)
+3. **PDF strategy:** YeshInvoice native `pdfurl` from response
+4. **Receipt email:** Via YeshInvoice `shareReceiptYeshInvoice` API (built-in share)
+5. **Retroactive receipts:** Deferred to separate operator contour
+6. **Receipt email timing:** After YeshInvoice API confirmation (on `shareStatus=sent`)
