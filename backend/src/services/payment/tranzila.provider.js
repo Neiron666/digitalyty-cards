@@ -6,6 +6,12 @@ import PaymentTransaction from "../../models/PaymentTransaction.model.js";
 import { PRICES_AGOROT } from "../../config/plans.js";
 import { sendRenewalFailedEmailMailjetBestEffort } from "../mailjet.service.js";
 import { getSiteUrl } from "../../utils/siteUrl.util.js";
+import {
+    createReceiptYeshInvoice,
+    buildYeshInvoiceDocumentUniqueKey,
+    shareReceiptYeshInvoice,
+} from "../yeshinvoice.service.js";
+import Receipt from "../../models/Receipt.model.js";
 
 /**
  * Подпись Tranzila
@@ -184,6 +190,15 @@ function ensureTranzilaStoState(user) {
  */
 function isStoCreateEnabled() {
     return process.env.TRANZILA_STO_CREATE_ENABLED === "true";
+}
+
+/**
+ * Returns true only when YESH_INVOICE_ENABLED is explicitly set to the
+ * string "true". Absent, "false", or any other value disables receipt creation.
+ * Strict string equality — no truthy coercion.
+ */
+function isYeshInvoiceEnabled() {
+    return process.env.YESH_INVOICE_ENABLED === "true";
 }
 
 /**
@@ -907,8 +922,9 @@ export default {
         }
 
         // ── 6. Ledger insert (idempotency via unique providerTxnId) ──
+        let txnDoc;
         try {
-            await PaymentTransaction.create({
+            txnDoc = await PaymentTransaction.create({
                 providerTxnId,
                 provider: "tranzila",
                 userId,
@@ -1029,6 +1045,173 @@ export default {
                     unexpectedError: true,
                 });
                 // Swallow — first payment is already fulfilled. Do not rethrow.
+            }
+        }
+
+        // ── 10. [Y3D.2] YeshInvoice receipt create — non-blocking, after full fulfillment ──
+        // Receipt issuance is a follow-on artifact. Must never block first-payment fulfillment.
+        // Outer try/catch swallows all unexpected setup/provider-call errors.
+        if (isYeshInvoiceEnabled()) {
+            try {
+                const documentUniqueKey =
+                    buildYeshInvoiceDocumentUniqueKey(providerTxnId);
+                const customerName = user.firstName || user.email;
+                const customerEmail = user.email;
+                const description =
+                    validPlan === "monthly"
+                        ? "מנוי Cardigo - חודשי"
+                        : "מנוי Cardigo - שנתי";
+
+                const receiptResult = await createReceiptYeshInvoice({
+                    documentUniqueKey,
+                    customerName,
+                    customerEmail,
+                    amountAgorot,
+                    description,
+                });
+
+                if (!receiptResult.ok) {
+                    console.warn("[receipt] provider call failed", {
+                        event: "receipt_create_provider_failed",
+                        providerTxnId,
+                        paymentTransactionIdPresent: Boolean(txnDoc?._id),
+                        userId,
+                        plan: validPlan,
+                        ok: false,
+                        failReason: String(receiptResult.error ?? "").slice(
+                            0,
+                            200,
+                        ),
+                    });
+                } else {
+                    // Inner try/catch: precise E11000 vs infra error discrimination.
+                    try {
+                        const createdReceipt = await Receipt.create({
+                            paymentTransactionId: txnDoc._id,
+                            userId: user._id,
+                            provider: "yeshinvoice",
+                            providerDocId: receiptResult.providerDocId,
+                            providerDocNumber: receiptResult.providerDocNumber,
+                            documentType: 6,
+                            pdfUrl: receiptResult.pdfUrl,
+                            documentUrl: receiptResult.documentUrl,
+                            amountAgorot,
+                            plan: validPlan,
+                            status: "created",
+                            failReason: null,
+                            documentUniqueKey,
+                            issuedAt: new Date(),
+                            shareStatus: "pending",
+                        });
+                        // [Y3F.2] Fire-and-forget share — must NOT block ACK path.
+                        void (async () => {
+                            try {
+                                const shareResult =
+                                    await shareReceiptYeshInvoice({
+                                        providerDocId:
+                                            receiptResult.providerDocId,
+                                    });
+                                const shareUpdate = shareResult.ok
+                                    ? {
+                                          shareStatus: "sent",
+                                          sharedAt: new Date(),
+                                          shareFailReason: null,
+                                      }
+                                    : {
+                                          shareStatus: "failed",
+                                          shareFailReason: String(
+                                              shareResult.error ?? "unknown",
+                                          ).slice(0, 200),
+                                      };
+                                try {
+                                    await Receipt.updateOne(
+                                        { _id: createdReceipt._id },
+                                        { $set: shareUpdate },
+                                    );
+                                } catch (_updateErr) {
+                                    console.warn(
+                                        "[receipt] share status updateOne failed",
+                                        {
+                                            event: "receipt_share_update_error",
+                                            providerTxnId,
+                                            receiptId: String(
+                                                createdReceipt._id,
+                                            ),
+                                            userId,
+                                            plan: validPlan,
+                                            ok: false,
+                                            failReason: String(
+                                                _updateErr?.message ?? "",
+                                            ).slice(0, 200),
+                                        },
+                                    );
+                                }
+                            } catch (_shareErr) {
+                                try {
+                                    await Receipt.updateOne(
+                                        { _id: createdReceipt._id },
+                                        {
+                                            $set: {
+                                                shareStatus: "failed",
+                                                shareFailReason: String(
+                                                    _shareErr?.message ??
+                                                        "unknown",
+                                                ).slice(0, 200),
+                                            },
+                                        },
+                                    );
+                                } catch {
+                                    // swallow — last-resort, must not propagate
+                                }
+                            }
+                        })();
+                    } catch (_receiptErr) {
+                        if (_receiptErr.code === 11000) {
+                            // Idempotent duplicate — paymentTransactionId unique index hit.
+                            console.info(
+                                "[receipt] duplicate receipt — idempotent replay",
+                                {
+                                    event: "receipt_create_duplicate",
+                                    providerTxnId,
+                                    paymentTransactionIdPresent: true,
+                                    userId,
+                                    plan: validPlan,
+                                    duplicate: true,
+                                },
+                            );
+                        } else {
+                            console.error(
+                                "[receipt] Receipt.create infra error",
+                                {
+                                    event: "receipt_create_infra_error",
+                                    providerTxnId,
+                                    paymentTransactionIdPresent: Boolean(
+                                        txnDoc?._id,
+                                    ),
+                                    userId,
+                                    plan: validPlan,
+                                    ok: false,
+                                    failReason: String(
+                                        _receiptErr?.message ?? "",
+                                    ).slice(0, 200),
+                                },
+                            );
+                        }
+                        // Swallow — fulfillment is already durable. Do not rethrow.
+                    }
+                }
+            } catch (_outerReceiptErr) {
+                console.error("[receipt] unexpected receipt hook error", {
+                    event: "receipt_hook_unexpected_error",
+                    providerTxnId,
+                    userId,
+                    plan: validPlan,
+                    failReason: String(_outerReceiptErr?.message ?? "").slice(
+                        0,
+                        200,
+                    ),
+                });
+                // Swallow — must not alter ACK or fulfillment outcome.
             }
         }
     },
@@ -1259,8 +1442,9 @@ export default {
         // ── 6. Success path ───────────────────────────────────────────────────────
         // All validations passed. Create paid ledger record FIRST.
         // Invariant: no User/Card mutation before successful PaymentTransaction.create.
+        let txnDoc;
         try {
-            await PaymentTransaction.create({
+            txnDoc = await PaymentTransaction.create({
                 providerTxnId,
                 provider: "tranzila",
                 status: "paid",
@@ -1351,6 +1535,175 @@ export default {
                     },
                 },
             );
+        }
+
+        // ── 9. [Y3E.2] YeshInvoice receipt create — non-blocking, after full fulfillment ──
+        // Receipt issuance is a follow-on artifact. Must never block recurring fulfillment.
+        // Outer try/catch swallows all unexpected setup/provider-call errors.
+        if (isYeshInvoiceEnabled()) {
+            try {
+                const documentUniqueKey =
+                    buildYeshInvoiceDocumentUniqueKey(providerTxnId);
+                const customerName = user.firstName || user.email;
+                const customerEmail = user.email;
+                const description =
+                    user.plan === "monthly"
+                        ? "מנוי Cardigo - חודשי"
+                        : "מנוי Cardigo - שנתי";
+
+                const receiptResult = await createReceiptYeshInvoice({
+                    documentUniqueKey,
+                    customerName,
+                    customerEmail,
+                    amountAgorot,
+                    description,
+                });
+
+                if (!receiptResult.ok) {
+                    console.warn("[receipt] recurring provider call failed", {
+                        event: "receipt_recurring_provider_failed",
+                        providerTxnId,
+                        paymentTransactionIdPresent: Boolean(txnDoc?._id),
+                        userId: String(user._id),
+                        plan: user.plan,
+                        ok: false,
+                        failReason: String(receiptResult.error ?? "").slice(
+                            0,
+                            200,
+                        ),
+                    });
+                } else {
+                    // Inner try/catch: precise E11000 vs infra error discrimination.
+                    try {
+                        const createdReceipt = await Receipt.create({
+                            paymentTransactionId: txnDoc._id,
+                            userId: user._id,
+                            provider: "yeshinvoice",
+                            providerDocId: receiptResult.providerDocId,
+                            providerDocNumber: receiptResult.providerDocNumber,
+                            documentType: 6,
+                            pdfUrl: receiptResult.pdfUrl,
+                            documentUrl: receiptResult.documentUrl,
+                            amountAgorot,
+                            plan: user.plan,
+                            status: "created",
+                            failReason: null,
+                            documentUniqueKey,
+                            issuedAt: new Date(),
+                            shareStatus: "pending",
+                        });
+                        // [Y3F.2] Fire-and-forget share — must NOT block ACK path.
+                        void (async () => {
+                            try {
+                                const shareResult =
+                                    await shareReceiptYeshInvoice({
+                                        providerDocId:
+                                            receiptResult.providerDocId,
+                                    });
+                                const shareUpdate = shareResult.ok
+                                    ? {
+                                          shareStatus: "sent",
+                                          sharedAt: new Date(),
+                                          shareFailReason: null,
+                                      }
+                                    : {
+                                          shareStatus: "failed",
+                                          shareFailReason: String(
+                                              shareResult.error ?? "unknown",
+                                          ).slice(0, 200),
+                                      };
+                                try {
+                                    await Receipt.updateOne(
+                                        { _id: createdReceipt._id },
+                                        { $set: shareUpdate },
+                                    );
+                                } catch (_updateErr) {
+                                    console.warn(
+                                        "[receipt] recurring share status updateOne failed",
+                                        {
+                                            event: "receipt_recurring_share_update_error",
+                                            providerTxnId,
+                                            receiptId: String(
+                                                createdReceipt._id,
+                                            ),
+                                            userId: String(user._id),
+                                            plan: user.plan,
+                                            ok: false,
+                                            failReason: String(
+                                                _updateErr?.message ?? "",
+                                            ).slice(0, 200),
+                                        },
+                                    );
+                                }
+                            } catch (_shareErr) {
+                                try {
+                                    await Receipt.updateOne(
+                                        { _id: createdReceipt._id },
+                                        {
+                                            $set: {
+                                                shareStatus: "failed",
+                                                shareFailReason: String(
+                                                    _shareErr?.message ??
+                                                        "unknown",
+                                                ).slice(0, 200),
+                                            },
+                                        },
+                                    );
+                                } catch {
+                                    // swallow — last-resort, must not propagate
+                                }
+                            }
+                        })();
+                    } catch (_receiptErr) {
+                        if (_receiptErr.code === 11000) {
+                            // Idempotent duplicate — paymentTransactionId unique index hit.
+                            console.info(
+                                "[receipt] recurring duplicate — idempotent replay",
+                                {
+                                    event: "receipt_recurring_duplicate",
+                                    providerTxnId,
+                                    paymentTransactionIdPresent: true,
+                                    userId: String(user._id),
+                                    plan: user.plan,
+                                    duplicate: true,
+                                },
+                            );
+                        } else {
+                            console.error(
+                                "[receipt] recurring Receipt.create infra error",
+                                {
+                                    event: "receipt_recurring_infra_error",
+                                    providerTxnId,
+                                    paymentTransactionIdPresent: Boolean(
+                                        txnDoc?._id,
+                                    ),
+                                    userId: String(user._id),
+                                    plan: user.plan,
+                                    ok: false,
+                                    failReason: String(
+                                        _receiptErr?.message ?? "",
+                                    ).slice(0, 200),
+                                },
+                            );
+                        }
+                        // Swallow — fulfillment is already durable. Do not rethrow.
+                    }
+                }
+            } catch (_outerReceiptErr) {
+                console.error(
+                    "[receipt] unexpected recurring receipt hook error",
+                    {
+                        event: "receipt_recurring_hook_unexpected_error",
+                        providerTxnId,
+                        userId: String(user._id),
+                        plan: user.plan,
+                        failReason: String(
+                            _outerReceiptErr?.message ?? "",
+                        ).slice(0, 200),
+                    },
+                );
+                // Swallow — must not alter return contract.
+            }
         }
 
         return {

@@ -38,6 +38,19 @@ if (isTranjila && process.env.TRANZILA_STO_CREATE_ENABLED === "true") {
     }
 }
 
+// ── YeshInvoice vars: gated validation ──────────────────────────────────────
+// YESH_INVOICE_ENABLED is independent of PAYMENT_PROVIDER.
+// YeshInvoice is a document/receipt provider, not a payment terminal.
+if (process.env.YESH_INVOICE_ENABLED === "true") {
+    const yiRequired = ["YESH_INVOICE_SECRET", "YESH_INVOICE_USERKEY"];
+    const yiMissing = yiRequired.filter((k) => !process.env[k]);
+    if (yiMissing.length) {
+        throw new Error(
+            `[payment] YESH_INVOICE_ENABLED=true but missing vars: ${yiMissing.join(", ")}`,
+        );
+    }
+}
+
 const provider = isTranjila ? tranzilaProvider : mockProvider;
 
 export default {
