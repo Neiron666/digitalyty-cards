@@ -30,7 +30,7 @@
 - Retroactive receipts for existing `PaymentTransaction` records — requires separate operator decision and separate runbook
 - Admin-panel receipt management or refund handling
 - Any billing gate item (G2, G4b, G6, G7) — those are prerequisites, not in this runbook
-- Frontend receipt cabinet UI — separate contour
+- Frontend receipt cabinet UI — **IMPLEMENTED (2026-04-24).** See `docs/handoffs/current/Cardigo_Enterprise_Handoff_ReceiptCabinet_Frontend_2026-04-24.md`.
 - Tranzila STO create observability (`tranzilaSto.status` structured log) — separate contour (5.10i)
 - Any change to `User.subscription`, `Card.billing`, or payment routing logic
 
@@ -101,7 +101,9 @@ Startup validation for `YESH_INVOICE_ENABLED` is **already implemented** at `bac
 
 New file: `backend/src/models/Receipt.model.js`
 
-Schema fields: `userId`, `paymentTransactionId`, `providerDocId`, `pdfPath`, `receiptStatus`, `emailSentAt`, timestamps.
+Schema fields (actual implemented): `userId`, `paymentTransactionId`, `providerDocId`, `pdfUrl` (provider URL — never exposed to client), `status` (enum `"created"` | `"failed"` | `"skipped"`), `shareStatus` (enum `"pending"` | `"sent"` | `"failed"` | `"skipped"`), `shareFailReason`, `sharedAt`, `provider`, `providerDocNumber`, `documentType`, `documentUrl`, `documentUniqueKey`, `issuedAt`, `failReason`, timestamps.
+
+> **Note:** The original design proposal used different field names (`pdfPath`, `receiptStatus`, `emailSentAt`). These names do NOT exist in the actual schema. Use the actual field names listed above.
 
 Unique index on `paymentTransactionId` — declared in schema file but NOT auto-applied (follow `PaymentTransaction.model.js` pattern):
 
@@ -207,12 +209,12 @@ Queries: `Receipt.find({ receiptStatus: "failed", providerDocId: null })` with a
 
 Wire into `backend/src/server.js` after `startBillingReconcileJob`.
 
-### D9. Create cabinet API endpoints
+### D9. Create cabinet API endpoints — DONE (2026-04-24)
 
-Add to `backend/src/routes/account.routes.js`:
+Both endpoints are implemented in `backend/src/routes/account.routes.js`:
 
-- `GET /api/account/receipts` — `requireAuth`, reads `Receipt.find({ userId: req.userId }).sort({ createdAt: -1 }).limit(50)`, returns safe DTO (no raw `providerDocId` if sensitive, no full `pdfPath` if signed URL is needed)
-- `GET /api/account/receipts/:id/download` — `requireAuth`, validates `receipt.userId == req.userId`, returns download URL or proxied PDF
+- `GET /api/account/receipts` — `requireAuth`, rate-limited 30/10min, reads `Receipt.find({ userId, status: "created" }).sort({ createdAt: -1 })`, server-clamps limit 1–20 (frontend requests 12). Returns `{ receipts, hasMore, total }` with safe DTO (no `pdfUrl`, `providerDocId`, `paymentTransactionId` or other raw provider fields).
+- `GET /api/account/receipts/:id/download` — `requireAuth`, rate-limited 20/10min, ObjectId pre-validation → 404, ownership by query `{ _id, userId }` → 404 if not found or wrong owner. **Backend proxy only** — streams PDF bytes from stored `pdfUrl`; raw provider URL is never forwarded to the client. Response: `Content-Type: application/pdf`, `Content-Disposition: attachment`, `Cache-Control: private, no-store`, `X-Content-Type-Options: nosniff`.
 
 ### D10. Apply index migration
 
@@ -248,11 +250,14 @@ Verify with `Receipt.collection.indexes()`.
 - [ ] Simulate YeshInvoice failure → `receiptStatus = "failed"` → retry job recovers
 - [ ] Admin-granted subscription → no `Receipt` document created (no `PaymentTransaction` exists)
 
-### E3. Frontend verification (after cabinet UI contour)
+### E3. Frontend verification — DONE (2026-04-24, operator-verified)
 
-- [ ] Receipt list visible in settings panel after successful payment
-- [ ] PDF download works
-- [ ] No extra billing info leaked (no raw `providerTxnId`, `tranzilaToken`, `stoId` in cabinet DTO)
+- [x] Receipt list visible in settings panel after successful payment — **operator-verified 2026-04-24** (user with receipts scenario confirmed)
+- [x] User with no receipts — empty-state displayed correctly — **operator-verified 2026-04-24**
+- [x] PDF download works (via secure backend proxy route) — **operator-verified 2026-04-24**
+- [x] "קבלות" accordion UX (collapsed by default, opens on click) — **operator-verified 2026-04-24**
+- [x] No extra billing info leaked — cabinet DTO does not expose `providerTxnId`, `tranzilaToken`, `stoId`, `pdfUrl`, or other raw provider fields — **code-verified (DTO shape confirmed)**
+- [ ] Wrong-owner / invalid-id / unauthenticated negative path tests — **not yet explicitly re-documented as manually verified** (security properties are code-complete; see `docs/handoffs/current/Cardigo_Enterprise_Handoff_ReceiptCabinet_Frontend_2026-04-24.md §Security properties`)
 
 ### E4. Frontend gates (run from `frontend/` after any frontend changes)
 

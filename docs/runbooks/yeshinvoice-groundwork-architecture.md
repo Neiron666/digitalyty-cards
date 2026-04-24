@@ -29,8 +29,9 @@
 - `shareReceiptYeshInvoice` — **EXISTS** (in `yeshinvoice.service.js`)
 - `migrate-receipt-indexes.mjs` — `backend/scripts/migrate-receipt-indexes.mjs` — **EXISTS**
 - Fire-and-forget receipt hooks in `tranzila.provider.js` (`handleNotify` + `handleStoNotify`) — **IMPLEMENTED**
-- `GET /api/account/receipts` — deferred to separate contour (cabinet UI not yet built)
-- `GET /api/account/receipts/:id/download` — deferred to separate contour
+- `GET /api/account/receipts` — **IMPLEMENTED (2026-04-24).** `requireAuth`, server-clamps limit 1–20, returns newest-first safe DTO. PROOF: `backend/src/routes/account.routes.js`.
+- `GET /api/account/receipts/:id/download` — **IMPLEMENTED (2026-04-24).** Backend proxy; `pdfUrl` (query-string access key) never forwarded to client. PROOF: `backend/src/routes/account.routes.js`.
+- Frontend receipt history in Settings → תשלומים → "קבלות" accordion — **IMPLEMENTED (2026-04-24).** See `docs/handoffs/current/Cardigo_Enterprise_Handoff_ReceiptCabinet_Frontend_2026-04-24.md`.
 - Receipt section in admin API — deferred to separate contour
 
 ### What is blocked for production (open gates)
@@ -183,10 +184,9 @@ G6 and G7 must close before `YESH_INVOICE_ENABLED=true` is set on the production
 
 ---
 
-## D. Future Receipt Architecture (FUTURE PROPOSED)
+## D. Receipt Architecture
 
-> **All content in this section is FUTURE PROPOSED architecture only.**  
-> No Receipt model, no YeshInvoice service, no receipt email exists at the time of this writing.
+> **Status update 2026-04-24:** D1–D6 are IMPLEMENTED AND SANDBOX-PROVEN. D7 (cabinet endpoints + frontend) is IMPLEMENTED (2026-04-24). Sections below retain their original design narrative; updated status notes are added inline where the implementation diverges from the proposal.
 
 ### D1. Receipt Model Role
 
@@ -258,12 +258,14 @@ A background job (`startReceiptRetryJob`) will query `Receipt.receiptStatus === 
 
 Idempotency: attempt to re-call YeshInvoice only if `receiptStatus === "failed"` and `providerDocId` is null (no partial-success state).
 
-### D7. Retrieval / Download Concept (FUTURE PROPOSED)
+### D7. Retrieval / Download — IMPLEMENTED (2026-04-24)
 
-Cabinet endpoints:
+Cabinet endpoints (both implemented in `backend/src/routes/account.routes.js`):
 
-- `GET /api/account/receipts` — returns paginated list of receipts for the authenticated user (reads `Receipt` model, not `PaymentTransaction`)
-- `GET /api/account/receipts/:id/download` — returns a signed download URL or streams the PDF
+- `GET /api/account/receipts` — `requireAuth`, reads `Receipt` model only (`status: "created"`, sorted newest-first, server-clamps limit 1–20). Returns safe DTO (see §E). No `PaymentTransaction` fields exposed.
+- `GET /api/account/receipts/:id/download` — `requireAuth`, validates ownership by query (`{ _id, userId }`). Backend proxy: fetches PDF bytes from the `pdfUrl` stored in the `Receipt` document and streams them to the browser with `Content-Type: application/pdf`, `Content-Disposition: attachment`, `Cache-Control: private, no-store`, `X-Content-Type-Options: nosniff`.
+
+**Download strategy resolved — backend proxy only.** The `pdfUrl` returned by YeshInvoice contains a query-string access key. Forwarding this URL to the client would expose the access credential. The backend proxy pattern ensures the raw provider URL never leaves the server.
 
 The `PaymentTransaction` ledger is NOT exposed directly to the cabinet. Cabinet reads `Receipt` only.
 
@@ -336,31 +338,34 @@ No-auth endpoint. Fail-closed 503 if `CARDIGO_STO_NOTIFY_TOKEN` missing. Token f
 
 ---
 
-### FUTURE PROPOSED CONTRACTS
+### IMPLEMENTED CONTRACTS (2026-04-24)
 
-> All items below are proposals only. No runtime implementation exists.
+#### `Receipt` DTO (cabinet-facing) — IMPLEMENTED
 
-#### FUTURE PROPOSED: `Receipt` DTO (cabinet-facing)
+PROOF: `backend/src/routes/account.routes.js`
 
 ```json
 {
     "id": "ObjectId string",
-    "paymentTransactionId": "ObjectId string",
-    "receiptStatus": "pending | created | failed",
-    "providerDocId": "string | null",
-    "pdfUrl": "string | null",
-    "emailSentAt": "ISO date | null",
-    "createdAt": "ISO date"
+    "createdAt": "ISO date | null",
+    "issuedAt": "ISO date | null",
+    "amountAgorot": "number | null",
+    "plan": "monthly | yearly | null",
+    "status": "created",
+    "shareStatus": "pending | sent | failed | skipped | null",
+    "hasPdf": "boolean"
 }
 ```
 
-#### FUTURE PROPOSED: `GET /api/account/receipts`
+**The DTO does NOT expose:** `pdfUrl`, `paymentTransactionId`, `providerDocId`, `providerDocNumber`, `documentUrl`. Raw provider fields never leave the server.
 
-Returns receipts for the authenticated user. Reads `Receipt` model only — does not expose `PaymentTransaction` raw fields.
+#### `GET /api/account/receipts` — IMPLEMENTED
 
-#### FUTURE PROPOSED: `GET /api/account/receipts/:id/download`
+`requireAuth`. Rate-limited (30/10min per userId). Reads `Receipt` model only (`status: "created"`, newest-first, server-clamps limit 1–20). Returns `{ receipts: [...], hasMore: boolean, total: number }`.
 
-Returns a download URL or streamed PDF for a receipt belonging to the authenticated user.
+#### `GET /api/account/receipts/:id/download` — IMPLEMENTED
+
+`requireAuth`. Rate-limited (20/10min per userId). ObjectId pre-validation → 404 on invalid format. Ownership by query: `Receipt.findOne({ _id, userId })` → 404 if not found or wrong owner. Backend proxy only — streams PDF bytes; `pdfUrl` never forwarded to client.
 
 #### FUTURE PROPOSED: Internal receipt creation input
 

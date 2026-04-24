@@ -187,7 +187,7 @@ Key fields:
 - `receiptId` (ObjectId, ref Receipt, nullable) - link to Receipt document.
 - `createdAt`, `updatedAt` (timestamps).
 
-**Receipt is a separate model (planned).** `providerDocId`, `pdfPath`, `receiptStatus`, `emailSentAt` live in Receipt, not in PaymentTransaction. Ledger (PaymentTransaction) is not exposed to the cabinet directly.
+**Receipt is a separate model (implemented).** `providerDocId`, `pdfUrl`, `status` (enum `"created"`/`"failed"`/`"skipped"`), `shareStatus`, `sharedAt` live in `Receipt`, not in `PaymentTransaction`. Ledger (`PaymentTransaction`) is not exposed to the cabinet directly.
 
 ### providerTxnId derivation
 
@@ -297,8 +297,12 @@ Two reconciliation jobs:
 - Startup validation: if `YESH_INVOICE_ENABLED=true`, `YESH_INVOICE_SECRET` and `YESH_INVOICE_USERKEY` are validated at startup (fail-fast). Implemented at `backend/src/services/payment/index.js:44–49`.
 - Receipt creation is **best-effort**: failure does not block the 200 ACK to Tranzila.
 - On share failure: `Receipt.shareStatus` set to `"failed"`; `shareFailReason` recorded.
-- Cabinet endpoint: `GET /api/account/receipts` + `GET /api/account/receipts/:id/download`. _(delivery status TBD — deferred to separate contour)_
-- Ledger (`PaymentTransaction`) is not exposed to the cabinet directly; cabinet reads Receipt model only.
+- Cabinet endpoints — **IMPLEMENTED (2026-04-24):**
+    - `GET /api/account/receipts` — `requireAuth`, server-clamps limit 1–20 (frontend requests 12), returns newest-first safe DTO; reads `Receipt` model only. PROOF: `backend/src/routes/account.routes.js`.
+    - `GET /api/account/receipts/:id/download` — `requireAuth`, backend proxy: streams PDF bytes from YeshInvoice; `pdfUrl` (contains query-string access key) is **never** forwarded to the client. Response: `Content-Type: application/pdf`, `Content-Disposition: attachment`, `Cache-Control: private, no-store`, `X-Content-Type-Options: nosniff`.
+    - Frontend receipt history in Settings → Section 3: תשלומים → "קבלות" accordion (native `<details>/<summary>`, collapsed by default). MVP shows up to 12 latest receipts. `failed`/`skipped` receipts not user-facing in MVP.
+    - Closure evidence: `docs/handoffs/current/Cardigo_Enterprise_Handoff_ReceiptCabinet_Frontend_2026-04-24.md`.
+- Ledger (`PaymentTransaction`) is not exposed to the cabinet directly; cabinet reads `Receipt` model only.
 
 **Sandbox proof (2026-04-24 — COMPLETE):** See `docs/handoffs/current/Cardigo_Enterprise_Handoff_YeshInvoice_Receipt_Sandbox_Proof_2026-04-24.md` for full evidence package.
 

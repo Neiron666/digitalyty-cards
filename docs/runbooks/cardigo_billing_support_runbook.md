@@ -29,7 +29,7 @@ Use these texts in the **Settings → תשלומים** block.
 ### Static support + limitations
 
 - **שינוי אמצעי תשלום**: פנה לתמיכה: **support@cardigo.co.il**
-- **היסטוריית תשלומים** אינה זמינה כעת.
+- **היסטוריית תשלומים** זמינה בממשק המוצר: הגדרות → תשלומים → "קבלות" (עד 12 קבלות אחרונות, MVP).
 - **החזרים כספיים** אינם מתבצעים אוטומטית. במידת הצורך - דרך התמיכה בלבד.
 
 ### Dev / not‑connected payment provider message (already implemented as dev‑safe fallback)
@@ -136,7 +136,7 @@ If the user is mid‑cycle and wants future renewals: currently **manual** only 
 
 ## 6) Known Product Limitations (documented)
 
-- Payment history is not exposed in the product UI (operator-visible only via admin API / DB query).
+- **Receipt history (היסטוריית תשלומים) is now available in the product UI** (Settings → Section 3: תשלומים → "קבלות" accordion, shipped 2026-04-24). MVP scope: up to 12 latest receipts with PDF download via secure backend proxy route. `failed`/`skipped` receipts are not user-facing in MVP. Evidence: `docs/handoffs/current/Cardigo_Enterprise_Handoff_ReceiptCabinet_Frontend_2026-04-24.md`.
 - **Self-service cancel-renewal is available in the product UI** (SettingsPanel billing section, shipped 5.9a.2). User path: product UI button → `POST /api/account/cancel-renewal` → provider-first cancel via `cancelTranzilaStoForUser`.
 - Self-service **refunds** and **payment-method changes** remain support-mediated.
 - `sto-cancel.mjs` remains the **operator/admin** script path. It is not the user path.
