@@ -105,6 +105,50 @@ async function ensureIndexes({ dryRun, verbose }) {
     }
 }
 
+async function ensureReadIndexes({ dryRun, verbose }) {
+    let idx = [];
+    try {
+        idx = await Receipt.collection.indexes();
+    } catch (err) {
+        // On a fresh DB the collection may not exist yet; treat as no indexes.
+        const code = err?.code;
+        const codeName = err?.codeName;
+        if (code === 26 || codeName === "NamespaceNotFound") {
+            idx = [];
+        } else {
+            throw err;
+        }
+    }
+
+    const byName = new Map(idx.map((i) => [i.name, i]));
+
+    // Compound read index for cabinet list route:
+    // GET /api/account/receipts  →  filter: { userId, status }, sort: { createdAt: -1 }
+    const wantName = "userId_1_status_1_createdAt_-1";
+
+    if (byName.has(wantName)) {
+        console.log(`${wantName} already exists - no-op`);
+        return;
+    }
+
+    // Non-unique index — no duplicate pre-check required.
+    if (dryRun || verbose) {
+        console.log(
+            dryRun
+                ? `[dry-run] would create read index ${wantName} on { userId: 1, status: 1, createdAt: -1 }`
+                : `creating read index ${wantName}`,
+        );
+    }
+
+    if (!dryRun) {
+        await Receipt.collection.createIndex(
+            { userId: 1, status: 1, createdAt: -1 },
+            { unique: false, name: wantName },
+        );
+        console.log(`created read index ${wantName}`);
+    }
+}
+
 async function main() {
     const args = parseArgs(process.argv);
 
@@ -119,6 +163,7 @@ async function main() {
 
     try {
         await ensureIndexes(args);
+        await ensureReadIndexes(args);
 
         console.log("done", { dryRun: args.dryRun });
     } finally {

@@ -67,3 +67,12 @@ export async function cancelRenewal() {
     const res = await api.post("/account/cancel-renewal");
     return res.data;
 }
+
+/**
+ * GET /api/account/receipts — paginated list of issued receipts for the authenticated user.
+ * Returns { receipts, hasMore, total }. Only status="created" receipts are returned.
+ */
+export async function getReceipts(limit = 10) {
+    const res = await api.get("/account/receipts", { params: { limit } });
+    return res.data;
+}

@@ -24,6 +24,8 @@ import {
 } from "../utils/marketingOptOut.util.js";
 import { CURRENT_MARKETING_CONSENT_VERSION } from "../utils/consentVersions.js";
 import { cancelTranzilaStoForUser } from "../services/payment/tranzila.provider.js";
+import Receipt from "../models/Receipt.model.js";
+import { isValidObjectId } from "../utils/orgMembership.util.js";
 
 const router = Router();
 
@@ -48,6 +50,14 @@ const nameUpdateRateMap = new Map();
 const CANCEL_RENEWAL_WINDOW_MS = 10 * 60 * 1000;
 const CANCEL_RENEWAL_LIMIT = 3;
 const cancelRenewalRateMap = new Map();
+
+const RECEIPTS_LIST_WINDOW_MS = 10 * 60 * 1000;
+const RECEIPTS_LIST_LIMIT = 30;
+const receiptsListRateMap = new Map();
+
+const RECEIPTS_DL_WINDOW_MS = 10 * 60 * 1000;
+const RECEIPTS_DL_LIMIT = 20;
+const receiptsDownloadRateMap = new Map();
 
 let accountSweepTick = 0;
 const SWEEP_EVERY = 200;
@@ -113,6 +123,8 @@ function rateLimitByIpForMap(req, map, limit, windowMs) {
         sweepRateMap(emailPrefRateMap, now);
         sweepRateMap(nameUpdateRateMap, now);
         sweepRateMap(cancelRenewalRateMap, now);
+        sweepRateMap(receiptsListRateMap, now);
+        sweepRateMap(receiptsDownloadRateMap, now);
     }
 
     const entry = map.get(ip);
@@ -795,6 +807,172 @@ router.post("/cancel-renewal", requireAuth, async (req, res) => {
             renewalStatus: "cancel_failed",
             messageKey: "renewal_cancel_failed",
         });
+    }
+});
+
+/**
+ * GET /api/account/receipts
+ * Self-service cabinet: returns a paginated list of issued receipts for the authenticated user.
+ * Reads Receipt model only — does not expose PaymentTransaction fields.
+ * Only receipts with status="created" are returned (failed/skipped are not user-facing in MVP).
+ */
+router.get("/receipts", requireAuth, async (req, res) => {
+    try {
+        if (
+            !rateLimitByIpForMap(
+                req,
+                receiptsListRateMap,
+                RECEIPTS_LIST_LIMIT,
+                RECEIPTS_LIST_WINDOW_MS,
+            )
+        ) {
+            return res
+                .status(429)
+                .json({ code: "RATE_LIMITED", message: "Too many requests" });
+        }
+
+        const rawLimit = Number.parseInt(String(req.query.limit ?? ""), 10);
+        const clampedLimit = Number.isFinite(rawLimit)
+            ? Math.min(Math.max(rawLimit, 1), 20)
+            : 10;
+
+        const filter = { userId: req.userId, status: "created" };
+
+        const [rawDocs, total] = await Promise.all([
+            Receipt.find(filter)
+                .select(
+                    "_id plan amountAgorot issuedAt createdAt pdfUrl shareStatus sharedAt",
+                )
+                .sort({ createdAt: -1 })
+                .limit(clampedLimit + 1)
+                .lean(),
+            Receipt.countDocuments(filter),
+        ]);
+
+        const hasMore = rawDocs.length > clampedLimit;
+        const docs = rawDocs.slice(0, clampedLimit);
+
+        const receipts = docs.map((doc) => ({
+            id: String(doc._id),
+            createdAt: doc.createdAt ?? null,
+            issuedAt: doc.issuedAt ?? null,
+            amountAgorot: doc.amountAgorot ?? null,
+            plan: doc.plan ?? null,
+            status: "created",
+            shareStatus: doc.shareStatus ?? null,
+            hasPdf: Boolean(doc.pdfUrl),
+        }));
+
+        return res.json({ receipts, hasMore, total });
+    } catch (err) {
+        console.error("[account] GET /receipts failed", err?.message || err);
+        return res.status(500).json({ message: "Internal error" });
+    }
+});
+
+/**
+ * GET /api/account/receipts/:id/download
+ * Backend-proxy receipt download. Fetches the PDF from the provider server-side;
+ * never exposes provider URL, query-string tokens, or internal fields to the client.
+ * Ownership-by-query: Receipt.findOne({ _id, userId, status }) ensures anti-enumeration.
+ */
+router.get("/receipts/:id/download", requireAuth, async (req, res) => {
+    try {
+        // 1. IP rate-limit
+        if (
+            !rateLimitByIpForMap(
+                req,
+                receiptsDownloadRateMap,
+                RECEIPTS_DL_LIMIT,
+                RECEIPTS_DL_WINDOW_MS,
+            )
+        ) {
+            return res
+                .status(429)
+                .json({ code: "RATE_LIMITED", message: "Too many requests" });
+        }
+
+        // 2. ObjectId validation — invalid id → 404, not 500/CastError
+        const receiptId = req.params.id;
+        if (!isValidObjectId(receiptId)) {
+            return res.status(404).json({ message: "Not found" });
+        }
+
+        // 3. Ownership-by-query: single query with userId + status in filter
+        //    Minimal select — no pdfUrl in any outbound JSON
+        const receipt = await Receipt.findOne({
+            _id: receiptId,
+            userId: req.userId,
+            status: "created",
+        })
+            .select("_id pdfUrl")
+            .lean();
+
+        // 4. Missing / wrong-owner / wrong-status → 404 (anti-enumeration)
+        if (!receipt) {
+            return res.status(404).json({ message: "Not found" });
+        }
+
+        // 5. No PDF issued yet → 404
+        if (!receipt.pdfUrl) {
+            return res.status(404).json({ message: "Not found" });
+        }
+
+        // 6–8. Backend proxy: fetch provider PDF server-side.
+        //      All provider retrieval failures → 502.
+        //      pdfUrl is never forwarded to the client.
+        let upstream;
+        let buf;
+        try {
+            upstream = await fetch(receipt.pdfUrl, {
+                signal: AbortSignal.timeout(10_000),
+            });
+
+            if (!upstream.ok) {
+                console.error(
+                    "[account] GET /receipts/:id/download upstream not ok",
+                    {
+                        userId: String(req.userId),
+                        receiptId,
+                        upstreamStatus: upstream.status,
+                    },
+                );
+                return res
+                    .status(502)
+                    .json({ message: "Document unavailable" });
+            }
+
+            buf = Buffer.from(await upstream.arrayBuffer());
+        } catch (fetchErr) {
+            console.error(
+                "[account] GET /receipts/:id/download upstream fetch failed",
+                {
+                    userId: String(req.userId),
+                    receiptId,
+                    failReason: String(fetchErr?.name ?? "unknown").slice(
+                        0,
+                        80,
+                    ),
+                },
+            );
+            return res.status(502).json({ message: "Document unavailable" });
+        }
+
+        // 9. Stream PDF bytes to client with safe headers
+        res.setHeader("Content-Type", "application/pdf");
+        res.setHeader(
+            "Content-Disposition",
+            'attachment; filename="receipt.pdf"',
+        );
+        res.setHeader("Cache-Control", "private, no-store");
+        res.setHeader("X-Content-Type-Options", "nosniff");
+        return res.send(buf);
+    } catch (err) {
+        console.error(
+            "[account] GET /receipts/:id/download failed",
+            err?.message || err,
+        );
+        return res.status(500).json({ message: "Internal error" });
     }
 });
 
