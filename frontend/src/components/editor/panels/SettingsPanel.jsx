@@ -203,7 +203,7 @@ export default function SettingsPanel({
         // Receipts — non-blocking secondary load; failure is isolated to receipts block only.
         setReceiptsLoading(true);
         setReceiptsError("");
-        getReceipts(10)
+        getReceipts(12)
             .then((data) =>
                 setReceipts(Array.isArray(data?.receipts) ? data.receipts : []),
             )
@@ -1196,163 +1196,185 @@ export default function SettingsPanel({
                                             </div>
 
                                             {/* ── Receipt history ── */}
-                                            {(() => {
-                                                const dateFormatter =
-                                                    new Intl.DateTimeFormat(
-                                                        "he-IL",
-                                                        {
-                                                            day: "2-digit",
-                                                            month: "2-digit",
-                                                            year: "numeric",
-                                                        },
-                                                    );
-                                                const amountFormatter =
-                                                    new Intl.NumberFormat(
-                                                        "he-IL",
-                                                        {
-                                                            style: "currency",
-                                                            currency: "ILS",
-                                                        },
-                                                    );
-                                                return (
-                                                    <div
-                                                        className={
-                                                            styles.receiptsBlock
-                                                        }
-                                                    >
-                                                        {receiptsLoading && (
+                                            <details
+                                                className={styles.collapsible}
+                                            >
+                                                <summary
+                                                    className={
+                                                        styles.collapsibleTrigger
+                                                    }
+                                                >
+                                                    קבלות
+                                                </summary>
+                                                <div
+                                                    className={
+                                                        styles.collapsibleContent
+                                                    }
+                                                >
+                                                    {(() => {
+                                                        const dateFormatter =
+                                                            new Intl.DateTimeFormat(
+                                                                "he-IL",
+                                                                {
+                                                                    day: "2-digit",
+                                                                    month: "2-digit",
+                                                                    year: "numeric",
+                                                                },
+                                                            );
+                                                        const amountFormatter =
+                                                            new Intl.NumberFormat(
+                                                                "he-IL",
+                                                                {
+                                                                    style: "currency",
+                                                                    currency:
+                                                                        "ILS",
+                                                                },
+                                                            );
+                                                        return (
                                                             <div
                                                                 className={
-                                                                    styles.billingNote
+                                                                    styles.receiptsBlock
                                                                 }
                                                             >
-                                                                טוען קבלות...
-                                                            </div>
-                                                        )}
-                                                        {!receiptsLoading &&
-                                                            receiptsError && (
-                                                                <div
-                                                                    className={
-                                                                        styles.billingError
-                                                                    }
-                                                                >
-                                                                    {
-                                                                        receiptsError
-                                                                    }
-                                                                </div>
-                                                            )}
-                                                        {!receiptsLoading &&
-                                                            !receiptsError &&
-                                                            receipts.length ===
-                                                                0 && (
-                                                                <div
-                                                                    className={
-                                                                        styles.billingNote
-                                                                    }
-                                                                >
-                                                                    אין קבלות
-                                                                    עדיין.
-                                                                </div>
-                                                            )}
-                                                        {!receiptsLoading &&
-                                                            !receiptsError &&
-                                                            receipts.length >
-                                                                0 && (
-                                                                <ul
-                                                                    className={
-                                                                        styles.receiptsList
-                                                                    }
-                                                                >
-                                                                    {receipts.map(
-                                                                        (r) => {
-                                                                            const dateVal =
-                                                                                r.issuedAt ||
-                                                                                r.createdAt;
-                                                                            const dateStr =
-                                                                                dateVal
-                                                                                    ? dateFormatter.format(
-                                                                                          new Date(
-                                                                                              dateVal,
-                                                                                          ),
-                                                                                      )
-                                                                                    : "";
-                                                                            const amountStr =
-                                                                                typeof r.amountAgorot ===
-                                                                                "number"
-                                                                                    ? amountFormatter.format(
-                                                                                          r.amountAgorot /
-                                                                                              100,
-                                                                                      )
-                                                                                    : "";
-                                                                            const planLabel =
-                                                                                r.plan ===
-                                                                                "yearly"
-                                                                                    ? "שנתי"
-                                                                                    : r.plan ===
-                                                                                        "monthly"
-                                                                                      ? "חודשי"
-                                                                                      : "";
-                                                                            return (
-                                                                                <li
-                                                                                    key={
-                                                                                        r.id
-                                                                                    }
-                                                                                    className={
-                                                                                        styles.receiptRow
-                                                                                    }
-                                                                                >
-                                                                                    <span
-                                                                                        className={
-                                                                                            styles.receiptMain
-                                                                                        }
-                                                                                    >
-                                                                                        <span
-                                                                                            className={
-                                                                                                styles.receiptDate
-                                                                                            }
-                                                                                            dir="ltr"
-                                                                                        >
-                                                                                            {
-                                                                                                dateStr
-                                                                                            }
-                                                                                        </span>
-                                                                                        <span
-                                                                                            className={
-                                                                                                styles.receiptMeta
-                                                                                            }
-                                                                                        >
-                                                                                            {[
-                                                                                                amountStr,
-                                                                                                planLabel,
-                                                                                            ]
-                                                                                                .filter(
-                                                                                                    Boolean,
-                                                                                                )
-                                                                                                .join(
-                                                                                                    " · ",
-                                                                                                )}
-                                                                                        </span>
-                                                                                    </span>
-                                                                                    {r.hasPdf && (
-                                                                                        <a
-                                                                                            href={`/api/account/receipts/${r.id}/download`}
-                                                                                            className={
-                                                                                                styles.receiptDownloadLink
-                                                                                            }
-                                                                                        >
-                                                                                            הורדת
-                                                                                            קבלה
-                                                                                        </a>
-                                                                                    )}
-                                                                                </li>
-                                                                            );
-                                                                        },
+                                                                {receiptsLoading && (
+                                                                    <div
+                                                                        className={
+                                                                            styles.billingNote
+                                                                        }
+                                                                    >
+                                                                        טוען
+                                                                        קבלות...
+                                                                    </div>
+                                                                )}
+                                                                {!receiptsLoading &&
+                                                                    receiptsError && (
+                                                                        <div
+                                                                            className={
+                                                                                styles.billingError
+                                                                            }
+                                                                        >
+                                                                            {
+                                                                                receiptsError
+                                                                            }
+                                                                        </div>
                                                                     )}
-                                                                </ul>
-                                                            )}
-                                                    </div>
-                                                );
-                                            })()}
+                                                                {!receiptsLoading &&
+                                                                    !receiptsError &&
+                                                                    receipts.length ===
+                                                                        0 && (
+                                                                        <div
+                                                                            className={
+                                                                                styles.billingNote
+                                                                            }
+                                                                        >
+                                                                            אין
+                                                                            קבלות
+                                                                            עדיין.
+                                                                        </div>
+                                                                    )}
+                                                                {!receiptsLoading &&
+                                                                    !receiptsError &&
+                                                                    receipts.length >
+                                                                        0 && (
+                                                                        <ul
+                                                                            className={
+                                                                                styles.receiptsList
+                                                                            }
+                                                                        >
+                                                                            {receipts.map(
+                                                                                (
+                                                                                    r,
+                                                                                ) => {
+                                                                                    const dateVal =
+                                                                                        r.issuedAt ||
+                                                                                        r.createdAt;
+                                                                                    const dateStr =
+                                                                                        dateVal
+                                                                                            ? dateFormatter.format(
+                                                                                                  new Date(
+                                                                                                      dateVal,
+                                                                                                  ),
+                                                                                              )
+                                                                                            : "";
+                                                                                    const amountStr =
+                                                                                        typeof r.amountAgorot ===
+                                                                                        "number"
+                                                                                            ? amountFormatter.format(
+                                                                                                  r.amountAgorot /
+                                                                                                      100,
+                                                                                              )
+                                                                                            : "";
+                                                                                    const planLabel =
+                                                                                        r.plan ===
+                                                                                        "yearly"
+                                                                                            ? "שנתי"
+                                                                                            : r.plan ===
+                                                                                                "monthly"
+                                                                                              ? "חודשי"
+                                                                                              : "";
+                                                                                    return (
+                                                                                        <li
+                                                                                            key={
+                                                                                                r.id
+                                                                                            }
+                                                                                            className={
+                                                                                                styles.receiptRow
+                                                                                            }
+                                                                                        >
+                                                                                            <span
+                                                                                                className={
+                                                                                                    styles.receiptMain
+                                                                                                }
+                                                                                            >
+                                                                                                <span
+                                                                                                    className={
+                                                                                                        styles.receiptDate
+                                                                                                    }
+                                                                                                    dir="ltr"
+                                                                                                >
+                                                                                                    {
+                                                                                                        dateStr
+                                                                                                    }
+                                                                                                </span>
+                                                                                                <span
+                                                                                                    className={
+                                                                                                        styles.receiptMeta
+                                                                                                    }
+                                                                                                >
+                                                                                                    {[
+                                                                                                        amountStr,
+                                                                                                        planLabel,
+                                                                                                    ]
+                                                                                                        .filter(
+                                                                                                            Boolean,
+                                                                                                        )
+                                                                                                        .join(
+                                                                                                            " · ",
+                                                                                                        )}
+                                                                                                </span>
+                                                                                            </span>
+                                                                                            {r.hasPdf && (
+                                                                                                <a
+                                                                                                    href={`/api/account/receipts/${r.id}/download`}
+                                                                                                    className={
+                                                                                                        styles.receiptDownloadLink
+                                                                                                    }
+                                                                                                >
+                                                                                                    הורדת
+                                                                                                    קבלה
+                                                                                                </a>
+                                                                                            )}
+                                                                                        </li>
+                                                                                    );
+                                                                                },
+                                                                            )}
+                                                                        </ul>
+                                                                    )}
+                                                            </div>
+                                                        );
+                                                    })()}
+                                                </div>
+                                            </details>
                                         </>
                                     )}
 
