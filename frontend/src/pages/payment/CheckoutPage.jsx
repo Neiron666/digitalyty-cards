@@ -435,9 +435,9 @@ export default function CheckoutPage() {
                     <div className={styles.actions}>
                         <Button
                             variant="primary"
-                            onClick={() => navigate("/dashboard")}
+                            onClick={() => navigate("/edit/card/settings")}
                         >
-                            לדף הבקרה
+                            להגדרות הכרטיס
                         </Button>
                     </div>
                 </div>
@@ -692,9 +692,9 @@ export default function CheckoutPage() {
                     <div className={styles.actions}>
                         <Button
                             variant="primary"
-                            onClick={() => navigate("/dashboard")}
+                            onClick={() => navigate("/edit/card/settings")}
                         >
-                            לדף הבקרה
+                            להגדרות הכרטיס
                         </Button>
                     </div>
                 </div>
