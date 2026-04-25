@@ -82,4 +82,11 @@ paymentIntentSchema.index(
     { name: "paymentintents_userId_createdAt" },
 );
 
+// Pending checkout reuse lookup index. autoIndex/autoCreate are OFF;
+// apply via migrate-paymentintent-indexes.mjs.
+paymentIntentSchema.index(
+    { userId: 1, plan: 1, mode: 1, status: 1, checkoutExpiresAt: 1 },
+    { name: "paymentintents_userId_plan_mode_status_checkoutExpiresAt" },
+);
+
 export default mongoose.model("PaymentIntent", paymentIntentSchema);

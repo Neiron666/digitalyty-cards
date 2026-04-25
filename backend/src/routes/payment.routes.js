@@ -74,6 +74,62 @@ function buildReceiptProfileSnapshot(user) {
     };
 }
 
+// ── Snapshot equivalence helpers (module-private) ────────────────────────────
+// Used to determine whether an existing pending PaymentIntent can be reused.
+// capturedAt is intentionally excluded: it is a timestamp of when the snapshot
+// was taken, not a receipt-data field. Two snapshots with identical billing data
+// but different capturedAt values are semantically equivalent.
+
+const SNAPSHOT_COMPARE_FIELDS = [
+    "recipientType",
+    "name",
+    "nameInvoice",
+    "fullName",
+    "numberId", // compared server-side only; never logged
+    "email",
+    "address",
+    "city",
+    "zipCode",
+    "countryCode",
+    "snapshotSource",
+    // capturedAt — intentionally absent
+];
+
+/**
+ * Normalise a receipt snapshot field value for equivalence comparison.
+ * null / undefined → null
+ * string → trim; empty-after-trim → null; otherwise trimmed string
+ * other primitives → value as-is
+ * Does not log. Does not expose values.
+ */
+function normalizeReceiptSnapshotValue(value) {
+    if (value === null || value === undefined) return null;
+    if (typeof value === "string") {
+        const t = value.trim();
+        return t === "" ? null : t;
+    }
+    return value;
+}
+
+/**
+ * Returns true iff both receipt profile snapshots represent equivalent
+ * billing/receipt data (all SNAPSHOT_COMPARE_FIELDS match after normalization).
+ * Returns false if either argument is absent.
+ * Never logs values. Never exposes numberId.
+ */
+function receiptProfileSnapshotsEquivalent(a, b) {
+    if (!a || !b) return false;
+    for (const field of SNAPSHOT_COMPARE_FIELDS) {
+        if (
+            normalizeReceiptSnapshotValue(a[field]) !==
+            normalizeReceiptSnapshotValue(b[field])
+        ) {
+            return false;
+        }
+    }
+    return true;
+}
+
 /**
  * POST /create — Create a payment
  * body: { plan: "monthly" | "yearly", mode?: "external" }
@@ -150,6 +206,51 @@ router.post("/create", requireAuth, async (req, res) => {
     const now = new Date();
     const checkoutExpiresAt = new Date(now.getTime() + 2 * 60 * 60 * 1000);
     const purgeAt = new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000);
+
+    // ── Pending-intent reuse guard ────────────────────────────────────────────
+    // Reuse an existing valid pending PaymentIntent only if its stored
+    // receiptProfileSnapshot is equivalent to the freshly-built snapshot.
+    // If the user changed receipt profile data, the snapshots will differ and
+    // a new PaymentIntent is created so the receipt uses the updated data.
+    const existingIntent = await PaymentIntent.findOne({
+        userId: req.userId,
+        plan,
+        mode,
+        status: "pending",
+        checkoutExpiresAt: { $gt: now },
+    })
+        .sort({ createdAt: -1 })
+        .lean();
+
+    if (
+        existingIntent &&
+        receiptProfileSnapshotsEquivalent(
+            existingIntent.receiptProfileSnapshot,
+            snapshot,
+        )
+    ) {
+        let payment;
+        try {
+            payment = await paymentProvider.createPayment({
+                userId: req.userId,
+                plan,
+                mode,
+                paymentIntentId: existingIntent._id,
+            });
+        } catch (err) {
+            if (err?.code === "IFRAME_CHECKOUT_NOT_CONFIGURED") {
+                return res
+                    .status(400)
+                    .json({ message: "Iframe checkout is not configured" });
+            }
+            throw err;
+        }
+        return res.json({
+            ...payment,
+            paymentIntentId: existingIntent._id.toString(),
+        });
+    }
+    // → no match or snapshot mismatch: create a new PaymentIntent below
 
     let paymentIntent;
     try {

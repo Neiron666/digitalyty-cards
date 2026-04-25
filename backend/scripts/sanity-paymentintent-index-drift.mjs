@@ -71,6 +71,13 @@ const EXPECTED = [
         ttlSeconds: null,
         description: "Lookup compound index for notify reconciliation",
     },
+    {
+        name: "paymentintents_userId_plan_mode_status_checkoutExpiresAt",
+        key: { userId: 1, plan: 1, mode: 1, status: 1, checkoutExpiresAt: 1 },
+        unique: false,
+        ttlSeconds: null,
+        description: "Pending checkout reuse lookup index",
+    },
 ];
 
 // ── Main ──────────────────────────────────────────────────────────────────────
