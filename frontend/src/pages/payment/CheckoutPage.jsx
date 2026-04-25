@@ -20,7 +20,24 @@ const PLAN_LABELS = {
 
 /* ── Validation ─────────────────────────────────────── */
 
-function validateReceiptDraft(draft) {
+/**
+ * Validate the receipt draft before advancing to summary.
+ *
+ * Required fields (before payment):
+ *   - A display name: draft.name OR draft.nameInvoice.
+ *     Draft is pre-filled from serverProfile on load, so an explicit clear
+ *     by the user is respected and must block progression.
+ *   - A receipt email: draft.email OR accountEmail (authenticated user's email).
+ *     serverProfile.email is NOT used as a fallback — clearing the email
+ *     field must be respected unless the account itself has an email.
+ *
+ * Optional: numberId, address, city, zipCode, recipientType.
+ *
+ * @param {object} draft         - current form draft
+ * @param {string|null} accountEmail - authenticated user's account email
+ */
+function validateReceiptDraft(draft, accountEmail) {
+    // ── Format / length checks (always apply) ──────────────
     if (draft.name.trim().length > 200)
         return "שם מלא ארוך מדי (מקסימום 200 תווים).";
     if (draft.nameInvoice.trim().length > 200)
@@ -42,6 +59,19 @@ function validateReceiptDraft(draft) {
         return "עיר ארוכה מדי (מקסימום 100 תווים).";
     if (draft.zipCode.trim().length > 20)
         return "מיקוד ארוך מדי (מקסימום 20 תווים).";
+
+    // ── Required: receipt display name (draft only) ─────────
+    // Draft is pre-filled from server on load. An explicit clear must block.
+    if (!draft.name.trim() && !draft.nameInvoice.trim()) {
+        return "נדרש שם לקבלה או שם עסק / שם לחשבונית לפני מעבר לתשלום.";
+    }
+
+    // ── Required: receipt email (draft or account fallback) ──
+    // serverProfile.email is NOT consulted — draft reflects current intent.
+    if (!draft.email.trim() && !(accountEmail ?? "").trim()) {
+        return "נדרש דוא״ל לקבלה לפני מעבר לתשלום.";
+    }
+
     return null;
 }
 
@@ -164,7 +194,7 @@ export default function CheckoutPage() {
     async function handleReceiptSave() {
         setReceiptError("");
         setReceiptOk("");
-        const validErr = validateReceiptDraft(draft);
+        const validErr = validateReceiptDraft(draft, account?.email ?? null);
         if (validErr) {
             setReceiptError(validErr);
             return;
@@ -268,6 +298,57 @@ export default function CheckoutPage() {
         setReceiptOk("");
     }
 
+    /* ── Continue to summary (validate → save if dirty → advance) ── */
+    async function handleContinueToSummary() {
+        // Always validate required fields first — no empty-draft bypass.
+        const validErr = validateReceiptDraft(draft, account?.email ?? null);
+        if (validErr) {
+            setReceiptError(validErr);
+            return;
+        }
+
+        // Build diff payload: only fields that changed vs server state.
+        const payload = buildReceiptPayload(
+            draft,
+            clearNumberId,
+            account?.receiptProfile,
+        );
+
+        // If nothing changed, server profile already satisfies requirements — advance.
+        if (Object.keys(payload).length === 0) {
+            setStep("summary");
+            return;
+        }
+
+        // Draft is dirty: persist before advancing.
+        setReceiptBusy(true);
+        setReceiptError("");
+        setReceiptOk("");
+        try {
+            const updated = await updateReceiptProfile(payload);
+            setAccount((prev) => ({
+                ...prev,
+                receiptProfile: updated?.receiptProfile ?? prev?.receiptProfile,
+            }));
+            setClearNumberId(false);
+            setStep("summary");
+        } catch (err) {
+            if (err?.response?.status === 429) {
+                setReceiptError("יותר מדי ניסיונות. נסו שוב מאוחר יותר.");
+            } else {
+                const msg = err?.response?.data?.message;
+                if (typeof msg === "string" && msg.length < 200) {
+                    setReceiptError(msg);
+                } else {
+                    setReceiptError("שמירת הפרטים נכשלה. נסו שנית.");
+                }
+            }
+            // Stay on receipt step — do not advance.
+        } finally {
+            setReceiptBusy(false);
+        }
+    }
+
     /* ── Invalid plan ──────────────────────────────── */
     if (!VALID_PLANS.includes(plan)) {
         return (
@@ -333,6 +414,37 @@ export default function CheckoutPage() {
         );
     }
 
+    /* ── Active subscription guard ─────────────────── */
+    const subExpiresAt = account?.subscription?.expiresAt
+        ? new Date(account.subscription.expiresAt)
+        : null;
+    const isActiveSub =
+        account?.subscription?.status === "active" &&
+        subExpiresAt !== null &&
+        subExpiresAt > new Date();
+
+    if (isActiveSub) {
+        return (
+            <div className={styles.page}>
+                <SeoHelmet robots="noindex, nofollow" />
+                <div className={styles.card}>
+                    <Notice variant="info">
+                        יש לך כבר מנוי פעיל. המנוי בתוקף עד{" "}
+                        {subExpiresAt.toLocaleDateString("he-IL")}.
+                    </Notice>
+                    <div className={styles.actions}>
+                        <Button
+                            variant="primary"
+                            onClick={() => navigate("/dashboard")}
+                        >
+                            לדף הבקרה
+                        </Button>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
     /* ── Receipt step ──────────────────────────────── */
     if (step === "receipt") {
         const serverProfile = account?.receiptProfile ?? null;
@@ -344,8 +456,8 @@ export default function CheckoutPage() {
                     <div className={styles.header}>
                         <h1 className={styles.title}>פרטי חשבונית</h1>
                         <p className={styles.subtitle}>
-                            הזינו פרטים לקבלת חשבונית. ניתן לדלג ולהשלים מאוחר
-                            יותר.
+                            יש לאשר פרטי קבלה לפני מעבר לתשלום. השינויים לא
+                            יחולו על קבלות שכבר הופקו.
                         </p>
                     </div>
 
@@ -454,7 +566,8 @@ export default function CheckoutPage() {
                         </Button>
                         <Button
                             variant="primary"
-                            onClick={() => setStep("summary")}
+                            onClick={handleContinueToSummary}
+                            loading={receiptBusy}
                             disabled={receiptBusy}
                         >
                             המשך לסיכום

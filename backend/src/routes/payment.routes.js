@@ -128,10 +128,22 @@ router.post("/create", requireAuth, async (req, res) => {
     }
 
     const user = await User.findById(req.userId).select(
-        "firstName email receiptProfile",
+        "firstName email receiptProfile subscription",
     );
     if (!user) {
         return res.status(404).json({ message: "User not found" });
+    }
+
+    // Guard: block checkout if user already has a live active subscription.
+    const sub = user.subscription || {};
+    if (
+        sub.status === "active" &&
+        sub.expiresAt &&
+        new Date(sub.expiresAt) > new Date()
+    ) {
+        return res
+            .status(409)
+            .json({ message: "Already have an active subscription" });
     }
 
     const snapshot = buildReceiptProfileSnapshot(user);
