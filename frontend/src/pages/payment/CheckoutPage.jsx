@@ -241,6 +241,10 @@ export default function CheckoutPage() {
 
     /* ── External fallback ─────────────────────────── */
     async function handleExternalFallback() {
+        if (paymentUrl) {
+            window.location.assign(paymentUrl);
+            return;
+        }
         setPaymentBusy(true);
         setPaymentError("");
         try {
@@ -547,7 +551,11 @@ export default function CheckoutPage() {
                                 variant="primary"
                                 onClick={handleCreatePayment}
                                 loading={paymentBusy}
-                                disabled={paymentBusy || !summaryReady}
+                                disabled={
+                                    paymentBusy ||
+                                    !summaryReady ||
+                                    Boolean(paymentUrl)
+                                }
                             >
                                 המשך לתשלום
                             </Button>
@@ -642,19 +650,22 @@ export default function CheckoutPage() {
                     />
                 </div>
 
-                <div className={styles.fallbackBlock}>
-                    <p className={styles.mutedText}>
-                        אם עמוד התשלום אינו נטען, ניתן לפתוח אותו בחלון נפרד:
-                    </p>
-                    <Button
-                        variant="secondary"
-                        onClick={handleExternalFallback}
-                        loading={paymentBusy}
-                        disabled={paymentBusy}
-                    >
-                        פתיחה בחלון מלא
-                    </Button>
-                </div>
+                {!paymentResult && (
+                    <div className={styles.fallbackBlock}>
+                        <p className={styles.mutedText}>
+                            אם עמוד התשלום אינו נטען, ניתן לפתוח אותו בחלון
+                            נפרד:
+                        </p>
+                        <Button
+                            variant="secondary"
+                            onClick={handleExternalFallback}
+                            loading={paymentBusy}
+                            disabled={paymentBusy}
+                        >
+                            פתיחה בחלון מלא
+                        </Button>
+                    </div>
+                )}
             </div>
         </div>
     );
