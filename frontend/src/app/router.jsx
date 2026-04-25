@@ -44,6 +44,12 @@ const PublicCard = lazy(() => import("../pages/PublicCard"));
 const PreviewCard = lazy(() => import("../pages/PreviewCard"));
 import NotFound from "../pages/NotFound";
 
+// payment
+const CheckoutPage = lazy(() => import("../pages/payment/CheckoutPage"));
+const IframeReturnPage = lazy(
+    () => import("../pages/payment/IframeReturnPage"),
+);
+
 function AdminRouteGate() {
     const { user } = useAuth();
     if (user?.role !== "admin") return <NotFound />;
@@ -295,6 +301,28 @@ const router = createBrowserRouter([
             <ChunkErrorBoundary label="שגיאת טעינה בכרטיס">
                 <Suspense fallback={<RouteFallback label="טוען כרטיס…" />}>
                     <PreviewCard />
+                </Suspense>
+            </ChunkErrorBoundary>
+        ),
+    },
+    {
+        // Standalone checkout page (no marketing Header/Footer)
+        path: "/payment/checkout",
+        element: (
+            <ChunkErrorBoundary label="שגיאת טעינה בדף התשלום">
+                <Suspense fallback={<RouteFallback label="טוען דף תשלום…" />}>
+                    <CheckoutPage />
+                </Suspense>
+            </ChunkErrorBoundary>
+        ),
+    },
+    {
+        // Standalone iframe return relay page (no marketing Header/Footer)
+        path: "/payment/iframe-return",
+        element: (
+            <ChunkErrorBoundary label="שגיאת טעינה">
+                <Suspense fallback={<RouteFallback label="טוען…" />}>
+                    <IframeReturnPage />
                 </Suspense>
             </ChunkErrorBoundary>
         ),

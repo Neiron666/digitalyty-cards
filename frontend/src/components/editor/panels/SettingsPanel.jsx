@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import Panel from "./Panel";
 import Button from "../../ui/Button";
 import Input from "../../ui/Input";
@@ -13,7 +14,6 @@ import {
     getReceipts,
     updateReceiptProfile,
 } from "../../../services/account.service";
-import { createPayment } from "../../../services/payment.service";
 import CancelRenewalModal from "../CancelRenewalModal";
 import styles from "./SettingsPanel.module.css";
 
@@ -38,6 +38,7 @@ export default function SettingsPanel({
 }) {
     const { isAuthenticated, logout } = useAuth();
     const slug = card?.slug;
+    const navigate = useNavigate();
 
     const [account, setAccount] = useState(null);
     const [accountLoading, setAccountLoading] = useState(false);
@@ -962,23 +963,10 @@ export default function SettingsPanel({
                                     );
                                     return;
                                 }
-                                setBillingBusy(true);
                                 setBillingMsg("");
-                                try {
-                                    const res = await createPayment(plan);
-                                    if (
-                                        res?.paymentUrl &&
-                                        /^https?:\/\//i.test(res.paymentUrl)
-                                    ) {
-                                        window.location.href = res.paymentUrl;
-                                        return;
-                                    }
-                                    setBillingMsg("תשלום לא זמין בסביבת פיתוח");
-                                } catch {
-                                    setBillingMsg("לא ניתן להתחיל תשלום כרגע");
-                                } finally {
-                                    setBillingBusy(false);
-                                }
+                                navigate(
+                                    `/payment/checkout?plan=${encodeURIComponent(plan)}`,
+                                );
                             }
 
                             return (

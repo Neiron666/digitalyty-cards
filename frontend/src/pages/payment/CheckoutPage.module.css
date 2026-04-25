@@ -1,0 +1,191 @@
+.page {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    min-height: 100dvh;
+    padding-inline: 1rem;
+    padding-block: 2rem;
+    background: var(--bg-main);
+}
+
+.card {
+    width: 100%;
+    max-width: 520px;
+    background: var(--bg-card);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-soft);
+    padding: 1.75rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+}
+
+.header {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+}
+
+.title {
+    font-size: var(--fs-h3);
+    color: var(--text-main);
+    margin: 0;
+    font-weight: 700;
+}
+
+.subtitle {
+    font-size: var(--fs-body-sm);
+    color: var(--text-muted);
+    margin: 0;
+}
+
+/* ── Step indicator ──────────────────────────────── */
+
+.stepRow {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: var(--fs-caption);
+}
+
+.stepActive {
+    color: var(--primary);
+    font-weight: 600;
+}
+
+.stepDone {
+    color: var(--c-success);
+}
+
+.stepInactive {
+    color: var(--text-muted);
+}
+
+.stepSep {
+    color: var(--text-muted);
+}
+
+/* ── Form ────────────────────────────────────────── */
+
+.form {
+    display: flex;
+    flex-direction: column;
+    gap: 0.875rem;
+}
+
+/* ── Actions ─────────────────────────────────────── */
+
+.actions {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-block-start: 0.5rem;
+}
+
+/* ── Check label ─────────────────────────────────── */
+
+.checkLabel {
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start;
+    gap: 0.5rem;
+    font-size: var(--fs-body-sm);
+    color: var(--text-muted);
+    cursor: pointer;
+}
+
+.checkLabel input[type="checkbox"] {
+    flex-shrink: 0;
+    margin-block-start: 0.2em;
+}
+
+/* ── Summary rows ────────────────────────────────── */
+
+.summaryRow {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: var(--fs-body);
+    padding-block: 0.4rem;
+    border-block-end: 1px solid var(--border);
+}
+
+.summaryLabel {
+    color: var(--text-muted);
+}
+
+.summaryValue {
+    color: var(--text-main);
+    font-weight: 600;
+}
+
+/* ── Fallback block ──────────────────────────────── */
+
+.fallbackBlock {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    padding: 1rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+}
+
+/* ── Iframe ──────────────────────────────────────── */
+
+.frameWrapper {
+    width: 100%;
+    border-radius: var(--radius-md);
+    overflow: hidden;
+}
+
+.frame {
+    display: block;
+    width: 100%;
+    min-height: 560px;
+    border: none;
+    border-radius: var(--radius-md);
+}
+
+/* ── Text helpers ────────────────────────────────── */
+
+.errorText {
+    font-size: var(--fs-body);
+    color: var(--c-danger);
+    margin: 0;
+}
+
+.mutedText {
+    font-size: var(--fs-body-sm);
+    color: var(--text-muted);
+    margin: 0;
+}
+
+.link {
+    font-size: var(--fs-body);
+    color: var(--primary);
+    text-decoration: underline;
+}
+
+.inlineLink {
+    color: var(--primary);
+    text-decoration: underline;
+}
+
+/* ── Desktop uplift ──────────────────────────────── */
+
+@media (min-width: 48rem) {
+    .card {
+        padding: 2.25rem;
+        margin-block-start: 1rem;
+    }
+
+    .frame {
+        min-height: 640px;
+    }
+}

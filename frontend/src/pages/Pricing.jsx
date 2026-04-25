@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import { createPayment } from "../services/payment.service";
 import Button from "../components/ui/Button";
 import SeoHelmet from "../components/seo/SeoHelmet";
 import FlashBanner from "../components/ui/FlashBanner/FlashBanner";
@@ -318,37 +317,7 @@ export default function Pricing() {
             navigate("/register");
             return;
         }
-        if (payBusy) return;
-        setPayBusy(true);
-        try {
-            const res = await createPayment(plan);
-            const url = res?.paymentUrl;
-            if (url && /^\//.test(url)) {
-                navigate(url);
-            } else if (url && /^https?:\/\//i.test(url)) {
-                window.location.assign(url);
-            } else {
-                setSearchParams(
-                    (prev) => {
-                        const next = new URLSearchParams(prev);
-                        next.set("payment", "fail");
-                        return next;
-                    },
-                    { replace: true },
-                );
-            }
-        } catch {
-            setSearchParams(
-                (prev) => {
-                    const next = new URLSearchParams(prev);
-                    next.set("payment", "fail");
-                    return next;
-                },
-                { replace: true },
-            );
-        } finally {
-            setPayBusy(false);
-        }
+        navigate(`/payment/checkout?plan=${encodeURIComponent(plan)}`);
     }
 
     function dismissBanner() {
