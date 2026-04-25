@@ -141,8 +141,11 @@ async function main() {
 
     const result = await createReceiptYeshInvoice({
         documentUniqueKey,
-        customerName,
-        customerEmail: args.email,
+        customer: {
+            name: customerName,
+            email: args.email,
+            countryCode: "IL",
+        },
         amountAgorot,
         description,
     });

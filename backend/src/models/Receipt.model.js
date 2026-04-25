@@ -72,6 +72,35 @@ const receiptSchema = new mongoose.Schema(
             type: Date,
             default: null,
         },
+        // Immutable record of who the receipt was issued to.
+        // Populated at Receipt.create() time by payment lifecycle hooks in a future contour.
+        // Write-once — never updated after creation.
+        // numberIdMasked: last 4 chars visible if length > 4, otherwise "***".
+        // numberIdHash: SHA-256 hex of raw numberId for audit/forensic use only.
+        // source: how recipient was resolved at issuance time.
+        // paymentIntentId: future-ready; null until PaymentIntent contour ships.
+        recipientSnapshot: {
+            name: { type: String, maxlength: 200, default: null },
+            nameInvoice: { type: String, maxlength: 200, default: null },
+            fullName: { type: String, maxlength: 200, default: null },
+            email: { type: String, maxlength: 200, default: null },
+            numberIdMasked: { type: String, maxlength: 20, default: null },
+            numberIdHash: { type: String, maxlength: 64, default: null },
+            address: { type: String, maxlength: 300, default: null },
+            city: { type: String, maxlength: 100, default: null },
+            zipCode: { type: String, maxlength: 20, default: null },
+            countryCode: { type: String, maxlength: 5, default: null },
+            source: {
+                type: String,
+                enum: [null, "receiptProfile", "paymentIntent", "fallback"],
+                default: null,
+            },
+            paymentIntentId: {
+                type: mongoose.Schema.Types.ObjectId,
+                ref: "PaymentIntent",
+                default: null,
+            },
+        },
         // Tracks shareDocument (email send) outcome independently from document creation.
         shareStatus: {
             type: String,

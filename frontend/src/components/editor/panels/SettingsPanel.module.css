@@ -550,3 +550,56 @@
     outline: 2px solid rgba(212, 175, 55, 0.7);
     outline-offset: 2px;
 }
+
+/* ── Receipt profile block (Section 3: תשלומים) ── */
+
+.receiptProfileBlock {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding-block-start: 10px;
+    border-block-start: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.receiptProfileFields {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.receiptProfileSelectRow {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-top: 12px;
+}
+
+.receiptProfileSelectLabel {
+    font-weight: 700;
+    font-size: var(--fs-body-lg);
+    color: var(--text-main);
+}
+
+.receiptProfileSelect {
+    padding: 12px;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--input-border);
+    background: var(--input-bg);
+    color: var(--input-text);
+    font-size: var(--fs-body);
+    font-family: inherit;
+    cursor: pointer;
+    transition: border-color 0.2s ease;
+}
+
+.receiptProfileSelect:focus,
+.receiptProfileSelect:focus-visible {
+    outline: none;
+    border: 2px solid var(--gold);
+    box-shadow: 0 0 0 2px var(--gold-fade);
+}
+
+.receiptProfileSelect:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+}

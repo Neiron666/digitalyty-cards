@@ -218,6 +218,65 @@ const UserSchema = new mongoose.Schema(
         // Known values: "register" | "signup_consume" | "invite_accept" |
         //               "editor_sidebar" | "settings_panel" | "unsubscribe_link"
         emailMarketingConsentSource: { type: String, default: null },
+
+        // --- Receipt billing profile (optional, user-controlled) ---
+        // Fields used to populate the "לכבוד" / customer block on YeshInvoice receipt documents.
+        // All fields are optional. null = not set by user.
+        //
+        // Security:
+        // - numberId is server-side PII only.
+        // - Never log raw numberId.
+        // - Never include raw numberId in public/card/org/admin DTOs.
+        // - Only numberIdMasked may be returned to the owning user via GET /me.
+        // - Raw numberId is intended to be transmitted only to YeshInvoice createDocument at receipt issuance time.
+        receiptProfile: {
+            recipientType: {
+                type: String,
+                enum: [null, "private", "business"],
+                default: null,
+            },
+            name: { type: String, trim: true, maxlength: 200, default: null },
+            nameInvoice: {
+                type: String,
+                trim: true,
+                maxlength: 200,
+                default: null,
+            },
+            fullName: {
+                type: String,
+                trim: true,
+                maxlength: 200,
+                default: null,
+            },
+            numberId: {
+                type: String,
+                trim: true,
+                maxlength: 32,
+                default: null,
+            }, // PII — server-side only
+            email: {
+                type: String,
+                trim: true,
+                lowercase: true,
+                maxlength: 200,
+                default: null,
+            },
+            address: {
+                type: String,
+                trim: true,
+                maxlength: 300,
+                default: null,
+            },
+            city: { type: String, trim: true, maxlength: 100, default: null },
+            zipCode: { type: String, trim: true, maxlength: 20, default: null },
+            countryCode: {
+                type: String,
+                trim: true,
+                maxlength: 5,
+                default: null,
+            },
+            updatedAt: { type: Date, default: null },
+        },
     },
     { timestamps: true },
 );

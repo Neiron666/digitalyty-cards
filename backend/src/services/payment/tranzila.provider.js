@@ -12,6 +12,7 @@ import {
     shareReceiptYeshInvoice,
 } from "../yeshinvoice.service.js";
 import Receipt from "../../models/Receipt.model.js";
+import PaymentIntent from "../../models/PaymentIntent.model.js";
 
 /**
  * Подпись Tranzila
@@ -777,11 +778,155 @@ function logStoCreateOutcome({
     console.info("[sto]", logObject);
 }
 
+// ── YeshInvoice Customer mapping helpers ───────────────────────────────────────────
+// Private to this module. Handles receipt profile resolution, PII masking,
+// and structured customer object assembly for YeshInvoice API calls.
+
+function trimOrNull(value) {
+    if (value === null || value === undefined) return null;
+    if (typeof value !== "string") return null;
+    const t = value.trim();
+    return t === "" ? null : t;
+}
+
+function hasMeaningfulReceiptProfile(profile) {
+    if (!profile) return false;
+    return !!(
+        trimOrNull(profile.name) ||
+        trimOrNull(profile.nameInvoice) ||
+        trimOrNull(profile.fullName) ||
+        trimOrNull(profile.numberId) ||
+        trimOrNull(profile.email) ||
+        trimOrNull(profile.address) ||
+        trimOrNull(profile.city) ||
+        trimOrNull(profile.zipCode) ||
+        trimOrNull(profile.countryCode) ||
+        trimOrNull(profile.recipientType)
+    );
+}
+
+function maskNumberId(raw) {
+    const v = trimOrNull(raw);
+    if (v === null) return null;
+    if (v.length <= 4) return "***";
+    return "***" + v.slice(-4);
+}
+
+function hashNumberId(raw) {
+    const v = trimOrNull(raw);
+    if (v === null) return null;
+    return crypto.createHash("sha256").update(v).digest("hex");
+}
+
+function buildFallbackCustomer(user) {
+    return {
+        name: trimOrNull(user.firstName) || trimOrNull(user.email) || "",
+        email: trimOrNull(user.email) || "",
+        countryCode: "IL",
+        source: "fallback",
+    };
+}
+
+function buildCustomerFromProfile(profile, user, source) {
+    return {
+        name: trimOrNull(profile.name) || trimOrNull(user.email) || "",
+        nameInvoice: trimOrNull(profile.nameInvoice),
+        fullName: trimOrNull(profile.fullName),
+        numberId: trimOrNull(profile.numberId),
+        email: trimOrNull(profile.email) || trimOrNull(user.email) || "",
+        address: trimOrNull(profile.address),
+        city: trimOrNull(profile.city),
+        zipCode: trimOrNull(profile.zipCode),
+        countryCode: (trimOrNull(profile.countryCode) || "IL").toUpperCase(),
+        source,
+    };
+}
+
+function buildCustomerFromPaymentIntent(intent, user) {
+    const snap = intent.receiptProfileSnapshot ?? {};
+    return {
+        name: trimOrNull(snap.name) || trimOrNull(user.email) || "",
+        nameInvoice: trimOrNull(snap.nameInvoice),
+        fullName: trimOrNull(snap.fullName),
+        numberId: trimOrNull(snap.numberId),
+        email: trimOrNull(snap.email) || trimOrNull(user.email) || "",
+        address: trimOrNull(snap.address),
+        city: trimOrNull(snap.city),
+        zipCode: trimOrNull(snap.zipCode),
+        countryCode: (trimOrNull(snap.countryCode) || "IL").toUpperCase(),
+        source: "paymentIntent",
+    };
+}
+
+function buildFirstPaymentCustomer(user, resolvedPaymentIntent) {
+    if (resolvedPaymentIntent !== null) {
+        return buildCustomerFromPaymentIntent(resolvedPaymentIntent, user);
+    }
+    if (hasMeaningfulReceiptProfile(user.receiptProfile)) {
+        return buildCustomerFromProfile(
+            user.receiptProfile,
+            user,
+            "receiptProfile",
+        );
+    }
+    return buildFallbackCustomer(user);
+}
+
+function buildStoCustomer(user) {
+    if (hasMeaningfulReceiptProfile(user.receiptProfile)) {
+        return buildCustomerFromProfile(
+            user.receiptProfile,
+            user,
+            "receiptProfile",
+        );
+    }
+    return buildFallbackCustomer(user);
+}
+
+function buildRecipientSnapshot(customer, paymentIntentId) {
+    return {
+        name: customer.name || null,
+        nameInvoice: customer.nameInvoice || null,
+        fullName: customer.fullName || null,
+        email: customer.email || null,
+        numberIdMasked: maskNumberId(customer.numberId),
+        numberIdHash: hashNumberId(customer.numberId),
+        address: customer.address || null,
+        city: customer.city || null,
+        zipCode: customer.zipCode || null,
+        countryCode: customer.countryCode || null,
+        source: customer.source || null,
+        paymentIntentId: paymentIntentId || null,
+    };
+}
+
+/**
+ * Validates and returns the iframe-mode return URL pair.
+ * Throws IFRAME_CHECKOUT_NOT_CONFIGURED if either URL is missing.
+ * Called only when mode="iframe" is requested.
+ */
+function requireIframeCheckoutUrls() {
+    if (!TRANZILA_CONFIG.iframeSuccessUrl || !TRANZILA_CONFIG.iframeFailUrl) {
+        const err = new Error("Iframe checkout is not configured");
+        err.code = "IFRAME_CHECKOUT_NOT_CONFIGURED";
+        throw err;
+    }
+    return {
+        successUrl: TRANZILA_CONFIG.iframeSuccessUrl,
+        failUrl: TRANZILA_CONFIG.iframeFailUrl,
+    };
+}
+
 export default {
     /**
      * Создание платежа (redirect пользователя на Tranzila)
      */
-    async createPayment({ userId, plan }) {
+    async createPayment({
+        userId,
+        plan,
+        paymentIntentId,
+        mode = "external",
+    } = {}) {
         const ag = PRICES_AGOROT[plan];
         if (!ag) {
             throw new Error("Invalid plan");
@@ -789,6 +934,16 @@ export default {
 
         const sumStr = `${Math.floor(ag / 100)}.${String(ag % 100).padStart(2, "0")}`;
         const description = `Cardigo – ${plan} plan`;
+
+        // Select success/fail return URLs based on mode.
+        // notify_url_address is always the server-to-server notify endpoint regardless of mode.
+        const { successUrl, failUrl } =
+            mode === "iframe"
+                ? requireIframeCheckoutUrls()
+                : {
+                      successUrl: TRANZILA_CONFIG.successUrl,
+                      failUrl: TRANZILA_CONFIG.failUrl,
+                  };
 
         // DirectNG: terminal lives in the URL path, not as a query param.
         // tranmode=AK: standard debit + create token — required for TranzilaTK to be returned.
@@ -800,15 +955,20 @@ export default {
             `tranmode=AK`,
             `description=${encodeURIComponent(description)}`,
             `notify_url_address=${encodeURIComponent(TRANZILA_CONFIG.notifyUrl)}`,
-            `success_url_address=${encodeURIComponent(TRANZILA_CONFIG.successUrl)}`,
-            `fail_url_address=${encodeURIComponent(TRANZILA_CONFIG.failUrl)}`,
+            `success_url_address=${encodeURIComponent(successUrl)}`,
+            `fail_url_address=${encodeURIComponent(failUrl)}`,
             `udf1=${userId}`,
             `udf2=${plan}`,
+            ...(paymentIntentId ? [`udf3=${paymentIntentId}`] : []),
         ].join("&");
 
-        return {
+        const result = {
             paymentUrl: `${TRANZILA_CONFIG.checkoutBase}/${TRANZILA_CONFIG.terminal}/iframenew.php?${params}`,
         };
+        if (paymentIntentId) {
+            result.paymentIntentId = String(paymentIntentId);
+        }
+        return result;
     },
 
     /**
@@ -858,6 +1018,7 @@ export default {
         // ── 3. Resolve fields safely (moved before trust — DirectNG trust needs these) ──
         const rawUserId = data.udf1;
         const plan = data.udf2;
+        const rawIntentId = data.udf3 ?? null;
         const userId = looksLikeObjectId(rawUserId) ? rawUserId : null;
         const validPlan = plan === "monthly" || plan === "yearly" ? plan : null;
         const amountAgorot = parseAmountAgorot(data.sum);
@@ -921,6 +1082,34 @@ export default {
             if (!indexPresent) failReason = failReason || "missing_index";
         }
 
+        // ── 5.5. PaymentIntent resolution (best-effort; never blocks fulfillment) ──
+        let resolvedPaymentIntentId = null;
+        let resolvedPaymentIntent = null;
+        if (
+            rawIntentId !== null &&
+            looksLikeObjectId(rawIntentId) &&
+            userId &&
+            validPlan
+        ) {
+            try {
+                const intent = await PaymentIntent.findOne({
+                    _id: rawIntentId,
+                    userId,
+                    plan: validPlan,
+                });
+                if (intent) {
+                    resolvedPaymentIntent = intent;
+                    resolvedPaymentIntentId = intent._id;
+                }
+            } catch (intentLookupErr) {
+                console.warn("[payment_intent] lookup failed", {
+                    event: "payment_intent_lookup_failed",
+                    message: intentLookupErr?.message,
+                });
+                resolvedPaymentIntentId = null;
+            }
+        }
+
         // ── 6. Ledger insert (idempotency via unique providerTxnId) ──
         let txnDoc;
         try {
@@ -934,6 +1123,7 @@ export default {
                 payloadAllowlisted,
                 rawPayloadHash,
                 failReason,
+                paymentIntentId: resolvedPaymentIntentId,
             });
         } catch (e) {
             if (e.code === 11000) {
@@ -942,6 +1132,20 @@ export default {
             }
             // Infra failure - throw so route returns 500 and provider retries.
             throw e;
+        }
+
+        // ── 6.5. Best-effort PaymentIntent status sync (never blocks fulfillment) ──
+        if (resolvedPaymentIntentId !== null) {
+            const intentFinalStatus = isPaid ? "completed" : "failed";
+            void PaymentIntent.updateOne(
+                { _id: resolvedPaymentIntentId },
+                { $set: { status: intentFinalStatus } },
+            ).catch((intentSyncErr) => {
+                console.warn("[payment_intent] status sync failed", {
+                    event: "payment_intent_status_sync_failed",
+                    message: intentSyncErr?.message,
+                });
+            });
         }
 
         // ── 7. If not paid → stop (already logged in ledger) ──
@@ -1055,8 +1259,10 @@ export default {
             try {
                 const documentUniqueKey =
                     buildYeshInvoiceDocumentUniqueKey(providerTxnId);
-                const customerName = user.firstName || user.email;
-                const customerEmail = user.email;
+                const customer = buildFirstPaymentCustomer(
+                    user,
+                    resolvedPaymentIntent,
+                );
                 const description =
                     validPlan === "monthly"
                         ? "מנוי Cardigo - חודשי"
@@ -1064,8 +1270,7 @@ export default {
 
                 const receiptResult = await createReceiptYeshInvoice({
                     documentUniqueKey,
-                    customerName,
-                    customerEmail,
+                    customer,
                     amountAgorot,
                     description,
                 });
@@ -1102,6 +1307,10 @@ export default {
                             documentUniqueKey,
                             issuedAt: new Date(),
                             shareStatus: "pending",
+                            recipientSnapshot: buildRecipientSnapshot(
+                                customer,
+                                resolvedPaymentIntentId,
+                            ),
                         });
                         // [Y3F.2] Fire-and-forget share — must NOT block ACK path.
                         void (async () => {
@@ -1110,6 +1319,7 @@ export default {
                                     await shareReceiptYeshInvoice({
                                         providerDocId:
                                             receiptResult.providerDocId,
+                                        customerEmail: customer.email,
                                     });
                                 const shareUpdate = shareResult.ok
                                     ? {
@@ -1544,8 +1754,7 @@ export default {
             try {
                 const documentUniqueKey =
                     buildYeshInvoiceDocumentUniqueKey(providerTxnId);
-                const customerName = user.firstName || user.email;
-                const customerEmail = user.email;
+                const customer = buildStoCustomer(user);
                 const description =
                     user.plan === "monthly"
                         ? "מנוי Cardigo - חודשי"
@@ -1553,8 +1762,7 @@ export default {
 
                 const receiptResult = await createReceiptYeshInvoice({
                     documentUniqueKey,
-                    customerName,
-                    customerEmail,
+                    customer,
                     amountAgorot,
                     description,
                 });
@@ -1591,6 +1799,10 @@ export default {
                             documentUniqueKey,
                             issuedAt: new Date(),
                             shareStatus: "pending",
+                            recipientSnapshot: buildRecipientSnapshot(
+                                customer,
+                                null,
+                            ),
                         });
                         // [Y3F.2] Fire-and-forget share — must NOT block ACK path.
                         void (async () => {
@@ -1599,6 +1811,7 @@ export default {
                                     await shareReceiptYeshInvoice({
                                         providerDocId:
                                             receiptResult.providerDocId,
+                                        customerEmail: customer.email,
                                     });
                                 const shareUpdate = shareResult.ok
                                     ? {

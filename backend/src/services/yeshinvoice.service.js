@@ -83,17 +83,24 @@ function toYIDate(date) {
  *   payments[].TypeID = 3 (credit card)
  *
  * @param {object} params
- * @param {string} params.documentUniqueKey — 20-char unique key
- * @param {string} params.customerName      — full name on the receipt
- * @param {string} params.customerEmail     — customer email (stored on doc, not sent at creation)
- * @param {number} params.amountAgorot      — total in agorot (integer)
- * @param {string} params.description       — line item name (e.g. "מנוי Cardigo - חודשי")
+ * @param {string} params.documentUniqueKey       — 20-char unique key
+ * @param {object} params.customer                — structured customer object
+ * @param {string} params.customer.name           — display name on the receipt
+ * @param {string} params.customer.email          — customer email
+ * @param {string} [params.customer.countryCode]  — ISO country code (default "IL")
+ * @param {string} [params.customer.nameInvoice]  — name on invoice (optional)
+ * @param {string} [params.customer.fullName]     — full legal name (optional)
+ * @param {string} [params.customer.numberId]     — ID number (optional)
+ * @param {string} [params.customer.address]      — address (optional)
+ * @param {string} [params.customer.city]         — city (optional)
+ * @param {string} [params.customer.zipCode]      — zip code (optional)
+ * @param {number} params.amountAgorot            — total in agorot (integer)
+ * @param {string} params.description             — line item name (e.g. "מנוי Cardigo - חודשי")
  * @returns {object}
  */
 function buildReceiptBody({
     documentUniqueKey,
-    customerName,
-    customerEmail,
+    customer,
     amountAgorot,
     description,
 }) {
@@ -104,6 +111,19 @@ function buildReceiptBody({
     maxDate.setDate(maxDate.getDate() + 30);
     const maxDateTimeStr = toYIDateTime(maxDate);
     const dueDateStr = toYIDate(today);
+
+    const yiCustomer = {
+        ID: -1,
+        Name: customer.name || customer.email || "",
+        EmailAddress: customer.email || "",
+        CountryCode: customer.countryCode || "IL",
+    };
+    if (customer.nameInvoice) yiCustomer.NameInvoice = customer.nameInvoice;
+    if (customer.fullName) yiCustomer.FullName = customer.fullName;
+    if (customer.numberId) yiCustomer.NumberID = customer.numberId;
+    if (customer.address) yiCustomer.Address = customer.address;
+    if (customer.city) yiCustomer.City = customer.city;
+    if (customer.zipCode) yiCustomer.ZipCode = customer.zipCode;
 
     return {
         DocumentType: DOCUMENT_TYPE_RECEIPT,
@@ -120,11 +140,7 @@ function buildReceiptBody({
         MaxDate: maxDateTimeStr,
         statusID: 1,
         isDraft: false,
-        Customer: {
-            Name: customerName,
-            EmailAddress: customerEmail,
-            ID: -1,
-        },
+        Customer: yiCustomer,
         items: [
             {
                 Name: description,
@@ -176,7 +192,11 @@ async function yiPost(path, body, timeoutMs) {
  * Preview a receipt document via YeshInvoice createDocumentPreview.
  * Used for smoke-testing / preflight validation without committing a document.
  *
- * @param {object} params — same shape as buildReceiptBody params
+ * @param {object} params                   — same shape as buildReceiptBody params
+ * @param {string} params.documentUniqueKey — 20-char unique key
+ * @param {object} params.customer          — structured customer object (see buildReceiptBody)
+ * @param {number} params.amountAgorot      — total in agorot
+ * @param {string} params.description       — line item name
  * @returns {{ ok: boolean, raw: object, error?: string }}
  */
 export async function previewReceiptYeshInvoice(params) {
@@ -208,7 +228,11 @@ export async function previewReceiptYeshInvoice(params) {
  * Returns a normalized result. The caller is responsible for persisting
  * the result to the Receipt collection.
  *
- * @param {object} params — same shape as buildReceiptBody params
+ * @param {object} params                   — same shape as buildReceiptBody params
+ * @param {string} params.documentUniqueKey — 20-char unique key
+ * @param {object} params.customer          — structured customer object (see buildReceiptBody)
+ * @param {number} params.amountAgorot      — total in agorot
+ * @param {string} params.description       — line item name
  * @returns {{ ok: boolean, providerDocId: number|null, providerDocNumber: number|null, pdfUrl: string|null, documentUrl: string|null, raw: object|null, error?: string }}
  */
 export async function createReceiptYeshInvoice(params) {

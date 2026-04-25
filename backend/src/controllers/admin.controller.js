@@ -496,7 +496,7 @@ export async function listCards(req, res) {
 
 export async function getUserById(req, res) {
     const user = await User.findById(req.params.id).select(
-        "-passwordHash -tranzilaToken -tranzilaTokenMeta",
+        "-passwordHash -tranzilaToken -tranzilaTokenMeta -receiptProfile.numberId",
     );
     if (!user) return res.status(404).json({ message: "Not found" });
     return res.json(user);

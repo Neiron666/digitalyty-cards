@@ -76,3 +76,13 @@ export async function getReceipts(limit = 10) {
     const res = await api.get("/account/receipts", { params: { limit } });
     return res.data;
 }
+
+/**
+ * PATCH /api/account/receipt-profile — partial update of the authenticated user's receipt/billing profile.
+ * Absent fields are untouched. Send field: null to explicitly clear.
+ * Returns { receiptProfile } masked DTO on success.
+ */
+export async function updateReceiptProfile(fields) {
+    const res = await api.patch("/account/receipt-profile", fields);
+    return res.data;
+}

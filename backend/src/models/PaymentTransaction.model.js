@@ -56,6 +56,11 @@ const paymentTransactionSchema = new mongoose.Schema(
             ref: "Receipt",
             default: null,
         },
+        paymentIntentId: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "PaymentIntent",
+            default: null,
+        },
         failReason: {
             type: String,
             default: null,

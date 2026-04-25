@@ -102,9 +102,6 @@ async function main() {
     const customerEmail = args.email;
     const description = `מנוי Cardigo - ${planLabel}`;
 
-    // Harmless userId placeholder — context only, never written to Mongo in this script
-    const smokePlaceholderUserId = "smoke-create-placeholder";
-
     console.log("[yeshinvoice-create-test] Starting sandbox createDocument...");
     console.log(
         `[yeshinvoice-create-test] plan=${args.plan} amountAgorot=${amountAgorot} documentUniqueKey=${documentUniqueKey}`,
@@ -112,12 +109,13 @@ async function main() {
 
     const result = await createReceiptYeshInvoice({
         documentUniqueKey,
-        customerName,
-        customerEmail,
+        customer: {
+            name: customerName,
+            email: customerEmail,
+            countryCode: "IL",
+        },
         amountAgorot,
         description,
-        // userId is for caller context only — service does not use it
-        userId: smokePlaceholderUserId,
     });
 
     // ── Sanitized output (no secrets, no raw body, no auth header) ────────────

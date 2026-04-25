@@ -11,6 +11,7 @@ import {
     updateAccountName,
     cancelRenewal,
     getReceipts,
+    updateReceiptProfile,
 } from "../../../services/account.service";
 import { createPayment } from "../../../services/payment.service";
 import CancelRenewalModal from "../CancelRenewalModal";
@@ -70,6 +71,22 @@ export default function SettingsPanel({
     const [nameBusy, setNameBusy] = useState(false);
     const [nameError, setNameError] = useState("");
     const [nameOk, setNameOk] = useState("");
+
+    const [receiptProfileDraft, setReceiptProfileDraft] = useState({
+        recipientType: "",
+        name: "",
+        nameInvoice: "",
+        email: "",
+        numberId: "",
+        address: "",
+        city: "",
+        zipCode: "",
+    });
+    const [receiptProfileClearNumberId, setReceiptProfileClearNumberId] =
+        useState(false);
+    const [receiptProfileBusy, setReceiptProfileBusy] = useState(false);
+    const [receiptProfileError, setReceiptProfileError] = useState("");
+    const [receiptProfileOk, setReceiptProfileOk] = useState("");
 
     const [delCardConfirm, setDelCardConfirm] = useState("");
 
@@ -245,6 +262,49 @@ export default function SettingsPanel({
         setNameOk("");
     }, [account?.firstName]);
 
+    useEffect(() => {
+        const rp = account?.receiptProfile ?? null;
+        setReceiptProfileDraft({
+            recipientType: rp?.recipientType ?? "",
+            name: rp?.name ?? "",
+            nameInvoice: rp?.nameInvoice ?? "",
+            email: rp?.email ?? "",
+            numberId: "",
+            address: rp?.address ?? "",
+            city: rp?.city ?? "",
+            zipCode: rp?.zipCode ?? "",
+        });
+        setReceiptProfileClearNumberId(false);
+        setReceiptProfileError("");
+        setReceiptProfileOk("");
+    }, [account?.receiptProfile]);
+
+    const isReceiptProfileDirty = useMemo(() => {
+        const rp = account?.receiptProfile ?? null;
+        if (receiptProfileClearNumberId) return true;
+        if (receiptProfileDraft.numberId.trim() !== "") return true;
+        const textFields = [
+            "name",
+            "nameInvoice",
+            "email",
+            "address",
+            "city",
+            "zipCode",
+        ];
+        for (const field of textFields) {
+            const draftValue = receiptProfileDraft[field].trim();
+            const serverValue = (rp?.[field] ?? "").trim();
+            if (draftValue !== serverValue) return true;
+        }
+        const draftType = receiptProfileDraft.recipientType || null;
+        const serverType = rp?.recipientType ?? null;
+        return draftType !== serverType;
+    }, [
+        receiptProfileDraft,
+        receiptProfileClearNumberId,
+        account?.receiptProfile,
+    ]);
+
     const canEditSlug = useMemo(() => {
         return (
             isAuthenticated &&
@@ -303,6 +363,123 @@ export default function SettingsPanel({
             setSlugError(mapSlugError(err));
         } finally {
             setSlugBusy(false);
+        }
+    }
+
+    function validateReceiptProfileDraft(draft) {
+        if (draft.name.trim().length > 200) {
+            return "שם לקבלה ארוך מדי (מקסימום 200 תווים).";
+        }
+        if (draft.nameInvoice.trim().length > 200) {
+            return "שם עסק / שם לחשבונית ארוך מדי (מקסימום 200 תווים).";
+        }
+        const emailTrim = draft.email.trim();
+        if (emailTrim !== "") {
+            if (emailTrim.length > 200) {
+                return "דוא\u05f4ל ארוך מדי (מקסימום 200 תווים).";
+            }
+            if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailTrim)) {
+                return "כתובת דוא\u05f4ל לא תקינה.";
+            }
+        }
+        const idTrim = draft.numberId.trim();
+        if (idTrim !== "") {
+            if (idTrim.length > 32) {
+                return "מספר מזהה ארוך מדי (מקסימום 32 תווים).";
+            }
+            if (!/^[a-zA-Z0-9-]*$/.test(idTrim)) {
+                return "מספר מזהה מכיל תווים לא חוקיים. מותרים: ספרות, אותיות, מקף.";
+            }
+        }
+        if (draft.address.trim().length > 300) {
+            return "כתובת ארוכה מדי (מקסימום 300 תווים).";
+        }
+        if (draft.city.trim().length > 100) {
+            return "עיר ארוכה מדי (מקסימום 100 תווים).";
+        }
+        if (draft.zipCode.trim().length > 20) {
+            return "מיקוד ארוך מדי (מקסימום 20 תווים).";
+        }
+        return null;
+    }
+
+    function buildReceiptProfilePayload(draft, clearNumberId, serverProfile) {
+        const rp = serverProfile ?? null;
+        const payload = {};
+        const draftType = draft.recipientType || null;
+        const serverType = rp?.recipientType ?? null;
+        if (draftType !== serverType) {
+            payload.recipientType = draftType;
+        }
+        const textFields = [
+            "name",
+            "nameInvoice",
+            "email",
+            "address",
+            "city",
+            "zipCode",
+        ];
+        for (const field of textFields) {
+            const draftValue = draft[field].trim();
+            const serverValue = (rp?.[field] ?? "").trim();
+            if (draftValue !== serverValue) {
+                payload[field] = draftValue === "" ? null : draftValue;
+            }
+        }
+        if (clearNumberId) {
+            payload.numberId = null;
+        } else if (draft.numberId.trim() !== "") {
+            payload.numberId = draft.numberId.trim();
+        }
+        return payload;
+    }
+
+    async function handleReceiptProfileSave() {
+        setReceiptProfileError("");
+        setReceiptProfileOk("");
+        const validationError =
+            validateReceiptProfileDraft(receiptProfileDraft);
+        if (validationError) {
+            setReceiptProfileError(validationError);
+            return;
+        }
+        const payload = buildReceiptProfilePayload(
+            receiptProfileDraft,
+            receiptProfileClearNumberId,
+            account?.receiptProfile ?? null,
+        );
+        if (Object.keys(payload).length === 0) {
+            setReceiptProfileOk("אין שינויים לשמירה.");
+            return;
+        }
+        setReceiptProfileBusy(true);
+        try {
+            const data = await updateReceiptProfile(payload);
+            setAccount((prev) =>
+                prev
+                    ? { ...prev, receiptProfile: data.receiptProfile ?? null }
+                    : prev,
+            );
+            setReceiptProfileClearNumberId(false);
+            setReceiptProfileOk("פרטי הקבלה נשמרו.");
+        } catch (err) {
+            const status = err?.response?.status;
+            if (status === 429) {
+                setReceiptProfileError(
+                    "יותר מדי ניסיונות. נסו שוב מאוחר יותר.",
+                );
+            } else if (status === 400) {
+                const message = err?.response?.data?.message;
+                setReceiptProfileError(
+                    typeof message === "string" && message.length < 200
+                        ? message
+                        : "נתונים לא תקינים. בדקו את הפרטים ונסו שנית.",
+                );
+            } else {
+                setReceiptProfileError("לא הצלחנו לשמור את פרטי הקבלה.");
+            }
+        } finally {
+            setReceiptProfileBusy(false);
         }
     }
 
@@ -1193,6 +1370,468 @@ export default function SettingsPanel({
                                             <div className={styles.billingNote}>
                                                 שינוי אמצעי תשלום? פנה לתמיכה:
                                                 support@cardigo.co.il
+                                            </div>
+
+                                            {/* ── Receipt profile form ── */}
+                                            <div
+                                                className={
+                                                    styles.receiptProfileBlock
+                                                }
+                                            >
+                                                <div
+                                                    className={
+                                                        styles.sectionTitle
+                                                    }
+                                                >
+                                                    פרטי קבלה
+                                                </div>
+
+                                                <div
+                                                    className={
+                                                        styles.billingDisclosure
+                                                    }
+                                                >
+                                                    <span>
+                                                        הפרטים ישמשו להפקת קבלות
+                                                        ומסמכי תשלום בלבד.
+                                                    </span>
+                                                    <span>
+                                                        שינויים לא יחולו על
+                                                        קבלות שכבר הופקו.
+                                                    </span>
+                                                    <span>
+                                                        המספר המזהה הוא
+                                                        אופציונלי ורגיש — מלאו
+                                                        אותו רק אם נדרש.
+                                                    </span>
+                                                    <a
+                                                        href="/privacy"
+                                                        className={
+                                                            styles.billingDisclosureLink
+                                                        }
+                                                    >
+                                                        מדיניות הפרטיות
+                                                    </a>
+                                                </div>
+
+                                                <div
+                                                    className={
+                                                        styles.receiptProfileFields
+                                                    }
+                                                >
+                                                    <div
+                                                        className={
+                                                            styles.receiptProfileSelectRow
+                                                        }
+                                                    >
+                                                        <label
+                                                            htmlFor="rp-recipient-type"
+                                                            className={
+                                                                styles.receiptProfileSelectLabel
+                                                            }
+                                                        >
+                                                            סוג נמען
+                                                        </label>
+                                                        <select
+                                                            id="rp-recipient-type"
+                                                            className={
+                                                                styles.receiptProfileSelect
+                                                            }
+                                                            value={
+                                                                receiptProfileDraft.recipientType
+                                                            }
+                                                            disabled={
+                                                                receiptProfileBusy
+                                                            }
+                                                            onChange={(e) => {
+                                                                setReceiptProfileDraft(
+                                                                    (
+                                                                        draft,
+                                                                    ) => ({
+                                                                        ...draft,
+                                                                        recipientType:
+                                                                            e
+                                                                                .target
+                                                                                .value,
+                                                                    }),
+                                                                );
+                                                                setReceiptProfileError(
+                                                                    "",
+                                                                );
+                                                                setReceiptProfileOk(
+                                                                    "",
+                                                                );
+                                                            }}
+                                                        >
+                                                            <option value="">
+                                                                לא צוין
+                                                            </option>
+                                                            <option value="private">
+                                                                פרטי
+                                                            </option>
+                                                            <option value="business">
+                                                                עסקי
+                                                            </option>
+                                                        </select>
+                                                    </div>
+
+                                                    <Input
+                                                        label="שם לקבלה"
+                                                        type="text"
+                                                        value={
+                                                            receiptProfileDraft.name
+                                                        }
+                                                        onChange={(e) => {
+                                                            setReceiptProfileDraft(
+                                                                (draft) => ({
+                                                                    ...draft,
+                                                                    name: e
+                                                                        .target
+                                                                        .value,
+                                                                }),
+                                                            );
+                                                            setReceiptProfileError(
+                                                                "",
+                                                            );
+                                                            setReceiptProfileOk(
+                                                                "",
+                                                            );
+                                                        }}
+                                                        meta="אם יישאר ריק, נשתמש בשם החשבון או בדוא״ל החשבון."
+                                                        autoComplete="name"
+                                                        disabled={
+                                                            receiptProfileBusy
+                                                        }
+                                                    />
+
+                                                    <Input
+                                                        label="דוא״ל לשליחת קבלה"
+                                                        type="email"
+                                                        value={
+                                                            receiptProfileDraft.email
+                                                        }
+                                                        onChange={(e) => {
+                                                            setReceiptProfileDraft(
+                                                                (draft) => ({
+                                                                    ...draft,
+                                                                    email: e
+                                                                        .target
+                                                                        .value,
+                                                                }),
+                                                            );
+                                                            setReceiptProfileError(
+                                                                "",
+                                                            );
+                                                            setReceiptProfileOk(
+                                                                "",
+                                                            );
+                                                        }}
+                                                        meta="אם יישאר ריק, הקבלה תישלח לדוא״ל החשבון."
+                                                        autoComplete="email"
+                                                        dir="ltr"
+                                                        disabled={
+                                                            receiptProfileBusy
+                                                        }
+                                                    />
+
+                                                    <Input
+                                                        label={
+                                                            receiptProfileDraft.recipientType ===
+                                                            "business"
+                                                                ? "ח.פ. / מספר עוסק"
+                                                                : receiptProfileDraft.recipientType ===
+                                                                    "private"
+                                                                  ? "ת.ז."
+                                                                  : "ת.ז. / ח.פ. / מספר עוסק"
+                                                        }
+                                                        type="text"
+                                                        value={
+                                                            receiptProfileDraft.numberId
+                                                        }
+                                                        onChange={(e) => {
+                                                            setReceiptProfileDraft(
+                                                                (draft) => ({
+                                                                    ...draft,
+                                                                    numberId:
+                                                                        e.target
+                                                                            .value,
+                                                                }),
+                                                            );
+                                                            setReceiptProfileClearNumberId(
+                                                                false,
+                                                            );
+                                                            setReceiptProfileError(
+                                                                "",
+                                                            );
+                                                            setReceiptProfileOk(
+                                                                "",
+                                                            );
+                                                        }}
+                                                        meta={
+                                                            account
+                                                                ?.receiptProfile
+                                                                ?.numberIdMasked
+                                                                ? `מספר מזהה שמור: ${account.receiptProfile.numberIdMasked}`
+                                                                : undefined
+                                                        }
+                                                        placeholder="אופציונלי"
+                                                        autoComplete="off"
+                                                        dir="ltr"
+                                                        disabled={
+                                                            receiptProfileBusy ||
+                                                            receiptProfileClearNumberId
+                                                        }
+                                                    />
+
+                                                    {account?.receiptProfile
+                                                        ?.numberIdMasked && (
+                                                        <label
+                                                            className={
+                                                                styles.billingOptIn
+                                                            }
+                                                        >
+                                                            <input
+                                                                type="checkbox"
+                                                                checked={
+                                                                    receiptProfileClearNumberId
+                                                                }
+                                                                disabled={
+                                                                    receiptProfileBusy
+                                                                }
+                                                                onChange={(
+                                                                    e,
+                                                                ) => {
+                                                                    setReceiptProfileClearNumberId(
+                                                                        e.target
+                                                                            .checked,
+                                                                    );
+                                                                    if (
+                                                                        e.target
+                                                                            .checked
+                                                                    ) {
+                                                                        setReceiptProfileDraft(
+                                                                            (
+                                                                                draft,
+                                                                            ) => ({
+                                                                                ...draft,
+                                                                                numberId:
+                                                                                    "",
+                                                                            }),
+                                                                        );
+                                                                    }
+                                                                    setReceiptProfileError(
+                                                                        "",
+                                                                    );
+                                                                    setReceiptProfileOk(
+                                                                        "",
+                                                                    );
+                                                                }}
+                                                            />
+                                                            <span
+                                                                className={
+                                                                    styles.billingOptInLabel
+                                                                }
+                                                            >
+                                                                מחק מספר מזהה
+                                                                שמור
+                                                            </span>
+                                                        </label>
+                                                    )}
+
+                                                    <details
+                                                        className={
+                                                            styles.collapsible
+                                                        }
+                                                    >
+                                                        <summary
+                                                            className={
+                                                                styles.collapsibleTrigger
+                                                            }
+                                                        >
+                                                            פרטים נוספים
+                                                        </summary>
+                                                        <div
+                                                            className={
+                                                                styles.collapsibleContent
+                                                            }
+                                                        >
+                                                            <Input
+                                                                label="שם עסק / שם לחשבונית"
+                                                                type="text"
+                                                                value={
+                                                                    receiptProfileDraft.nameInvoice
+                                                                }
+                                                                onChange={(
+                                                                    e,
+                                                                ) => {
+                                                                    setReceiptProfileDraft(
+                                                                        (
+                                                                            draft,
+                                                                        ) => ({
+                                                                            ...draft,
+                                                                            nameInvoice:
+                                                                                e
+                                                                                    .target
+                                                                                    .value,
+                                                                        }),
+                                                                    );
+                                                                    setReceiptProfileError(
+                                                                        "",
+                                                                    );
+                                                                    setReceiptProfileOk(
+                                                                        "",
+                                                                    );
+                                                                }}
+                                                                disabled={
+                                                                    receiptProfileBusy
+                                                                }
+                                                            />
+
+                                                            <Input
+                                                                label="כתובת"
+                                                                type="text"
+                                                                value={
+                                                                    receiptProfileDraft.address
+                                                                }
+                                                                onChange={(
+                                                                    e,
+                                                                ) => {
+                                                                    setReceiptProfileDraft(
+                                                                        (
+                                                                            draft,
+                                                                        ) => ({
+                                                                            ...draft,
+                                                                            address:
+                                                                                e
+                                                                                    .target
+                                                                                    .value,
+                                                                        }),
+                                                                    );
+                                                                    setReceiptProfileError(
+                                                                        "",
+                                                                    );
+                                                                    setReceiptProfileOk(
+                                                                        "",
+                                                                    );
+                                                                }}
+                                                                autoComplete="street-address"
+                                                                disabled={
+                                                                    receiptProfileBusy
+                                                                }
+                                                            />
+
+                                                            <Input
+                                                                label="עיר"
+                                                                type="text"
+                                                                value={
+                                                                    receiptProfileDraft.city
+                                                                }
+                                                                onChange={(
+                                                                    e,
+                                                                ) => {
+                                                                    setReceiptProfileDraft(
+                                                                        (
+                                                                            draft,
+                                                                        ) => ({
+                                                                            ...draft,
+                                                                            city: e
+                                                                                .target
+                                                                                .value,
+                                                                        }),
+                                                                    );
+                                                                    setReceiptProfileError(
+                                                                        "",
+                                                                    );
+                                                                    setReceiptProfileOk(
+                                                                        "",
+                                                                    );
+                                                                }}
+                                                                autoComplete="address-level2"
+                                                                disabled={
+                                                                    receiptProfileBusy
+                                                                }
+                                                            />
+
+                                                            <Input
+                                                                label="מיקוד"
+                                                                type="text"
+                                                                value={
+                                                                    receiptProfileDraft.zipCode
+                                                                }
+                                                                onChange={(
+                                                                    e,
+                                                                ) => {
+                                                                    setReceiptProfileDraft(
+                                                                        (
+                                                                            draft,
+                                                                        ) => ({
+                                                                            ...draft,
+                                                                            zipCode:
+                                                                                e
+                                                                                    .target
+                                                                                    .value,
+                                                                        }),
+                                                                    );
+                                                                    setReceiptProfileError(
+                                                                        "",
+                                                                    );
+                                                                    setReceiptProfileOk(
+                                                                        "",
+                                                                    );
+                                                                }}
+                                                                autoComplete="postal-code"
+                                                                dir="ltr"
+                                                                disabled={
+                                                                    receiptProfileBusy
+                                                                }
+                                                            />
+                                                        </div>
+                                                    </details>
+
+                                                    {receiptProfileError && (
+                                                        <div
+                                                            className={
+                                                                styles.billingError
+                                                            }
+                                                        >
+                                                            {
+                                                                receiptProfileError
+                                                            }
+                                                        </div>
+                                                    )}
+
+                                                    {receiptProfileOk && (
+                                                        <div
+                                                            className={
+                                                                styles.pwSuccess
+                                                            }
+                                                        >
+                                                            {receiptProfileOk}
+                                                        </div>
+                                                    )}
+
+                                                    <div
+                                                        className={
+                                                            styles.billingActions
+                                                        }
+                                                    >
+                                                        <Button
+                                                            variant="secondary"
+                                                            loading={
+                                                                receiptProfileBusy
+                                                            }
+                                                            disabled={
+                                                                receiptProfileBusy ||
+                                                                !isReceiptProfileDirty
+                                                            }
+                                                            onClick={
+                                                                handleReceiptProfileSave
+                                                            }
+                                                        >
+                                                            שמור פרטי קבלה
+                                                        </Button>
+                                                    </div>
+                                                </div>
                                             </div>
 
                                             {/* ── Receipt history ── */}

@@ -59,6 +59,10 @@ const RECEIPTS_DL_WINDOW_MS = 10 * 60 * 1000;
 const RECEIPTS_DL_LIMIT = 20;
 const receiptsDownloadRateMap = new Map();
 
+const RECEIPT_PROFILE_WINDOW_MS = 10 * 60 * 1000;
+const RECEIPT_PROFILE_LIMIT = 10;
+const receiptProfileRateMap = new Map();
+
 let accountSweepTick = 0;
 const SWEEP_EVERY = 200;
 
@@ -111,6 +115,54 @@ function buildAutoRenewalDto(user) {
     };
 }
 
+/**
+ * Build a masked receipt profile DTO for the owning user.
+ * Returns null if user.receiptProfile does not exist or no meaningful fields are set.
+ * NEVER returns raw numberId.
+ */
+function buildReceiptProfileDto(user) {
+    const rp = user?.receiptProfile ?? null;
+    if (!rp) return null;
+
+    const MEANINGFUL = [
+        "recipientType",
+        "name",
+        "nameInvoice",
+        "fullName",
+        "numberId",
+        "email",
+        "address",
+        "city",
+        "zipCode",
+        "countryCode",
+    ];
+    const hasAny = MEANINGFUL.some(
+        (f) => rp[f] !== null && rp[f] !== undefined && rp[f] !== "",
+    );
+    if (!hasAny) return null;
+
+    // Mask rule: no value → null; length ≤ 4 → "***"; length > 4 → "***" + last 4
+    const rawId = rp.numberId ?? null;
+    let numberIdMasked = null;
+    if (rawId !== null && rawId !== "") {
+        numberIdMasked = rawId.length <= 4 ? "***" : "***" + rawId.slice(-4);
+    }
+
+    return {
+        recipientType: rp.recipientType ?? null,
+        name: rp.name ?? null,
+        nameInvoice: rp.nameInvoice ?? null,
+        fullName: rp.fullName ?? null,
+        numberIdMasked,
+        email: rp.email ?? null,
+        address: rp.address ?? null,
+        city: rp.city ?? null,
+        zipCode: rp.zipCode ?? null,
+        countryCode: rp.countryCode ?? null,
+        updatedAt: rp.updatedAt ?? null,
+    };
+}
+
 function rateLimitByIpForMap(req, map, limit, windowMs) {
     const ip = getClientIp(req);
     if (!ip) return true;
@@ -125,6 +177,7 @@ function rateLimitByIpForMap(req, map, limit, windowMs) {
         sweepRateMap(cancelRenewalRateMap, now);
         sweepRateMap(receiptsListRateMap, now);
         sweepRateMap(receiptsDownloadRateMap, now);
+        sweepRateMap(receiptProfileRateMap, now);
     }
 
     const entry = map.get(ip);
@@ -148,7 +201,7 @@ router.get("/me", requireAuth, async (req, res) => {
 
         const user = await User.findById(userId)
             .select(
-                "firstName email role plan subscription createdAt emailMarketingConsent emailMarketingConsentAt emailMarketingConsentVersion emailMarketingConsentSource tranzilaSto.status tranzilaSto.stoId tranzilaSto.cancelledAt renewalFailedAt",
+                "firstName email role plan subscription createdAt emailMarketingConsent emailMarketingConsentAt emailMarketingConsentVersion emailMarketingConsentSource tranzilaSto.status tranzilaSto.stoId tranzilaSto.cancelledAt renewalFailedAt receiptProfile",
             )
             .lean();
 
@@ -215,6 +268,7 @@ router.get("/me", requireAuth, async (req, res) => {
             emailMarketingConsentSource:
                 user.emailMarketingConsentSource || null,
             autoRenewal: buildAutoRenewalDto(user),
+            receiptProfile: buildReceiptProfileDto(user),
         });
     } catch (err) {
         console.error("[account] GET /me failed", err?.message || err);
@@ -379,6 +433,203 @@ router.patch("/name", requireAuth, async (req, res) => {
         return res.json({ firstName: updated.firstName });
     } catch (err) {
         console.error("[account] PATCH /name failed", err?.message || err);
+        return res.status(500).json({ message: "Internal error" });
+    }
+});
+
+/**
+ * PATCH /api/account/receipt-profile
+ * Partial update of the authenticated user's receipt billing profile.
+ * Only submitted ALLOWED fields are written. Absent fields are untouched.
+ * Sending field: null explicitly clears that field.
+ * Empty string is normalized to null.
+ * Raw numberId is never returned. Masked form (numberIdMasked) only.
+ * 200 { receiptProfile } on success.
+ * 400 on validation failure or no valid fields provided.
+ * 429 on rate limit.
+ */
+router.patch("/receipt-profile", requireAuth, async (req, res) => {
+    try {
+        if (
+            !rateLimitByIpForMap(
+                req,
+                receiptProfileRateMap,
+                RECEIPT_PROFILE_LIMIT,
+                RECEIPT_PROFILE_WINDOW_MS,
+            )
+        ) {
+            return res
+                .status(429)
+                .json({ code: "RATE_LIMITED", message: "Too many requests" });
+        }
+
+        const body = req.body;
+
+        // Reject non-plain-object bodies
+        if (body === null || typeof body !== "object" || Array.isArray(body)) {
+            return res.status(400).json({ message: "Invalid request body" });
+        }
+
+        // Security: reject any body key containing "." or "$" (MongoDB injection guard)
+        for (const key of Object.keys(body)) {
+            if (key.includes(".") || key.includes("$")) {
+                return res.status(400).json({ message: "Invalid field name" });
+            }
+        }
+
+        const ALLOWED = [
+            "recipientType",
+            "name",
+            "nameInvoice",
+            "fullName",
+            "numberId",
+            "email",
+            "address",
+            "city",
+            "zipCode",
+            "countryCode",
+        ];
+
+        const updates = {};
+
+        for (const field of ALLOWED) {
+            if (!Object.prototype.hasOwnProperty.call(body, field)) continue;
+            const raw = body[field];
+
+            // null = explicit clear
+            if (raw === null) {
+                updates[`receiptProfile.${field}`] = null;
+                continue;
+            }
+
+            if (field === "recipientType") {
+                const trimmed =
+                    typeof raw === "string" ? raw.trim() : undefined;
+                if (trimmed === undefined) {
+                    return res
+                        .status(400)
+                        .json({
+                            message: "recipientType must be a string or null",
+                        });
+                }
+                if (trimmed === "") {
+                    updates["receiptProfile.recipientType"] = null;
+                    continue;
+                }
+                if (trimmed !== "private" && trimmed !== "business") {
+                    return res
+                        .status(400)
+                        .json({ message: "Invalid recipientType" });
+                }
+                updates["receiptProfile.recipientType"] = trimmed;
+                continue;
+            }
+
+            // All remaining fields must be strings
+            if (typeof raw !== "string") {
+                return res
+                    .status(400)
+                    .json({ message: `${field} must be a string or null` });
+            }
+
+            const trimmed = raw.trim();
+
+            // Empty string normalizes to null
+            if (trimmed === "") {
+                updates[`receiptProfile.${field}`] = null;
+                continue;
+            }
+
+            if (
+                field === "name" ||
+                field === "nameInvoice" ||
+                field === "fullName"
+            ) {
+                if (trimmed.length > 200) {
+                    return res
+                        .status(400)
+                        .json({ message: `${field} too long` });
+                }
+                updates[`receiptProfile.${field}`] = trimmed;
+            } else if (field === "numberId") {
+                if (trimmed.length > 32) {
+                    return res
+                        .status(400)
+                        .json({ message: "numberId too long" });
+                }
+                if (!/^[a-zA-Z0-9-]*$/.test(trimmed)) {
+                    return res
+                        .status(400)
+                        .json({ message: "Invalid numberId format" });
+                }
+                updates["receiptProfile.numberId"] = trimmed;
+            } else if (field === "email") {
+                if (trimmed.length > 200) {
+                    return res.status(400).json({ message: "email too long" });
+                }
+                if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
+                    return res
+                        .status(400)
+                        .json({ message: "Invalid email format" });
+                }
+                updates["receiptProfile.email"] = trimmed.toLowerCase();
+            } else if (field === "address") {
+                if (trimmed.length > 300) {
+                    return res
+                        .status(400)
+                        .json({ message: "address too long" });
+                }
+                updates["receiptProfile.address"] = trimmed;
+            } else if (field === "city") {
+                if (trimmed.length > 100) {
+                    return res.status(400).json({ message: "city too long" });
+                }
+                updates["receiptProfile.city"] = trimmed;
+            } else if (field === "zipCode") {
+                if (trimmed.length > 20) {
+                    return res
+                        .status(400)
+                        .json({ message: "zipCode too long" });
+                }
+                updates["receiptProfile.zipCode"] = trimmed;
+            } else if (field === "countryCode") {
+                if (trimmed.length > 5) {
+                    return res
+                        .status(400)
+                        .json({ message: "countryCode too long" });
+                }
+                updates["receiptProfile.countryCode"] = trimmed.toUpperCase();
+            }
+        }
+
+        // Guard: at least one ALLOWED field must be present
+        if (Object.keys(updates).length === 0) {
+            return res
+                .status(400)
+                .json({ message: "No updatable fields provided" });
+        }
+
+        // Stamp updatedAt only when actual field updates are present
+        updates["receiptProfile.updatedAt"] = new Date();
+
+        const updated = await User.findByIdAndUpdate(
+            req.userId,
+            { $set: updates },
+            { new: true, select: "receiptProfile" },
+        );
+
+        if (!updated) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        return res.json({
+            receiptProfile: buildReceiptProfileDto(updated),
+        });
+    } catch (err) {
+        console.error(
+            "[account] PATCH /receipt-profile failed",
+            err?.message || err,
+        );
         return res.status(500).json({ message: "Internal error" });
     }
 });

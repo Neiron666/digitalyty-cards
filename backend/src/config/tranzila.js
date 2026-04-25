@@ -5,8 +5,15 @@ export const TRANZILA_CONFIG = {
     secret: process.env.TRANZILA_SECRET, // для hash / signature (inbound notify only)
     checkoutBase: "https://directng.tranzila.com", // DirectNG hosted checkout domain; terminal appended in path by provider
     notifyUrl: process.env.TRANZILA_NOTIFY_URL, // https://api.domain/api/payment/notify
-    successUrl: process.env.TRANZILA_SUCCESS_URL, // https://domain/payment/success
-    failUrl: process.env.TRANZILA_FAIL_URL, // https://domain/payment/fail
+    successUrl: process.env.TRANZILA_SUCCESS_URL, // https://domain/payment/success (external mode)
+    failUrl: process.env.TRANZILA_FAIL_URL, // https://domain/payment/fail (external mode)
+
+    // ── Iframe checkout browser return URLs ───────────────────────────────────
+    // Used only when createPayment is called with mode="iframe".
+    // Must point to SPA routes, not Netlify functions.
+    // null when env vars are absent — validated at call time by requireIframeCheckoutUrls().
+    iframeSuccessUrl: process.env.TRANZILA_IFRAME_SUCCESS_URL ?? null,
+    iframeFailUrl: process.env.TRANZILA_IFRAME_FAIL_URL ?? null,
 
     // ── STO / token / recurring terminal ─────────────────────────────────────────────────
     // stoTerminal is a separate token/STO terminal, NOT a hosted checkout terminal.
