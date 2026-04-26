@@ -7,10 +7,10 @@ import {
     generateSeoSuggestion,
     generateFaqSuggestion,
 } from "../services/gemini.service.js";
+import Organization from "../models/Organization.model.js";
 import { hasAccess } from "../utils/planAccess.js";
-import { resolveBilling } from "../utils/trial.js";
 import { resolveEffectiveTier } from "../utils/tier.js";
-import { planFromTier } from "../utils/cardDTO.js";
+import { planFromTier, resolveEffectiveBilling } from "../utils/cardDTO.js";
 import { getPersonalOrgId } from "../utils/personalOrg.util.js";
 import { assertActiveOrgAndMembershipOrNotFound } from "../utils/orgMembership.util.js";
 import { HttpError } from "../utils/httpError.js";
@@ -89,16 +89,35 @@ function checkRateLimit(userId, limit) {
 
 async function resolveFeaturePlan(card, userId, now) {
     if (!userId) return { plan: "free", billingSource: "unknown" };
+
+    // Org-aware: load Organization for non-personal org cards only
+    let org = null;
+    if (card?.orgId) {
+        const personalOrgId = await getPersonalOrgId();
+        const isNonPersonalOrg = String(card.orgId) !== String(personalOrgId);
+        if (isNonPersonalOrg) {
+            org = await Organization.findById(card.orgId)
+                .select("_id isActive orgEntitlement")
+                .lean();
+        }
+    }
+
     const user = await User.findById(userId)
         .select("adminTier adminTierUntil")
         .lean();
-    const effectiveBilling = resolveBilling(card, now);
+    const effectiveBilling = resolveEffectiveBilling(card, now, org);
     const effectiveTier = resolveEffectiveTier({
         card,
         user,
         effectiveBilling,
         now,
     });
+
+    // Preserve org plan semantics (PLANS.org) for future org-specific feature/quota policy
+    if (effectiveBilling?.source === "organization") {
+        return { plan: "org", billingSource: "organization" };
+    }
+
     return {
         plan: planFromTier(effectiveTier?.tier || "free"),
         billingSource: effectiveBilling?.source || "unknown",

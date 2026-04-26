@@ -3,6 +3,9 @@ import Button from "../../components/ui/Button";
 import Input from "../../components/ui/Input";
 import FlashBanner from "../../components/ui/FlashBanner/FlashBanner";
 import {
+    adminExtendOrgEntitlement,
+    adminGrantOrgEntitlement,
+    adminRevokeOrgEntitlement,
     createAdminOrgInvite,
     createAdminOrganization,
     deleteAdminOrgMember,
@@ -27,6 +30,17 @@ function clampInt(value, { min, max, fallback }) {
     if (n < min) return min;
     if (n > max) return max;
     return n;
+}
+
+function formatAdminDate(value) {
+    if (!value) return "—";
+    const d = new Date(value);
+    if (!Number.isFinite(d.getTime())) return "—";
+    return d.toLocaleDateString("he-IL", {
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+    });
 }
 
 /** Local human-readable Hebrew label for member status values. */
@@ -73,11 +87,38 @@ function mapAdminApiError(err) {
     if (status === 400 && (code === "EMPTY_PATCH" || code === "INVALID_PATCH"))
         return "אין מה לעדכן.";
 
+    if (status === 409 && code === "ENTITLEMENT_ALREADY_ACTIVE")
+        return "הרשאת הארגון כבר פעילה. השתמש בהארכת גישה.";
+    if (status === 409 && code === "NOT_ACTIVE")
+        return "אין הרשאה פעילה להארכה. יש להעניק גישה חדשה.";
+    if (status === 409 && code === "NO_ENTITLEMENT")
+        return "אין הרשאה פעילה לביטול.";
+    if (status === 409 && code === "INACTIVE_ORG") return "הארגון אינו פעיל.";
+    if (status === 400 && code === "CONFIRM_REQUIRED")
+        return "נדרש אישור הענקת גישה שנתית.";
+    if (status === 400 && code === "INVALID_REASON")
+        return "הסיבה חייבת להכיל 5–500 תווים.";
+    if (status === 400 && code === "INVALID_EXPIRES_AT")
+        return "תאריך תפוגה לא תקין.";
+    if (status === 400 && code === "INVALID_DATE_RANGE")
+        return "טווח תאריכים לא תקין.";
+    if (status === 400 && code === "INVALID_PAYMENT_REFERENCE")
+        return "אסמכתא תשלום לא תקינה (עד 120 תווים).";
+    if (status === 400 && code === "INVALID_ADMIN_NOTE")
+        return "הערת מנהל לא תקינה (עד 500 תווים).";
+
     if (status === 401) return "נדרשת התחברות.";
     if (status === 403) return "אין הרשאות.";
 
     return "אירעה שגיאה. נסה שוב.";
 }
+
+const ENTITLEMENT_STATUS_CLASS = {
+    none: styles.entitlementStatus_none,
+    active: styles.entitlementStatus_active,
+    expired: styles.entitlementStatus_expired,
+    revoked: styles.entitlementStatus_revoked,
+};
 
 function OrgRow({ org, onSelect, onToggleActive, busy }) {
     const isActive = Boolean(org?.isActive);
@@ -127,6 +168,20 @@ export default function AdminOrganizationsView() {
     const [selectedOrg, setSelectedOrg] = useState(null);
     const [selectedSeatLimit, setSelectedSeatLimit] = useState("");
     const [selectedBusy, setSelectedBusy] = useState(false);
+
+    const [entitlementBusy, setEntitlementBusy] = useState(false);
+    const [entitlementOp, setEntitlementOp] = useState(null);
+    const [grantExpiresAt, setGrantExpiresAt] = useState("");
+    const [grantReason, setGrantReason] = useState("");
+    const [grantPaymentRef, setGrantPaymentRef] = useState("");
+    const [grantAdminNote, setGrantAdminNote] = useState("");
+    const [grantConfirm, setGrantConfirm] = useState(false);
+    const [extendNewExpiresAt, setExtendNewExpiresAt] = useState("");
+    const [extendReason, setExtendReason] = useState("");
+    const [extendPaymentRef, setExtendPaymentRef] = useState("");
+    const [extendAdminNote, setExtendAdminNote] = useState("");
+    const [revokeReason, setRevokeReason] = useState("");
+    const [revokeConfirm, setRevokeConfirm] = useState(false);
 
     const [members, setMembers] = useState([]);
     const [membersTotal, setMembersTotal] = useState(0);
@@ -237,6 +292,18 @@ export default function AdminOrganizationsView() {
         setInviteEmail("");
         setInviteRole("member");
         setInviteLink("");
+        setEntitlementOp(null);
+        setGrantExpiresAt("");
+        setGrantReason("");
+        setGrantPaymentRef("");
+        setGrantAdminNote("");
+        setGrantConfirm(false);
+        setExtendNewExpiresAt("");
+        setExtendReason("");
+        setExtendPaymentRef("");
+        setExtendAdminNote("");
+        setRevokeReason("");
+        setRevokeConfirm(false);
         loadInvites(selectedOrgId);
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [selectedOrgId]);
@@ -496,6 +563,185 @@ export default function AdminOrganizationsView() {
         }
     }
 
+    // ─── Org Entitlement computed ─────────────────────────────────────────────
+    const ent = selectedOrg?.entitlement ?? null;
+    const entNow = new Date();
+    const entExpiresDate = ent?.expiresAt ? new Date(ent.expiresAt) : null;
+    const entIsEffectivelyActive =
+        ent?.status === "active" &&
+        entExpiresDate !== null &&
+        Number.isFinite(entExpiresDate.getTime()) &&
+        entExpiresDate > entNow;
+    const entComputedStatus =
+        !ent || ent.status === "none" || ent.status === undefined
+            ? "none"
+            : ent.status === "revoked"
+              ? "revoked"
+              : ent.status === "active" && !entIsEffectivelyActive
+                ? "expired"
+                : "active";
+    const entStatusLabel =
+        {
+            none: "אין הרשאה",
+            active: "פעיל",
+            expired: "פג תוקף",
+            revoked: "בוטל",
+        }[entComputedStatus] ?? "—";
+    const showGrant = !entIsEffectivelyActive;
+    const showExtend = entIsEffectivelyActive;
+    const showRevoke = entIsEffectivelyActive;
+
+    async function handleGrantEntitlement(e) {
+        e.preventDefault();
+        const expiresDate = grantExpiresAt ? new Date(grantExpiresAt) : null;
+        if (
+            !expiresDate ||
+            !Number.isFinite(expiresDate.getTime()) ||
+            expiresDate <= new Date()
+        ) {
+            showFlash("error", "תאריך תפוגה חייב להיות בעתיד.");
+            return;
+        }
+        const reason = grantReason.trim();
+        if (reason.length < 5 || reason.length > 500) {
+            showFlash("error", "הסיבה חייבת להכיל 5–500 תווים.");
+            return;
+        }
+        if (grantPaymentRef.trim().length > 120) {
+            showFlash("error", "אסמכתא תשלום לא תקינה (עד 120 תווים).");
+            return;
+        }
+        if (grantAdminNote.trim().length > 500) {
+            showFlash("error", "הערת מנהל לא תקינה (עד 500 תווים).");
+            return;
+        }
+        if (!grantConfirm) {
+            showFlash("error", "נדרש אישור הענקת גישה שנתית.");
+            return;
+        }
+        setEntitlementBusy(true);
+        try {
+            const body = {
+                expiresAt: expiresDate.toISOString(),
+                reason,
+                confirmOrgAnnualGrant: true,
+            };
+            if (grantPaymentRef.trim())
+                body.paymentReference = grantPaymentRef.trim();
+            if (grantAdminNote.trim()) body.adminNote = grantAdminNote.trim();
+            const res = await adminGrantOrgEntitlement(selectedOrgId, body);
+            const msg = res?.data?.auditWriteFailed
+                ? "גישה שנתית הוענקה. שים לב: רישום הביקורת נכשל — יש לבדוק לוגים."
+                : "גישה שנתית הוענקה.";
+            showFlash(res?.data?.auditWriteFailed ? "info" : "success", msg);
+            setEntitlementOp(null);
+            setGrantExpiresAt("");
+            setGrantReason("");
+            setGrantPaymentRef("");
+            setGrantAdminNote("");
+            setGrantConfirm(false);
+            await loadSelectedOrgAndMembers(selectedOrgId);
+        } catch (err) {
+            showFlash("error", mapAdminApiError(err));
+        } finally {
+            setEntitlementBusy(false);
+        }
+    }
+
+    async function handleExtendEntitlement(e) {
+        e.preventDefault();
+        const currentExpires = selectedOrg?.entitlement?.expiresAt
+            ? new Date(selectedOrg.entitlement.expiresAt)
+            : null;
+        if (!currentExpires || !Number.isFinite(currentExpires.getTime())) {
+            showFlash("error", "תאריך תפוגה נוכחי לא תקין.");
+            return;
+        }
+        const newExpires = extendNewExpiresAt
+            ? new Date(extendNewExpiresAt)
+            : null;
+        if (
+            !newExpires ||
+            !Number.isFinite(newExpires.getTime()) ||
+            newExpires <= currentExpires
+        ) {
+            showFlash(
+                "error",
+                "תאריך תפוגה חדש חייב להיות אחרי תאריך התפוגה הנוכחי.",
+            );
+            return;
+        }
+        const reason = extendReason.trim();
+        if (reason.length < 5 || reason.length > 500) {
+            showFlash("error", "הסיבה חייבת להכיל 5–500 תווים.");
+            return;
+        }
+        if (extendPaymentRef.trim().length > 120) {
+            showFlash("error", "אסמכתא תשלום לא תקינה (עד 120 תווים).");
+            return;
+        }
+        if (extendAdminNote.trim().length > 500) {
+            showFlash("error", "הערת מנהל לא תקינה (עד 500 תווים).");
+            return;
+        }
+        setEntitlementBusy(true);
+        try {
+            const body = {
+                newExpiresAt: newExpires.toISOString(),
+                reason,
+            };
+            if (extendPaymentRef.trim())
+                body.paymentReference = extendPaymentRef.trim();
+            if (extendAdminNote.trim()) body.adminNote = extendAdminNote.trim();
+            const res = await adminExtendOrgEntitlement(selectedOrgId, body);
+            const msg = res?.data?.auditWriteFailed
+                ? "גישה שנתית הוארכה. שים לב: רישום הביקורת נכשל — יש לבדוק לוגים."
+                : "גישה שנתית הוארכה.";
+            showFlash(res?.data?.auditWriteFailed ? "info" : "success", msg);
+            setEntitlementOp(null);
+            setExtendNewExpiresAt("");
+            setExtendReason("");
+            setExtendPaymentRef("");
+            setExtendAdminNote("");
+            await loadSelectedOrgAndMembers(selectedOrgId);
+        } catch (err) {
+            showFlash("error", mapAdminApiError(err));
+        } finally {
+            setEntitlementBusy(false);
+        }
+    }
+
+    async function handleRevokeEntitlement(e) {
+        e.preventDefault();
+        const reason = revokeReason.trim();
+        if (reason.length < 5 || reason.length > 500) {
+            showFlash("error", "הסיבה חייבת להכיל 5–500 תווים.");
+            return;
+        }
+        if (!revokeConfirm) {
+            showFlash("error", "נדרש אישור ביטול גישה שנתית.");
+            return;
+        }
+        setEntitlementBusy(true);
+        try {
+            const res = await adminRevokeOrgEntitlement(selectedOrgId, {
+                reason,
+            });
+            const msg = res?.data?.auditWriteFailed
+                ? "גישה שנתית בוטלה. שים לב: רישום הביקורת נכשל — יש לבדוק לוגים."
+                : "גישה שנתית בוטלה.";
+            showFlash(res?.data?.auditWriteFailed ? "info" : "success", msg);
+            setEntitlementOp(null);
+            setRevokeReason("");
+            setRevokeConfirm(false);
+            await loadSelectedOrgAndMembers(selectedOrgId);
+        } catch (err) {
+            showFlash("error", mapAdminApiError(err));
+        } finally {
+            setEntitlementBusy(false);
+        }
+    }
+
     return (
         <div className={styles.wrap} dir="rtl">
             {flash ? (
@@ -708,6 +954,383 @@ export default function AdminOrganizationsView() {
                                 >
                                     שמור
                                 </Button>
+                            </div>
+
+                            {/* ─── Annual Org Entitlement ─── */}
+                            <div className={styles.entitlementSection}>
+                                <h3 className={styles.h3}>
+                                    הרשאה שנתית לארגון
+                                </h3>
+                                <p className={styles.entitlementHelperText}>
+                                    גישה שנתית לארגון מנוהלת ידנית לאחר תשלום
+                                    מחוץ למערכת. לא מתבצעת כאן סליקה, יצירת
+                                    חשבונית או חיוב אוטומטי.
+                                </p>
+
+                                <div className={styles.detailsGrid}>
+                                    <div className={styles.detailItem}>
+                                        <div className={styles.detailLabel}>
+                                            סטטוס
+                                        </div>
+                                        <div className={styles.detailValue}>
+                                            <span
+                                                className={[
+                                                    styles.entitlementStatusBadge,
+                                                    ENTITLEMENT_STATUS_CLASS[
+                                                        entComputedStatus
+                                                    ],
+                                                ]
+                                                    .filter(Boolean)
+                                                    .join(" ")}
+                                            >
+                                                {entStatusLabel}
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <div className={styles.detailItem}>
+                                        <div className={styles.detailLabel}>
+                                            תוכנית
+                                        </div>
+                                        <div className={styles.detailValue}>
+                                            {ent?.plan || "—"}
+                                        </div>
+                                    </div>
+                                    <div className={styles.detailItem}>
+                                        <div className={styles.detailLabel}>
+                                            תחילה
+                                        </div>
+                                        <div
+                                            className={styles.detailValue}
+                                            dir="ltr"
+                                        >
+                                            {formatAdminDate(ent?.startsAt)}
+                                        </div>
+                                    </div>
+                                    <div className={styles.detailItem}>
+                                        <div className={styles.detailLabel}>
+                                            תפוגה
+                                        </div>
+                                        <div
+                                            className={styles.detailValue}
+                                            dir="ltr"
+                                        >
+                                            {formatAdminDate(ent?.expiresAt)}
+                                        </div>
+                                    </div>
+                                    <div className={styles.detailItem}>
+                                        <div className={styles.detailLabel}>
+                                            מקור
+                                        </div>
+                                        <div className={styles.detailValue}>
+                                            {ent?.source || "—"}
+                                        </div>
+                                    </div>
+                                    <div className={styles.detailItem}>
+                                        <div className={styles.detailLabel}>
+                                            הוענק
+                                        </div>
+                                        <div
+                                            className={styles.detailValue}
+                                            dir="ltr"
+                                        >
+                                            {formatAdminDate(ent?.grantedAt)}
+                                        </div>
+                                    </div>
+                                    <div className={styles.detailItem}>
+                                        <div className={styles.detailLabel}>
+                                            עודכן לאחרונה
+                                        </div>
+                                        <div
+                                            className={styles.detailValue}
+                                            dir="ltr"
+                                        >
+                                            {formatAdminDate(
+                                                ent?.lastModifiedAt,
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className={styles.entitlementActions}>
+                                    {showGrant && (
+                                        <Button
+                                            size="small"
+                                            onClick={() =>
+                                                setEntitlementOp(
+                                                    entitlementOp === "grant"
+                                                        ? null
+                                                        : "grant",
+                                                )
+                                            }
+                                            disabled={entitlementBusy}
+                                        >
+                                            {entitlementOp === "grant"
+                                                ? "סגור"
+                                                : "הענק גישה שנתית"}
+                                        </Button>
+                                    )}
+                                    {showExtend && (
+                                        <Button
+                                            size="small"
+                                            variant="secondary"
+                                            onClick={() =>
+                                                setEntitlementOp(
+                                                    entitlementOp === "extend"
+                                                        ? null
+                                                        : "extend",
+                                                )
+                                            }
+                                            disabled={entitlementBusy}
+                                        >
+                                            {entitlementOp === "extend"
+                                                ? "סגור"
+                                                : "הארך גישה"}
+                                        </Button>
+                                    )}
+                                    {showRevoke && (
+                                        <Button
+                                            size="small"
+                                            variant="danger"
+                                            onClick={() =>
+                                                setEntitlementOp(
+                                                    entitlementOp === "revoke"
+                                                        ? null
+                                                        : "revoke",
+                                                )
+                                            }
+                                            disabled={entitlementBusy}
+                                        >
+                                            {entitlementOp === "revoke"
+                                                ? "סגור"
+                                                : "בטל גישה"}
+                                        </Button>
+                                    )}
+                                </div>
+
+                                {entitlementOp === "grant" && (
+                                    <form
+                                        className={styles.entitlementFormPanel}
+                                        onSubmit={handleGrantEntitlement}
+                                    >
+                                        <label className={styles.label}>
+                                            תאריך תפוגה *
+                                        </label>
+                                        <Input
+                                            type="date"
+                                            value={grantExpiresAt}
+                                            onChange={(e) =>
+                                                setGrantExpiresAt(
+                                                    e.target.value,
+                                                )
+                                            }
+                                            required
+                                        />
+                                        <label className={styles.label}>
+                                            סיבה *
+                                        </label>
+                                        <Input
+                                            value={grantReason}
+                                            onChange={(e) =>
+                                                setGrantReason(e.target.value)
+                                            }
+                                            placeholder="לדוגמה: חוזה שנתי B2B"
+                                            required
+                                        />
+                                        <label className={styles.label}>
+                                            אסמכתא תשלום (אופציונלי)
+                                        </label>
+                                        <Input
+                                            value={grantPaymentRef}
+                                            onChange={(e) =>
+                                                setGrantPaymentRef(
+                                                    e.target.value,
+                                                )
+                                            }
+                                            placeholder="מס׳ אסמכתא, קישור, תיאור"
+                                        />
+                                        <label className={styles.label}>
+                                            הערת מנהל (אופציונלי)
+                                        </label>
+                                        <Input
+                                            value={grantAdminNote}
+                                            onChange={(e) =>
+                                                setGrantAdminNote(
+                                                    e.target.value,
+                                                )
+                                            }
+                                            placeholder="הערה פנימית לטובת הצוות"
+                                        />
+                                        <div
+                                            className={
+                                                styles.entitlementCheckboxRow
+                                            }
+                                        >
+                                            <input
+                                                type="checkbox"
+                                                id="entGrantConfirm"
+                                                checked={grantConfirm}
+                                                onChange={(e) =>
+                                                    setGrantConfirm(
+                                                        e.target.checked,
+                                                    )
+                                                }
+                                            />
+                                            <label
+                                                htmlFor="entGrantConfirm"
+                                                className={styles.label}
+                                            >
+                                                אני מאשר/ת הענקת גישה שנתית לאחר
+                                                קבלת תשלום מחוץ למערכת
+                                            </label>
+                                        </div>
+                                        <Button
+                                            type="submit"
+                                            size="small"
+                                            disabled={
+                                                entitlementBusy || !grantConfirm
+                                            }
+                                        >
+                                            {entitlementBusy
+                                                ? "שולח..."
+                                                : "הענק גישה"}
+                                        </Button>
+                                    </form>
+                                )}
+
+                                {entitlementOp === "extend" && (
+                                    <form
+                                        className={styles.entitlementFormPanel}
+                                        onSubmit={handleExtendEntitlement}
+                                    >
+                                        <p
+                                            className={
+                                                styles.entitlementHelperText
+                                            }
+                                        >
+                                            תפוגה נוכחית:{" "}
+                                            {formatAdminDate(ent?.expiresAt)}
+                                        </p>
+                                        <label className={styles.label}>
+                                            תאריך תפוגה חדש *
+                                        </label>
+                                        <Input
+                                            type="date"
+                                            value={extendNewExpiresAt}
+                                            onChange={(e) =>
+                                                setExtendNewExpiresAt(
+                                                    e.target.value,
+                                                )
+                                            }
+                                            required
+                                        />
+                                        <label className={styles.label}>
+                                            סיבה *
+                                        </label>
+                                        <Input
+                                            value={extendReason}
+                                            onChange={(e) =>
+                                                setExtendReason(e.target.value)
+                                            }
+                                            placeholder="לדוגמה: חידוש שנתי"
+                                            required
+                                        />
+                                        <label className={styles.label}>
+                                            אסמכתא תשלום (אופציונלי)
+                                        </label>
+                                        <Input
+                                            value={extendPaymentRef}
+                                            onChange={(e) =>
+                                                setExtendPaymentRef(
+                                                    e.target.value,
+                                                )
+                                            }
+                                            placeholder="מס׳ אסמכתא"
+                                        />
+                                        <label className={styles.label}>
+                                            הערת מנהל (אופציונלי)
+                                        </label>
+                                        <Input
+                                            value={extendAdminNote}
+                                            onChange={(e) =>
+                                                setExtendAdminNote(
+                                                    e.target.value,
+                                                )
+                                            }
+                                        />
+                                        <Button
+                                            type="submit"
+                                            size="small"
+                                            disabled={entitlementBusy}
+                                        >
+                                            {entitlementBusy
+                                                ? "שולח..."
+                                                : "הארך גישה"}
+                                        </Button>
+                                    </form>
+                                )}
+
+                                {entitlementOp === "revoke" && (
+                                    <form
+                                        className={styles.entitlementFormPanel}
+                                        onSubmit={handleRevokeEntitlement}
+                                    >
+                                        <p
+                                            className={
+                                                styles.entitlementHelperText
+                                            }
+                                        >
+                                            ביטול הגישה השנתית יפסיק את ההרשאה
+                                            לאלתר. לא מבוצעת החזרה כספית.
+                                        </p>
+                                        <label className={styles.label}>
+                                            סיבה *
+                                        </label>
+                                        <Input
+                                            value={revokeReason}
+                                            onChange={(e) =>
+                                                setRevokeReason(e.target.value)
+                                            }
+                                            placeholder="לדוגמה: סיום חוזה"
+                                            required
+                                        />
+                                        <div
+                                            className={
+                                                styles.entitlementCheckboxRow
+                                            }
+                                        >
+                                            <input
+                                                type="checkbox"
+                                                id="entRevokeConfirm"
+                                                checked={revokeConfirm}
+                                                onChange={(e) =>
+                                                    setRevokeConfirm(
+                                                        e.target.checked,
+                                                    )
+                                                }
+                                            />
+                                            <label
+                                                htmlFor="entRevokeConfirm"
+                                                className={styles.label}
+                                            >
+                                                אני מאשר/ת ביטול גישה שנתית
+                                                לארגון זה
+                                            </label>
+                                        </div>
+                                        <Button
+                                            type="submit"
+                                            size="small"
+                                            variant="danger"
+                                            disabled={
+                                                entitlementBusy ||
+                                                !revokeConfirm
+                                            }
+                                        >
+                                            {entitlementBusy
+                                                ? "שולח..."
+                                                : "בטל גישה"}
+                                        </Button>
+                                    </form>
+                                )}
                             </div>
 
                             <h3 className={styles.h3}>חברים</h3>

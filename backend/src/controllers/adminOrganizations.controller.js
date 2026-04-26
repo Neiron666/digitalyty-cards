@@ -2,6 +2,7 @@ import mongoose from "mongoose";
 import crypto from "crypto";
 
 import Organization from "../models/Organization.model.js";
+import { logAdminAction } from "../services/adminAudit.service.js";
 import OrganizationMember from "../models/OrganizationMember.model.js";
 import OrgInvite from "../models/OrgInvite.model.js";
 import OrgInviteAudit from "../models/OrgInviteAudit.model.js";
@@ -84,6 +85,112 @@ function pickInviteDTO(invite) {
         createdAt: invite.createdAt,
     };
 }
+
+// ─── Org Entitlement helpers ─────────────────────────────────────────────────
+
+/**
+ * Safe bounded DTO for org entitlement admin responses.
+ * Omits operator-memo fields (paymentReference, adminNote) and internal
+ * ObjectId refs (grantedByUserId, lastModifiedByUserId).
+ */
+function pickOrgEntitlementDTO(org) {
+    const oe = org?.orgEntitlement;
+    if (!oe || oe.status === undefined) {
+        return {
+            status: "none",
+            plan: null,
+            startsAt: null,
+            expiresAt: null,
+            source: null,
+            grantedAt: null,
+            lastModifiedAt: null,
+        };
+    }
+    return {
+        status: oe.status ?? "none",
+        plan: oe.plan ?? null,
+        startsAt: oe.startsAt ?? null,
+        expiresAt: oe.expiresAt ?? null,
+        source: oe.source ?? null,
+        grantedAt: oe.grantedAt ?? null,
+        lastModifiedAt: oe.lastModifiedAt ?? null,
+    };
+}
+
+/**
+ * Safe audit snapshot — only state-machine fields, no operator memos, no PII.
+ */
+function safeAuditEntitlementSnapshot(oe) {
+    if (!oe) {
+        return {
+            status: "none",
+            plan: null,
+            startsAt: null,
+            expiresAt: null,
+            source: null,
+        };
+    }
+    return {
+        status: oe.status ?? "none",
+        plan: oe.plan ?? null,
+        startsAt: oe.startsAt ?? null,
+        expiresAt: oe.expiresAt ?? null,
+        source: oe.source ?? null,
+    };
+}
+
+/**
+ * normalizeOptionalText — for paymentReference and adminNote.
+ * Returns { ok: true, value: string|null } or { ok: false }.
+ */
+function normalizeOptionalText(value, max) {
+    if (value === undefined || value === null) return { ok: true, value: null };
+    if (typeof value !== "string") return { ok: false };
+    const trimmed = value.trim();
+    if (!trimmed) return { ok: true, value: null };
+    if (trimmed.length > max) return { ok: false };
+    return { ok: true, value: trimmed };
+}
+
+/**
+ * requireReason — validates reason string.
+ * Returns trimmed string on valid; null on invalid.
+ */
+function requireReason(value) {
+    if (typeof value !== "string") return null;
+    const trimmed = value.trim();
+    if (trimmed.length < 5 || trimmed.length > 500) return null;
+    return trimmed;
+}
+
+/**
+ * parseDate — parses a value into a Date.
+ * Returns Date if valid and finite; null otherwise.
+ */
+function parseDate(value) {
+    if (value === undefined || value === null) return null;
+    const d = new Date(value);
+    return Number.isFinite(d.getTime()) ? d : null;
+}
+
+/**
+ * isEffectiveOrgEntitlementActive — computed (not stored) active check.
+ * Stored status:"active" with expiresAt in the past is NOT effectively active.
+ */
+function isEffectiveOrgEntitlementActive(entitlement, now) {
+    if (!entitlement || entitlement.status !== "active") return false;
+    const expires = parseDate(entitlement.expiresAt);
+    if (!expires) return false;
+    if (expires <= now) return false;
+    if (entitlement.startsAt != null) {
+        const starts = parseDate(entitlement.startsAt);
+        if (!starts) return false;
+        if (starts > now) return false;
+    }
+    return true;
+}
+
+// ─── End Org Entitlement helpers ─────────────────────────────────────────────
 
 function normalizeName(value) {
     if (typeof value !== "string") return "";
@@ -247,7 +354,9 @@ export async function adminGetOrganizationById(req, res) {
     }
 
     const org = await Organization.findById(id)
-        .select("slug name note isActive seatLimit createdAt updatedAt")
+        .select(
+            "slug name note isActive seatLimit orgEntitlement createdAt updatedAt",
+        )
         .lean();
 
     if (!org?._id) {
@@ -267,6 +376,7 @@ export async function adminGetOrganizationById(req, res) {
             activeMemberships: Number(seatUsage?.activeMemberships || 0),
             pendingInvites: Number(seatUsage?.pendingInvites || 0),
         },
+        entitlement: pickOrgEntitlementDTO(org),
     });
 }
 
@@ -745,3 +855,496 @@ export async function adminDeleteOrgMember(req, res) {
 
     return res.sendStatus(204);
 }
+
+// ─── Org Entitlement — Grant / Revoke / Extend ───────────────────────────────
+
+export async function adminGrantOrgEntitlement(req, res) {
+    // 1. Validate :id
+    const id = String(req.params.id || "");
+    if (!isValidObjectId(id)) {
+        return res
+            .status(400)
+            .json({ code: "INVALID_ID", message: "Invalid id" });
+    }
+
+    // 2. Load org directly (requireOrgById only selects _id+seatLimit)
+    const org = await Organization.findById(id)
+        .select("_id isActive orgEntitlement")
+        .lean();
+    if (!org?._id) {
+        return res
+            .status(404)
+            .json({ code: "NOT_FOUND", message: "Not found" });
+    }
+
+    // 3. Org must be active
+    if (!org.isActive) {
+        return res
+            .status(409)
+            .json({
+                code: "INACTIVE_ORG",
+                message: "Organization is inactive",
+            });
+    }
+
+    // 4. Explicit confirmation required
+    if (req.body?.confirmOrgAnnualGrant !== true) {
+        return res
+            .status(400)
+            .json({
+                code: "CONFIRM_REQUIRED",
+                message: "confirmOrgAnnualGrant must be true",
+            });
+    }
+
+    // 5. Reason required
+    const reason = requireReason(req.body?.reason);
+    if (!reason) {
+        return res
+            .status(400)
+            .json({
+                code: "INVALID_REASON",
+                message: "reason must be a string of 5–500 characters",
+            });
+    }
+
+    const now = new Date();
+
+    // 6. Effective-active guard (stored-active but expired → allow re-grant)
+    if (isEffectiveOrgEntitlementActive(org.orgEntitlement, now)) {
+        return res
+            .status(409)
+            .json({
+                code: "ENTITLEMENT_ALREADY_ACTIVE",
+                message: "Organization entitlement is already active",
+            });
+    }
+
+    // 7. startsAt optional, defaults to now
+    let startsAt = now;
+    if (req.body?.startsAt !== undefined && req.body?.startsAt !== null) {
+        const parsed = parseDate(req.body.startsAt);
+        if (!parsed) {
+            return res
+                .status(400)
+                .json({
+                    code: "INVALID_DATE_RANGE",
+                    message: "startsAt must be a valid date",
+                });
+        }
+        startsAt = parsed;
+    }
+
+    // 8. expiresAt required, must be future, must be after startsAt, max 400 days from startsAt
+    const expiresAt = parseDate(req.body?.expiresAt);
+    if (!expiresAt) {
+        return res
+            .status(400)
+            .json({
+                code: "INVALID_EXPIRES_AT",
+                message: "expiresAt is required and must be a valid date",
+            });
+    }
+    if (expiresAt <= now) {
+        return res
+            .status(400)
+            .json({
+                code: "INVALID_EXPIRES_AT",
+                message: "expiresAt must be in the future",
+            });
+    }
+    if (expiresAt <= startsAt) {
+        return res
+            .status(400)
+            .json({
+                code: "INVALID_DATE_RANGE",
+                message: "expiresAt must be after startsAt",
+            });
+    }
+    const maxExpiresAt = new Date(
+        startsAt.getTime() + 400 * 24 * 60 * 60 * 1000,
+    );
+    if (expiresAt > maxExpiresAt) {
+        return res
+            .status(400)
+            .json({
+                code: "INVALID_EXPIRES_AT",
+                message: "expiresAt must be within 400 days of startsAt",
+            });
+    }
+
+    // 9. paymentReference optional max 120
+    const prResult = normalizeOptionalText(req.body?.paymentReference, 120);
+    if (!prResult.ok) {
+        return res
+            .status(400)
+            .json({
+                code: "INVALID_PAYMENT_REFERENCE",
+                message:
+                    "paymentReference must be a string of at most 120 characters",
+            });
+    }
+    const paymentReference = prResult.value;
+
+    // 10. adminNote optional max 500
+    const anResult = normalizeOptionalText(req.body?.adminNote, 500);
+    if (!anResult.ok) {
+        return res
+            .status(400)
+            .json({
+                code: "INVALID_ADMIN_NOTE",
+                message: "adminNote must be a string of at most 500 characters",
+            });
+    }
+    const adminNote = anResult.value;
+
+    // Mutation: full replacement of orgEntitlement sub-doc to clear stale fields
+    const updatedOrg = await Organization.findByIdAndUpdate(
+        org._id,
+        {
+            $set: {
+                orgEntitlement: {
+                    status: "active",
+                    plan: "org",
+                    startsAt,
+                    expiresAt,
+                    grantedByUserId: req.userId,
+                    grantedAt: now,
+                    lastModifiedByUserId: req.userId,
+                    lastModifiedAt: now,
+                    source: "admin-manual",
+                    paymentReference,
+                    adminNote,
+                },
+            },
+        },
+        { new: true, runValidators: true },
+    )
+        .select("_id orgEntitlement")
+        .lean();
+
+    // AdminAudit — await with graceful degradation
+    try {
+        await logAdminAction({
+            adminUserId: req.userId,
+            action: "ORG_ENTITLEMENT_GRANT",
+            targetType: "org",
+            targetId: org._id,
+            reason,
+            meta: {
+                before: safeAuditEntitlementSnapshot(org.orgEntitlement),
+                after: safeAuditEntitlementSnapshot(updatedOrg?.orgEntitlement),
+                paymentReferenceProvided: Boolean(paymentReference),
+                adminNoteProvided: Boolean(adminNote),
+            },
+        });
+    } catch (auditErr) {
+        console.error("[admin] ORG_ENTITLEMENT_GRANT audit write failed", {
+            orgId: String(org._id),
+            error: auditErr?.message || auditErr,
+        });
+        return res.json({
+            ok: true,
+            orgId: String(org._id),
+            entitlement: pickOrgEntitlementDTO(updatedOrg),
+            auditWriteFailed: true,
+            warning:
+                "Organization entitlement was updated but admin audit log could not be written. Check server logs.",
+        });
+    }
+
+    return res.json({
+        ok: true,
+        orgId: String(org._id),
+        entitlement: pickOrgEntitlementDTO(updatedOrg),
+    });
+}
+
+export async function adminRevokeOrgEntitlement(req, res) {
+    // 1. Validate :id
+    const id = String(req.params.id || "");
+    if (!isValidObjectId(id)) {
+        return res
+            .status(400)
+            .json({ code: "INVALID_ID", message: "Invalid id" });
+    }
+
+    // 2. Load org directly
+    const org = await Organization.findById(id)
+        .select("_id orgEntitlement")
+        .lean();
+    if (!org?._id) {
+        return res
+            .status(404)
+            .json({ code: "NOT_FOUND", message: "Not found" });
+    }
+
+    // 3. Reason required
+    const reason = requireReason(req.body?.reason);
+    if (!reason) {
+        return res
+            .status(400)
+            .json({
+                code: "INVALID_REASON",
+                message: "reason must be a string of 5–500 characters",
+            });
+    }
+
+    const currentStatus = org.orgEntitlement?.status;
+
+    // 4. No entitlement to revoke
+    if (!currentStatus || currentStatus === "none") {
+        return res
+            .status(409)
+            .json({
+                code: "NO_ENTITLEMENT",
+                message: "No active entitlement to revoke",
+            });
+    }
+
+    // 5. Already revoked — idempotent no-op (no DB write, no audit)
+    if (currentStatus === "revoked") {
+        return res.json({
+            ok: true,
+            orgId: String(org._id),
+            alreadyRevoked: true,
+            entitlement: pickOrgEntitlementDTO(org),
+        });
+    }
+
+    // 6. status === "active" — revoke regardless of whether expiresAt is future or past
+    const now = new Date();
+
+    // Mutation: dotted-path to preserve historical fields
+    const updatedOrg = await Organization.findByIdAndUpdate(
+        org._id,
+        {
+            $set: {
+                "orgEntitlement.status": "revoked",
+                "orgEntitlement.lastModifiedByUserId": req.userId,
+                "orgEntitlement.lastModifiedAt": now,
+            },
+        },
+        { new: true, runValidators: true },
+    )
+        .select("_id orgEntitlement")
+        .lean();
+
+    // AdminAudit — await with graceful degradation
+    try {
+        await logAdminAction({
+            adminUserId: req.userId,
+            action: "ORG_ENTITLEMENT_REVOKE",
+            targetType: "org",
+            targetId: org._id,
+            reason,
+            meta: {
+                before: safeAuditEntitlementSnapshot(org.orgEntitlement),
+                after: safeAuditEntitlementSnapshot(updatedOrg?.orgEntitlement),
+            },
+        });
+    } catch (auditErr) {
+        console.error("[admin] ORG_ENTITLEMENT_REVOKE audit write failed", {
+            orgId: String(org._id),
+            error: auditErr?.message || auditErr,
+        });
+        return res.json({
+            ok: true,
+            orgId: String(org._id),
+            entitlement: pickOrgEntitlementDTO(updatedOrg),
+            auditWriteFailed: true,
+            warning:
+                "Organization entitlement was updated but admin audit log could not be written. Check server logs.",
+        });
+    }
+
+    return res.json({
+        ok: true,
+        orgId: String(org._id),
+        entitlement: pickOrgEntitlementDTO(updatedOrg),
+    });
+}
+
+export async function adminExtendOrgEntitlement(req, res) {
+    // 1. Validate :id
+    const id = String(req.params.id || "");
+    if (!isValidObjectId(id)) {
+        return res
+            .status(400)
+            .json({ code: "INVALID_ID", message: "Invalid id" });
+    }
+
+    // 2. Load org directly
+    const org = await Organization.findById(id)
+        .select("_id isActive orgEntitlement")
+        .lean();
+    if (!org?._id) {
+        return res
+            .status(404)
+            .json({ code: "NOT_FOUND", message: "Not found" });
+    }
+
+    // 3. Org must be active
+    if (!org.isActive) {
+        return res
+            .status(409)
+            .json({
+                code: "INACTIVE_ORG",
+                message: "Organization is inactive",
+            });
+    }
+
+    // 4. Reason required
+    const reason = requireReason(req.body?.reason);
+    if (!reason) {
+        return res
+            .status(400)
+            .json({
+                code: "INVALID_REASON",
+                message: "reason must be a string of 5–500 characters",
+            });
+    }
+
+    const now = new Date();
+
+    // 5–6. Entitlement must be effectively active (stored-active-expired → NOT_ACTIVE; use grant)
+    if (!isEffectiveOrgEntitlementActive(org.orgEntitlement, now)) {
+        return res
+            .status(409)
+            .json({
+                code: "NOT_ACTIVE",
+                message:
+                    "No effectively active entitlement to extend. Use grant for expired or missing entitlements.",
+            });
+    }
+
+    const currentExpiresAt = parseDate(org.orgEntitlement?.expiresAt);
+    if (!currentExpiresAt) {
+        return res
+            .status(409)
+            .json({
+                code: "NOT_ACTIVE",
+                message: "Current entitlement has no valid expiresAt",
+            });
+    }
+
+    // 7. newExpiresAt required and valid
+    const newExpiresAt = parseDate(req.body?.newExpiresAt);
+    if (!newExpiresAt) {
+        return res
+            .status(400)
+            .json({
+                code: "INVALID_EXPIRES_AT",
+                message: "newExpiresAt is required and must be a valid date",
+            });
+    }
+
+    // 8. newExpiresAt must be after current expiresAt
+    if (newExpiresAt <= currentExpiresAt) {
+        return res
+            .status(400)
+            .json({
+                code: "INVALID_EXPIRES_AT",
+                message: "newExpiresAt must be after current expiresAt",
+            });
+    }
+
+    // 9. newExpiresAt max 400 days from current expiresAt
+    const maxNewExpiresAt = new Date(
+        currentExpiresAt.getTime() + 400 * 24 * 60 * 60 * 1000,
+    );
+    if (newExpiresAt > maxNewExpiresAt) {
+        return res
+            .status(400)
+            .json({
+                code: "INVALID_EXPIRES_AT",
+                message:
+                    "newExpiresAt must be within 400 days of current expiresAt",
+            });
+    }
+
+    // 10. paymentReference optional max 120
+    const prResult = normalizeOptionalText(req.body?.paymentReference, 120);
+    if (!prResult.ok) {
+        return res
+            .status(400)
+            .json({
+                code: "INVALID_PAYMENT_REFERENCE",
+                message:
+                    "paymentReference must be a string of at most 120 characters",
+            });
+    }
+    const paymentReference = prResult.value;
+
+    // 11. adminNote optional max 500
+    const anResult = normalizeOptionalText(req.body?.adminNote, 500);
+    if (!anResult.ok) {
+        return res
+            .status(400)
+            .json({
+                code: "INVALID_ADMIN_NOTE",
+                message: "adminNote must be a string of at most 500 characters",
+            });
+    }
+    const adminNote = anResult.value;
+
+    // Mutation: dotted-path to preserve grant provenance (status, plan, startsAt, grantedBy/At, source)
+    const $setExtend = {
+        "orgEntitlement.expiresAt": newExpiresAt,
+        "orgEntitlement.lastModifiedByUserId": req.userId,
+        "orgEntitlement.lastModifiedAt": now,
+    };
+    // Only update optional operator memos if explicitly provided (non-null after normalize)
+    if (paymentReference !== null) {
+        $setExtend["orgEntitlement.paymentReference"] = paymentReference;
+    }
+    if (adminNote !== null) {
+        $setExtend["orgEntitlement.adminNote"] = adminNote;
+    }
+
+    const updatedOrg = await Organization.findByIdAndUpdate(
+        org._id,
+        { $set: $setExtend },
+        { new: true, runValidators: true },
+    )
+        .select("_id orgEntitlement")
+        .lean();
+
+    // AdminAudit — await with graceful degradation
+    try {
+        await logAdminAction({
+            adminUserId: req.userId,
+            action: "ORG_ENTITLEMENT_EXTEND",
+            targetType: "org",
+            targetId: org._id,
+            reason,
+            meta: {
+                before: safeAuditEntitlementSnapshot(org.orgEntitlement),
+                after: safeAuditEntitlementSnapshot(updatedOrg?.orgEntitlement),
+                paymentReferenceProvided: Boolean(paymentReference),
+                adminNoteProvided: Boolean(adminNote),
+            },
+        });
+    } catch (auditErr) {
+        console.error("[admin] ORG_ENTITLEMENT_EXTEND audit write failed", {
+            orgId: String(org._id),
+            error: auditErr?.message || auditErr,
+        });
+        return res.json({
+            ok: true,
+            orgId: String(org._id),
+            entitlement: pickOrgEntitlementDTO(updatedOrg),
+            auditWriteFailed: true,
+            warning:
+                "Organization entitlement was updated but admin audit log could not be written. Check server logs.",
+        });
+    }
+
+    return res.json({
+        ok: true,
+        orgId: String(org._id),
+        entitlement: pickOrgEntitlementDTO(updatedOrg),
+    });
+}
+
+// ─── End Org Entitlement — Grant / Revoke / Extend ───────────────────────────

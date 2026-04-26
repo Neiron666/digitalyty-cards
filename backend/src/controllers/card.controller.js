@@ -31,12 +31,15 @@ import {
     isTrialDeleteDue,
     isTrialExpired,
     isEntitled,
-    resolveBilling,
     computeUserPremiumTrialDates,
 } from "../utils/trial.js";
 import { HttpError } from "../utils/httpError.js";
 import { claimAnonymousCardForUser } from "../services/claimCard.service.js";
-import { toCardDTO, planFromTier } from "../utils/cardDTO.js";
+import {
+    toCardDTO,
+    planFromTier,
+    resolveEffectiveBilling,
+} from "../utils/cardDTO.js";
 import { resolveEffectiveTier } from "../utils/tier.js";
 import { normalizeAboutParagraphs } from "../utils/about.js";
 import { normalizeFaqForWrite } from "../utils/faq.util.js";
@@ -445,13 +448,20 @@ async function resolveFeaturePlanForCard(card, userId, now) {
     const user = await User.findById(userId)
         .select("adminTier adminTierUntil")
         .lean();
-    const effectiveBilling = resolveBilling(card, now);
+    let org = null;
+    if (card?.orgId) {
+        org = await Organization.findById(card.orgId)
+            .select("isActive orgEntitlement")
+            .lean();
+    }
+    const effectiveBilling = resolveEffectiveBilling(card, now, org);
     const effectiveTier = resolveEffectiveTier({
         card,
         user,
         effectiveBilling,
         now,
     });
+    if (effectiveBilling?.source === "organization") return "org";
     return planFromTier(effectiveTier?.tier || "free");
 }
 
@@ -853,7 +863,7 @@ export async function getOrCreateMyOrgCard(req, res) {
     if (!orgSlug) return res.status(404).json({ message: "Not found" });
 
     const org = await Organization.findOne({ slug: orgSlug, isActive: true })
-        .select("_id slug")
+        .select("_id slug isActive orgEntitlement")
         .lean();
 
     if (!org?._id) return res.status(404).json({ message: "Not found" });
@@ -936,6 +946,7 @@ export async function getOrCreateMyOrgCard(req, res) {
     const dto = toCardDTO(card, now, {
         user: userTier || null,
         exposeSlugPolicy: true,
+        org,
     });
 
     if (dto?.slug) {
@@ -2281,7 +2292,7 @@ export async function getPreviewCompanyCardByOrgSlugAndSlug(req, res) {
         slug: orgSlug,
         isActive: true,
     })
-        .select("_id slug")
+        .select("_id slug isActive orgEntitlement")
         .lean();
 
     if (!org?._id) {
@@ -2336,7 +2347,7 @@ export async function getPreviewCompanyCardByOrgSlugAndSlug(req, res) {
         .select("adminTier adminTierUntil")
         .lean();
 
-    const dto = toCardDTO(card, now, { user: userTier });
+    const dto = toCardDTO(card, now, { user: userTier, org });
     if (dto?.slug) {
         const canonicalOrgSlug = org?.slug ? String(org.slug) : orgSlug;
         dto.publicPath = `/c/${canonicalOrgSlug}/${dto.slug}`;
@@ -2433,7 +2444,7 @@ export async function getCompanyCardByOrgSlugAndSlug(req, res) {
         slug: orgSlug,
         isActive: true,
     })
-        .select("_id slug")
+        .select("_id slug isActive orgEntitlement")
         .lean();
 
     if (!org?._id) {
@@ -2507,7 +2518,7 @@ export async function getCompanyCardByOrgSlugAndSlug(req, res) {
         .select("adminTier adminTierUntil")
         .lean();
 
-    const dto = toCardDTO(card, now, { user: userTier });
+    const dto = toCardDTO(card, now, { user: userTier, org });
     if (dto?.slug) {
         const canonicalOrgSlug = org?.slug ? String(org.slug) : orgSlug;
         dto.publicPath = `/c/${canonicalOrgSlug}/${dto.slug}`;

@@ -11,7 +11,7 @@ const AdminAuditSchema = new mongoose.Schema(
         action: { type: String, required: true, index: true },
         targetType: {
             type: String,
-            enum: ["user", "card", "blog"],
+            enum: ["user", "card", "blog", "org"],
             required: true,
         },
         targetId: {

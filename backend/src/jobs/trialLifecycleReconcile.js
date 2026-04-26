@@ -27,12 +27,22 @@ async function reconcileOnce() {
             "billing.status": "trial",
             trialEndsAt: { $lte: now },
             downgradedAt: null,
-        }).select("_id billing trialEndsAt user adminOverride");
+        }).select("_id orgId billing trialEndsAt user adminOverride");
 
         let downgradedCount = 0;
         let skippedPaidOrOverride = 0;
+        let skippedOrgCards = 0;
 
         for (const card of candidates) {
+            // Org-owned cards are governed by Organization.orgEntitlement.
+            // Trial lifecycle downgrade/downgradedAt stamp must not apply to org-owned cards.
+            // Do NOT load Organization or check source:"organization" here;
+            // the structural card.orgId guard is the correct boundary.
+            if (card?.orgId) {
+                skippedOrgCards += 1;
+                continue;
+            }
+
             // Defense-in-depth: re-check billing at evaluation time.
             // If the card has been upgraded or has an active admin override,
             // skip - do NOT overwrite legitimate billing.
@@ -70,6 +80,7 @@ async function reconcileOnce() {
                 candidates: candidates.length,
                 downgradedCount,
                 skippedPaidOrOverride,
+                skippedOrgCards,
             });
         } else {
             const nowMs = Date.now();

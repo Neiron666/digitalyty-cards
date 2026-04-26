@@ -199,6 +199,39 @@ export function revokeAdminOrgInvite(orgId, inviteId) {
     return api.post(`/admin/orgs/${orgId}/invites/${inviteId}/revoke`);
 }
 
+// Organization entitlement (admin)
+export function adminGrantOrgEntitlement(
+    orgId,
+    {
+        expiresAt,
+        reason,
+        confirmOrgAnnualGrant,
+        startsAt,
+        paymentReference,
+        adminNote,
+    } = {},
+) {
+    const body = { expiresAt, reason, confirmOrgAnnualGrant };
+    if (startsAt !== undefined && startsAt !== null) body.startsAt = startsAt;
+    if (paymentReference) body.paymentReference = paymentReference;
+    if (adminNote) body.adminNote = adminNote;
+    return api.post(`/admin/orgs/${orgId}/entitlement/grant`, body);
+}
+
+export function adminRevokeOrgEntitlement(orgId, { reason } = {}) {
+    return api.post(`/admin/orgs/${orgId}/entitlement/revoke`, { reason });
+}
+
+export function adminExtendOrgEntitlement(
+    orgId,
+    { newExpiresAt, reason, paymentReference, adminNote } = {},
+) {
+    const body = { newExpiresAt, reason };
+    if (paymentReference) body.paymentReference = paymentReference;
+    if (adminNote) body.adminNote = adminNote;
+    return api.post(`/admin/orgs/${orgId}/entitlement/extend`, body);
+}
+
 // Allowed hosts allowlist (admin)
 export function listAdminAllowedHosts(params = {}) {
     return api.get("/admin/allowed-hosts", { params });

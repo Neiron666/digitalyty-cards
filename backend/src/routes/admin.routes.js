@@ -34,6 +34,9 @@ import {
     adminPatchOrgMember,
     adminPatchOrganization,
     adminRevokeOrgInvite,
+    adminGrantOrgEntitlement,
+    adminRevokeOrgEntitlement,
+    adminExtendOrgEntitlement,
 } from "../controllers/adminOrganizations.controller.js";
 import {
     getAdminAnalyticsSources,
@@ -96,6 +99,10 @@ router.post("/orgs", adminCreateOrganization);
 router.patch("/orgs/:id", adminPatchOrganization);
 router.post("/orgs/:id/invites", adminCreateOrgInvite);
 router.post("/orgs/:id/invites/:inviteId/revoke", adminRevokeOrgInvite);
+// Org entitlement — platform-admin-only B2B/offline grant lifecycle
+router.post("/orgs/:id/entitlement/grant", adminGrantOrgEntitlement);
+router.post("/orgs/:id/entitlement/revoke", adminRevokeOrgEntitlement);
+router.post("/orgs/:id/entitlement/extend", adminExtendOrgEntitlement);
 router.patch("/orgs/:id/members/:memberId", adminPatchOrgMember);
 router.delete("/orgs/:id/members/:memberId", adminDeleteOrgMember);
 router.post("/cards/:id/delete", deleteCardPermanently);

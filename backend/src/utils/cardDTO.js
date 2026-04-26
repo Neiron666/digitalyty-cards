@@ -4,6 +4,7 @@ import { resolveEffectiveTier } from "./tier.js";
 import { formatIsrael, toIsrael } from "./time.util.js";
 import { PLANS } from "../config/plans.js";
 import { normalizeAboutParagraphs } from "./about.js";
+import { resolveOrgEntitlementBilling } from "./orgEntitlement.util.js";
 
 export function planFromTier(tier) {
     if (tier === "premium") return "yearly";
@@ -19,7 +20,12 @@ function isTrialExpiredForWrite(card, now = new Date()) {
     return new Date(now).getTime() >= endsAt;
 }
 
-export function resolveEffectiveBilling(card, now = new Date()) {
+export function resolveEffectiveBilling(card, now = new Date(), org = null) {
+    // Org entitlement pre-check: computed premium for org-owned cards.
+    if (card?.orgId && org) {
+        const orgBilling = resolveOrgEntitlementBilling(org, now);
+        if (orgBilling) return orgBilling;
+    }
     // Single source of truth: the billing resolver returns the effectiveBilling contract.
     return resolveBilling(card, now);
 }
@@ -31,7 +37,10 @@ export function computeEntitlements(
     now = new Date(),
 ) {
     const tier = effectiveTier?.tier || "free";
-    const featurePlan = planFromTier(tier);
+    const featurePlan =
+        effectiveBilling?.source === "organization"
+            ? "org"
+            : planFromTier(tier);
     const isEntitled = Boolean(effectiveBilling?.isEntitled);
 
     // Billing truth: edit/write access.
@@ -121,6 +130,7 @@ export function toCardDTO(
         minimal = false,
         user = null,
         exposeSlugPolicy = false,
+        org = null,
     } = {},
 ) {
     if (!card) return null;
@@ -128,7 +138,7 @@ export function toCardDTO(
     const cardObj =
         typeof card.toObject === "function" ? card.toObject() : card;
 
-    const effectiveBillingRaw = resolveEffectiveBilling(cardObj, now);
+    const effectiveBillingRaw = resolveEffectiveBilling(cardObj, now, org);
     const effectiveBilling = {
         ...effectiveBillingRaw,
         untilIsrael: effectiveBillingRaw?.until

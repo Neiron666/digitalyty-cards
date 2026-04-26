@@ -171,6 +171,18 @@ function requireReason(req, res) {
     return reason;
 }
 
+/**
+ * Returns true when the given card is owned by a non-personal org.
+ * Non-personal org-owned cards are governed by Organization.orgEntitlement;
+ * personal billing/trial admin operations must not mutate them.
+ * No Organization document load needed — ownership is a structural fact.
+ */
+async function isNonPersonalOrgCard(card) {
+    if (!card?.orgId) return false;
+    const personalOrgId = await getPersonalOrgId();
+    return String(card.orgId) !== String(personalOrgId);
+}
+
 function parseTierOverride(req, res) {
     const raw = req.body?.tier;
     if (raw === null || raw === undefined || raw === "") {
@@ -925,6 +937,17 @@ export async function extendTrial(req, res) {
     const existing = await Card.findById(req.params.id);
     if (!existing) return res.status(404).json({ message: "Not found" });
 
+    // Manual trial extension is a legacy personal-card admin operation.
+    // Org-owned cards are governed by Organization.orgEntitlement and must not receive trial stamps.
+    if (await isNonPersonalOrgCard(existing)) {
+        return res.status(409).json({
+            ok: false,
+            code: "ORG_CARD_BILLING_MANAGED_BY_ORG",
+            message:
+                "Org-owned cards are governed by Organization.orgEntitlement. Use the org entitlement admin API instead.",
+        });
+    }
+
     // Semantics: SET trial to exact untilLocal OR calendar-days-from-now (Israel).
     // days=0 means expire now.
     const trialDeleteAt = new Date(trialEndsAt.getTime() + 7 * DAY_MS);
@@ -1627,6 +1650,17 @@ export async function adminSetCardBilling(req, res) {
     const existing = await Card.findById(cardId);
     if (!existing) return res.status(404).json({ message: "Not found" });
 
+    // Org-owned cards are governed by Organization.orgEntitlement.
+    // Personal billing admin set/revoke must not create ghost billing state on org-governed cards.
+    if (await isNonPersonalOrgCard(existing)) {
+        return res.status(409).json({
+            ok: false,
+            code: "ORG_CARD_BILLING_MANAGED_BY_ORG",
+            message:
+                "Org-owned cards are governed by Organization.orgEntitlement. Use the org entitlement admin API instead.",
+        });
+    }
+
     const payerTypeRaw = req.body?.payerType;
     const payerTypeProvided = payerTypeRaw !== undefined;
     const payerType =
@@ -1844,6 +1878,17 @@ export async function adminSyncCardBillingFromUser(req, res) {
 
     const existing = await Card.findById(cardId);
     if (!existing) return res.status(404).json({ message: "Not found" });
+
+    // Org-owned cards are governed by Organization.orgEntitlement.
+    // This guard fires before force/ORG_PAYER_LOCKED — no force bypass allowed for org-owned cards.
+    if (await isNonPersonalOrgCard(existing)) {
+        return res.status(409).json({
+            ok: false,
+            code: "ORG_CARD_BILLING_MANAGED_BY_ORG",
+            message:
+                "Org-owned cards are governed by Organization.orgEntitlement. Use the org entitlement admin API instead.",
+        });
+    }
 
     const forceRaw = req.body?.force;
     const force =

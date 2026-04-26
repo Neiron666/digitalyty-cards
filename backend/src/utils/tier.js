@@ -24,6 +24,7 @@ function derivedTierFromEffectiveBilling(effectiveBilling) {
     const plan = effectiveBilling?.plan || "free";
     if (plan === "yearly") return "premium";
     if (plan === "monthly") return "premium";
+    if (plan === "org") return "premium";
     return "free";
 }
 

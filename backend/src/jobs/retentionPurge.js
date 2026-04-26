@@ -73,15 +73,25 @@ async function purgeOnce() {
             retentionPurgedAt: null,
             user: { $ne: null },
         }).select(
-            "_id billing adminOverride user content businessHours bookingSettings contact gallery uploads",
+            "_id orgId billing adminOverride user content businessHours bookingSettings contact gallery uploads",
         );
 
         let purgedCount = 0;
         let skippedPaidOrOverride = 0;
+        let skippedOrgCards = 0;
         let storageDeletedCount = 0;
         let storageFailedCount = 0;
 
         for (const card of candidates) {
+            // Org-owned cards are governed by Organization.orgEntitlement.
+            // Personal retention purge must never apply to org-owned cards.
+            // Do NOT load Organization or check source:"organization" here;
+            // the structural card.orgId guard is the correct boundary.
+            if (card?.orgId) {
+                skippedOrgCards += 1;
+                continue;
+            }
+
             // Defense-in-depth: if the card has been re-upgraded or admin-overridden,
             // skip - do NOT purge legitimate premium data.
             const billing = resolveBilling(card, now);
@@ -210,6 +220,7 @@ async function purgeOnce() {
                 candidates: candidates.length,
                 purgedCount,
                 skippedPaidOrOverride,
+                skippedOrgCards,
                 storageDeletedCount,
                 storageFailedCount,
             });
