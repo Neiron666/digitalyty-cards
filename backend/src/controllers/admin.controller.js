@@ -26,6 +26,12 @@ import {
     parseIsraelLocalToUtc,
 } from "../utils/time.util.js";
 import { getPersonalOrgId } from "../utils/personalOrg.util.js";
+import { cancelTranzilaStoForUser } from "../services/payment/tranzila.provider.js";
+import PasswordReset from "../models/PasswordReset.model.js";
+import ActivePasswordReset from "../models/ActivePasswordReset.model.js";
+import MailJob from "../models/MailJob.model.js";
+import EmailVerificationToken from "../models/EmailVerificationToken.model.js";
+import EmailSignupToken from "../models/EmailSignupToken.model.js";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -668,11 +674,54 @@ export async function deleteUserPermanently(req, res) {
         });
     }
 
-    const user = await User.findById(targetUserId).select("role").lean();
+    const user = await User.findById(targetUserId).select("role email").lean();
     if (user?.role === "admin") {
         return res.status(409).json({
             code: "TARGET_IS_ADMIN",
             message: "Permanent delete for admin users is not allowed (MVP)",
+        });
+    }
+
+    // ── STO cancellation: must precede any storage or DB destruction ─────────
+    // NOTE: skipped:true is safe — must check both ok and skipped.
+    const userForSto = await User.findById(targetUserId).select("tranzilaSto");
+    if (userForSto) {
+        const stoResult = await cancelTranzilaStoForUser(userForSto, {
+            source: "admin_delete",
+            reason,
+        });
+        if (!stoResult.ok && !stoResult.skipped) {
+            return res.status(409).json({
+                code: "STO_CANCEL_REQUIRED",
+                message:
+                    "Cannot delete: active billing could not be cancelled. Use sto:cancel:execute script and retry.",
+            });
+        }
+    }
+
+    // ── Auth/job cleanup: before card cascade and User.deleteOne ─────────────
+    // Hard-block — stale tokens/jobs for a deleted user are unacceptable.
+    // Order: MailJob → auth tokens → User.deleteOne.
+    const targetNormalizedEmail =
+        typeof user?.email === "string" ? user.email.trim().toLowerCase() : "";
+    try {
+        await MailJob.deleteMany({ userId: targetUserId });
+        await EmailVerificationToken.deleteMany({ userId: targetUserId });
+        if (targetNormalizedEmail) {
+            await EmailSignupToken.deleteMany({
+                emailNormalized: targetNormalizedEmail,
+            });
+        }
+        await PasswordReset.deleteMany({ userId: targetUserId });
+        await ActivePasswordReset.deleteMany({ userId: targetUserId });
+    } catch (err) {
+        console.error("[admin] auth/job cleanup failed", {
+            userId: targetUserId,
+            error: err?.message || err,
+        });
+        return res.status(500).json({
+            code: "USER_DELETE_CLEANUP_FAILED",
+            message: "Cannot delete: account cleanup failed. Retry later.",
         });
     }
 
@@ -1397,9 +1446,23 @@ export async function adminRevokeUserSubscription(req, res) {
     }
 
     const existing = await User.findById(userId).select(
-        "plan subscription cardId",
+        "plan subscription cardId tranzilaSto",
     );
     if (!existing) return res.status(404).json({ message: "Not found" });
+
+    // ── STO cancellation: must precede local subscription downgrade ──────────
+    // NOTE: skipped:true is safe — must check both ok and skipped.
+    const stoResult = await cancelTranzilaStoForUser(existing, {
+        source: "admin_revoke",
+        reason,
+    });
+    if (!stoResult.ok && !stoResult.skipped) {
+        return res.status(409).json({
+            code: "STO_CANCEL_REQUIRED",
+            message:
+                "Cannot revoke: active billing could not be cancelled. Use sto:cancel:execute script and retry.",
+        });
+    }
 
     const before = {
         plan: existing.plan,

@@ -24,6 +24,10 @@ import {
 } from "../utils/marketingOptOut.util.js";
 import { CURRENT_MARKETING_CONSENT_VERSION } from "../utils/consentVersions.js";
 import { cancelTranzilaStoForUser } from "../services/payment/tranzila.provider.js";
+import ActivePasswordReset from "../models/ActivePasswordReset.model.js";
+import MailJob from "../models/MailJob.model.js";
+import EmailVerificationToken from "../models/EmailVerificationToken.model.js";
+import EmailSignupToken from "../models/EmailSignupToken.model.js";
 import Receipt from "../models/Receipt.model.js";
 import { isValidObjectId } from "../utils/orgMembership.util.js";
 
@@ -506,11 +510,9 @@ router.patch("/receipt-profile", requireAuth, async (req, res) => {
                 const trimmed =
                     typeof raw === "string" ? raw.trim() : undefined;
                 if (trimmed === undefined) {
-                    return res
-                        .status(400)
-                        .json({
-                            message: "recipientType must be a string or null",
-                        });
+                    return res.status(400).json({
+                        message: "recipientType must be a string or null",
+                    });
                 }
                 if (trimmed === "") {
                     updates["receiptProfile.recipientType"] = null;
@@ -858,6 +860,46 @@ router.post("/delete-account", requireAuth, async (req, res) => {
                 .json({ message: "Unable to delete account" });
         }
 
+        // ── STO cancellation: after tombstone, before card cascade ───────────
+        // NOTE: skipped:true is safe — must check both ok and skipped.
+        const userForSto = await User.findById(req.userId).select(
+            "tranzilaSto",
+        );
+        if (userForSto) {
+            const stoResult = await cancelTranzilaStoForUser(userForSto, {
+                source: "self_delete",
+                reason: "account_deleted",
+            });
+            if (!stoResult.ok && !stoResult.skipped) {
+                return res
+                    .status(400)
+                    .json({ message: "Unable to delete account" });
+            }
+        }
+
+        // ── Auth/job cleanup: before card cascade and User.deleteOne ─────────────
+        // Hard-block — stale tokens/jobs for a deleted user are unacceptable.
+        // Order: MailJob → auth tokens → User.deleteOne.
+        try {
+            await MailJob.deleteMany({ userId: req.userId });
+            await EmailVerificationToken.deleteMany({ userId: req.userId });
+            if (normalizedEmail) {
+                await EmailSignupToken.deleteMany({
+                    emailNormalized: normalizedEmail,
+                });
+            }
+            await PasswordReset.deleteMany({ userId: req.userId });
+            await ActivePasswordReset.deleteMany({ userId: req.userId });
+        } catch (err) {
+            console.error(
+                "[account] auth/job cleanup failed",
+                err?.message || err,
+            );
+            return res
+                .status(400)
+                .json({ message: "Unable to delete account" });
+        }
+
         // ── Delete all user's cards (Supabase-first) ──
         const cards = await Card.find({ user: req.userId });
 
@@ -911,13 +953,6 @@ router.post("/delete-account", requireAuth, async (req, res) => {
                 usedAt: null,
             }),
         ]);
-
-        // ── Best-effort token cleanup ──
-        try {
-            await PasswordReset.deleteMany({ userId: req.userId });
-        } catch (_) {
-            // Ignore.
-        }
 
         // ── Delete user ──
         await User.deleteOne({ _id: req.userId });

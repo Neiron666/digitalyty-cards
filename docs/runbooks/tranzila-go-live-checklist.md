@@ -165,6 +165,7 @@
 - [ ] Заполнить receipt profile (name, email обязательны).
 - [ ] Продолжить до summary → проверить план и цену.
 - [ ] Продолжить до payment → iframe рендерится с Tranzila DirectNG.
+- [ ] Cardigo brand mark/logo is visible at the top of the checkout card on receipt, summary, payment, success/fail states, and on `/payment/iframe-return`.
 - [ ] Завершить оплату тестовой картой (sandbox terminal).
 - [ ] Убедиться, что success UX показывается в parent frame (без полной переадресации страницы).
 - [ ] Убедиться, что navigate → `/edit/card/settings` после клика на кнопку успеха.
