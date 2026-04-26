@@ -32,6 +32,7 @@ import ActivePasswordReset from "../models/ActivePasswordReset.model.js";
 import MailJob from "../models/MailJob.model.js";
 import EmailVerificationToken from "../models/EmailVerificationToken.model.js";
 import EmailSignupToken from "../models/EmailSignupToken.model.js";
+import AiUsageMonthly from "../models/AiUsageMonthly.model.js";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -714,6 +715,7 @@ export async function deleteUserPermanently(req, res) {
         }
         await PasswordReset.deleteMany({ userId: targetUserId });
         await ActivePasswordReset.deleteMany({ userId: targetUserId });
+        await AiUsageMonthly.deleteMany({ userId: targetUserId });
     } catch (err) {
         console.error("[admin] auth/job cleanup failed", {
             userId: targetUserId,
@@ -768,19 +770,35 @@ export async function deleteUserPermanently(req, res) {
         deletedUserCount > 0;
 
     if (didWork) {
-        await logAdminAction({
-            adminUserId: req.userId,
-            action: "USER_DELETE_PERMANENT",
-            targetType: "user",
-            targetId: new mongoose.Types.ObjectId(targetUserId),
-            reason,
-            meta: {
-                targetUserId,
-                deletedCardsCount,
-                deletedInvitesCount,
-                deletedMembershipsCount,
-            },
-        });
+        try {
+            await logAdminAction({
+                adminUserId: req.userId,
+                action: "USER_DELETE_PERMANENT",
+                targetType: "user",
+                targetId: new mongoose.Types.ObjectId(targetUserId),
+                reason,
+                meta: {
+                    targetUserId,
+                    deletedCardsCount,
+                    deletedInvitesCount,
+                    deletedMembershipsCount,
+                },
+            });
+        } catch (auditErr) {
+            console.error("[admin] USER_DELETE_PERMANENT audit write failed", {
+                action: "USER_DELETE_PERMANENT",
+                targetUserId: String(targetUserId),
+                adminUserId: String(req.userId),
+                error: auditErr?.message || String(auditErr),
+            });
+            return res.json({
+                ok: true,
+                deleted: true,
+                auditWriteFailed: true,
+                warning:
+                    "User was deleted but admin audit log could not be written. Check server logs.",
+            });
+        }
     }
 
     return res.json({ ok: true });

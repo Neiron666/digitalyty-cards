@@ -18,6 +18,13 @@ function randomHex(bytes = 6) {
     return crypto.randomBytes(bytes).toString("hex");
 }
 
+function fakeSha256Hex() {
+    return crypto
+        .createHash("sha256")
+        .update(crypto.randomBytes(16))
+        .digest("hex");
+}
+
 async function listen(serverApp) {
     return await new Promise((resolve, reject) => {
         const server = serverApp.listen(0, "0.0.0.0", () => resolve(server));
@@ -232,6 +239,14 @@ async function main() {
             getAnonPrivateBucketName,
             getPublicBucketName,
         },
+        { default: PasswordReset },
+        { default: ActivePasswordReset },
+        { default: EmailVerificationToken },
+        { default: EmailSignupToken },
+        { default: MailJob },
+        { default: AiUsageMonthly },
+        { default: DeletedEmailBlock },
+        { default: AdminAudit },
     ] = await Promise.all([
         import("../src/app.js"),
         import("../src/models/Card.model.js"),
@@ -239,6 +254,14 @@ async function main() {
         import("../src/utils/jwt.js"),
         import("../src/utils/supabasePaths.js"),
         import("../src/services/supabaseStorage.js"),
+        import("../src/models/PasswordReset.model.js"),
+        import("../src/models/ActivePasswordReset.model.js"),
+        import("../src/models/EmailVerificationToken.model.js"),
+        import("../src/models/EmailSignupToken.model.js"),
+        import("../src/models/MailJob.model.js"),
+        import("../src/models/AiUsageMonthly.model.js"),
+        import("../src/models/DeletedEmailBlock.model.js"),
+        import("../src/models/AdminAudit.model.js"),
     ]);
 
     // Avoid index governance conflicts during sanity startup.
@@ -257,6 +280,7 @@ async function main() {
     const created = {
         adminUserId: null,
         targetUserId: null,
+        targetEmailNormalized: null,
         cardId: null,
         rawPaths: [],
         paths: [],
@@ -270,6 +294,14 @@ async function main() {
         precheckOkCount: 0,
         postcheckNotFoundCount: 0,
         failures: [],
+        passwordResetsDeleted: false,
+        activePasswordResetsDeleted: false,
+        emailVerificationTokensDeleted: false,
+        emailSignupTokensDeleted: false,
+        mailJobsDeleted: false,
+        aiUsageDeleted: false,
+        deletedEmailBlockNotCreated: false,
+        adminAuditWritten: false,
     };
 
     let adminToken = null;
@@ -295,10 +327,45 @@ async function main() {
             role: "user",
         });
         created.targetUserId = String(user._id);
+        created.targetEmailNormalized = userEmail.trim().toLowerCase();
         report.userId = created.targetUserId;
 
         const userToken = signToken(String(user._id));
         const userHeaders = { Authorization: `Bearer ${userToken}` };
+
+        // (2b) Seed cleanup-target records — verify LOCAL_AUTH_JOB_CLEANUP, AI_USAGE_DELETE_CASCADE
+        await PasswordReset.create({
+            userId: created.targetUserId,
+            tokenHash: fakeSha256Hex(),
+            expiresAt: new Date(Date.now() + 60 * 60 * 1000),
+        });
+        await ActivePasswordReset.create({
+            userId: created.targetUserId,
+            expiresAt: new Date(Date.now() + 60 * 60 * 1000),
+        });
+        await EmailVerificationToken.create({
+            userId: created.targetUserId,
+            tokenHash: fakeSha256Hex(),
+            expiresAt: new Date(Date.now() + 60 * 60 * 1000),
+        });
+        await EmailSignupToken.create({
+            emailNormalized: created.targetEmailNormalized,
+            tokenHash: fakeSha256Hex(),
+            expiresAt: new Date(Date.now() + 60 * 60 * 1000),
+        });
+        await MailJob.create({
+            userId: created.targetUserId,
+            expiresAt: new Date(Date.now() + 60 * 60 * 1000),
+        });
+        await AiUsageMonthly.create({
+            userId: created.targetUserId,
+            feature: "sanity-test",
+            periodKey: "2099-01",
+        });
+        console.log("sanity:cleanup-target-records-seeded", {
+            userId: created.targetUserId,
+            count: 6,
+        });
 
         // (3) Create personal card via API, then resolve cardId via GET /cards/mine
         const createRes = await requestJson({
@@ -479,6 +546,85 @@ async function main() {
             report.postcheckNotFoundCount += 1;
         }
 
+        // (9) Post-assert: cleanup-target records deleted + no tombstone + audit written
+        // Verifies LOCAL_AUTH_JOB_CLEANUP, AI_USAGE_DELETE_CASCADE, ADMIN_AUDIT_RELIABILITY
+
+        const prCount = await PasswordReset.countDocuments({
+            userId: created.targetUserId,
+        });
+        assert(
+            prCount === 0,
+            `Expected 0 PasswordReset after delete, got ${prCount}`,
+        );
+        report.passwordResetsDeleted = true;
+
+        const aprCount = await ActivePasswordReset.countDocuments({
+            userId: created.targetUserId,
+        });
+        assert(
+            aprCount === 0,
+            `Expected 0 ActivePasswordReset after delete, got ${aprCount}`,
+        );
+        report.activePasswordResetsDeleted = true;
+
+        const evtCount = await EmailVerificationToken.countDocuments({
+            userId: created.targetUserId,
+        });
+        assert(
+            evtCount === 0,
+            `Expected 0 EmailVerificationToken after delete, got ${evtCount}`,
+        );
+        report.emailVerificationTokensDeleted = true;
+
+        const estCount = await EmailSignupToken.countDocuments({
+            emailNormalized: created.targetEmailNormalized,
+        });
+        assert(
+            estCount === 0,
+            `Expected 0 EmailSignupToken after delete, got ${estCount}`,
+        );
+        report.emailSignupTokensDeleted = true;
+
+        const mjCount = await MailJob.countDocuments({
+            userId: created.targetUserId,
+        });
+        assert(
+            mjCount === 0,
+            `Expected 0 MailJob after delete, got ${mjCount}`,
+        );
+        report.mailJobsDeleted = true;
+
+        const aiCount = await AiUsageMonthly.countDocuments({
+            userId: created.targetUserId,
+        });
+        assert(
+            aiCount === 0,
+            `Expected 0 AiUsageMonthly after delete, got ${aiCount}`,
+        );
+        report.aiUsageDeleted = true;
+
+        // Negative tombstone assertion — admin delete must NOT create DeletedEmailBlock.
+        // emailKey is HMAC-SHA256 (not raw email); query by formerUserId only.
+        const debCount = await DeletedEmailBlock.countDocuments({
+            formerUserId: created.targetUserId,
+        });
+        assert(
+            debCount === 0,
+            `Expected no DeletedEmailBlock tombstone for admin delete, got ${debCount}`,
+        );
+        report.deletedEmailBlockNotCreated = true;
+
+        // Positive audit assertion — USER_DELETE_PERMANENT must be written.
+        const auditCount = await AdminAudit.countDocuments({
+            action: "USER_DELETE_PERMANENT",
+            targetId: new mongoose.Types.ObjectId(created.targetUserId),
+        });
+        assert(
+            auditCount === 1,
+            `Expected 1 AdminAudit USER_DELETE_PERMANENT, got ${auditCount}`,
+        );
+        report.adminAuditWritten = true;
+
         report.ok = true;
         return report;
     } catch (err) {
@@ -515,6 +661,63 @@ async function main() {
             }
         } catch {
             // ignore
+        }
+
+        // Best-effort cleanup for newly seeded cleanup-target records.
+        // These are idempotent (deleteMany returns 0 if already gone).
+        // Each wrapped individually so one failure does not block the rest.
+        if (created.targetUserId) {
+            try {
+                await PasswordReset.deleteMany({
+                    userId: created.targetUserId,
+                });
+            } catch {
+                /* ignore */
+            }
+            try {
+                await ActivePasswordReset.deleteMany({
+                    userId: created.targetUserId,
+                });
+            } catch {
+                /* ignore */
+            }
+            try {
+                await EmailVerificationToken.deleteMany({
+                    userId: created.targetUserId,
+                });
+            } catch {
+                /* ignore */
+            }
+            try {
+                await MailJob.deleteMany({ userId: created.targetUserId });
+            } catch {
+                /* ignore */
+            }
+            try {
+                await AiUsageMonthly.deleteMany({
+                    userId: created.targetUserId,
+                });
+            } catch {
+                /* ignore */
+            }
+        }
+        if (created.targetEmailNormalized) {
+            try {
+                await EmailSignupToken.deleteMany({
+                    emailNormalized: created.targetEmailNormalized,
+                });
+            } catch {
+                /* ignore */
+            }
+        }
+
+        // Best-effort cleanup of the temporary sanity admin user.
+        if (created.adminUserId) {
+            try {
+                await User.deleteOne({ _id: created.adminUserId });
+            } catch {
+                /* ignore */
+            }
         }
 
         await closeServer(server);

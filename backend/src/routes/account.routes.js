@@ -28,6 +28,7 @@ import ActivePasswordReset from "../models/ActivePasswordReset.model.js";
 import MailJob from "../models/MailJob.model.js";
 import EmailVerificationToken from "../models/EmailVerificationToken.model.js";
 import EmailSignupToken from "../models/EmailSignupToken.model.js";
+import AiUsageMonthly from "../models/AiUsageMonthly.model.js";
 import Receipt from "../models/Receipt.model.js";
 import { isValidObjectId } from "../utils/orgMembership.util.js";
 
@@ -890,6 +891,7 @@ router.post("/delete-account", requireAuth, async (req, res) => {
             }
             await PasswordReset.deleteMany({ userId: req.userId });
             await ActivePasswordReset.deleteMany({ userId: req.userId });
+            await AiUsageMonthly.deleteMany({ userId: req.userId });
         } catch (err) {
             console.error(
                 "[account] auth/job cleanup failed",
