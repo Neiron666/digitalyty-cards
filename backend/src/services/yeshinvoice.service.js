@@ -71,6 +71,17 @@ function toYIDate(date) {
     return `${y}-${m}-${d}`;
 }
 
+// Strip HTML/XML-looking tags from a string before sending to YeshInvoice free-text fields.
+// Applied only at document-build time — does not mutate stored user data.
+// null/undefined → "". Tags stripped. Whitespace collapsed to single space. Result trimmed.
+function stripHtmlForYeshInvoiceText(value) {
+    if (typeof value !== "string") return value ?? "";
+    return value
+        .replace(/<[^>]*>/g, "")
+        .replace(/\s+/g, " ")
+        .trim();
+}
+
 /**
  * Builds the frozen request body for document creation / preview.
  * Business rules (non-negotiable):
@@ -114,15 +125,22 @@ function buildReceiptBody({
 
     const yiCustomer = {
         ID: -1,
-        Name: customer.name || customer.email || "",
+        Name:
+            stripHtmlForYeshInvoiceText(customer.name) || customer.email || "",
         EmailAddress: customer.email || "",
         CountryCode: customer.countryCode || "IL",
     };
-    if (customer.nameInvoice) yiCustomer.NameInvoice = customer.nameInvoice;
-    if (customer.fullName) yiCustomer.FullName = customer.fullName;
+    if (customer.nameInvoice)
+        yiCustomer.NameInvoice = stripHtmlForYeshInvoiceText(
+            customer.nameInvoice,
+        );
+    if (customer.fullName)
+        yiCustomer.FullName = stripHtmlForYeshInvoiceText(customer.fullName);
     if (customer.numberId) yiCustomer.NumberID = customer.numberId;
-    if (customer.address) yiCustomer.Address = customer.address;
-    if (customer.city) yiCustomer.City = customer.city;
+    if (customer.address)
+        yiCustomer.Address = stripHtmlForYeshInvoiceText(customer.address);
+    if (customer.city)
+        yiCustomer.City = stripHtmlForYeshInvoiceText(customer.city);
     if (customer.zipCode) yiCustomer.ZipCode = customer.zipCode;
 
     return {

@@ -46,6 +46,18 @@
 - `TRANZILA_SUCCESS_URL` - `https://cardigo.co.il/pricing?payment=success`
 - `TRANZILA_FAIL_URL` - `https://cardigo.co.il/pricing?payment=fail`
 
+НУЖНО (для iframe checkout mode — требуется только при `mode="iframe"`):
+
+- `PAYMENT_INTENT_ENABLED` = `true` — включает PaymentIntent snapshot/reconciliation path. Устанавливать только когда iframe checkout намеренно включён и протестирован. **Anti-drift:** не оставлять включённым для production terminal rollout без E2E smoke. Sandbox-proven 2026-04-25 (`testcards`).
+- `TRANZILA_IFRAME_SUCCESS_URL` = `https://cardigo.co.il/api/payments/return?status=success&target=iframe`
+- `TRANZILA_IFRAME_FAIL_URL` = `https://cardigo.co.il/api/payments/return?status=fail&target=iframe`
+
+**Anti-drift notes (iframe return URLs):**
+
+- `TRANZILA_IFRAME_*_URL` **обязательно** включают `&target=iframe`. Удаление этого суффикса молча регрессирует iframe relay в `/pricing` (неправильный destination).
+- Никогда не указывать `TRANZILA_IFRAME_*_URL` напрямую на `/payment/iframe-return`. Этот SPA-роут обрабатывает только GET; Tranzila делает POST form-submit. `/api/payments/return` — Netlify function bridge, единственный корректный target.
+- External `TRANZILA_SUCCESS_URL` / `TRANZILA_FAIL_URL` — для внешнего full-window flow; **НЕ добавлять `&target=iframe` к ним**.
+
 НУЖНО (STO / token / MyBilling — для STO create):
 
 - `TRANZILA_STO_TERMINAL` - token / MyBilling terminal ID (**not** a hosted checkout terminal)
@@ -143,6 +155,33 @@
     - `PaymentTransaction` создан (providerTxnId уникален)
     - user subscription обновлён
     - card billing обновлён
+
+### C) Iframe checkout sandbox smoke
+
+> Выполнять при `PAYMENT_INTENT_ENABLED=true`, `PAYMENT_PROVIDER=tranzila`, `TRANZILA_TERMINAL=testcards` (sandbox). Требуется чистый тестовый пользователь (нет активной подписки, нет pending PI).
+
+- [ ] Войти под тестовым пользователем.
+- [ ] Открыть `/payment/checkout?plan=monthly`.
+- [ ] Заполнить receipt profile (name, email обязательны).
+- [ ] Продолжить до summary → проверить план и цену.
+- [ ] Продолжить до payment → iframe рендерится с Tranzila DirectNG.
+- [ ] Завершить оплату тестовой картой (sandbox terminal).
+- [ ] Убедиться, что success UX показывается в parent frame (без полной переадресации страницы).
+- [ ] Убедиться, что navigate → `/edit/card/settings` после клика на кнопку успеха.
+- [ ] Проверить в Mongo: `PaymentIntent.status === "completed"`.
+- [ ] Проверить в Mongo: `PaymentTransaction.status === "paid"`, `providerTxnId` присутствует.
+- [ ] Проверить в Mongo: `Receipt.status === "created"`, `shareStatus === "sent"`.
+- [ ] Проверить в Mongo: `Receipt.recipientSnapshot.source === "paymentIntent"`.
+- [ ] Убедиться, что receipt email доставлен (проверить inbox тестового email-адреса).
+- [ ] Убедиться, что квитанция отображается и скачивается в `/edit/card/settings → קבלות`.
+- [ ] Убедиться, что нет активных `status:"pending"` PI для того же пользователя/плана/mode после завершения.
+
+### D) Anti-regression checks (iframe relay)
+
+- [ ] `POST /api/payments/return?status=success&target=iframe` → `303 /payment/iframe-return?status=success`.
+- [ ] `POST /api/payments/return?status=success` (без target) → `303 /pricing?payment=success`.
+- [ ] `POST /api/payments/return?status=fail&target=iframe` → `303 /payment/iframe-return?status=fail`.
+- [ ] `POST /api/payments/return?status=fail` (без target) → `303 /pricing?payment=fail`.
 
 ---
 

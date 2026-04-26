@@ -106,6 +106,67 @@ User clicks "Upgrade"
 
 **Critical invariant:** Notify (④→⑦) is the **sole source of truth** for payment confirmation. Success/fail redirect URLs (③) are UX-only and must never trigger entitlement changes.
 
+### Iframe Checkout Mode (additional flow — sandbox-proven 2026-04-25)
+
+> Runs **in parallel** to the server-to-server notify contour above. Entitlement still originates exclusively from ④→⑦.
+
+```
+User at /payment/checkout?plan=...  (standalone, no Layout)
+  │
+  ▼
+① POST /api/payments/create { plan, mode:"iframe" }    ← requireAuth
+  │  If PAYMENT_INTENT_ENABLED=true:
+  │    - Create / reuse PaymentIntent (reuse guard: see §17)
+  │    - paymentIntentId passed as udf3 in DirectNG URL
+  │  Backend returns { paymentUrl, paymentIntentId }
+  ▼
+② CheckoutPage embeds DirectNG iframe (paymentUrl)
+  │
+  ├─ ③a Payment succeeds → Tranzila POST-submits browser form to:
+  │     TRANZILA_IFRAME_SUCCESS_URL
+  │     = https://cardigo.co.il/api/payments/return?status=success&target=iframe
+  └─ ③b Payment fails/cancelled → Tranzila POST-submits browser form to:
+        TRANZILA_IFRAME_FAIL_URL
+        = https://cardigo.co.il/api/payments/return?status=fail&target=iframe
+  │
+  ▼ (_redirects L3 routes ALL methods on /api/payments/return to Netlify function)
+④ Netlify function: payment-return.js
+  │  - Reads only ?status= and ?target= query params (no body parse)
+  │  - target allowlist: only "iframe" recognized
+  │  - Returns HTTP 303 to /payment/iframe-return?status=<status>
+  ▼
+⑤ Browser GET /payment/iframe-return?status=<status>  (SPA catch-all handles GET)
+  │
+  ▼
+⑥ IframeReturnPage (standalone, no Layout)
+  │  - Reads ?status= from URL
+  │  - Calls window.parent.postMessage({ type:"CARDIGO_PAYMENT_STATUS", status }, origin)
+  ▼
+⑦ CheckoutPage postMessage listener (UX only)
+  │  - Validates event.origin === window.location.origin
+  │  - Validates event.data.type === "CARDIGO_PAYMENT_STATUS"
+  │  - Calls setPaymentResult("success" | "fail")
+  │  - On success: navigates to /edit/card/settings
+  │  - Does NOT call backend. Does NOT grant entitlement.
+  ▼
+(independent, server-to-server — same as external flow)
+⑧ Tranzila POST to notify URL (identical to notify contour ④→⑦ above)
+  │  Entitlement, PaymentTransaction, Receipt all created here.
+```
+
+**Anti-drift rule:** `TRANZILA_IFRAME_SUCCESS_URL` and `TRANZILA_IFRAME_FAIL_URL` must **always** include `&target=iframe`. Never point these vars directly to `/payment/iframe-return`. Reason: Tranzila return is a POST form submission; SPA catch-all handles GET only; `/api/payments/return` is the Netlify function bridge that converts POST → GET redirect.
+
+**Return relay routing table:**
+
+| Request to `/api/payments/return` | 303 destination                         |
+| --------------------------------- | --------------------------------------- |
+| `?status=success` (no target)     | `/pricing?payment=success`              |
+| `?status=fail` (no target)        | `/pricing?payment=fail`                 |
+| `?status=success&target=iframe`   | `/payment/iframe-return?status=success` |
+| `?status=fail&target=iframe`      | `/payment/iframe-return?status=fail`    |
+| invalid status + `target=iframe`  | `/payment/iframe-return?status=fail`    |
+| invalid status, no target         | `/pricing?payment=fail`                 |
+
 ---
 
 ## 4) ACK Policy
@@ -332,20 +393,23 @@ Two reconciliation jobs:
 
 ### Backend (Render) - existing (billing-relevant subset)
 
-| Var                           | File                          | Purpose                            |
-| ----------------------------- | ----------------------------- | ---------------------------------- |
-| `PAYMENT_PROVIDER`            | `services/payment/index.js`   | `"tranzila"` or mock (default)     |
-| `TRANZILA_TERMINAL`           | `config/tranzila.js`          | Terminal ID                        |
-| `TRANZILA_SECRET`             | `config/tranzila.js`          | HMAC signature secret              |
-| `TRANZILA_NOTIFY_URL`         | `config/tranzila.js`          | Server-to-server notify URL        |
-| `TRANZILA_SUCCESS_URL`        | `config/tranzila.js`          | User redirect on success (UX only) |
-| `TRANZILA_FAIL_URL`           | `config/tranzila.js`          | User redirect on failure (UX only) |
-| `CARDIGO_PROXY_SHARED_SECRET` | `app.js`                      | Origin lock (proxy → backend)      |
-| `MAILJET_API_KEY`             | `services/mailjet.service.js` | Email API                          |
-| `MAILJET_API_SECRET`          | `services/mailjet.service.js` | Email API                          |
-| `MAILJET_FROM_EMAIL`          | `services/mailjet.service.js` | Sender                             |
-| `MAILJET_FROM_NAME`           | `services/mailjet.service.js` | Sender name                        |
-| `SITE_URL`                    | `utils/siteUrl.util.js`       | Canonical domain                   |
+| Var                           | File                          | Purpose                                                                                                                                                                                                                                                                      |
+| ----------------------------- | ----------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `PAYMENT_PROVIDER`            | `services/payment/index.js`   | `"tranzila"` or mock (default)                                                                                                                                                                                                                                               |
+| `TRANZILA_TERMINAL`           | `config/tranzila.js`          | Terminal ID                                                                                                                                                                                                                                                                  |
+| `TRANZILA_SECRET`             | `config/tranzila.js`          | HMAC signature secret                                                                                                                                                                                                                                                        |
+| `TRANZILA_NOTIFY_URL`         | `config/tranzila.js`          | Server-to-server notify URL                                                                                                                                                                                                                                                  |
+| `TRANZILA_SUCCESS_URL`        | `config/tranzila.js`          | User redirect on success — external/full-window flow (UX only). Value: `https://cardigo.co.il/pricing?payment=success`                                                                                                                                                       |
+| `TRANZILA_FAIL_URL`           | `config/tranzila.js`          | User redirect on failure — external/full-window flow (UX only). Value: `https://cardigo.co.il/pricing?payment=fail`                                                                                                                                                          |
+| `TRANZILA_IFRAME_SUCCESS_URL` | `config/tranzila.js`          | Iframe return URL — success. **Anti-drift: must include `&target=iframe`.** Required value: `https://cardigo.co.il/api/payments/return?status=success&target=iframe`. Never point directly to `/payment/iframe-return`. See §17.                                             |
+| `TRANZILA_IFRAME_FAIL_URL`    | `config/tranzila.js`          | Iframe return URL — fail. **Anti-drift: must include `&target=iframe`.** Required value: `https://cardigo.co.il/api/payments/return?status=fail&target=iframe`. Never point directly to `/payment/iframe-return`. See §17.                                                   |
+| `PAYMENT_INTENT_ENABLED`      | `routes/payment.routes.js`    | Enables PaymentIntent snapshot/reconciliation path for iframe checkout. Set `true` when iframe flow is intentionally armed and tested. Do not enable for production terminal rollout without full E2E smoke discipline. Sandbox-proven with `testcards` terminal 2026-04-25. |
+| `CARDIGO_PROXY_SHARED_SECRET` | `app.js`                      | Origin lock (proxy → backend)                                                                                                                                                                                                                                                |
+| `MAILJET_API_KEY`             | `services/mailjet.service.js` | Email API                                                                                                                                                                                                                                                                    |
+| `MAILJET_API_SECRET`          | `services/mailjet.service.js` | Email API                                                                                                                                                                                                                                                                    |
+| `MAILJET_FROM_EMAIL`          | `services/mailjet.service.js` | Sender                                                                                                                                                                                                                                                                       |
+| `MAILJET_FROM_NAME`           | `services/mailjet.service.js` | Sender name                                                                                                                                                                                                                                                                  |
+| `SITE_URL`                    | `utils/siteUrl.util.js`       | Canonical domain                                                                                                                                                                                                                                                             |
 
 ### Backend (Render) - STO recurring terminal (active, feature-flag gated)
 
@@ -589,3 +653,102 @@ User self-service cancel stops **future** recurring charges only. It does NOT tr
 - **G7:** Production recurring lifecycle proof (real customers, production terminal) — **OPEN**
 
 Full evidence package: `docs/handoffs/current/Cardigo_Enterprise_Handoff_YeshInvoice_Receipt_Sandbox_Proof_2026-04-24.md`
+
+---
+
+## 17) Iframe Checkout Mode — Sandbox E2E Accepted 2026-04-25
+
+> **Scope:** This section closes sandbox documentation readiness for iframe checkout. It does **not** close production terminal rollout. Production terminal cutover, production Tranzila terminal validation, production provider credentials, final production payment smoke, and recurring lifecycle production proof remain separate future contours.
+
+### Architecture Summary
+
+**Flow:** `CheckoutPage (iframe)` → `DirectNG iframenew.php` → Tranzila POST → `payment-return.js` (Netlify function bridge) → `IframeReturnPage` (SPA relay) → `postMessage` → `CheckoutPage` state update → navigate `/edit/card/settings`.
+
+**Entitlement path (unchanged):** Tranzila server-to-server notify → `payment-notify.js` → backend `POST /api/payments/notify` → `handleNotify` → `User.subscription` + `Card.billing`. This is the sole entitlement trigger.
+
+**Files (canonical locations):**
+
+| Concern                                 | File                                                                                                           |
+| --------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| Netlify return bridge                   | `frontend/netlify/functions/payment-return.js`                                                                 |
+| Iframe relay SPA page                   | `frontend/src/pages/payment/IframeReturnPage.jsx`                                                              |
+| Checkout page (postMessage consumer)    | `frontend/src/pages/payment/CheckoutPage.jsx`                                                                  |
+| Framing defense headers                 | `frontend/public/_headers` (`/payment/iframe-return`: `X-Frame-Options: SAMEORIGIN`, `frame-ancestors 'self'`) |
+| Router registration (standalone routes) | `frontend/src/app/router.jsx` (top-level, no Layout)                                                           |
+| PaymentIntent model + indexes           | `backend/src/models/PaymentIntent.model.js`                                                                    |
+| Payment create route (PI reuse guard)   | `backend/src/routes/payment.routes.js`                                                                         |
+| Provider URL builder + notify handler   | `backend/src/services/payment/tranzila.provider.js`                                                            |
+
+### Return Relay Truth
+
+See §3 iframe flow for the full routing table. Key invariant:
+
+- `TRANZILA_IFRAME_SUCCESS_URL` → must contain `&target=iframe` → `payment-return.js` recognizes by strict allowlist → 303 to `/payment/iframe-return?status=success`.
+- External flow (`TRANZILA_SUCCESS_URL`) has no `target` param → 303 to `/pricing?payment=success`. **These two flows are independent and must not be conflated.**
+
+### PaymentIntent Reuse Guard Truth
+
+`POST /api/payments/create { plan, mode:"iframe" }` when `PAYMENT_INTENT_ENABLED=true`:
+
+1. Looks for existing `pending` PaymentIntent for `(userId, plan, mode)` with `checkoutExpiresAt > now`.
+2. Compares `receiptProfileSnapshot` of existing PI vs freshly-built snapshot (11 billing fields; `capturedAt` excluded).
+3. **Reuse** if snapshots are equivalent → regenerate Tranzila URL using existing PI `_id` as `udf3`.
+4. **New PI** if no match, expired, or snapshot mismatch (receipt profile changed) → `PaymentIntent.create()`.
+5. Completed / failed / cancelled PIs are never reused.
+
+**Expected physical indexes (applied 2026-04-25):**
+
+| Index name                                                 | Purpose                      |
+| ---------------------------------------------------------- | ---------------------------- |
+| `paymentintents_purgeAt_ttl`                               | TTL auto-purge after 14 days |
+| `paymentintents_userId_createdAt`                          | Notify reconciliation lookup |
+| `paymentintents_userId_plan_mode_status_checkoutExpiresAt` | Reuse guard lookup           |
+
+### Receipt / YeshInvoice Email Truth
+
+- When `paymentIntentId` is resolved in `handleNotify`, `buildFirstPaymentCustomer()` uses `buildCustomerFromPaymentIntent()` → `customer.source = "paymentIntent"`.
+- `buildRecipientSnapshot(customer, paymentIntentId)` stores: `numberIdMasked`, `numberIdHash` (inside `recipientSnapshot`), `source: "paymentIntent"`, `paymentIntentId`.
+- Raw `numberId` is **never stored** in `Receipt.recipientSnapshot`.
+- Receipt email delivery uses `shareReceiptYeshInvoice()` (YeshInvoice `shareDocument` API). Mailjet is unrelated to receipt delivery.
+
+### Sandbox E2E Acceptance Record — 2026-04-25
+
+| Check                                                           | Result |
+| --------------------------------------------------------------- | ------ |
+| Route `/payment/checkout?plan=monthly` accessible               | ✅     |
+| Tranzila sandbox terminal used (`testcards`)                    | ✅     |
+| `PAYMENT_INTENT_ENABLED=true` armed                             | ✅     |
+| `YESH_INVOICE_ENABLED=true` with test credentials               | ✅     |
+| Iframe payment succeeded                                        | ✅     |
+| PaymentIntent `status=completed`                                | ✅     |
+| PaymentTransaction `status=paid`, `providerTxnId` present       | ✅     |
+| Receipt created, `providerDocId` present                        | ✅     |
+| Receipt `recipientSnapshot.source="paymentIntent"`              | ✅     |
+| Receipt `numberIdMasked` stored, raw `numberId` absent          | ✅     |
+| Receipt `shareStatus=sent`, email received                      | ✅     |
+| Receipt appeared in `/edit/card/settings`, downloaded correctly | ✅     |
+| Post-payment success button navigated to `/edit/card/settings`  | ✅     |
+| Duplicate pending PI count after smoke = 0                      | ✅     |
+
+**Redacted evidence note:** All personal/financial identifiers (paymentIntentId, paymentTransactionId, providerTxnId, providerDocId, numberId, email) from the sandbox smoke are redacted from this document per doc hygiene policy.
+
+### Open P2 Tails (non-blocking, deferred)
+
+1. **`handleReceiptSave` empty-payload guard** — if no receipt profile fields changed, a no-op PATCH is still sent. Add empty-payload guard before `updateReceiptProfile` call in `CheckoutPage.jsx`.
+2. **`receiptOk` not cleared in no-diff path** — `handleContinueToSummary` no-diff branch advances to `setStep("summary")` without calling `setReceiptOk("")`. Stale success notice may persist briefly.
+3. **Fallback external-mode PI on null paymentUrl** — `handleExternalFallback()` in `CheckoutPage.jsx`: if `paymentUrl` is null, calls `createPayment(plan, { mode:"external" })`. Creates an external-mode PI even when an iframe PI exists for the same user/plan (different mode → reuse guard doesn't match). Orphaned pending PI expires via TTL. Not a security or billing risk.
+4. **HTML tag stripping before YeshInvoice text fields** — `name`/`nameInvoice`/`address` fields are not HTML-stripped before passing to YeshInvoice. React escapes tags in UI; tags may appear as-is in PDF. Low/medium risk. Deferred.
+5. **Pricing CTA UX for active subscribers** — active-subscriber path shows a notice and navigates to `/edit/card/settings`. No pricing upgrade option visible to active subscribers. UX polish deferred.
+
+### Production Rollout Boundary (explicit)
+
+**This section closes sandbox documentation readiness only.** The following items remain separate future contours and are NOT closed by this section:
+
+- Production terminal cutover (swap `testcards`/`testcardstok` for production terminal IDs).
+- `PRICES_AGOROT` restore to production values (`3990`/`39990`) after all active sandbox STO schedules are cancelled.
+- `TRANZILA_SECRET` swap to production signing secret.
+- Full production E2E payment smoke on production terminal.
+- Production recurring lifecycle proof (STO charges on production terminal).
+- G6 + G7 (see §14 and §16) remain open.
+
+**Cross-reference:** `docs/handoffs/current/Cardigo_Enterprise_Handoff_CheckoutIframe_E2E_2026-04-25.md`

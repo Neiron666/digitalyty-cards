@@ -24,3 +24,20 @@
     color: var(--text-muted);
     margin: 0;
 }
+
+/* ── Brand mark ──────────────────────────────────────── */
+
+.brandBlock {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    margin-block-end: 1rem;
+}
+
+.brandImg {
+    block-size: 1.5rem;
+    inline-size: auto;
+    max-inline-size: 7.5rem;
+    display: block;
+}

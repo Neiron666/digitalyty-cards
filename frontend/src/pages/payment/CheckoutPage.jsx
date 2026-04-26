@@ -104,6 +104,28 @@ function buildReceiptPayload(draft, clearNumberId, serverProfile) {
     return payload;
 }
 
+/* ── Brand mark ──────────────────────────────────────── */
+
+function CheckoutBrandMark() {
+    return (
+        <div className={styles.brandBlock} aria-label="Cardigo">
+            <picture>
+                <source
+                    type="image/webp"
+                    srcSet="/images/brand-logo/cardigo-logo.webp"
+                />
+                <img
+                    src="/images/brand-logo/cardigo-logo.png"
+                    alt="Cardigo"
+                    className={styles.brandImg}
+                    loading="lazy"
+                    decoding="async"
+                />
+            </picture>
+        </div>
+    );
+}
+
 /* ── Component ──────────────────────────────────────── */
 
 export default function CheckoutPage() {
@@ -199,13 +221,17 @@ export default function CheckoutPage() {
             setReceiptError(validErr);
             return;
         }
+        const payload = buildReceiptPayload(
+            draft,
+            clearNumberId,
+            account?.receiptProfile,
+        );
+        if (Object.keys(payload).length === 0) {
+            setReceiptOk("לא בוצעו שינויים.");
+            return;
+        }
         setReceiptBusy(true);
         try {
-            const payload = buildReceiptPayload(
-                draft,
-                clearNumberId,
-                account?.receiptProfile,
-            );
             const updated = await updateReceiptProfile(payload);
             setAccount((prev) => ({
                 ...prev,
@@ -316,6 +342,7 @@ export default function CheckoutPage() {
 
         // If nothing changed, server profile already satisfies requirements — advance.
         if (Object.keys(payload).length === 0) {
+            setReceiptOk("");
             setStep("summary");
             return;
         }
@@ -355,6 +382,7 @@ export default function CheckoutPage() {
             <div className={styles.page}>
                 <SeoHelmet robots="noindex, nofollow" />
                 <div className={styles.card}>
+                    <CheckoutBrandMark />
                     <p className={styles.errorText}>
                         תוכנית לא תקינה. אנא בחרו תוכנית מעמוד המחירים.
                     </p>
@@ -374,6 +402,7 @@ export default function CheckoutPage() {
             <div className={styles.page}>
                 <SeoHelmet robots="noindex, nofollow" />
                 <div className={styles.card}>
+                    <CheckoutBrandMark />
                     <p className={styles.mutedText}>טוען פרטי חשבון...</p>
                 </div>
             </div>
@@ -386,6 +415,7 @@ export default function CheckoutPage() {
             <div className={styles.page}>
                 <SeoHelmet robots="noindex, nofollow" />
                 <div className={styles.card}>
+                    <CheckoutBrandMark />
                     <Notice variant="info">יש להתחבר כדי להמשיך לתשלום.</Notice>
                     <div className={styles.actions}>
                         <Link to="/login" className={styles.link}>
@@ -406,6 +436,7 @@ export default function CheckoutPage() {
             <div className={styles.page}>
                 <SeoHelmet robots="noindex, nofollow" />
                 <div className={styles.card}>
+                    <CheckoutBrandMark />
                     <Notice variant="error">
                         אירעה שגיאה בטעינת הפרטים. נסו לרענן את הדף.
                     </Notice>
@@ -428,6 +459,7 @@ export default function CheckoutPage() {
             <div className={styles.page}>
                 <SeoHelmet robots="noindex, nofollow" />
                 <div className={styles.card}>
+                    <CheckoutBrandMark />
                     <Notice variant="info">
                         יש לך כבר מנוי פעיל. המנוי בתוקף עד{" "}
                         {subExpiresAt.toLocaleDateString("he-IL")}.
@@ -453,6 +485,7 @@ export default function CheckoutPage() {
             <div className={styles.page}>
                 <SeoHelmet robots="noindex, nofollow" />
                 <div className={styles.card}>
+                    <CheckoutBrandMark />
                     <div className={styles.header}>
                         <h1 className={styles.title}>פרטי חשבונית</h1>
                         <p className={styles.subtitle}>
@@ -585,6 +618,7 @@ export default function CheckoutPage() {
             <div className={styles.page}>
                 <SeoHelmet robots="noindex, nofollow" />
                 <div className={styles.card}>
+                    <CheckoutBrandMark />
                     <div className={styles.header}>
                         <h1 className={styles.title}>סיכום הזמנה</h1>
                     </div>
@@ -685,6 +719,7 @@ export default function CheckoutPage() {
             <div className={styles.page}>
                 <SeoHelmet robots="noindex, nofollow" />
                 <div className={styles.card}>
+                    <CheckoutBrandMark />
                     <Notice variant="success">
                         התשלום נשלח לאישור. נעדכן את החשבון לאחר קבלת אישור
                         התשלום.
@@ -707,6 +742,7 @@ export default function CheckoutPage() {
             <div className={styles.page}>
                 <SeoHelmet robots="noindex, nofollow" />
                 <div className={styles.card}>
+                    <CheckoutBrandMark />
                     <Notice variant="error">
                         התשלום לא הושלם. ניתן לנסות שנית.
                     </Notice>
@@ -714,6 +750,7 @@ export default function CheckoutPage() {
                         <Button
                             variant="secondary"
                             onClick={() => {
+                                setPaymentError("");
                                 setPaymentResult(null);
                                 setStep("summary");
                             }}
@@ -738,6 +775,7 @@ export default function CheckoutPage() {
         <div className={styles.page}>
             <SeoHelmet robots="noindex, nofollow" />
             <div className={styles.card}>
+                <CheckoutBrandMark />
                 <div className={styles.header}>
                     <h1 className={styles.title}>תשלום מאובטח</h1>
                 </div>

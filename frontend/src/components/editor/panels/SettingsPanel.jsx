@@ -450,7 +450,7 @@ export default function SettingsPanel({
             account?.receiptProfile ?? null,
         );
         if (Object.keys(payload).length === 0) {
-            setReceiptProfileOk("אין שינויים לשמירה.");
+            setReceiptProfileOk("לא בוצעו שינויים.");
             return;
         }
         setReceiptProfileBusy(true);

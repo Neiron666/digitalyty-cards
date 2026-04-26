@@ -21,6 +21,21 @@ export default function IframeReturnPage() {
         <div className={styles.page}>
             <SeoHelmet robots="noindex, nofollow" />
             <div className={styles.card}>
+                <div className={styles.brandBlock} aria-label="Cardigo">
+                    <picture>
+                        <source
+                            type="image/webp"
+                            srcSet="/images/brand-logo/cardigo-logo.webp"
+                        />
+                        <img
+                            src="/images/brand-logo/cardigo-logo.png"
+                            alt="Cardigo"
+                            className={styles.brandImg}
+                            loading="lazy"
+                            decoding="async"
+                        />
+                    </picture>
+                </div>
                 {status === "success" ? (
                     <p className={styles.text}>מעבדים את אישור התשלום...</p>
                 ) : (
