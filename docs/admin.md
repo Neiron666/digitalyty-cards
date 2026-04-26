@@ -95,6 +95,8 @@ All of these require JSON body with `reason`.
       `{ "untilLocal": { "date": "YYYY-MM-DD", "hour": 13, "minute": 5 }, "reason": "..." }`
         - `date/hour/minute` are interpreted in `Asia/Jerusalem`.
         - `minute` must be in 5-minute steps: `0,5,10,...,55`.
+    - ⚠️ **Blocked for org-owned cards** — returns `409 ORG_CARD_BILLING_MANAGED_BY_ORG`.
+      Org-owned card premium is managed via org annual entitlement (see **Organization Annual Entitlement** section below).
 - Override plan until a future date (max +365 days):
     - `POST /api/admin/cards/:id/plan/override`
     - Body: `{ "plan": "monthly", "until": "2026-01-01T00:00:00.000Z", "reason": "..." }`
@@ -163,3 +165,65 @@ Admin write actions are stored in the `AdminAudit` collection.
 5. Verify audit records were created in MongoDB for each write action.
 
 Note: This change set is trial-only and does not modify analytics day bucketing.
+
+---
+
+## Organization Annual Entitlement
+
+Platform admin can grant, extend, or revoke annual premium access for an organization. All org-owned cards under an active entitlement receive premium automatically.
+
+This is **not** a personal billing operation. No Tranzila, STO, YeshInvoice, PaymentTransaction, Receipt, or `User.subscription` mutation is involved.
+
+For the full operator runbook (flows, error codes, troubleshooting):
+→ `docs/runbooks/org-annual-entitlement-admin-grant.md`
+
+### Endpoints
+
+- `GET /api/admin/orgs/:id` — returns org detail including `entitlement` subdocument.
+
+- `POST /api/admin/orgs/:id/entitlement/grant`
+    - Body: `{ "expiresAt": "<ISO 8601>", "reason": "<5–500 chars>", "confirmOrgAnnualGrant": true, "paymentReference": "<optional, max 120>", "adminNote": "<optional, max 500>" }`
+    - Blocks if entitlement already active: `409 ENTITLEMENT_ALREADY_ACTIVE`.
+
+- `POST /api/admin/orgs/:id/entitlement/extend`
+    - Body: `{ "newExpiresAt": "<ISO 8601>", "reason": "<5–500 chars>", "paymentReference": "<optional>", "adminNote": "<optional>" }`
+    - `newExpiresAt` must be after current `expiresAt`.
+    - Blocks if no active entitlement: `409 NOT_ACTIVE`.
+
+- `POST /api/admin/orgs/:id/entitlement/revoke`
+    - Body: `{ "reason": "<5–500 chars>" }`
+    - Blocks if no entitlement: `409 NO_ENTITLEMENT`.
+
+### Key error codes
+
+| Code                         | Meaning                                      |
+| ---------------------------- | -------------------------------------------- |
+| `ENTITLEMENT_ALREADY_ACTIVE` | Use Extend instead of Grant                  |
+| `NOT_ACTIVE`                 | No active entitlement to extend; Grant first |
+| `NO_ENTITLEMENT`             | Nothing to revoke                            |
+| `INACTIVE_ORG`               | Org is not active                            |
+| `CONFIRM_REQUIRED`           | `confirmOrgAnnualGrant: true` required       |
+| `INVALID_REASON`             | 5–500 chars required                         |
+| `INVALID_EXPIRES_AT`         | Must be a valid future ISO date              |
+| `INVALID_DATE_RANGE`         | Extend date must be after current expiry     |
+| `INVALID_PAYMENT_REFERENCE`  | Max 120 chars                                |
+| `INVALID_ADMIN_NOTE`         | Max 500 chars                                |
+
+### `ORG_CARD_BILLING_MANAGED_BY_ORG` guard
+
+The following legacy card billing/trial operations are **blocked** for org-owned cards (`409 ORG_CARD_BILLING_MANAGED_BY_ORG`):
+
+- `POST /api/admin/cards/:id/trial/extend`
+- `adminSetCardBilling` (direct card billing admin override)
+- `adminSyncCardBillingFromUser`
+- `adminRevokeCardBilling` (via adminSetCardBilling delegation)
+
+`adminOverride` remains an explicit platform-admin escape hatch and is reviewed separately; it is not the org annual entitlement grant mechanism.
+
+### AdminAudit actions
+
+| Operation | Action                   |
+| --------- | ------------------------ |
+| Grant     | `ORG_ENTITLEMENT_GRANT`  |
+| Extend    | `ORG_ENTITLEMENT_EXTEND` |
+| Revoke    | `ORG_ENTITLEMENT_REVOKE` |

@@ -59,6 +59,8 @@ All internal amounts are **integers in agorot** (1/100 of ₪). No floats anywhe
 
 > **AI quota note:** `aiGeneration` is a **shared monthly budget** across all AI surfaces (About, FAQ, SEO). The numbers above are the total per-user monthly limit, not per-surface. Enforcement: `backend/src/controllers/ai.controller.js` → `readTotalMonthlyUsage`. See `docs/ai-about-workstream.md` §5.1 for details.
 
+> **Org plan note:** Org plan access is granted through platform-admin annual entitlement, **not** through personal Tranzila payment flow. There is no org checkout, no STO recurring billing, and no automatic receipt generated for org grants. See §18 and `docs/runbooks/org-annual-entitlement-admin-grant.md`.
+
 **Enforcement policy:** `publish`, `seo`, `analytics`, `slugChange` MUST be backend-enforced in the respective controller actions (card.controller.js publish/SEO/slug endpoints). UI crowns are informational only - they do not replace backend gates.
 
 **Feature check function:** `backend/src/utils/planAccess.js` → `hasAccess(plan, feature)`.
@@ -269,6 +271,8 @@ Strategy: **discover-then-derive**.
 ---
 
 ## 7) Billing Resolution Chain (existing - documented for reference)
+
+**Important:** Org-owned cards (`card.orgId` set) under an active organization annual entitlement resolve via a separate path **before** this chain is entered. See §18 for the org entitlement path. The chain below applies to personal cards and to org cards when no active org entitlement exists.
 
 Precedence (highest → lowest):
 
@@ -767,3 +771,64 @@ All 4 micro-contours: frontend gates EXIT 0 on 2026-04-26 (`check:inline-styles`
 - G6 + G7 (see §14 and §16) remain open.
 
 **Cross-reference:** `docs/handoffs/current/Cardigo_Enterprise_Handoff_CheckoutIframe_E2E_2026-04-25.md`
+
+---
+
+## 18) Organization Annual Entitlement — Outside Personal Billing Flow
+
+**Status:** Active — 2026-04-26.
+
+Organization annual entitlement is a **separate mechanism** from the personal billing flow documented in §1–§17. It is not part of this flow.
+
+### What org annual entitlement is NOT
+
+The following personal billing components are **not involved** in org annual entitlement:
+
+| Component                                      | Status for org entitlement |
+| ---------------------------------------------- | -------------------------- |
+| `/payment/checkout` (Tranzila hosted checkout) | NOT used                   |
+| `/api/payments/create`                         | NOT used                   |
+| `PaymentIntent` model                          | NOT used                   |
+| `PaymentTransaction` model                     | NOT used                   |
+| `Receipt` model                                | NOT used                   |
+| Tranzila provider                              | NOT used                   |
+| Tranzila STO (recurring)                       | NOT used                   |
+| YeshInvoice (receipt/document)                 | NOT used                   |
+| `User.subscription` mutation                   | NOT triggered              |
+| Automatic invoice/receipt generation           | NOT triggered              |
+
+### What org annual entitlement IS
+
+- `Organization.orgEntitlement` is the SSoT for org premium access.
+- Platform admin grants/extends/revokes entitlement manually via admin UI after confirmed off-platform payment or agreement.
+- No payment provider is involved.
+- No automatic receipt is generated.
+
+### Resolver behavior for org cards
+
+When `card.orgId` is set and the organization has `orgEntitlement.status === "active"` and `orgEntitlement.expiresAt > now`:
+
+```json
+{
+    "source": "organization",
+    "isPaid": true,
+    "plan": "org"
+}
+```
+
+- `effectiveBilling.source = "organization"` is the public DTO value.
+- `PLANS.org` feature gates apply (see §2 feature matrix).
+- Personal cards belonging to org members are unaffected.
+- `User.subscription` is unaffected.
+
+### Resolution chain position
+
+Org-owned cards under active org entitlement resolve **before** the personal billing/trial/free chain (§7). When org entitlement is active, the personal chain is not entered for that card.
+
+When org entitlement is absent, expired, or revoked, the personal chain (§7) applies normally.
+
+### Operator runbook
+
+For full operator instructions (grant/extend/revoke flows, API contract, error codes, troubleshooting):
+
+→ `docs/runbooks/org-annual-entitlement-admin-grant.md`

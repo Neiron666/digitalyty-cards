@@ -1,4 +1,5 @@
-# Cardigo Enterprise Next-Chat Master Handoff  
+# Cardigo Enterprise Next-Chat Master Handoff
+
 **Date:** 2026-04-26  
 **Project:** Cardigo — Israel-first digital business card / mini business page SaaS  
 **Current master state:** Admin user delete lifecycle + billing provider cancellation + local cascade + documentation + rollout verification **PASSED**  
@@ -19,45 +20,45 @@ The assistant must not act like a code generator only. It must protect architect
 ChatGPT is responsible for:
 
 1. **Architecture decisions**
-   - Scalability
-   - Security
-   - Data integrity
-   - Payment correctness
-   - Operational safety
-   - Maintainability
-   - Minimal blast radius
+    - Scalability
+    - Security
+    - Data integrity
+    - Payment correctness
+    - Operational safety
+    - Maintainability
+    - Minimal blast radius
 
 2. **Backend/frontend consulting**
-   - Backend routes/controllers/models/services
-   - Frontend flows and UX
-   - API contracts
-   - Storage lifecycle
-   - Billing/receipt lifecycle
-   - Auth/security lifecycle
-   - CI/CD and rollout
+    - Backend routes/controllers/models/services
+    - Frontend flows and UX
+    - API contracts
+    - Storage lifecycle
+    - Billing/receipt lifecycle
+    - Auth/security lifecycle
+    - CI/CD and rollout
 
 3. **Security review**
-   - CSRF/XSS/injection class risks
-   - Token leakage
-   - Secret leakage
-   - Password reset safety
-   - Payment provider safety
-   - PII/logging safety
-   - User deletion/cascade safety
+    - CSRF/XSS/injection class risks
+    - Token leakage
+    - Secret leakage
+    - Password reset safety
+    - Payment provider safety
+    - PII/logging safety
+    - User deletion/cascade safety
 
 4. **Copilot Agent tasking**
-   - ChatGPT frames the task.
-   - Copilot executes.
-   - ChatGPT reviews proof.
-   - No code should be accepted without proof and verification.
+    - ChatGPT frames the task.
+    - Copilot executes.
+    - ChatGPT reviews proof.
+    - No code should be accepted without proof and verification.
 
 5. **Documentation ownership**
-   - Runbooks
-   - Policies
-   - Master handoffs
-   - Anti-drift notes
-   - Rollout checklists
-   - Operator instructions
+    - Runbooks
+    - Policies
+    - Master handoffs
+    - Anti-drift notes
+    - Rollout checklists
+    - Operator instructions
 
 ---
 
@@ -144,8 +145,8 @@ Digitalyty may exist as a separate brand/history, but **Cardigo is the product t
 
 - Target operational DB: `cardigo_prod` in the active production-shaped development cluster.
 - Manual index governance:
-  - `MONGOOSE_AUTO_INDEX=false`
-  - `MONGOOSE_AUTO_CREATE=false`
+    - `MONGOOSE_AUTO_INDEX=false`
+    - `MONGOOSE_AUTO_CREATE=false`
 - Indexes are applied by explicit scripts / operator steps, not by runtime auto-indexing.
 
 ---
@@ -263,11 +264,11 @@ Key truth:
 - `/payment/checkout` is standalone, outside marketing Layout.
 - `/payment/iframe-return` is standalone, outside marketing Layout.
 - `target=iframe` return path:
-  - `/api/payments/return?status=success&target=iframe`
-  - 303 → `/payment/iframe-return?status=success`
+    - `/api/payments/return?status=success&target=iframe`
+    - 303 → `/payment/iframe-return?status=success`
 - External no-target path:
-  - `/api/payments/return?status=success`
-  - 303 → `/pricing?payment=success`
+    - `/api/payments/return?status=success`
+    - 303 → `/pricing?payment=success`
 - `postMessage` is UX-only.
 - Notify webhook remains the sole entitlement path.
 - PaymentIntent carries `receiptProfileSnapshot`.
@@ -285,9 +286,9 @@ Closed hardening:
 - YeshInvoice free-text fields are stripped at provider-boundary only.
 - Payment/checkout pages have Cardigo logo branding.
 - Documentation updated in:
-  - `billing-flow-ssot.md`
-  - `tranzila-go-live-checklist.md`
-  - active checkout iframe handoff
+    - `billing-flow-ssot.md`
+    - `tranzila-go-live-checklist.md`
+    - active checkout iframe handoff
 
 ### 5.2 YeshInvoice receipt truth
 
@@ -295,15 +296,15 @@ Closed hardening:
 - `PaymentIntent.receiptProfileSnapshot` is authoritative for customer details.
 - Free-text fields sent to YeshInvoice are sanitized at document-build boundary.
 - Sanitization does **not** mutate:
-  - `user.receiptProfile`
-  - `PaymentIntent.receiptProfileSnapshot`
+    - `user.receiptProfile`
+    - `PaymentIntent.receiptProfileSnapshot`
 - Email / NumberID / ZipCode / CountryCode are not stripped by HTML helper because they have their own upstream validation/format rules.
 
 ### 5.3 Trial/free/premium lifecycle truth
 
 - Trial starts on first legitimate card acquisition:
-  - first card creation, or
-  - claiming anonymous card as first card
+    - first card creation, or
+    - claiming anonymous card as first card
 - Trial length: 10 days.
 - Trial does not delete card on expiry.
 - After expiry entitlement falls back to free.
@@ -311,7 +312,7 @@ Closed hardening:
 - AI is hard-blocked on free.
 - Retention purge removes gallery fully, with storage cleanup.
 - Product truth:
-  - Trial is onboarding incentive, not a separate plan.
+    - Trial is onboarding incentive, not a separate plan.
 
 ### 5.4 Tracking/consent truth
 
@@ -326,6 +327,58 @@ Closed hardening:
 - One Cardigo app identity site-wide.
 - Per-card PWA is not implemented and not planned in that contour.
 - Installability contour closed.
+
+---
+
+### 5.6 Org Annual Entitlement — Phase 2A–2I CLOSED
+
+Organization annual entitlement contour: fully implemented, verified, and documented.
+
+**What was built (all phases closed):**
+
+| Phase | Contour                                                                          | Status |
+| ----- | -------------------------------------------------------------------------------- | ------ |
+| 2A    | `Organization.orgEntitlement` model field + `AdminAudit` model                   | CLOSED |
+| 2B    | Org-aware DTO resolver (`effectiveBilling.source = "organization"`)              | CLOSED |
+| 2C    | retentionPurgeJob + trialLifecycleReconcile skip org-owned cards                 | CLOSED |
+| 2D    | Admin grant/extend/revoke API (`POST /api/admin/orgs/:id/entitlement/*`)         | CLOSED |
+| 2E    | Local admin API smoke                                                            | PASSED |
+| 2F    | Org card premium DTO smoke                                                       | PASSED |
+| 2G    | `ai.controller.js` org entitlement recognition for AI access                     | CLOSED |
+| 2H    | `admin.controller.js` org-card billing/trial guards (Phase 2H)                   | CLOSED |
+| 2I    | Admin UI (AdminOrganizationsView — entitlement block, grant/extend/revoke forms) | CLOSED |
+| 3I    | Manual browser smoke / operator UX acceptance                                    | PASSED |
+| 2J    | Docs package (runbook, policy, billing SSoT, admin.md, trial lifecycle)          | CLOSED |
+
+**Product truth:**
+
+- Platform admin grants annual entitlement after confirmed off-platform payment/agreement.
+- All org-owned cards under active entitlement resolve: `effectiveBilling.source = "organization"`, `plan = "org"`, `effectiveTier = "premium"`.
+- Personal cards and `User.subscription` are unaffected.
+- No self-service org checkout. No Tranzila/STO/YeshInvoice/PaymentTransaction/Receipt involved.
+
+**Admin hardening (Phase 2H):**
+
+- `extendTrial`, `adminSetCardBilling`, `adminSyncCardBillingFromUser`, `adminRevokeCardBilling` blocked for org-owned cards with `409 ORG_CARD_BILLING_MANAGED_BY_ORG`.
+- `adminOverride` remains a deferred escape hatch; it was intentionally not blocked.
+
+**Docs location:**
+
+- Operator runbook: `docs/runbooks/org-annual-entitlement-admin-grant.md`
+- Policy: `docs/policies/POLICY_ORGS.md` §12
+- Billing boundary: `docs/runbooks/billing-flow-ssot.md` §18
+- Admin API reference: `docs/admin.md` — Organization Annual Entitlement section
+- Trial lifecycle: `docs/runbooks/trial-lifecycle-ssot.md` §2 and §9
+
+**Explicit out-of-scope (not implemented in this contour):**
+
+- Tranzila / STO / YeshInvoice / PaymentTransaction / Receipt
+- Personal checkout for org cards
+- Org-wide AI quota pool (V1 uses per-user quota)
+- Org self-service entitlement management
+- Org entitlement expiry notification
+- Audit trail UI (display AdminAudit per org)
+- Production rollout verification (separate future contour)
 
 ---
 
@@ -372,30 +425,30 @@ Added STO cancellation before destructive/local lifecycle operations.
 Covered flows:
 
 1. Admin hard delete:
-   - `source: "admin_delete"`
-   - blocks with `409 STO_CANCEL_REQUIRED` if cancellation fails.
+    - `source: "admin_delete"`
+    - blocks with `409 STO_CANCEL_REQUIRED` if cancellation fails.
 
 2. Admin subscription revoke:
-   - `source: "admin_revoke"`
-   - blocks with `409 STO_CANCEL_REQUIRED` before local downgrade.
+    - `source: "admin_revoke"`
+    - blocks with `409 STO_CANCEL_REQUIRED` before local downgrade.
 
 3. Self-delete:
-   - `source: "self_delete"`
-   - after tombstone, before card cascade.
-   - blocks with generic 400 if provider cancellation fails.
+    - `source: "self_delete"`
+    - after tombstone, before card cascade.
+    - blocks with generic 400 if provider cancellation fails.
 
 #### Important invariant
 
 All STO block conditions must remain:
 
 ```js
-!stoResult.ok && !stoResult.skipped
+!stoResult.ok && !stoResult.skipped;
 ```
 
 Do **not** simplify to:
 
 ```js
-!stoResult.ok
+!stoResult.ok;
 ```
 
 because no-STO / invalid non-created states can return:
@@ -443,13 +496,13 @@ This closes:
 Cleanup is hard-blocking:
 
 - Admin delete:
-  - `500 USER_DELETE_CLEANUP_FAILED`
-  - user is **not** deleted
-  - safe to retry after DB/Mongo connectivity is healthy
+    - `500 USER_DELETE_CLEANUP_FAILED`
+    - user is **not** deleted
+    - safe to retry after DB/Mongo connectivity is healthy
 
 - Self-delete:
-  - generic 400
-  - user is **not** deleted
+    - generic 400
+    - user is **not** deleted
 
 ---
 
@@ -499,10 +552,10 @@ If audit fails after deletion:
 
 ```json
 {
-  "ok": true,
-  "deleted": true,
-  "auditWriteFailed": true,
-  "warning": "User was deleted but admin audit log could not be written. Check server logs."
+    "ok": true,
+    "deleted": true,
+    "auditWriteFailed": true,
+    "warning": "User was deleted but admin audit log could not be written. Check server logs."
 }
 ```
 
@@ -562,14 +615,14 @@ Expected output booleans:
 
 ```json
 {
-  "passwordResetsDeleted": true,
-  "activePasswordResetsDeleted": true,
-  "emailVerificationTokensDeleted": true,
-  "emailSignupTokensDeleted": true,
-  "mailJobsDeleted": true,
-  "aiUsageDeleted": true,
-  "deletedEmailBlockNotCreated": true,
-  "adminAuditWritten": true
+    "passwordResetsDeleted": true,
+    "activePasswordResetsDeleted": true,
+    "emailVerificationTokensDeleted": true,
+    "emailSignupTokensDeleted": true,
+    "mailJobsDeleted": true,
+    "aiUsageDeleted": true,
+    "deletedEmailBlockNotCreated": true,
+    "adminAuditWritten": true
 }
 ```
 
@@ -738,14 +791,14 @@ and all booleans true:
 
 ```json
 {
-  "passwordResetsDeleted": true,
-  "activePasswordResetsDeleted": true,
-  "emailVerificationTokensDeleted": true,
-  "emailSignupTokensDeleted": true,
-  "mailJobsDeleted": true,
-  "aiUsageDeleted": true,
-  "deletedEmailBlockNotCreated": true,
-  "adminAuditWritten": true
+    "passwordResetsDeleted": true,
+    "activePasswordResetsDeleted": true,
+    "emailVerificationTokensDeleted": true,
+    "emailSignupTokensDeleted": true,
+    "mailJobsDeleted": true,
+    "aiUsageDeleted": true,
+    "deletedEmailBlockNotCreated": true,
+    "adminAuditWritten": true
 }
 ```
 
@@ -1143,7 +1196,7 @@ This is a known existing state and not related to current delete lifecycle work 
 May return:
 
 ```json
-{"ok":false,"code":"GATE_REQUIRED"}
+{ "ok": false, "code": "GATE_REQUIRED" }
 ```
 
 with HTTP 401 because proxy/site gate is active. This is not a backend-down signal.
@@ -1298,4 +1351,3 @@ Prefer:
 - no “quick hacks”
 
 Cardigo is moving toward production. Every change must be treated as production-shaped, even while still under development.
-

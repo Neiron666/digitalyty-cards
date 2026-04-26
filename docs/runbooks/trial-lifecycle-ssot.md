@@ -16,6 +16,8 @@ Cardigo offers a time-bounded premium trial to eligible registered users. During
 
 **SSoT:** `backend/src/config/trial.js` → `isUserTrialEligible(user)`
 
+**Org-owned cards are not personal trial eligible.** Trial is a personal-card/user onboarding feature only. Cards with `card.orgId` set are governed by `Organization.orgEntitlement`, not by trial. Do not attempt trial extension to grant org card premium access.
+
 A user is eligible when **all** conditions hold:
 
 1. `TRIAL_ROLLOUT_DATE` env var is configured (non-null).
@@ -155,6 +157,8 @@ After trial expiry, cards enter a retention grace period before purge eligibilit
 | `RETENTION_PURGE_HEARTBEAT_MS` | `43200000` | Purge heartbeat log interval  |
 
 ### Retention purge scope
+
+**Org-owned cards are excluded from retention purge.** Cards with `card.orgId` set are skipped by `retentionPurgeJob`. Org card premium lifecycle is governed by `Organization.orgEntitlement`, not by trial/retention lifecycle. If an org card appears to have premium data, that is governed by org entitlement, not by the retention grace/purge window.
 
 The retention purge job removes all premium-only surplus data, including:
 

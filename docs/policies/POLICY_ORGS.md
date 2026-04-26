@@ -53,6 +53,7 @@
 
 - Создавать Organization (slug, name, note).
 - Задавать и менять **seatLimit / тариф / биллинг**.
+    - `seatLimit` (мест в org) и `orgEntitlement` (премиум-доступ) — **раздельные** концепции. Для ежегодного org entitlement см. §12 и `docs/runbooks/org-annual-entitlement-admin-grant.md`.
 - Назначать Org Owner (директора) и менять ownership (controlled operation).
 - Выполнять break-glass операции (см. SECURITY_AUTH_INVITES.md).
 
@@ -211,3 +212,41 @@ Email-провайдер для онбординга сотрудников **н
 - Membership revoke → 404 на org surfaces (anti-enumeration).
 - PublicPath/ogPath SSoT в DTO, QRCodeBlock не угадывает orgSlug.
 - Все org-действия имеют аудит.
+
+---
+
+## 12) Organization Annual Entitlement
+
+**SSoT:** `docs/runbooks/org-annual-entitlement-admin-grant.md`
+
+### seatLimit vs. orgEntitlement — раздельные концепции
+
+| Концепция        | Что регулирует                             | Где хранится                  |
+| ---------------- | ------------------------------------------ | ----------------------------- |
+| `seatLimit`      | Количество мест (active memberships) в org | `Organization.seatLimit`      |
+| `orgEntitlement` | Премиум-доступ для всех org-карточек       | `Organization.orgEntitlement` |
+
+Это **независимые измерения**. Увеличение seatLimit не даёт premium. Предоставление org entitlement не меняет seatLimit.
+
+### Правила
+
+- **Platform admin only.** Org owner и org admin не могут самостоятельно выдать entitlement.
+- **Offline payment model.** Оплата/договор происходит вне платформы. Платформенный admin вручную предоставляет entitlement после подтверждённой оплаты.
+- **Нет Tranzila/STO/YeshInvoice/PaymentTransaction/Receipt.** Ежегодный org entitlement не проходит через личный платёжный flow и не генерирует квитанции автоматически.
+- **Scope: все org-карточки.** Все карточки с `card.orgId` этой org при активном entitlement получают premium через resolver (`effectiveBilling.source = "organization"`, `plan = "org"`).
+- **Personal cards unaffected.** Личные карточки участников org продолжают работать по личному billing/trial/free.
+- **User.subscription не мутируется.** Операции org entitlement не затрагивают `User.subscription`.
+
+### Операции
+
+| Операция          | Когда использовать                                            |
+| ----------------- | ------------------------------------------------------------- |
+| Grant (Выдать)    | После подтверждённой внешней оплаты/договора                  |
+| Extend (Продлить) | Когда есть активный entitlement и нужно продлить              |
+| Revoke (Отозвать) | Досрочное прекращение доступа (нарушение договора / неоплата) |
+
+### Связанные документы
+
+- `docs/runbooks/org-annual-entitlement-admin-grant.md` — полный операторский runbook
+- `docs/admin.md` — API-справочник (эндпоинты grant/extend/revoke)
+- `docs/runbooks/billing-flow-ssot.md` — §18 org boundary section (org ≠ personal billing)
