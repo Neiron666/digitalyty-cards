@@ -561,6 +561,9 @@ async function cancelTranzilaStoForUser(
         "webhook",
         "manual_portal",
         "self_service",
+        "admin_delete",
+        "admin_revoke",
+        "self_delete",
     ];
     const normalizedSource = ALLOWED_CANCEL_SOURCES.includes(source)
         ? source

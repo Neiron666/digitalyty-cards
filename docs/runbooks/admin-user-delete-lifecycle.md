@@ -59,7 +59,7 @@ Route middleware: `requireAdmin` (applied globally to all `/api/admin` routes in
 1. **Platform-admin authorization** — `requireAdmin` middleware enforces `user.role === "admin"` with a valid session before the route handler is reached (HTTP 401/403 if not satisfied)
 2. **Reason requirement** — `requireReason(req, res)` validates `req.body.reason` is a non-empty string ≤ 500 chars; returns HTTP 400 `REASON_REQUIRED` / `REASON_TOO_LONG` if not satisfied
 3. **Destructive confirmation token** — `req.body.confirm` must equal exactly `"DELETE"`; returns HTTP 400 `CONFIRM_REQUIRED` if not satisfied
-4. **Self-target guard** — `SELF_DELETE_FORBIDDEN` if admin is deleting themselves (HTTP 403)
+4. **Self-target guard** — `SELF_DELETE_FORBIDDEN` if admin is deleting themselves (HTTP 409)
 5. **Target admin-role guard** — `TARGET_IS_ADMIN` if target user has `role: "admin"` (HTTP 409 — MVP restriction)
 6. **STO cancel** — `cancelTranzilaStoForUser(user, { source: "admin_delete" })`
     - `ok: true` or `skipped: true` → proceed
@@ -178,6 +178,8 @@ The function is idempotent and never throws. Repeated calls on a `"cancelled"` S
 | Self-delete               | `"self_delete"`  |
 | Admin subscription revoke | `"admin_revoke"` |
 
+> These values are accepted by `cancelTranzilaStoForUser` and persist to `user.tranzilaSto.cancellationSource`. Unknown or legacy source strings still normalize to `"operator_script"`. The accepted value set is kept in sync between `ALLOWED_CANCEL_SOURCES` (provider) and the `cancellationSource` schema enum (User model) — both must be updated together if new lifecycle sources are added.
+
 ### Manual Operator Recovery (STO failure)
 
 If a delete is blocked by 409 `STO_CANCEL_REQUIRED` due to a transient Tranzila API failure:
@@ -192,15 +194,15 @@ If a delete is blocked by 409 `STO_CANCEL_REQUIRED` due to a transient Tranzila 
 
 ## §10. Failure Modes
 
-| Failure                                       | Response                                                              | Data State                                        |
-| --------------------------------------------- | --------------------------------------------------------------------- | ------------------------------------------------- |
-| STO provider call fails (`ok: false`)         | HTTP 409 `STO_CANCEL_REQUIRED`                                        | No local writes; user intact                      |
-| Supabase image delete fails for a card        | Logged; cascade continues                                             | Card document deleted; image may remain in bucket |
-| Auth/job model delete fails mid-cascade       | Logged; cascade may continue depending on error                       | Partial cleanup; user may still exist             |
-| AdminAudit write fails                        | `{ ok: true, deleted: true, auditWriteFailed: true, warning: "..." }` | User deleted; audit entry missing                 |
-| Target user not found                         | HTTP 404                                                              | No writes                                         |
-| Self-target (admin deleting themselves)       | HTTP 403 `SELF_DELETE_FORBIDDEN`                                      | No writes                                         |
-| Sole-org-admin guard fires (self-delete only) | HTTP 409 `SOLE_ORG_ADMIN`                                             | No writes                                         |
+| Failure                                                  | Response                                                              | Data State                                                                                                                                                                                                                          |
+| -------------------------------------------------------- | --------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| STO provider call fails (`ok: false`)                    | HTTP 409 `STO_CANCEL_REQUIRED`                                        | No local writes; user intact                                                                                                                                                                                                        |
+| Supabase image delete fails for a card                   | Logged; cascade continues                                             | Card document deleted; image may remain in bucket                                                                                                                                                                                   |
+| Auth/job/AI cleanup fails (`USER_DELETE_CLEANUP_FAILED`) | HTTP 500 `USER_DELETE_CLEANUP_FAILED`                                 | **User NOT deleted** — no destructive writes yet; inspect backend logs for `[admin] auth/job cleanup failed`; confirm DB/Mongo connectivity; retry the admin delete request; do NOT manually delete the user until cleanup succeeds |
+| AdminAudit write fails                                   | `{ ok: true, deleted: true, auditWriteFailed: true, warning: "..." }` | User deleted; audit entry missing                                                                                                                                                                                                   |
+| Target user not found                                    | HTTP 404                                                              | No writes                                                                                                                                                                                                                           |
+| Self-target (admin deleting themselves)                  | HTTP 409 `SELF_DELETE_FORBIDDEN`                                      | No writes                                                                                                                                                                                                                           |
+| Sole-org-admin guard fires (self-delete only)            | HTTP 409 `SOLE_ORG_ADMIN`                                             | No writes                                                                                                                                                                                                                           |
 
 ---
 
