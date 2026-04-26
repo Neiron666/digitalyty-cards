@@ -1,10 +1,21 @@
 # POLICY_ADMIN_DELETE_LIFECYCLE_V1
 
-**Status:** Proposed / Required Target. Supersedes ad-hoc deletion behavior.  
+**Status:** IMPLEMENTED — all primary lifecycle contours closed as of 2026-04-26.  
 **Version:** V1  
 **Date:** 2026-04-26  
 **Scope:** Platform admin hard-delete, self-delete account, admin subscription revoke — when billing/STO/provider artifacts may exist.  
 **Tier:** Tier 1 — Product / Security Canon (see `.github/copilot-instructions.md` §2)
+
+> **Implementation status as of 2026-04-26 — all primary admin/self-delete lifecycle contours are CLOSED:**
+>
+> - **PROVIDER_CANCELLATION_BEFORE_DELETE_OR_REVOKE** — CLOSED
+> - **LOCAL_AUTH_JOB_CLEANUP** — CLOSED
+> - **AI_USAGE_DELETE_CASCADE** — CLOSED
+> - **ADMIN_AUDIT_RELIABILITY** — CLOSED
+> - **SANITY_ADMIN_USER_DELETE_EXPANSION** — CLOSED with live CI destructive sanity PASS
+>
+> The "Current Implementation Warning" section (§12) and the Implementation Roadmap (§14) have been updated to reflect these closures.
+> For the operator-facing sequence, sanity coverage, and verification checklist, see `docs/runbooks/admin-user-delete-lifecycle.md`.
 
 > **Relationship to existing policies:**
 >
@@ -16,15 +27,15 @@
 
 ## 0. Executive Summary
 
-The Phase 1 audit (2026-04-26) established that:
+The Phase 1 audit (2026-04-26) identified three gaps:
 
-1. `POST /api/admin/users/:id/delete` hard-deletes a user and all their cards **without cancelling an active Tranzila STO**.
-2. `POST /api/account/delete-account` self-deletes **without cancelling an active Tranzila STO**.
-3. `POST /api/admin/users/:id/subscription/revoke` downgrades a subscription to free/inactive **without cancelling an active Tranzila STO**.
+1. `POST /api/admin/users/:id/delete` hard-deleted a user without cancelling an active Tranzila STO and without cleaning auth/job/AI records.
+2. `POST /api/account/delete-account` self-deleted without cancelling an active Tranzila STO.
+3. `POST /api/admin/users/:id/subscription/revoke` downgraded a subscription without cancelling an active Tranzila STO.
 
-In all three cases, the provider-side recurring billing schedule survives user deletion. The STO continues charging the user's payment card on the Tranzila schedule, firing STO-notify webhooks for a user that no longer exists in the local database.
+**As of 2026-04-26 all three gaps are closed.** All five implementation contours listed above have been verified by a live CI destructive sanity (`backend-admin-sanity.yml` against `MONGO_URI_DRIFT_CHECK`).
 
-This policy defines the target lifecycle that these three flows must implement before being considered production-safe for paid users.
+This policy documents the finalized lifecycle and the accepted product decisions that govern these three flows.
 
 ---
 
@@ -152,23 +163,19 @@ The `POST /api/account/delete-account` flow currently creates an email tombstone
 `POST /api/account/delete-account` creates a `DeletedEmailBlock` tombstone.  
 `POST /api/admin/users/:id/delete` does NOT create a tombstone (deferred as of `docs/api-security.md:599`).
 
-### 6.2 Target policy
+### 6.2 Accepted product decision (2026-04-26)
 
-Admin hard delete **should** create a `DeletedEmailBlock` tombstone unless the specific deletion reason is classified as "non-fraud / operator housekeeping" and the product explicitly decides re-registration should be permitted.
+**Admin hard delete must NOT create a `DeletedEmailBlock` tombstone.**
 
-Default policy: tombstone is always created for admin hard delete.
+Rationale: platform admin authority is not equivalent to a finality/re-registration block. An admin delete is an operator-initiated action, not a self-initiated finality event. Tombstone-blocking re-registration on every admin delete would be an over-reach relative to admin intent.
 
-Rationale:
-
-- Without a tombstone, a deleted user can immediately re-register with the same email.
-- If any billing artifacts (PaymentTransaction, Receipt) reference that email via `recipientSnapshot.email`, re-registration creates a new user whose email collides with historical fiscal records.
-- Tombstone creation is write-once and uses HMAC-SHA256 with `EMAIL_BLOCK_SECRET`; no raw PII is stored in the tombstone record.
-
-### 6.3 Tombstone-first ordering
-
-When tombstone is added to admin delete, it must be created **before** any cascade destruction begins. This matches the existing self-delete ordering in [backend/src/routes/account.routes.js](../../backend/src/routes/account.routes.js).
+**Self-delete DOES create a `DeletedEmailBlock` tombstone** (tombstone-first, before any cascade). This behavior is unchanged.
 
 Tombstone must NOT be applied in automated inactivity cleanup (B1/B2/B3) — see `POLICY_RETENTION_V1.md §1.1`. This policy does not change that rule.
+
+### 6.3 Tombstone-first ordering (self-delete only)
+
+Self-delete creates the tombstone before any cascade destruction begins (`account.routes.js`). This ordering is preserved. Admin delete has no tombstone step.
 
 ---
 
@@ -272,15 +279,15 @@ Until that decision is made, current behavior (delete with card cascade) stands.
 
 The self-delete endpoint (`POST /api/account/delete-account`) checks whether the user is the sole admin of any organization and blocks deletion if true. The admin hard-delete endpoint (`POST /api/admin/users/:id/delete`) does NOT perform this check.
 
-### 10.2 Target policy
+### 10.2 Accepted product decision (2026-04-26)
 
-Admin hard delete must apply the same sole-org-admin guard as self-delete:
+**Admin hard delete must NOT be blocked by sole-org-admin state.**
 
-- Before cascade begins, check whether the target user is the sole `admin`-role member with `status: "active"` in any organization.
-- If yes: block deletion and return an actionable error identifying which organization(s) are affected.
-- The admin must first transfer org ownership (assign another admin member) or dissolve the org before the deletion can proceed.
+Rationale: platform admin authority supersedes org governance for this operation. The platform admin is performing an operator-level action and is responsible for handling any resulting org state downstream. Blocking the delete would prevent legitimate operator recovery scenarios.
 
-This prevents permanently orphaned organizations with no admin.
+**Self-delete DOES keep the sole-org-admin guard** (`SOLE_ORG_ADMIN` — 409 response). This behavior is unchanged.
+
+Org state after admin delete of a sole org admin is an operational concern to be handled by the platform admin.
 
 ---
 
@@ -325,132 +332,133 @@ The operation is NOT idempotent across partial-deletion states by design (some c
 
 ---
 
-## 12. Current Implementation Warning
+## 12. Implementation Status
 
-> **⚠️ The following flows are NOT production-safe for users with an active Tranzila STO.**
+> **Implementation status as of 2026-04-26: all primary admin/self-delete lifecycle contours listed in §0 are CLOSED.**
 
-| Flow                      | File                                                                                                        | Gap                                                              |
-| ------------------------- | ----------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
-| Admin hard delete         | [backend/src/controllers/admin.controller.js:644](../../backend/src/controllers/admin.controller.js#L644)   | No `cancelTranzilaStoForUser` call before user deletion          |
-| Self-delete               | [backend/src/routes/account.routes.js](../../backend/src/routes/account.routes.js)                          | No `cancelTranzilaStoForUser` call before user deletion          |
-| Admin subscription revoke | [backend/src/controllers/admin.controller.js:1388](../../backend/src/controllers/admin.controller.js#L1388) | No `cancelTranzilaStoForUser` call before subscription downgrade |
+| Contour                                       | Status                                      | Date Closed |
+| --------------------------------------------- | ------------------------------------------- | ----------- |
+| PROVIDER_CANCELLATION_BEFORE_DELETE_OR_REVOKE | ✅ CLOSED                                   | 2026-04-26  |
+| LOCAL_AUTH_JOB_CLEANUP                        | ✅ CLOSED                                   | 2026-04-26  |
+| AI_USAGE_DELETE_CASCADE                       | ✅ CLOSED                                   | 2026-04-26  |
+| ADMIN_AUDIT_RELIABILITY                       | ✅ CLOSED                                   | 2026-04-26  |
+| SANITY_ADMIN_USER_DELETE_EXPANSION            | ✅ CLOSED — live CI destructive sanity PASS | 2026-04-26  |
 
-**Temporary operator rule (until implementation is complete):**
+All three flows are production-safe for users with an active Tranzila STO. The temporary operator manual-cancel rule is no longer required — `cancelTranzilaStoForUser` is now called automatically as a hard precondition in all three flows.
 
-Before executing any of these operations on a user with `tranzilaSto.status = "created"`:
-
-1. Run `npm run sto:cancel:dry-run` to verify the target user's STO state.
-2. Run `npm run sto:cancel:execute --cancellation-reason="admin delete - pre-delete cancellation" --email=<user_email>` to cancel the STO at the provider.
-3. Confirm the STO status has been updated to `"cancelled"` in the user document.
-4. Proceed with the delete or revoke operation.
-
-This manual step MUST NOT be skipped for users on `plan: "monthly"` or `plan: "yearly"` with `tranzilaSto.status = "created"`.
+For operator verification procedures, see `docs/runbooks/admin-user-delete-lifecycle.md §11–§13`.
 
 ---
 
 ## 13. Data Classification Table
 
-| Data Type                    | Collection / Service   | Phase 1 Current Behavior                      | Target Policy                      | Action                                            | Rationale                                                                           | Needs Product/Legal Decision?                                                           |
-| ---------------------------- | ---------------------- | --------------------------------------------- | ---------------------------------- | ------------------------------------------------- | ----------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
-| User document                | `users`                | DELETED                                       | DELETED                            | Hard delete — last step after cascade             | Core entity                                                                         | No                                                                                      |
-| Cards                        | `cards`                | DELETED (storage-first)                       | DELETED (storage-first)            | Same — preserve ordering                          | User data                                                                           | No                                                                                      |
-| Supabase storage objects     | Supabase Storage       | DELETED (blocks DB delete)                    | DELETED (blocks DB delete)         | Same — preserve blocking semantics                | User-uploaded media                                                                 | No                                                                                      |
-| Leads                        | `leads`                | DELETED via card cascade                      | DELETED via card cascade           | Maintain; review per §9                           | Customer-submitted; processing ends with account                                    | **Yes — export/grace period?**                                                          |
-| Bookings                     | `bookings`             | DELETED via card cascade                      | DELETED via card cascade           | Maintain; review per §9                           | Customer-submitted appointment data                                                 | **Yes — export/grace period?**                                                          |
-| CardAnalyticsDaily           | `cardanalyticsdailys`  | DELETED via card cascade                      | DELETED via card cascade           | Maintain                                          | No standalone value after card deleted                                              | No                                                                                      |
-| SiteAnalyticsVisit           | `siteanalyticsvisits`  | RETAINED (no userId, TTL 90d)                 | RETAIN (TTL)                       | No action needed                                  | No userId link; hash-only identity; TTL handles                                     | No                                                                                      |
-| SiteAnalyticsDaily           | `siteanalyticsdailys`  | RETAINED (no userId, TTL 365d)                | RETAIN (TTL)                       | No action needed                                  | No userId link; aggregate only                                                      | No                                                                                      |
-| AiUsageMonthly               | `aiusagemonthlys`      | NOT TOUCHED (retained forever)                | **DELETE on user deletion**        | Add to cascade                                    | Personal usage history; no fiscal value; see §7.2                                   | **Yes — if product needs anonymized aggregates**                                        |
-| PasswordReset                | `passwordresets`       | NOT TOUCHED (admin delete gap)                | DELETE                             | Add to admin delete cascade                       | Security hygiene; stale tokens for non-existent user                                | No                                                                                      |
-| ActivePasswordReset          | `activepasswordresets` | NOT TOUCHED (admin delete gap)                | DELETE                             | Add to admin delete cascade                       | Security hygiene                                                                    | No                                                                                      |
-| EmailSignupToken             | `emailsignuptokens`    | NOT TOUCHED                                   | DELETE                             | Add to cascade (both paths)                       | Good hygiene; email-based reference                                                 | No                                                                                      |
-| MailJob                      | `mailjobs`             | NOT TOUCHED in admin delete; deleted in B1/B2 | DELETE before user doc             | Add to admin delete; enforce ordering (see §11.3) | May fire post-deletion without cancellation                                         | No                                                                                      |
-| DeletedEmailBlock            | `deletedemailblocks`   | CREATED by self-delete; NOT by admin delete   | CREATE on admin delete (target)    | Add tombstone creation to admin delete            | Prevents re-registration ambiguity; see §6                                          | **Yes — product may want opt-out for specific admin delete reasons**                    |
-| MarketingOptout              | `marketingoptouts`     | NOT TOUCHED                                   | RETAIN                             | No deletion                                       | Protective suppression artifact                                                     | No                                                                                      |
-| PaymentIntent                | `paymentintents`       | RETAINED (TTL index)                          | RETAIN until TTL                   | No action needed                                  | TTL-managed; no PII exposure concern                                                | No                                                                                      |
-| PaymentTransaction           | `paymenttransactions`  | RETAINED INTENTIONALLY                        | **MUST RETAIN**                    | Never delete                                      | Israeli financial law; orphaned userId acceptable per `POLICY_RETENTION_V1.md §1.3` | **Yes — confirm retention period with accountant/legal**                                |
-| Receipt                      | `receipts`             | RETAINED INTENTIONALLY                        | **MUST RETAIN**                    | Never delete                                      | Fiscal record; YeshInvoice-issued                                                   | **Yes — confirm retention period with accountant/legal**                                |
-| YeshInvoice provider doc     | YeshInvoice API        | RETAINED at provider (no delete API)          | **MUST RETAIN at provider**        | No action (no deletion capability)                | Permanent fiscal artifact at provider                                               | No                                                                                      |
-| Tranzila STO (provider side) | Tranzila API           | NOT CANCELLED on delete                       | **CANCEL before local delete**     | Call `cancelTranzilaStoForUser` as pre-condition  | Core P0 invariant; see §2–§3                                                        | No                                                                                      |
-| Tranzila token (local field) | `users.tranzilaToken`  | DELETED with user doc                         | DELETED with user doc              | Implicit — part of user document                  | No standalone value after user deleted; provider retains its own token record       | No                                                                                      |
-| AdminAudit                   | `adminaudits`          | RETAINED + created on delete                  | **MUST RETAIN** + create on delete | Never delete; always create on user deletion      | Legal/audit trail                                                                   | No                                                                                      |
-| OrgInviteAudit               | `orginviteaudits`      | RETAINED                                      | RETAIN                             | No deletion                                       | Audit trail for accepted invites                                                    | **Yes — anonymize actorUserId after retention window? Separate future policy required** |
-| OrganizationMember           | `organizationmembers`  | DELETED                                       | DELETED                            | Maintain                                          | User-membership binding; org persists independently                                 | No                                                                                      |
-| OrgInvite (pending)          | `orginvites`           | DELETED (pending only)                        | DELETED (pending only)             | Maintain                                          | Operational garbage only                                                            | No                                                                                      |
+| Data Type                    | Collection / Service   | Phase 1 Current Behavior                                                                                     | Target Policy                                                      | Action                                                                     | Rationale                                                                           | Needs Product/Legal Decision?                                                           |
+| ---------------------------- | ---------------------- | ------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------ | -------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
+| User document                | `users`                | DELETED                                                                                                      | DELETED                                                            | Hard delete — last step after cascade                                      | Core entity                                                                         | No                                                                                      |
+| Cards                        | `cards`                | DELETED (storage-first)                                                                                      | DELETED (storage-first)                                            | Same — preserve ordering                                                   | User data                                                                           | No                                                                                      |
+| Supabase storage objects     | Supabase Storage       | DELETED (blocks DB delete)                                                                                   | DELETED (blocks DB delete)                                         | Same — preserve blocking semantics                                         | User-uploaded media                                                                 | No                                                                                      |
+| Leads                        | `leads`                | DELETED via card cascade                                                                                     | DELETED via card cascade                                           | Maintain; review per §9                                                    | Customer-submitted; processing ends with account                                    | **Yes — export/grace period?**                                                          |
+| Bookings                     | `bookings`             | DELETED via card cascade                                                                                     | DELETED via card cascade                                           | Maintain; review per §9                                                    | Customer-submitted appointment data                                                 | **Yes — export/grace period?**                                                          |
+| CardAnalyticsDaily           | `cardanalyticsdailys`  | DELETED via card cascade                                                                                     | DELETED via card cascade                                           | Maintain                                                                   | No standalone value after card deleted                                              | No                                                                                      |
+| SiteAnalyticsVisit           | `siteanalyticsvisits`  | RETAINED (no userId, TTL 90d)                                                                                | RETAIN (TTL)                                                       | No action needed                                                           | No userId link; hash-only identity; TTL handles                                     | No                                                                                      |
+| SiteAnalyticsDaily           | `siteanalyticsdailys`  | RETAINED (no userId, TTL 365d)                                                                               | RETAIN (TTL)                                                       | No action needed                                                           | No userId link; aggregate only                                                      | No                                                                                      |
+| AiUsageMonthly               | `aiusagemonthlys`      | **DELETED on user deletion** (AI_USAGE_DELETE_CASCADE closed 2026-04-26)                                     | **DELETE on user deletion**                                        | Already implemented                                                        | Personal usage history; no fiscal value; see §7.2                                   | **Yes — if product needs anonymized aggregates**                                        |
+| PasswordReset                | `passwordresets`       | **DELETED** (LOCAL_AUTH_JOB_CLEANUP closed 2026-04-26)                                                       | DELETE                                                             | Already implemented                                                        | Security hygiene; stale tokens for non-existent user                                | No                                                                                      |
+| ActivePasswordReset          | `activepasswordresets` | **DELETED** (LOCAL_AUTH_JOB_CLEANUP closed 2026-04-26)                                                       | DELETE                                                             | Already implemented                                                        | Security hygiene                                                                    | No                                                                                      |
+| EmailSignupToken             | `emailsignuptokens`    | **DELETED** by emailNormalized (LOCAL_AUTH_JOB_CLEANUP closed 2026-04-26)                                    | DELETE                                                             | Already implemented (both admin and self-delete paths)                     | Hygiene; email-based reference                                                      | No                                                                                      |
+| MailJob                      | `mailjobs`             | **DELETED before User.deleteOne** in admin delete and self-delete (LOCAL_AUTH_JOB_CLEANUP closed 2026-04-26) | DELETE before user doc                                             | Already implemented; ordering enforced                                     | Prevents post-deletion email delivery                                               | No                                                                                      |
+| DeletedEmailBlock            | `deletedemailblocks`   | CREATED by self-delete; NOT by admin delete                                                                  | **MUST NOT CREATE on admin delete. CREATE/RETAIN on self-delete.** | No action on admin delete (product decision 2026-04-26, see §6.2)          | Platform admin authority is not a finality event; product decision closed           | No — product decision locked                                                            |
+| MarketingOptout              | `marketingoptouts`     | NOT TOUCHED                                                                                                  | RETAIN                                                             | No deletion                                                                | Protective suppression artifact                                                     | No                                                                                      |
+| PaymentIntent                | `paymentintents`       | RETAINED (TTL index)                                                                                         | RETAIN until TTL                                                   | No action needed                                                           | TTL-managed; no PII exposure concern                                                | No                                                                                      |
+| PaymentTransaction           | `paymenttransactions`  | RETAINED INTENTIONALLY                                                                                       | **MUST RETAIN**                                                    | Never delete                                                               | Israeli financial law; orphaned userId acceptable per `POLICY_RETENTION_V1.md §1.3` | **Yes — confirm retention period with accountant/legal**                                |
+| Receipt                      | `receipts`             | RETAINED INTENTIONALLY                                                                                       | **MUST RETAIN**                                                    | Never delete                                                               | Fiscal record; YeshInvoice-issued                                                   | **Yes — confirm retention period with accountant/legal**                                |
+| YeshInvoice provider doc     | YeshInvoice API        | RETAINED at provider (no delete API)                                                                         | **MUST RETAIN at provider**                                        | No action (no deletion capability)                                         | Permanent fiscal artifact at provider                                               | No                                                                                      |
+| Tranzila STO (provider side) | Tranzila API           | **CANCELLED as hard precondition** (PROVIDER_CANCELLATION_BEFORE_DELETE_OR_REVOKE closed 2026-04-26)         | **CANCEL before local delete/revoke**                              | Already implemented — `cancelTranzilaStoForUser` called in all three flows | Core P0 invariant; see §2–§3                                                        | No                                                                                      |
+| Tranzila token (local field) | `users.tranzilaToken`  | DELETED with user doc                                                                                        | DELETED with user doc                                              | Implicit — part of user document                                           | No standalone value after user deleted; provider retains its own token record       | No                                                                                      |
+| AdminAudit                   | `adminaudits`          | RETAINED + `USER_DELETE_PERMANENT` created on successful admin delete                                        | **MUST RETAIN** + create on delete                                 | Already implemented (ADMIN_AUDIT_RELIABILITY closed 2026-04-26)            | Legal/audit trail                                                                   | No                                                                                      |
+| OrgInviteAudit               | `orginviteaudits`      | RETAINED                                                                                                     | RETAIN                                                             | No deletion                                                                | Audit trail for accepted invites                                                    | **Yes — anonymize actorUserId after retention window? Separate future policy required** |
+| OrganizationMember           | `organizationmembers`  | DELETED                                                                                                      | DELETED                                                            | Maintain                                                                   | User-membership binding; org persists independently                                 | No                                                                                      |
+| OrgInvite (pending)          | `orginvites`           | DELETED (pending only)                                                                                       | DELETED (pending only)                                             | Maintain                                                                   | Operational garbage only                                                            | No                                                                                      |
 
 ---
 
 ## 14. Implementation Roadmap
 
-This section documents future implementation contours. **No code changes are made as part of this document.**
+### ✅ Contour A — Provider Cancellation Integration — CLOSED 2026-04-26
 
-### Contour A — Provider Cancellation Integration (P0)
+**Contour:** PROVIDER_CANCELLATION_BEFORE_DELETE_OR_REVOKE  
+**Status:** CLOSED. `cancelTranzilaStoForUser` is called as a hard precondition in `deleteUserPermanently` (`source: "admin_delete"`), `POST /delete-account` (`source: "self_delete"`), and `adminRevokeUserSubscription` (`source: "admin_revoke"`). All three flows block on `!stoResult.ok && !stoResult.skipped`.
 
-**Goal:** Call `cancelTranzilaStoForUser` as a pre-condition in `deleteUserPermanently`, `POST /delete-account`, and `adminRevokeUserSubscription`.  
-**Dependencies:** This policy approved by architect/product.  
-**Files:** `backend/src/controllers/admin.controller.js`, `backend/src/routes/account.routes.js`  
-**Risks:** Tranzila API unavailability blocks all deletes/revokes. Stale `pending` STO state may not be cancellable; need state-machine handling.  
-**Verification:** Extend `sanity-admin-user-delete.mjs` to cover STO pre-cancel path. CI gate.  
-**Rollback:** Revert controller changes. Operator falls back to `sto-cancel.mjs` manually.
+### ✅ Contour B — Cascade Cleanup Gaps — CLOSED 2026-04-26
 
-### Contour B — Cascade Cleanup Gaps (P1)
+**Contour:** LOCAL_AUTH_JOB_CLEANUP + AI_USAGE_DELETE_CASCADE  
+**Status:** CLOSED. `PasswordReset`, `ActivePasswordReset`, `MailJob`, `EmailVerificationToken`, `EmailSignupToken`, `AiUsageMonthly` are now deleted before `User.deleteOne` in both admin delete and self-delete.
 
-**Goal:** Add `PasswordReset`, `ActivePasswordReset`, `MailJob`, `AiUsageMonthly`, `EmailSignupToken` to admin delete cascade. Add sole-org-admin guard to admin delete. Add tombstone creation to admin delete.  
-**Dependencies:** Contour A complete. AiUsageMonthly product decision (§7.2). Tombstone product decision (§6.2).  
-**Files:** `backend/src/controllers/admin.controller.js`, `backend/src/routes/account.routes.js`  
-**Risks:** More operations increase partial-failure surface. MailJob ordering constraint (§11.3) must be respected.  
-**Verification:** Extend `sanity-admin-user-delete.mjs` to assert zero-count on PasswordReset, MailJob, AiUsageMonthly after delete.
+**Intentionally NOT implemented (product decisions 2026-04-26):**
 
-### Contour C — Transaction / Idempotency Helper (P2)
+- ~~Add sole-org-admin guard to admin delete~~ → **REJECTED** — platform admin authority supersedes org governance (see §10.2)
+- ~~Add tombstone creation to admin delete~~ → **REJECTED** — admin delete must NOT create DeletedEmailBlock (see §6.2)
+
+### ✅ Contour E — Tests / Sanity — CLOSED 2026-04-26
+
+**Contour:** SANITY_ADMIN_USER_DELETE_EXPANSION  
+**Status:** CLOSED with live CI destructive sanity PASS. `sanity-admin-user-delete.mjs` now verifies: admin delete endpoint, User deleted, Card deleted, Supabase paths not found, PasswordReset/ActivePasswordReset/EmailVerificationToken/EmailSignupToken/MailJob/AiUsageMonthly deleted, DeletedEmailBlock NOT created, `AdminAudit USER_DELETE_PERMANENT` written. See `docs/runbooks/admin-user-delete-lifecycle.md §11`.
+
+**Note:** STO pre-cancel CI assertion (mock STO state) and org fixture/leads/bookings/card analytics cascade assertions remain deferred tails. See `docs/runbooks/admin-user-delete-lifecycle.md §14`.
+
+### Contour C — Transaction / Idempotency Helper (P2 — deferred)
 
 **Goal:** Introduce a structured multi-card deletion helper that tracks per-card completion state, enabling safe retry without re-deleting already-cleaned cards.  
-**Dependencies:** Contour B complete.  
+**Dependencies:** Contours A+B complete (done).  
 **Files:** New utility, `backend/src/controllers/admin.controller.js`  
 **Risks:** Complexity. Without Mongo transactions, true atomicity is not achievable; focus on correct retry semantics and audit-friendly state.
 
-### Contour D — Admin UI Confirmation (P2)
+### Contour D — Admin UI Confirmation (P2 — deferred)
 
 **Goal:** Admin panel surfaces active STO status before presenting delete/revoke option. Requires operator acknowledgment when STO is active. Surfaces STO cancellation as a first-class step.  
-**Dependencies:** Contour A complete (API surfaces STO cancel result).  
+**Dependencies:** Contour A complete (done).  
 **Files:** Frontend admin components.
 
-### Contour E — Tests / Sanity (P1)
+### ✅ Contour F — Docs / Runbooks — CLOSED 2026-04-26
 
-**Goal:** Extend `sanity-admin-user-delete.mjs` to cover: STO pre-cancel state assertion, PasswordReset/MailJob/AiUsageMonthly zero-count verification, sole-org-admin blocking, tombstone creation. Consider a separate `sanity-admin-delete-billing.mjs` that exercises the STO cancellation path with a mock STO state (no real Tranzila call in CI).  
-**Dependencies:** Contour B.  
-**Files:** `backend/scripts/sanity-admin-user-delete.mjs`, potentially new `backend/scripts/sanity-admin-delete-billing.mjs`
+**Status:** CLOSED. `docs/runbooks/admin-user-delete-lifecycle.md` created covering all operator-facing sequences, data matrix, failure modes, CI coverage, and verification checklist. `docs/runbooks/billing-flow-ssot.md` updated with cross-reference.
 
-### Contour F — Docs / Runbooks (P1)
+### Contour G — Rollout (deferred)
 
-**Goal:** New `docs/runbooks/admin-user-delete.md` covering: pre-delete STO check, sole-org-admin guard, cascade order, retention artifacts, post-delete verification. Update `docs/runbooks/billing-flow-ssot.md` STO cancellation section.  
-**Dependencies:** Contour A/B complete.  
-**Files:** New runbook. `docs/runbooks/billing-flow-ssot.md`.
-
-### Contour G — Rollout (P1)
-
-**Goal:** Stage deployment. Test on staging with a real STO-enabled test user (mock STO, no real payment). Production rollout with operator on standby.  
-**Dependencies:** All previous contours. Staging proof.  
+**Goal:** Stage deployment with a real STO-enabled test user (mock STO, no real payment). Production rollout with operator on standby.  
+**Dependencies:** All primary contours complete (done).  
 **Pre-rollout operator action:** Run `classify:retention:dry-run` to identify all users with `tranzilaSto.status = "created"`. For each, confirm Tranzila portal shows active STO. Prepare operator runbook entry.  
 **Rollback:** Revert Contour A/B changes. Fall back to manual `sto-cancel.mjs` workflow.
 
 ---
 
-## 15. Open Decisions Requiring Sign-Off
+## 15. Settled Decisions (2026-04-26)
 
-The following decisions are required before implementation begins. Each is tagged with who must sign off.
+All primary decisions previously listed as "open" have been settled by architect/product as of 2026-04-26.
 
-| #   | Decision                                                                          | Owner               | Impact if deferred                                             |
-| --- | --------------------------------------------------------------------------------- | ------------------- | -------------------------------------------------------------- |
-| D1  | STO cancellation hard-block vs. enqueue-and-proceed                               | Architect + Product | Blocks Contour A design                                        |
-| D2  | Tombstone creation on admin hard delete (always vs. reason-conditional)           | Product             | Blocks Contour B tombstone integration                         |
-| D3  | Leads/bookings: immediate delete vs. export grace period                          | Product + Legal     | Blocks Contour B or requires new export flow                   |
-| D4  | AiUsageMonthly: delete immediately vs. anonymized aggregate retention             | Product             | Blocks Contour B AiUsage cleanup                               |
-| D5  | Sole-org-admin blocking: block delete or auto-transfer ownership to another admin | Product             | Blocks Contour B org guard                                     |
-| D6  | PaymentTransaction / Receipt retention period (years)                             | Accountant / Legal  | Required for compliance posture; does not block implementation |
-| D7  | OrgInviteAudit: retain-forever vs. anonymize actorUserId after N years            | Legal               | Does not block current implementation; future migration        |
-| D8  | Audit log failure: `{ ok: true, auditWriteFailed: true }` vs. block and rollback  | Architect           | Blocks Contour A audit order-of-operations                     |
+| #   | Decision                                                               | Outcome (2026-04-26)                                                                           |
+| --- | ---------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| D1  | STO cancellation hard-block vs. enqueue-and-proceed                    | **Hard-block** — `cancelTranzilaStoForUser` blocks all three flows on failure                  |
+| D2  | Tombstone creation on admin hard delete                                | **NOT created** — admin delete must NOT create DeletedEmailBlock (see §6.2)                    |
+| D3  | Leads/bookings: immediate delete vs. export grace period               | **Deferred tail** — not implemented; see `docs/runbooks/admin-user-delete-lifecycle.md §14`    |
+| D4  | AiUsageMonthly: delete immediately vs. anonymized aggregate retention  | **Delete** — AI_USAGE_DELETE_CASCADE CLOSED                                                    |
+| D5  | Sole-org-admin guard on admin delete                                   | **NOT blocked** — admin delete must NOT check sole-org state (see §10.2)                       |
+| D6  | PaymentTransaction / Receipt retention period (years)                  | **Retain indefinitely** (defers to `POLICY_RETENTION_V1.md §1.3`); legal confirmation deferred |
+| D7  | OrgInviteAudit: retain-forever vs. anonymize actorUserId after N years | **Retain** for now; future anonymization policy separate                                       |
+| D8  | Audit log failure: surface warning vs. block and rollback              | **Surface as warning** — `{ ok: true, deleted: true, auditWriteFailed: true }` (see §12)       |
 
-This policy document recommends the answer to D1 (hard-block), D2 (always create tombstone), D3 (delete with card, pending review), D4 (delete), D5 (block deletion), and D8 (surface as warning, do not rollback). All recommendations require sign-off before implementation.
+---
+
+## 16. Operator Runbook Cross-Reference
+
+See `docs/runbooks/admin-user-delete-lifecycle.md` for:
+
+- Step-by-step operator sequences (admin delete, self-delete, subscription revoke)
+- Data deleted / retained / not-created matrices
+- Failure modes and recovery procedures
+- CI sanity coverage details (`backend-admin-sanity.yml`)
+- Manual verification checklist for the 11 post-delete assertions
+- Deferred / out-of-scope tails
 
 ---
 

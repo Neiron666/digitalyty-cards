@@ -113,6 +113,8 @@ node --input-type=module -e "import 'dotenv/config'; console.log('dotenv ok')"
 5. `npm.cmd run sanity:ownership-consistency`
 6. `npm.cmd run sanity:card-index-drift`
 
+> **`sanity:admin-user-delete` is NOT in this list.** It is a destructive sanity (creates and deletes real Mongo documents) and must only run in CI via `.github/workflows/backend-admin-sanity.yml` against `MONGO_URI_DRIFT_CHECK`. Never run it locally against `MONGO_URI`. See `docs/runbooks/admin-user-delete-lifecycle.md §11`.
+
 **Raw logs policy**
 
 - Always keep RAW stdout/stderr and an explicit `EXIT:<code>` line for each command.

@@ -594,6 +594,8 @@ POST /api/account/cancel-renewal
 
 `cancellationSource` is set to `"self_service"` in `User.tranzilaSto`.
 
+> **`cancelTranzilaStoForUser` is also used as a hard precondition in platform admin operations:** admin hard delete (`source: "admin_delete"`), self-delete (`source: "self_delete"`), and admin subscription revoke (`source: "admin_revoke"`) all call this function and hard-block on provider failure. See `docs/runbooks/admin-user-delete-lifecycle.md §9` for operator recovery procedures.
+
 ### Premium-Remains Policy
 
 User self-service cancel stops **future** recurring charges only. It does NOT trigger an immediate downgrade.
