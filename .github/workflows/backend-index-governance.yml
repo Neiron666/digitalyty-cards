@@ -75,3 +75,42 @@ jobs:
 
                   export MONGO_URI="$MONGO_URI_DRIFT_CHECK"
                   npm run sanity:card-index-drift
+
+            # PR policy: warning-only (does not fail the workflow)
+            - name: Sanity (PR warning) - additional index drift
+              if: github.event_name == 'pull_request'
+              continue-on-error: true
+              env:
+                  MONGO_URI_DRIFT_CHECK: ${{ secrets.MONGO_URI_DRIFT_CHECK }}
+              run: |
+                  set -euo pipefail
+
+                  if [ -z "${MONGO_URI_DRIFT_CHECK:-}" ]; then
+                    echo "WARN: MONGO_URI_DRIFT_CHECK secret is missing; skipping additional index drift checks on PR. No fallback to production."
+                    exit 0
+                  fi
+
+                  export MONGO_URI="$MONGO_URI_DRIFT_CHECK"
+                  npm run sanity:paymentintent-index-drift
+                  npm run sanity:site-analytics-visit-index-drift
+                  npm run sanity:analytics-daily-index-drift
+                  npm run sanity:aiusagemonthly-index-drift
+
+            # main/release policy: fail the workflow on drift
+            - name: Sanity (main/release gate) - additional index drift
+              if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+              env:
+                  MONGO_URI_DRIFT_CHECK: ${{ secrets.MONGO_URI_DRIFT_CHECK }}
+              run: |
+                  set -euo pipefail
+
+                  if [ -z "${MONGO_URI_DRIFT_CHECK:-}" ]; then
+                    echo "ERROR: MONGO_URI_DRIFT_CHECK secret is missing; cannot run drift gate. No fallback to production."
+                    exit 1
+                  fi
+
+                  export MONGO_URI="$MONGO_URI_DRIFT_CHECK"
+                  npm run sanity:paymentintent-index-drift
+                  npm run sanity:site-analytics-visit-index-drift
+                  npm run sanity:analytics-daily-index-drift
+                  npm run sanity:aiusagemonthly-index-drift
