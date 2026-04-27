@@ -948,6 +948,22 @@ export default {
                       failUrl: TRANZILA_CONFIG.failUrl,
                   };
 
+        // NOTIFY DELIVERY MODE:
+        // "portal" (TRANZILA_NOTIFY_DELIVERY_MODE=portal): notify URL is configured
+        //   statically in Tranzila terminal Advanced settings ("כתובת דף notify").
+        //   ANTI-DRIFT: NEVER re-add notify_url_address here in portal mode.
+        //   Keeping it out of the browser-visible paymentUrl prevents CARDIGO_NOTIFY_TOKEN exposure.
+        // "embedded" (absent/any other value): existing behavior — notify_url_address
+        //   included in params. Used for mock/dev/local where portal URL is not configured.
+        const notifyDeliveryMode =
+            process.env.TRANZILA_NOTIFY_DELIVERY_MODE ?? "embedded";
+        const notifyParam =
+            notifyDeliveryMode === "portal"
+                ? []
+                : [
+                      `notify_url_address=${encodeURIComponent(TRANZILA_CONFIG.notifyUrl)}`,
+                  ];
+
         // DirectNG: terminal lives in the URL path, not as a query param.
         // tranmode=AK: standard debit + create token — required for TranzilaTK to be returned.
         // No outbound signature: DirectNG hosted checkout does not use a request signature.
@@ -957,7 +973,7 @@ export default {
             `lang=il`,
             `tranmode=AK`,
             `description=${encodeURIComponent(description)}`,
-            `notify_url_address=${encodeURIComponent(TRANZILA_CONFIG.notifyUrl)}`,
+            ...notifyParam,
             `success_url_address=${encodeURIComponent(successUrl)}`,
             `fail_url_address=${encodeURIComponent(failUrl)}`,
             `udf1=${userId}`,
@@ -1069,8 +1085,9 @@ export default {
         const trustOk = hasLegacySignature ? legacySigOk : directNgTrustOk;
 
         // ── 5. Determine status ──
-        const isPaid = trustOk && responseOk;
-        const status = isPaid ? "paid" : "failed";
+        // let: may be overridden by §5.5 PaymentIntent gate (DirectNG paid path).
+        let isPaid = trustOk && responseOk;
+        let status = isPaid ? "paid" : "failed";
 
         let failReason = null;
         if (!responseOk) failReason = `response_${data.Response || "unknown"}`;
@@ -1085,15 +1102,93 @@ export default {
             if (!indexPresent) failReason = failReason || "missing_index";
         }
 
-        // ── 5.5. PaymentIntent resolution (best-effort; never blocks fulfillment) ──
+        // ── 5.5. PaymentIntent strict atomic gate ──
+        // For paid DirectNG notifies with PAYMENT_INTENT_ENABLED=true:
+        //   - udf3/rawIntentId is required and must reference a valid pending intent.
+        //   - Atomic consume: pending → consuming (findOneAndUpdate).
+        //   - If gate fails: fulfillment is BLOCKED (isPaid forced false, no User/Card update).
+        // For all other paths (legacy signed, failed DirectNG, gating disabled):
+        //   - Best-effort resolve only — does not block fulfillment.
         let resolvedPaymentIntentId = null;
         let resolvedPaymentIntent = null;
-        if (
+        const isDirectNgPaidCandidate = isPaid && !hasLegacySignature;
+        const intentGatingEnabled =
+            process.env.PAYMENT_INTENT_ENABLED === "true";
+
+        if (isDirectNgPaidCandidate && intentGatingEnabled) {
+            // Gate 1: rawIntentId must be present and a valid ObjectId.
+            if (rawIntentId === null || !looksLikeObjectId(rawIntentId)) {
+                isPaid = false;
+                status = "failed";
+                failReason = failReason || "payment_intent_required";
+                console.warn(
+                    "[payment_intent] gate blocked: no valid intentId in paid DirectNG notify",
+                    {
+                        event: "payment_intent_gate_blocked",
+                        reason: "missing_intent_id",
+                        userId,
+                        plan: validPlan,
+                    },
+                );
+            } else {
+                // Gate 2: atomic consume — pending → consuming.
+                try {
+                    const intentNow = new Date();
+                    const preUpdateIntent =
+                        await PaymentIntent.findOneAndUpdate(
+                            {
+                                _id: rawIntentId,
+                                userId,
+                                plan: validPlan,
+                                amountAgorot,
+                                status: "pending",
+                                checkoutExpiresAt: { $gt: intentNow },
+                            },
+                            { $set: { status: "consuming" } },
+                            { new: false }, // return pre-update doc for receiptProfileSnapshot
+                        );
+                    if (preUpdateIntent === null) {
+                        isPaid = false;
+                        status = "failed";
+                        failReason =
+                            failReason ||
+                            "payment_intent_not_found_or_consumed";
+                        console.warn(
+                            "[payment_intent] gate blocked: atomic consume returned null",
+                            {
+                                event: "payment_intent_gate_blocked",
+                                reason: "not_found_or_consumed",
+                                userId,
+                                plan: validPlan,
+                            },
+                        );
+                    } else {
+                        resolvedPaymentIntent = preUpdateIntent;
+                        resolvedPaymentIntentId = preUpdateIntent._id;
+                    }
+                } catch (intentConsumeErr) {
+                    // DB infra failure — fail-safe: treat as blocked, not fail-open.
+                    isPaid = false;
+                    status = "failed";
+                    failReason = failReason || "payment_intent_lookup_failed";
+                    console.warn(
+                        "[payment_intent] gate error: atomic consume threw",
+                        {
+                            event: "payment_intent_gate_error",
+                            message: intentConsumeErr?.message,
+                            userId,
+                            plan: validPlan,
+                        },
+                    );
+                }
+            }
+        } else if (
             rawIntentId !== null &&
             looksLikeObjectId(rawIntentId) &&
             userId &&
             validPlan
         ) {
+            // Non-blocking resolve: legacy signed path, failed DirectNG, or gating disabled.
             try {
                 const intent = await PaymentIntent.findOne({
                     _id: rawIntentId,
@@ -1105,11 +1200,13 @@ export default {
                     resolvedPaymentIntentId = intent._id;
                 }
             } catch (intentLookupErr) {
-                console.warn("[payment_intent] lookup failed", {
-                    event: "payment_intent_lookup_failed",
-                    message: intentLookupErr?.message,
-                });
-                resolvedPaymentIntentId = null;
+                console.warn(
+                    "[payment_intent] lookup failed (non-blocking path)",
+                    {
+                        event: "payment_intent_lookup_failed",
+                        message: intentLookupErr?.message,
+                    },
+                );
             }
         }
 
@@ -1137,13 +1234,19 @@ export default {
             throw e;
         }
 
-        // ── 6.5. Best-effort PaymentIntent status sync (never blocks fulfillment) ──
+        // ── 6.5. PaymentIntent final status sync ──
+        // Paid DirectNG gated path: intent is in "consuming" — update to "completed" only
+        //   when filter includes status:"consuming" (prevents stale/duplicate writes).
+        // Non-blocking path (legacy/failed): update best-effort with no status filter.
         if (resolvedPaymentIntentId !== null) {
             const intentFinalStatus = isPaid ? "completed" : "failed";
-            void PaymentIntent.updateOne(
-                { _id: resolvedPaymentIntentId },
-                { $set: { status: intentFinalStatus } },
-            ).catch((intentSyncErr) => {
+            const intentUpdateFilter =
+                isPaid && !hasLegacySignature && intentGatingEnabled
+                    ? { _id: resolvedPaymentIntentId, status: "consuming" }
+                    : { _id: resolvedPaymentIntentId };
+            void PaymentIntent.updateOne(intentUpdateFilter, {
+                $set: { status: intentFinalStatus },
+            }).catch((intentSyncErr) => {
                 console.warn("[payment_intent] status sync failed", {
                     event: "payment_intent_status_sync_failed",
                     message: intentSyncErr?.message,

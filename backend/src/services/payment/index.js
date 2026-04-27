@@ -19,6 +19,29 @@ if (isTranjila) {
     }
 }
 
+// ── Anti-drift production safety guards ──────────────────────────────────────
+// Prevent unsafe Tranzila production mode. Required at startup when PAYMENT_PROVIDER=tranzila.
+// PAYMENT_INTENT_ENABLED=true: ensures every paid DirectNG notify is gated on a valid intent.
+// CARDIGO_NOTIFY_TOKEN: ensures /notify is fail-closed (not silently bypass-able).
+// TRANZILA_NOTIFY_DELIVERY_MODE=portal: ensures notify token is not embedded in paymentUrl.
+if (isTranjila) {
+    if (process.env.PAYMENT_INTENT_ENABLED !== "true") {
+        throw new Error(
+            "[payment] PAYMENT_PROVIDER=tranzila requires PAYMENT_INTENT_ENABLED=true",
+        );
+    }
+    if (!process.env.CARDIGO_NOTIFY_TOKEN?.trim()) {
+        throw new Error(
+            "[payment] PAYMENT_PROVIDER=tranzila requires CARDIGO_NOTIFY_TOKEN to be set",
+        );
+    }
+    if (process.env.TRANZILA_NOTIFY_DELIVERY_MODE !== "portal") {
+        throw new Error(
+            "[payment] PAYMENT_PROVIDER=tranzila requires TRANZILA_NOTIFY_DELIVERY_MODE=portal",
+        );
+    }
+}
+
 // ── STO create vars: gated validation ─────────────────────────────────────────
 // Only required when PAYMENT_PROVIDER=tranzila AND TRANZILA_STO_CREATE_ENABLED=true.
 // TRANZILA_STO_UPDATE_API_URL is cancel-only and must not be startup-required here.

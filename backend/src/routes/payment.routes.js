@@ -304,14 +304,17 @@ router.post("/create", requireAuth, async (req, res) => {
  */
 router.post("/notify", async (req, res) => {
     try {
-        // Defense-in-depth: x-cardigo-notify-token (MUST-if-set)
+        // Fail-closed: aligned with STO notify posture.
+        // Missing token → 503 (misconfigured, do not process).
+        // Token mismatch → 200 anti-oracle (do not leak mismatch).
         const expected = process.env.CARDIGO_NOTIFY_TOKEN?.trim();
-        if (expected) {
-            const provided = req.header("x-cardigo-notify-token")?.trim();
-            if (provided !== expected) {
-                // Anti-oracle: do not leak token mismatch
-                return res.status(200).send("OK");
-            }
+        if (!expected) {
+            return res.status(503).send("ERROR");
+        }
+        const provided = req.header("x-cardigo-notify-token")?.trim();
+        if (provided !== expected) {
+            // Anti-oracle: do not leak token mismatch
+            return res.status(200).send("OK");
         }
 
         await paymentProvider.handleNotify(req.body);

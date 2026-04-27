@@ -45,7 +45,7 @@ const paymentIntentSchema = new mongoose.Schema(
         },
         status: {
             type: String,
-            enum: ["pending", "completed", "failed", "cancelled"],
+            enum: ["pending", "consuming", "completed", "failed", "cancelled"],
             default: "pending",
         },
         amountAgorot: {
