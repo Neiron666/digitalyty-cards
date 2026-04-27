@@ -58,7 +58,7 @@ const CardAnalyticsDailySchema = new Schema(
     {
         timestamps: true,
         minimize: false,
-    }
+    },
 );
 
 CardAnalyticsDailySchema.index({ cardId: 1, day: 1 }, { unique: true });
@@ -69,4 +69,12 @@ CardAnalyticsDailySchema.statics.MAX_SOCIAL_CAMPAIGN_KEYS =
     MAX_SOCIAL_CAMPAIGN_KEYS;
 CardAnalyticsDailySchema.statics.MAX_UNIQUE_HASHES = MAX_UNIQUE_HASHES;
 
-export default mongoose.model("CardAnalyticsDaily", CardAnalyticsDailySchema);
+// Explicit collection pin — do NOT remove.
+// Mongoose v9 legacy-pluralize maps "CardAnalyticsDaily" → "cardanalyticsdailies".
+// Index governance and migration scripts target "cardanalyticsdailys".
+// Removing this third argument silently redirects all writes to the unindexed ghost collection.
+export default mongoose.model(
+    "CardAnalyticsDaily",
+    CardAnalyticsDailySchema,
+    "cardanalyticsdailys",
+);

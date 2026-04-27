@@ -70,4 +70,12 @@ SiteAnalyticsDailySchema.index(
 SiteAnalyticsDailySchema.statics.MAX_BUCKET_KEYS = MAX_BUCKET_KEYS;
 SiteAnalyticsDailySchema.statics.MAX_PAGE_CHANNEL_KEYS = MAX_PAGE_CHANNEL_KEYS;
 
-export default mongoose.model("SiteAnalyticsDaily", SiteAnalyticsDailySchema);
+// Explicit collection pin — do NOT remove.
+// Mongoose v9 legacy-pluralize maps "SiteAnalyticsDaily" → "siteanalyticsdailies".
+// Index governance and migration scripts target "siteanalyticsdailys".
+// Removing this third argument silently redirects all writes to the unindexed ghost collection.
+export default mongoose.model(
+    "SiteAnalyticsDaily",
+    SiteAnalyticsDailySchema,
+    "siteanalyticsdailys",
+);
