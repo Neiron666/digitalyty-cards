@@ -30,6 +30,7 @@
         "sanity:site-analytics-visit-index-drift": "node scripts/sanity-site-analytics-visit-index-drift.mjs",
         "sanity:paymentintent-index-drift": "node scripts/sanity-paymentintent-index-drift.mjs",
         "sanity:analytics-daily-index-drift": "node scripts/sanity-analytics-daily-index-drift.mjs",
+        "sanity:aiusagemonthly-index-drift": "node scripts/sanity-aiusagemonthly-index-drift.mjs",
         "migrate:site-analytics-visit-indexes": "node scripts/migrate-site-analytics-visit-indexes.mjs",
         "migrate:orgmember-indexes": "node scripts/migrate-orgmember-indexes.mjs",
         "migrate:analytics-daily-indexes": "node scripts/migrate-analytics-daily-indexes.mjs",

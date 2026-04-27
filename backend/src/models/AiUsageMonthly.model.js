@@ -34,4 +34,12 @@ AiUsageMonthlySchema.index(
     { unique: true },
 );
 
-export default mongoose.model("AiUsageMonthly", AiUsageMonthlySchema);
+// Collection name is intentionally pinned to "aiusagemonthlies".
+// AI quota / index governance (migrate-aiusagemonthly-indexes.mjs and
+// sanity-aiusagemonthly-index-drift.mjs) depends on this exact name.
+// Do not remove this pin or rename the collection without a coordinated migration.
+export default mongoose.model(
+    "AiUsageMonthly",
+    AiUsageMonthlySchema,
+    "aiusagemonthlies",
+);
