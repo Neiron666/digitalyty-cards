@@ -40,6 +40,10 @@ const STRIP_KEYS = new Set([
     "cred_type",
     // [BATCH-0] Token field — must be lowercase to match k.toLowerCase() in allowlistPayload.
     "tranzilatk",
+    // [BATCH-2] Handshake echo field — extracted before allowlist for §5.6 hash verification.
+    // Must be stripped so it is never persisted in PaymentTransaction.payloadAllowlisted.
+    // lowercase: allowlistPayload lowercases keys via k.toLowerCase() before STRIP_KEYS lookup.
+    "thtk",
     // [STO-BATCH-1] STO recurring notify: PII, customer data, and card/bank metadata.
     // These fields are not needed for V1 recurring renewal processing.
     // Lookup will be by sto_external_id, not by customer email/name/ID.
@@ -1150,6 +1154,10 @@ export default {
                 ? _expYearNorm
                 : null;
 
+        // [BATCH-2] Extract thtk BEFORE allowlist/strip — "thtk" is in STRIP_KEYS.
+        // Used only for hash comparison in §5.6. Plaintext never stored, never logged.
+        const notifyThtk = data.thtk ?? null;
+
         // ── 1. Derive idempotency key ──
         const providerTxnId = deriveProviderTxnId(payload);
 
@@ -1330,6 +1338,86 @@ export default {
                         message: intentLookupErr?.message,
                     },
                 );
+            }
+        }
+
+        // ── 5.6. Handshake thtk hash verification ─────────────────────────────────────
+        // Enforced only on the paid DirectNG path with both PAYMENT_INTENT_ENABLED and
+        // TRANZILA_HANDSHAKE_ENABLED set to "true". All other paths are unconditionally exempt.
+        //
+        // Exempt: legacy signed path, failed payments, STO notify, handshake disabled, intent gating disabled.
+        //
+        // Why !hasLegacySignature and not isDirectNgPaidCandidate:
+        //   isDirectNgPaidCandidate is a snapshot from before §5.5 and can be stale if §5.5 blocked.
+        //   !hasLegacySignature is the canonical, stable discriminator for the DirectNG path.
+        //
+        // ANTI-DRIFT: notifyThtk must never appear in log values, stored fields, or forwarded objects.
+        // ANTI-DRIFT: Only event/reason/userId/plan may be logged — no hashes, no tokens, no payload.
+        // ANTI-DRIFT: storedHash format validated (sha256 hex, 64 chars) — rejects placeholder/null/malformed.
+        //
+        // PaymentIntent consuming→failed behavior (file:line proof, no extra code needed):
+        //   §6.5 at line ~1370: intentFinalStatus = isPaid ? "completed" : "failed".
+        //   When §5.6 sets isPaid=false: intentFinalStatus="failed", filter={_id:resolvedPaymentIntentId}.
+        //   updateOne fires unconditionally — transitions consuming→failed. No stuck intent.
+        if (
+            isPaid &&
+            !hasLegacySignature &&
+            intentGatingEnabled &&
+            isHandshakeEnabled()
+        ) {
+            const storedHash = resolvedPaymentIntent?.handshakeThtkHash ?? null;
+            const isValidSha256Hex =
+                typeof storedHash === "string" &&
+                storedHash.length === 64 &&
+                /^[a-f0-9]{64}$/i.test(storedHash);
+
+            if (!isValidSha256Hex) {
+                // Intent created before Handshake was enabled, hash not written, or hash malformed.
+                // Operator must drain in-flight pending intents before enabling the flag.
+                isPaid = false;
+                status = "failed";
+                failReason = "handshake_hash_missing";
+                console.warn(
+                    "[handshake] notify blocked: handshakeThtkHash invalid or missing on intent",
+                    {
+                        event: "handshake_verify_blocked",
+                        reason: "hash_missing",
+                        userId,
+                        plan: validPlan,
+                    },
+                );
+            } else if (notifyThtk === null || notifyThtk.trim() === "") {
+                isPaid = false;
+                status = "failed";
+                failReason = "handshake_thtk_missing";
+                console.warn(
+                    "[handshake] notify blocked: thtk absent in notify payload",
+                    {
+                        event: "handshake_verify_blocked",
+                        reason: "thtk_missing",
+                        userId,
+                        plan: validPlan,
+                    },
+                );
+            } else {
+                const notifyThtkHash = crypto
+                    .createHash("sha256")
+                    .update(notifyThtk)
+                    .digest("hex");
+                if (notifyThtkHash !== storedHash) {
+                    isPaid = false;
+                    status = "failed";
+                    failReason = "handshake_thtk_mismatch";
+                    console.warn(
+                        "[handshake] notify blocked: thtk hash mismatch",
+                        {
+                            event: "handshake_verify_blocked",
+                            reason: "thtk_mismatch",
+                            userId,
+                            plan: validPlan,
+                        },
+                    );
+                }
             }
         }
 
