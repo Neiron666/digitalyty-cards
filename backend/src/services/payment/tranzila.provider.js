@@ -203,6 +203,15 @@ function isYeshInvoiceEnabled() {
 }
 
 /**
+ * Returns true only when TRANZILA_HANDSHAKE_ENABLED is explicitly set to the
+ * string "true". Absent, "false", or any other value disables Handshake.
+ * Strict string equality — no truthy coercion. Mirrors isStoCreateEnabled/isYeshInvoiceEnabled.
+ */
+function isHandshakeEnabled() {
+    return process.env.TRANZILA_HANDSHAKE_ENABLED === "true";
+}
+
+/**
  * Build Tranzila v2 API auth headers.
  * Winning formula (postman_canonical): requestTime=Unix_seconds,
  * nonce=80_alphanumeric, HMAC(key=privateKey+requestTime+nonce, msg=appKey) hex.
@@ -236,6 +245,74 @@ function buildTranzilaApiAuthHeaders() {
         Accept: "application/json",
         "Content-Type": "application/json",
     };
+}
+
+/**
+ * Fetch a Tranzila Handshake V2 token server-side.
+ * Locks the transaction amount at the Tranzila server before presenting checkout.
+ * Returns the thtk token string. Throws on any failure — caller must fail closed.
+ *
+ * ANTI-DRIFT:
+ * - buildTranzilaApiAuthHeaders() is called unchanged — do not inline or alter its formula.
+ * - sumIls must always equal PRICES_AGOROT[plan] / 100 — same source as sumStr in createPayment.
+ * - terminal must always be TRANZILA_CONFIG.terminal — the DirectNG checkout terminal, NOT stoTerminal.
+ * - request_params is intentionally omitted in Phase 2 (minimal footprint).
+ * - Never log thtk, auth headers, raw response body, or secrets.
+ *
+ * @param {{ terminal: string, sumIls: number }} params
+ * @returns {Promise<string>} thtk token (memory-only; caller must not persist plaintext)
+ */
+async function fetchTranzilaHandshakeToken({ terminal, sumIls }) {
+    const url = TRANZILA_CONFIG.handshakeApiUrl;
+    if (!url || !url.startsWith("https://")) {
+        throw new Error(
+            "handshake_config_error: handshakeApiUrl missing or not https",
+        );
+    }
+
+    const headers = buildTranzilaApiAuthHeaders();
+    const body = JSON.stringify({ terminal_name: terminal, sum: sumIls });
+
+    let res;
+    let rawText;
+    try {
+        res = await fetch(url, {
+            method: "POST",
+            headers,
+            body,
+            signal: AbortSignal.timeout(10000),
+        });
+        rawText = await res.text();
+    } catch (_fetchErr) {
+        throw new Error("handshake_network_error");
+    }
+
+    if (res.status < 200 || res.status >= 300) {
+        const code =
+            res.status === 401 || res.status === 403
+                ? "handshake_auth_error"
+                : "handshake_http_error";
+        throw new Error(`${code}: ${res.status}`);
+    }
+
+    let parsed;
+    try {
+        parsed = JSON.parse(rawText);
+    } catch (_parseErr) {
+        throw new Error("handshake_parse_error");
+    }
+
+    if (Number(parsed.error_code) !== 0) {
+        throw new Error(
+            `handshake_provider_error: ${Number(parsed.error_code)}`,
+        );
+    }
+
+    if (typeof parsed.thtk !== "string" || parsed.thtk.trim() === "") {
+        throw new Error("handshake_missing_thtk");
+    }
+
+    return parsed.thtk;
 }
 
 /**
@@ -936,6 +1013,50 @@ export default {
         }
 
         const sumStr = `${Math.floor(ag / 100)}.${String(ag % 100).padStart(2, "0")}`;
+
+        // ── Handshake: amount-lock at Tranzila server ──────────────────────────
+        // ANTI-DRIFT: terminal must always match TRANZILA_CONFIG.terminal (same as checkout URL path).
+        // ANTI-DRIFT: sumIls must always equal ag / 100 (same source as sumStr above).
+        // ANTI-DRIFT: request_params intentionally absent — add only after explicit audit.
+        // ANTI-DRIFT: TRANZILA_STO_TERMINAL must never be used here (STO and checkout are separate terminals).
+        // Fail closed: any failure throws → route returns error → paymentUrl never returned.
+        // paymentIntentId is required when Handshake is enabled — Cardigo hardened flow invariant.
+        let thtk = null;
+        if (isHandshakeEnabled()) {
+            if (!paymentIntentId) {
+                throw new Error("handshake_requires_payment_intent");
+            }
+            thtk = await fetchTranzilaHandshakeToken({
+                terminal: TRANZILA_CONFIG.terminal,
+                sumIls: ag / 100,
+            });
+            // Hash-only storage — plaintext thtk must never be persisted.
+            // Filter includes all intent trust fields to prevent writing to a consumed or foreign intent.
+            const thtkHash = crypto
+                .createHash("sha256")
+                .update(thtk)
+                .digest("hex");
+            const updateResult = await PaymentIntent.updateOne(
+                {
+                    _id: paymentIntentId,
+                    userId,
+                    plan,
+                    amountAgorot: ag,
+                    status: "pending",
+                    checkoutExpiresAt: { $gt: new Date() },
+                },
+                {
+                    $set: {
+                        handshakeThtkHash: thtkHash,
+                        handshakeCreatedAt: new Date(),
+                    },
+                },
+            );
+            if (!updateResult.matchedCount) {
+                throw new Error("handshake_intent_update_failed");
+            }
+        }
+
         const description = `Cardigo – ${plan} plan`;
 
         // Select success/fail return URLs based on mode.
@@ -979,6 +1100,8 @@ export default {
             `udf1=${userId}`,
             `udf2=${plan}`,
             ...(paymentIntentId ? [`udf3=${paymentIntentId}`] : []),
+            // ANTI-DRIFT: thtk must use encodeURIComponent; only present when Handshake enabled and token obtained.
+            ...(thtk ? [`thtk=${encodeURIComponent(thtk)}`] : []),
         ].join("&");
 
         const result = {

@@ -64,6 +64,12 @@ const paymentIntentSchema = new mongoose.Schema(
             type: Date,
             required: true,
         },
+
+        // Handshake audit evidence. sha256(thtk) — plaintext token is never stored.
+        // Enables future notify thtk-echo comparison without sensitive field exposure.
+        // No index: lookup is always by _id. Purged with the intent via TTL.
+        handshakeThtkHash: { type: String, default: null },
+        handshakeCreatedAt: { type: Date, default: null },
     },
     { timestamps: true },
 );

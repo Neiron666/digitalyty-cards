@@ -31,4 +31,9 @@ export const TRANZILA_CONFIG = {
     apiPrivateKey: process.env.TRANZILA_API_PRIVATE_KEY,
     pw: process.env.TRANZILA_PW,
     stoNotifyUrl: process.env.TRANZILA_STO_NOTIFY_URL,
+
+    // ── Handshake V2 ──────────────────────────────────────────────────────────
+    // Required when TRANZILA_HANDSHAKE_ENABLED=true.
+    // null when env var is absent — validated at startup by index.js.
+    handshakeApiUrl: process.env.TRANZILA_HANDSHAKE_API_URL ?? null,
 };

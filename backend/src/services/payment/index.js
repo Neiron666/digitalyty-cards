@@ -74,6 +74,31 @@ if (process.env.YESH_INVOICE_ENABLED === "true") {
     }
 }
 
+// ── Handshake vars: gated validation ─────────────────────────────────────────
+// Required only when PAYMENT_PROVIDER=tranzila AND TRANZILA_HANDSHAKE_ENABLED=true.
+// TRANZILA_API_APP_KEY / TRANZILA_API_PRIVATE_KEY are validated independently here:
+// the STO guard only checks them when TRANZILA_STO_CREATE_ENABLED=true.
+// Handshake may be enabled while STO remains off.
+if (isTranjila && process.env.TRANZILA_HANDSHAKE_ENABLED === "true") {
+    const hsRequired = [
+        "TRANZILA_HANDSHAKE_API_URL",
+        "TRANZILA_API_APP_KEY",
+        "TRANZILA_API_PRIVATE_KEY",
+        "TRANZILA_TERMINAL",
+    ];
+    const hsMissing = hsRequired.filter((k) => !process.env[k]);
+    if (hsMissing.length) {
+        throw new Error(
+            `[payment] TRANZILA_HANDSHAKE_ENABLED=true but missing: ${hsMissing.join(", ")}`,
+        );
+    }
+    if (!process.env.TRANZILA_HANDSHAKE_API_URL.startsWith("https://")) {
+        throw new Error(
+            "[payment] TRANZILA_HANDSHAKE_API_URL must start with https://",
+        );
+    }
+}
+
 const provider = isTranjila ? tranzilaProvider : mockProvider;
 
 export default {
