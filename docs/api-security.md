@@ -85,17 +85,17 @@ All endpoints are mounted under `/api/auth` (see `backend/src/routes/auth.routes
 
 Create a new user account via email + password.
 
-| Field      | Location | Required | Description                                             |
-| ---------- | -------- | -------- | ------------------------------------------------------- |
-| `email`    | body     | yes      | User email (normalized)                                 |
-| `password` | body     | yes      | Plaintext password (≥ 8 chars)                          |
-| `consent`  | body     | yes      | Boolean `true` - explicit acceptance of Terms & Privacy |
+| Field      | Location | Required | Description                                                   |
+| ---------- | -------- | -------- | ------------------------------------------------------------- |
+| `email`    | body     | yes      | User email (normalized)                                       |
+| `password` | body     | yes      | Plaintext password — must satisfy PASSWORD_POLICY_V1 (see §5) |
+| `consent`  | body     | yes      | Boolean `true` - explicit acceptance of Terms & Privacy       |
 
 **Rate limit**: 20 requests / 10 min per IP.
 
 **Behaviour**:
 
-1. Validates email format and password length (≥ 8 characters).
+1. Validates email format and password against PASSWORD_POLICY_V1 (see §5).
 2. Enforces `consent === true` (strict boolean); rejects with `CONSENT_REQUIRED` otherwise.
 3. Case-insensitive duplicate check (2-step: exact match → collation fallback).
 4. Hashes password with `bcrypt` (salt rounds 10).
@@ -109,8 +109,7 @@ Create a new user account via email + password.
 | ------ | -------------------------------------------------------------- | --------------------------------------------------------------- |
 | 200    | `{ "registered": true, "isVerified": false }`                  | Account created (no auth cookie - user must verify email first) |
 | 400    | `{ "message": "Invalid email" }`                               | Malformed email                                                 |
-| 400    | `{ "message": "Invalid password" }`                            | Missing or non-string password                                  |
-| 400    | `{ "message": "Password must be at least 8 characters" }`      | Too short                                                       |
+| 400    | `{ "code": "<PASSWORD_*>", "message": "Invalid password" }`    | Password fails PASSWORD_POLICY_V1 (see §5 for all codes)        |
 | 400    | `{ "message": "Invalid request", "code": "CONSENT_REQUIRED" }` | `consent !== true`                                              |
 | 409    | `{ "message": "Unable to register" }`                          | Duplicate or permanently blocked email (anti-enum)              |
 | 429    | `{ "code": "RATE_LIMITED", "message": "Too many requests" }`   | Rate limit exceeded                                             |
@@ -178,10 +177,10 @@ Request a password-reset link. **Anti-enumeration** - always returns 204 regardl
 
 Consume a password-reset token and set a new password.
 
-| Field      | Location | Required | Description              |
-| ---------- | -------- | -------- | ------------------------ |
-| `token`    | body     | yes      | Raw reset token (hex)    |
-| `password` | body     | yes      | New password (≥ 8 chars) |
+| Field      | Location | Required | Description                                             |
+| ---------- | -------- | -------- | ------------------------------------------------------- |
+| `token`    | body     | yes      | Raw reset token (hex)                                   |
+| `password` | body     | yes      | New password — must satisfy PASSWORD_POLICY_V1 (see §5) |
 
 **Rate limit**: 40 requests / 10 min per IP.
 
@@ -189,12 +188,12 @@ Consume a password-reset token and set a new password.
 
 **Responses**:
 
-| Status | Body                                                           | Condition                                               |
-| ------ | -------------------------------------------------------------- | ------------------------------------------------------- |
-| 204    | -                                                              | Password reset                                          |
-| 400    | `{ "code": "WEAK_PASSWORD", "message": "Password too short" }` | Password < 8 chars. **Token is NOT consumed.**          |
-| 400    | `{ "message": "Unable to reset password" }`                    | Invalid, expired, or already-used token (no code field) |
-| 429    | `{ "code": "RATE_LIMITED", "message": "Too many requests" }`   | Rate limit                                              |
+| Status | Body                                                         | Condition                                                     |
+| ------ | ------------------------------------------------------------ | ------------------------------------------------------------- |
+| 204    | -                                                            | Password reset                                                |
+| 400    | `{ "code": "<PASSWORD_*>", "message": "Invalid password" }`  | Password fails PASSWORD_POLICY_V1. **Token is NOT consumed.** |
+| 400    | `{ "message": "Unable to reset password" }`                  | Invalid, expired, or already-used token (no code field)       |
+| 429    | `{ "code": "RATE_LIMITED", "message": "Too many requests" }` | Rate limit                                                    |
 
 ---
 
@@ -224,11 +223,11 @@ Request a magic signup link via email. **Anti-enumeration** - always returns 204
 
 Consume a magic signup link token and create an account with a password.
 
-| Field      | Location | Required | Description                                             |
-| ---------- | -------- | -------- | ------------------------------------------------------- |
-| `token`    | body     | yes      | Raw signup token (hex)                                  |
-| `password` | body     | yes      | Password for new account (≥ 8 chars)                    |
-| `consent`  | body     | yes      | Boolean `true` - explicit acceptance of Terms & Privacy |
+| Field      | Location | Required | Description                                                         |
+| ---------- | -------- | -------- | ------------------------------------------------------------------- |
+| `token`    | body     | yes      | Raw signup token (hex)                                              |
+| `password` | body     | yes      | Password for new account — must satisfy PASSWORD_POLICY_V1 (see §5) |
+| `consent`  | body     | yes      | Boolean `true` - explicit acceptance of Terms & Privacy             |
 
 **Rate limit**: 60 requests / 10 min per IP.
 
@@ -242,10 +241,11 @@ Consume a magic signup link token and create an account with a password.
 
 **Responses**:
 
-| Status | Body                                         | Condition                                          |
-| ------ | -------------------------------------------- | -------------------------------------------------- |
-| 200    | `{ "ok": true }`                             | Account created (auth cookie set via `Set-Cookie`) |
-| 400    | `{ "message": "Unable to complete signup" }` | Any failure (anti-enum)                            |
+| Status | Body                                                                 | Condition                                                                 |
+| ------ | -------------------------------------------------------------------- | ------------------------------------------------------------------------- |
+| 200    | `{ "ok": true }`                                                     | Account created (auth cookie set via `Set-Cookie`)                        |
+| 400    | `{ "code": "<PASSWORD_*>", "message": "Unable to complete signup" }` | Password fails PASSWORD_POLICY_V1. Token NOT consumed (see §5 for codes). |
+| 400    | `{ "message": "Unable to complete signup" }`                         | Any other failure (anti-enum)                                             |
 
 > **Design note**: neutral 400 on _all_ failures including rate limit (enterprise contract - no distinction between invalid token and rate limit).
 
@@ -400,12 +400,60 @@ User requests magic link → email sent
 
 ## 5. Password Policy
 
-| Rule       | Value       | Enforced on                                                                     |
-| ---------- | ----------- | ------------------------------------------------------------------------------- |
-| Min length | **8 chars** | `/register`, `/signup-consume`, `/reset`, `/change-password`, `/invites/accept` |
-| Hashing    | bcrypt      | Salt rounds: 10                                                                 |
+### PASSWORD_POLICY_V1 (active — 2026-04)
 
-> Future: consider adding complexity rules (uppercase, digit, symbol).
+All password-creation and password-change flows enforce PASSWORD_POLICY_V1. Login (`/login`) must NOT apply this policy — bcrypt.compare is unconditional on the login path.
+
+SSoT files:
+
+- Backend: `backend/src/utils/passwordPolicy.js`
+- Frontend: `frontend/src/utils/passwordPolicy.js`
+
+| Rule                 | Detail                                                                 |
+| -------------------- | ---------------------------------------------------------------------- |
+| Required             | Non-empty string                                                       |
+| Min length           | **8 characters**                                                       |
+| Max length           | **72 characters** (bcrypt truncation guard)                            |
+| No whitespace        | Space, tab, newline, and all `\s` characters rejected                  |
+| Printable ASCII only | charCodes 33–126 (`/^[\x21-\x7E]+$/`); rejects Hebrew, Cyrillic, emoji |
+| Lowercase required   | At least one `[a-z]`                                                   |
+| Uppercase required   | At least one `[A-Z]`                                                   |
+| Digit required       | At least one `[0-9]`                                                   |
+| Symbol required      | At least one printable non-alphanumeric ASCII character                |
+
+Validation is deterministic early-return: the first failing rule determines the returned code. The password is never logged, trimmed, normalized, or echoed.
+
+### Error codes
+
+| Code                           | Condition                               |
+| ------------------------------ | --------------------------------------- |
+| `PASSWORD_REQUIRED`            | Missing or empty                        |
+| `PASSWORD_TOO_SHORT`           | Fewer than 8 characters                 |
+| `PASSWORD_TOO_LONG`            | More than 72 characters                 |
+| `PASSWORD_CONTAINS_WHITESPACE` | Contains any whitespace                 |
+| `PASSWORD_CONTAINS_NON_ASCII`  | Contains non-printable-ASCII characters |
+| `PASSWORD_MISSING_LOWERCASE`   | No lowercase English letter             |
+| `PASSWORD_MISSING_UPPERCASE`   | No uppercase English letter             |
+| `PASSWORD_MISSING_DIGIT`       | No digit                                |
+| `PASSWORD_MISSING_SYMBOL`      | No printable ASCII symbol               |
+
+### Route coverage
+
+| Route                        | Enforcement                                                                                                                    | Error response                                                       |
+| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------- |
+| `/auth/register`             | full validation                                                                                                                | `400 { code: "<PASSWORD_*>", message: "Invalid password" }`          |
+| `/auth/signup-consume`       | full validation                                                                                                                | `400 { code: "<PASSWORD_*>", message: "Unable to complete signup" }` |
+| `/auth/reset`                | full validation — token NOT consumed on failure                                                                                | `400 { code: "<PASSWORD_*>", message: "Invalid password" }`          |
+| `/account/change-password`   | applies to `newPassword` only — `currentPassword` is credential verification, not policy-validated                             | `400 { code: "<PASSWORD_*>", message: "Unable to change password" }` |
+| `/invites/accept` (new-user) | policy enforced as boolean gate — invalid password returns `404/notFound`, same as invalid token, to preserve anti-enumeration | `404 { message: "Not found" }`                                       |
+| `/auth/login`                | **EXEMPT** — policy must not gate login; bcrypt.compare is unconditional                                                       | —                                                                    |
+
+### Hashing
+
+| Rule        | Value  |
+| ----------- | ------ |
+| Hashing     | bcrypt |
+| Salt rounds | 10     |
 
 ---
 
@@ -600,4 +648,4 @@ After a user performs a full self-delete of their account, the email address is 
 
 ---
 
-_Last updated: 2026-04-03 (deleted-email recreation block: tombstone mechanism, guard coverage on all 4 account-creation flows, EMAIL_BLOCK_SECRET env var, anti-enumeration notes updated for blocked-email paths, deletedemailblocks index prerequisite documented)_
+_Last updated: 2026-04-29 (PASSWORD_POLICY_V1: §5 rewritten with full complexity rules + error code table + route coverage; WEAK_PASSWORD retired; /register, /reset, /signup-consume request + response tables updated; prior entry: 2026-04-03 deleted-email block)_

@@ -16,6 +16,13 @@ import {
 } from "../../../services/account.service";
 import CancelRenewalModal from "../CancelRenewalModal";
 import styles from "./SettingsPanel.module.css";
+import {
+    validatePasswordPolicy,
+    getPasswordPolicyMessage,
+    getPasswordPolicyChecklist,
+    PASSWORD_POLICY_HELPER_TEXT_HE,
+    PASSWORD_POLICY,
+} from "../../../utils/passwordPolicy.js";
 
 function formatDate(value) {
     if (!value) return "";
@@ -56,6 +63,8 @@ export default function SettingsPanel({
     const [pwError, setPwError] = useState("");
     const [pwSuccess, setPwSuccess] = useState("");
     const [pwConfirmError, setPwConfirmError] = useState("");
+    const [pwNewError, setPwNewError] = useState("");
+    const [pwNewTouched, setPwNewTouched] = useState(false);
 
     const [billingBusy, setBillingBusy] = useState(false);
     const [billingMsg, setBillingMsg] = useState("");
@@ -148,13 +157,31 @@ export default function SettingsPanel({
         setPwError("");
         setPwSuccess("");
         setPwConfirmError("");
+        setPwNewError("");
+        setPwNewTouched(true);
 
-        if (!pwCurrent.trim() || !pwNew.trim() || !pwConfirm.trim()) {
+        // 1. currentPassword presence → form-level generic
+        if (!pwCurrent.trim()) {
             setPwError("יש למלא את כל השדות.");
             return;
         }
+
+        // 2. newPassword policy → field-level precise
+        const pwResult = validatePasswordPolicy(pwNew);
+        if (!pwResult.ok) {
+            setPwNewError(getPasswordPolicyMessage(pwResult.code));
+            return;
+        }
+
+        // 3. confirm presence → field-level
+        if (!pwConfirm) {
+            setPwConfirmError("שדה אימות הסיסמה הוא חובה");
+            return;
+        }
+
+        // 4. confirm mismatch → field-level
         if (pwNew !== pwConfirm) {
-            setPwConfirmError("הסיסמאות אינן תואמות.");
+            setPwConfirmError("הסיסמאות לא תואמות.");
             return;
         }
 
@@ -169,9 +196,15 @@ export default function SettingsPanel({
             setPwNew("");
             setPwConfirm("");
             setPwConfirmError("");
+            setPwNewError("");
+            setPwNewTouched(false);
         } catch (err) {
+            const code = err?.response?.data?.code;
             const status = err?.response?.status;
-            if (status === 429) {
+            if (typeof code === "string" && code.startsWith("PASSWORD_")) {
+                setPwNewError(getPasswordPolicyMessage(code));
+                setPwNewTouched(true);
+            } else if (status === 429 || code === "RATE_LIMITED") {
                 setPwError("יותר מדי ניסיונות. נסה שוב מאוחר יותר.");
             } else {
                 setPwError("לא הצלחנו לשנות את הסיסמה.");
@@ -2097,10 +2130,36 @@ export default function SettingsPanel({
                                             setPwError("");
                                             setPwSuccess("");
                                             setPwConfirmError("");
+                                            setPwNewError("");
                                         }}
+                                        onBlur={() => setPwNewTouched(true)}
+                                        minLength={PASSWORD_POLICY.minLength}
+                                        maxLength={PASSWORD_POLICY.maxLength}
+                                        meta={PASSWORD_POLICY_HELPER_TEXT_HE}
+                                        error={pwNewError}
                                         autoComplete="new-password"
                                         disabled={pwSubmitting}
                                     />
+
+                                    {(pwNewTouched ||
+                                        pwNewError ||
+                                        pwNew.length > 0) && (
+                                        <ul
+                                            className={styles.pwChecklist}
+                                            aria-label="דרישות הסיסמה"
+                                        >
+                                            {getPasswordPolicyChecklist(
+                                                pwNew,
+                                            ).map((item) => (
+                                                <li
+                                                    key={item.id}
+                                                    className={`${styles.pwChecklistItem}${item.met ? ` ${styles.pwChecklistItemMet}` : ""}`}
+                                                >
+                                                    {item.label}
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    )}
 
                                     <Input
                                         label="אימות סיסמה חדשה"
@@ -2111,6 +2170,7 @@ export default function SettingsPanel({
                                             setPwConfirmError("");
                                             setPwSuccess("");
                                         }}
+                                        maxLength={PASSWORD_POLICY.maxLength}
                                         error={pwConfirmError}
                                         autoComplete="new-password"
                                         disabled={pwSubmitting}

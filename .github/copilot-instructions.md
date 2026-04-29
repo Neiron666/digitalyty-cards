@@ -210,4 +210,17 @@ Paste raw outputs + EXIT codes. Never claim you ran checks you didn’t run.
 - Phase 2: List edited files + minimal diff summary + QA checklist.
 - Verification: raw command outputs + EXIT codes (when commands were run).
 
+## 7) RESPONSE FORMAT STRICT RULE:
+
+- Answer in one single plain-text response only.
+- No Markdown fenced code blocks.
+- No triple backticks.
+- No separate code boxes.
+- No diff blocks.
+- No patch blocks.
+- No markdown tables.
+- Commands, file paths, line ranges, stdout, EXIT codes, and proofs must be written as regular plain text lines.
+- Keep the Phase structure, but keep everything copyable as one continuous text.
+- I must be able to drag-select the full answer once and copy it completely.
+
 END.

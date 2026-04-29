@@ -7,8 +7,13 @@ import Button from "../components/ui/Button";
 import Notice from "../components/ui/Notice/Notice";
 import FieldValidationMessage from "../components/ui/FieldValidationMessage";
 import styles from "./Register.module.css";
-
-const PASSWORD_MIN_LENGTH = 8;
+import {
+    validatePasswordPolicy,
+    getPasswordPolicyMessage,
+    getPasswordPolicyChecklist,
+    PASSWORD_POLICY_HELPER_TEXT_HE,
+    PASSWORD_POLICY,
+} from "../utils/passwordPolicy.js";
 
 function Register() {
     const [form, setForm] = useState({
@@ -29,6 +34,7 @@ function Register() {
         confirmPassword: "",
         consent: "",
     });
+    const [passwordTouched, setPasswordTouched] = useState(false);
     const consentErrorId = useId();
 
     function update(field, value) {
@@ -37,6 +43,7 @@ function Register() {
     }
 
     function validate() {
+        setPasswordTouched(true);
         const errs = {
             firstName: "",
             email: "",
@@ -54,10 +61,9 @@ function Register() {
         } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) {
             errs.email = "כתובת האימייל אינה תקינה";
         }
-        if (!form.password) {
-            errs.password = "שדה הסיסמה הוא חובה";
-        } else if (form.password.length < PASSWORD_MIN_LENGTH) {
-            errs.password = `הסיסמה חייבת לכלול לפחות ${PASSWORD_MIN_LENGTH} תווים`;
+        const pwResult = validatePasswordPolicy(form.password);
+        if (!pwResult.ok) {
+            errs.password = getPasswordPolicyMessage(pwResult.code);
         }
         if (!form.confirmPassword) {
             errs.confirmPassword = "שדה אימות הסיסמה הוא חובה";
@@ -99,6 +105,14 @@ function Register() {
         } catch (err) {
             const code = err.response?.data?.code;
             const status = err.response?.status;
+            if (typeof code === "string" && code.startsWith("PASSWORD_")) {
+                setFieldErrors((prev) => ({
+                    ...prev,
+                    password: getPasswordPolicyMessage(code),
+                }));
+                setPasswordTouched(true);
+                return;
+            }
             if (code === "CONSENT_REQUIRED") {
                 setError("חובה להסכים למדיניות הפרטיות ולתנאי השימוש");
             } else if (status === 409) {
@@ -171,10 +185,33 @@ function Register() {
                     autoComplete="new-password"
                     value={form.password}
                     onChange={(e) => update("password", e.target.value)}
+                    onBlur={() => setPasswordTouched(true)}
                     required
-                    minLength={PASSWORD_MIN_LENGTH}
+                    minLength={PASSWORD_POLICY.minLength}
+                    maxLength={PASSWORD_POLICY.maxLength}
+                    meta={PASSWORD_POLICY_HELPER_TEXT_HE}
                     error={fieldErrors.password}
                 />
+
+                {(passwordTouched ||
+                    fieldErrors.password ||
+                    form.password.length > 0) && (
+                    <ul
+                        className={styles.pwChecklist}
+                        aria-label="דרישות הסיסמה"
+                    >
+                        {getPasswordPolicyChecklist(form.password).map(
+                            (item) => (
+                                <li
+                                    key={item.id}
+                                    className={`${styles.pwChecklistItem}${item.met ? ` ${styles.pwChecklistItemMet}` : ""}`}
+                                >
+                                    {item.label}
+                                </li>
+                            ),
+                        )}
+                    </ul>
+                )}
 
                 <Input
                     label="אימות סיסמה"
@@ -183,6 +220,7 @@ function Register() {
                     value={form.confirmPassword}
                     onChange={(e) => update("confirmPassword", e.target.value)}
                     required
+                    maxLength={PASSWORD_POLICY.maxLength}
                     error={fieldErrors.confirmPassword}
                 />
 

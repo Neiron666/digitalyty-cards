@@ -292,3 +292,82 @@ Consent, legal, and compliance gaps cannot be silently backfilled as "technical 
 ---
 
 _Last updated: 2026-03-28 (Steps 10–13 added)_
+
+---
+
+## 2026-04 Addendum — PASSWORD_POLICY_V1 Closure
+
+Contour: REGISTER_PASSWORD_POLICY_HARDENING_TASK_1 through TASK_5.5 (closed 2026-04-29)
+
+### Context
+
+Step 8 of the March 2026 cycle recorded "Password minimum length (8 chars) enforcement added to /auth/reset, /account/change-password, /invites/accept." That was a correct description of the state at cycle-close. The current addendum documents the subsequent upgrade to a full complexity policy.
+
+### What changed
+
+The password enforcement model was upgraded from minimum-length-only (8 chars, no complexity) to PASSWORD_POLICY_V1, a full 9-rule complexity policy enforced consistently across all password-creation and password-change routes.
+
+Old state: min-length = 8, no complexity, single legacy WEAK_PASSWORD code for short passwords.
+New state: PASSWORD_POLICY_V1 — 9 rules, 9 distinct machine-readable codes.
+
+WEAK_PASSWORD is retired. It no longer exists as an active backend error code.
+
+### PASSWORD_POLICY_V1 rules
+
+1. Non-empty string
+2. minLength = 8
+3. maxLength = 72 (bcrypt truncation guard)
+4. No whitespace
+5. Printable ASCII only (charCodes 33–126; rejects Hebrew, Cyrillic, emoji)
+6. Lowercase English letter required
+7. Uppercase English letter required
+8. Digit required
+9. Symbol required (printable non-alphanumeric ASCII)
+
+### SSoT files
+
+Backend: backend/src/utils/passwordPolicy.js
+Frontend: frontend/src/utils/passwordPolicy.js
+
+Both files are frozen-constant exports with identical validation logic and deterministic early-return order.
+
+### Backend routes covered
+
+/auth/register — full policy validation, PASSWORD*\* code returned on failure
+/auth/signup-consume — full policy validation, PASSWORD*_ code returned on failure
+/auth/reset — full policy validation, token NOT consumed on failure
+/invites/accept — boolean gate only; invalid password returns 404/notFound (anti-enumeration preserved, no PASSWORD\__ code returned)
+/account/change-password — applies to newPassword only; currentPassword is credential verification only
+
+### Frontend surfaces covered
+
+Register.jsx — validatePasswordPolicy + checklist + helper text + backend PASSWORD*\* mapping
+ResetPassword.jsx — validatePasswordPolicy + checklist + helper text + backend PASSWORD*_ mapping
+SignupConsume.jsx — validatePasswordPolicy + checklist + helper text + backend PASSWORD\__ mapping
+InviteAccept.jsx — client-side validation for new-user flow only; no PASSWORD\_\* mapping in catch (anti-enumeration)
+SettingsPanel.jsx change-password — validatePasswordPolicy(pwNew) only; currentPassword not policy-validated
+
+### Canonical exceptions (must not be changed without architecture review)
+
+Login exception: /login must NOT apply password policy. bcrypt.compare is unconditional.
+InviteAccept anti-enumeration: backend returns 404 on invalid password, not PASSWORD*\* codes. Frontend does not map PASSWORD*\* in InviteAccept catch.
+SettingsPanel currentPassword exception: currentPassword is credential verification only. Wrong currentPassword returns generic form-level error.
+
+### Verification gates completed
+
+All frontend gates passed EXIT:0 for each surface (TASK 5.2C, 5.3C, 5.4C, 5.5C):
+check:inline-styles EXIT:0
+check:skins EXIT:0
+check:contract EXIT:0
+build EXIT:0
+backend sanity-imports covers passwordPolicy SSoT (confirmed EXIT:0).
+
+### Docs updated
+
+docs/api-security.md §5 — rewritten to full PASSWORD*POLICY_V1 spec; WEAK_PASSWORD retired; route coverage table added.
+docs/runbooks/auth-forgot-reset-runbook.md — reset validation section updated from WEAK_PASSWORD to PASSWORD*\* pattern.
+docs/handoffs/current/Cardigo_Enterprise_Handoff_PasswordPolicy_V1_Closed_2026-04-29.md — created.
+
+### Verdict
+
+CLOSED / PASS

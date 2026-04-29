@@ -197,19 +197,25 @@ Single-active:
 
 run forgot twice → only the most recent APR + MailJob is valid; prior APR is atomically replaced by findOneAndReplace upsert.
 
-/reset validation and error-code mapping (live as of 2026-03-29)
+/reset validation and error-code mapping (updated 2026-04-29 — PASSWORD_POLICY_V1)
 
-The /auth/reset handler validates password length BEFORE consuming the token.
-A short-password (< 8 chars) rejection returns 400 {code:"WEAK_PASSWORD"} and leaves ActivePasswordReset untouched - the token remains valid and reusable.
+The /auth/reset handler validates the new password against PASSWORD*POLICY_V1 BEFORE consuming the token.
+Any policy failure returns 400 with a specific PASSWORD*\* code and leaves ActivePasswordReset untouched — the token remains valid and reusable.
+
+Note: the old WEAK*PASSWORD code is retired. It no longer exists in the backend. The current contract is the PASSWORD*\* code family (9 distinct codes). Do not reference WEAK_PASSWORD as an active error code.
 
 Distinct backend response codes on /auth/reset:
 
-- WEAK_PASSWORD (400): password too short. Token NOT consumed. User can correct and retry.
+- Any PASSWORD\_\* code (400): password fails PASSWORD_POLICY_V1. Token NOT consumed. User can correct and retry.
+  Possible codes: PASSWORD_REQUIRED, PASSWORD_TOO_SHORT, PASSWORD_TOO_LONG, PASSWORD_CONTAINS_WHITESPACE,
+  PASSWORD_CONTAINS_NON_ASCII, PASSWORD_MISSING_LOWERCASE, PASSWORD_MISSING_UPPERCASE,
+  PASSWORD_MISSING_DIGIT, PASSWORD_MISSING_SYMBOL.
+  See docs/api-security.md §5 for full rule set.
 - RATE_LIMITED (429): IP rate limit hit. Token NOT consumed.
 - No code (400): invalid, expired, or already-used token.
 
 Frontend (ResetPassword.jsx) maps these codes to distinct Hebrew messages:
 
-- WEAK_PASSWORD → "הסיסמה חייבת להכיל לפחות 8 תווים."
+- code.startsWith("PASSWORD\_") → getPasswordPolicyMessage(code) → Hebrew field-level error on the password input. passwordTouched is set to true so the checklist is shown.
 - RATE_LIMITED → "נסו שוב בעוד כמה דקות."
 - else → "לא ניתן לאפס סיסמה. בקשו קישור חדש."

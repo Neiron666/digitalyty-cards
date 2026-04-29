@@ -5,6 +5,13 @@ import Input from "../components/ui/Input";
 import Button from "../components/ui/Button";
 import { consumeSignupToken } from "../services/auth.service";
 import { trackRegistrationComplete } from "../services/siteAnalytics.client";
+import {
+    validatePasswordPolicy,
+    getPasswordPolicyMessage,
+    getPasswordPolicyChecklist,
+    PASSWORD_POLICY_HELPER_TEXT_HE,
+    PASSWORD_POLICY,
+} from "../utils/passwordPolicy.js";
 import styles from "./SignupConsume.module.css";
 
 export default function SignupConsume() {
@@ -24,6 +31,11 @@ export default function SignupConsume() {
     });
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
+    const [fieldErrors, setFieldErrors] = useState({
+        password: "",
+        confirmPassword: "",
+    });
+    const [passwordTouched, setPasswordTouched] = useState(false);
 
     // Strip the token query param from the URL so that third-party pixels / GTM
     // variables observing window.location do not record the raw token value.
@@ -37,10 +49,15 @@ export default function SignupConsume() {
 
     function update(field, value) {
         setForm((p) => ({ ...p, [field]: value }));
+        if (field === "password" || field === "confirmPassword") {
+            setFieldErrors((prev) => ({ ...prev, [field]: "" }));
+        }
     }
 
     async function handleSubmit(e) {
         e.preventDefault();
+        setPasswordTouched(true);
+        setFieldErrors({ password: "", confirmPassword: "" });
         setError("");
 
         if (!token) {
@@ -58,8 +75,28 @@ export default function SignupConsume() {
             return;
         }
 
+        const pwResult = validatePasswordPolicy(form.password);
+        if (!pwResult.ok) {
+            setFieldErrors((prev) => ({
+                ...prev,
+                password: getPasswordPolicyMessage(pwResult.code),
+            }));
+            return;
+        }
+
+        if (!form.confirmPassword) {
+            setFieldErrors((prev) => ({
+                ...prev,
+                confirmPassword: "שדה אימות הסיסמה הוא חובה",
+            }));
+            return;
+        }
+
         if (form.password !== form.confirmPassword) {
-            setError("הסיסמאות לא תואמות.");
+            setFieldErrors((prev) => ({
+                ...prev,
+                confirmPassword: "הסיסמאות לא תואמות.",
+            }));
             return;
         }
 
@@ -84,8 +121,17 @@ export default function SignupConsume() {
 
             trackRegistrationComplete();
             window.location.replace("/edit");
-        } catch {
-            setError("לא ניתן להשלים הרשמה. בקשו קישור חדש.");
+        } catch (err) {
+            const code = err?.response?.data?.code;
+            if (typeof code === "string" && code.startsWith("PASSWORD_")) {
+                setFieldErrors((prev) => ({
+                    ...prev,
+                    password: getPasswordPolicyMessage(code),
+                }));
+                setPasswordTouched(true);
+            } else {
+                setError("לא ניתן להשלים הרשמה. בקשו קישור חדש.");
+            }
         } finally {
             setLoading(false);
         }
@@ -135,8 +181,33 @@ export default function SignupConsume() {
                     autoComplete="new-password"
                     value={form.password}
                     onChange={(e) => update("password", e.target.value)}
+                    onBlur={() => setPasswordTouched(true)}
                     required
+                    minLength={PASSWORD_POLICY.minLength}
+                    maxLength={PASSWORD_POLICY.maxLength}
+                    meta={PASSWORD_POLICY_HELPER_TEXT_HE}
+                    error={fieldErrors.password}
                 />
+
+                {(passwordTouched ||
+                    fieldErrors.password ||
+                    form.password.length > 0) && (
+                    <ul
+                        className={styles.pwChecklist}
+                        aria-label="דרישות הסיסמה"
+                    >
+                        {getPasswordPolicyChecklist(form.password).map(
+                            (item) => (
+                                <li
+                                    key={item.id}
+                                    className={`${styles.pwChecklistItem}${item.met ? ` ${styles.pwChecklistItemMet}` : ""}`}
+                                >
+                                    {item.label}
+                                </li>
+                            ),
+                        )}
+                    </ul>
+                )}
 
                 <Input
                     label="אימות סיסמה"
@@ -145,6 +216,8 @@ export default function SignupConsume() {
                     value={form.confirmPassword}
                     onChange={(e) => update("confirmPassword", e.target.value)}
                     required
+                    maxLength={PASSWORD_POLICY.maxLength}
+                    error={fieldErrors.confirmPassword}
                 />
 
                 <label className={styles.consentRow}>

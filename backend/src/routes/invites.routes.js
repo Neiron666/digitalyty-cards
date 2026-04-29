@@ -16,6 +16,7 @@ import {
     CURRENT_MARKETING_CONSENT_VERSION,
 } from "../utils/consentVersions.js";
 import { isEmailBlocked } from "../utils/emailBlock.util.js";
+import { validatePasswordPolicy } from "../utils/passwordPolicy.js";
 
 const router = Router();
 
@@ -128,10 +129,7 @@ router.post("/accept", optionalAuth, async (req, res) => {
 
     // Enterprise hardening: if this invite would create a new user,
     // require a password + consent BEFORE consuming the invite.
-    if (
-        !user &&
-        (typeof password !== "string" || !password || password.length < 8)
-    ) {
+    if (!user && !validatePasswordPolicy(password).ok) {
         return notFound(res);
     }
     if (!user && req.body.consent !== true) {

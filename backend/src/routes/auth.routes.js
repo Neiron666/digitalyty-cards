@@ -19,6 +19,7 @@ import {
     CURRENT_MARKETING_CONSENT_VERSION,
 } from "../utils/consentVersions.js";
 import { isEmailBlocked } from "../utils/emailBlock.util.js";
+import { validatePasswordPolicy } from "../utils/passwordPolicy.js";
 
 const router = Router();
 
@@ -48,8 +49,6 @@ const SIGNUP_CONSUME_RATE_LIMIT = 60;
 const SIGNUP_LINK_EMAIL_RATE_LIMIT = 5;
 const VERIFY_EMAIL_RATE_LIMIT = 30;
 const RESEND_VERIFY_RATE_LIMIT = 5;
-
-const PASSWORD_MIN_LENGTH = 8;
 
 const inMemoryRegisterRate = new Map();
 const inMemoryLoginRate = new Map();
@@ -192,13 +191,11 @@ router.post("/register", async (req, res) => {
     if (!isValidEmail(rawEmail)) {
         return res.status(400).json({ message: "Invalid email" });
     }
-    if (typeof password !== "string" || !password) {
-        return res.status(400).json({ message: "Invalid password" });
-    }
-    if (password.length < PASSWORD_MIN_LENGTH) {
-        return res.status(400).json({
-            message: `Password must be at least ${PASSWORD_MIN_LENGTH} characters`,
-        });
+    const pwCheck = validatePasswordPolicy(password);
+    if (!pwCheck.ok) {
+        return res
+            .status(400)
+            .json({ code: pwCheck.code, message: "Invalid password" });
     }
 
     // ── Consent enforcement (strict boolean) ──
@@ -679,11 +676,17 @@ router.post("/signup-consume", async (req, res) => {
         const rawToken = String(req.body?.token || "").trim();
         const password = req.body?.password;
 
-        if (!rawToken || typeof password !== "string" || !password) {
+        if (!rawToken) {
             return fail();
         }
-        if (password.length < PASSWORD_MIN_LENGTH) {
-            return fail();
+        const pwCheckConsume = validatePasswordPolicy(password);
+        if (!pwCheckConsume.ok) {
+            return res
+                .status(400)
+                .json({
+                    code: pwCheckConsume.code,
+                    message: "Unable to complete signup",
+                });
         }
 
         const tokenHash = sha256Hex(rawToken);
@@ -797,13 +800,14 @@ router.post("/reset", async (req, res) => {
     const rawToken = String(req.body?.token || "").trim();
     const password = req.body?.password;
 
-    if (!rawToken || typeof password !== "string" || !password) {
+    if (!rawToken) {
         return res.status(400).json({ message: "Unable to reset password" });
     }
-    if (password.length < PASSWORD_MIN_LENGTH) {
+    const pwCheckReset = validatePasswordPolicy(password);
+    if (!pwCheckReset.ok) {
         return res
             .status(400)
-            .json({ code: "WEAK_PASSWORD", message: "Password too short" });
+            .json({ code: pwCheckReset.code, message: "Invalid password" });
     }
 
     const tokenHash = sha256Hex(rawToken);

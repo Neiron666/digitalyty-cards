@@ -5,6 +5,13 @@ import Input from "../components/ui/Input";
 import Button from "../components/ui/Button";
 import api from "../services/api";
 import { useAuth } from "../context/AuthContext";
+import {
+    validatePasswordPolicy,
+    getPasswordPolicyMessage,
+    getPasswordPolicyChecklist,
+    PASSWORD_POLICY_HELPER_TEXT_HE,
+    PASSWORD_POLICY,
+} from "../utils/passwordPolicy.js";
 import styles from "./InviteAccept.module.css";
 
 function InviteAccept() {
@@ -23,6 +30,8 @@ function InviteAccept() {
     const [marketingConsent, setMarketingConsent] = useState(false);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
+    const [passwordError, setPasswordError] = useState("");
+    const [passwordTouched, setPasswordTouched] = useState(false);
     const [loginRequired, setLoginRequired] = useState(false);
 
     const returnTo = useMemo(() => {
@@ -41,7 +50,9 @@ function InviteAccept() {
     async function handleSubmit(e) {
         e.preventDefault();
         setError("");
+        setPasswordError("");
         setLoginRequired(false);
+        if (isNewUser) setPasswordTouched(true);
 
         if (!token) {
             setError("הקישור אינו תקין או שפג תוקפו");
@@ -61,10 +72,15 @@ function InviteAccept() {
             return;
         }
 
-        // New-user flow requires a password. Existing-user flow requires login.
-        if (!isLoggedIn && !password) {
-            setError("הזינו סיסמא ליצירת חשבון חדש");
-            return;
+        // New-user flow: validate password policy client-side.
+        // Backend intentionally returns 404 (not PASSWORD_* codes) on invalid
+        // password to preserve invite token anti-enumeration.
+        if (!isLoggedIn) {
+            const pwResult = validatePasswordPolicy(password);
+            if (!pwResult.ok) {
+                setPasswordError(getPasswordPolicyMessage(pwResult.code));
+                return;
+            }
         }
 
         // New-user flow requires explicit consent.
@@ -143,7 +159,37 @@ function InviteAccept() {
                     autoComplete="new-password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
+                    onBlur={() => {
+                        if (isNewUser) setPasswordTouched(true);
+                    }}
+                    minLength={PASSWORD_POLICY.minLength}
+                    maxLength={PASSWORD_POLICY.maxLength}
+                    meta={
+                        isNewUser ? PASSWORD_POLICY_HELPER_TEXT_HE : undefined
+                    }
+                    error={isNewUser ? passwordError : undefined}
                 />
+
+                {isNewUser &&
+                    (passwordTouched ||
+                        passwordError ||
+                        password.length > 0) && (
+                        <ul
+                            className={styles.pwChecklist}
+                            aria-label="דרישות הסיסמה"
+                        >
+                            {getPasswordPolicyChecklist(password).map(
+                                (item) => (
+                                    <li
+                                        key={item.id}
+                                        className={`${styles.pwChecklistItem}${item.met ? ` ${styles.pwChecklistItemMet}` : ""}`}
+                                    >
+                                        {item.label}
+                                    </li>
+                                ),
+                            )}
+                        </ul>
+                    )}
 
                 {isNewUser ? (
                     <>

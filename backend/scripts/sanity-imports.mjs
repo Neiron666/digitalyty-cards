@@ -58,6 +58,7 @@ async function main() {
             relPath: "src/middlewares/auth.middleware.js",
         },
         { label: "jwt", relPath: "src/utils/jwt.js" },
+        { label: "passwordPolicy", relPath: "src/utils/passwordPolicy.js" },
 
         {
             label: "supabaseStorage",

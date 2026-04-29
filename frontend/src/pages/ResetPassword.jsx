@@ -4,6 +4,13 @@ import AuthLayout from "../components/auth/AuthLayout";
 import Input from "../components/ui/Input";
 import Button from "../components/ui/Button";
 import { resetPassword } from "../services/auth.service";
+import {
+    validatePasswordPolicy,
+    getPasswordPolicyMessage,
+    getPasswordPolicyChecklist,
+    PASSWORD_POLICY_HELPER_TEXT_HE,
+    PASSWORD_POLICY,
+} from "../utils/passwordPolicy.js";
 import styles from "./ResetPassword.module.css";
 
 export default function ResetPassword() {
@@ -18,13 +25,23 @@ export default function ResetPassword() {
     const [form, setForm] = useState({ password: "", confirmPassword: "" });
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
+    const [fieldErrors, setFieldErrors] = useState({
+        password: "",
+        confirmPassword: "",
+    });
+    const [passwordTouched, setPasswordTouched] = useState(false);
 
     function update(field, value) {
         setForm((p) => ({ ...p, [field]: value }));
+        if (field === "password" || field === "confirmPassword") {
+            setFieldErrors((prev) => ({ ...prev, [field]: "" }));
+        }
     }
 
     async function handleSubmit(e) {
         e.preventDefault();
+        setPasswordTouched(true);
+        setFieldErrors({ password: "", confirmPassword: "" });
         setError("");
 
         if (!token) {
@@ -32,13 +49,28 @@ export default function ResetPassword() {
             return;
         }
 
-        if (form.password.length < 8) {
-            setError("הסיסמה חייבת להכיל לפחות 8 תווים.");
+        const pwResult = validatePasswordPolicy(form.password);
+        if (!pwResult.ok) {
+            setFieldErrors((prev) => ({
+                ...prev,
+                password: getPasswordPolicyMessage(pwResult.code),
+            }));
+            return;
+        }
+
+        if (!form.confirmPassword) {
+            setFieldErrors((prev) => ({
+                ...prev,
+                confirmPassword: "שדה אימות הסיסמה הוא חובה",
+            }));
             return;
         }
 
         if (form.password !== form.confirmPassword) {
-            setError("הסיסמאות לא תואמות.");
+            setFieldErrors((prev) => ({
+                ...prev,
+                confirmPassword: "הסיסמאות לא תואמות.",
+            }));
             return;
         }
 
@@ -48,8 +80,12 @@ export default function ResetPassword() {
             navigate("/login?reset=1", { replace: true });
         } catch (err) {
             const code = err?.response?.data?.code;
-            if (code === "WEAK_PASSWORD") {
-                setError("הסיסמה חייבת להכיל לפחות 8 תווים.");
+            if (typeof code === "string" && code.startsWith("PASSWORD_")) {
+                setFieldErrors((prev) => ({
+                    ...prev,
+                    password: getPasswordPolicyMessage(code),
+                }));
+                setPasswordTouched(true);
             } else if (code === "RATE_LIMITED") {
                 setError("נסו שוב בעוד כמה דקות.");
             } else {
@@ -95,8 +131,33 @@ export default function ResetPassword() {
                     autoComplete="new-password"
                     value={form.password}
                     onChange={(e) => update("password", e.target.value)}
+                    onBlur={() => setPasswordTouched(true)}
                     required
+                    minLength={PASSWORD_POLICY.minLength}
+                    maxLength={PASSWORD_POLICY.maxLength}
+                    meta={PASSWORD_POLICY_HELPER_TEXT_HE}
+                    error={fieldErrors.password}
                 />
+
+                {(passwordTouched ||
+                    fieldErrors.password ||
+                    form.password.length > 0) && (
+                    <ul
+                        className={styles.pwChecklist}
+                        aria-label="דרישות הסיסמה"
+                    >
+                        {getPasswordPolicyChecklist(form.password).map(
+                            (item) => (
+                                <li
+                                    key={item.id}
+                                    className={`${styles.pwChecklistItem}${item.met ? ` ${styles.pwChecklistItemMet}` : ""}`}
+                                >
+                                    {item.label}
+                                </li>
+                            ),
+                        )}
+                    </ul>
+                )}
 
                 <Input
                     label="אימות סיסמה"
@@ -105,6 +166,8 @@ export default function ResetPassword() {
                     value={form.confirmPassword}
                     onChange={(e) => update("confirmPassword", e.target.value)}
                     required
+                    maxLength={PASSWORD_POLICY.maxLength}
+                    error={fieldErrors.confirmPassword}
                 />
 
                 {error ? <p className={styles.error}>{error}</p> : null}

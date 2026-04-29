@@ -23,6 +23,7 @@ import {
     removeMarketingOptOut,
 } from "../utils/marketingOptOut.util.js";
 import { CURRENT_MARKETING_CONSENT_VERSION } from "../utils/consentVersions.js";
+import { validatePasswordPolicy } from "../utils/passwordPolicy.js";
 import { cancelTranzilaStoForUser } from "../services/payment/tranzila.provider.js";
 import ActivePasswordReset from "../models/ActivePasswordReset.model.js";
 import MailJob from "../models/MailJob.model.js";
@@ -665,16 +666,20 @@ router.post("/change-password", requireAuth, async (req, res) => {
             typeof currentPassword !== "string" ||
             !currentPassword.trim() ||
             typeof newPassword !== "string" ||
-            !newPassword.trim()
+            !newPassword
         ) {
             return res
                 .status(400)
                 .json({ message: "Unable to change password" });
         }
-        if (newPassword.length < 8) {
+        const pwCheckChange = validatePasswordPolicy(newPassword);
+        if (!pwCheckChange.ok) {
             return res
                 .status(400)
-                .json({ message: "Unable to change password" });
+                .json({
+                    code: pwCheckChange.code,
+                    message: "Unable to change password",
+                });
         }
 
         const user = await User.findById(req.userId)
