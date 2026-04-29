@@ -194,6 +194,33 @@ Run manually after deploy to production (https://cardigo.co.il):
 
 ---
 
+## Final Rollout Smoke Closure — 2026-04-29
+
+UI smoke was manually verified by owner as PASS.
+
+Backend SSoT inline smoke was executed from backend/src/utils/passwordPolicy.js via Node --input-type=module inline import (no DB, no server, no network). Exit code 0. Output: ALL PASS.
+
+Verified codes:
+
+- PASSWORD_REQUIRED — PASS
+- PASSWORD_TOO_SHORT — PASS
+- PASSWORD_TOO_LONG — PASS
+- PASSWORD_CONTAINS_WHITESPACE — PASS
+- PASSWORD_CONTAINS_NON_ASCII — PASS
+- PASSWORD_MISSING_LOWERCASE — PASS
+- PASSWORD_MISSING_UPPERCASE — PASS
+- PASSWORD_MISSING_DIGIT — PASS
+- PASSWORD_MISSING_SYMBOL — PASS
+- valid password (Cardigo1!) — ok:true, code:null — PASS
+
+Production curl smoke was blocked by Netlify gate (GATE_REQUIRED) without a valid \_\_Host-cardigo_gate cookie. Classified as access-layer behavior, not a password-policy failure. Password policy validation is proven via backend SSoT inline smoke above.
+
+No DB migration required. No env var required. No index apply required. No user migration required.
+
+Final verdict: PASSWORD*POLICY_V1 rollout smoke PASS. Contour REGISTER_PASSWORD_POLICY_HARDENING_TASK*\* is closed.
+
+---
+
 _Created: 2026-04-29_
 _Author: Copilot Agent (senior engineer mode)_
 _Contour: REGISTER_PASSWORD_POLICY_HARDENING_TASK_1–5.5_

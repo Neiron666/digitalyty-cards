@@ -142,7 +142,9 @@ function Register() {
                     </p>
                     <p className={styles.successHint}>
                         לחצו על הקישור באימייל כדי להשלים את ההרשמה. אם לא
-                        קיבלתם - בדקו בתיקיית הספאם.
+                        קיבלתם -{" "}
+                        <span className={styles.spam}>בדקו בתיקיית ה</span>
+                        <span className={styles.spam}>ספאם.</span>
                     </p>
                 </div>
             </AuthLayout>

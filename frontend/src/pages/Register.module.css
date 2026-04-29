@@ -182,3 +182,7 @@
     content: "✓";
     color: var(--c-success);
 }
+.successHint > .spam {
+    font-weight: 400;
+    color: var(--global-white-text);
+}
