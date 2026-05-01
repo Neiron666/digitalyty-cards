@@ -1,3 +1,6 @@
 /payment/iframe-return
   X-Frame-Options: SAMEORIGIN
   Content-Security-Policy: frame-ancestors 'self'
+
+/manifest.webmanifest
+  Content-Type: application/manifest+json
