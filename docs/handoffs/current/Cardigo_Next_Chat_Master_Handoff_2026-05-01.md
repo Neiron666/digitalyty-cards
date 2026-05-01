@@ -3,8 +3,8 @@
 **Prepared for:** next ChatGPT window / continuing Cardigo project work  
 **Project:** Cardigo — Israel-first digital business card SaaS  
 **Current handoff date:** 2026-05-01  
-**Most recent closed contour:** `PASSWORD_POLICY_V1` / `REGISTER_PASSWORD_POLICY_HARDENING`  
-**Final rollout smoke date recorded:** 2026-04-29  
+**Most recent closed contour:** `EDITOR_PERSONAL_CARD_BADGE_VISIBILITY` (prior: `PASSWORD_POLICY_V1` / `REGISTER_PASSWORD_POLICY_HARDENING`)  
+**Final rollout smoke date recorded:** 2026-04-29
 
 ---
 
@@ -966,3 +966,62 @@ REGISTER_PASSWORD_POLICY_HARDENING
 = CLOSED / PRODUCTION-READY / ROLLOUT SMOKE PASS
 ```
 
+---
+
+## 16. Current Closed Contour: EDITOR_PERSONAL_CARD_BADGE_VISIBILITY
+
+```txt
+EDITOR_PERSONAL_CARD_BADGE_VISIBILITY
+= CLOSED / VERIFIED / BROWSER SMOKE PASS
+Closed: 2026-05-01
+```
+
+### 16.1 Summary
+
+Authenticated users with no org memberships and no active org context no longer see the non-actionable "כרטיס אישי" context switcher in the card editor. Users who have orgs or are already in org context (activeOrgSlug truthy) continue to see the switcher as before.
+
+Positive side effect: for no-org users on mobile the hamburger button label "תפריט עריכה" is restored (pre-existing conditional in Editor.jsx line ~216-220 gates it on `!showContextBar`).
+
+### 16.2 SSoT and Predicate
+
+SSoT file: `frontend/src/pages/EditCard.jsx`, prop `showContextBar` at lines ~2396-2398.
+
+Exact predicate:
+
+```jsx
+showContextBar={isAuthenticated && (myOrgs.length > 0 || Boolean(activeOrgSlug))}
+```
+
+Branch rationale:
+
+- `myOrgs.length > 0` — user has at least one org, context switcher is actionable.
+- `Boolean(activeOrgSlug)` — user is already in org context (including `?org=` query param and `/orgs/mine` error-fallback path). Preserves the escape hatch back to personal mode. This branch is required because the bootstrap `useEffect` in EditCard.jsx (lines ~817-823) sets `activeOrgSlug` from `?org=` even when `orgsLoadState === "error"`, making `myOrgs` empty while the user is editing an org card.
+
+### 16.3 Anti-Drift Rules
+
+```txt
+1. Do not simplify to `isAuthenticated && myOrgs.length > 0`.
+   The Boolean(activeOrgSlug) branch is mandatory — removing it breaks the /orgs/mine error-fallback escape hatch.
+2. Do not duplicate this predicate inside Editor.jsx or EditorSidebar.jsx.
+   showContextBar is the single SSoT control point. It is a prop only.
+3. Do not move this visibility behavior into CSS.
+4. If the bootstrap useEffect error-fallback block (EditCard.jsx lines ~817-823) is ever refactored, re-audit this predicate immediately.
+```
+
+### 16.4 Verification
+
+```txt
+frontend check:inline-styles  PASS  EXIT 0
+frontend check:skins           PASS  EXIT 0
+frontend check:contract        PASS  EXIT 0
+frontend build                 PASS  EXIT 0
+manual browser smoke           PASS  no-org user mobile + desktop 2026-05-01
+```
+
+### 16.5 Files Changed
+
+```txt
+frontend/src/pages/EditCard.jsx — showContextBar prop expression (one line)
+```
+
+No backend changes. No CSS changes. No runbook changes.
