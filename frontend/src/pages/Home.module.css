@@ -1092,9 +1092,6 @@
     box-shadow:
         5px 5px 7px rgba(0, 0, 0, 0.35),
         0 0 0 1px rgba(212, 175, 55, 0.15);
-    transition:
-        transform 0.3s ease,
-        box-shadow 0.3s ease;
 }
 
 /* ── 5b. Control benefit cards (image-top, matches insight cards) ── */
