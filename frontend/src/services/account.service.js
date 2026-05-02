@@ -79,6 +79,17 @@ export async function resumeAutoRenewal() {
 }
 
 /**
+ * POST /api/account/delete-payment-method — self-service local payment token clear.
+ * No request body — backend derives user from req.userId (httpOnly cookie auth).
+ * Returns { ok, messageKey, paymentMethod, autoRenewal }.
+ * Fails if STO status is not in the server-side allowlist.
+ */
+export async function deletePaymentMethod() {
+    const res = await api.post("/account/delete-payment-method");
+    return res.data;
+}
+
+/**
  * GET /api/account/receipts — paginated list of issued receipts for the authenticated user.
  * Returns { receipts, hasMore, total }. Only status="created" receipts are returned.
  */

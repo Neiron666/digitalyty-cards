@@ -135,7 +135,9 @@ function buildAutoRenewalDto(user) {
 }
 
 function isPaymentMethodDeleteAllowedStoStatus(stoStatus) {
-    return stoStatus == null || stoStatus === "cancelled" || stoStatus === "failed";
+    return (
+        stoStatus == null || stoStatus === "cancelled" || stoStatus === "failed"
+    );
 }
 
 function buildPaymentMethodDto(user) {
@@ -1413,7 +1415,8 @@ router.post("/delete-payment-method", requireAuth, async (req, res) => {
 
         // E. STO status not safely deletable (runs before token-missing idempotent success)
         const stoStatus = user.tranzilaSto?.status ?? null;
-        const canDeleteForStoStatus = isPaymentMethodDeleteAllowedStoStatus(stoStatus);
+        const canDeleteForStoStatus =
+            isPaymentMethodDeleteAllowedStoStatus(stoStatus);
         if (!canDeleteForStoStatus) {
             return res.status(409).json({
                 ok: false,
