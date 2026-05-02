@@ -3,14 +3,16 @@
 **Scope (current reality):**
 
 - **Cancel-renewal** is available self-service in the product UI (SettingsPanel → billing section) via `POST /api/account/cancel-renewal` (shipped 5.9a.1/5.9a.2).
-- **Resume auto-renewal** is available self-service in the product UI (SettingsPanel → billing section) via `POST /api/account/resume-auto-renewal` (sandbox-proven 2026-05-02). Requires `tranzilaSto.status === "cancelled"` and a valid stored Tranzila token. Token-absent/expired state is support-mediated.
+- **Resume auto-renewal** is available self-service in the product UI (SettingsPanel → billing section) via `POST /api/account/resume-auto-renewal` (sandbox-proven 2026-05-02). Requires `tranzilaSto.status === "cancelled"` and a valid stored Tranzila token. Token-absent/expired state is support-mediated. See `billing-flow-ssot.md §19`.
+- **Delete saved payment method** is available self-service in the product UI (SettingsPanel → billing section → ניהול פרטי תשלום שמורים) via `POST /api/account/delete-payment-method` (manually smoke-verified 2026-05-02). Allowed only when auto-renewal is not active/pending. See `billing-flow-ssot.md §20`.
 - Self‑service also includes:
     1. **Read‑only** subscription status in **Settings → תשלומים**
     2. **Initiate payment** via `POST /api/payments/create` (in dev: mock URL; in prod: Tranzila URL)
-- **Refunds and payment-method changes remain support / admin mediated.**
+- **Refunds remain support / admin mediated.**
+- **Replacing or updating to a different payment card is NOT yet self-service** and remains a future/support-mediated contour. See §4.3.
 
-**Why:** Tranzila (single‑payment) has no Stripe‑like customer portal. Payment-method change and refunds are not exposed in the product UI.
-Self-service cancel-renewal is implemented separately and does not require a Tranzila portal.
+**Why:** Tranzila (single‑payment) has no Stripe‑like customer portal. Refunds and card replacement are not exposed in the product UI.
+Self-service cancel-renewal and delete-payment-method are implemented separately and do not require a Tranzila portal.
 
 ---
 
@@ -27,9 +29,26 @@ Use these texts in the **Settings → תשלומים** block.
     - ניתן לחדש את החידוש האוטומטי בעתיד דרך הגדרות → תשלומים (כל עוד המנוי פעיל ולא פג תוקף)
 - **Cancelled state shown in UI:** החידוש האוטומטי בוטל. הגישה Premium פעילה עד {date}.
 
+### Self-service delete saved payment method UX (SettingsPanel, smoke-verified 2026-05-02)
+
+- **Collapsible section label (visible when a saved token exists):** ניהול פרטי תשלום שמורים
+- **Static explanation inside collapsible:** המנוי יישאר פעיל עד תאריך הסיום. לאחר מחיקת פרטי התשלום לא ניתן יהיה לחדש את המנוי אוטומטית.
+- **Blocked-state note (shown when STO is active/pending):** החידוש האוטומטי פעיל — יש לבטל אותו תחילה לפני מחיקת פרטי התשלום.
+- **Button:** מחק פרטי תשלום (disabled while STO is active/pending)
+- **Modal title:** מחיקת פרטי תשלום שמורים
+- **Modal body explains:**
+    - מחיקה זו לא מבטלת את המנוי הנוכחי.
+    - הגישה Premium תישאר פעילה עד תאריך הסיום.
+    - לאחר המחיקה לא ניתן יהיה לחדש אוטומטית את המנוי.
+    - בתום התקופה יהיה צורך לבצע רכישה חדשה.
+    - לא יתבצע חיוב כעת ולא תישלח קבלה.
+- **Confirm button in modal:** מחק פרטי תשלום
+- **Success message shown after delete:** פרטי התשלום נמחקו. לחידוש המנוי בעתיד יהיה צורך להזין פרטי תשלום מחדש.
+
 ### Static support + limitations
 
-- **שינוי אמצעי תשלום**: פנה לתמיכה: **support@cardigo.co.il**
+- **שינוי/החלפת אמצעי תשלום (Replace card)**: לא זמין כעת בממשק העצמי. פנה לתמיכה: **support@cardigo.co.il**
+- **מחיקת אמצעי תשלום שמור (Delete stored token)**: זמין עצמאית בהגדרות → תשלומים כאשר החידוש האוטומטי אינו פעיל.
 - **היסטוריית תשלומים** זמינה בממשק המוצר: הגדרות → תשלומים → "קבלות" (עד 12 קבלות אחרונות, MVP).
 - **החזרים כספיים** אינם מתבצעים אוטומטית. במידת הצורך - דרך התמיכה בלבד.
 
@@ -39,7 +58,7 @@ Use these texts in the **Settings → תשלומים** block.
 
 ### Optional short disclaimer (if you want one line only)
 
-- לשינוי אמצעי תשלום/החזר - תמיכה בלבד.
+- להחלפת/החזר אמצעי תשלום - תמיכה בלבד. מחיקת אמצעי תשלום שמור זמינה עצמאית.
 
 ---
 
@@ -118,18 +137,19 @@ After the refund is processed:
 
 ### 4.3 “Change payment method”
 
-With Tranzila single‑payment there is no stored payment method to switch.
-The correct support response:
+**Important distinction:** Cardigo stores a Tranzila provider-issued token (not raw PAN/CVV/card numbers). Two separate concepts apply:
 
-- “We don’t store your payment method. To use a different card, start a new payment/renewal when needed.”
+**Delete stored token (self-service):** The user can delete the locally stored Tranzila token via Settings → תשלומים → **ניהול פרטי תשלום שמורים** → **מחק פרטי תשלום**, provided auto-renewal is not active/pending. Deleting the token does NOT cancel the current Premium subscription or create a charge. After deletion, auto-renewal and resume become unavailable.
 
-If the user is mid‑cycle and wants future renewals: self-service resume auto-renewal is available (via **חדש חידוש אוטומטי** button in Settings → תשלומים) provided the subscription is still active and the stored Tranzila token has not expired. If the token is expired or missing, this is a support-mediated path.
+**Replace/update to a different card (NOT self-service):** There is no current self-service path for an active-premium user to replace the stored token with a new card. Active-premium checkout bypass is not supported. The correct support response: "Replacing your payment card while your subscription is active is not yet available as a self-service option. Please contact us at support@cardigo.co.il. After your current subscription expires, you can subscribe again with a new card via the normal checkout."
+
+If the user is mid-cycle and wants future renewals with the existing token: self-service resume auto-renewal is available (via **חדש חידוש אוטומטי** button in Settings → תשלומים) provided the subscription is still active and the stored Tranzila token has not been deleted and has not expired. If the token is expired, missing, or was deleted, this is a support-mediated path requiring the user to subscribe again after expiry.
 
 ---
 
 ## 5) Security & Compliance Notes
 
-- **No PCI scope** in Cardigo: we never store payment credentials.
+- **PCI scope:** Cardigo does not store raw card numbers, CVV, or full PAN. Cardigo stores a Tranzila provider-issued token used for recurring STO scheduling and resume-auto-renewal. This token can be deleted by the user via self-service (see §1). Deletion removes it from Cardigo's database only; provider-side token invalidation is not implemented.
 - Keep logs free of PII beyond what is necessary (email may be required, but do not log passwords/tokens).
 - Maintain anti‑enumeration in public surfaces; support actions are authenticated/admin‑only.
 
@@ -140,7 +160,9 @@ If the user is mid‑cycle and wants future renewals: self-service resume auto-r
 - **Receipt history (היסטוריית תשלומים) is now available in the product UI** (Settings → Section 3: תשלומים → "קבלות" accordion, shipped 2026-04-24). MVP scope: up to 12 latest receipts with PDF download via secure backend proxy route. `failed`/`skipped` receipts are not user-facing in MVP. Evidence: `docs/handoffs/current/Cardigo_Enterprise_Handoff_ReceiptCabinet_Frontend_2026-04-24.md`.
 - **Self-service cancel-renewal is available in the product UI** (SettingsPanel billing section, shipped 5.9a.2). User path: product UI button → `POST /api/account/cancel-renewal` → provider-first cancel via `cancelTranzilaStoForUser`.
 - **Self-service resume auto-renewal is available in the product UI** (SettingsPanel billing section, sandbox-proven 2026-05-02). User path: **חדש חידוש אוטומטי** button (shown only when `autoRenewal.status === "cancelled"` AND subscription still active AND `expiresAt` not yet passed AND provider is Tranzila AND plan is monthly/yearly) → `POST /api/account/resume-auto-renewal` → `createTranzilaStoForUser` with `allowRecreateAfterCancel:true`. Requires a valid stored Tranzila token. Token-absent/expired state is support-mediated. See `billing-flow-ssot.md §19`.
-- Self-service **refunds** and **payment-method changes** remain support-mediated.
+- **Self-service delete saved payment method is implemented** (smoke-verified 2026-05-02). Allowed when auto-renewal is not active/pending. See `billing-flow-ssot.md §20` and §1 of this runbook.
+- Self-service **refunds** remain support-mediated.
+- **Payment-method replacement/update (replacing the stored card with a different card)** is NOT implemented and remains a deferred contour. Not a self-service path.
 - `sto-cancel.mjs` remains the **operator/admin** script path. It is not the user path.
 - Non-atomic User + Card billing updates (crash between saves can leave inconsistency; reconciliation job planned, not yet implemented).
 - Tranzila retry behavior (how many retries, intervals) is not confirmed; idempotency window and reconciliation timing are therefore not fully specified.
@@ -151,7 +173,7 @@ If the user is mid‑cycle and wants future renewals: self-service resume auto-r
 
 PaymentTransaction ledger (providerTxnId, idempotency via E11000 unique index, PayloadAllowlist) exists and is used by both `handleNotify` and `handleStoNotify`. The upgrade items still pending:
 
-1. ~~**Self-service portal**~~ — **RESOLVED (5.9a.1/5.9a.2, 2026-04-22):** User self-service cancel-renewal shipped in SettingsPanel billing section. Payment-method change and refunds remain support-mediated.
+1. ~~**Self-service portal**~~ — **RESOLVED (5.9a.1/5.9a.2 + 2026-05-02):** User self-service cancel-renewal shipped. Resume auto-renewal sandbox-proven. Delete saved payment method smoke-verified. Payment-method replacement (updating to a new card) and refunds remain support-mediated.
 2. ~~**Receipt / YeshInvoice**~~ — **IMPLEMENTED AND SANDBOX-PROVEN (2026-04-24).** `yeshinvoice.service.js`, `Receipt.model.js`, and fire-and-forget hooks in `tranzila.provider.js` are live in the codebase. Sandbox receipt creation, share/email, and `Receipt.shareStatus` update all proved. `YESH_INVOICE_ENABLED=true` is active in the local sandbox env. Production Render deployment requires G6 (production terminal cutover) and G7 (production recurring lifecycle proof) before `YESH_INVOICE_ENABLED=true` is set there. See `billing-flow-ssot.md §9` and `§16`.
 3. ~~**STO failed-state retry/recovery**~~ — **RESOLVED (5.12.H).** `backend/scripts/sto-retry-failed.mjs` exists — dry-run default, single-target (`--email`/`--user-id`), production-terminal block (`/^fxp/i` requires `--allow-prod`).
 4. **Non-atomic User + Card updates** — reconciliation job planned but not implemented.

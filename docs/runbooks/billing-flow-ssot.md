@@ -320,6 +320,23 @@ Precedence (highest → lowest):
 > ```
 >
 > Derived by `buildAutoRenewalDto()` in `backend/src/routes/account.routes.js`. Does not expose `stoId`, `tranzilaToken`, or any raw provider response.
+>
+> **`paymentMethod` DTO shape** (frontend-safe, no raw provider fields):
+>
+> ```
+> paymentMethod: {
+>   saved: boolean,
+>   expired: boolean,
+>   canDelete: boolean
+> }
+> ```
+>
+> Derived by `buildPaymentMethodDto()` in `backend/src/routes/account.routes.js`.
+>
+> - `saved` — `true` if a local Tranzila provider token is present in the user record. Boolean presence only; raw token is never returned.
+> - `expired` — server-computed boolean from stored token metadata (`expMonth`/`expYear`). Never exposes raw expiry fields.
+> - `canDelete` — `true` when `saved === true` AND the STO status is in the allowed-for-delete set (see §20). `canDelete` does **not** depend on `expired`; an expired token may still be deleted if STO state allows.
+> - Raw `tranzilaToken`, `tranzilaTokenMeta`, `stoId`, and any other provider identifiers are **never** returned in this DTO.
 
 ### Reconciliation
 
@@ -599,6 +616,8 @@ POST /api/account/cancel-renewal
 
 ### Response DTO
 
+Success and idempotent-success paths (`messageKey: "cancelled"` and `messageKey: "already_cancelled"` and `messageKey: "no_active_renewal"`) include both `autoRenewal` and `paymentMethod`:
+
 ```json
 {
     "ok": true,
@@ -609,11 +628,20 @@ POST /api/account/cancel-renewal
         "cancelledAtPresent": true,
         "subscriptionExpiresAt": "<ISO>"
     },
+    "paymentMethod": {
+        "saved": true,
+        "expired": false,
+        "canDelete": true
+    },
     "messageKey": "cancelled"
 }
 ```
 
 `messageKey` values: `already_cancelled` | `no_active_renewal` | `cancel_unavailable` | `cancelled` | `cancel_failed`
+
+> **State-sync note:** After a successful cancel, the STO status transitions to `"cancelled"`, which makes `canDelete` eligible to become `true` (subject to token presence). The frontend merges the returned `paymentMethod` directly into its account state, so the delete payment method button may become enabled immediately without a reload.
+>
+> **Token preserved on cancel:** Cancel-renewal does NOT delete the stored Tranzila token. `paymentMethod.saved` remains `true` after cancellation. The token is only removed by a separate `POST /api/account/delete-payment-method` call (see §20).
 
 ### Provider-First Architecture
 
@@ -918,18 +946,28 @@ POST /api/account/resume-auto-renewal
         "canCancel": true,
         "cancelledAtPresent": false,
         "subscriptionExpiresAt": "<ISO>"
+    },
+    "paymentMethod": {
+        "saved": true,
+        "expired": false,
+        "canDelete": false
     }
 }
 ```
 
 `messageKey` values on error: `resume_unavailable` (503) | `account_not_found` | `subscription_not_active` | `subscription_expired` | `wrong_provider` | `unsupported_plan` | `already_active` | `renewal_in_progress` | `renewal_not_cancelled` | `token_missing` | `token_expired` | `resume_failed` | `resume_renewal_rate_limited` (429)
 
+> **State-sync note:** After a successful resume, the STO status transitions to `"created"`, which makes `canDelete` become `false`. The frontend merges the returned `paymentMethod` directly into its account state, so the delete payment method button becomes disabled immediately without a reload.
+
 ### UI (SettingsPanel)
 
 - **חדש חידוש אוטומטי** button shown when `canResumeAutoRenewal === true`.
-- `canResumeAutoRenewal` conditions (IIFE in SettingsPanel): `renewalStatus === "cancelled"` AND `provider === "tranzila"` AND `subStatus === "active"` AND `Boolean(expiresAt)` AND `!isExpired` AND (`acPlan === "monthly"` OR `"yearly"`).
+- `canResumeAutoRenewal` conditions (IIFE in SettingsPanel): `renewalStatus === "cancelled"` AND `provider === "tranzila"` AND `subStatus === "active"` AND `Boolean(expiresAt)` AND `!isExpired` AND (`acPlan === "monthly"` OR `"yearly"`) AND `account?.paymentMethod?.saved !== false`.
 - Hebrew error mapping for all real messageKeys implemented in `handleResumeRenewal()`.
 - On success: UI reflects updated `autoRenewal.status === "active"`.
+- **`paymentMethod.saved !== false` guard:** If the user has previously deleted their stored payment method, `canResumeAutoRenewal` evaluates to `false` and the resume button is hidden. Attempting resume when the token is absent returns `token_missing` from the backend.
+
+> **Token-missing / post-delete recovery:** If the stored Tranzila token was deleted via `POST /api/account/delete-payment-method`, resume is permanently blocked (`token_missing`) until a new token is established. The recovery path is NOT self-service resume — it is a future update-card contour (deferred; not currently implemented) or a normal new checkout after the subscription expires. See §20.
 
 ### No YeshInvoice/Receipt Contact
 
@@ -961,3 +999,176 @@ This section closes sandbox documentation readiness only. Resume auto-renewal in
 - Full production E2E smoke on production terminal.
 
 **Cross-reference:** `docs/handoffs/current/Cardigo_Enterprise_Handoff_ResumeAutoRenewal_2026-05-02.md`
+
+---
+
+## 20) User Self-Service Delete Saved Payment Method — Manually Smoke-Verified (2026-05-02)
+
+**Status: IMPLEMENTED + MANUALLY SMOKE-VERIFIED. Production rollout: NOT STARTED (production terminal cutover pending).**
+
+### Overview
+
+Allows an authenticated user to delete the Tranzila provider-issued token stored locally in Cardigo. This is a local DB clear only — no provider API call is made, no STO is cancelled, no charge occurs, no receipt is created, and no YeshInvoice or Mailjet contact occurs.
+
+This endpoint is blocked while the STO is active or pending. The user must cancel auto-renewal first (via `POST /api/account/cancel-renewal`) before the delete operation becomes available.
+
+### Endpoint
+
+```
+POST /api/account/delete-payment-method
+```
+
+- `requireAuth` — user derived from `req.userId` (httpOnly cookie auth only).
+- No request body accepted.
+- Rate limit: **5 attempts / 24 hours per authenticated user** (`DELETE_PAYMENT_METHOD_LIMIT=5`, `DELETE_PAYMENT_METHOD_WINDOW_MS=86400000` — keyed by `userId` in-memory map).
+- In-flight guard: `deletePaymentMethodInFlight` Set prevents concurrent double-execution per userId.
+
+### STO Status Allowlist
+
+`isPaymentMethodDeleteAllowedStoStatus()` (in `backend/src/routes/account.routes.js:L137`) enforces:
+
+| `tranzilaSto.status` | Delete allowed?      |
+| -------------------- | -------------------- |
+| `null` / absent      | Yes                  |
+| `"cancelled"`        | Yes                  |
+| `"failed"`           | Yes                  |
+| `"created"`          | **No**               |
+| `"pending"`          | **No**               |
+| Any unknown value    | **No** (fail-closed) |
+
+The delete is fail-closed: any unrecognised status value is treated as blocked.
+
+### Mutation (local DB only)
+
+On success, the following fields are cleared via `User.updateOne` with the STO allowlist as an explicit filter:
+
+- `tranzilaToken = null`
+- `tranzilaTokenMeta.expMonth = null`
+- `tranzilaTokenMeta.expYear = null`
+
+No other fields are modified. Specifically:
+
+- `subscription.expiresAt` is **not changed** — Premium access remains until the paid-until date.
+- `Card.billing.paidUntil` is **not changed**.
+- `tranzilaSto` (including `status`, `stoId`, `cancelledAt`) is **not changed**.
+- `renewalFailedAt` is **not changed**.
+- `PaymentTransaction` and `Receipt` records are **not affected**.
+- No provider API call is made (no Tranzila, no YeshInvoice, no Mailjet).
+
+### Idempotency
+
+If the token is already `null` when the endpoint is called, it returns HTTP 200 with `messageKey: "payment_method_already_deleted"` and current-state DTOs. No error, no mutation.
+
+### Response
+
+All success and expected-failure paths return `paymentMethod` and `autoRenewal` safe DTOs. Raw token, expiry fields, stoId, and provider identifiers are never returned.
+
+```json
+{
+    "ok": true,
+    "messageKey": "payment_method_deleted",
+    "paymentMethod": {
+        "saved": false,
+        "expired": false,
+        "canDelete": false
+    },
+    "autoRenewal": {
+        "status": "cancelled",
+        "canCancel": false,
+        "cancelledAtPresent": true,
+        "subscriptionExpiresAt": "<ISO>"
+    }
+}
+```
+
+`messageKey` values:
+
+| `messageKey`                         | HTTP | Meaning                                               |
+| ------------------------------------ | ---- | ----------------------------------------------------- |
+| `payment_method_deleted`             | 200  | Token cleared successfully                            |
+| `payment_method_already_deleted`     | 200  | Token was already null — idempotent success           |
+| `payment_method_sto_not_deletable`   | 409  | STO status blocks delete (`"created"` or `"pending"`) |
+| `payment_method_delete_rate_limited` | 429  | Rate limit exceeded (5/24h)                           |
+| `payment_method_in_flight`           | 409  | Concurrent call already in progress for this userId   |
+| `payment_method_delete_failed`       | 500  | Unexpected error or unresolvable DB state             |
+| `account_not_found`                  | 404  | Authenticated user not found in DB                    |
+
+### Effect on autoRenewal and Resume
+
+After the token is deleted:
+
+- `paymentMethod.saved` becomes `false`.
+- `canResumeAutoRenewal` becomes `false` in the frontend (the `saved !== false` guard is checked before the resume button is shown).
+- Any backend call to `POST /api/account/resume-auto-renewal` will return `token_missing`.
+- **Recovery is not resume.** The only paths to re-establish a token are: (a) a future update-card contour (not yet implemented), or (b) a normal new checkout after the current subscription expires. Active-premium checkout bypass is not supported.
+
+### UI (SettingsPanel)
+
+- Outer gate: `account?.paymentMethod?.saved === true` — the entire section is hidden once `saved` becomes `false`.
+- Collapsible `<details>` element with CSS class `collapsibleDanger`.
+- Summary label (always shown when section is visible): **ניהול פרטי תשלום שמורים**
+- Static explanation inside: "המנוי יישאר פעיל עד תאריך הסיום. לאחר מחיקת פרטי התשלום לא ניתן יהיה לחדש את המנוי אוטומטית."
+- Blocked-state note (shown when `canDelete !== true`): "החידוש האוטומטי פעיל — יש לבטל אותו תחילה לפני מחיקת פרטי התשלום."
+- Delete button label: **מחק פרטי תשלום** — disabled when `deletePaymentMethodBusy || canDelete !== true`.
+- On click (when `canDelete === true`): opens `DeletePaymentMethodModal` for confirmation.
+- Success message (shown outside the collapsible gate, persists after section disappears): "פרטי התשלום נמחקו. לחידוש המנוי בעתיד יהיה צורך להזין פרטי תשלום מחדש."
+- Support note below the section: "שינוי אמצעי תשלום? פנה לתמיכה: support@cardigo.co.il"
+
+### Confirmation Modal (DeletePaymentMethodModal)
+
+- Title: **מחיקת פרטי תשלום שמורים**
+- Body lines (exact):
+    1. מחיקה זו לא מבטלת את המנוי הנוכחי.
+    2. הגישה Premium תישאר פעילה עד תאריך הסיום.
+    3. לאחר המחיקה לא ניתן יהיה לחדש אוטומטית את המנוי.
+    4. בתום התקופה יהיה צורך לבצע רכישה חדשה.
+    5. לא יתבצע חיוב כעת ולא תישלח קבלה.
+- Confirm button: **מחק פרטי תשלום**
+- Cancel button: **חזרה**
+- ARIA role: `alertdialog`, RTL, Escape guard, backdrop click guard.
+
+### Security / Privacy
+
+- Cardigo stores a Tranzila provider-issued token, not raw PAN/CVV or raw card numbers.
+- This endpoint removes that local stored token from Cardigo's database only.
+- Provider-side token invalidation is **not** performed by this endpoint; whether the token remains usable at the Tranzila provider level after local deletion is a deferred open question.
+- No raw token, raw stoId, raw expiry fields, or raw card data are logged or returned.
+
+### Manual Smoke Results (2026-05-02)
+
+| Check                                                                        | Result |
+| ---------------------------------------------------------------------------- | ------ |
+| With active STO: delete section visible, button disabled, note shown         | ✅     |
+| After cancel-renewal: `canDelete` becomes `true` without reload              | ✅     |
+| Delete modal opens; confirmation required                                    | ✅     |
+| After delete: `paymentMethod.saved=false`, section disappears                | ✅     |
+| Resume button disappears after delete (`saved !== false` guard)              | ✅     |
+| Premium subscription remains active until `expiresAt` after delete           | ✅     |
+| After resume: `canDelete` becomes `false` without reload                     | ✅     |
+| Self-delete with active STO: STO cancelled provider-first before user delete | ✅     |
+
+**Redacted evidence note:** Raw stoId, TranzilaTK, providerTxnId, and email are not documented here per doc hygiene policy. Booleans only.
+
+### Explicit Non-Actions
+
+The following do NOT happen when `POST /api/account/delete-payment-method` is called:
+
+- No Tranzila API call.
+- No STO cancellation.
+- No `PaymentTransaction` created.
+- No `Receipt` created.
+- No YeshInvoice contact.
+- No Mailjet email sent.
+- No refund issued.
+- No subscription downgrade.
+- No `subscription.expiresAt` change.
+- No `Card.billing.paidUntil` change.
+- No `renewalFailedAt` change.
+
+### Future / Deferred
+
+- **Update/replace payment method:** Replacing the stored token with a new card is not implemented. No self-service path exists for active-premium users to replace their payment method. After the current subscription expires, a normal checkout flow may be used to subscribe with a new card.
+- **Provider-side token invalidation:** Whether the deleted local token can be invalidated at the Tranzila provider level requires Tranzila API capability confirmation. Not implemented.
+- **Admin revoke token cleanup:** If admin subscription revoke should also clear the local token, this requires a separate contour decision and implementation.
+
+**Cross-reference:** `docs/handoffs/current/Cardigo_Enterprise_Handoff_DeletePaymentMethod_2026-05-02.md`
