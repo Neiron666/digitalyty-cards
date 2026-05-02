@@ -362,6 +362,27 @@ Receipt behavior:
 - Receipt failure must not roll back subscription/card renewal.
 - Duplicate receipt is guarded via idempotency/unique relations.
 
+**Phase 2A/P3A closure (2026-05-02) — YeshInvoice shareDocument ReturnValue contract fix:**
+
+`shareStatus="sent"` is set only when the provider response satisfies both `Success === true` AND `ReturnValue === true`. `Success: true` alone is not sufficient — for `shareDocument`, `ReturnValue` is a **boolean** (`true` = email dispatched), not an object. `createDocument` `ReturnValue` is an object `{ id, docNumber, pdfurl, url }` — do not conflate these two shapes.
+
+Fixed failure paths (Phase 2A):
+- `share_document_not_sent` — `Success: true` but `ReturnValue !== true` → `Receipt.shareStatus = "failed"`.
+- `missing_provider_doc_id` — `providerDocId` absent before API call → `Receipt.shareStatus = "failed"`.
+- `shareDocument` request body is `{ id, SendEmail, SendSMS }` only — undocumented `email` field removed.
+- Operator log anchors (Render warn events): `receipt_share_failed` (any `ok: false` from share), `receipt_share_exception` (unexpected throw in share IIFE). Both contain only non-sensitive boolean presence fields.
+
+Controlled smoke (2026-05-02, `neiron.player@gmail.com`): `PaymentTransaction.status=paid`, `Receipt` created, `Receipt.shareStatus=sent`, `Receipt.shareFailReason=null`, `recipientEmailMatchesTarget=true`, receipt email arrived automatically, STO created.
+
+`support@cardigo.co.il` routing audit (2026-05-02): no code fallback or hardcode found in any payment/receipt/YeshInvoice path. The one `Receipt` row where `recipientSnapshot.email=support@cardigo.co.il` had `recipientSource=paymentIntent` — that user's own checkout snapshot email was `support@cardigo.co.il`. No bug.
+
+Remaining deferred tails (out of scope for this contour):
+- Sandbox STO schedule cleanup (`dannybestboy@gmail.com`, `testcardstok`) before production cutover — operator to cancel manually.
+- Receipt retry job — separate future contour.
+- YeshInvoice portal "email sent" indicator is not reliable as sole evidence for API `shareDocument`; `Receipt.shareStatus=sent` (after `ReturnValue: true` check) plus inbox arrival are the stronger proofs.
+
+Canonical reference: `docs/runbooks/billing-flow-ssot.md §9` (updated), `docs/handoffs/current/Cardigo_Enterprise_Handoff_YeshInvoice_Receipt_Sandbox_Proof_2026-04-24.md §9` (addendum).
+
 For latest STO recurring proof:
 
 ```txt

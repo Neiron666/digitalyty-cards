@@ -65,6 +65,11 @@ const RESUME_RENEWAL_LIMIT = 2;
 const resumeRenewalRateMap = new Map();
 const resumeRenewalInFlight = new Set();
 
+const DELETE_PAYMENT_METHOD_WINDOW_MS = 24 * 60 * 60 * 1000;
+const DELETE_PAYMENT_METHOD_LIMIT = 5;
+const deletePaymentMethodRateMap = new Map();
+const deletePaymentMethodInFlight = new Set();
+
 const RECEIPTS_LIST_WINDOW_MS = 10 * 60 * 1000;
 const RECEIPTS_LIST_LIMIT = 30;
 const receiptsListRateMap = new Map();
@@ -126,6 +131,40 @@ function buildAutoRenewalDto(user) {
         subscriptionExpiresAt: user?.subscription?.expiresAt ?? null,
         // [5.10a.3.1] Renewal failure signal. ISO timestamp or null. Never boolean.
         renewalFailedAt: user?.renewalFailedAt ?? null,
+    };
+}
+
+function isPaymentMethodDeleteAllowedStoStatus(stoStatus) {
+    return stoStatus == null || stoStatus === "cancelled" || stoStatus === "failed";
+}
+
+function buildPaymentMethodDto(user) {
+    const hasToken = Boolean(user?.tranzilaToken);
+    let expired = false;
+    if (hasToken) {
+        const meta = user?.tranzilaTokenMeta;
+        if (
+            meta &&
+            Number.isInteger(meta.expYear) &&
+            meta.expYear >= 2020 &&
+            meta.expYear <= 2099 &&
+            Number.isInteger(meta.expMonth) &&
+            meta.expMonth >= 1 &&
+            meta.expMonth <= 12
+        ) {
+            const now = new Date();
+            const cy = now.getFullYear();
+            const cm = now.getMonth() + 1;
+            expired =
+                meta.expYear < cy ||
+                (meta.expYear === cy && meta.expMonth < cm);
+        }
+    }
+    const stoStatus = user?.tranzilaSto?.status ?? null;
+    return {
+        saved: hasToken,
+        expired: hasToken ? expired : false,
+        canDelete: hasToken && isPaymentMethodDeleteAllowedStoStatus(stoStatus),
     };
 }
 
@@ -193,6 +232,7 @@ function rateLimitByIpForMap(req, map, limit, windowMs) {
         sweepRateMap(receiptsListRateMap, now);
         sweepRateMap(receiptsDownloadRateMap, now);
         sweepRateMap(receiptProfileRateMap, now);
+        sweepRateMap(deletePaymentMethodRateMap, now);
     }
 
     const entry = map.get(ip);
@@ -216,7 +256,7 @@ router.get("/me", requireAuth, async (req, res) => {
 
         const user = await User.findById(userId)
             .select(
-                "firstName email role plan subscription createdAt emailMarketingConsent emailMarketingConsentAt emailMarketingConsentVersion emailMarketingConsentSource tranzilaSto.status tranzilaSto.stoId tranzilaSto.cancelledAt renewalFailedAt receiptProfile",
+                "firstName email role plan subscription createdAt emailMarketingConsent emailMarketingConsentAt emailMarketingConsentVersion emailMarketingConsentSource tranzilaSto.status tranzilaSto.stoId tranzilaSto.cancelledAt renewalFailedAt receiptProfile tranzilaToken tranzilaTokenMeta",
             )
             .lean();
 
@@ -284,6 +324,7 @@ router.get("/me", requireAuth, async (req, res) => {
                 user.emailMarketingConsentSource || null,
             autoRenewal: buildAutoRenewalDto(user),
             receiptProfile: buildReceiptProfileDto(user),
+            paymentMethod: buildPaymentMethodDto(user),
         });
     } catch (err) {
         console.error("[account] GET /me failed", err?.message || err);
@@ -1316,6 +1357,167 @@ router.post("/resume-auto-renewal", requireAuth, async (req, res) => {
             ok: false,
             messageKey: "resume_failed",
         });
+    }
+});
+
+/**
+ * POST /api/account/delete-payment-method
+ * Self-service: clear the local Tranzila payment token only when no active STO exists.
+ * Fail-closed by STO status allowlist. No provider API call. Local DB clear only.
+ */
+router.post("/delete-payment-method", requireAuth, async (req, res) => {
+    const userId = req.userId;
+
+    // A. Rate limit (userId-keyed)
+    const now = Date.now();
+    const rlEntry = deletePaymentMethodRateMap.get(userId);
+    if (rlEntry && rlEntry.resetAt > now) {
+        rlEntry.count += 1;
+        if (rlEntry.count > DELETE_PAYMENT_METHOD_LIMIT) {
+            return res.status(429).json({
+                ok: false,
+                messageKey: "payment_method_delete_rate_limited",
+            });
+        }
+    } else {
+        deletePaymentMethodRateMap.set(userId, {
+            count: 1,
+            resetAt: now + DELETE_PAYMENT_METHOD_WINDOW_MS,
+        });
+    }
+
+    // B. In-flight guard
+    if (deletePaymentMethodInFlight.has(userId)) {
+        return res.status(409).json({
+            ok: false,
+            messageKey: "payment_method_in_flight",
+        });
+    }
+    deletePaymentMethodInFlight.add(userId);
+
+    try {
+        // C. Load user
+        const user = await User.findById(userId)
+            .select(
+                "tranzilaSto.status tranzilaSto.stoId tranzilaSto.cancelledAt subscription renewalFailedAt tranzilaToken tranzilaTokenMeta",
+            )
+            .lean();
+
+        // D. User not found
+        if (!user) {
+            return res.status(404).json({
+                ok: false,
+                messageKey: "account_not_found",
+            });
+        }
+
+        // E. STO status not safely deletable (runs before token-missing idempotent success)
+        const stoStatus = user.tranzilaSto?.status ?? null;
+        const canDeleteForStoStatus = isPaymentMethodDeleteAllowedStoStatus(stoStatus);
+        if (!canDeleteForStoStatus) {
+            return res.status(409).json({
+                ok: false,
+                messageKey: "payment_method_sto_not_deletable",
+                paymentMethod: buildPaymentMethodDto(user),
+                autoRenewal: buildAutoRenewalDto(user),
+            });
+        }
+
+        // F. Token already missing — idempotent success
+        if (!user.tranzilaToken) {
+            return res.status(200).json({
+                ok: true,
+                messageKey: "payment_method_already_deleted",
+                paymentMethod: buildPaymentMethodDto(user),
+                autoRenewal: buildAutoRenewalDto(user),
+            });
+        }
+
+        // G. Atomic local token clear with explicit allowed-status filter
+        const updateResult = await User.updateOne(
+            {
+                _id: user._id,
+                $or: [
+                    { "tranzilaSto.status": { $exists: false } },
+                    { "tranzilaSto.status": null },
+                    { "tranzilaSto.status": { $in: ["cancelled", "failed"] } },
+                ],
+            },
+            {
+                $set: {
+                    tranzilaToken: null,
+                    "tranzilaTokenMeta.expMonth": null,
+                    "tranzilaTokenMeta.expYear": null,
+                },
+            },
+        );
+
+        // H. Reload fresh state
+        const refreshed = await User.findById(userId)
+            .select(
+                "tranzilaSto.status tranzilaSto.stoId tranzilaSto.cancelledAt subscription renewalFailedAt tranzilaToken tranzilaTokenMeta",
+            )
+            .lean();
+
+        if (updateResult.modifiedCount === 1) {
+            console.log("[account] payment_method_deleted_self_service", {
+                event: "payment_method_deleted_self_service",
+                userId: String(user._id),
+                hadToken: true,
+                stoStatusAtDelete: stoStatus ?? null,
+                subscriptionStatus: user.subscription?.status ?? null,
+            });
+            return res.status(200).json({
+                ok: true,
+                messageKey: "payment_method_deleted",
+                paymentMethod: buildPaymentMethodDto(refreshed),
+                autoRenewal: buildAutoRenewalDto(refreshed),
+            });
+        }
+
+        // I. modifiedCount === 0 — classify actual state
+        if (!refreshed) {
+            return res.status(500).json({
+                ok: false,
+                messageKey: "payment_method_delete_failed",
+            });
+        }
+
+        if (!refreshed.tranzilaToken) {
+            return res.status(200).json({
+                ok: true,
+                messageKey: "payment_method_already_deleted",
+                paymentMethod: buildPaymentMethodDto(refreshed),
+                autoRenewal: buildAutoRenewalDto(refreshed),
+            });
+        }
+
+        const refreshedStoStatus = refreshed.tranzilaSto?.status ?? null;
+        if (!isPaymentMethodDeleteAllowedStoStatus(refreshedStoStatus)) {
+            return res.status(409).json({
+                ok: false,
+                messageKey: "payment_method_sto_not_deletable",
+                paymentMethod: buildPaymentMethodDto(refreshed),
+                autoRenewal: buildAutoRenewalDto(refreshed),
+            });
+        }
+
+        return res.status(500).json({
+            ok: false,
+            messageKey: "payment_method_delete_failed",
+        });
+    } catch (err) {
+        // J. Catch
+        console.error(
+            "[account] POST /delete-payment-method failed",
+            err?.message || err,
+        );
+        return res.status(500).json({
+            ok: false,
+            messageKey: "payment_method_delete_failed",
+        });
+    } finally {
+        deletePaymentMethodInFlight.delete(userId);
     }
 });
 

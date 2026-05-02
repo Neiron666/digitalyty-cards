@@ -125,7 +125,7 @@ The production terminal vars are commented out in `backend/.env`. Do not uncomme
 | ----------------- | ---------------------------------------------------------------------------------------------------------- |
 | Base URL          | `https://api.yeshinvoice.co.il` (`YESH_INVOICE_API_BASE`)                                                  |
 | Auth header       | `Authorization: JSON.stringify({ secret, userkey })` — literal JSON string                                 |
-| Response envelope | `{ Success: bool, ErrorMessage: string, ReturnValue: { id, docNumber, pdfurl, url } }` — uppercase fields  |
+| Response envelope | `createDocument`: `{ Success: bool, ErrorMessage: string, ReturnValue: { id, docNumber, pdfurl, url } }` — uppercase fields. `shareDocument`: `{ Success: bool, ErrorMessage: string, ReturnValue: bool }` — `ReturnValue: true` = email dispatched. See post-proof addendum §9. |
 | Document type     | 6 (קבלה — for עוסק פטור)                                                                                   |
 | `Success` casing  | **Uppercase `S`** — `raw?.Success` is the correct path; `raw?.success` is `null` (confirmed sandbox proof) |
 
@@ -171,3 +171,44 @@ Scope:
 - Identify any other pre-production gaps before opening the bounded production rollout contour
 
 **Do NOT open the production rollout contour until the pre-production tails audit is complete.**
+
+---
+
+## 9. Post-proof addendum — YeshInvoice shareDocument ReturnValue contract fix
+
+**Date:** 2026-05-02
+**Contour:** YESHINVOICE_SHARE_EMAIL_REGRESSION_DOC_CLOSURE_P2D
+**Phase 2A fix applied:** 2026-05-02
+**Phase 3A verification:** PASS (all gates EXIT:0, 2026-05-02)
+
+### Incident summary
+
+The original `shareReceiptYeshInvoice` implementation checked only `raw.Success === true` before marking a share as successful. The correct YeshInvoice API contract for `shareDocument` requires both `Success: true` AND `ReturnValue: true`. `Success: true` alone means the API request was accepted; `ReturnValue: true` means the email was actually dispatched by the provider. The two fields are not equivalent for the share operation.
+
+This was a documentation/code misunderstanding arising from conflating `createDocument` response semantics (where `ReturnValue` is an object `{ id, docNumber, pdfurl, url }`) with `shareDocument` response semantics (where `ReturnValue` is a boolean).
+
+### Historical clarification for the 2026-04-24 proof
+
+The 2026-04-24 sandbox proof remains **valid and is not invalidated**. The email was delivered and `Receipt.shareStatus` was set to `sent` correctly in that run. The bug did not manifest because `ReturnValue` happened to be `true` in those runs. However, the old code did not verify `ReturnValue` — meaning a future case where `Success: true, ReturnValue: false` would have been silently mis-classified as `sent`. Phase 2A closes this gap.
+
+### Phase 2A fix summary (5 changes, 2 files)
+
+1. `shareReceiptYeshInvoice` now requires `raw.ReturnValue === true` (in addition to `raw.Success === true`) before returning `ok: true`.
+2. `Success: true` with `ReturnValue !== true` returns `{ ok: false, error: "share_document_not_sent" }`.
+3. Missing `providerDocId` returns `{ ok: false, error: "missing_provider_doc_id" }` before the API call is made.
+4. Undocumented `email: customerEmail` field removed from the `shareDocument` request body. Body is now `{ id, SendEmail, SendSMS }` only — matching the documented API contract exactly.
+5. Two safe structured warn-level log events added to `tranzila.provider.js` share IIFEs (both `first_payment` and `sto_recurring` flows): `receipt_share_failed` (share returned `ok: false`) and `receipt_share_exception` (unexpected throw). Both contain only non-sensitive boolean presence fields.
+
+Files changed: `backend/src/services/yeshinvoice.service.js`, `backend/src/services/payment/tranzila.provider.js`. No schema, env, frontend, or payment ACK changes.
+
+### Phase 3A verification summary
+
+All gates passed (EXIT:0, 2026-05-02): import sanity, `sanity:imports` (20 imports, 0 failed), `check:inline-styles`, `check:skins` (28 files), `check:contract` (25 templates), `build` (✓ built). Anti-leak grep confirmed no forbidden fields in share warning blocks. `ReturnValue` check confirmed at exact line. `email: customerEmail` absence confirmed.
+
+### Controlled smoke summary
+
+Controlled end-to-end smoke for `neiron.player@gmail.com` passed (2026-05-02): `PaymentTransaction.status=paid`, `Receipt` created, `Receipt.shareStatus=sent`, `Receipt.shareFailReason=null`, `recipientEmailMatchesTarget=true`, receipt email arrived automatically in the correct inbox, STO created.
+
+### Cross-reference
+
+Canonical corrected API contract: `docs/runbooks/billing-flow-ssot.md §9` — the `yeshinvoice.service.js` implementation bullet now documents `createDocument` and `shareDocument` `ReturnValue` shapes separately with anti-drift wording.
