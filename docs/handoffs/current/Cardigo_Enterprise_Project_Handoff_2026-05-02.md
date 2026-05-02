@@ -178,9 +178,9 @@ Protected invariants:
 
 - Previously Tranzila top-level redirect could stick on `/payment/iframe-return?status=success`.
 - Now top-level fallback works:
-  - `status=success` → `/edit/card/settings`;
-  - `status=fail` → `/pricing?payment=fail`;
-  - unknown status → `/pricing?payment=fail`.
+    - `status=success` → `/edit/card/settings`;
+    - `status=fail` → `/pricing?payment=fail`;
+    - unknown status → `/pricing?payment=fail`.
 - Full sandbox payment redirect after success was verified.
 
 ---
@@ -192,8 +192,8 @@ Protected invariants:
 - Node.js + Express.
 - MongoDB Atlas via Mongoose.
 - Manual index governance:
-  - `MONGOOSE_AUTO_INDEX=false`
-  - `MONGOOSE_AUTO_CREATE=false`
+    - `MONGOOSE_AUTO_INDEX=false`
+    - `MONGOOSE_AUTO_CREATE=false`
 - Indexes via explicit scripts/migrations only.
 
 ### Auth/runtime truth
@@ -232,23 +232,23 @@ Payment/billing is currently one of the most sensitive and mature contours in Ca
 There are separate paths:
 
 1. **First payment notify**
-   - Route: `/api/payments/notify`
-   - Uses `CARDIGO_NOTIFY_TOKEN`
-   - Uses PaymentIntent gate
-   - Uses Handshake V2 / thtk verification
-   - Can create STO if `TRANZILA_STO_CREATE_ENABLED=true`
-   - Can create YeshInvoice receipt
+    - Route: `/api/payments/notify`
+    - Uses `CARDIGO_NOTIFY_TOKEN`
+    - Uses PaymentIntent gate
+    - Uses Handshake V2 / thtk verification
+    - Can create STO if `TRANZILA_STO_CREATE_ENABLED=true`
+    - Can create YeshInvoice receipt
 
 2. **STO recurring notify**
-   - Route: `/api/payments/sto-notify`
-   - Uses `CARDIGO_STO_NOTIFY_TOKEN`
-   - Does **not** use PaymentIntent
-   - Does **not** use Handshake V2
-   - Does **not** use `paymentIntentId`
-   - Uses `sto_external_id` / STO correlation
-   - Creates recurring PaymentTransaction with `idempotencyNote="sto_recurring_notify"`
-   - Extends user subscription and card billing
-   - Creates recurring YeshInvoice receipt
+    - Route: `/api/payments/sto-notify`
+    - Uses `CARDIGO_STO_NOTIFY_TOKEN`
+    - Does **not** use PaymentIntent
+    - Does **not** use Handshake V2
+    - Does **not** use `paymentIntentId`
+    - Uses `sto_external_id` / STO correlation
+    - Creates recurring PaymentTransaction with `idempotencyNote="sto_recurring_notify"`
+    - Extends user subscription and card billing
+    - Creates recurring YeshInvoice receipt
 
 This separation is now proven by real sandbox E2E.
 
@@ -296,10 +296,10 @@ Closed with layered controls:
 - PaymentIntent lifecycle now includes `consuming`.
 - `/notify` is fail-closed when `CARDIGO_NOTIFY_TOKEN` is missing.
 - Startup anti-drift guards require:
-  - `PAYMENT_INTENT_ENABLED=true`
-  - `CARDIGO_NOTIFY_TOKEN`
-  - `TRANZILA_NOTIFY_DELIVERY_MODE=portal`
-  when `PAYMENT_PROVIDER=tranzila`.
+    - `PAYMENT_INTENT_ENABLED=true`
+    - `CARDIGO_NOTIFY_TOKEN`
+    - `TRANZILA_NOTIFY_DELIVERY_MODE=portal`
+      when `PAYMENT_PROVIDER=tranzila`.
 - PaymentIntent indexes verified correct in `cardigo_prod`.
 
 ### Anti-drift note
@@ -328,19 +328,19 @@ Handshake V2 is now implemented and sandbox-proven:
 ### Forgery tests passed
 
 - Forged notify without `thtk` was blocked:
-  - `PaymentTransaction.status=failed`
-  - `failReason=handshake_thtk_missing`
-  - User/Card not activated
+    - `PaymentTransaction.status=failed`
+    - `failReason=handshake_thtk_missing`
+    - User/Card not activated
 - Forged notify with wrong `thtk` was blocked:
-  - `PaymentTransaction.status=failed`
-  - `failReason=handshake_thtk_mismatch`
-  - User/Card not activated
+    - `PaymentTransaction.status=failed`
+    - `failReason=handshake_thtk_mismatch`
+    - User/Card not activated
 - Real sandbox first payment with Handshake passed:
-  - `PaymentTransaction.status=paid`
-  - `PaymentIntent.status=completed`
-  - `User.subscription.status=active`
-  - `Card.billing.status=active`
-  - YeshInvoice sandbox receipt created/sent
+    - `PaymentTransaction.status=paid`
+    - `PaymentIntent.status=completed`
+    - `User.subscription.status=active`
+    - `Card.billing.status=active`
+    - YeshInvoice sandbox receipt created/sent
 
 ### No-secret rule
 
@@ -367,6 +367,7 @@ Receipt behavior:
 `shareStatus="sent"` is set only when the provider response satisfies both `Success === true` AND `ReturnValue === true`. `Success: true` alone is not sufficient — for `shareDocument`, `ReturnValue` is a **boolean** (`true` = email dispatched), not an object. `createDocument` `ReturnValue` is an object `{ id, docNumber, pdfurl, url }` — do not conflate these two shapes.
 
 Fixed failure paths (Phase 2A):
+
 - `share_document_not_sent` — `Success: true` but `ReturnValue !== true` → `Receipt.shareStatus = "failed"`.
 - `missing_provider_doc_id` — `providerDocId` absent before API call → `Receipt.shareStatus = "failed"`.
 - `shareDocument` request body is `{ id, SendEmail, SendSMS }` only — undocumented `email` field removed.
@@ -377,6 +378,7 @@ Controlled smoke (2026-05-02, `neiron.player@gmail.com`): `PaymentTransaction.st
 `support@cardigo.co.il` routing audit (2026-05-02): no code fallback or hardcode found in any payment/receipt/YeshInvoice path. The one `Receipt` row where `recipientSnapshot.email=support@cardigo.co.il` had `recipientSource=paymentIntent` — that user's own checkout snapshot email was `support@cardigo.co.il`. No bug.
 
 Remaining deferred tails (out of scope for this contour):
+
 - Sandbox STO schedule cleanup (`dannybestboy@gmail.com`, `testcardstok`) before production cutover — operator to cancel manually.
 - Receipt retry job — separate future contour.
 - YeshInvoice portal "email sent" indicator is not reliable as sole evidence for API `shareDocument`; `Receipt.shareStatus=sent` (after `ReturnValue: true` check) plus inbox arrival are the stronger proofs.
@@ -668,12 +670,12 @@ Allowed:
 - env var names;
 - placeholders like `?snk=<CARDIGO_STO_NOTIFY_TOKEN>`;
 - boolean proof values:
-  - `stoIdPresent=true`
-  - `providerTxnIdPresent=true`
-  - `providerTxnIdLooksSto=true`
-  - `paymentIntentIdPresent=false`
-  - `thtkHashPresent=true`
-  - `payloadAllowlistedForbiddenKeysPresent=[]`
+    - `stoIdPresent=true`
+    - `providerTxnIdPresent=true`
+    - `providerTxnIdLooksSto=true`
+    - `paymentIntentIdPresent=false`
+    - `thtkHashPresent=true`
+    - `payloadAllowlistedForbiddenKeysPresent=[]`
 
 ---
 
@@ -711,34 +713,34 @@ The completed billing proof is closed. Do not mix the next workstream into it.
 Possible next bounded workstreams:
 
 1. **Operator cleanup / sandbox STO cancellation**
-   - User said he will handle manually.
-   - If reopened, must start with audit.
+    - User said he will handle manually.
+    - If reopened, must start with audit.
 
 2. **Production terminal cutover / G6**
-   - Separate contour.
-   - Requires production Tranzila terminals, production notify URLs, Handshake settings, STO notify URL, env parity, smoke plan, rollback plan.
-   - Must not carry sandbox `testcards/testcardstok` into production.
+    - Separate contour.
+    - Requires production Tranzila terminals, production notify URLs, Handshake settings, STO notify URL, env parity, smoke plan, rollback plan.
+    - Must not carry sandbox `testcards/testcardstok` into production.
 
 3. **G7 production recurring lifecycle proof**
-   - Separate contour after production cutover.
-   - Must be carefully planned; may involve low-risk production transaction strategy.
+    - Separate contour after production cutover.
+    - Must be carefully planned; may involve low-risk production transaction strategy.
 
 4. **PRICES_AGOROT production readiness**
-   - Separate pre-production contour.
-   - Only after sandbox schedules/test artifacts are cleaned.
+    - Separate pre-production contour.
+    - Only after sandbox schedules/test artifacts are cleaned.
 
 5. **Admin platform user deletion / billing lifecycle audit**
-   - Large audit needed.
-   - Key concern: deleting a user must cancel/detach provider-side STO and handle all owned data/fiscal retention properly.
+    - Large audit needed.
+    - Key concern: deleting a user must cancel/detach provider-side STO and handle all owned data/fiscal retention properly.
 
 6. **Auth/registration/token/error handling hardening**
-   - Continue improving invalid-token and invalid-input paths.
+    - Continue improving invalid-token and invalid-input paths.
 
 7. **Monitoring / CI/CD / production readiness**
-   - Sentry/cron monitoring, alerts, CI gates, smoke scripts.
+    - Sentry/cron monitoring, alerts, CI gates, smoke scripts.
 
 8. **Security/performance/stress testing**
-   - After production readiness baseline.
+    - After production readiness baseline.
 
 ---
 
@@ -951,4 +953,3 @@ Before giving any Copilot prompt:
 8. Update docs/handoff if truth changed.
 
 The correct default posture is conservative, proof-driven and security-first.
-

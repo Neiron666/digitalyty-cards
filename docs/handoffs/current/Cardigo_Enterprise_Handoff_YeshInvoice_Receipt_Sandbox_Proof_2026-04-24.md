@@ -121,13 +121,13 @@ The production terminal vars are commented out in `backend/.env`. Do not uncomme
 
 ## 5. YeshInvoice API Contract (Confirmed)
 
-| Field             | Value                                                                                                      |
-| ----------------- | ---------------------------------------------------------------------------------------------------------- |
-| Base URL          | `https://api.yeshinvoice.co.il` (`YESH_INVOICE_API_BASE`)                                                  |
-| Auth header       | `Authorization: JSON.stringify({ secret, userkey })` — literal JSON string                                 |
+| Field             | Value                                                                                                                                                                                                                                                                            |
+| ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Base URL          | `https://api.yeshinvoice.co.il` (`YESH_INVOICE_API_BASE`)                                                                                                                                                                                                                        |
+| Auth header       | `Authorization: JSON.stringify({ secret, userkey })` — literal JSON string                                                                                                                                                                                                       |
 | Response envelope | `createDocument`: `{ Success: bool, ErrorMessage: string, ReturnValue: { id, docNumber, pdfurl, url } }` — uppercase fields. `shareDocument`: `{ Success: bool, ErrorMessage: string, ReturnValue: bool }` — `ReturnValue: true` = email dispatched. See post-proof addendum §9. |
-| Document type     | 6 (קבלה — for עוסק פטור)                                                                                   |
-| `Success` casing  | **Uppercase `S`** — `raw?.Success` is the correct path; `raw?.success` is `null` (confirmed sandbox proof) |
+| Document type     | 6 (קבלה — for עוסק פטור)                                                                                                                                                                                                                                                         |
+| `Success` casing  | **Uppercase `S`** — `raw?.Success` is the correct path; `raw?.success` is `null` (confirmed sandbox proof)                                                                                                                                                                       |
 
 ---
 
