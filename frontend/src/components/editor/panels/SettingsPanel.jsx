@@ -237,6 +237,7 @@ export default function SettingsPanel({
             setAccount((prev) => ({
                 ...prev,
                 autoRenewal: res?.autoRenewal ?? prev?.autoRenewal,
+                paymentMethod: res?.paymentMethod ?? prev?.paymentMethod,
             }));
             setCancelModalOpen(false);
         } catch (err) {
@@ -264,6 +265,8 @@ export default function SettingsPanel({
                     ? {
                           ...prev,
                           autoRenewal: res?.autoRenewal ?? prev?.autoRenewal,
+                          paymentMethod:
+                              res?.paymentMethod ?? prev?.paymentMethod,
                       }
                     : prev,
             );
@@ -1578,47 +1581,88 @@ export default function SettingsPanel({
                                                 </div>
                                             )}
 
-                                            {account?.paymentMethod
-                                                ?.canDelete === true && (
-                                                <>
-                                                    <div
+                                            {account?.paymentMethod?.saved ===
+                                                true && (
+                                                <details
+                                                    className={`${styles.collapsible} ${styles.collapsibleDanger}`}
+                                                >
+                                                    <summary
                                                         className={
-                                                            styles.billingNote
+                                                            styles.collapsibleTrigger
                                                         }
                                                     >
-                                                        ניתן למחוק את פרטי
-                                                        התשלום השמורים. המנוי
-                                                        יישאר פעיל עד תאריך
-                                                        הסיום, אך לאחר המחיקה לא
-                                                        ניתן יהיה לחדש אותו
-                                                        אוטומטית.
-                                                    </div>
+                                                        ניהול פרטי תשלום שמורים
+                                                    </summary>
                                                     <div
                                                         className={
-                                                            styles.billingActions
+                                                            styles.collapsibleContent
                                                         }
                                                     >
-                                                        <Button
-                                                            variant="secondary"
-                                                            disabled={
-                                                                deletePaymentMethodBusy
+                                                        <div
+                                                            className={
+                                                                styles.billingNote
                                                             }
-                                                            onClick={() => {
-                                                                setDeletePaymentMethodError(
-                                                                    "",
-                                                                );
-                                                                setDeletePaymentMethodSuccess(
-                                                                    false,
-                                                                );
-                                                                setDeletePaymentMethodModalOpen(
-                                                                    true,
-                                                                );
-                                                            }}
                                                         >
-                                                            מחק פרטי תשלום
-                                                        </Button>
+                                                            המנוי יישאר פעיל עד
+                                                            תאריך הסיום. לאחר
+                                                            מחיקת פרטי התשלום לא
+                                                            ניתן יהיה לחדש את
+                                                            המנוי אוטומטית.
+                                                        </div>
+                                                        {account?.paymentMethod
+                                                            ?.canDelete !==
+                                                            true && (
+                                                            <div
+                                                                className={
+                                                                    styles.billingNote
+                                                                }
+                                                            >
+                                                                החידוש האוטומטי
+                                                                פעיל — יש לבטל
+                                                                אותו תחילה לפני
+                                                                מחיקת פרטי
+                                                                התשלום.
+                                                            </div>
+                                                        )}
+                                                        <div
+                                                            className={
+                                                                styles.billingActions
+                                                            }
+                                                        >
+                                                            <Button
+                                                                variant="secondary"
+                                                                disabled={
+                                                                    deletePaymentMethodBusy ||
+                                                                    account
+                                                                        ?.paymentMethod
+                                                                        ?.canDelete !==
+                                                                        true
+                                                                }
+                                                                onClick={() => {
+                                                                    if (
+                                                                        account
+                                                                            ?.paymentMethod
+                                                                            ?.canDelete !==
+                                                                        true
+                                                                    ) {
+                                                                        return;
+                                                                    }
+                                                                    setDeletePaymentMethodError(
+                                                                        "",
+                                                                    );
+                                                                    setDeletePaymentMethodSuccess(
+                                                                        false,
+                                                                    );
+                                                                    setDeletePaymentMethodModalOpen(
+                                                                        true,
+                                                                    );
+                                                                }}
+                                                            >
+                                                                מחק פרטי תשלום
+                                                            </Button>
+                                                        </div>
                                                     </div>
-                                                </>
+                                                </details>
                                             )}
 
                                             {deletePaymentMethodSuccess && (

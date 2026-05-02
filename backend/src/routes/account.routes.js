@@ -1086,6 +1086,7 @@ router.post("/cancel-renewal", requireAuth, async (req, res) => {
                 ok: true,
                 renewalStatus: "already_cancelled",
                 autoRenewal,
+                paymentMethod: buildPaymentMethodDto(user),
                 messageKey: "renewal_already_cancelled",
             });
         }
@@ -1095,6 +1096,7 @@ router.post("/cancel-renewal", requireAuth, async (req, res) => {
                 ok: true,
                 renewalStatus: "no_active_renewal",
                 autoRenewal,
+                paymentMethod: buildPaymentMethodDto(user),
                 messageKey: "no_active_renewal",
             });
         }
@@ -1127,6 +1129,7 @@ router.post("/cancel-renewal", requireAuth, async (req, res) => {
                     ? "already_cancelled"
                     : "cancelled",
                 autoRenewal: buildAutoRenewalDto(user),
+                paymentMethod: buildPaymentMethodDto(user),
                 messageKey: result.skipped
                     ? "renewal_already_cancelled"
                     : "renewal_cancelled",
@@ -1338,7 +1341,7 @@ router.post("/resume-auto-renewal", requireAuth, async (req, res) => {
             // ── Reload to read persisted state for safe DTO ───────────────────────
             const refreshed = await User.findById(req.userId)
                 .select(
-                    "tranzilaSto.status tranzilaSto.stoId tranzilaSto.cancelledAt subscription renewalFailedAt",
+                    "tranzilaSto.status tranzilaSto.stoId tranzilaSto.cancelledAt subscription renewalFailedAt tranzilaToken tranzilaTokenMeta",
                 )
                 .lean();
 
@@ -1346,6 +1349,7 @@ router.post("/resume-auto-renewal", requireAuth, async (req, res) => {
                 ok: true,
                 resumed: true,
                 autoRenewal: buildAutoRenewalDto(refreshed),
+                paymentMethod: buildPaymentMethodDto(refreshed),
             });
         } finally {
             resumeRenewalInFlight.delete(userId);
