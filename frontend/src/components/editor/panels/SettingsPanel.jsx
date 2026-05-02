@@ -11,6 +11,7 @@ import {
     updateEmailPreferences,
     updateAccountName,
     cancelRenewal,
+    resumeAutoRenewal,
     getReceipts,
     updateReceiptProfile,
 } from "../../../services/account.service";
@@ -73,6 +74,9 @@ export default function SettingsPanel({
     const [cancelModalOpen, setCancelModalOpen] = useState(false);
     const [cancelBusy, setCancelBusy] = useState(false);
     const [cancelError, setCancelError] = useState("");
+
+    const [resumeBusy, setResumeBusy] = useState(false);
+    const [resumeError, setResumeError] = useState("");
 
     const [mktBusy, setMktBusy] = useState(false);
     const [mktError, setMktError] = useState("");
@@ -236,6 +240,62 @@ export default function SettingsPanel({
             setCancelModalOpen(false);
         } finally {
             setCancelBusy(false);
+        }
+    }
+
+    async function handleResumeRenewal() {
+        setResumeError("");
+        setResumeBusy(true);
+        try {
+            const res = await resumeAutoRenewal();
+            setAccount((prev) =>
+                prev
+                    ? {
+                          ...prev,
+                          autoRenewal: res?.autoRenewal ?? prev?.autoRenewal,
+                      }
+                    : prev,
+            );
+        } catch (err) {
+            const status = err?.response?.status;
+            const messageKey = err?.response?.data?.messageKey;
+            if (status === 429) {
+                setResumeError("בוצעו יותר מדי ניסיונות. נסו שוב מאוחר יותר.");
+            } else if (messageKey === "resume_unavailable") {
+                setResumeError("האפשרות אינה זמינה כרגע. נסו שוב מאוחר יותר.");
+            } else if (
+                messageKey === "subscription_not_active" ||
+                messageKey === "subscription_expired"
+            ) {
+                setResumeError(
+                    "המנוי אינו פעיל כרגע. ניתן להסדיר חידוש לאחר סיום התקופה.",
+                );
+            } else if (messageKey === "wrong_provider") {
+                setResumeError(
+                    "לא ניתן להפעיל חידוש אוטומטי עבור סוג המנוי הנוכחי.",
+                );
+            } else if (messageKey === "unsupported_plan") {
+                setResumeError("סוג המנוי אינו נתמך לחידוש אוטומטי.");
+            } else if (messageKey === "already_active") {
+                setResumeError("החידוש האוטומטי כבר פעיל.");
+            } else if (messageKey === "renewal_in_progress") {
+                setResumeError("חידוש אוטומטי כבר נמצא בתהליך.");
+            } else if (messageKey === "renewal_not_cancelled") {
+                setResumeError("אין חידוש אוטומטי מבוטל להפעלה מחדש.");
+            } else if (
+                messageKey === "token_missing" ||
+                messageKey === "token_expired"
+            ) {
+                setResumeError(
+                    "לא ניתן להפעיל מחדש את החידוש האוטומטי עם פרטי התשלום הקיימים. ניתן לפנות לתמיכה.",
+                );
+            } else {
+                setResumeError(
+                    "לא הצלחנו להפעיל מחדש את החידוש האוטומטי. נסו שוב מאוחר יותר.",
+                );
+            }
+        } finally {
+            setResumeBusy(false);
         }
     }
 
@@ -989,6 +1049,14 @@ export default function SettingsPanel({
                                     Date.now() &&
                                 renewalStatus === "active";
 
+                            const canResumeAutoRenewal =
+                                renewalStatus === "cancelled" &&
+                                provider === "tranzila" &&
+                                subStatus === "active" &&
+                                Boolean(expiresAt) &&
+                                !isExpired &&
+                                (acPlan === "monthly" || acPlan === "yearly");
+
                             async function handlePayment(plan) {
                                 if (plan === "yearly" && !yearlyOptIn) {
                                     setBillingMsg(
@@ -1349,17 +1417,80 @@ export default function SettingsPanel({
 
                                                     {renewalStatus ===
                                                         "cancelled" && (
-                                                        <div
-                                                            className={
-                                                                styles.pwSuccess
-                                                            }
-                                                        >
-                                                            החידוש האוטומטי
-                                                            בוטל.{" "}
-                                                            {renewalPaidUntil
-                                                                ? `הגישה Premium פעילה עד ${formatDate(renewalPaidUntil)}.`
-                                                                : ""}
-                                                        </div>
+                                                        <>
+                                                            <div
+                                                                className={
+                                                                    styles.pwSuccess
+                                                                }
+                                                            >
+                                                                החידוש האוטומטי
+                                                                בוטל.{" "}
+                                                                {renewalPaidUntil
+                                                                    ? `הגישה Premium פעילה עד ${formatDate(renewalPaidUntil)}.`
+                                                                    : ""}
+                                                            </div>
+                                                            {canResumeAutoRenewal && (
+                                                                <>
+                                                                    <div
+                                                                        className={
+                                                                            styles.billingNote
+                                                                        }
+                                                                    >
+                                                                        המנוי
+                                                                        שלך
+                                                                        עדיין
+                                                                        פעיל עד
+                                                                        תאריך
+                                                                        הסיום.
+                                                                        אפשר
+                                                                        להפעיל
+                                                                        מחדש את
+                                                                        החידוש
+                                                                        האוטומטי
+                                                                        כדי
+                                                                        שהחיוב
+                                                                        הבא
+                                                                        יתבצע רק
+                                                                        בסיום
+                                                                        התקופה
+                                                                        הנוכחית.
+                                                                    </div>
+                                                                    <div
+                                                                        className={
+                                                                            styles.billingActions
+                                                                        }
+                                                                    >
+                                                                        <Button
+                                                                            variant="secondary"
+                                                                            loading={
+                                                                                resumeBusy
+                                                                            }
+                                                                            disabled={
+                                                                                resumeBusy
+                                                                            }
+                                                                            onClick={
+                                                                                handleResumeRenewal
+                                                                            }
+                                                                        >
+                                                                            {resumeBusy
+                                                                                ? "מחדש..."
+                                                                                : "חדש חידוש אוטומטי"}
+                                                                        </Button>
+                                                                    </div>
+                                                                </>
+                                                            )}
+                                                            {resumeError && (
+                                                                <div
+                                                                    className={
+                                                                        styles.billingError
+                                                                    }
+                                                                >
+                                                                    {
+                                                                        resumeError
+                                                                    }
+                                                                </div>
+                                                            )}
+                                                        </>
                                                     )}
 
                                                     {(renewalStatus ===

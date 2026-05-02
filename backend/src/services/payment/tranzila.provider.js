@@ -459,7 +459,12 @@ function buildStoDeactivateBody(stoTerminal, stoId) {
  * @param {Date} firstChargeDate    — typically user.subscription.expiresAt
  * @returns {Promise<{ok:boolean, [skipped]:boolean, [created]:boolean, [stoId]:string, [reason]:string, [errorCode]:number|null, [errorMessage]:string}>}
  */
-async function createTranzilaStoForUser(user, plan, firstChargeDate) {
+async function createTranzilaStoForUser(
+    user,
+    plan,
+    firstChargeDate,
+    opts = {},
+) {
     const currentSto = ensureTranzilaStoState(user);
 
     // ── A. Idempotency guard ──
@@ -473,7 +478,13 @@ async function createTranzilaStoForUser(user, plan, firstChargeDate) {
     }
 
     // ── B. Cancelled guard ──
-    if (currentSto.status === "cancelled") {
+    // Default behaviour: cancelled STO cannot be recreated (prevents accidental double-STO).
+    // Exception: opts.allowRecreateAfterCancel === true enables the dedicated self-service
+    // resume path (POST /api/account/resume-auto-renewal) which validates all preconditions.
+    if (
+        currentSto.status === "cancelled" &&
+        opts.allowRecreateAfterCancel !== true
+    ) {
         return { ok: false, skipped: true, reason: "cancelled" };
     }
 

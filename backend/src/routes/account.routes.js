@@ -24,7 +24,10 @@ import {
 } from "../utils/marketingOptOut.util.js";
 import { CURRENT_MARKETING_CONSENT_VERSION } from "../utils/consentVersions.js";
 import { validatePasswordPolicy } from "../utils/passwordPolicy.js";
-import { cancelTranzilaStoForUser } from "../services/payment/tranzila.provider.js";
+import {
+    cancelTranzilaStoForUser,
+    createTranzilaStoForUser,
+} from "../services/payment/tranzila.provider.js";
 import ActivePasswordReset from "../models/ActivePasswordReset.model.js";
 import MailJob from "../models/MailJob.model.js";
 import EmailVerificationToken from "../models/EmailVerificationToken.model.js";
@@ -56,6 +59,11 @@ const nameUpdateRateMap = new Map();
 const CANCEL_RENEWAL_WINDOW_MS = 10 * 60 * 1000;
 const CANCEL_RENEWAL_LIMIT = 3;
 const cancelRenewalRateMap = new Map();
+
+const RESUME_RENEWAL_WINDOW_MS = 24 * 60 * 60 * 1000;
+const RESUME_RENEWAL_LIMIT = 2;
+const resumeRenewalRateMap = new Map();
+const resumeRenewalInFlight = new Set();
 
 const RECEIPTS_LIST_WINDOW_MS = 10 * 60 * 1000;
 const RECEIPTS_LIST_LIMIT = 30;
@@ -181,6 +189,7 @@ function rateLimitByIpForMap(req, map, limit, windowMs) {
         sweepRateMap(emailPrefRateMap, now);
         sweepRateMap(nameUpdateRateMap, now);
         sweepRateMap(cancelRenewalRateMap, now);
+        sweepRateMap(resumeRenewalRateMap, now);
         sweepRateMap(receiptsListRateMap, now);
         sweepRateMap(receiptsDownloadRateMap, now);
         sweepRateMap(receiptProfileRateMap, now);
@@ -674,12 +683,10 @@ router.post("/change-password", requireAuth, async (req, res) => {
         }
         const pwCheckChange = validatePasswordPolicy(newPassword);
         if (!pwCheckChange.ok) {
-            return res
-                .status(400)
-                .json({
-                    code: pwCheckChange.code,
-                    message: "Unable to change password",
-                });
+            return res.status(400).json({
+                code: pwCheckChange.code,
+                message: "Unable to change password",
+            });
         }
 
         const user = await User.findById(req.userId)
@@ -1099,6 +1106,215 @@ router.post("/cancel-renewal", requireAuth, async (req, res) => {
             ok: false,
             renewalStatus: "cancel_failed",
             messageKey: "renewal_cancel_failed",
+        });
+    }
+});
+
+/**
+ * POST /api/account/resume-auto-renewal
+ * [BILLING_REENABLE_AUTORENEWAL_P2] Self-service resume of a cancelled Tranzila STO.
+ *
+ * Business behaviour:
+ *   - Recreates a future STO schedule using the stored Tranzila token.
+ *   - Does NOT create an immediate payment.
+ *   - Does NOT create a PaymentTransaction or Receipt.
+ *   - Does NOT change subscription.expiresAt or Card.billing.
+ *   - firstChargeDate is always user.subscription.expiresAt (not accepted from client).
+ *   - plan is always user.plan (not accepted from client).
+ *
+ * Security:
+ *   - requireAuth mandatory; user is derived from req.userId only.
+ *   - No plan/date/amount/token/stoId accepted from request body.
+ *   - Response never contains stoId, token, providerTxnId, or raw provider data.
+ *
+ * Rate limit: 2 attempts per userId per 24 hours.
+ * In-flight guard: one concurrent call per userId (anti-double-click).
+ */
+router.post("/resume-auto-renewal", requireAuth, async (req, res) => {
+    try {
+        // ── Rate limit by userId (authenticated, not IP) ──────────────────────
+        const userId = String(req.userId);
+        const now = Date.now();
+
+        const rlEntry = resumeRenewalRateMap.get(userId);
+        if (!rlEntry || rlEntry.resetAt <= now) {
+            resumeRenewalRateMap.set(userId, {
+                count: 1,
+                resetAt: now + RESUME_RENEWAL_WINDOW_MS,
+            });
+        } else {
+            rlEntry.count += 1;
+            if (rlEntry.count > RESUME_RENEWAL_LIMIT) {
+                return res.status(429).json({
+                    ok: false,
+                    messageKey: "resume_renewal_rate_limited",
+                });
+            }
+        }
+
+        // ── In-flight guard (anti-double-click / anti-parallel-call) ─────────
+        if (resumeRenewalInFlight.has(userId)) {
+            return res.status(409).json({
+                ok: false,
+                messageKey: "renewal_in_progress",
+            });
+        }
+        resumeRenewalInFlight.add(userId);
+
+        try {
+            // ── Feature/config gate ───────────────────────────────────────────────
+            if (process.env.TRANZILA_STO_CREATE_ENABLED !== "true") {
+                return res.status(503).json({
+                    ok: false,
+                    messageKey: "resume_unavailable",
+                });
+            }
+
+            // ── Load full Mongoose document (non-lean — createTranzilaStoForUser calls user.save()) ──
+            const user = await User.findById(req.userId);
+
+            if (!user) {
+                return res.status(404).json({
+                    ok: false,
+                    messageKey: "account_not_found",
+                });
+            }
+
+            const sub = user.subscription ?? {};
+            const now2 = new Date();
+
+            // ── Precondition: active subscription ────────────────────────────────
+            if (sub.status !== "active") {
+                return res.status(403).json({
+                    ok: false,
+                    messageKey: "subscription_not_active",
+                });
+            }
+
+            // ── Precondition: not expired ─────────────────────────────────────────
+            const expiresAt =
+                sub.expiresAt instanceof Date ? sub.expiresAt : null;
+            if (!expiresAt || expiresAt <= now2) {
+                return res.status(403).json({
+                    ok: false,
+                    messageKey: "subscription_expired",
+                });
+            }
+
+            // ── Precondition: tranzila provider ───────────────────────────────────
+            if (sub.provider !== "tranzila") {
+                return res.status(409).json({
+                    ok: false,
+                    messageKey: "wrong_provider",
+                });
+            }
+
+            // ── Precondition: valid plan ──────────────────────────────────────────
+            if (user.plan !== "monthly" && user.plan !== "yearly") {
+                return res.status(409).json({
+                    ok: false,
+                    messageKey: "unsupported_plan",
+                });
+            }
+
+            // ── Precondition: STO state must be cancelled ─────────────────────────
+            const stoStatus = user.tranzilaSto?.status ?? null;
+            if (stoStatus === "created") {
+                return res.status(409).json({
+                    ok: false,
+                    messageKey: "already_active",
+                    autoRenewal: buildAutoRenewalDto(user),
+                });
+            }
+            if (stoStatus === "pending") {
+                return res.status(409).json({
+                    ok: false,
+                    messageKey: "renewal_in_progress",
+                    autoRenewal: buildAutoRenewalDto(user),
+                });
+            }
+            if (stoStatus !== "cancelled") {
+                return res.status(409).json({
+                    ok: false,
+                    messageKey: "renewal_not_cancelled",
+                    autoRenewal: buildAutoRenewalDto(user),
+                });
+            }
+
+            // ── Precondition: stored token present ───────────────────────────────
+            if (!user.tranzilaToken) {
+                return res.status(409).json({
+                    ok: false,
+                    messageKey: "token_missing",
+                });
+            }
+
+            // ── Precondition: token expiry (only when meta is deterministic) ──────
+            // If expYear/expMonth are absent or invalid, skip this gate and let
+            // buildStoCreateBody validate — it throws sto_build_error on bad meta.
+            const meta = user.tranzilaTokenMeta;
+            if (
+                meta &&
+                Number.isInteger(meta.expYear) &&
+                meta.expYear >= 2020 &&
+                meta.expYear <= 2099 &&
+                Number.isInteger(meta.expMonth) &&
+                meta.expMonth >= 1 &&
+                meta.expMonth <= 12
+            ) {
+                const cy = now2.getFullYear();
+                const cm = now2.getMonth() + 1;
+                if (
+                    meta.expYear < cy ||
+                    (meta.expYear === cy && meta.expMonth < cm)
+                ) {
+                    return res.status(409).json({
+                        ok: false,
+                        messageKey: "token_expired",
+                    });
+                }
+            }
+
+            // ── Recreate STO from stored token ────────────────────────────────────
+            // plan and firstChargeDate come exclusively from the user document —
+            // never from the request body. This prevents entitlement drift.
+            const result = await createTranzilaStoForUser(
+                user,
+                user.plan,
+                user.subscription.expiresAt,
+                { allowRecreateAfterCancel: true },
+            );
+
+            if (!result.ok) {
+                return res.status(502).json({
+                    ok: false,
+                    messageKey: "resume_failed",
+                });
+            }
+
+            // ── Reload to read persisted state for safe DTO ───────────────────────
+            const refreshed = await User.findById(req.userId)
+                .select(
+                    "tranzilaSto.status tranzilaSto.stoId tranzilaSto.cancelledAt subscription renewalFailedAt",
+                )
+                .lean();
+
+            return res.status(200).json({
+                ok: true,
+                resumed: true,
+                autoRenewal: buildAutoRenewalDto(refreshed),
+            });
+        } finally {
+            resumeRenewalInFlight.delete(userId);
+        }
+    } catch (err) {
+        console.error(
+            "[account] POST /resume-auto-renewal failed",
+            err?.message || err,
+        );
+        return res.status(500).json({
+            ok: false,
+            messageKey: "resume_failed",
         });
     }
 });

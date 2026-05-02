@@ -69,6 +69,16 @@ export async function cancelRenewal() {
 }
 
 /**
+ * POST /api/account/resume-auto-renewal — self-service resume of cancelled Tranzila STO.
+ * No request body — backend derives user from req.userId (httpOnly cookie auth).
+ * Returns safe autoRenewal DTO: { ok, resumed, autoRenewal }
+ */
+export async function resumeAutoRenewal() {
+    const res = await api.post("/account/resume-auto-renewal");
+    return res.data;
+}
+
+/**
  * GET /api/account/receipts — paginated list of issued receipts for the authenticated user.
  * Returns { receipts, hasMore, total }. Only status="created" receipts are returned.
  */
