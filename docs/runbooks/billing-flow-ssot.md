@@ -248,6 +248,7 @@ Key fields:
 - `status` (String: `"pending"` | `"paid"` | `"failed"` | `"refunded"`). Note: `"duplicate"` is NOT a status (see idempotencyNote).
 - `idempotencyNote` (String, nullable) - set to `"duplicate_skipped"` when E11000 is caught on insert.
 - `receiptId` (ObjectId, ref Receipt, nullable) - link to Receipt document.
+    > **Future tail (2026-05-02 smoke):** `Receipt.paymentTransactionId` is populated (Receipt → PaymentTransaction link exists) but `PaymentTransaction.receiptIdPresent=false` in this smoke — the link is one-directional. Write-back of `receiptId` to `PaymentTransaction` is a deferred future contour.
 - `createdAt`, `updatedAt` (timestamps).
 
 **Receipt is a separate model (implemented).** `providerDocId`, `pdfUrl`, `status` (enum `"created"`/`"failed"`/`"skipped"`), `shareStatus`, `sharedAt` live in `Receipt`, not in `PaymentTransaction`. Ledger (`PaymentTransaction`) is not exposed to the cabinet directly.
@@ -551,6 +552,7 @@ Implementation: `buildTranzilaApiAuthHeaders()` in `backend/src/services/payment
 
 - Guard A: if `user.tranzilaSto.stoId` exists and `status === "created"` → skip, return `{ ok: true, skipped: true }`
 - A user with `tranzilaSto.status === "created"` cannot be used for a clean e2e re-test without explicit DB state reset or a fresh test user
+- `opts.allowRecreateAfterCancel=true` (passed by the resume endpoint — see §19) bypasses the `status === "cancelled"` hard-stop **only**. It does NOT bypass Guard A: `status === "created"` idempotency remains fully enforced.
 
 ### Operator fast-forward notes (sto-create-custom-date.mjs)
 
@@ -629,6 +631,7 @@ User self-service cancel stops **future** recurring charges only. It does NOT tr
 - Button label: **ביטול חידוש אוטומטי** (shown only when `autoRenewal.status === "active" && autoRenewal.canCancel === true`).
 - After cancellation: button is hidden; status row shows "החידוש האוטומטי בוטל. הגישה Premium פעילה עד {date}."
 - `autoRenewal.canCancel` is `true` only when `status === "active"`.
+- When `autoRenewal.status === "cancelled"` (and subscription still active/not expired, provider is Tranzila, plan is monthly/yearly): the **חדש חידוש אוטומטי** button is shown (self-service resume). See §19 for full resume flow detail.
 
 ### `buildAutoRenewalDto()` Status Map
 
@@ -852,3 +855,103 @@ When org entitlement is absent, expired, or revoked, the personal chain (§7) ap
 For full operator instructions (grant/extend/revoke flows, API contract, error codes, troubleshooting):
 
 → `docs/runbooks/org-annual-entitlement-admin-grant.md`
+
+---
+
+## 19) User Self-Service Resume Auto-Renewal — Sandbox-Proven (2026-05-02)
+
+**Status: IMPLEMENTED + SANDBOX-PROVEN. Production rollout: NOT STARTED.**
+
+### Endpoint
+
+```
+POST /api/account/resume-auto-renewal
+```
+
+- `requireAuth` — user derived from `req.userId` (httpOnly cookie auth only).
+- No request body accepted. `userId`, `stoId`, `email` from the request body are ignored.
+- Rate limit: **2 attempts / 24 hours per authenticated user** (userId-keyed in-memory map; `RESUME_RENEWAL_WINDOW_MS` / `RESUME_RENEWAL_LIMIT` env knobs).
+- In-flight guard: `resumeRenewalInFlight` Set prevents concurrent double-execution per user.
+- Feature flag: `TRANZILA_STO_CREATE_ENABLED === "true"` (strict string equality) — if false/absent, endpoint returns 503 `"resume_unavailable"`.
+
+### Preconditions (hard-blocked, checked before provider call)
+
+| Condition                                                          | messageKey on violation   |
+| ------------------------------------------------------------------ | ------------------------- |
+| User not found                                                     | `account_not_found`       |
+| `subscription.status !== "active"`                                 | `subscription_not_active` |
+| `subscription.expiresAt` absent                                    | `subscription_expired`    |
+| `subscription.expiresAt` in the past                               | `subscription_expired`    |
+| `user.paymentProvider !== "tranzila"`                              | `wrong_provider`          |
+| `plan` not `"monthly"` or `"yearly"`                               | `unsupported_plan`        |
+| `tranzilaSto.status === "created"` and stoId present               | `already_active`          |
+| `tranzilaSto.status === "pending"`                                 | `renewal_in_progress`     |
+| `tranzilaSto.status` is not `"cancelled"` (any other state)        | `renewal_not_cancelled`   |
+| `tranzilaSto.tranzilaToken` absent                                 | `token_missing`           |
+| `tranzilaSto.tranzilaToken` expired (`tokenExpiresAt` in the past) | `token_expired`           |
+
+> **Note on `token_missing` / `token_expired`:** These states indicate the stored Tranzila token is absent or expired. The self-service resume path requires a valid stored token and cannot proceed without one. This is a support-mediated path — do NOT direct active Premium users immediately to enter a new payment card as the first response. See support runbook for escalation guidance.
+
+### Provider call
+
+`createTranzilaStoForUser(user, plan, firstChargeDate, { allowRecreateAfterCancel: true })` is called.
+
+- Write-ahead: `tranzilaSto.status` is set to `"pending"` before the provider API call.
+- On success: status advances to `"created"`. A new `stoId` is stored in `user.tranzilaSto.stoId`.
+- On failure: status falls back to `"failed"`. Endpoint returns 500 `"resume_failed"`.
+- `allowRecreateAfterCancel: true` bypasses the `status === "cancelled"` hard-stop only. It does NOT bypass Guard A (see §14): `status === "created"` idempotency remains enforced.
+
+### Response DTO (success)
+
+```json
+{
+    "ok": true,
+    "resumed": true,
+    "autoRenewal": {
+        "status": "active",
+        "canCancel": true,
+        "cancelledAtPresent": false,
+        "subscriptionExpiresAt": "<ISO>"
+    }
+}
+```
+
+`messageKey` values on error: `resume_unavailable` (503) | `account_not_found` | `subscription_not_active` | `subscription_expired` | `wrong_provider` | `unsupported_plan` | `already_active` | `renewal_in_progress` | `renewal_not_cancelled` | `token_missing` | `token_expired` | `resume_failed` | `resume_renewal_rate_limited` (429)
+
+### UI (SettingsPanel)
+
+- **חדש חידוש אוטומטי** button shown when `canResumeAutoRenewal === true`.
+- `canResumeAutoRenewal` conditions (IIFE in SettingsPanel): `renewalStatus === "cancelled"` AND `provider === "tranzila"` AND `subStatus === "active"` AND `Boolean(expiresAt)` AND `!isExpired` AND (`acPlan === "monthly"` OR `"yearly"`).
+- Hebrew error mapping for all real messageKeys implemented in `handleResumeRenewal()`.
+- On success: UI reflects updated `autoRenewal.status === "active"`.
+
+### No YeshInvoice/Receipt Contact
+
+Resume does not trigger any payment. No `handleNotify` / `handleStoNotify` is called. No `PaymentTransaction` is created. No `Receipt` is created. No YeshInvoice email is sent. This is **Class A expected behavior** — email delivery requires a real payment event, not an STO creation event.
+
+### Sandbox Smoke (2026-05-02) — PASS
+
+| Check                                         | Result |
+| --------------------------------------------- | ------ |
+| Payment → STO created                         | ✅     |
+| YeshInvoice receipt email delivered           | ✅     |
+| Cancel → `tranzilaSto.status="cancelled"`     | ✅     |
+| Resume endpoint → 200 `ok:true, resumed:true` | ✅     |
+| New `stoIdPresent=true` written to MongoDB    | ✅     |
+| `tranzilaSto.status="created"` after resume   | ✅     |
+| `subscription.expiresAt` unchanged throughout | ✅     |
+| Cancel (cleanup) after smoke                  | ✅     |
+| All 4 frontend gates EXIT:0                   | ✅     |
+| No YeshInvoice email on resume (Class A)      | ✅     |
+
+**Redacted evidence note:** Raw stoId, TranzilaTK, providerTxnId, providerDocId, email are not documented here per doc hygiene policy. Use booleans only.
+
+### Production Rollout Boundary (explicit)
+
+This section closes sandbox documentation readiness only. Resume auto-renewal in production requires:
+
+- Production terminal cutover complete (G6 closed).
+- `TRANZILA_STO_CREATE_ENABLED=true` armed in production Render env.
+- Full production E2E smoke on production terminal.
+
+**Cross-reference:** `docs/handoffs/current/Cardigo_Enterprise_Handoff_ResumeAutoRenewal_2026-05-02.md`

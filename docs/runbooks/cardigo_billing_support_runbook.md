@@ -3,6 +3,7 @@
 **Scope (current reality):**
 
 - **Cancel-renewal** is available self-service in the product UI (SettingsPanel → billing section) via `POST /api/account/cancel-renewal` (shipped 5.9a.1/5.9a.2).
+- **Resume auto-renewal** is available self-service in the product UI (SettingsPanel → billing section) via `POST /api/account/resume-auto-renewal` (sandbox-proven 2026-05-02). Requires `tranzilaSto.status === "cancelled"` and a valid stored Tranzila token. Token-absent/expired state is support-mediated.
 - Self‑service also includes:
     1. **Read‑only** subscription status in **Settings → תשלומים**
     2. **Initiate payment** via `POST /api/payments/create` (in dev: mock URL; in prod: Tranzila URL)
@@ -23,7 +24,7 @@ Use these texts in the **Settings → תשלומים** block.
 - **Modal explains:**
     - הגישה Premium תמשיך עד סוף התקופה המשולמת (לא יבוטל המִשְׁתַּמֵּשׁ מידית)
     - לא יחוייבו תשלומים נוספים לאחר הביטול
-    - ניתן לחדש מנוי בעתיד דרך עמוד התמחורה
+    - ניתן לחדש את החידוש האוטומטי בעתיד דרך הגדרות → תשלומים (כל עוד המנוי פעיל ולא פג תוקף)
 - **Cancelled state shown in UI:** החידוש האוטומטי בוטל. הגישה Premium פעילה עד {date}.
 
 ### Static support + limitations
@@ -122,7 +123,7 @@ The correct support response:
 
 - “We don’t store your payment method. To use a different card, start a new payment/renewal when needed.”
 
-If the user is mid‑cycle and wants future renewals: currently **manual** only (until portal/recurring is implemented).
+If the user is mid‑cycle and wants future renewals: self-service resume auto-renewal is available (via **חדש חידוש אוטומטי** button in Settings → תשלומים) provided the subscription is still active and the stored Tranzila token has not expired. If the token is expired or missing, this is a support-mediated path.
 
 ---
 
@@ -138,6 +139,7 @@ If the user is mid‑cycle and wants future renewals: currently **manual** only 
 
 - **Receipt history (היסטוריית תשלומים) is now available in the product UI** (Settings → Section 3: תשלומים → "קבלות" accordion, shipped 2026-04-24). MVP scope: up to 12 latest receipts with PDF download via secure backend proxy route. `failed`/`skipped` receipts are not user-facing in MVP. Evidence: `docs/handoffs/current/Cardigo_Enterprise_Handoff_ReceiptCabinet_Frontend_2026-04-24.md`.
 - **Self-service cancel-renewal is available in the product UI** (SettingsPanel billing section, shipped 5.9a.2). User path: product UI button → `POST /api/account/cancel-renewal` → provider-first cancel via `cancelTranzilaStoForUser`.
+- **Self-service resume auto-renewal is available in the product UI** (SettingsPanel billing section, sandbox-proven 2026-05-02). User path: **חדש חידוש אוטומטי** button (shown only when `autoRenewal.status === "cancelled"` AND subscription still active AND `expiresAt` not yet passed AND provider is Tranzila AND plan is monthly/yearly) → `POST /api/account/resume-auto-renewal` → `createTranzilaStoForUser` with `allowRecreateAfterCancel:true`. Requires a valid stored Tranzila token. Token-absent/expired state is support-mediated. See `billing-flow-ssot.md §19`.
 - Self-service **refunds** and **payment-method changes** remain support-mediated.
 - `sto-cancel.mjs` remains the **operator/admin** script path. It is not the user path.
 - Non-atomic User + Card billing updates (crash between saves can leave inconsistency; reconciliation job planned, not yet implemented).

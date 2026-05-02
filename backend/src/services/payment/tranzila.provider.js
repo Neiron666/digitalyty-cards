@@ -995,6 +995,30 @@ function buildRecipientSnapshot(customer, paymentIntentId) {
     };
 }
 
+// [Y3G] Best-effort reverse link — must NOT block ACK, share, or fulfillment.
+async function linkReceiptToPaymentTransactionBestEffort(
+    paymentTransactionId,
+    receiptId,
+    source,
+) {
+    if (!paymentTransactionId || !receiptId) return;
+    try {
+        await PaymentTransaction.updateOne(
+            { _id: paymentTransactionId, receiptId: null },
+            { $set: { receiptId } },
+        );
+    } catch (err) {
+        console.warn("[receipt] txn writeback failed", {
+            event: "receipt_txn_writeback_error",
+            paymentTransactionIdPresent: Boolean(paymentTransactionId),
+            receiptIdPresent: Boolean(receiptId),
+            source,
+            ok: false,
+            failReason: String(err?.message ?? "").slice(0, 200),
+        });
+    }
+}
+
 /**
  * Validates and returns the iframe-mode return URL pair.
  * Throws IFRAME_CHECKOUT_NOT_CONFIGURED if either URL is missing.
@@ -1640,6 +1664,12 @@ export default {
                                 resolvedPaymentIntentId,
                             ),
                         });
+                        // [Y3G.1] Write-back receiptId to PaymentTransaction — best-effort, detached.
+                        void linkReceiptToPaymentTransactionBestEffort(
+                            txnDoc._id,
+                            createdReceipt._id,
+                            "first_payment",
+                        );
                         // [Y3F.2] Fire-and-forget share — must NOT block ACK path.
                         void (async () => {
                             try {
@@ -2132,6 +2162,12 @@ export default {
                                 null,
                             ),
                         });
+                        // [Y3G.2] Write-back receiptId to PaymentTransaction — best-effort, detached.
+                        void linkReceiptToPaymentTransactionBestEffort(
+                            txnDoc._id,
+                            createdReceipt._id,
+                            "sto_recurring",
+                        );
                         // [Y3F.2] Fire-and-forget share — must NOT block ACK path.
                         void (async () => {
                             try {
