@@ -1691,6 +1691,25 @@ export default {
                                               shareResult.error ?? "unknown",
                                           ).slice(0, 200),
                                       };
+                                if (!shareResult.ok) {
+                                    console.warn("[receipt] share failed", {
+                                        event: "receipt_share_failed",
+                                        flow: "first_payment",
+                                        receiptIdPresent: Boolean(
+                                            createdReceipt._id,
+                                        ),
+                                        paymentTransactionIdPresent: Boolean(
+                                            txnDoc?._id,
+                                        ),
+                                        providerTxnIdPresent:
+                                            Boolean(providerTxnId),
+                                        userIdPresent: Boolean(userId),
+                                        plan: validPlan,
+                                        shareFailReason: String(
+                                            shareResult.error ?? "unknown",
+                                        ).slice(0, 200),
+                                    });
+                                }
                                 try {
                                     await Receipt.updateOne(
                                         { _id: createdReceipt._id },
@@ -1715,6 +1734,23 @@ export default {
                                     );
                                 }
                             } catch (_shareErr) {
+                                console.warn("[receipt] share exception", {
+                                    event: "receipt_share_exception",
+                                    flow: "first_payment",
+                                    receiptIdPresent: Boolean(
+                                        createdReceipt._id,
+                                    ),
+                                    paymentTransactionIdPresent: Boolean(
+                                        txnDoc?._id,
+                                    ),
+                                    providerTxnIdPresent:
+                                        Boolean(providerTxnId),
+                                    userIdPresent: Boolean(userId),
+                                    plan: validPlan,
+                                    errorMessage: String(
+                                        _shareErr?.message ?? "unknown",
+                                    ).slice(0, 200),
+                                });
                                 try {
                                     await Receipt.updateOne(
                                         { _id: createdReceipt._id },
@@ -2189,6 +2225,25 @@ export default {
                                               shareResult.error ?? "unknown",
                                           ).slice(0, 200),
                                       };
+                                if (!shareResult.ok) {
+                                    console.warn("[receipt] share failed", {
+                                        event: "receipt_share_failed",
+                                        flow: "sto_recurring",
+                                        receiptIdPresent: Boolean(
+                                            createdReceipt._id,
+                                        ),
+                                        paymentTransactionIdPresent: Boolean(
+                                            txnDoc?._id,
+                                        ),
+                                        providerTxnIdPresent:
+                                            Boolean(providerTxnId),
+                                        userIdPresent: Boolean(user?._id),
+                                        plan: user.plan,
+                                        shareFailReason: String(
+                                            shareResult.error ?? "unknown",
+                                        ).slice(0, 200),
+                                    });
+                                }
                                 try {
                                     await Receipt.updateOne(
                                         { _id: createdReceipt._id },
@@ -2213,6 +2268,23 @@ export default {
                                     );
                                 }
                             } catch (_shareErr) {
+                                console.warn("[receipt] share exception", {
+                                    event: "receipt_share_exception",
+                                    flow: "sto_recurring",
+                                    receiptIdPresent: Boolean(
+                                        createdReceipt._id,
+                                    ),
+                                    paymentTransactionIdPresent: Boolean(
+                                        txnDoc?._id,
+                                    ),
+                                    providerTxnIdPresent:
+                                        Boolean(providerTxnId),
+                                    userIdPresent: Boolean(user?._id),
+                                    plan: user.plan,
+                                    errorMessage: String(
+                                        _shareErr?.message ?? "unknown",
+                                    ).slice(0, 200),
+                                });
                                 try {
                                     await Receipt.updateOne(
                                         { _id: createdReceipt._id },

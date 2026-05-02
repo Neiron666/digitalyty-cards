@@ -306,14 +306,21 @@ export async function createReceiptYeshInvoice(params) {
  */
 export async function shareReceiptYeshInvoice({
     providerDocId,
-    customerEmail,
+    customerEmail, // kept in signature to avoid call-site churn; not sent in body (see ANTI-DRIFT below)
 }) {
+    // Guard: never call shareDocument with a missing document id.
+    if (!providerDocId) {
+        return { ok: false, raw: null, error: "missing_provider_doc_id" };
+    }
+
     try {
+        // ANTI-DRIFT: shareDocument body intentionally matches YeshInvoice contract exactly:
+        // id, SendEmail, SendSMS only. email field is deliberately absent — the recipient
+        // address is stored on the document at createDocument time (Customer.EmailAddress).
         const body = {
             id: providerDocId,
             SendEmail: true,
             SendSMS: false,
-            email: customerEmail,
         };
 
         const { ok, raw } = await yiPost("/api/v1/shareDocument", body, 10_000);
@@ -322,12 +329,27 @@ export async function shareReceiptYeshInvoice({
             return {
                 ok: false,
                 raw,
-                error: raw?.ErrorMessage ?? `HTTP ok=${ok}`,
+                error: String(raw?.ErrorMessage ?? `HTTP ok=${ok}`).slice(
+                    0,
+                    200,
+                ),
             };
+        }
+
+        // ANTI-DRIFT: Success:true means the API request was accepted.
+        // ReturnValue:true means the email was actually dispatched.
+        // Both are required by the YeshInvoice shareDocument contract.
+        // Do not collapse these two conditions into one.
+        if (raw.ReturnValue !== true) {
+            return { ok: false, raw, error: "share_document_not_sent" };
         }
 
         return { ok: true, raw };
     } catch (err) {
-        return { ok: false, raw: null, error: String(err?.message ?? err) };
+        return {
+            ok: false,
+            raw: null,
+            error: String(err?.message ?? err).slice(0, 200),
+        };
     }
 }
