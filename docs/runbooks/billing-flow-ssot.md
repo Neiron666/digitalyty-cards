@@ -18,7 +18,7 @@ All internal amounts are **integers in agorot** (1/100 of ₪). No floats anywhe
 
 **Canonical location:** `backend/src/config/plans.js` → `PRICES_AGOROT` export.
 
-> **⚠️ Active STO schedule price lock:** `PRICES_AGOROT` current code value: `monthly: 3990, yearly: 39990` (₪39.90 / ₪399.90). Confirmed in `backend/src/config/plans.js:72–73`. An active sandbox STO schedule exists at ₪39.90/month (`testcardstok` terminal, `dannybestboy@gmail.com`, first-charge-date 2026-05-01, pending webhook 01/05/2026). **Do NOT change `PRICES_AGOROT` while this schedule is active** — any mismatch between the code value and the amount on the STO schedule will cause every recurring notify to fail with `amount_mismatch`. After the 01/05/2026 webhook is verified and the test schedule is cancelled via `sto-cancel.mjs`, restore production values only in a dedicated pre-production contour.
+> **⚠️ STO schedule price lock:** `PRICES_AGOROT` current code value: `monthly: 3990, yearly: 39990` (₪39.90 / ₪399.90). Confirmed in `backend/src/config/plans.js:72–73`. `TRANZILA_STO_NOTIFY_SANDBOX_E2E_P0` CLOSED/PASS (2026-05-02) — real webhook received 01/05/2026 and fully verified. Sandbox STO schedule (`dannybestboy@gmail.com`, terminal `testcardstok`) advanced to next charge 01/06/2026. **Cleanup required:** cancel/deactivate sandbox STO schedule before production cutover and before any unintended future sandbox charge. Operator will handle cleanup manually. **Do NOT change `PRICES_AGOROT` while active sandbox STO schedules remain** — any mismatch between the code value and the amount on the active STO schedule will cause every recurring notify to fail with `amount_mismatch`. After all sandbox STO schedules are cancelled/deactivated, restore production values only in a dedicated pre-production contour.
 
 **Conversion rules:**
 
@@ -536,7 +536,7 @@ Implementation: `buildTranzilaApiAuthHeaders()` in `backend/src/services/payment
 ### Security / redaction rules
 
 - **Never log:** `TranzilaTK` (tranzilaToken), HMAC key, HMAC value, STO request body (contains card token), raw Tranzila API response body
-- `stoId` (e.g., `429105`) is a provider schedule reference — **not a secret**; safe for operator visibility via admin API
+- `stoId` is a provider schedule reference. It is safe for operator visibility through approved admin/operator surfaces, but raw stoId values must not be documented in handoffs/runbooks. Use `stoIdPresent=true` in proof records.
 - `tranzilaSto` subdoc is visible to admin via admin `getUserById` endpoint; excluded from self/account-facing DTOs
 
 ### Sandbox e2e result (2026-04-19)
@@ -558,7 +558,7 @@ Implementation: `buildTranzilaApiAuthHeaders()` in `backend/src/services/payment
 
 **Operator script:** `backend/scripts/sto-create-custom-date.mjs` — dry-run by default. Requires `--run --execute --i-understand-sto-api-call --email=<email> --first-charge-date=<YYYY-MM-DD>` to call the provider API. Does nothing unless manually executed with all required flags. Do not delete this script.
 
-**Current active fast-forward candidate (2026-04-28):** `dannybestboy@gmail.com`, `first-charge-date=2026-05-01`. Tranzila `testcardstok` portal confirms `תחילת החיובים=01/05/2026`, `מועד החיוב הבא=01/05/2026`, amount ₪39.90. Waiting for real webhook on 01/05/2026 (scope: `TRANZILA_STO_NOTIFY_SANDBOX_E2E_P0`).
+**Fast-forward result — CLOSED/PASS (2026-05-02):** `dannybestboy@gmail.com`, `first-charge-date=2026-05-01`. Real Tranzila MyBilling recurring webhook received 01/05/2026. Verification exit: `STO_NOTIFY_FINAL_VERIFY_EXIT:0`. Subscription extended to `2026-06-27T08:20:38.113Z`. Card billing matched subscription expiry. Recurring `PaymentTransaction` paid with `idempotencyNote=sto_recurring_notify`. Receipt created/sent, email arrived. Tranzila `testcardstok` portal schedule advanced to next charge 01/06/2026. **Cleanup required:** cancel/deactivate sandbox STO schedule before production cutover and before any unintended future sandbox charge. Operator will handle cleanup manually.
 
 **Discarded fast-forward attempt:** `first-charge-date=2026-04-29` produced `יום חיוב בחודש=28`, `מועד החיוב הבא=28/05/2026` due to `charge_dom` clamp. Not accepted as next-day webhook proof.
 
@@ -650,17 +650,18 @@ User self-service cancel stops **future** recurring charges only. It does NOT tr
 
 ### Final Accepted Proof Statement
 
-| Scenario                                                             | Result    | Date       | Classification                                                                 |
-| -------------------------------------------------------------------- | --------- | ---------- | ------------------------------------------------------------------------------ |
-| Real provider-originated first-payment webhook (Tranzila DirectNG)   | ✅ PROVED | 2026-04-24 | Tier 3 — real provider                                                         |
-| Real provider-originated STO recurring webhook (Tranzila My Billing) | ✅ PROVED | 2026-04-22 | Tier 3 — real provider (`REAL_TRANZILA_STO_NOTIFY_E2E_SUCCESS_FULLY_VERIFIED`) |
-| YeshInvoice `Receipt.create` (provider doc issued)                   | ✅ PROVED | 2026-04-24 | Tier 1 — sandbox API                                                           |
-| YeshInvoice `shareReceiptYeshInvoice` (email sent)                   | ✅ PROVED | 2026-04-24 | Tier 1 — sandbox API                                                           |
-| `Receipt.shareStatus` update (pending → sent)                        | ✅ PROVED | 2026-04-24 | Tier 1 — Mongo write verified                                                  |
-| First-payment replay / idempotency                                   | ✅ PROVED | 2026-04-24 | Tier 1 — E11000 idempotency confirmed                                          |
-| STO recurring replay / idempotency                                   | ✅ PROVED | 2026-04-24 | Tier 1 — E11000 idempotency confirmed                                          |
-| Synthetic direct-backend runtime proof (fire-and-forget hook)        | ✅ PROVED | 2026-04-24 | Tier 1 — synthetic handler                                                     |
-| Public relay smoke (cardigo.co.il → Netlify → Render)                | ✅ PROVED | 2026-04-24 | Tier 2 — relay (caveat: requires Render warm-up; see below)                    |
+| Scenario                                                                                | Result    | Date                             | Classification                                                                 |
+| --------------------------------------------------------------------------------------- | --------- | -------------------------------- | ------------------------------------------------------------------------------ |
+| Real provider-originated first-payment webhook (Tranzila DirectNG)                      | ✅ PROVED | 2026-04-24                       | Tier 3 — real provider                                                         |
+| Real provider-originated STO recurring webhook (Tranzila My Billing)                    | ✅ PROVED | 2026-04-22                       | Tier 3 — real provider (`REAL_TRANZILA_STO_NOTIFY_E2E_SUCCESS_FULLY_VERIFIED`) |
+| Real provider-originated STO recurring webhook (fast-forward, `dannybestboy@gmail.com`) | ✅ PROVED | 2026-05-01 / verified 2026-05-02 | Tier 3 — real provider (`TRANZILA_STO_NOTIFY_SANDBOX_E2E_P0` CLOSED/PASS)      |
+| YeshInvoice `Receipt.create` (provider doc issued)                                      | ✅ PROVED | 2026-04-24                       | Tier 1 — sandbox API                                                           |
+| YeshInvoice `shareReceiptYeshInvoice` (email sent)                                      | ✅ PROVED | 2026-04-24                       | Tier 1 — sandbox API                                                           |
+| `Receipt.shareStatus` update (pending → sent)                                           | ✅ PROVED | 2026-04-24                       | Tier 1 — Mongo write verified                                                  |
+| First-payment replay / idempotency                                                      | ✅ PROVED | 2026-04-24                       | Tier 1 — E11000 idempotency confirmed                                          |
+| STO recurring replay / idempotency                                                      | ✅ PROVED | 2026-04-24                       | Tier 1 — E11000 idempotency confirmed                                          |
+| Synthetic direct-backend runtime proof (fire-and-forget hook)                           | ✅ PROVED | 2026-04-24                       | Tier 1 — synthetic handler                                                     |
+| Public relay smoke (cardigo.co.il → Netlify → Render)                                   | ✅ PROVED | 2026-04-24                       | Tier 2 — relay (caveat: requires Render warm-up; see below)                    |
 
 ### Known Caveats
 
@@ -668,7 +669,7 @@ User self-service cancel stops **future** recurring charges only. It does NOT tr
 - **Render cold-start / Netlify 9s timeout:** Public relay smoke may return 502 before Render backend warms up. Allow 30–60s warm-up time and retry. This is a false-negative infrastructure caveat, not a bug.
 - **Early polluted fake notify attempt:** One early direct-backend fake notify attempt was made before the real sandbox proof. It created no DB residue. Ledger is clean.
 - **Local sandbox env:** `TRANZILA_TERMINAL=testcards`, `TRANZILA_STO_TERMINAL=testcardstok` — these are sandbox values. Production terminal vars are commented out in `.env`.
-- **PRICES_AGOROT:** Current code value is `3990/39990` (₪39.90 / ₪399.90) — confirmed in `plans.js:72–73`. Active sandbox STO schedule: `dannybestboy@gmail.com`, first-charge-date 2026-05-01, terminal `testcardstok`, ₪39.90/month. **Do NOT change while this schedule is active** — `amount_mismatch` on every recurring notify. Restore production values in a dedicated pre-production contour only after all sandbox STO schedules are cancelled.
+- **PRICES_AGOROT:** Current code value is `3990/39990` (₪39.90 / ₪399.90) — confirmed in `plans.js:72–73`. `TRANZILA_STO_NOTIFY_SANDBOX_E2E_P0` CLOSED/PASS (2026-05-02). Sandbox STO schedule (`dannybestboy@gmail.com`, terminal `testcardstok`) advanced to next charge 01/06/2026. **Do NOT change `PRICES_AGOROT` while active sandbox STO schedules remain** — `amount_mismatch` on every recurring notify. Operator will cancel/deactivate all sandbox STO schedules / test artifacts manually before production cutover. Restore production values in a dedicated pre-production contour only after all active sandbox schedules are cancelled/deactivated.
 
 ### Open Production Gates
 

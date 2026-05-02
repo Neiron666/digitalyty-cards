@@ -2,7 +2,7 @@
 
 **Date:** 2026-04-28  
 **Project:** Cardigo — Israel-first digital business card / mini business page SaaS  
-**Current master state:** Billing hardening + Handshake V2 + STO fast-forward create — all CLOSED/PASS. Waiting for real Tranzila MyBilling recurring webhook on 01/05/2026.  
+**Current master state:** All billing hardening contours CLOSED/PASS. TRANZILA_STO_NOTIFY_SANDBOX_E2E_P0 CLOSED/PASS (2026-05-02). Real Tranzila MyBilling webhook received 01/05/2026 and fully verified.  
 **Purpose:** Full handoff/instruction document for the next ChatGPT conversation. Captures all closed contours, current sandbox posture, pending webhook state, operator verification checklist, cleanup checklist, and anti-drift policy.
 
 ---
@@ -30,20 +30,20 @@ Architecture / Intent
 
 ## 1. Executive State
 
-| Contour                                                                                                    | Status                   |
-| ---------------------------------------------------------------------------------------------------------- | ------------------------ |
-| First-payment notify hardening (consuming gate, startup anti-drift, portal delivery mode)                  | ✅ CLOSED/PASS           |
-| Tranzila Handshake V2 (thtk verification, forged-notify blocked, real payment passed)                      | ✅ CLOSED/PASS           |
-| IframeReturnPage top-level fallback                                                                        | ✅ CLOSED/PASS           |
-| STO create sandbox E2E (full payment → STO → receipt)                                                      | ✅ CLOSED/PASS           |
-| STO fast-forward create (sto-create-custom-date.mjs, dannybestboy@gmail.com, first-charge-date=2026-05-01) | ✅ CLOSED/PASS           |
-| STO notify pre-webhook gate smoke (403 without token, 403 wrong token, 403 direct backend)                 | ✅ CLOSED/PASS           |
-| **STO recurring notify real webhook E2E (TRANZILA_STO_NOTIFY_SANDBOX_E2E_P0)**                             | ⏳ WAITING — 01/05/2026  |
-| Production terminal cutover                                                                                | 🔴 OPEN (future contour) |
-| G6 (production terminal cutover)                                                                           | 🔴 OPEN                  |
-| G7 (production recurring lifecycle proof)                                                                  | 🔴 OPEN                  |
+| Contour                                                                                                    | Status                                                        |
+| ---------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------- |
+| First-payment notify hardening (consuming gate, startup anti-drift, portal delivery mode)                  | ✅ CLOSED/PASS                                                |
+| Tranzila Handshake V2 (thtk verification, forged-notify blocked, real payment passed)                      | ✅ CLOSED/PASS                                                |
+| IframeReturnPage top-level fallback                                                                        | ✅ CLOSED/PASS                                                |
+| STO create sandbox E2E (full payment → STO → receipt)                                                      | ✅ CLOSED/PASS                                                |
+| STO fast-forward create (sto-create-custom-date.mjs, dannybestboy@gmail.com, first-charge-date=2026-05-01) | ✅ CLOSED/PASS                                                |
+| STO notify pre-webhook gate smoke (403 without token, 403 wrong token, 403 direct backend)                 | ✅ CLOSED/PASS                                                |
+| **STO recurring notify real webhook E2E (TRANZILA_STO_NOTIFY_SANDBOX_E2E_P0)**                             | ✅ CLOSED/PASS (2026-05-02, real provider webhook 01/05/2026) |
+| Production terminal cutover                                                                                | 🔴 OPEN (future contour)                                      |
+| G6 (production terminal cutover)                                                                           | 🔴 OPEN                                                       |
+| G7 (production recurring lifecycle proof)                                                                  | 🔴 OPEN                                                       |
 
-**P0 blockers: 0. P1 blockers: 0. Awaiting one real provider webhook.**
+**P0 blockers: 0. P1 blockers: 0. All billing contours closed.**
 
 ---
 
@@ -63,7 +63,7 @@ Architecture / Intent
 | `CARDIGO_STO_NOTIFY_TOKEN`      | configured (not logged, not documented in plaintext)                                                 |
 | `PRICES_AGOROT`                 | `monthly: 3990, yearly: 39990` (₪39.90 / ₪399.90) — confirmed in `backend/src/config/plans.js:72–73` |
 
-**Active sandbox STO schedule:** `dannybestboy@gmail.com`, terminal `testcardstok`, amount ₪39.90, plan monthly, `first-charge-date=2026-05-01`. Do NOT change `PRICES_AGOROT` while this schedule is active.
+**Sandbox STO schedule update:** `TRANZILA_STO_NOTIFY_SANDBOX_E2E_P0` CLOSED/PASS (2026-05-02). Schedule (`dannybestboy@gmail.com`, terminal `testcardstok`) advanced to next charge 01/06/2026. Cleanup required: cancel/deactivate sandbox STO schedule before production cutover and before any unintended future sandbox charge. Operator will handle cleanup manually. Do NOT change `PRICES_AGOROT` while active sandbox STO schedules remain.
 
 ---
 
@@ -185,89 +185,119 @@ Tranzila portal STO notify URL configured: domain `cardigo.co.il`, path `/api/pa
 
 ---
 
-## 4. Pending: TRANZILA_STO_NOTIFY_SANDBOX_E2E_P0
+## 4. CLOSED: TRANZILA_STO_NOTIFY_SANDBOX_E2E_P0
 
-**Status:** `WAITING_FOR_REAL_PROVIDER_WEBHOOK`  
-**Expected date:** 01/05/2026  
-**Target user:** `dannybestboy@gmail.com`  
-**Terminal:** `testcardstok`  
-**Amount:** ₪39.90  
+**Status:** CLOSED / PASS
+**Real provider webhook:** received 01/05/2026, verified 2026-05-02
+**Verification exit:** `STO_NOTIFY_FINAL_VERIFY_EXIT:0`
+**Target user:** `dannybestboy@gmail.com`
+**Terminal:** `testcardstok`
 **Plan:** monthly
+**Amount:** ₪39.90 / 3990 agorot
 
-**Expected chain when webhook arrives:**
+**Verified DB User/Card state:**
 
-```
-Real Tranzila MyBilling recurring charge
-  → POST /api/payments/sto-notify?snk=<token>
-  → Netlify payment-sto-notify.js (token validation)
-  → Backend handleStoNotify
-  → User lookup by tranzilaSto.stoId
-  → supplier / currency / amount checks
-  → providerTxnId idempotency gate
-  → PaymentTransaction created (paid, idempotencyNote="sto_recurring_notify")
-  → User.subscription.expiresAt extended from max(currentExpiresAt, now) + 30 days
-  → Card.billing.paidUntil extended
-  → YeshInvoice Receipt created / shared
-  → Receipt email delivered to dannybestboy@gmail.com
-```
+- `User.plan=monthly`
+- `User.subscription.status=active`
+- `User.subscription.provider=tranzila`
+- `User.subscription.expiresAt=2026-06-27T08:20:38.113Z`
+- `subscriptionExtendedBeyondFirstPayment=true`
+- `renewalFailedAt=null`
+- `User.tranzilaSto.status=created`
+- `stoIdPresent=true` (raw stoId intentionally not documented)
+- `stoLastErrorCode=null`
+- `stoLastErrorMessage=null`
+- `Card.billing.status=active`
+- `Card.billing.plan=monthly`
+- `Card.billing.paidUntil=2026-06-27T08:20:38.113Z`
+- `billingMatchesUserSubscription=true`
+
+**Verified STO recurring PaymentTransaction:**
+
+- `count=1`
+- `latest.status=paid`
+- `latest.plan=monthly`
+- `latest.amountAgorot=3990`
+- `latest.currency=ILS`
+- `latest.failReason=null`
+- `latest.idempotencyNote=sto_recurring_notify`
+- `providerTxnIdPresent=true`
+- `providerTxnIdLooksSto=true`
+- `paymentIntentIdPresent=false` — STO recurring notify path does NOT use PaymentIntent or Handshake V2
+- `rawPayloadHashPresent=true`
+- `payloadAllowlistedForbiddenKeysPresent=[]`
+- `payloadHasStoExternalId=true`
+- `createdAt=2026-05-01T23:20:24.885Z`
+
+**Verified Receipt:**
+
+- `countForLatestStoTxn=1`
+- `latest.status=created`
+- `latest.shareStatus=sent`
+- `documentUniqueKeyPresent=true`
+- `paymentTransactionMatchesLatestStoTxn=true`
+- `createdAt=2026-05-01T23:20:25.361Z`
+- Receipt email arrived.
+
+**Tranzila portal:** Schedule advanced to next charge date 01/06/2026.
+
+**Architecture invariant confirmed:** STO notify path does NOT use PaymentIntent or Handshake V2. Security model: `CARDIGO_STO_NOTIFY_TOKEN` + proxy secret + `stoId` user correlation + supplier/currency/amount checks + `providerTxnId` idempotency. `paymentIntentIdPresent=false` on STO recurring PaymentTransaction confirms path isolation.
 
 ---
 
-## 5. Expected Post-Webhook Verification Checklist
+## 5. Completed Post-Webhook Verification Record — 2026-05-02
 
-After the real Tranzila MyBilling webhook arrives on 01/05/2026, verify the following in order:
+**Webhook event:** Real Tranzila MyBilling recurring charge, 01/05/2026 (`dannybestboy@gmail.com`).
+**Verification completed:** 2026-05-02. Exit: `STO_NOTIFY_FINAL_VERIFY_EXIT:0`.
 
 ### Step 1 — Render log check
 
-Look for this line in Render backend logs:
+Log line confirmed: `[sto-notify] handler result ok:true duplicate:false plan:monthly`
 
-```
-[sto-notify] handler result ok:true duplicate:false plan:monthly
-```
-
-- `ok:true` — required
-- `duplicate:false` — required (first occurrence)
-- No error stack in the surrounding log context
-- No raw token, stoId, or payment details in logs (only boolean presence fields)
+- `ok:true` — ✅ confirmed
+- `duplicate:false` — ✅ confirmed (first occurrence)
+- No error stack, no sensitive data in logs.
 
 ### Step 2 — MongoDB state: `dannybestboy@gmail.com`
 
-| Field                         | Expected                                                            |
+| Field                         | Verified                                                            |
 | ----------------------------- | ------------------------------------------------------------------- |
 | `User.subscription.status`    | `active`                                                            |
-| `User.subscription.expiresAt` | Extended forward (approximately `01/05/2026 + 30d`)                 |
+| `User.subscription.expiresAt` | `2026-06-27T08:20:38.113Z`                                          |
 | `User.renewalFailedAt`        | `null`                                                              |
 | `User.tranzilaSto.status`     | `created` (unchanged — recurring success does not alter STO status) |
 | `stoIdPresent`                | `true` (unchanged)                                                  |
 
 ### Step 3 — PaymentTransaction ledger
 
-| Field                    | Expected                            |
-| ------------------------ | ----------------------------------- |
-| New `PaymentTransaction` | present                             |
-| `status`                 | `paid`                              |
-| `idempotencyNote`        | `"sto_recurring_notify"`            |
-| `amountAgorot`           | `3990`                              |
-| `providerTxnId`          | present (starts with `sto:` prefix) |
+| Field                    | Verified                                                |
+| ------------------------ | ------------------------------------------------------- |
+| New `PaymentTransaction` | ✅ present                                              |
+| `status`                 | `paid`                                                  |
+| `idempotencyNote`        | `sto_recurring_notify`                                  |
+| `amountAgorot`           | `3990`                                                  |
+| `providerTxnIdPresent`   | `true`                                                  |
+| `paymentIntentIdPresent` | `false` — STO recurring path confirmed path-independent |
 
 ### Step 4 — Receipt
 
-| Field         | Expected  |
-| ------------- | --------- |
-| New `Receipt` | present   |
-| `status`      | `created` |
-| `shareStatus` | `sent`    |
-| `sharedAt`    | populated |
+| Field                      | Verified   |
+| -------------------------- | ---------- |
+| New `Receipt`              | ✅ present |
+| `status`                   | `created`  |
+| `shareStatus`              | `sent`     |
+| `documentUniqueKeyPresent` | `true`     |
 
 ### Step 5 — Card billing
 
-| Field                    | Expected                   |
-| ------------------------ | -------------------------- |
-| `Card.billing.paidUntil` | Updated (extended forward) |
+| Field                            | Verified                   |
+| -------------------------------- | -------------------------- |
+| `Card.billing.paidUntil`         | `2026-06-27T08:20:38.113Z` |
+| `billingMatchesUserSubscription` | `true`                     |
 
 ### Step 6 — Email delivery
 
-- Check `dannybestboy@gmail.com` inbox for YeshInvoice receipt email.
+Receipt email arrived at `dannybestboy@gmail.com`. ✅
 
 ### Step 7 — Idempotency architecture note (diagnostic only)
 
@@ -288,7 +318,9 @@ The `providerTxnId` uniqueness constraint (`E11000`) is the duplicate guard. If 
 
 ---
 
-## 7. Cleanup Checklist (after 01/05 webhook verified)
+## 7. Cleanup Checklist — Sandbox STO Schedule / Test Artifacts
+
+**Sandbox schedule advanced to next charge 01/06/2026.** Cancel/deactivate sandbox STO schedule before production cutover and before any unintended future sandbox charge. Operator will handle cleanup manually.
 
 | Item                            | Action                                                              | Command                                                                                                                                          |
 | ------------------------------- | ------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -335,30 +367,32 @@ The following must NOT appear in any documentation, logs, or operator notes:
 | HMAC values              | Raw HMAC digest, nonce, requestTime                     | Never                                                |
 | Provider transaction IDs | Raw `providerTxnId`, `providerDocId`                    | `providerTxnIdPresent: true`                         |
 
-**Test email `dannybestboy@gmail.com`:** may be referenced when operationally needed (it is the current pending STO webhook test candidate).
+**Test email `dannybestboy@gmail.com`:** may be referenced when operationally needed (STO E2E sandbox test user — real webhook verified 01/05/2026; contour CLOSED/PASS 2026-05-02).
 
 ---
 
 ## 10. Next Steps for Next GPT Chat
 
-### Immediate next action (01/05/2026)
+### Contour status (2026-05-02)
 
-When the real Tranzila MyBilling webhook arrives, run the post-webhook verification checklist (§5 above).
+`TRANZILA_STO_NOTIFY_SANDBOX_E2E_P0` = CLOSED/PASS. All billing hardening contours are closed.
 
-Expected outcome: `TRANZILA_STO_NOTIFY_SANDBOX_E2E_P0 = CLOSED/PASS`
+### Immediate operator actions
 
-After verification passes:
+1. Cancel/deactivate sandbox STO schedule (`dannybestboy@gmail.com`, `testcardstok`) before production cutover and before unintended future sandbox charge. See §7 cleanup checklist. Operator handles manually.
+2. Confirm `TRANZILA_STO_CREATE_ENABLED` remains `false` on Render.
+3. Verify no orphaned STO schedules remain in `testcardstok` portal.
 
-1. Run cleanup checklist (§7 above).
-2. Update `billing-flow-ssot.md §16` proof table to add the 01/05 recurring webhook result.
-3. Consider creating a brief handoff update noting `TRANZILA_STO_NOTIFY_SANDBOX_E2E_P0 = CLOSED/PASS`.
+### After sandbox cleanup
 
-### If webhook does not arrive on 01/05
+1. Restore `PRICES_AGOROT` to production values only in a dedicated pre-production contour after all sandbox STO schedules are cancelled.
+2. Update `billing-flow-ssot.md §16` proof table — already updated in this closure batch.
 
-1. Check Render backend logs for any `[sto-notify]` entries on 01/05.
-2. Check Tranzila `testcardstok` portal — was a charge attempt made?
-3. If no charge attempt: use Option C (simulated notify with a real previously-received payload).
-4. Do not re-run `sto-create-custom-date.mjs` without cancelling the existing schedule first.
+### If webhook had not arrived on 01/05
+
+Historical Option C fallback: simulated notify with a real previously-received payload. Not needed — real webhook confirmed.
+
+Do not re-run `sto-create-custom-date.mjs` without cancelling the existing schedule first.
 
 ### After `TRANZILA_STO_NOTIFY_SANDBOX_E2E_P0` is closed
 
@@ -378,9 +412,9 @@ Recommended future contours (in priority order):
 | ------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Do NOT update prior handoff docs                                          | Historical records — modifying them corrupts the chronicle. This doc supersedes `Cardigo_Enterprise_Next_Chat_Master_Handoff_2026-04-26.md` as the current truth. |
 | Do NOT delete `Cardigo_Enterprise_Next_Chat_Master_Handoff_2026-04-26.md` | It is the prior master truth and remains as historical record in `current/`.                                                                                      |
-| Do NOT change `PRICES_AGOROT`                                             | Active STO schedule at `₪39.90` (`dannybestboy@gmail.com`). Code already matches. No action needed.                                                               |
+| Do NOT change `PRICES_AGOROT` while active sandbox schedules exist        | Sandbox STO schedule (dannybestboy@gmail.com, testcardstok) must be cancelled/deactivated first. Operator handles manually.                                       |
 | Do NOT set `TRANZILA_STO_CREATE_ENABLED=true`                             | Must stay `false` until next approved test window or production rollout.                                                                                          |
-| Do NOT run `sto-cancel.mjs` yet                                           | Wait until 01/05 webhook is verified before cleanup.                                                                                                              |
+| Sandbox STO schedule cleanup                                              | Cancel/deactivate sandbox STO schedule before production cutover. Operator handles manually. See §7 cleanup checklist.                                            |
 | Do NOT reopen admin user delete lifecycle contour                         | Closed and verified 2026-04-26. No regression observed.                                                                                                           |
 | Do NOT reopen iframe checkout E2E contour                                 | Closed 2026-04-25, hardened 2026-04-26. No regression observed.                                                                                                   |
 | Do NOT carry sandbox terminal IDs to production                           | `testcards` and `testcardstok` are sandbox only. Production terminal cutover is a separate future contour.                                                        |
