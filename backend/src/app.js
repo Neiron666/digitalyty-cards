@@ -3,6 +3,7 @@ import cookieParser from "cookie-parser";
 import cors from "cors";
 import helmet from "helmet";
 import * as Sentry from "@sentry/node";
+import mongoose from "mongoose";
 import cardRoutes from "./routes/card.routes.js";
 import { errorMiddleware } from "./middlewares/error.middleware.js";
 import uploadRoutes from "./routes/upload.routes.js";
@@ -134,7 +135,10 @@ app.use("/api/account", accountRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/unsubscribe", unsubscribeRoutes);
 app.get("/api/health", (req, res) => {
-    res.json({ status: "OK" });
+    if (mongoose.connection.readyState === 1) {
+        return res.json({ status: "OK", db: "connected" });
+    }
+    return res.status(503).json({ status: "ERROR", code: "DB_NOT_READY" });
 });
 app.use("/api/analytics", analyticsRoutes);
 app.use("/api/site-analytics", siteAnalyticsRoutes);

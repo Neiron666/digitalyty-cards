@@ -4,6 +4,7 @@ import paymentProvider from "../services/payment/index.js";
 import PaymentIntent from "../models/PaymentIntent.model.js";
 import User from "../models/User.model.js";
 import { PRICES_AGOROT } from "../config/plans.js";
+import * as Sentry from "@sentry/node";
 
 const router = Router();
 
@@ -323,6 +324,17 @@ router.post("/notify", async (req, res) => {
         // Only infra failures (DB down, network) reach here.
         // Signature/business failures are handled inside handleNotify (no throw).
         console.error("[notify] infra failure:", err.message);
+        const sentryActive =
+            typeof Sentry.getClient === "function" && !!Sentry.getClient();
+        if (sentryActive) {
+            Sentry.captureException(err, {
+                tags: {
+                    area: "payments",
+                    route: "notify",
+                    failureType: "infra_failure",
+                },
+            });
+        }
         res.status(500).send("ERROR");
     }
 });
@@ -370,6 +382,17 @@ router.post("/sto-notify", async (req, res) => {
         // Only infra failures (DB down, network) reach here.
         // Business failures are handled inside handleStoNotify (no throw).
         console.error("[sto-notify] infra failure:", err.message);
+        const sentryActive =
+            typeof Sentry.getClient === "function" && !!Sentry.getClient();
+        if (sentryActive) {
+            Sentry.captureException(err, {
+                tags: {
+                    area: "payments",
+                    route: "sto-notify",
+                    failureType: "infra_failure",
+                },
+            });
+        }
         res.status(500).send("ERROR");
     }
 });
