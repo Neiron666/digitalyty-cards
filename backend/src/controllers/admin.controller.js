@@ -1521,6 +1521,9 @@ export async function adminRevokeUserSubscription(req, res) {
             expiresAt: null,
             provider: "admin",
         },
+        tranzilaToken: null,
+        "tranzilaTokenMeta.expMonth": null,
+        "tranzilaTokenMeta.expYear": null,
     };
 
     const user = await User.findByIdAndUpdate(
