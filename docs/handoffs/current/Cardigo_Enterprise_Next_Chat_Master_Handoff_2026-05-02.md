@@ -160,10 +160,10 @@ PROJECT MODE: Cardigo enterprise workflow.
 - Flex only — no CSS Grid.
 - Mobile-first mandatory.
 - Typography policy:
-  - `font-size` только через `var(--fs-*)`;
-  - `--fs-*` только rem-based;
-  - не использовать `px`, `em`, `%`, `vw`, `vh`, `clamp`, fluid typography;
-  - не использовать `calc(non-rem)` для font-size.
+    - `font-size` только через `var(--fs-*)`;
+    - `--fs-*` только rem-based;
+    - не использовать `px`, `em`, `%`, `vw`, `vh`, `clamp`, fluid typography;
+    - не использовать `calc(non-rem)` для font-size.
 - Не создавать ad hoc typography tokens.
 - Не протаскивать card-scope tokens в app/public/auth/admin/site-shell контекст.
 - Preview-only styles only under `[data-preview="phone"]`.
@@ -211,11 +211,11 @@ Frontend stack: React + Vite + CSS Modules.
 - Use collapsible/danger visual hierarchy when action is sensitive.
 - Disable + explain is better than disappearing/reappearing when user needs to understand why an action is unavailable.
 - For billing/payment actions, UI must clearly state:
-  - whether Premium remains active;
-  - whether payment happens now;
-  - whether receipt is issued;
-  - whether auto-renewal will work afterward;
-  - whether new checkout is needed later.
+    - whether Premium remains active;
+    - whether payment happens now;
+    - whether receipt is issued;
+    - whether auto-renewal will work afterward;
+    - whether new checkout is needed later.
 
 ---
 
@@ -246,11 +246,11 @@ Backend stack: Node.js + Express + MongoDB / Mongoose.
 - Do not expose raw payment credentials.
 - Do not expose raw provider tokens.
 - Use booleans like:
-  - `stoIdPresent`;
-  - `tranzilaTokenPresent`;
-  - `providerTxnIdPresent`;
-  - `documentUniqueKeyPresent`;
-  - `recipientEmailMatchesTarget`.
+    - `stoIdPresent`;
+    - `tranzilaTokenPresent`;
+    - `providerTxnIdPresent`;
+    - `documentUniqueKeyPresent`;
+    - `recipientEmailMatchesTarget`.
 - Never document or log actual token / STO / provider transaction / provider document values.
 
 ---
@@ -392,7 +392,7 @@ Manual smoke:
 - Resume auto-renewal works.
 - Tranzila schedule updates correctly.
 - Rate-limit Hebrew message appears:
-  - `בוצעו יותר מדי ניסיונות. נסו שוב מאוחר יותר.`
+    - `בוצעו יותר מדי ניסיונות. נסו שוב מאוחר יותר.`
 
 ### 9.2 YeshInvoice missing email suspicion
 
@@ -437,29 +437,29 @@ Status: CLOSED / PASS / manually smoke-verified.
 Implemented behavior:
 
 - `GET /api/account/me` returns safe `paymentMethod` DTO:
-  - `saved`;
-  - `expired`;
-  - `canDelete`.
+    - `saved`;
+    - `expired`;
+    - `canDelete`.
 - `POST /api/account/delete-payment-method`:
-  - requireAuth;
-  - no request body;
-  - 5/24h rate limit;
-  - in-flight guard;
-  - allowed only when STO status is `null`, absent, `cancelled`, or `failed`;
-  - blocks `created`, `pending`, and unknown statuses fail-closed;
-  - clears only:
-    - `tranzilaToken = null`;
-    - `tranzilaTokenMeta.expMonth = null`;
-    - `tranzilaTokenMeta.expYear = null`;
-  - does not touch subscription, Card.billing, renewalFailedAt, STO state, PaymentTransaction, Receipt, YeshInvoice, Mailjet;
-  - idempotent if token already missing.
+    - requireAuth;
+    - no request body;
+    - 5/24h rate limit;
+    - in-flight guard;
+    - allowed only when STO status is `null`, absent, `cancelled`, or `failed`;
+    - blocks `created`, `pending`, and unknown statuses fail-closed;
+    - clears only:
+        - `tranzilaToken = null`;
+        - `tranzilaTokenMeta.expMonth = null`;
+        - `tranzilaTokenMeta.expYear = null`;
+    - does not touch subscription, Card.billing, renewalFailedAt, STO state, PaymentTransaction, Receipt, YeshInvoice, Mailjet;
+    - idempotent if token already missing.
 
 Frontend:
 
 - Delete payment method UI added in SettingsPanel.
 - Button moved into collapsible danger section:
-  - `ניהול פרטי תשלום שמורים`;
-  - button `מחק פרטי תשלום`.
+    - `ניהול פרטי תשלום שמורים`;
+    - button `מחק פרטי תשלום`.
 - When auto-renewal is active, section remains visible but button disabled with explanation.
 - After cancel, delete becomes enabled immediately without reload.
 - After resume, delete becomes disabled immediately without reload.
@@ -572,24 +572,18 @@ Expected/current policy:
 
 ### Admin revoke subscription
 
-Current known behavior:
+**CONTOUR ADMIN_REVOKE_TOKEN_CLEAR_P1 — CLOSED 2026-05-03.**
 
-- cancels STO provider-first;
-- sets plan/subscription inactive/free/admin;
-- currently token retention needs separate contour review.
+Implemented behavior:
 
-Future recommended contour:
+- cancels STO provider-first (unchanged);
+- sets plan/subscription inactive/free/admin (unchanged);
+- now also clears local stored token fields atomically: `tranzilaToken`, `tranzilaTokenMeta.expMonth`, `tranzilaTokenMeta.expYear`;
+- token clear is local DB only — no provider-side token invalidation;
+- PaymentTransaction/Receipt retained; no YeshInvoice/Mailjet/payment/refund side effects;
+- resume-auto-renewal blocked after revoke via `token_missing` gate.
 
-```text
-ADMIN_REVOKE_TOKEN_CLEAR_P1
-```
-
-Audit whether admin revoke should also clear `tranzilaToken` because after revoke:
-
-- subscription inactive;
-- STO cancelled;
-- resume not meaningful;
-- token may become stranded data.
+See dedicated handoff: `docs/handoffs/current/Cardigo_Enterprise_Handoff_AdminRevokeTokenClear_2026-05-03.md`
 
 ---
 
@@ -980,11 +974,11 @@ Example style:
 
 ```javascript
 printjson({
-  userFound: Boolean(user),
-  userId: user?._id ? String(user._id) : null,
-  stoIdPresent: Boolean(user?.tranzilaSto?.stoId),
-  tranzilaTokenPresent: Boolean(user?.tranzilaToken),
-  receiptIdPresent: Boolean(txn?.receiptId),
+    userFound: Boolean(user),
+    userId: user?._id ? String(user._id) : null,
+    stoIdPresent: Boolean(user?.tranzilaSto?.stoId),
+    tranzilaTokenPresent: Boolean(user?.tranzilaToken),
+    receiptIdPresent: Boolean(txn?.receiptId),
 });
 ```
 

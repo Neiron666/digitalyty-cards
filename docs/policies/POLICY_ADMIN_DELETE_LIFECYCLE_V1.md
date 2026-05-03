@@ -129,17 +129,21 @@ When `cancelTranzilaStoForUser` returns `ok: false`, the blocking error must sur
 
 ## 4. Admin Subscription Revoke Policy
 
-`adminRevokeUserSubscription` sets `plan = "free"` and `subscription.status = "inactive"`. This does NOT cancel the Tranzila STO.
+**Status: CLOSED.** Contour `PROVIDER_CANCELLATION_BEFORE_DELETE_OR_REVOKE` closed 2026-04-26. Contour `ADMIN_REVOKE_TOKEN_CLEAR_P1` closed 2026-05-03.
 
-### 4.1 Current gap
+`adminRevokeUserSubscription` is provider/STO-first. It calls `cancelTranzilaStoForUser(existing, { source: "admin_revoke" })` before any local write. If provider cancellation fails (`!stoResult.ok && !stoResult.skipped`), revoke returns 409 `STO_CANCEL_REQUIRED` and no local writes occur. If STO is already cancelled, absent, or safely skipped, execution proceeds.
 
-If an admin revokes a subscription while an STO is `"created"`, the STO-notify webhook will fire on the next renewal date and re-activate the subscription by writing a new `PaymentTransaction` with `status: "paid"` and updating `user.plan`, `user.subscription`, and `Card.billing`. The admin revoke is silently undone by the next renewal.
+After safe STO cancellation/skip, a single atomic `User.findByIdAndUpdate` performs:
 
-### 4.2 Target policy
+- `plan = "free"`
+- `subscription.status = "inactive"`, `subscription.expiresAt = null`, `subscription.provider = "admin"`
+- `tranzilaToken = null`
+- `tranzilaTokenMeta.expMonth = null`
+- `tranzilaTokenMeta.expYear = null`
 
-- Admin subscription revoke for a user with `tranzilaSto.status = "created"` **must** call `cancelTranzilaStoForUser` before applying the local plan/subscription downgrade.
-- If STO cancellation fails, the revoke operation must fail and return an actionable error.
-- If STO is already cancelled or absent, the revoke proceeds immediately.
+The token clear is local DB only. No provider-side token invalidation. `PaymentTransaction` and `Receipt` are retained. No YeshInvoice document, Mailjet email, payment, or refund is created. After revoke, `token_missing` gate blocks resume-auto-renewal.
+
+> **Contrast with cancel-renewal:** Self-service cancel-renewal intentionally retains `tranzilaToken` so the user can resume auto-renewal. Admin revoke clears the token because the subscription is being revoked by the platform.
 
 ---
 

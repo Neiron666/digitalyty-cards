@@ -641,7 +641,7 @@ Success and idempotent-success paths (`messageKey: "cancelled"` and `messageKey:
 
 > **State-sync note:** After a successful cancel, the STO status transitions to `"cancelled"`, which makes `canDelete` eligible to become `true` (subject to token presence). The frontend merges the returned `paymentMethod` directly into its account state, so the delete payment method button may become enabled immediately without a reload.
 >
-> **Token preserved on cancel:** Cancel-renewal does NOT delete the stored Tranzila token. `paymentMethod.saved` remains `true` after cancellation. The token is only removed by a separate `POST /api/account/delete-payment-method` call (see §20).
+> **Token preserved on cancel:** Cancel-renewal does NOT delete the stored Tranzila token. `paymentMethod.saved` remains `true` after cancellation. The token is removed by a separate `POST /api/account/delete-payment-method` call (see §20) or by admin subscription revoke (see §20 Future/Deferred — admin revoke token cleanup). This distinction is intentional: cancel-renewal keeps the token so the user can resume auto-renewal self-service; admin revoke clears the token because the subscription is being revoked by the platform.
 
 ### Provider-First Architecture
 
@@ -1169,6 +1169,6 @@ The following do NOT happen when `POST /api/account/delete-payment-method` is ca
 
 - **Update/replace payment method:** Replacing the stored token with a new card is not implemented. No self-service path exists for active-premium users to replace their payment method. After the current subscription expires, a normal checkout flow may be used to subscribe with a new card.
 - **Provider-side token invalidation:** Whether the deleted local token can be invalidated at the Tranzila provider level requires Tranzila API capability confirmation. Not implemented.
-- **Admin revoke token cleanup:** If admin subscription revoke should also clear the local token, this requires a separate contour decision and implementation.
+- **Admin revoke token cleanup:** Contour `ADMIN_REVOKE_TOKEN_CLEAR_P1` — **CLOSED 2026-05-03.** Admin subscription revoke (`POST /api/admin/billing/users/:userId/subscription/revoke`) now clears the local stored token fields atomically with the subscription downgrade, after STO cancellation succeeds or safely skips. Fields cleared: `tranzilaToken`, `tranzilaTokenMeta.expMonth`, `tranzilaTokenMeta.expYear`. This is local DB cleanup only — it does NOT invalidate the token at the Tranzila provider level (provider-side invalidation remains unconfirmed and not implemented). PaymentTransaction and Receipt are retained. No YeshInvoice document, Mailjet email, payment, or refund is created. After revoke, the user cannot resume auto-renewal using the old token (`token_missing` gate applies). Recovery requires a new valid payment through a future checkout flow.
 
-**Cross-reference:** `docs/handoffs/current/Cardigo_Enterprise_Handoff_DeletePaymentMethod_2026-05-02.md`
+**Cross-reference:** `docs/handoffs/current/Cardigo_Enterprise_Handoff_DeletePaymentMethod_2026-05-02.md`, `docs/handoffs/current/Cardigo_Enterprise_Handoff_AdminRevokeTokenClear_2026-05-03.md`

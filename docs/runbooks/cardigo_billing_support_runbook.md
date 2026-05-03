@@ -102,14 +102,15 @@ Before any billing action:
 > Before executing the Cardigo-side downgrade steps below, check the user's `tranzilaSto` state.
 >
 > - If `tranzilaSto.status === "created"` AND `tranzilaSto.stoId` is present, the user has an active recurring standing order at Tranzila. Downgrading Cardigo alone will NOT stop the recurring charge.
-> - Admin revoke / Cardigo-side downgrade is not complete cancellation for STO users. Provider-side STO must be deactivated separately.
-> - **First, check `tranzilaSto.status`:**
->     - If `"cancelled"` — the user has already self-service-cancelled via the product UI. Provider-side cancellation is already done. Do NOT cancel at the provider again. You may proceed with any Cardigo-side downgrade if still required.
+> - **Admin revoke endpoint (`POST /api/admin/billing/users/:userId/subscription/revoke`) handles STO cancellation automatically as a hard precondition.** It calls `cancelTranzilaStoForUser` internally before any local write. If STO cancellation fails, the endpoint returns 409 `STO_CANCEL_REQUIRED` — operator must use `sto-cancel.mjs` script or Tranzila portal to resolve the STO before retrying the revoke. If STO is already cancelled or absent, revoke proceeds immediately.
+> - After a successful admin revoke, the local stored payment token (`tranzilaToken` and `tranzilaTokenMeta`) is automatically cleared. The user cannot resume auto-renewal using the old token after a platform revoke. No payment, receipt, refund, YeshInvoice document, or email is created by admin revoke.
+> - **First, check `tranzilaSto.status` (applies when using manual/legacy admin billing-set endpoint, not the revoke endpoint):**
+>     - If `"cancelled"` — the user has already self-service-cancelled via the product UI. Provider-side cancellation is already done. Do NOT cancel at the provider again.
 >     - If `"created"` AND a `stoId` is present — an active STO is registered at Tranzila. Downgrading Cardigo alone will NOT stop the recurring charge.
 >     - If `"pending"` or `"failed"` — do NOT assume there is no provider-side STO. Inspect Tranzila portal / logs before downgrade.
->     - If `null` / no `stoId` — no active STO is known in Cardigo. Standard downgrade steps below may proceed.
-> - **User self-service cancel path (product UI):** `POST /api/account/cancel-renewal` calls `cancelTranzilaStoForUser`, which cancels provider-side before writing `tranzilaSto.status = "cancelled"` in Mongo. This P0 gate is fully satisfied by that path.
-> - **Operator manual cancel path:** Use `sto-cancel.mjs` script or Tranzila portal to deactivate provider-side STO. Document the action: ticket ID, operator, date/time.
+>     - If `null` / no `stoId` — no active STO is known in Cardigo. Standard downgrade steps may proceed.
+> - **User self-service cancel path (product UI):** `POST /api/account/cancel-renewal` calls `cancelTranzilaStoForUser`, which cancels provider-side before writing `tranzilaSto.status = "cancelled"` in Mongo.
+> - **Operator manual / fallback cancel path:** Use `sto-cancel.mjs` script or Tranzila portal to deactivate provider-side STO when the revoke endpoint returns `STO_CANCEL_REQUIRED` or when using manual billing-set operations. Document the action: ticket ID, operator, date/time.
 > - Never mark `tranzilaSto.status = "cancelled"` in Mongo before provider-side cancellation is confirmed.
 > - Never use ad-hoc DB mutation as the normal cancellation flow.
 >   Given Tranzila single‑payment:

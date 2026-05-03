@@ -106,8 +106,19 @@ Function: `adminRevokeUserSubscription`
 
 1. **STO cancel** — `cancelTranzilaStoForUser(existing, { source: "admin_revoke" })`
     - Same block semantics — hard-block on `!ok && !skipped`
-2. **Local subscription downgrade** — update `user.subscription` to free/inactive in Mongo
+    - If provider cancellation fails, revoke returns 409 `STO_CANCEL_REQUIRED` — no local writes occur
+2. **Local subscription downgrade and token clear** — single atomic `User.findByIdAndUpdate` sets:
+    - `plan = "free"`
+    - `subscription.status = "inactive"`, `subscription.expiresAt = null`, `subscription.provider = "admin"`
+    - `tranzilaToken = null` (ADMIN_REVOKE_TOKEN_CLEAR_P1, closed 2026-05-03)
+    - `tranzilaTokenMeta.expMonth = null`
+    - `tranzilaTokenMeta.expYear = null`
+    - Token clear is local DB only. No provider-side token invalidation.
 3. **No user deletion** — `User.deleteOne` is never called in this flow
+4. **Fiscal records retained** — `PaymentTransaction` and `Receipt` are not touched. No YeshInvoice document, Mailjet email, payment, or refund is created.
+5. **Resume-auto-renewal blocked** — after revoke, `token_missing` gate applies. Recovery requires a new valid payment through a future checkout flow.
+
+> **Contrast with cancel-renewal:** Self-service `POST /api/account/cancel-renewal` intentionally retains `tranzilaToken` so the user can resume auto-renewal self-service. Admin revoke clears the token because the subscription is being revoked by the platform.
 
 ---
 
