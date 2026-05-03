@@ -7,5 +7,4 @@
 /card/*       /index.html   200
 /c/*          /index.html   200
 /gate.html    /index.html   404
-/.netlify/functions/auth  /index.html   404
 /*            /index.html   200
