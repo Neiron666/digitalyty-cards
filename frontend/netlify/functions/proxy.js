@@ -62,54 +62,6 @@ exports.handler = async function handler(event) {
             return { statusCode: 404, body: "Not found" };
         }
 
-        // Narrow bypass: public analytics write endpoints do not require
-        // the gate cookie. POST only - no other path is bypassed.
-        const isPublicAnalyticsBypass =
-            String(event.httpMethod || "").toUpperCase() === "POST" &&
-            (targetPath === "/api/site-analytics/track" ||
-                targetPath === "/api/analytics/track");
-
-        if (!isPublicAnalyticsBypass) {
-            const expectedGateCookie = String(
-                process.env.CARDIGO_GATE_COOKIE_VALUE || "",
-            ).trim();
-            const headers = event && event.headers ? event.headers : {};
-            const cookieHeader = String(headers.cookie || headers.Cookie || "");
-
-            if (!expectedGateCookie) {
-                return {
-                    statusCode: 500,
-                    headers: {
-                        "content-type": "application/json; charset=utf-8",
-                        "cache-control": "no-store",
-                        vary: "Cookie",
-                    },
-                    body: JSON.stringify({ ok: false, code: "GATE_MISCONFIG" }),
-                };
-            }
-
-            let providedGateCookie = "";
-            for (const part of cookieHeader.split(";")) {
-                const [name, ...rest] = String(part).split("=");
-                if (String(name || "").trim() !== "__Host-cardigo_gate")
-                    continue;
-                providedGateCookie = rest.join("=").trim();
-                break;
-            }
-
-            if (providedGateCookie !== expectedGateCookie) {
-                return {
-                    statusCode: 401,
-                    headers: {
-                        "content-type": "application/json; charset=utf-8",
-                        "cache-control": "no-store",
-                        vary: "Cookie",
-                    },
-                    body: JSON.stringify({ ok: false, code: "GATE_REQUIRED" }),
-                };
-            }
-        }
-
         const qs = getQueryString(event);
         const url = `${BACKEND_ORIGIN}${targetPath}${qs ? `?${qs}` : ""}`;
 
