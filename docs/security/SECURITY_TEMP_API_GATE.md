@@ -1,3 +1,8 @@
+> **RETIRED / ARCHIVED — 2026-05-03**
+> This temporary API gate document is historical only. The public gate has been removed from production. `frontend/netlify/functions/proxy.js` no longer checks `CARDIGO_GATE_COOKIE_VALUE` or `__Host-cardigo_gate`. `frontend/public/gate.html` was removed and `/gate.html` is tombstoned to HTTP 404. `frontend/netlify/functions/auth.js` is now a 404 tombstone and no longer performs password/cookie issuance. Do not use this document as an operational runbook. Current production truth is documented in `docs/handoffs/current/Cardigo_Enterprise_Production_Launch_Handoff_2026-05-03.md`.
+
+---
+
 # Temporary API Gate (Password + Cookie) + Proxy Origin Lock
 
 This repo currently uses a **temporary password gate** to restrict access to proxied backend endpoints during testing, plus a **shared-secret origin lock** to prevent direct access to the Render backend origin.
