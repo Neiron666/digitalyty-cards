@@ -99,6 +99,14 @@ app.use((req, res, next) => {
     const sharedSecret = process.env.CARDIGO_PROXY_SHARED_SECRET;
     if (!sharedSecret) return next();
 
+    // Render internal health check cannot inject x-cardigo-proxy-secret.
+    // GET /api/health is safe to bypass: it exposes only db readiness status,
+    // no user data, no credentials, no secrets, no stack traces.
+    // POST /api/health and any sub-path remain behind the proxy-secret guard.
+    if (req.method === "GET" && req.path === "/api/health") {
+        return next();
+    }
+
     const allowLocalDirect = process.env.ALLOW_LOCAL_DIRECT === "1";
     const isProd = process.env.NODE_ENV === "production";
     const remoteAddress = req.socket?.remoteAddress || "";
