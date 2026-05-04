@@ -171,8 +171,7 @@ Additionally:
 
 **Future optional hardening (P2, non-blocking):**
 
-- Add an explicit `MONGO_URI` production-guard check (e.g., refuse to run if `MONGO_URI` contains the production Atlas hostname) across all controlled-write sanity scripts.
-- This would prevent accidental production fixture writes. Not blocking for current status.
+- ~~Add an explicit `MONGO_URI` production-guard check (e.g., refuse to run if `MONGO_URI` contains the production Atlas hostname) across all controlled-write sanity scripts.~~ **COMPLETED** in contour `CONTROLLED_WRITE_SANITY_PRODUCTION_DB_GUARD` (2026-05-04). All three new QA sanity scripts (`sanity:analytics`, `sanity:booking`, `sanity:leads`) — and all 11 controlled-write scripts in the full suite — now call `assertControlledWriteSanityTarget` (from `backend/scripts/lib/controlled-write-guard.mjs`) before DB connect. They fail closed on production-like DB targets unless an explicit verbose override is set. See `docs/handoffs/current/Cardigo_Enterprise_Handoff_2026-05-04_ControlledWriteSanity_ProductionDBGuard_Closed.md`.
 
 ---
 
@@ -215,7 +214,7 @@ Additionally:
 - No production deploy.
 - No production mutation.
 - No CI workflow changes.
-- No global production-DB guard added to the sanity suite (deferred, see Section 9).
+- ~~No global production-DB guard added to the sanity suite (deferred, see Section 9).~~ Guard was subsequently completed in contour `CONTROLLED_WRITE_SANITY_PRODUCTION_DB_GUARD` (2026-05-04) — all 11 controlled-write scripts are now guarded.
 - No archive handoffs modified.
 
 ---

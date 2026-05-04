@@ -459,6 +459,10 @@ P3.5 — Sandbox STO schedule cleanup confirmation (testcardstok sandbox schedul
    Dedicated controlled-write local sanity scripts added for analytics, booking, and leads: `sanity:analytics` (9 checks), `sanity:booking` (4 checks), `sanity:leads` (6 checks). Shared fixture helper `sanity-shared-fixtures.mjs` added. All target sanities passed EXIT:0; existing backend regression sanity suite passed EXIT:0; frontend gates/build passed EXIT:0. Scripts are local/staging controlled-write checks and must not be run against production `MONGO_URI`.
    See: `docs/handoffs/current/Cardigo_Enterprise_Handoff_2026-05-04_OrgPremiumFeature_QA_SanityCoverage_Closed.md`
 
+10. CONTROLLED_WRITE_SANITY_PRODUCTION_DB_GUARD — **CLOSED / VERIFIED (2026-05-04)**.
+    Added shared fail-closed guard (`backend/scripts/lib/controlled-write-guard.mjs`) for all 11 controlled-write sanity scripts. Guard blocks production-like DB targets by default (DB name `cardigo_prod`, any name containing `prod`, empty DB name, unparseable URI, or `NODE_ENV=production`) and requires an explicit verbose override for intentionally safe disposable targets with production-like names. CI audit confirmed `MONGO_URI_DRIFT_CHECK` targets `cardigo_ci` — not production-like — so no CI override is required. All 11 fail-closed runtime tests passed. All 7 read-only scripts unguarded and passing.
+    See: `docs/handoffs/current/Cardigo_Enterprise_Handoff_2026-05-04_ControlledWriteSanity_ProductionDBGuard_Closed.md`
+
 ---
 
 ## 17. Anti-Secret / Anti-Overclaim Policy
