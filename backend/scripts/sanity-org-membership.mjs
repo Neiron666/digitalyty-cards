@@ -4,6 +4,10 @@ import crypto from "node:crypto";
 
 import mongoose from "mongoose";
 import { assertControlledWriteSanityTarget } from "./lib/controlled-write-guard.mjs";
+import {
+    SANITY_INVITE_PASSWORD,
+    extractTokenFromInviteLink,
+} from "./sanity-shared-fixtures.mjs";
 
 function assert(condition, message) {
     if (!condition) throw new Error(message);
@@ -11,25 +15,6 @@ function assert(condition, message) {
 
 function randomHex(bytes = 6) {
     return crypto.randomBytes(bytes).toString("hex");
-}
-
-function extractTokenFromInviteLink(inviteLink) {
-    if (typeof inviteLink !== "string" || !inviteLink.trim()) return "";
-    const raw = inviteLink.trim();
-
-    try {
-        const u = new URL(raw);
-        return String(u.searchParams.get("token") || "").trim();
-    } catch {
-        // Fallback for unexpected non-absolute URLs.
-        const m = raw.match(/[?&]token=([^&]+)/i);
-        if (!m) return "";
-        try {
-            return decodeURIComponent(String(m[1] || "")).trim();
-        } catch {
-            return String(m[1] || "").trim();
-        }
-    }
 }
 
 async function listen(serverApp) {
@@ -67,8 +52,6 @@ async function requestJson({ baseUrl, path, method, headers, body }) {
 function isOk(status) {
     return status >= 200 && status < 300;
 }
-
-const SANITY_INVITE_PASSWORD = "Sanity#Pass12345";
 
 async function getOrgMembershipIndexDebt(OrganizationMember) {
     try {

@@ -1,7 +1,7 @@
 /**
  * sanity-shared-fixtures.mjs
  *
- * Shared utility functions for sanity-analytics, sanity-booking, sanity-leads.
+ * Shared utility functions for backend sanity scripts.
  * NOT a standalone script. Import from the individual sanity scripts only.
  * Contains no mongoose model imports and no side effects.
  */
@@ -48,3 +48,20 @@ export async function requestJson({ baseUrl, path, method, headers, body }) {
 }
 
 export const SANITY_INVITE_PASSWORD = "Sanity#Pass12345";
+
+export function extractTokenFromInviteLink(inviteLink) {
+    if (typeof inviteLink !== "string" || !inviteLink.trim()) return "";
+    const raw = inviteLink.trim();
+    try {
+        const url = new URL(raw);
+        return String(url.searchParams.get("token") || "").trim();
+    } catch {
+        const match = raw.match(/[?&]token=([^&]+)/i);
+        if (!match) return "";
+        try {
+            return decodeURIComponent(String(match[1] || "")).trim();
+        } catch {
+            return String(match[1] || "").trim();
+        }
+    }
+}

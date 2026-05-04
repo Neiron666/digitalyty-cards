@@ -4,6 +4,10 @@ import crypto from "node:crypto";
 
 import mongoose from "mongoose";
 import { assertControlledWriteSanityTarget } from "./lib/controlled-write-guard.mjs";
+import {
+    SANITY_INVITE_PASSWORD,
+    extractTokenFromInviteLink,
+} from "./sanity-shared-fixtures.mjs";
 
 // Node 22 treats unhandled rejections as fatal by default.
 // Mongoose index creation can reject during startup if DB indexes are out of sync.
@@ -21,25 +25,6 @@ function assert(condition, message) {
 
 function randomHex(bytes = 6) {
     return crypto.randomBytes(bytes).toString("hex");
-}
-
-function extractTokenFromInviteLink(inviteLink) {
-    if (typeof inviteLink !== "string" || !inviteLink.trim()) return "";
-    const raw = inviteLink.trim();
-
-    try {
-        const u = new URL(raw);
-        return String(u.searchParams.get("token") || "").trim();
-    } catch {
-        // Fallback for unexpected non-absolute URLs.
-        const m = raw.match(/[?&]token=([^&]+)/i);
-        if (!m) return "";
-        try {
-            return decodeURIComponent(String(m[1] || "")).trim();
-        } catch {
-            return String(m[1] || "").trim();
-        }
-    }
 }
 
 async function listen(serverApp) {
@@ -82,8 +67,6 @@ async function requestText({ url, method, headers }) {
     const text = await res.text();
     return { status: res.status, text };
 }
-
-const SANITY_INVITE_PASSWORD = "Sanity#Pass12345";
 
 async function getCardIndexDebt(Card) {
     try {
