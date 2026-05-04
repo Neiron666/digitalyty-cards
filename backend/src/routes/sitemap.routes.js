@@ -6,6 +6,7 @@ import Organization from "../models/Organization.model.js";
 import OrganizationMember from "../models/OrganizationMember.model.js";
 import { isEntitled, isTrialExpired, resolveBilling } from "../utils/trial.js";
 import { resolveEffectiveTier } from "../utils/tier.js";
+import { resolveOrgEntitlementBilling } from "../utils/orgEntitlement.util.js";
 import { getSiteUrl } from "../utils/siteUrl.util.js";
 import { getPersonalOrgId } from "../utils/personalOrg.util.js";
 
@@ -44,20 +45,57 @@ router.get("/sitemap.xml", async (req, res) => {
         );
 
         const now = new Date();
-        const visible = cards
-            .filter((c) => !(isTrialExpired(c, now) && !isEntitled(c, now)))
-            .filter((c) => {
-                // Exclude free-tier cards from sitemap (noindex policy).
-                const billing = resolveBilling(c, now);
-                const tier = resolveEffectiveTier({
-                    card: c,
-                    effectiveBilling: billing,
-                    now,
-                });
-                return (tier?.tier || "free") !== "free";
-            });
-
         const personalOrgIdStr = String(personalOrgId);
+
+        // First pass: trial/entitlement gate only (free-tier filter deferred until org
+        // entitlement data is loaded, so org-owned premium cards are not prematurely excluded).
+        const candidateCards = cards.filter(
+            (c) => !(isTrialExpired(c, now) && !isEntitled(c, now)),
+        );
+
+        // Collect company org IDs from candidates (before tier filter) so we can
+        // batch-load org entitlement in a single query.
+        const candidateCompanyOrgIds = Array.from(
+            new Set(
+                candidateCards
+                    .map((c) => (c?.orgId ? String(c.orgId) : ""))
+                    .filter((id) => id && id !== personalOrgIdStr),
+            ),
+        );
+
+        // Batch-load orgs with orgEntitlement (one query, no N+1).
+        // isActive filter is applied here so resolveOrgEntitlementBilling sees the correct flag.
+        const orgs = candidateCompanyOrgIds.length
+            ? await Organization.find({
+                  _id: { $in: candidateCompanyOrgIds },
+                  isActive: true,
+              })
+                  .select("_id slug isActive orgEntitlement")
+                  .lean()
+            : [];
+        const orgById = new Map(orgs.map((o) => [String(o._id), o]));
+        const orgSlugById = new Map(orgs.map((o) => [String(o._id), o.slug]));
+
+        // Second pass: apply full tier filter, using org entitlement for org-owned cards.
+        // Org cards with active Organization.orgEntitlement resolve as premium before the
+        // personal billing chain, aligning sitemap with the production DTO billing contract.
+        const visible = candidateCards.filter((c) => {
+            const orgId = c?.orgId ? String(c.orgId) : "";
+            const org =
+                orgId && orgId !== personalOrgIdStr ? orgById.get(orgId) : null;
+            const orgBilling = org
+                ? resolveOrgEntitlementBilling(org, now)
+                : null;
+            const effectiveBilling = orgBilling || resolveBilling(c, now);
+            const tier = resolveEffectiveTier({
+                card: c,
+                effectiveBilling,
+                now,
+            });
+            return (tier?.tier || "free") !== "free";
+        });
+
+        // Recompute company org IDs from the final visible set for the membership gate.
         const companyOrgIds = Array.from(
             new Set(
                 visible
@@ -65,16 +103,6 @@ router.get("/sitemap.xml", async (req, res) => {
                     .filter((id) => id && id !== personalOrgIdStr),
             ),
         );
-
-        const orgs = companyOrgIds.length
-            ? await Organization.find({
-                  _id: { $in: companyOrgIds },
-                  isActive: true,
-              })
-                  .select("_id slug")
-                  .lean()
-            : [];
-        const orgSlugById = new Map(orgs.map((o) => [String(o._id), o.slug]));
 
         // Membership-gate for org-card URLs (batched, fixed number of queries; no N+1).
         // NOTE: sitemap output is not bounded by design today (it loads all visible cards);

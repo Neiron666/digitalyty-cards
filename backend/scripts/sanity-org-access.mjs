@@ -295,6 +295,27 @@ async function main() {
         created.orgId = orgCreate.body?.id || null;
         assert(created.orgId, "Missing org id");
 
+        // Grant orgEntitlement to the test org so that the org-owned card resolves as
+        // org-premium in sitemap.routes.js. Sitemap inclusion for org-owned premium cards
+        // uses Organization.orgEntitlement as the SSoT — not Card.adminTier — matching
+        // the production billing contract (billing-flow-ssot.md §18).
+        await Organization.updateOne(
+            { _id: created.orgId },
+            {
+                $set: {
+                    "orgEntitlement.status": "active",
+                    "orgEntitlement.plan": "org",
+                    "orgEntitlement.startsAt": new Date(Date.now() - 1000),
+                    "orgEntitlement.expiresAt": new Date(
+                        Date.now() + 365 * 24 * 60 * 60 * 1000,
+                    ),
+                    "orgEntitlement.grantedByUserId": admin._id,
+                    "orgEntitlement.grantedAt": new Date(),
+                    "orgEntitlement.source": "admin-manual",
+                },
+            },
+        );
+
         // Add member via invite + public accept (sanity must not depend on direct-add)
         const inviteCreate = await requestJson({
             baseUrl,
