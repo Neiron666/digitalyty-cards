@@ -139,6 +139,8 @@ After that fix, `sanity:org-access` also exposed a real production bug: `sitemap
 
 **If either sanity fails:** inspect the stdout status code and response body first. Do not assume a missing fixture. Do not assume a missing env var. Both sanities are expected to pass in any environment with a valid `MONGO_URI` and correct env configuration.
 
+**Prerequisite on a fresh or recreated cluster:** `sanity:org-membership` additionally requires the `orgId_1_userId_1` unique compound index to exist on `organizationmembers`. On a blank CI cluster this index will not exist until the bootstrap migration is run. Run `node scripts/migrate-orgmember-indexes.mjs --apply --verbose` per `docs/runbooks/ci-cluster-bootstrap.md §5 Step 5` before the first sanity run on a blank cluster. The production cluster (`cardigo_prod`) was verified read-only on 2026-05-04 and already had the index — no production apply was performed.
+
 **Raw logs policy**
 
 - Always keep RAW stdout/stderr and an explicit `EXIT:<code>` line for each command.

@@ -101,6 +101,11 @@ Runtime ≠ Sanity ≠ Migration:
     - Dry-run by default. Apply: `node scripts/migrate-tenantkey-slug.mjs --apply --create-index`
     - `--create-index` is required; omitting it runs the backfill only without creating the index.
     - Required as part of CI-only cluster bootstrap — see `docs/runbooks/ci-cluster-bootstrap.md` §5.
+- Migration (`migrate:orgmember-indexes`): governs `orgId_1_userId_1` unique compound index on `organizationmembers`. Enforces one membership row per user per org; required before `sanity:org-membership` can pass on a fresh cluster.
+    - Dry-run by default. Apply: `npm.cmd run migrate:orgmember-indexes -- --apply --verbose`
+    - Required as part of CI-only cluster bootstrap — see `docs/runbooks/ci-cluster-bootstrap.md` §5 Step 5.
+    - Idempotent: re-running `--apply` on a cluster that already has the index is safe (no-op).
+    - **Production status (2026-05-04):** read-only dry-run against `cardigo_prod` confirmed `orgId_1_userId_1 already exists and is unique — no-op`. No production apply was performed or required.
 
 Do NOT run `--apply` automatically in CI.
 

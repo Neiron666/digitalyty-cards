@@ -180,7 +180,48 @@ EXIT:0
 
 Warnings are expected and non-blocking (see §6). The presence of warnings does not affect `ok: true`.
 
-### 5.6 Step 4 — Clear session env
+### 5.6 Step 5 — OrganizationMember index bootstrap
+
+Required for `sanity:org-membership` to pass. The `organizationmembers` collection and its `orgId_1_userId_1` unique compound index must exist before the sanity preflight can succeed.
+
+```powershell
+node scripts/migrate-orgmember-indexes.mjs --apply --verbose
+```
+
+Expected output:
+
+```
+mode: APPLY
+MongoDB connected
+
+--- organizationmembers ---
+  created unique index orgId_1_userId_1 - POST-CHECK PASS
+
+done { dryRun: false }
+```
+
+If the index was already present (e.g. re-running bootstrap on an existing cluster):
+
+```
+  orgId_1_userId_1 already exists and is unique - no-op
+```
+
+Both outputs indicate `EXIT:0` — the operation is idempotent.
+
+**Required index:** `organizationmembers.orgId_1_userId_1` — `{ orgId: 1, userId: 1 }` unique compound.
+
+Verify with the org sanities:
+
+```powershell
+npm run sanity:org-membership
+npm run sanity:org-access
+```
+
+Expected: both exit `EXIT:0`, `ok: true`.
+
+**This step applies to the CI cluster only.** The production cluster (`cardigo_prod`) was verified read-only (dry-run) on 2026-05-04 and already had the index — no production apply was performed.
+
+### 5.7 Step 6 — Clear session env
 
 ```powershell
 Remove-Item Env:MONGO_URI
@@ -284,16 +325,16 @@ Any of the following changes to any Mongoose model schema triggers the §8.1 ass
 
 ## 9. Forbidden Operations
 
-| Operation                                                                               | Reason                                                                        |
-| --------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
-| Running `bootstrap-first-admin.mjs` on CI cluster                                       | Creates admin users; not relevant to drift parity                             |
-| Running any `migrate-user-*.mjs` on CI cluster                                          | User collection parity not required for card drift checks                     |
-| Running any `migrate-organization-*.mjs`, `migrate-orgmember-*.mjs`, etc. on CI cluster | Not required for card drift checks                                            |
-| Running `migrate-tenantkey-slug.mjs` without `--create-index`                           | Will execute backfill logic without creating the index; incomplete bootstrap  |
-| Storing production documents in the CI cluster                                          | The CI cluster must never hold production data                                |
-| Using `MONGO_URI` (production) in GitHub Actions for drift checks                       | Breaks production cluster IP allowlist law and exposes production to CI scope |
-| Including raw Mongo URIs, passwords, or Atlas private IDs in documentation              | Security policy                                                               |
-| Copying the CI `0.0.0.0/0` Network Access rule to production                            | Fundamentally different security posture                                      |
+| Operation                                                                                                     | Reason                                                                                                                                                                                                            |
+| ------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Running `bootstrap-first-admin.mjs` on CI cluster                                                             | Creates admin users; not relevant to drift parity                                                                                                                                                                 |
+| Running any `migrate-user-*.mjs` on CI cluster                                                                | User collection parity not required for card drift checks                                                                                                                                                         |
+| Running `migrate-orgmember-*.mjs` on CI cluster **outside an explicit bootstrap/index-governance workstream** | Not needed for card-only drift checks; IS required as part of CI bootstrap when `sanity:org-membership` is in scope (see §5 Step 5). Do not run arbitrary migrations on CI without a bounded explicit workstream. |
+| Running `migrate-tenantkey-slug.mjs` without `--create-index`                                                 | Will execute backfill logic without creating the index; incomplete bootstrap                                                                                                                                      |
+| Storing production documents in the CI cluster                                                                | The CI cluster must never hold production data                                                                                                                                                                    |
+| Using `MONGO_URI` (production) in GitHub Actions for drift checks                                             | Breaks production cluster IP allowlist law and exposes production to CI scope                                                                                                                                     |
+| Including raw Mongo URIs, passwords, or Atlas private IDs in documentation                                    | Security policy                                                                                                                                                                                                   |
+| Copying the CI `0.0.0.0/0` Network Access rule to production                                                  | Fundamentally different security posture                                                                                                                                                                          |
 
 ---
 
@@ -359,7 +400,17 @@ Both Mongo-backed workflows have been hardened:
 - Frontend smoke: `https://cardigo.co.il` returned `200 OK`.
 - Direct `/api/health` curl may return `403 PROXY_FORBIDDEN` — this is the proxy gate, not a Mongo failure. See §3.
 
-### 11.5 Governance obligation
+### 11.5 OrganizationMember index bootstrap — CLOSED / PASS (2026-05-04)
+
+- **Root cause:** §5 originally covered only the `cards` collection. The `organizationmembers` collection and `orgId_1_userId_1` unique compound index were absent from `cardigo_ci`, causing `sanity:org-membership` to fail at preflight with `NamespaceNotFound`.
+- **CI resolution:** `migrate-orgmember-indexes.mjs --apply --verbose` run against `cardigo_ci`. Index created. `sanity:org-membership` EXIT:0. `sanity:org-access` EXIT:0 (regression).
+- **Production parity:** read-only dry-run (`migrate-orgmember-indexes.mjs --verbose`) against `cardigo_prod` on 2026-05-04 confirmed `orgId_1_userId_1 already exists and is unique — no-op`. **No production apply was performed or required.** Production was already at parity.
+- **CI and production parity confirmed:** both clusters have `organizationmembers.orgId_1_userId_1` unique `{ orgId: 1, userId: 1 }`.
+- **Scope:** no code changes, no package changes, no frontend changes, no backend/src changes, no CI workflow changes.
+- **Bootstrap procedure updated:** §5 Step 5 added; §9 forbidden-operations row corrected.
+- **Deferred open:** wiring `sanity:org-membership` into CI governance (`.github/workflows/`) is a separate bounded architecture decision (controlled-write in CI requires DB guard bypass). Not part of this workstream.
+
+### 11.6 Governance obligation
 
 Every production Mongo index, collection, migration, or Mongo-related script change requires an explicit CI-only impact assessment before workstream closure. See §8.1 for the full law.
 

@@ -32,7 +32,7 @@ Before this contour:
 
 **Created:**
 
-- `backend/scripts/sanity-shared-fixtures.mjs` — shared helper module (L1–L49): exports `assert`, `randomHex`, `listen`, `readJson`, `requestJson`, `SANITY_INVITE_PASSWORD`. Not a standalone script; imported by the three sanity scripts below.
+- `backend/scripts/sanity-shared-fixtures.mjs` — shared helper module (L1–L66): exports `assert`, `randomHex`, `listen`, `readJson`, `requestJson`, `SANITY_INVITE_PASSWORD`, and `extractTokenFromInviteLink`. Not a standalone script; now imported by five sanity scripts: `sanity-analytics.mjs`, `sanity-booking.mjs`, `sanity-leads.mjs`, `sanity-org-access.mjs`, and `sanity-org-membership.mjs`. `extractTokenFromInviteLink` was added in contour `SANITY_INVITE_HELPERS_DEDUP` (2026-05-04).
 - `backend/scripts/sanity-analytics.mjs` — standalone sanity script (L1–L345): 9 checks covering analytics entitlement contract.
 - `backend/scripts/sanity-booking.mjs` — standalone sanity script (L1–L340): 4 checks covering booking entitlement contract.
 - `backend/scripts/sanity-leads.mjs` — standalone sanity script (L1–L315): 6 checks covering lead form entitlement contract.
