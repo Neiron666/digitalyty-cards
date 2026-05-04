@@ -20,6 +20,86 @@ function escapeHtml(value = "") {
         .replace(/'/g, "&#39;");
 }
 
+const GENERIC_CARD_OG_TITLES = new Set([
+    "כרטיס ביקור דיגיטלי",
+    "כרטיס ביקור דיגיטלי – Cardigo",
+    "כרטיס ביקור דיגיטלי | Cardigo",
+    "Cardigo",
+]);
+
+function normalizeMetaText(value, maxLength) {
+    const text = String(value || "")
+        .replace(/\s+/g, " ")
+        .trim();
+    if (!maxLength) return text;
+    return text.slice(0, maxLength);
+}
+
+function isGenericCardOgTitle(value) {
+    return GENERIC_CARD_OG_TITLES.has(normalizeMetaText(value));
+}
+
+function buildCardOgMetadata(card, siteUrl) {
+    const rawSeoTitle = normalizeMetaText(card.seo?.title);
+    const seoTitle =
+        rawSeoTitle && !isGenericCardOgTitle(rawSeoTitle) ? rawSeoTitle : "";
+    const businessName = normalizeMetaText(card.business?.name);
+
+    const title =
+        seoTitle ||
+        (businessName
+            ? businessName + " – כרטיס ביקור דיגיטלי"
+            : "כרטיס ביקור דיגיטלי");
+
+    const description =
+        normalizeMetaText(card.seo?.description, 160) ||
+        normalizeMetaText(card.content?.description, 160) ||
+        normalizeMetaText(card.content?.aboutText, 160) ||
+        "כרטיס ביקור דיגיטלי לעסקים – Cardigo";
+
+    const fallbackImage = siteUrl + "/og-default.jpg";
+    const image = card.design?.coverImage || card.design?.logo || fallbackImage;
+    const isFallbackImage = image === fallbackImage;
+
+    const imageAlt = businessName
+        ? businessName + " – Cardigo"
+        : "Cardigo – כרטיס ביקור דיגיטלי לעסקים";
+
+    const imageParts = [
+        '    <meta property="og:image" content="' + escapeHtml(image) + '" />',
+    ];
+    if (String(image).startsWith("https://")) {
+        imageParts.push(
+            '    <meta property="og:image:secure_url" content="' +
+                escapeHtml(image) +
+                '" />',
+        );
+    }
+    if (isFallbackImage) {
+        imageParts.push(
+            '    <meta property="og:image:width" content="1200" />',
+        );
+        imageParts.push(
+            '    <meta property="og:image:height" content="630" />',
+        );
+        imageParts.push(
+            '    <meta property="og:image:type" content="image/jpeg" />',
+        );
+    }
+    imageParts.push(
+        '    <meta property="og:image:alt" content="' +
+            escapeHtml(imageAlt) +
+            '" />',
+    );
+
+    return {
+        title,
+        description,
+        image,
+        imageMetaHtml: imageParts.join("\n"),
+    };
+}
+
 /* ── Blog OG ──────────────────────────────────────────────────── */
 
 router.get("/og/blog/:slug", async (req, res) => {
@@ -184,14 +264,10 @@ router.get("/og/card/:slug", async (req, res) => {
 
     const publicUrl = `${siteUrl}/card/${card.slug}`;
 
-    const title = card.seo?.title || "כרטיס ביקור דיגיטלי";
-    const description =
-        card.seo?.description || "כרטיס ביקור דיגיטלי לעסקים – Cardigo";
-
-    const image =
-        card.design?.coverImage ||
-        card.design?.logo ||
-        `${siteUrl}/og-default.jpg`;
+    const { title, description, image, imageMetaHtml } = buildCardOgMetadata(
+        card,
+        siteUrl,
+    );
 
     const html = `<!doctype html>
 <html lang="he" dir="rtl">
@@ -206,7 +282,7 @@ router.get("/og/card/:slug", async (req, res) => {
     <meta property="og:site_name" content="Cardigo" />
     <meta property="og:title" content="${escapeHtml(title)}" />
     <meta property="og:description" content="${escapeHtml(description)}" />
-    <meta property="og:image" content="${escapeHtml(image)}" />
+${imageMetaHtml}
     <meta property="og:url" content="${escapeHtml(publicUrl)}" />
 
     <meta name="twitter:card" content="summary_large_image" />
@@ -278,14 +354,10 @@ router.get("/og/c/:orgSlug/:slug", async (req, res) => {
 
     const publicUrl = `${siteUrl}/c/${orgSlug}/${card.slug}`;
 
-    const title = card.seo?.title || "כרטיס ביקור דיגיטלי";
-    const description =
-        card.seo?.description || "כרטיס ביקור דיגיטלי לעסקים – Cardigo";
-
-    const image =
-        card.design?.coverImage ||
-        card.design?.logo ||
-        `${siteUrl}/og-default.jpg`;
+    const { title, description, image, imageMetaHtml } = buildCardOgMetadata(
+        card,
+        siteUrl,
+    );
 
     const html = `<!doctype html>
 <html lang="he" dir="rtl">
@@ -300,7 +372,7 @@ router.get("/og/c/:orgSlug/:slug", async (req, res) => {
     <meta property="og:site_name" content="Cardigo" />
     <meta property="og:title" content="${escapeHtml(title)}" />
     <meta property="og:description" content="${escapeHtml(description)}" />
-    <meta property="og:image" content="${escapeHtml(image)}" />
+${imageMetaHtml}
     <meta property="og:url" content="${escapeHtml(publicUrl)}" />
 
     <meta name="twitter:card" content="summary_large_image" />
