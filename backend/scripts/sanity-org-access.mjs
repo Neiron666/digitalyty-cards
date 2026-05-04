@@ -318,6 +318,9 @@ async function main() {
         const tokenFromLink = extractTokenFromInviteLink(inviteLink);
         assert(tokenFromLink, "Missing invite token");
 
+        // Backend new-user invite accept contract:
+        // token, password, consent:true, and firstName are required.
+        // Keep this sanity body aligned with invites.routes.js /accept.
         const inviteAccept = await requestJson({
             baseUrl,
             path: "/invites/accept",
@@ -326,6 +329,7 @@ async function main() {
                 token: tokenFromLink,
                 password: SANITY_INVITE_PASSWORD,
                 consent: true,
+                firstName: "Sanity",
             },
         });
 
@@ -336,7 +340,7 @@ async function main() {
 
         assert(
             inviteAccept.status === 200,
-            `Failed to accept invite: status=${inviteAccept.status}`,
+            `Failed to accept invite: status=${inviteAccept.status} body=${JSON.stringify(inviteAccept.body)}`,
         );
 
         // Obtain member JWT via User lookup + signToken (no body.token dependency).

@@ -443,6 +443,10 @@ P3.5 — Sandbox STO schedule cleanup confirmation (testcardstok sandbox schedul
 5. SEO*ROUTE_NOINDEX_HYGIENE_P2_P3
    Review /edit/*, /admin/\_ noindex policy. Low priority.
 
+6. ORG_CARD_PREMIUM_STATUS_REVERT_ON_SAVE — **CLOSED / PRODUCTION PASS (2026-05-04)**.
+   Backend-only fix: `updateCard` PATCH response now passes `orgForDto` (with `orgEntitlement`) into `toCardDTO`, so org-owned cards under active admin-granted entitlement correctly return `effectiveBilling.source = "organization"` in the save response. Before the fix, the editor sidebar temporarily showed מסלול: חינם after שמור שינויים until reload. Production smoke confirmed on `/c/digitalyty/draft-41d469-eae8ac`: immediately after save = מסלול: פרמיום.
+   See: `docs/handoffs/current/Cardigo_Enterprise_Handoff_2026-05-04_OrgCard_PremiumStatusRevert_OnSave_Closed.md`
+
 ---
 
 ## 17. Anti-Secret / Anti-Overclaim Policy

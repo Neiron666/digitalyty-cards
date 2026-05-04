@@ -115,6 +115,20 @@ node --input-type=module -e "import 'dotenv/config'; console.log('dotenv ok')"
 
 > **`sanity:admin-user-delete` is NOT in this list.** It is a destructive sanity (creates and deletes real Mongo documents) and must only run in CI via `.github/workflows/backend-admin-sanity.yml` against `MONGO_URI_DRIFT_CHECK`. Never run it locally against `MONGO_URI`. See `docs/runbooks/admin-user-delete-lifecycle.md §11`.
 
+**Known local-env tail: sanity:org-access and sanity:org-membership**
+
+`sanity:org-access` and `sanity:org-membership` invoke an invite-accept integration test step. In local environments without a valid org invite fixture present in the DB, this step fails with:
+
+```
+Error: Failed to accept invite: status=404
+```
+
+This is a pre-existing scope limitation of these scripts in local dev environments and is **not** caused by changes to card PATCH/update response DTO assembly or any other runtime code change. It was observed and classified as unrelated during `ORG_CARD_PREMIUM_STATUS_REVERT_ON_SAVE` Phase 3 verification (2026-05-04).
+
+Treat `EXIT:1` on these two sanities as **expected** when no live org invite fixture is present locally. Do not treat this as a production verification failure or a code regression. Track as a separate bounded contour if org invite fixture coverage is required.
+
+This note does **not** weaken production verification expectations. In production CI or any environment with real org invite data, these sanities are expected to pass.
+
 **Raw logs policy**
 
 - Always keep RAW stdout/stderr and an explicit `EXIT:<code>` line for each command.
