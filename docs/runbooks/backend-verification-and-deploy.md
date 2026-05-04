@@ -112,6 +112,11 @@ node --input-type=module -e "import 'dotenv/config'; console.log('dotenv ok')"
 4. `npm.cmd run sanity:slug-policy`
 5. `npm.cmd run sanity:ownership-consistency`
 6. `npm.cmd run sanity:card-index-drift`
+7. `npm.cmd run sanity:analytics`
+8. `npm.cmd run sanity:booking`
+9. `npm.cmd run sanity:leads`
+
+> **`sanity:analytics`, `sanity:booking`, `sanity:leads` are controlled-write sanity scripts.** They create local fixtures (users, org, cards, analytics events / bookings / leads) and clean them in `finally` blocks. Run them only against a safe local or staging DB. **Do not run them against production `MONGO_URI`.** They cover premium/data/action paths for analytics, booking, and leads entitlement contracts. Added 2026-05-04 (contour `ORG_PREMIUM_FEATURE_QA_SANITY_COVERAGE`).
 
 > **`sanity:admin-user-delete` is NOT in this list.** It is a destructive sanity (creates and deletes real Mongo documents) and must only run in CI via `.github/workflows/backend-admin-sanity.yml` against `MONGO_URI_DRIFT_CHECK`. Never run it locally against `MONGO_URI`. See `docs/runbooks/admin-user-delete-lifecycle.md §11`.
 

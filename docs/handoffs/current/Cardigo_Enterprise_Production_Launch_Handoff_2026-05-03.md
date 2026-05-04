@@ -455,6 +455,10 @@ P3.5 — Sandbox STO schedule cleanup confirmation (testcardstok sandbox schedul
    Org-owned premium feature parity restored across all feature paths: gallery upload entitlement (`upload.controller.js`), analytics real data vs demo (`analytics.controller.js`), booking availability/create (`booking.controller.js`), lead form submission (`lead.controller.js`), and business hours (covered by prior updateCard org-aware DTO). Org gallery limit product decision: 10 (aligned with monthly/yearly; `plans.js` L56, `limits.js` L4). Security regression audit P3B passed: ownership, membership, anti-enumeration, trial/expired handling all preserved; no payment/Tranzila/YeshInvoice/Receipt changes; no orgEntitlement mutation drift.
    See: `docs/handoffs/current/Cardigo_Enterprise_Handoff_2026-05-04_OrgCard_PremiumFeatureParity_Closed.md`
 
+9. ORG_PREMIUM_FEATURE_QA_SANITY_COVERAGE — **CLOSED / VERIFIED (2026-05-04)**.
+   Dedicated controlled-write local sanity scripts added for analytics, booking, and leads: `sanity:analytics` (9 checks), `sanity:booking` (4 checks), `sanity:leads` (6 checks). Shared fixture helper `sanity-shared-fixtures.mjs` added. All target sanities passed EXIT:0; existing backend regression sanity suite passed EXIT:0; frontend gates/build passed EXIT:0. Scripts are local/staging controlled-write checks and must not be run against production `MONGO_URI`.
+   See: `docs/handoffs/current/Cardigo_Enterprise_Handoff_2026-05-04_OrgPremiumFeature_QA_SanityCoverage_Closed.md`
+
 ---
 
 ## 17. Anti-Secret / Anti-Overclaim Policy
