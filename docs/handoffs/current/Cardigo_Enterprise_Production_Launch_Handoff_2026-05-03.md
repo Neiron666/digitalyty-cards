@@ -353,6 +353,15 @@ Remaining SEO tails:
 
 - Google Search Console verification and sitemap submission not yet completed (P1 tail).
 
+### Card Social Preview — CLOSED / PRODUCTION PASS (2026-05-04)
+
+- `/card/*` and `/c/*` social preview UA traffic now receives backend `/og` HTML through a Netlify Edge Function (`frontend/netlify/edge-functions/og-preview.js`). Facebook, WhatsApp, and other social crawlers in the UA allowlist hit the edge function; normal browsers and Googlebot continue to receive the SPA shell.
+- `backend/src/routes/og.routes.js` is the SSoT for card OG HTML. Both personal and org card handlers use a shared `buildCardOgMetadata` helper.
+- Card OG metadata quality policy is live: generic SEO titles are suppressed; `card.business.name` participates in the title fallback chain; `og:image:alt` and `og:image:secure_url` are always emitted; `og:image:width/height/type` are emitted only for the `/og-default.jpg` fallback image.
+- Production smoke passed 2026-05-04: `/card/cardigo` and `/c/digitalyty/draft-41d469-eae8ac` both returned card-specific OG HTML to social crawlers; Googlebot and normal browsers received the SPA shell; nonexistent slugs returned 404.
+- Dedicated handoff: `docs/handoffs/current/Cardigo_Enterprise_Handoff_2026-05-04_Public_Card_Social_Preview_And_OG_Metadata_Closed.md`
+- Contour `PUBLIC_ROUTE_SOCIAL_PREVIEW_ARCHITECTURE_P1` (named in the Homepage Static OG handoff as the next step) is now closed.
+
 ---
 
 ## 14. Payment / Security Invariants
@@ -431,8 +440,8 @@ P3.5 — Sandbox STO schedule cleanup confirmation (testcardstok sandbox schedul
    Update billing-flow-ssot.md, tranzila-go-live-checklist.md, and backend-verification-and-deploy.md.
    Archive pre-launch handoffs.
 
-5. SEO_ROUTE_NOINDEX_HYGIENE_P2_P3
-   Review /edit/_, /admin/_ noindex policy. Low priority.
+5. SEO*ROUTE_NOINDEX_HYGIENE_P2_P3
+   Review /edit/*, /admin/\_ noindex policy. Low priority.
 
 ---
 

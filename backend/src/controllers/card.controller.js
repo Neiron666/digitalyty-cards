@@ -2163,28 +2163,38 @@ export async function updateCard(req, res) {
                   .lean()
             : null;
 
-    const dto = toCardDTO(card, now, { user: userTier });
+    // Resolve personal org (cached — O(1) on warm paths; already called earlier
+    // in this request for non-personal org cards via the membership auth check).
+    const personalOrgId = await getPersonalOrgId();
+    const cardOrgId = String(card?.orgId || "");
+    const isNonPersonalOrg =
+        Boolean(cardOrgId) && cardOrgId !== String(personalOrgId);
+
+    // Org-aware DTO: fetch org with orgEntitlement for real org-owned cards only.
+    // Matches getOrCreateMyOrgCard so effectiveBilling and entitlements are
+    // derived from org entitlement, not raw card.billing (which stays "free").
+    // Personal cards: no new DB query (orgForDto stays null).
+    let orgForDto = null;
+    if (isNonPersonalOrg) {
+        orgForDto = await Organization.findById(card.orgId)
+            .select("_id slug isActive orgEntitlement")
+            .lean();
+    }
+
+    const dto = toCardDTO(card, now, { user: userTier, org: orgForDto });
 
     // SSoT: always return correct public/og paths for PATCH responses.
     // Frontend may replace the whole draftCard with this DTO (publish/save).
+    // Reuse orgForDto for slug/isActive — eliminates the previous duplicate org query.
     if (dto && typeof dto === "object" && dto?.slug) {
-        const personalOrgId = await getPersonalOrgId();
-        const cardOrgId = String(card?.orgId || "");
-        const isPersonalScope =
-            !cardOrgId || cardOrgId === String(personalOrgId);
-
-        if (isPersonalScope) {
+        if (!isNonPersonalOrg) {
             dto.publicPath = `/card/${dto.slug}`;
             dto.ogPath = `/og/card/${dto.slug}`;
         } else {
-            const org = await Organization.findById(card.orgId)
-                .select("slug isActive")
-                .lean();
-
-            const orgSlug = String(org?.slug || "")
+            const orgSlug = String(orgForDto?.slug || "")
                 .trim()
                 .toLowerCase();
-            const isActive = org?.isActive !== false;
+            const isActive = orgForDto?.isActive !== false;
 
             if (!orgSlug || !isActive) {
                 return res.status(404).json({ message: "Not found" });
