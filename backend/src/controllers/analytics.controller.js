@@ -203,6 +203,15 @@ async function loadOwnedCardOrThrow(cardId, req) {
     return { card, status: 200 };
 }
 
+async function loadOrgForCard(card) {
+    if (!card?.orgId) return null;
+    const personalOrgId = await getPersonalOrgId();
+    if (String(card.orgId) === String(personalOrgId)) return null;
+    return Organization.findById(card.orgId)
+        .select("_id isActive orgEntitlement")
+        .lean();
+}
+
 function parseRange(req, { fallback, allowed }) {
     const raw = req.query?.range;
     const n = Number.parseInt(String(raw || ""), 10);
@@ -482,8 +491,10 @@ export async function trackAnalytics(req, res) {
 
         // Premium-only uniques (best effort): do NOT break tracking.
         try {
+            // Resolve org for org cards to get correct entitlements.
+            const orgForCard = await loadOrgForCard(card).catch(() => null);
             // Avoid an extra DB read unless user-tier override could matter.
-            const dtoNoUser = toCardDTO(card, now);
+            const dtoNoUser = toCardDTO(card, now, { org: orgForCard });
             let dto = dtoNoUser;
 
             const needsUserTier =
@@ -493,7 +504,7 @@ export async function trackAnalytics(req, res) {
                 const userTier = await User.findById(String(card.user))
                     .select("adminTier adminTierUntil")
                     .lean();
-                dto = toCardDTO(card, now, { user: userTier });
+                dto = toCardDTO(card, now, { user: userTier, org: orgForCard });
             }
 
             const level = dto?.entitlements?.analyticsLevel || "none";
@@ -645,10 +656,17 @@ export async function getSummary(req, res) {
     if (!card) return res.status(status).json({ message: "Forbidden" });
 
     const now = new Date();
-    const userTier = await User.findById(String(req.userId))
-        .select("adminTier adminTierUntil")
-        .lean();
-    const dto = toCardDTO(card, now, { includePrivate: false, user: userTier });
+    const [userTier, org] = await Promise.all([
+        User.findById(String(req.userId))
+            .select("adminTier adminTierUntil")
+            .lean(),
+        loadOrgForCard(card),
+    ]);
+    const dto = toCardDTO(card, now, {
+        includePrivate: false,
+        user: userTier,
+        org,
+    });
     const level = dto?.entitlements?.analyticsLevel || "none";
 
     let rangeDays = parseRange(req, { fallback: 30, allowed: [7, 30] });
@@ -743,10 +761,13 @@ export async function getActions(req, res) {
     if (!card) return res.status(status).json({ message: "Forbidden" });
 
     const now = new Date();
-    const userTier = await User.findById(String(req.userId))
-        .select("adminTier adminTierUntil")
-        .lean();
-    const dto = toCardDTO(card, now, { user: userTier });
+    const [userTier, org] = await Promise.all([
+        User.findById(String(req.userId))
+            .select("adminTier adminTierUntil")
+            .lean(),
+        loadOrgForCard(card),
+    ]);
+    const dto = toCardDTO(card, now, { user: userTier, org });
     const level = dto?.entitlements?.analyticsLevel || "none";
 
     if (level === "demo") {
@@ -783,10 +804,13 @@ export async function getSources(req, res) {
     if (!card) return res.status(status).json({ message: "Forbidden" });
 
     const now = new Date();
-    const userTier = await User.findById(String(req.userId))
-        .select("adminTier adminTierUntil")
-        .lean();
-    const dto = toCardDTO(card, now, { user: userTier });
+    const [userTier, org] = await Promise.all([
+        User.findById(String(req.userId))
+            .select("adminTier adminTierUntil")
+            .lean(),
+        loadOrgForCard(card),
+    ]);
+    const dto = toCardDTO(card, now, { user: userTier, org });
     const level = dto?.entitlements?.analyticsLevel || "none";
 
     if (level === "demo") {
@@ -1017,10 +1041,13 @@ export async function getCampaigns(req, res) {
     if (!card) return res.status(status).json({ message: "Forbidden" });
 
     const now = new Date();
-    const userTier = await User.findById(String(req.userId))
-        .select("adminTier adminTierUntil")
-        .lean();
-    const dto = toCardDTO(card, now, { user: userTier });
+    const [userTier, org] = await Promise.all([
+        User.findById(String(req.userId))
+            .select("adminTier adminTierUntil")
+            .lean(),
+        loadOrgForCard(card),
+    ]);
+    const dto = toCardDTO(card, now, { user: userTier, org });
     const level = dto?.entitlements?.analyticsLevel || "none";
 
     if (level === "demo") {

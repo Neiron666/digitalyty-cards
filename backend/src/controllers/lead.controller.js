@@ -1,9 +1,13 @@
 import Card from "../models/Card.model.js";
 import Lead from "../models/Lead.model.js";
+import Organization from "../models/Organization.model.js";
 import User from "../models/User.model.js";
 import { resolveBilling } from "../utils/trial.js";
 import { resolveEffectiveTier } from "../utils/tier.js";
-import { computeEntitlements } from "../utils/cardDTO.js";
+import {
+    computeEntitlements,
+    resolveEffectiveBilling,
+} from "../utils/cardDTO.js";
 import { sanitizeLeadInput } from "../utils/leadSanitize.js";
 import { isValidObjectId } from "../utils/orgMembership.util.js";
 import { getPersonalOrgId } from "../utils/personalOrg.util.js";
@@ -55,7 +59,19 @@ export async function createLead(req, res) {
         }
 
         const now = new Date();
-        const effectiveBilling = resolveBilling(card, now);
+
+        // Load org for org cards so entitlement reflects org entitlement.
+        let leadOrg = null;
+        if (card?.orgId) {
+            const personalOrgId = await getPersonalOrgId();
+            if (String(card.orgId) !== String(personalOrgId)) {
+                leadOrg = await Organization.findById(card.orgId)
+                    .select("_id isActive orgEntitlement")
+                    .lean();
+            }
+        }
+
+        const effectiveBilling = resolveEffectiveBilling(card, now, leadOrg);
 
         const userTier = card?.user
             ? await User.findById(String(card.user))

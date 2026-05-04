@@ -1,11 +1,15 @@
 import crypto from "crypto";
 import Card from "../models/Card.model.js";
 import Booking from "../models/Booking.model.js";
+import Organization from "../models/Organization.model.js";
 import { resolveActor, assertCardOwner } from "../utils/actor.js";
 import { HttpError } from "../utils/httpError.js";
 import { resolveBilling } from "../utils/trial.js";
 import { resolveEffectiveTier } from "../utils/tier.js";
-import { computeEntitlements } from "../utils/cardDTO.js";
+import {
+    computeEntitlements,
+    resolveEffectiveBilling,
+} from "../utils/cardDTO.js";
 import User from "../models/User.model.js";
 import {
     sanitizePublicBookingInput,
@@ -108,7 +112,19 @@ async function loadActiveCardOrNotFound(cardId) {
 
 async function assertBookingEntitled(card) {
     const now = new Date();
-    const effectiveBilling = resolveBilling(card, now);
+
+    // Load org for org cards so entitlement check reflects org entitlement.
+    let org = null;
+    if (card?.orgId) {
+        const personalOrgId = await getPersonalOrgId();
+        if (String(card.orgId) !== String(personalOrgId)) {
+            org = await Organization.findById(card.orgId)
+                .select("_id isActive orgEntitlement")
+                .lean();
+        }
+    }
+
+    const effectiveBilling = resolveEffectiveBilling(card, now, org);
 
     const userTier = card?.user
         ? await User.findById(String(card.user))
