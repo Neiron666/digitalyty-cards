@@ -115,19 +115,21 @@ node --input-type=module -e "import 'dotenv/config'; console.log('dotenv ok')"
 
 > **`sanity:admin-user-delete` is NOT in this list.** It is a destructive sanity (creates and deletes real Mongo documents) and must only run in CI via `.github/workflows/backend-admin-sanity.yml` against `MONGO_URI_DRIFT_CHECK`. Never run it locally against `MONGO_URI`. See `docs/runbooks/admin-user-delete-lifecycle.md §11`.
 
-**Known local-env tail: sanity:org-access and sanity:org-membership**
+**sanity:org-access and sanity:org-membership**
 
-`sanity:org-access` and `sanity:org-membership` invoke an invite-accept integration test step. In local environments without a valid org invite fixture present in the DB, this step fails with:
+Both sanities should pass when a valid `MONGO_URI` and required env vars are present. They spin up an in-process Express server, create a test org, invite a test user, and accept the invite.
+
+**Historical failure (resolved 2026-05-04):** These sanities previously failed at the invite-accept step with:
 
 ```
 Error: Failed to accept invite: status=404
 ```
 
-This is a pre-existing scope limitation of these scripts in local dev environments and is **not** caused by changes to card PATCH/update response DTO assembly or any other runtime code change. It was observed and classified as unrelated during `ORG_CARD_PREMIUM_STATUS_REVERT_ON_SAVE` Phase 3 verification (2026-05-04).
+Root cause: the sanity scripts omitted `firstName` from the `POST /api/invites/accept` body. The `/api/invites/accept` new-user branch requires `firstName` (non-empty, max 100). The backend route was correct — the 404 was the correct anti-enumeration response shape. This was sanity script contract drift, not a missing fixture and not a missing env var. Fixed 2026-05-04 by adding `firstName: "Sanity"` to the inviteAccept body in both scripts.
 
-Treat `EXIT:1` on these two sanities as **expected** when no live org invite fixture is present locally. Do not treat this as a production verification failure or a code regression. Track as a separate bounded contour if org invite fixture coverage is required.
+After that fix, `sanity:org-access` also exposed a real production bug: `sitemap.routes.js` did not load `Organization.orgEntitlement`, causing org-owned premium cards to be excluded from `sitemap.xml`. Also fixed 2026-05-04 (see `docs/handoffs/current/Cardigo_Enterprise_Handoff_2026-05-04_OrgInviteSanity_And_SitemapOrgEntitlement_Closed.md`).
 
-This note does **not** weaken production verification expectations. In production CI or any environment with real org invite data, these sanities are expected to pass.
+**If either sanity fails:** inspect the stdout status code and response body first. Do not assume a missing fixture. Do not assume a missing env var. Both sanities are expected to pass in any environment with a valid `MONGO_URI` and correct env configuration.
 
 **Raw logs policy**
 

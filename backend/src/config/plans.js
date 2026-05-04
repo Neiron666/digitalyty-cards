@@ -53,7 +53,7 @@ export const PLANS = {
     org: {
         templates: "all",
         gallery: true,
-        galleryLimit: 50,
+        galleryLimit: 10,
         leadForm: true,
         booking: true,
         video: true,

@@ -447,6 +447,10 @@ P3.5 — Sandbox STO schedule cleanup confirmation (testcardstok sandbox schedul
    Backend-only fix: `updateCard` PATCH response now passes `orgForDto` (with `orgEntitlement`) into `toCardDTO`, so org-owned cards under active admin-granted entitlement correctly return `effectiveBilling.source = "organization"` in the save response. Before the fix, the editor sidebar temporarily showed מסלול: חינם after שמור שינויים until reload. Production smoke confirmed on `/c/digitalyty/draft-41d469-eae8ac`: immediately after save = מסלול: פרמיום.
    See: `docs/handoffs/current/Cardigo_Enterprise_Handoff_2026-05-04_OrgCard_PremiumStatusRevert_OnSave_Closed.md`
 
+7. ORG_INVITE_SANITY_AND_SITEMAP_ORG_ENTITLEMENT — **CLOSED / PRODUCTION PASS (2026-05-04)**.
+   Two related tails closed: (1) `sanity:org-access` and `sanity:org-membership` omitted `firstName` from the invite-accept body after the firstName contour made it mandatory — scripts updated, both sanities now EXIT:0. (2) `sitemap.routes.js` did not load `Organization.orgEntitlement`, causing org-owned premium cards to be excluded from `sitemap.xml` — fixed, production smoke confirmed `https://cardigo.co.il/c/digitalyty/draft-41d469-eae8ac` present in sitemap.
+   See: `docs/handoffs/current/Cardigo_Enterprise_Handoff_2026-05-04_OrgInviteSanity_And_SitemapOrgEntitlement_Closed.md`
+
 ---
 
 ## 17. Anti-Secret / Anti-Overclaim Policy

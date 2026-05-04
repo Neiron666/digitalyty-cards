@@ -1,4 +1,6 @@
 import Card from "../models/Card.model.js";
+import Organization from "../models/Organization.model.js";
+import { getPersonalOrgId } from "../utils/personalOrg.util.js";
 import User from "../models/User.model.js";
 import crypto from "crypto";
 import {
@@ -15,11 +17,13 @@ import {
     assertNotLocked,
     isTrialDeleteDue,
     isEntitled,
-    resolveBilling,
 } from "../utils/trial.js";
 import { HttpError } from "../utils/httpError.js";
 import { resolveEffectiveTier } from "../utils/tier.js";
-import { computeEntitlements } from "../utils/cardDTO.js";
+import {
+    computeEntitlements,
+    resolveEffectiveBilling,
+} from "../utils/cardDTO.js";
 import { processImage } from "../utils/processImage.js";
 import {
     collectSupabasePathsFromCard,
@@ -189,7 +193,23 @@ export async function uploadGalleryImage(req, res) {
         }
 
         // Gallery limit: driven by effective tier entitlements.
-        const effectiveBilling = resolveBilling(card, now);
+        // Org-owned cards must resolve upload entitlement through Organization.orgEntitlement,
+        // matching DTO / updateCard / sitemap.routes.js org billing truth.
+        const personalOrgId = await getPersonalOrgId();
+        const cardOrgId = String(card?.orgId || "");
+        const isNonPersonalOrg =
+            Boolean(cardOrgId) && cardOrgId !== String(personalOrgId);
+        let orgForUpload = null;
+        if (isNonPersonalOrg) {
+            orgForUpload = await Organization.findById(card.orgId)
+                .select("_id isActive orgEntitlement")
+                .lean();
+        }
+        const effectiveBilling = resolveEffectiveBilling(
+            card,
+            now,
+            orgForUpload,
+        );
         const userTier =
             actor?.type === "user"
                 ? await User.findById(String(actor.id))
