@@ -14,6 +14,7 @@ import {
 } from "../services/bookings.service";
 import useUnreadCount from "../hooks/useUnreadCount";
 import styles from "./Inbox.module.css";
+import SeoHelmet from "../components/seo/SeoHelmet";
 
 const VIEWS = [
     { key: "active", label: "הכל" },
@@ -374,6 +375,7 @@ export default function Inbox() {
 
     return (
         <main className={styles.main}>
+            <SeoHelmet robots="noindex, nofollow" />
             <h1 className={styles.heading}>הודעות נכנסות</h1>
             {categoryBar}
 

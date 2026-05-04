@@ -11,6 +11,7 @@ import { useAuth } from "../context/AuthContext";
 import { TEMPLATES } from "../templates/templates.config";
 import CrownIcon from "../components/icons/CrownIcon";
 import styles from "./EditCard.module.css";
+import SeoHelmet from "../components/seo/SeoHelmet";
 
 const REFETCH_THROTTLE_MS = 15_000;
 
@@ -2282,6 +2283,7 @@ function EditCard() {
 
     return (
         <div className={styles.editCard}>
+            <SeoHelmet robots="noindex, nofollow" />
             <ConfirmUnsavedChangesModal
                 open={isUnsavedModalOpen}
                 title="השינויים לא נשמרו"

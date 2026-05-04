@@ -4,3 +4,45 @@
 
 /manifest.webmanifest
   Content-Type: application/manifest+json
+
+# SEO containment: noindex HTTP-level belt-and-suspenders for auth/private/admin/utility routes.
+# SeoHelmet (JS-rendered) is the primary mechanism; X-Robots-Tag covers non-JS crawlers and
+# redirect paths. Do not add X-Robots-Tag to public marketing or public card routes.
+/login
+  X-Robots-Tag: noindex, nofollow
+/register
+  X-Robots-Tag: noindex, nofollow
+/forgot-password
+  X-Robots-Tag: noindex, nofollow
+/reset-password
+  X-Robots-Tag: noindex, nofollow
+/signup-link
+  X-Robots-Tag: noindex, nofollow
+/signup
+  X-Robots-Tag: noindex, nofollow
+/invite
+  X-Robots-Tag: noindex, nofollow
+/verify-email
+  X-Robots-Tag: noindex, nofollow
+/unsubscribe
+  X-Robots-Tag: noindex, nofollow
+/dashboard
+  X-Robots-Tag: noindex, nofollow
+/dashboard/*
+  X-Robots-Tag: noindex, nofollow
+/inbox
+  X-Robots-Tag: noindex, nofollow
+/inbox/*
+  X-Robots-Tag: noindex, nofollow
+/org/invites
+  X-Robots-Tag: noindex, nofollow
+/org/invites/*
+  X-Robots-Tag: noindex, nofollow
+/edit
+  X-Robots-Tag: noindex, nofollow
+/edit/*
+  X-Robots-Tag: noindex, nofollow
+/admin
+  X-Robots-Tag: noindex, nofollow
+/admin/*
+  X-Robots-Tag: noindex, nofollow

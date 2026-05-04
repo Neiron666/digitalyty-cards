@@ -1,0 +1,9 @@
+.root {
+    padding: 80px 20px;
+    text-align: center;
+}
+
+.backLink {
+    margin-top: 20px;
+    display: inline-block;
+}

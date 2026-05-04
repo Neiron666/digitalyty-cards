@@ -4,6 +4,7 @@ import Layout from "../components/layout/Layout";
 import ChunkErrorBoundary from "./ChunkErrorBoundary";
 import RouteFallback from "./RouteFallback";
 import { useAuth } from "../context/AuthContext";
+import SeoHelmet from "../components/seo/SeoHelmet";
 
 // pages
 import Home from "../pages/Home";
@@ -52,14 +53,24 @@ const IframeReturnPage = lazy(
 
 function AdminRouteGate() {
     const { user } = useAuth();
-    if (user?.role !== "admin") return <NotFound />;
+    if (user?.role !== "admin") {
+        return (
+            <>
+                <SeoHelmet robots="noindex, nofollow" />
+                <NotFound />
+            </>
+        );
+    }
 
     return (
-        <ChunkErrorBoundary label="שגיאה בטעינת הדף">
-            <Suspense fallback={<RouteFallback label="הדף נטען…" />}>
-                <Admin />
-            </Suspense>
-        </ChunkErrorBoundary>
+        <>
+            <SeoHelmet robots="noindex, nofollow" />
+            <ChunkErrorBoundary label="שגיאה בטעינת הדף">
+                <Suspense fallback={<RouteFallback label="הדף נטען…" />}>
+                    <Admin />
+                </Suspense>
+            </ChunkErrorBoundary>
+        </>
     );
 }
 

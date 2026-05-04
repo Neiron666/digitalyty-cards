@@ -7,6 +7,7 @@ import { getHasOrgAdmin } from "../services/orgAdminGate";
 import FlashBanner from "../components/ui/FlashBanner/FlashBanner";
 import Button from "../components/ui/Button";
 import styles from "./OrgInvites.module.css";
+import SeoHelmet from "../components/seo/SeoHelmet";
 
 function normalizeEmail(value) {
     if (typeof value !== "string") return "";
@@ -501,6 +502,7 @@ export default function OrgInvites() {
     if (isAuthenticated && gateState === "checking") {
         return (
             <main className={styles.main} dir="rtl">
+                <SeoHelmet robots="noindex, nofollow" />
                 <div className={styles.container}>
                     <h1 className={styles.title}>הזמנות לארגון</h1>
                     <div className={styles.hint}>טוען…</div>
@@ -511,6 +513,7 @@ export default function OrgInvites() {
 
     return (
         <main className={styles.main} dir="rtl">
+            <SeoHelmet robots="noindex, nofollow" />
             <div className={styles.container}>
                 <h1 className={styles.title}>הזמנות לארגון</h1>
 

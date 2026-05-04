@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import FlashBanner from "../components/ui/FlashBanner/FlashBanner";
 import { useAuth } from "../context/AuthContext";
 import styles from "./Dashboard.module.css";
+import SeoHelmet from "../components/seo/SeoHelmet";
 
 function coerceFlashFromState(state) {
     const flash = state?.flash;
@@ -62,6 +63,7 @@ export default function Dashboard() {
 
     return (
         <>
+            <SeoHelmet robots="noindex, nofollow" />
             {flash ? (
                 <div className={styles.flashWrap}>
                     <div className={styles.flash}>
