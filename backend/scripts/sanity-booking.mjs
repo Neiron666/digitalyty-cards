@@ -25,6 +25,7 @@ import {
     listen,
     requestJson,
 } from "./sanity-shared-fixtures.mjs";
+import { assertControlledWriteSanityTarget } from "./lib/controlled-write-guard.mjs";
 
 const APP_TZ = "Asia/Jerusalem";
 
@@ -107,6 +108,7 @@ async function cleanup(
 }
 
 async function main() {
+    assertControlledWriteSanityTarget("sanity:booking");
     // Must set BEFORE any model imports to prevent background index builds.
     mongoose.set("autoIndex", false);
     mongoose.set("autoCreate", false);

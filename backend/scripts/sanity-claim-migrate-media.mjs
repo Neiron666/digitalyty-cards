@@ -19,6 +19,7 @@ import {
     collectSupabasePathsFromCard,
     normalizeSupabasePaths,
 } from "../src/utils/supabasePaths.js";
+import { assertControlledWriteSanityTarget } from "./lib/controlled-write-guard.mjs";
 
 function requireEnv(name) {
     const v = process.env[name];
@@ -52,6 +53,7 @@ function assert(condition, message) {
 }
 
 async function main() {
+    assertControlledWriteSanityTarget("sanity:claim-migrate-media");
     // Mongo
     await connectDB(process.env.MONGO_URI);
 

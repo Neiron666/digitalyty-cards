@@ -32,6 +32,7 @@ import {
     listen,
     requestJson,
 } from "./sanity-shared-fixtures.mjs";
+import { assertControlledWriteSanityTarget } from "./lib/controlled-write-guard.mjs";
 
 // Honeypot fake ID used by the controller (from lead.controller.js FAKE_LEAD_ID).
 const FAKE_LEAD_ID = "000000000000000000000000";
@@ -75,6 +76,7 @@ async function cleanup(
 }
 
 async function main() {
+    assertControlledWriteSanityTarget("sanity:leads");
     // Must set BEFORE any model imports to prevent background index builds.
     mongoose.set("autoIndex", false);
     mongoose.set("autoCreate", false);

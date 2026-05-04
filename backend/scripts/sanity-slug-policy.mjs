@@ -10,6 +10,7 @@ import { connectDB } from "../src/config/db.js";
 import Card from "../src/models/Card.model.js";
 import User from "../src/models/User.model.js";
 import { signToken } from "../src/utils/jwt.js";
+import { assertControlledWriteSanityTarget } from "./lib/controlled-write-guard.mjs";
 
 function assert(condition, message) {
     if (!condition) throw new Error(message);
@@ -152,6 +153,7 @@ async function cleanupDocs({ userId }) {
 }
 
 async function main() {
+    assertControlledWriteSanityTarget("sanity:slug-policy");
     // Mongo
     await connectDB(process.env.MONGO_URI);
 

@@ -8,6 +8,7 @@ import CardAnalyticsDaily from "../src/models/CardAnalyticsDaily.model.js";
 import Booking from "../src/models/Booking.model.js";
 import { connectDB } from "../src/config/db.js";
 import { deleteCardCascade } from "../src/utils/cardDeleteCascade.js";
+import { assertControlledWriteSanityTarget } from "./lib/controlled-write-guard.mjs";
 
 function makeSlug() {
     const rand = Math.random().toString(16).slice(2, 8);
@@ -15,6 +16,7 @@ function makeSlug() {
 }
 
 async function main() {
+    assertControlledWriteSanityTarget("sanity:cascade-delete");
     try {
         await connectDB(process.env.MONGO_URI);
 

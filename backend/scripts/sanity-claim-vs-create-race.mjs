@@ -9,6 +9,7 @@ import Card from "../src/models/Card.model.js";
 import User from "../src/models/User.model.js";
 import { signToken } from "../src/utils/jwt.js";
 import { getPersonalOrgId } from "../src/utils/personalOrg.util.js";
+import { assertControlledWriteSanityTarget } from "./lib/controlled-write-guard.mjs";
 
 async function listen(serverApp) {
     return await new Promise((resolve, reject) => {
@@ -54,6 +55,7 @@ const email = `sanity-claim-then-mine-${Date.now()}-${crypto
 
 const mongoUri = process.env.MONGO_URI;
 assert(mongoUri, "Missing MONGO_URI");
+assertControlledWriteSanityTarget("sanity:claim-vs-create-race");
 
 const jwtSecret = process.env.JWT_SECRET;
 assert(jwtSecret && String(jwtSecret).trim(), "Missing JWT_SECRET");

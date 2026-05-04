@@ -2,6 +2,7 @@ import "dotenv/config";
 
 import crypto from "node:crypto";
 import mongoose from "mongoose";
+import { assertControlledWriteSanityTarget } from "./lib/controlled-write-guard.mjs";
 
 process.on("unhandledRejection", (reason) => {
     console.error("unhandledRejection", reason);
@@ -215,6 +216,7 @@ async function postcheckNotFound({
 }
 
 async function main() {
+    assertControlledWriteSanityTarget("sanity:admin-user-delete");
     mongoose.set("autoIndex", false);
     mongoose.set("autoCreate", false);
 

@@ -29,6 +29,7 @@ import {
     listen,
     requestJson,
 } from "./sanity-shared-fixtures.mjs";
+import { assertControlledWriteSanityTarget } from "./lib/controlled-write-guard.mjs";
 
 // Node 22: treat unhandled rejections as fatal.
 process.on("unhandledRejection", (reason) => {
@@ -76,6 +77,7 @@ async function cleanup(
 }
 
 async function main() {
+    assertControlledWriteSanityTarget("sanity:analytics");
     // Must set BEFORE any model imports to prevent background index builds.
     mongoose.set("autoIndex", false);
     mongoose.set("autoCreate", false);

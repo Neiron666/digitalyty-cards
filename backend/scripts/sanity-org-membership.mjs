@@ -3,6 +3,7 @@ import "dotenv/config";
 import crypto from "node:crypto";
 
 import mongoose from "mongoose";
+import { assertControlledWriteSanityTarget } from "./lib/controlled-write-guard.mjs";
 
 function assert(condition, message) {
     if (!condition) throw new Error(message);
@@ -131,6 +132,7 @@ async function cleanup(models, { adminUserId, userId, userEmail, orgId }) {
 }
 
 async function main() {
+    assertControlledWriteSanityTarget("sanity:org-membership");
     // Avoid background autoIndex races/conflicts in sanity scripts.
     // Must be set BEFORE importing app/models.
     mongoose.set("autoIndex", false);

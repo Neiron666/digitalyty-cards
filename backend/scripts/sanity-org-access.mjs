@@ -3,6 +3,7 @@ import "dotenv/config";
 import crypto from "node:crypto";
 
 import mongoose from "mongoose";
+import { assertControlledWriteSanityTarget } from "./lib/controlled-write-guard.mjs";
 
 // Node 22 treats unhandled rejections as fatal by default.
 // Mongoose index creation can reject during startup if DB indexes are out of sync.
@@ -166,6 +167,7 @@ async function cleanup(
 }
 
 async function main() {
+    assertControlledWriteSanityTarget("sanity:org-access");
     // Avoid background autoIndex races/conflicts in sanity scripts.
     // Use explicit connect option (more reliable than global set() for this script).
     mongoose.set("autoIndex", false);
