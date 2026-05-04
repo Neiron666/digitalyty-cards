@@ -451,6 +451,10 @@ P3.5 — Sandbox STO schedule cleanup confirmation (testcardstok sandbox schedul
    Two related tails closed: (1) `sanity:org-access` and `sanity:org-membership` omitted `firstName` from the invite-accept body after the firstName contour made it mandatory — scripts updated, both sanities now EXIT:0. (2) `sitemap.routes.js` did not load `Organization.orgEntitlement`, causing org-owned premium cards to be excluded from `sitemap.xml` — fixed, production smoke confirmed `https://cardigo.co.il/c/digitalyty/draft-41d469-eae8ac` present in sitemap.
    See: `docs/handoffs/current/Cardigo_Enterprise_Handoff_2026-05-04_OrgInviteSanity_And_SitemapOrgEntitlement_Closed.md`
 
+8. ORG_CARD_PREMIUM_FEATURE_PARITY — **CLOSED / PRODUCTION PASS (2026-05-04)**.
+   Org-owned premium feature parity restored across all feature paths: gallery upload entitlement (`upload.controller.js`), analytics real data vs demo (`analytics.controller.js`), booking availability/create (`booking.controller.js`), lead form submission (`lead.controller.js`), and business hours (covered by prior updateCard org-aware DTO). Org gallery limit product decision: 10 (aligned with monthly/yearly; `plans.js` L56, `limits.js` L4). Security regression audit P3B passed: ownership, membership, anti-enumeration, trial/expired handling all preserved; no payment/Tranzila/YeshInvoice/Receipt changes; no orgEntitlement mutation drift.
+   See: `docs/handoffs/current/Cardigo_Enterprise_Handoff_2026-05-04_OrgCard_PremiumFeatureParity_Closed.md`
+
 ---
 
 ## 17. Anti-Secret / Anti-Overclaim Policy

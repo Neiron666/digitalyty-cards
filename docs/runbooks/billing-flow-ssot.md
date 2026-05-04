@@ -52,7 +52,7 @@ All internal amounts are **integers in agorot** (1/100 of ₪). No floats anywhe
 | `reviews`      | ✗              | ✓              | ✓              | ✓              |
 | `templates`    | `[1]`          | `"all"`        | `"all"`        | `"all"`        |
 | `gallery`      | ✗              | ✓              | ✓              | ✓              |
-| `galleryLimit` | 4 (moot)       | 10             | 10             | 50             |
+| `galleryLimit` | 4 (moot)       | 10             | 10             | 10             |
 | `aiGeneration` | 10/mo (shared) | 30/mo (shared) | 30/mo (shared) | 30/mo (shared) |
 
 > **Gallery note:** Free plan has `gallery: false` → `canUseGallery === false` in entitlements. The `galleryLimit` value (4) is never reached because gallery upload is fully gated by the boolean.

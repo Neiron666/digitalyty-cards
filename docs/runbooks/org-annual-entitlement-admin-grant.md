@@ -393,7 +393,7 @@ When the billing resolver evaluates a card:
     - `effectiveBilling.source = "organization"`
     - `effectiveBilling.plan = "org"`
     - `effectiveTier = "premium"`
-    - `PLANS.org` feature gates apply (publish, seo, analytics, slugChange, leadForm, video, reviews, templates:"all", gallery, galleryLimit:50)
+    - `PLANS.org` feature gates apply (publish, seo, analytics, slugChange, leadForm, video, reviews, templates:"all", gallery, galleryLimit:10)
 2. Otherwise (expired, revoked, or no entitlement): org-owned cards fall back through the normal resolver chain (personal billing → free).
 
 **What is NOT affected:**
