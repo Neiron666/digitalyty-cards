@@ -182,10 +182,11 @@ The `suggestAbout` handler follows this exact sequence:
    7b. **Monthly quota check** - persistent, success-only → 429 `AI_MONTHLY_LIMIT_REACHED`.
 8. **Derive card context** - extract business name, category, slogan from the trusted card document (server-side only, never from the request body).
    8b. **Business-context readiness gate** - if `businessName` or `category` is empty → 400 `AI_INSUFFICIENT_BUSINESS_CONTEXT`. This is a server-side enforcement layer; the frontend also gates proactively.
+   8b-out. **Outbound business field caps** - `businessName`, `category`, `slogan`, and `city` (SEO handler only) are silently truncated to SSoT limits from `backend/src/utils/business.util.js` (`BUSINESS_NAME_MAX`=60, `BUSINESS_SUBTITLE_MAX`=80, `BUSINESS_SLOGAN_MAX`=120, `BUSINESS_CITY_MAX`=40) before being included in the Gemini prompt payload. These caps are prompt-payload-only: stored card data is not mutated. Overlong values produce no request rejection; the truncated local variable is passed to the provider.
    8c. **Outbound context caps** - existing About content is extracted from the card and bounded before being sent to Gemini: title capped at 500 chars, each paragraph capped at 2,000 chars. This prevents user-controlled content from inflating input token cost.
 9. **Call Gemini** - target-aware structured output generation.
 10. **Increment monthly usage** - success-only, atomic `$inc`. Accounting failure does not block the response.
-11. **Metadata log** - latency, card ID, user ID, model, mode, language, target. No prompt or AI response content is logged.
+11. **Metadata log** - card ID, user ID, model, mode, language, target, latency, and `tokenCounts` (four numeric/null fields: `promptTokenCount`, `candidatesTokenCount`, `thoughtsTokenCount`, `totalTokenCount` — sourced from Gemini `usageMetadata`, null-guarded if absent). No prompt body, response body, suggestion object, or user/business text is logged. `usageMeta`/`tokenCounts` are not returned to the frontend. `AiUsageMonthly` token persistence and SDK `thinkingBudget` support are intentionally deferred.
 12. **Return** - suggestion + fresh quota DTO.
 
 ### 3.5 Auth / ownership / org-gate posture
@@ -257,7 +258,18 @@ The Gemini integration uses target-specific output budgets, structured JSON sche
 | `paragraph` | 512               | Single `aboutParagraph` string                 | Paragraph-only rules     |
 | `full`      | 1024              | `aboutTitle` + `aboutParagraphs` (maxItems: 3) | Full-block rules         |
 
-**Outbound context caps** (applied at step 8c before Gemini call):
+**Outbound context caps** (applied at steps 8b-out and 8c before Gemini call):
+
+Business fields (step 8b-out, all three handlers where applicable — prompt payload only, stored card data not mutated):
+
+- `businessName`: ≤ 60 characters (`BUSINESS_NAME_MAX`)
+- `category`: ≤ 80 characters (`BUSINESS_SUBTITLE_MAX`)
+- `slogan`: ≤ 120 characters (`BUSINESS_SLOGAN_MAX`)
+- `city`: ≤ 40 characters (`BUSINESS_CITY_MAX`) — SEO handler only
+
+Constants source: `backend/src/utils/business.util.js`.
+
+Existing About content (step 8c — About handler only):
 
 - Existing title: capped at 500 characters.
 - Existing paragraphs: each capped at 2,000 characters.
@@ -602,13 +614,16 @@ These are logical next steps. No design or implementation work has been started.
 
     **Residual deferred tail**: A non-blocking title-quality tail remains — the anti-generic variation instruction may not be sharp enough to force visually distinct title _phrasing_ in all cases. This is explicitly deferred for a possible future micro-contour (instruction wording sharpening only, no contour expansion).
 
+### 12.3 Completed improvement (May 2026)
+
+- **Outbound business field caps + usageMetadata extraction (GEMINI_AI_USAGE_COST_GUARDS_P1 — closed 2026-05-05)**: All three AI handlers (About, SEO, FAQ) now defensively cap `businessName` (≤60), `category` (≤80), `slogan` (≤120), and `city` (≤40, SEO only) before the Gemini provider call, using SSoT constants from `backend/src/utils/business.util.js`. Caps are prompt-payload-only; stored card data is not mutated. The previously open §12.1 item "Outbound slogan cap" is closed. Additionally, all three service functions now extract Gemini `usageMetadata` token counts (`promptTokenCount`, `candidatesTokenCount`, `thoughtsTokenCount`, `totalTokenCount`) after each successful provider call and log them as safe numeric metadata (`tokenCounts` in success logs). `usageMeta` is not returned to the frontend. `AiUsageMonthly` token persistence and SDK `thinkingBudget` support are intentionally deferred to a future contour. Changed runtime files: `backend/src/controllers/ai.controller.js`, `backend/src/services/gemini.service.js` only.
+
 ### 12.1 Optional low-priority refinements (not currently planned)
 
 Identified during token economy audit. Not required for current operational posture:
 
-- **Outbound slogan cap**: The `slogan` field is currently sent to Gemini without a character cap. Adding a ~200-char cap would be pure defense-in-depth; risk is LOW given monthly quota bounds.
 - **Dead improve line in `SYSTEM_INSTRUCTION_FULL`**: The system instruction for `target=full` includes an improve-context line that is unreachable in current frontend semantics (full CTA fires only from empty state → mode is always `create`). Removing it would save ~15 tokens/request. Not urgent.
 
 ---
 
-_Document created as part of the About AI workstream closure. Updated to reflect current implementation state including all three AI surfaces (About, FAQ V1, SEO), shared monthly AI budget (free=10, premium=30), unified AiQuotaHint component, and feature flags. March 2026. Updated April 2026: About AI title/paragraph diversity improvement (V1 closed) and deferred title-quality tail note added (§3.10, §12.2)._
+_Document created as part of the About AI workstream closure. Updated to reflect current implementation state including all three AI surfaces (About, FAQ V1, SEO), shared monthly AI budget (free=10, premium=30), unified AiQuotaHint component, and feature flags. March 2026. Updated April 2026: About AI title/paragraph diversity improvement (V1 closed) and deferred title-quality tail note added (§3.10, §12.2). Updated May 2026: Outbound business field caps and Gemini usageMetadata extraction closed (GEMINI_AI_USAGE_COST_GUARDS_P1); step 8b-out, §3.10 cap inventory, §3.4 step 11 log inventory, and §12.3 updated accordingly._

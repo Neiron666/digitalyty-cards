@@ -84,3 +84,6 @@ cg_cookies.txt
 # Extra defense for frontend build output
 /frontend/dist/
 
+# Closed-contour local scan scripts
+/run_scans_final.ps1
+

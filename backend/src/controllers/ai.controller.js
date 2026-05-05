@@ -395,9 +395,12 @@ export async function suggestAbout(req, res) {
     }
 
     // 8b-out. Outbound caps (prompt payload only — does not affect stored data)
-    if (businessName.length > BUSINESS_NAME_MAX) businessName = businessName.slice(0, BUSINESS_NAME_MAX);
-    if (category.length > BUSINESS_SUBTITLE_MAX) category = category.slice(0, BUSINESS_SUBTITLE_MAX);
-    if (slogan.length > BUSINESS_SLOGAN_MAX) slogan = slogan.slice(0, BUSINESS_SLOGAN_MAX);
+    if (businessName.length > BUSINESS_NAME_MAX)
+        businessName = businessName.slice(0, BUSINESS_NAME_MAX);
+    if (category.length > BUSINESS_SUBTITLE_MAX)
+        category = category.slice(0, BUSINESS_SUBTITLE_MAX);
+    if (slogan.length > BUSINESS_SLOGAN_MAX)
+        slogan = slogan.slice(0, BUSINESS_SLOGAN_MAX);
 
     // 8c. Derive existing about with outbound caps (prompt-only, not DB)
     const OUTBOUND_TITLE_CAP = 500;
@@ -795,8 +798,10 @@ export async function suggestSeo(req, res) {
     }
 
     // 8b-out. Outbound caps (prompt payload only — does not affect stored data)
-    if (businessName.length > BUSINESS_NAME_MAX) businessName = businessName.slice(0, BUSINESS_NAME_MAX);
-    if (category.length > BUSINESS_SUBTITLE_MAX) category = category.slice(0, BUSINESS_SUBTITLE_MAX);
+    if (businessName.length > BUSINESS_NAME_MAX)
+        businessName = businessName.slice(0, BUSINESS_NAME_MAX);
+    if (category.length > BUSINESS_SUBTITLE_MAX)
+        category = category.slice(0, BUSINESS_SUBTITLE_MAX);
 
     // 8c. Optional short context (token-efficient)
     let slogan =
@@ -807,8 +812,10 @@ export async function suggestSeo(req, res) {
         typeof card.business?.city === "string"
             ? card.business.city.trim()
             : "";
-    if (slogan.length > BUSINESS_SLOGAN_MAX) slogan = slogan.slice(0, BUSINESS_SLOGAN_MAX);
-    if (city.length > BUSINESS_CITY_MAX) city = city.slice(0, BUSINESS_CITY_MAX);
+    if (slogan.length > BUSINESS_SLOGAN_MAX)
+        slogan = slogan.slice(0, BUSINESS_SLOGAN_MAX);
+    if (city.length > BUSINESS_CITY_MAX)
+        city = city.slice(0, BUSINESS_CITY_MAX);
 
     let aboutTitle =
         typeof card.content?.aboutTitle === "string"
@@ -1112,8 +1119,10 @@ export async function suggestFaq(req, res) {
     }
 
     // 8b-out. Outbound caps (prompt payload only — does not affect stored data)
-    if (businessName.length > BUSINESS_NAME_MAX) businessName = businessName.slice(0, BUSINESS_NAME_MAX);
-    if (category.length > BUSINESS_SUBTITLE_MAX) category = category.slice(0, BUSINESS_SUBTITLE_MAX);
+    if (businessName.length > BUSINESS_NAME_MAX)
+        businessName = businessName.slice(0, BUSINESS_NAME_MAX);
+    if (category.length > BUSINESS_SUBTITLE_MAX)
+        category = category.slice(0, BUSINESS_SUBTITLE_MAX);
 
     // 8c. Optional bounded enrichment context (safe short fields from card)
     let slogan =
