@@ -242,15 +242,29 @@ function buildBlogPostingJsonLd(post) {
     const ld = {
         "@context": "https://schema.org",
         "@type": "BlogPosting",
+        "@id": `${ORIGIN}/blog/${post.slug}#article`,
         headline: post.title || "",
         description: post.seo?.description || post.excerpt || "",
         url: `${ORIGIN}/blog/${post.slug}`,
+        mainEntityOfPage: {
+            "@type": "WebPage",
+            "@id": `${ORIGIN}/blog/${post.slug}`,
+        },
+        inLanguage: "he",
         datePublished: post.publishedAt || undefined,
         dateModified: post.updatedAt || post.publishedAt || undefined,
+        author: {
+            "@type": "Person",
+            name: post.authorName || DEFAULT_AUTHOR_NAME,
+        },
         publisher: {
             "@type": "Organization",
             name: "Cardigo",
             url: ORIGIN,
+            logo: {
+                "@type": "ImageObject",
+                url: `${ORIGIN}/images/brand-logo/cardigo-logo.png`,
+            },
         },
     };
     ld.image = post.heroImageUrl || BLOG_OG_FALLBACK;

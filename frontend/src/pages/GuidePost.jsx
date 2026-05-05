@@ -242,15 +242,29 @@ function buildArticleJsonLd(post) {
     const ld = {
         "@context": "https://schema.org",
         "@type": "Article",
+        "@id": `${ORIGIN}/guides/${post.slug}#article`,
         headline: post.title || "",
         description: post.seo?.description || post.excerpt || "",
         url: `${ORIGIN}/guides/${post.slug}`,
+        mainEntityOfPage: {
+            "@type": "WebPage",
+            "@id": `${ORIGIN}/guides/${post.slug}`,
+        },
+        inLanguage: "he",
         datePublished: post.publishedAt || undefined,
         dateModified: post.updatedAt || post.publishedAt || undefined,
+        author: {
+            "@type": "Person",
+            name: post.authorName || DEFAULT_AUTHOR_NAME,
+        },
         publisher: {
             "@type": "Organization",
             name: "Cardigo",
             url: ORIGIN,
+            logo: {
+                "@type": "ImageObject",
+                url: `${ORIGIN}/images/brand-logo/cardigo-logo.png`,
+            },
         },
     };
     ld.image = post.heroImageUrl || GUIDE_OG_FALLBACK;
