@@ -1,7 +1,7 @@
 # YeshInvoice Groundwork Architecture
 
 **Contour:** 5.12.0 — YeshInvoice groundwork docs; implementation completed in 5.12.x  
-**Status:** IMPLEMENTED — sandbox-proven 2026-04-24. Production rollout NOT STARTED.  
+**Status:** IMPLEMENTED — sandbox-proven 2026-04-24. Production rollout ACTIVE for first-payment / receipt / receipt retry (operator-confirmed 2026-05-05). Production STO recurring charge proof remains a separately tracked follow-up.  
 **Created:** 2026-04-23  
 **See also:** `docs/runbooks/billing-flow-ssot.md` §9 and §16 (implementation status and proof truth)
 
@@ -49,7 +49,7 @@ G6 and G7 must close before `YESH_INVOICE_ENABLED=true` is set on the production
 
 **Documents:** current billing chain, implemented integration architecture, code patterns used, runbook reference.
 
-**Production rollout:** NOT STARTED. Implementation is complete and sandbox-proven. Production enablement requires G6 + G7.
+**Production rollout:** ACTIVE for first-payment / receipt / receipt retry (operator-confirmed 2026-05-05). G6 CLOSED / OPERATOR-CONFIRMED. G7 PARTIAL / SEPARATELY TRACKED — production STO recurring charge proof pending until the first real production recurring charge fires and is operator-verified.
 
 ---
 
@@ -252,11 +252,9 @@ if (txn.provider === "mock")
     return { ok: true, skipped: true, reason: "mock_provider" };
 ```
 
-### D6. Retry Strategy Concept (FUTURE PROPOSED)
+### D6. ~~Retry Strategy Concept~~ — IMPLEMENTED (2026-05-05)
 
-A background job (`startReceiptRetryJob`) will query `Receipt.receiptStatus === "failed"` records and re-attempt creation. Pattern mirrors `billingReconcile.js` (running-flag guard, Sentry cron monitor, configurable interval via `RECEIPT_RECONCILIATION_INTERVAL_MS`).
-
-Idempotency: attempt to re-call YeshInvoice only if `receiptStatus === "failed"` and `providerDocId` is null (no partial-success state).
+`startReceiptRetryJob` in `backend/src/jobs/receiptRetry.js` — CREATED and production-active. Queries `Receipt.status === "failed"` records with `retryCount < MAX_RETRIES=5`; uses `nextRetryAt` for exponential backoff (base 5min, max 4h). Compound index `status_1_nextRetryAt_1` applied via `migrate-receipt-indexes.mjs`. Dual feature-flag guard: `RECEIPT_RETRY_ENABLED=true` AND `YESH_INVOICE_ENABLED=true`. Interval: `RECEIPT_RETRY_INTERVAL_MS` (default 1800000 = 30min). Boot delay: 105s.
 
 ### D7. Retrieval / Download — IMPLEMENTED (2026-04-24)
 

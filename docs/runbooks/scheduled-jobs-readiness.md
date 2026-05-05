@@ -1,7 +1,7 @@
 # Runbook: Scheduled Jobs Readiness
 
 **Scope:** Operational SSoT for all scheduled / background job infrastructure in Cardigo.
-**Status:** Active — last reviewed 2026-04-18.
+**Status:** Active — last reviewed 2026-05-05.
 
 ---
 
@@ -13,7 +13,7 @@
 | ------------------------- | ------------------------ | ------------------------------------------------------------------- |
 | Render Cron Jobs          | **None configured**      | All scheduled work runs in-process                                  |
 | Render Background Workers | **None configured**      | All scheduled work runs in-process                                  |
-| In-process Node timers    | **5 active workers**     | Started inside the backend Web Service via `server.js`              |
+| In-process Node timers    | **7 active workers**     | Started inside the backend Web Service via `server.js`              |
 | GitHub Actions cron       | **1 workflow**           | `backend-admin-sanity.yml` — nightly sanity against CI-only cluster |
 | MongoDB TTL indexes       | **DB-engine automation** | Booking `purgeAt` TTL; not Node cron; not in-process                |
 
@@ -35,7 +35,7 @@ The backend is currently deployed as a **Render Free web service**, which sleeps
 
 ## 2) In-Process Worker Inventory
 
-All 5 workers are started in `backend/src/server.js` after `connectDB`. None require a separate deploy target.
+All 7 workers are started in `backend/src/server.js` after `connectDB`. None require a separate deploy target.
 
 ### 2.1 `reset-mail-worker`
 
@@ -106,6 +106,34 @@ All 5 workers are started in `backend/src/server.js` after `connectDB`. None req
 | Sentry monitor slug | `trial-reminder`                                                                                                                                                                                                                            |
 | Readiness status    | **ACTIVE** — `TRIAL_REMINDER_ENABLED=true` confirmed in Render (owner 2026-04-18)                                                                                                                                                           |
 | Key risks           | Sends only to `emailMarketingConsent === true` users. Suppression/unsubscribe/repeat-send protections all active. Email sender env is `MAILJET_FROM_EMAIL` / `MAILJET_FROM_NAME` — do not confuse with the unused `MAILJET_SENDER_*` names. |
+
+### 2.6 `billing-reconcile`
+
+| Property            | Value                                                                                                                                                 |
+| ------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Purpose             | Expires subscriptions where `expiresAt < now` and `status === "active"` → sets `status: "expired"`, downgrades `User.plan` and `Card.billing` to free |
+| Interval            | Default: **6 h** (`BILLING_RECONCILE_INTERVAL_MS`)                                                                                                    |
+| Boot delay          | 90 s (staggered)                                                                                                                                      |
+| Auto-start / gate   | **Unconditional** — no enabled/disabled env gate                                                                                                      |
+| Classification      | Write (non-destructive)                                                                                                                               |
+| Required env vars   | None beyond standard Mongo/JWT                                                                                                                        |
+| Sentry monitor slug | `billing-reconcile`                                                                                                                                   |
+| Readiness status    | **ACTIVE**                                                                                                                                            |
+| Key risks           | None blocking. Atomic `updateOne`-style guard prevents double-downgrade.                                                                              |
+
+### 2.7 `receipt-retry`
+
+| Property            | Value                                                                                                                                                                                                                                                                          |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Purpose             | Retries `Receipt` documents with `status: "failed"` up to `MAX_RETRIES=5` times using exponential backoff (`nextRetryAt`). Calls `createReceiptYeshInvoice` then `shareReceiptYeshInvoice` per item. Best-effort write-back of `receiptId` to `PaymentTransaction` on success. |
+| Interval            | Default: **30 min** (`RECEIPT_RETRY_INTERVAL_MS`, env var default: 1800000)                                                                                                                                                                                                    |
+| Boot delay          | 105 s (staggered after `billing-reconcile`)                                                                                                                                                                                                                                    |
+| Auto-start / gate   | **Dual-gated** — starts only if `RECEIPT_RETRY_ENABLED=true` AND `YESH_INVOICE_ENABLED=true`                                                                                                                                                                                   |
+| Classification      | Write + External API (YeshInvoice)                                                                                                                                                                                                                                             |
+| Required env vars   | `RECEIPT_RETRY_ENABLED=true`, `YESH_INVOICE_ENABLED=true`, `YESH_INVOICE_SECRET`, `YESH_INVOICE_USERKEY`, `YESH_INVOICE_API_BASE`                                                                                                                                              |
+| Sentry monitor slug | `receipt-retry`                                                                                                                                                                                                                                                                |
+| Readiness status    | **ACTIVE** — `RECEIPT_RETRY_ENABLED=true` and `YESH_INVOICE_ENABLED=true` confirmed in production Render (2026-05-05)                                                                                                                                                          |
+| Key risks           | Per-item catch isolates failures. `running` flag prevents concurrent runs. Share failure does NOT increment `retryCount`. `$exists:false` arms in query handle pre-Phase-2B documents without `nextRetryAt`.                                                                   |
 
 ---
 
@@ -233,16 +261,18 @@ The full billing/Tranzila/YeshInvoice/idempotency/distributed-locks/audit-log/re
 
 ## 9) Production Readiness Table
 
-| Job                         | Schedule source                         | Auto/gated                       | Classification          | Production impact      | Monitoring               | Current status                       | Notes                                                                  |
-| --------------------------- | --------------------------------------- | -------------------------------- | ----------------------- | ---------------------- | ------------------------ | ------------------------------------ | ---------------------------------------------------------------------- |
-| `reset-mail-worker`         | In-process 60 s                         | Auto                             | Email                   | Medium                 | Monitor: yes; Alert: no  | Active                               | MailJob stuck-processing has no auto-retry                             |
-| `trial-cleanup`             | In-process 1 h                          | Auto                             | Destructive + Storage   | Medium                 | Monitor: yes; Alert: yes | Active (missed check-ins)            | Sleeping runtime causes missed check-ins; candidates: 0 in recent runs |
-| `trial-lifecycle-reconcile` | In-process 6 h                          | Auto                             | Write                   | Low                    | Monitor: yes; Alert: no  | Active                               | No blocking risks                                                      |
-| `retention-purge`           | In-process 6 h                          | Auto                             | Destructive + Storage   | High                   | Monitor: yes; Alert: no  | Active                               | Auto-enabled; deletes premium card contact data after grace period     |
-| `trial-reminder`            | In-process 2 h                          | Gated (`TRIAL_REMINDER_ENABLED`) | Email                   | Medium                 | Monitor: yes; Alert: no  | Active (TRIAL_REMINDER_ENABLED=true) | Consent/suppression/repeat-send protections verified                   |
-| `backend-admin-sanity`      | GitHub Actions cron 02:13 UTC           | Automated                        | Read (CI-only cluster)  | None (production data) | GitHub Actions           | Active                               | CI-only; never touches production Mongo                                |
-| `Booking TTL purge`         | MongoDB engine (TTL index on `purgeAt`) | Automatic                        | Destructive (DB-engine) | Medium                 | None (DB-engine)         | Active                               | Not Node cron; DB-engine TTL                                           |
-| Recurring billing cron      | N/A                                     | N/A                              | N/A                     | Critical               | N/A                      | **NOT IMPLEMENTED (deferred)**       | Do not implement until full billing contour is closed                  |
+| Job                         | Schedule source                         | Auto/gated                                               | Classification          | Production impact      | Monitoring               | Current status                                             | Notes                                                                                                  |
+| --------------------------- | --------------------------------------- | -------------------------------------------------------- | ----------------------- | ---------------------- | ------------------------ | ---------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| `reset-mail-worker`         | In-process 60 s                         | Auto                                                     | Email                   | Medium                 | Monitor: yes; Alert: no  | Active                                                     | MailJob stuck-processing has no auto-retry                                                             |
+| `trial-cleanup`             | In-process 1 h                          | Auto                                                     | Destructive + Storage   | Medium                 | Monitor: yes; Alert: yes | Active (missed check-ins)                                  | Sleeping runtime causes missed check-ins; candidates: 0 in recent runs                                 |
+| `trial-lifecycle-reconcile` | In-process 6 h                          | Auto                                                     | Write                   | Low                    | Monitor: yes; Alert: no  | Active                                                     | No blocking risks                                                                                      |
+| `retention-purge`           | In-process 6 h                          | Auto                                                     | Destructive + Storage   | High                   | Monitor: yes; Alert: no  | Active                                                     | Auto-enabled; deletes premium card contact data after grace period                                     |
+| `trial-reminder`            | In-process 2 h                          | Gated (`TRIAL_REMINDER_ENABLED`)                         | Email                   | Medium                 | Monitor: yes; Alert: no  | Active (TRIAL_REMINDER_ENABLED=true)                       | Consent/suppression/repeat-send protections verified                                                   |
+| `backend-admin-sanity`      | GitHub Actions cron 02:13 UTC           | Automated                                                | Read (CI-only cluster)  | None (production data) | GitHub Actions           | Active                                                     | CI-only; never touches production Mongo                                                                |
+| `Booking TTL purge`         | MongoDB engine (TTL index on `purgeAt`) | Automatic                                                | Destructive (DB-engine) | Medium                 | None (DB-engine)         | Active                                                     | Not Node cron; DB-engine TTL                                                                           |
+| `billing-reconcile`         | In-process 6 h                          | Auto                                                     | Write                   | High                   | Monitor: yes; Alert: no  | Active                                                     | Expires `User.subscription` when `expiresAt < now`. `BILLING_RECONCILE_INTERVAL_MS` (default 21600000) |
+| `receipt-retry`             | In-process 30 min                       | Gated (`RECEIPT_RETRY_ENABLED` + `YESH_INVOICE_ENABLED`) | Write                   | Medium                 | Monitor: yes; Alert: no  | Active (RECEIPT_RETRY_ENABLED=true, production 2026-05-05) | Max 5 retries; exponential backoff capped at 4h; MAX_BATCH=20 per run                                  |
+| Recurring billing cron      | N/A                                     | N/A                                                      | N/A                     | Critical               | N/A                      | **NOT IMPLEMENTED (deferred)**                             | Do not implement until full billing contour is closed                                                  |
 
 ---
 

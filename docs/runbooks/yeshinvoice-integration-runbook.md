@@ -1,7 +1,7 @@
 # YeshInvoice Integration Runbook
 
 **Contour:** 5.12.x — YeshInvoice integration (COMPLETE — sandbox-proven 2026-04-24)  
-**Status:** IMPLEMENTED — sandbox-proven. Production rollout NOT STARTED.  
+**Status:** IMPLEMENTED — sandbox-proven. Production rollout ACTIVE for first-payment / receipt creation / receipt share / receipt retry (operator-confirmed 2026-05-05). Production STO recurring charge proof remains a separately tracked follow-up.  
 **Created:** 2026-04-23  
 **Dependencies:**
 
@@ -59,10 +59,10 @@
 
 - [x] ~~Gate 2: Failed-STO retry / recovery (5.10h)~~ — **CLOSED (5.12.H)**
 - [x] ~~Gate 4b: STO create observability (5.10i)~~ — **CLOSED (5.12.H)**
-- [ ] **Gate 6: Production terminal cutover (5.10f) — OPEN**
-- [ ] **Gate 7: Production E2E lifecycle proof (5.10g) — OPEN**
+- [x] ~~Gate 6: Production terminal cutover (5.10f)~~ — **CLOSED / OPERATOR-CONFIRMED (2026-05-05).** Real production first-payment flow verified with Tranzila payment, Cardigo fulfillment, YeshInvoice receipt creation/share, and STO creation.
+- [ ] **Gate 7: Production STO recurring charge proof (5.10g) — PARTIAL / SEPARATELY TRACKED.** Production rollout is active; recurring STO charge proof pending until the first real production recurring charge fires and is operator-verified.
 
-Sandbox implementation is complete. G6 and G7 block production enablement (`YESH_INVOICE_ENABLED=true` on production Render) only.
+Production is ACTIVE for first-payment / receipt / retry. G7 does NOT block current production operation; it is a follow-up verification milestone.
 
 ---
 
@@ -197,17 +197,19 @@ createReceiptBestEffort({
 );
 ```
 
-### D8. Create receipt retry job
+### D8. ~~Create receipt retry job~~ — DONE (2026-05-05)
 
-New file: `backend/src/jobs/receiptRetry.js`
+File: `backend/src/jobs/receiptRetry.js` — CREATED and production-active.
 
-Pattern: `backend/src/jobs/billingReconcile.js` (running flag, Sentry cron monitor, configurable interval).
+Pattern: `backend/src/jobs/billingReconcile.js` (running flag, Sentry cron monitor, configurable interval). Dual feature-flag guard: `RECEIPT_RETRY_ENABLED=true` AND `YESH_INVOICE_ENABLED=true` (both required).
 
-Env var: `RECEIPT_RETRY_INTERVAL_MS` (default: `3 * 60 * 60 * 1000 = 10,800,000 ms / 3h`).
+Env var: `RECEIPT_RETRY_INTERVAL_MS` (default: `30 * 60 * 1000 = 1,800,000 ms / 30min`). Boot delay: 105s (staggered after `billingReconcile` at 90s).
 
-Queries: `Receipt.find({ receiptStatus: "failed", providerDocId: null })` with a bounded limit per run.
+Query: `Receipt.find({ status: "failed", retryCount: { $lt: MAX_RETRIES } })` with `$exists:false` arms for Phase 2A pre-field documents; bounded by `nextRetryAt <= now` and `MAX_BATCH=20` per run. Exponential backoff: `Math.min(BACKOFF_BASE_MS * 2^retryCount, BACKOFF_MAX_MS)` where `BACKOFF_BASE_MS=5min`, `BACKOFF_MAX_MS=4h`. `MAX_RETRIES=5`.
 
-Wire into `backend/src/server.js` after `startBillingReconcileJob`.
+Wired into `backend/src/server.js` after `startBillingReconcileJob` (line 136–140).
+
+Index: `status_1_nextRetryAt_1` compound index on `Receipt` — applied via `migrate-receipt-indexes.mjs ensureRetryIndex()`. Schema fields: `retryCount` (Number, default 0), `nextRetryAt` (Date, default null).
 
 ### D9. Create cabinet API endpoints — DONE (2026-04-24)
 
@@ -237,17 +239,17 @@ Verify with `Receipt.collection.indexes()`.
 - [ ] `isYeshInvoiceEnabled()` returns false when env var absent or `"false"`
 - [ ] `createReceiptBestEffort` with `provider="mock"` returns `{ ok: true, skipped: true, reason: "mock_provider" }`
 - [ ] Duplicate `paymentTransactionId` → unique index violation → no second receipt
-- [ ] YeshInvoice API failure → `receiptStatus = "failed"` → payment ACK NOT blocked
-- [ ] Retry job: picks up `receiptStatus === "failed"` records; skips `receiptStatus === "created"` records
+- [ ] YeshInvoice API failure → `status = "failed"` → payment ACK NOT blocked
+- [ ] Retry job: picks up `status === "failed"` records; skips `status === "created"` records
 - [ ] `GET /api/account/receipts` rejects unauthenticated requests (401)
 - [ ] `GET /api/account/receipts/:id/download` rejects cross-user ownership (403/404)
 
 ### E2. Sandbox E2E
 
-- [ ] Complete a test first payment → `PaymentTransaction.status = "paid"` confirmed → `Receipt.receiptStatus = "created"` confirmed → `providerDocId` populated
+- [ ] Complete a test first payment → `PaymentTransaction.status = "paid"` confirmed → `Receipt.status = "created"` confirmed → `providerDocId` populated
 - [ ] Receipt email received in sandbox inbox
 - [ ] Simulate a STO recurring charge → receipt created for `sto_recurring_notify` txn
-- [ ] Simulate YeshInvoice failure → `receiptStatus = "failed"` → retry job recovers
+- [ ] Simulate YeshInvoice failure → `status = "failed"` → retry job recovers
 - [ ] Admin-granted subscription → no `Receipt` document created (no `PaymentTransaction` exists)
 
 ### E3. Frontend verification — DONE (2026-04-24, operator-verified)
