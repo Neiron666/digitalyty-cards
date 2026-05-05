@@ -293,6 +293,88 @@ Before relying on scheduled jobs for production SLAs, all of the following must 
 
 ---
 
+## 11) Sentry Application Metrics — Billing + Receipt (Batch 1)
+
+**Contour:** SENTRY_APPLICATION_METRICS_MVP_P1_BATCH1
+**Status:** IMPLEMENTED — code-verified 2026-05-06. No dashboards, alerts, or Sentry monitors created in this contour. No Sentry plan or PAYG billing changes made.
+
+### Helper
+
+**File:** `backend/src/utils/sentryMetrics.util.js`
+
+- No-op / fail-silent when Sentry is inactive (`isSentryActive()` guard using `Sentry.getClient()`).
+- Hard allowlist for metric names — unknown names silently dropped.
+- Hard allowlist for tag keys and tag values — unknown keys dropped, unknown values set to `"unknown"` where safe or dropped entirely.
+- Null / non-object / array tag inputs guarded at entry — no throw.
+- All Sentry SDK calls wrapped in `try/catch` — helper never throws.
+- No `console.log/warn/error` output.
+- No new packages. Requires `@sentry/node ^10.40.0` (already present).
+
+### Metric Inventory
+
+All 6 metrics are backend-only. Scope: payment notify + receipt creation + receipt retry only.
+
+**payment.notify.success**
+Type: increment
+Tags: `provider` (tranzila), `flow` (first_payment | sto_recurring), `plan` (monthly | yearly | unknown)
+Source: `handleNotify` and `handleStoNotify` in `tranzila.provider.js`
+Safety: fires after all persistence (`user.save`, `Card.updateOne` x2) completes. Never fires on E11000 duplicate replay path.
+
+**payment.notify.failed**
+Type: increment
+Tags: `provider` (tranzila), `flow` (first_payment | sto_recurring), `reason` (allowlisted — see helper)
+Source: `handleNotify` (inside `!isPaid` guard only) and `handleStoNotify` (charge rejection / sto_cancelled / invalid_plan / amount_mismatch paths)
+Safety: fires on non-paid and STO-rejected paths only. Never fires on duplicate replay. Never fires on `no_provider_txn_id` early-return path.
+
+**receipt.create.failed**
+Type: increment
+Tags: `provider` (yeshinvoice), `flow` (first_payment | sto_recurring), `plan` (monthly | yearly | unknown), `reason` (create_failed)
+Source: inside `!receiptResult.ok` block in `handleNotify` and `handleStoNotify` in `tranzila.provider.js`
+Safety: fires only when YeshInvoice receipt creation returns a non-ok result. Payment ACK is never blocked by this metric.
+
+**receipt.retry.candidate_count**
+Type: gauge
+Value: `candidates.length` (integer, 0–N)
+Tags: `provider` (yeshinvoice), `flow` (retry_job)
+Source: `receiptRetry.js` — emitted immediately after candidate query, before zero-candidate early return
+Safety: fires on every sweep including zero-candidate sweeps. This is intentional heartbeat-style signal — zero does not indicate an error.
+
+**receipt.retry.success**
+Type: increment
+Tags: `provider` (yeshinvoice), `flow` (retry_job), `plan` (monthly | yearly | unknown)
+Source: `processReceipt` in `receiptRetry.js` — after `Receipt.updateOne(status: "created")` completes
+Safety: fires only after DB persistence confirms success.
+
+**receipt.retry.failed**
+Type: increment
+Tags: `provider` (yeshinvoice), `flow` (retry_job), `plan` (monthly | yearly | unknown), `reason` (create_failed)
+Source: `processReceipt` in `receiptRetry.js` — after `Receipt.updateOne(retryCount++)` and backoff scheduling complete
+Safety: fires only after DB persistence confirms failure record written.
+
+### Forbidden Tag Values
+
+The helper's allowlist prevents these from ever reaching Sentry as tag values:
+`userId`, `email`, `slug`, `providerTxnId`, `stoId`, `TranzilaTK`, `rawPayload`, `rawPayloadHash`, `documentUniqueKey`, `providerDocId`, `paymentTransactionId`, raw error text, prompt text, generated text.
+
+### Known P2 Tails (non-blocking, not fixed in Batch 1)
+
+- `sto_cancelled` string maps to `reason="unknown"` at Sentry — no matching keyword in `sanitizeReason`. Observability quality only.
+- `invalid_plan` string maps to `reason="unknown"` at Sentry — same reason. Observability quality only.
+- `sanitizeReason` has no case normalization — uppercase inputs fall to `"unknown"`. Current call sites are all lowercase; no runtime impact.
+- `receipt.retry.candidate_count` emits `0` on every zero-candidate sweep — intentional; bounded cardinality.
+
+### Explicit Non-Goals for This Batch
+
+- No AI / Gemini metrics implemented.
+- No `api.critical_error` metric implemented.
+- No frontend metrics.
+- No global API request metrics.
+- No Sentry dashboards, alerts, or new monitors created.
+- No real payment or provider smoke was performed to verify metrics in this contour. Metric correctness was verified by code proof and a no-network Node smoke test only.
+- Sentry Application Metrics availability depends on the active Sentry subscription tier. No plan or PAYG billing changes were made.
+
+---
+
 ## Related Runbooks
 
 - `docs/runbooks/anon-card-cleanup.md` — detailed trial-cleanup mechanics, error table, tuning, troubleshooting.

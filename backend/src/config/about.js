@@ -1,1 +1,2 @@
 export const ABOUT_PARAGRAPHS_MAX = 3;
+export const ABOUT_PARAGRAPH_ITEM_MAX = 2000;

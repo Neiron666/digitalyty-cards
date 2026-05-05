@@ -5,6 +5,7 @@ import {
     shareReceiptYeshInvoice,
 } from "../services/yeshinvoice.service.js";
 import * as Sentry from "@sentry/node";
+import { incrementMetric, gaugeMetric } from "../utils/sentryMetrics.util.js";
 
 // ---------------------------------------------------------------------------
 // Receipt retry job — retries failed YeshInvoice receipt creation for
@@ -126,6 +127,8 @@ async function retryOnce() {
             .sort({ nextRetryAt: 1, createdAt: 1 })
             .limit(MAX_BATCH)
             .lean();
+
+        gaugeMetric("receipt.retry.candidate_count", candidates.length, { provider: "yeshinvoice", flow: "retry_job" });
 
         if (!candidates.length) {
             const nowMs = Date.now();
@@ -266,6 +269,7 @@ async function processReceipt(receipt, now) {
             planPresent: Boolean(receipt.plan),
             amountAgorotPresent: Boolean(receipt.amountAgorot),
         });
+        incrementMetric("receipt.retry.success", { provider: "yeshinvoice", flow: "retry_job", plan: (receipt.plan === "monthly" || receipt.plan === "yearly") ? receipt.plan : "unknown" });
 
         // Best-effort PaymentTransaction receiptId write-back.
         // Only writes receiptId — no other PaymentTransaction fields touched.
@@ -343,6 +347,7 @@ async function processReceipt(receipt, now) {
             retryCount: currentRetryCount + 1,
             errorPresent: Boolean(receiptResult.error),
         });
+        incrementMetric("receipt.retry.failed", { provider: "yeshinvoice", flow: "retry_job", plan: (receipt.plan === "monthly" || receipt.plan === "yearly") ? receipt.plan : "unknown", reason: "create_failed" });
     }
 }
 

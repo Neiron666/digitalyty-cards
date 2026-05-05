@@ -2,7 +2,7 @@ import mongoose from "mongoose";
 
 import { normalizeReviews } from "../utils/reviews.util.js";
 import { BOOKING_HORIZON_ALLOWED } from "../utils/bookingHorizon.util.js";
-import { ABOUT_PARAGRAPHS_MAX } from "../config/about.js";
+import { ABOUT_PARAGRAPHS_MAX, ABOUT_PARAGRAPH_ITEM_MAX } from "../config/about.js";
 import { REVIEWS_MAX } from "../config/reviews.js";
 import {
     BUSINESS_NAME_MAX,
@@ -61,6 +61,13 @@ function isValidWazeOrHttpUrl(v) {
     }
     // All other values: delegate to the standard http(s) validator.
     return isValidContactUrl(v);
+}
+
+function isValidSelfThemeHexColor(value) {
+    if (value == null) return true;
+    if (typeof value !== "string") return false;
+    const v = value.trim().toLowerCase();
+    return /^#[0-9a-f]{6}$/.test(v) || /^#[0-9a-f]{3}$/.test(v);
 }
 
 const UploadItemSchema = new mongoose.Schema(
@@ -553,24 +560,37 @@ const CardSchema = new mongoose.Schema(
 
         content: {
             // required minimal fields
-            title: String,
-            description: String,
+            title: { type: String, maxlength: [200, "content.title must not exceed 200 characters"] },
+            description: { type: String, maxlength: [500, "content.description must not exceed 500 characters"] },
 
             // legacy fields (kept for backward compatibility)
-            aboutTitle: String,
+            aboutTitle: { type: String, maxlength: [300, "content.aboutTitle must not exceed 300 characters"] },
             aboutParagraphs: {
                 type: [String],
                 default: undefined,
-                validate: {
-                    validator: (arr) => {
-                        if (arr === undefined || arr === null) return true;
-                        if (!Array.isArray(arr)) return false;
-                        return arr.length <= ABOUT_PARAGRAPHS_MAX;
+                validate: [
+                    {
+                        validator: (arr) => {
+                            if (arr === undefined || arr === null) return true;
+                            if (!Array.isArray(arr)) return false;
+                            return arr.length <= ABOUT_PARAGRAPHS_MAX;
+                        },
+                        message: `content.aboutParagraphs must contain at most ${ABOUT_PARAGRAPHS_MAX} items`,
                     },
-                    message: `content.aboutParagraphs must contain at most ${ABOUT_PARAGRAPHS_MAX} items`,
-                },
+                    {
+                        validator: (arr) => {
+                            if (!Array.isArray(arr)) return true;
+                            return arr.every(
+                                (item) =>
+                                    typeof item !== "string" ||
+                                    item.length <= ABOUT_PARAGRAPH_ITEM_MAX,
+                            );
+                        },
+                        message: `Each item in content.aboutParagraphs must not exceed ${ABOUT_PARAGRAPH_ITEM_MAX} characters`,
+                    },
+                ],
             },
-            aboutText: String,
+            aboutText: { type: String, maxlength: [6500, "content.aboutText must not exceed 6500 characters"] },
             videoUrl: String,
 
             // Additive (V1): descriptive services list.
@@ -605,8 +625,8 @@ const CardSchema = new mongoose.Schema(
         faq: { type: FaqSchema, default: null },
 
         seo: {
-            title: String,
-            description: String,
+            title: { type: String, maxlength: [200, "seo.title must not exceed 200 characters"] },
+            description: { type: String, maxlength: [500, "seo.description must not exceed 500 characters"] },
 
             // Advanced SEO:
             canonicalUrl: {
@@ -764,11 +784,51 @@ const CardSchema = new mongoose.Schema(
             // Self theme (token-levers v1)
             // Optional, backward compatible. Values are sanitized at read/generation time.
             selfThemeV1: {
-                bg: { type: String, default: null },
-                text: { type: String, default: null },
-                primary: { type: String, default: null },
-                secondary: { type: String, default: null },
-                onPrimary: { type: String, default: null },
+                bg: {
+                    type: String,
+                    trim: true,
+                    default: null,
+                    validate: {
+                        validator: isValidSelfThemeHexColor,
+                        message: "Invalid hex color value",
+                    },
+                },
+                text: {
+                    type: String,
+                    trim: true,
+                    default: null,
+                    validate: {
+                        validator: isValidSelfThemeHexColor,
+                        message: "Invalid hex color value",
+                    },
+                },
+                primary: {
+                    type: String,
+                    trim: true,
+                    default: null,
+                    validate: {
+                        validator: isValidSelfThemeHexColor,
+                        message: "Invalid hex color value",
+                    },
+                },
+                secondary: {
+                    type: String,
+                    trim: true,
+                    default: null,
+                    validate: {
+                        validator: isValidSelfThemeHexColor,
+                        message: "Invalid hex color value",
+                    },
+                },
+                onPrimary: {
+                    type: String,
+                    trim: true,
+                    default: null,
+                    validate: {
+                        validator: isValidSelfThemeHexColor,
+                        message: "Invalid hex color value",
+                    },
+                },
                 version: { type: Number, default: 1 },
             },
 
