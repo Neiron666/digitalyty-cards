@@ -144,10 +144,24 @@ router.get("/og/blog/:slug", async (req, res) => {
             : "");
     const image = getPublicUrlForPath({ path: heroPath }) || "";
 
+    const imageAlt = image
+        ? collapseWs(post.heroImage?.alt) || collapseWs(post.title) || ""
+        : "";
+
     const imageMeta = image
-        ? `
-    <meta property="og:image" content="${escapeHtml(image)}" />
-    <meta name="twitter:image" content="${escapeHtml(image)}" />`
+        ? "\n" +
+          [
+              `    <meta property="og:image" content="${escapeHtml(image)}" />`,
+              imageAlt
+                  ? `    <meta property="og:image:alt" content="${escapeHtml(imageAlt)}" />`
+                  : "",
+              `    <meta name="twitter:image" content="${escapeHtml(image)}" />`,
+              imageAlt
+                  ? `    <meta name="twitter:image:alt" content="${escapeHtml(imageAlt)}" />`
+                  : "",
+          ]
+              .filter(Boolean)
+              .join("\n")
         : "";
 
     const articleMeta = [
@@ -235,10 +249,24 @@ router.get("/og/guides/:slug", async (req, res) => {
             : "");
     const image = getPublicUrlForPath({ path: heroPath }) || "";
 
+    const imageAlt = image
+        ? collapseWs(post.heroImage?.alt) || collapseWs(post.title) || ""
+        : "";
+
     const imageMeta = image
-        ? `
-    <meta property="og:image" content="${escapeHtml(image)}" />
-    <meta name="twitter:image" content="${escapeHtml(image)}" />`
+        ? "\n" +
+          [
+              `    <meta property="og:image" content="${escapeHtml(image)}" />`,
+              imageAlt
+                  ? `    <meta property="og:image:alt" content="${escapeHtml(imageAlt)}" />`
+                  : "",
+              `    <meta name="twitter:image" content="${escapeHtml(image)}" />`,
+              imageAlt
+                  ? `    <meta name="twitter:image:alt" content="${escapeHtml(imageAlt)}" />`
+                  : "",
+          ]
+              .filter(Boolean)
+              .join("\n")
         : "";
 
     const articleMeta = [
