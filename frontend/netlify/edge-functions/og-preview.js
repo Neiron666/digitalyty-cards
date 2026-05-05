@@ -1,7 +1,7 @@
 /* global Netlify */
 
 // Cardigo — Social Preview Edge Function
-// Intercepts /card/:slug and /c/:orgSlug/:slug for social preview bots only.
+// Intercepts /card/:slug, /c/:orgSlug/:slug, /blog/:slug, and /guides/:slug for social preview bots only.
 // Normal browsers are excluded at config level via user-agent header matching —
 // they never invoke this function and continue through _redirects to the SPA as today.
 // Googlebot, bingbot, and generic bot catch-all are intentionally excluded from this
@@ -17,7 +17,7 @@ const SECRET_ENV_KEY = "CARDIGO_PROXY_SHARED_SECRET";
 const SLUG_RE = /^[A-Za-z0-9_-]+$/;
 
 export const config = {
-    path: ["/card/*", "/c/*"],
+    path: ["/card/*", "/c/*", "/blog/*", "/guides/*"],
     method: ["GET"],
     header: {
         "user-agent":
@@ -53,6 +53,16 @@ export default async function ogPreview(request, context) {
                 encodeURIComponent(orgSlug) +
                 "/" +
                 encodeURIComponent(slug);
+        } else if (segments[0] === "blog" && segments.length === 2) {
+            const slug = segments[1];
+            if (!SLUG_RE.test(slug)) return context.next();
+            backendPath =
+                BACKEND_ORIGIN + "/og/blog/" + encodeURIComponent(slug);
+        } else if (segments[0] === "guides" && segments.length === 2) {
+            const slug = segments[1];
+            if (!SLUG_RE.test(slug)) return context.next();
+            backendPath =
+                BACKEND_ORIGIN + "/og/guides/" + encodeURIComponent(slug);
         } else {
             return context.next();
         }
