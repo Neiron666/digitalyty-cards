@@ -149,6 +149,7 @@ export default function SeoHelmet({
     articlePublishedTime,
     articleModifiedTime,
     articleAuthor,
+    imageAlt,
 }) {
     const scripts = normalizeJsonLdItems(jsonLd, jsonLdItems);
 
@@ -209,6 +210,9 @@ export default function SeoHelmet({
                 <meta property="og:description" content={description} />
             ) : null}
             {image ? <meta property="og:image" content={image} /> : null}
+            {image && imageAlt ? (
+                <meta property="og:image:alt" content={imageAlt} />
+            ) : null}
             {url ? <meta property="og:url" content={url} /> : null}
             {articlePublishedTime ? (
                 <meta
@@ -233,6 +237,9 @@ export default function SeoHelmet({
                 <meta name="twitter:description" content={description} />
             ) : null}
             {image ? <meta name="twitter:image" content={image} /> : null}
+            {image && imageAlt ? (
+                <meta name="twitter:image:alt" content={imageAlt} />
+            ) : null}
 
             {trackingMode === "gtm" ? (
                 <script key="gtm-inline">

@@ -428,6 +428,7 @@ export default function GuidePost() {
                     post.updatedAt || post.publishedAt || undefined
                 }
                 articleAuthor={post.authorName || DEFAULT_AUTHOR_NAME}
+                imageAlt={post.heroImageAlt || post.title || undefined}
             />
             <article className={styles.article}>
                 <div className={styles.articleInner}>
