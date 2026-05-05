@@ -6,10 +6,10 @@
 ## Scope и важные условия
 
 - Все значения сохраняются в `card.seo.*`.
-- Публичная карточка (`/card/:slug`, `/c/:orgSlug/:slug`) применяет SEO meta и скрипты **после загрузки JS** (SPA + Helmet).
+- Публичная карточка (`/card/:slug`, `/c/:orgSlug/:slug`) применяет SEO meta и скрипты **после загрузки JS** (SPA + Helmet) для Googlebot и браузеров. Social preview bots (Facebook, WhatsApp и др.) получают OG HTML через Netlify Edge Function → backend `/og/card/:slug` (не через SPA).
 - Preview (`/preview/...`) всегда `noindex,nofollow,noarchive` и **без трекеров**.
 - Editor (`/edit/...`) **без трекеров**.
-- На этапе разработки в `frontend/index.html` может стоять глобальный `<meta name="robots" content="noindex, nofollow">` - это осознанный “рубильник” (пока проект в разработке).
+- `frontend/index.html` **не содержит** глобальный `<meta name="robots" content="noindex, nofollow">` в продакшене. Глобальный noindex был удалён при запуске продакшена (2026-05-03). Индексация управляется через route-specific noindex / X-Robots-Tag и политику robots.txt.
 
 ---
 

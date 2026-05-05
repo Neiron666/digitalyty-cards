@@ -325,8 +325,9 @@ global noindex:
 
 robots.txt (frontend/public/robots.txt):
 
-- User-agent: \* / Allow: / / Sitemap: https://cardigo.co.il/sitemap.xml
-- No Disallow rules.
+- User-agent: \* / Allow: / / Disallow: /.netlify/ / Disallow: /og/ / Sitemap: https://cardigo.co.il/sitemap.xml
+- Two technical Disallow rules: `/.netlify/` (Netlify internal functions) and `/og/` (backend social-preview OG HTML, not user-facing pages).
+- `/api/` is intentionally NOT disallowed — Google WRS depends on `/api/*` for SPA rendering. Updated via SEO_ROBOTS_TXT_MINIMAL_TECHNICAL_DISALLOW_P1 (2026-05-05).
 
 sitemap.xml:
 
@@ -417,7 +418,7 @@ P3.1 — Move old pre-launch handoffs from docs/handoffs/current/ to docs/handof
 
 P3.2 — Remove old local cookie test artifacts (cg_cookies.txt, cookies.txt) from repo root if still present.
 
-P3.3 — og:site_name improvement (previously deferred).
+P3.3 — og:site_name and og:locale baseline meta: CLOSED via SEO_SEOHELMET_OG_BASELINE_META_P1 on 2026-05-05. Both `og:site_name="Cardigo"` and `og:locale="he_IL"` are now always emitted by `SeoHelmet.jsx` as hardcoded constants.
 
 P3.4 — Full rewrite/cleanup of SECURITY_TEMP_API_GATE.md body in a later docs cleanup contour.
 
@@ -589,7 +590,7 @@ All claims in this handoff are based on the following primary sources. See those
 - frontend/netlify/functions/auth.js — 404 tombstone only; no CARDIGO*GATE*\* references
 - frontend/netlify/functions/proxy.js — no gate cookie check; x-cardigo-proxy-secret forwarding active
 - frontend/index.html — global noindex <meta> removed
-- frontend/public/robots.txt — User-agent: \* / Allow: / / Sitemap: https://cardigo.co.il/sitemap.xml
+- frontend/public/robots.txt — User-agent: \* / Allow: / / Disallow: /.netlify/ / Disallow: /og/ / Sitemap: https://cardigo.co.il/sitemap.xml
 - frontend/src/components/seo/SeoHelmet.jsx — per-route noindex via prop; no global default noindex
 - frontend/src/pages/PreviewCard.jsx — noindex hardcoded (intentional)
 - frontend/src/pages/payment/CheckoutPage.jsx — noindex on all checkout states (intentional)

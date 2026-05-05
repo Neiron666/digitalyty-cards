@@ -1,7 +1,8 @@
-# Blog SEO & OG - Runbook (Cardigo)
+# Blog & Guides SEO & OG - Runbook (Cardigo)
 
-**Статус фичи:** Blog (admin CRUD + public pages + JSON-LD + OG + sitemap) реализован и проверен локально.  
-**Важно:** на проде сейчас включён временный **Gate (password cookie)** на Netlify proxy (`GATE_REQUIRED`). Это **намеренно** блокирует краулеров/соцсети и не даёт SEO/OG работать “наружу” до момента открытия сайта.
+**Статус:** Production OPEN. Blog and guides SEO/OG, social preview, JSON-LD, article meta, image alt, and sitemap are live and verified on https://cardigo.co.il. Production launch: 2026-05-03.
+
+> For the full public indexability SSoT (all routes, social preview architecture, robots.txt policy, deferred items), see: `docs/runbooks/seo-public-indexability-runbook.md`
 
 ---
 
@@ -19,31 +20,32 @@
 
 - **OG endpoint:** `GET /og/blog/:slug`
     - `published-only`, draft/missing → `404 Not found` (anti-enumeration)
-    - валидные `og:*` и `twitter:*` мета
-    - `og:type="article"`
+    - `og:type="article"`, `og:title`, `og:description`, `og:url`
+    - `og:image` (conditional on hero image), `og:image:alt` (conditional)
+    - `twitter:image` (conditional), `twitter:image:alt` (conditional)
+    - `article:published_time`, `article:modified_time`, `article:author`
     - `meta refresh` redirect на canonical: `https://cardigo.co.il/blog/:slug`
+- **OG endpoint:** `GET /og/guides/:slug`
+    - Same tag inventory as `/og/blog/:slug`. Canonical redirect to `/guides/:slug`.
 - **Sitemap:** `GET /sitemap.xml`
-    - включает blog URLs только для `published`
-    - добавляет `<lastmod>` из `updatedAt`
+    - включает blog и guide URLs для `published`, с `<lastmod>` из `updatedAt`
+    - включает card URLs (personal + org-owned premium) с `<lastmod>` из `updatedAt`
+    - static paths include stable `<lastmod>` baseline
     - без N+1 (single query для blog posts)
 
 ---
 
-## 2) Почему на проде сейчас не индексируется
+## 2) Статус продакшена
 
-На проде Netlify proxy требует cookie `__Host-cardigo_gate` и возвращает:
+> **Pre-production historical note (до 2026-05-03):** Before production launch, a Netlify proxy gate (the `cardigo-proxy` header guard) blocked all public crawlers. That gate was fully removed at production launch on 2026-05-03.
 
-```json
-{ "ok": false, "code": "GATE_REQUIRED" }
-```
+Current production truth (2026-05-03 — present):
 
-Это блокирует:
-
-- `https://cardigo.co.il/api/blog?...`
-- `https://cardigo.co.il/og/blog/:slug`
-- `https://cardigo.co.il/sitemap.xml`
-
-**Открывать SEO/OG нужно позже**, когда сайт будет готов, либо через controlled bypass allowlist под feature-flag (рекомендуемый enterprise путь).
+- `https://cardigo.co.il/sitemap.xml` — HTTP 200, publicly served.
+- `https://cardigo.co.il/og/blog/:slug` — HTTP 200 for published slugs; 404 for missing.
+- `https://cardigo.co.il/og/guides/:slug` — HTTP 200 for published slugs; 404 for missing.
+- `https://cardigo.co.il/api/blog?...` — HTTP 200. `/api/*` is intentionally NOT disallowed in robots.txt because Google WRS depends on it for SPA rendering.
+- `https://cardigo.co.il/robots.txt` — publicly served; see `docs/runbooks/seo-public-indexability-runbook.md` for current Disallow policy.
 
 ---
 
@@ -80,55 +82,67 @@ curl.exe -i "$base/og/blog/nonexistent-slug-zzz"
 - `og:type` = `article`
 - `og:title`, `og:description`, `og:url` присутствуют
 - `og:image` присутствует только если есть hero image (иначе отсутствует)
-- `twitter:title` и `twitter:description` валидные, **single-line** `content="..."`
+- `og:image:alt` присутствует только если есть hero image (значение из `heroImage.alt` или `title`)
+- `twitter:title`, `twitter:description`, `twitter:image` валидные, **single-line** `content="..."`
+- `twitter:image:alt` присутствует только если есть hero image
+- `article:published_time`, `article:modified_time`, `article:author` присутствуют
 - `refresh` redirect на `https://cardigo.co.il/blog/<slug>`
 
 ---
 
-## 4) План “Когда открываем сайт” (prod activation checklist)
+## 4) Production smoke checklist
 
-> Цель: открыть **только** публичные read-only поверхности для краулеров/соцсетей, не открывая admin/write API.
+> **Pre-production historical note:** This section formerly described a gateway bypass approach for opening the site. The gate was fully removed on 2026-05-03 (see §2). Sections 4.2 and 4.3 now serve as ongoing production smoke and GSC checklist.
 
-### 4.1 Рекомендуемый подход
+### 4.1 (Archived — gate approach)
 
-Сделать allowlist-bypass в Netlify proxy **под feature-flag**, например:
+The `CARDIGO_GATE_PUBLIC_BYPASS=1` feature-flag bypass approach was not used. The gate was removed directly at launch. This subsection is preserved as historical reference only.
 
-- `CARDIGO_GATE_PUBLIC_BYPASS=1`
+### 4.2 Production smoke (blog and guides)
 
-До включения флага gate остаётся полным (как сейчас).
-
-### 4.2 Production smoke (после включения bypass / снятия gate)
+Verify blog/guides OG with social bot UA:
 
 ```powershell
-curl.exe -i "https://cardigo.co.il/sitemap.xml"
-curl.exe -i "https://cardigo.co.il/og/blog/7"
-curl.exe -i "https://cardigo.co.il/api/blog?page=1&limit=5"
+$UA = "facebookexternalhit/1.1"
+curl.exe -s -A $UA "https://cardigo.co.il/blog/post-7a9572f4" | findstr /i "og:type" "og:image:alt" "article:published_time"
+curl.exe -s -A $UA "https://cardigo.co.il/guides/seo" | findstr /i "og:type" "og:image:alt" "article:published_time"
 ```
 
-Ожидаемо: **200 OK** (не `401 GATE_REQUIRED`).
+Expected: `og:type` = `article`, `og:image:alt` and `article:published_time` present.
 
-Негативные тесты - должны остаться закрыты:
+Verify missing slug returns 404:
 
 ```powershell
-curl.exe -i "https://cardigo.co.il/api/admin/blog/posts?page=1&limit=1"
-curl.exe -i -X POST "https://cardigo.co.il/api/auth/forgot" -H "Content-Type: application/json" --data-binary "{""email"":""x@y.com""}"
+curl.exe -s -o NUL -w "%{http_code}" -A $UA "https://cardigo.co.il/blog/nonexistent-slug-zzz999"
 ```
 
-Ожидаемо: **401 GATE_REQUIRED** (или иной gated ответ).
+Expected: `404`.
 
-### 4.3 Search Console
+Verify sitemap has blog, guides, and card entries with lastmod:
 
-- После открытия sitemap: отправить `https://cardigo.co.il/sitemap.xml` в Google Search Console.
-- Проверить Rich Results Test для `/blog/:slug` (BlogPosting JSON-LD).
+```powershell
+curl.exe -s "https://cardigo.co.il/sitemap.xml" | findstr /i "blog" "guides" "lastmod"
+```
+
+Expected: blog and guide URLs present with `<lastmod>` values; card URLs present with `<lastmod>` values.
+
+### 4.3 Search Console and Rich Results
+
+- Submit `https://cardigo.co.il/sitemap.xml` in Google Search Console (GSC). **DEFERRED — not yet done (P1 tail).**
+- Rich Results Test for `/blog/:slug` (BlogPosting JSON-LD): **VERIFIED** — Article + Breadcrumbs detected, no errors.
+- Rich Results Test for `/guides/:slug` (Article JSON-LD): **VERIFIED** — Article + Breadcrumbs detected.
+- After GSC setup: monitor Index Coverage report for blog and guides pages.
 
 ---
 
-## 5) Быстрый DoD (Definition of Done) для “SEO activation”
+## 5) DoD "SEO activation" — COMPLETE (2026-05-03)
 
-- `sitemap.xml` доступен без gate и содержит blog URLs для published
-- `/og/blog/:slug` доступен без gate и содержит валидные OG/Twitter мета
-- `/api/blog` доступен без gate (если требуется для клиентов/краулеров)
-- admin/write API всё ещё gated
+All DoD items were satisfied at production launch on 2026-05-03:
+
+- ✓ `sitemap.xml` publicly accessible; contains published blog and guide URLs with `<lastmod>`.
+- ✓ `/og/blog/:slug` and `/og/guides/:slug` publicly accessible with full OG/Twitter/article meta.
+- ✓ `/api/blog` and `/api/guides` publicly accessible (intentionally kept crawlable for Google WRS).
+- ✓ Admin/write API endpoints remain protected (authentication required, independent of gate).
 
 ---
 
@@ -156,6 +170,15 @@ curl.exe -i -X POST "https://cardigo.co.il/api/auth/forgot" -H "Content-Type: ap
 - Author bio block renders below the post body when `authorName` is present.
 - Includes author image (optional), name, and short bio text.
 
+### Guides public surfaces
+
+The guides section mirrors the blog structure:
+
+- `/guides` — listing of published guides.
+- `/guides/:slug` — single guide page with `SeoHelmet`, JSON-LD (`Article`, `BreadcrumbList`), hero image, and article meta.
+- `GET /og/guides/:slug` — backend OG endpoint for social preview bots. Same tag inventory as `/og/blog/:slug`.
+- `GuidePost.jsx` mirrors `BlogPost.jsx`: passes article meta props, `imageAlt`, and emits soft-404 noindex for missing slugs.
+
 ---
 
 ## 7) Discoverability / SEO / IA
@@ -167,13 +190,17 @@ curl.exe -i -X POST "https://cardigo.co.il/api/auth/forgot" -H "Content-Type: ap
 
 ### Sitemap
 
-- `GET /sitemap.xml` includes all `published` blog post URLs with `<lastmod>` from `updatedAt`.
+- `GET /sitemap.xml` includes all `published` blog post and guide post URLs with `<lastmod>` from `updatedAt`.
+- Card URLs (personal and org-owned premium) also include `<lastmod>` from `updatedAt`.
+- Static marketing pages include a stable `<lastmod>` date baseline (2026-05-03).
 - Only posts with `status: "published"` appear. Drafts and alias slugs are excluded.
 
 ### OG endpoint
 
-- `GET /og/blog/:slug` - resolves only the **current canonical slug** (not aliases).
-- Published-only; draft/missing → `404 Not found` (anti-enumeration).
+- `GET /og/blog/:slug` — resolves only the **current canonical slug** (not aliases). Published-only; draft/missing → `404 Not found`.
+- `GET /og/guides/:slug` — same policy as blog. Published-only; draft/missing → `404 Not found`.
+- Both endpoints emit `article:published_time`, `article:modified_time`, `article:author`, `og:image:alt`, `twitter:image:alt` (last two conditional on hero image).
+- Social preview bots reach these endpoints via Netlify Edge Function (og-preview.js) intercepting `/blog/*` and `/guides/*` UA-selectively.
 
 ### Analytics
 
@@ -182,8 +209,8 @@ curl.exe -i -X POST "https://cardigo.co.il/api/auth/forgot" -H "Content-Type: ap
 
 ### Current posture
 
-- SEO/OG endpoints are functional but currently gated behind Netlify proxy (see §2).
-- Footer `/blog` link ensures crawlers discover the blog once the gate is lifted.
+- SEO/OG endpoints are live and publicly accessible (gate removed 2026-05-03, see §2).
+- Footer `/blog` and `/guides` links ensure crawlers discover content via internal linking.
 
 ---
 
