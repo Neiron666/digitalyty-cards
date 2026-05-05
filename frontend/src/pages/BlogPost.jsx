@@ -377,6 +377,10 @@ export default function BlogPost() {
     if (notFound) {
         return (
             <main className={styles.blogWrap} data-page="site">
+                <SeoHelmet
+                    robots="noindex, nofollow"
+                    title="המאמר לא נמצא | Cardigo"
+                />
                 <p className={styles.status}>המאמר לא נמצא.</p>
                 <div className={styles.backRow}>
                     <Link to="/blog" className={styles.backLink}>

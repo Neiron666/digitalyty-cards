@@ -378,6 +378,10 @@ export default function GuidePost() {
     if (notFound) {
         return (
             <main className={styles.guideWrap} data-page="site">
+                <SeoHelmet
+                    robots="noindex, nofollow"
+                    title="המדריך לא נמצא | Cardigo"
+                />
                 <p className={styles.status}>המדריך לא נמצא.</p>
                 <div className={styles.backRow}>
                     <Link to="/guides" className={styles.backLink}>
