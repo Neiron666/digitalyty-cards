@@ -198,6 +198,8 @@ export default function SeoHelmet({
             ) : null}
 
             {/* OpenGraph */}
+            <meta property="og:locale" content="he_IL" />
+            <meta property="og:site_name" content="Cardigo" />
             <meta property="og:type" content={ogType} />
             {title ? <meta property="og:title" content={title} /> : null}
             {description ? (
