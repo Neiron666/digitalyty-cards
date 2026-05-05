@@ -7,6 +7,7 @@ import { startTrialLifecycleReconcileJob } from "./jobs/trialLifecycleReconcile.
 import { startRetentionPurgeJob } from "./jobs/retentionPurge.js";
 import { startTrialReminderJob } from "./jobs/trialReminderJob.js";
 import { startBillingReconcileJob } from "./jobs/billingReconcile.js";
+import { startReceiptRetryJob } from "./jobs/receiptRetry.js";
 
 // --- Sentry early init (before Express app loads) ---
 // Must run before app.js is imported so Sentry can instrument Express/http.
@@ -128,6 +129,13 @@ async function start() {
         intervalMs:
             Number(process.env.TRIAL_REMINDER_INTERVAL_MS) ||
             2 * 60 * 60 * 1000,
+    });
+
+    // YeshInvoice receipt retry: retries Receipt{status:"failed"} records.
+    // Disabled by default — requires RECEIPT_RETRY_ENABLED=true AND YESH_INVOICE_ENABLED=true.
+    startReceiptRetryJob({
+        intervalMs:
+            Number(process.env.RECEIPT_RETRY_INTERVAL_MS) || 30 * 60 * 1000,
     });
 
     app.listen(PORT, () => {

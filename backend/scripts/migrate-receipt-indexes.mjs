@@ -149,6 +149,50 @@ async function ensureReadIndexes({ dryRun, verbose }) {
     }
 }
 
+async function ensureRetryIndex({ dryRun, verbose }) {
+    let idx = [];
+    try {
+        idx = await Receipt.collection.indexes();
+    } catch (err) {
+        // On a fresh DB the collection may not exist yet; treat as no indexes.
+        const code = err?.code;
+        const codeName = err?.codeName;
+        if (code === 26 || codeName === "NamespaceNotFound") {
+            idx = [];
+        } else {
+            throw err;
+        }
+    }
+
+    const byName = new Map(idx.map((i) => [i.name, i]));
+
+    // Non-unique retry-eligibility index for receipt retry job query:
+    //   { status: "failed", nextRetryAt: null/$exists/$lte }
+    const wantName = "status_1_nextRetryAt_1";
+
+    if (byName.has(wantName)) {
+        console.log(`${wantName} already exists - no-op`);
+        return;
+    }
+
+    // Non-unique index — no duplicate pre-check required.
+    if (dryRun || verbose) {
+        console.log(
+            dryRun
+                ? `[dry-run] would create read index ${wantName} on { status: 1, nextRetryAt: 1 }`
+                : `creating read index ${wantName}`,
+        );
+    }
+
+    if (!dryRun) {
+        await Receipt.collection.createIndex(
+            { status: 1, nextRetryAt: 1 },
+            { unique: false, name: wantName },
+        );
+        console.log(`created read index ${wantName}`);
+    }
+}
+
 async function main() {
     const args = parseArgs(process.argv);
 
@@ -164,6 +208,7 @@ async function main() {
     try {
         await ensureIndexes(args);
         await ensureReadIndexes(args);
+        await ensureRetryIndex(args);
 
         console.log("done", { dryRun: args.dryRun });
     } finally {

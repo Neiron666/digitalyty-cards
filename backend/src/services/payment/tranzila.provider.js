@@ -1019,6 +1019,72 @@ async function linkReceiptToPaymentTransactionBestEffort(
     }
 }
 
+// [Y3H] Best-effort failed-receipt persistence — Phase 2A.
+// Creates a Receipt{status:"failed", shareStatus:"skipped"} as a durable retry target.
+// Must never block payment notify ACK, fulfillment, or successful receipt behavior.
+// Phase 2B retry job will later update these records to status:"created".
+async function persistFailedReceiptBestEffort({
+    txnDocId,
+    userId,
+    amountAgorot,
+    plan,
+    documentUniqueKey,
+    failReason,
+    recipientSnapshot,
+    flow,
+}) {
+    if (!txnDocId) {
+        console.warn("[receipt] failed receipt skipped — no txnDocId", {
+            event: "receipt_failed_no_txn_id",
+            flow,
+            ok: false,
+        });
+        return;
+    }
+    try {
+        await Receipt.create({
+            paymentTransactionId: txnDocId,
+            userId,
+            provider: "yeshinvoice",
+            providerDocId: null,
+            providerDocNumber: null,
+            documentType: 6,
+            pdfUrl: null,
+            documentUrl: null,
+            amountAgorot,
+            plan,
+            status: "failed",
+            shareStatus: "skipped",
+            failReason: String(failReason ?? "").slice(0, 200),
+            documentUniqueKey,
+            issuedAt: null,
+            recipientSnapshot,
+        });
+    } catch (_err) {
+        if (_err.code === 11000) {
+            // Idempotent replay — failed Receipt for this PaymentTransaction already exists.
+            console.info(
+                "[receipt] failed receipt duplicate — idempotent replay",
+                {
+                    event: "receipt_failed_duplicate",
+                    flow,
+                    txnDocIdPresent: Boolean(txnDocId),
+                    idempotent: true,
+                },
+            );
+            return;
+        }
+        console.error("[receipt] failed receipt create error", {
+            event: "receipt_failed_create_error",
+            flow,
+            txnDocIdPresent: Boolean(txnDocId),
+            userIdPresent: Boolean(userId),
+            ok: false,
+            failReason: String(_err?.message ?? "").slice(0, 200),
+        });
+    }
+}
+
 /**
  * Validates and returns the iframe-mode return URL pair.
  * Throws IFRAME_CHECKOUT_NOT_CONFIGURED if either URL is missing.
@@ -1640,6 +1706,19 @@ export default {
                             200,
                         ),
                     });
+                    await persistFailedReceiptBestEffort({
+                        txnDocId: txnDoc._id,
+                        userId: user._id,
+                        amountAgorot,
+                        plan: validPlan,
+                        documentUniqueKey,
+                        failReason: receiptResult.error,
+                        recipientSnapshot: buildRecipientSnapshot(
+                            customer,
+                            resolvedPaymentIntentId,
+                        ),
+                        flow: "first_payment",
+                    });
                 } else {
                     // Inner try/catch: precise E11000 vs infra error discrimination.
                     try {
@@ -2173,6 +2252,19 @@ export default {
                             0,
                             200,
                         ),
+                    });
+                    await persistFailedReceiptBestEffort({
+                        txnDocId: txnDoc._id,
+                        userId: user._id,
+                        amountAgorot,
+                        plan: user.plan,
+                        documentUniqueKey,
+                        failReason: receiptResult.error,
+                        recipientSnapshot: buildRecipientSnapshot(
+                            customer,
+                            null,
+                        ),
+                        flow: "sto_recurring",
                     });
                 } else {
                     // Inner try/catch: precise E11000 vs infra error discrimination.

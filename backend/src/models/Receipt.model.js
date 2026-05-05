@@ -116,14 +116,33 @@ const receiptSchema = new mongoose.Schema(
             type: Date,
             default: null,
         },
+        // Retry fields — populated by Phase 2B retry job.
+        // retryCount: bounded attempt counter, capped at MAX_RETRIES in receiptRetry.js.
+        // nextRetryAt: null means eligible immediately; set to future time after each failure.
+        retryCount: {
+            type: Number,
+            default: 0,
+            min: 0,
+        },
+        nextRetryAt: {
+            type: Date,
+            default: null,
+        },
     },
     { timestamps: true },
 );
 
-// Index declaration for documentation and manual migration.
-// autoIndex is OFF globally (db.js); this index is NOT created at runtime.
+// Index declarations for documentation and manual migration.
+// autoIndex is OFF globally (db.js); indexes are NOT created at runtime.
 // To create: run backend/scripts/migrate-receipt-indexes.mjs --apply
 receiptSchema.index({ paymentTransactionId: 1 }, { unique: true });
+// Retry eligibility index — supports Receipt retry job query:
+//   { status: "failed", nextRetryAt: null/$exists/$lte }
+// Actual creation: backend/scripts/migrate-receipt-indexes.mjs --apply
+receiptSchema.index(
+    { status: 1, nextRetryAt: 1 },
+    { name: "status_1_nextRetryAt_1" },
+);
 
 const Receipt = mongoose.model("Receipt", receiptSchema);
 
