@@ -1569,7 +1569,11 @@ export default {
 
         // ── 7. If not paid → stop (already logged in ledger) ──
         if (!isPaid) {
-            incrementMetric("payment.notify.failed", { provider: "tranzila", flow: "first_payment", reason: failReason });
+            incrementMetric("payment.notify.failed", {
+                provider: "tranzila",
+                flow: "first_payment",
+                reason: failReason,
+            });
             return;
         }
         if (!validPlan) return;
@@ -1677,7 +1681,11 @@ export default {
         // ── 10. [Y3D.2] YeshInvoice receipt create — non-blocking, after full fulfillment ──
         // Receipt issuance is a follow-on artifact. Must never block first-payment fulfillment.
         // Outer try/catch swallows all unexpected setup/provider-call errors.
-        incrementMetric("payment.notify.success", { provider: "tranzila", flow: "first_payment", plan: validPlan });
+        incrementMetric("payment.notify.success", {
+            provider: "tranzila",
+            flow: "first_payment",
+            plan: validPlan,
+        });
         if (isYeshInvoiceEnabled()) {
             try {
                 const documentUniqueKey =
@@ -1699,7 +1707,12 @@ export default {
                 });
 
                 if (!receiptResult.ok) {
-                    incrementMetric("receipt.create.failed", { provider: "yeshinvoice", flow: "first_payment", plan: validPlan, reason: "create_failed" });
+                    incrementMetric("receipt.create.failed", {
+                        provider: "yeshinvoice",
+                        flow: "first_payment",
+                        plan: validPlan,
+                        reason: "create_failed",
+                    });
                     console.warn("[receipt] provider call failed", {
                         event: "receipt_create_provider_failed",
                         providerTxnId,
@@ -1966,7 +1979,11 @@ export default {
                 }
                 throw e;
             }
-            incrementMetric("payment.notify.failed", { provider: "tranzila", flow: "sto_recurring", reason: "supplier_mismatch" });
+            incrementMetric("payment.notify.failed", {
+                provider: "tranzila",
+                flow: "sto_recurring",
+                reason: "supplier_mismatch",
+            });
             return { ok: false, reason: "supplier_mismatch", providerTxnId };
         }
 
@@ -1993,7 +2010,11 @@ export default {
                 }
                 throw e;
             }
-            incrementMetric("payment.notify.failed", { provider: "tranzila", flow: "sto_recurring", reason: "currency_mismatch" });
+            incrementMetric("payment.notify.failed", {
+                provider: "tranzila",
+                flow: "sto_recurring",
+                reason: "currency_mismatch",
+            });
             return { ok: false, reason: "currency_mismatch", providerTxnId };
         }
 
@@ -2021,7 +2042,11 @@ export default {
                 }
                 throw e;
             }
-            incrementMetric("payment.notify.failed", { provider: "tranzila", flow: "sto_recurring", reason: "user_not_found" });
+            incrementMetric("payment.notify.failed", {
+                provider: "tranzila",
+                flow: "sto_recurring",
+                reason: "user_not_found",
+            });
             return { ok: false, reason: "user_not_found", providerTxnId };
         }
 
@@ -2102,7 +2127,11 @@ export default {
                 pricingUrl: `${getSiteUrl()}/pricing`,
                 userId: String(user._id),
             }).catch(() => {});
-            incrementMetric("payment.notify.failed", { provider: "tranzila", flow: "sto_recurring", reason: failReason });
+            incrementMetric("payment.notify.failed", {
+                provider: "tranzila",
+                flow: "sto_recurring",
+                reason: failReason,
+            });
             return { ok: false, reason: failReason, providerTxnId };
         }
 
@@ -2110,7 +2139,11 @@ export default {
         if (sto.status === "cancelled") {
             const { duplicate } = await recordFailure("sto_cancelled", null);
             if (duplicate) return { ok: true, duplicate: true, providerTxnId };
-            incrementMetric("payment.notify.failed", { provider: "tranzila", flow: "sto_recurring", reason: "sto_cancelled" });
+            incrementMetric("payment.notify.failed", {
+                provider: "tranzila",
+                flow: "sto_recurring",
+                reason: "sto_cancelled",
+            });
             return { ok: false, reason: "sto_cancelled", providerTxnId };
         }
 
@@ -2118,7 +2151,11 @@ export default {
         if (user.plan !== "monthly" && user.plan !== "yearly") {
             const { duplicate } = await recordFailure("invalid_plan", null);
             if (duplicate) return { ok: true, duplicate: true, providerTxnId };
-            incrementMetric("payment.notify.failed", { provider: "tranzila", flow: "sto_recurring", reason: "invalid_plan" });
+            incrementMetric("payment.notify.failed", {
+                provider: "tranzila",
+                flow: "sto_recurring",
+                reason: "invalid_plan",
+            });
             return { ok: false, reason: "invalid_plan", providerTxnId };
         }
 
@@ -2131,7 +2168,11 @@ export default {
         ) {
             const { duplicate } = await recordFailure("amount_mismatch", null);
             if (duplicate) return { ok: true, duplicate: true, providerTxnId };
-            incrementMetric("payment.notify.failed", { provider: "tranzila", flow: "sto_recurring", reason: "amount_mismatch" });
+            incrementMetric("payment.notify.failed", {
+                provider: "tranzila",
+                flow: "sto_recurring",
+                reason: "amount_mismatch",
+            });
             return { ok: false, reason: "amount_mismatch", providerTxnId };
         }
 
@@ -2236,7 +2277,11 @@ export default {
         // ── 9. [Y3E.2] YeshInvoice receipt create — non-blocking, after full fulfillment ──
         // Receipt issuance is a follow-on artifact. Must never block recurring fulfillment.
         // Outer try/catch swallows all unexpected setup/provider-call errors.
-        incrementMetric("payment.notify.success", { provider: "tranzila", flow: "sto_recurring", plan: user.plan });
+        incrementMetric("payment.notify.success", {
+            provider: "tranzila",
+            flow: "sto_recurring",
+            plan: user.plan,
+        });
         if (isYeshInvoiceEnabled()) {
             try {
                 const documentUniqueKey =
@@ -2255,7 +2300,12 @@ export default {
                 });
 
                 if (!receiptResult.ok) {
-                    incrementMetric("receipt.create.failed", { provider: "yeshinvoice", flow: "sto_recurring", plan: user.plan, reason: "create_failed" });
+                    incrementMetric("receipt.create.failed", {
+                        provider: "yeshinvoice",
+                        flow: "sto_recurring",
+                        plan: user.plan,
+                        reason: "create_failed",
+                    });
                     console.warn("[receipt] recurring provider call failed", {
                         event: "receipt_recurring_provider_failed",
                         providerTxnId,

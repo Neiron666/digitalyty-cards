@@ -138,9 +138,7 @@ function isSentryActive() {
 export function incrementMetric(name, tags = {}) {
     if (!ALLOWED_METRIC_NAMES.has(name)) return;
     if (!isSentryActive()) return;
-    if (
-        typeof Sentry.metrics?.increment !== "function"
-    ) return;
+    if (typeof Sentry.metrics?.increment !== "function") return;
 
     const safeTags = sanitizeTags(tags);
     try {
@@ -162,9 +160,7 @@ export function incrementMetric(name, tags = {}) {
 export function gaugeMetric(name, value, tags = {}) {
     if (!ALLOWED_METRIC_NAMES.has(name)) return;
     if (!isSentryActive()) return;
-    if (
-        typeof Sentry.metrics?.gauge !== "function"
-    ) return;
+    if (typeof Sentry.metrics?.gauge !== "function") return;
 
     const safeTags = sanitizeTags(tags);
     try {
