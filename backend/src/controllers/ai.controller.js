@@ -14,6 +14,12 @@ import { planFromTier, resolveEffectiveBilling } from "../utils/cardDTO.js";
 import { getPersonalOrgId } from "../utils/personalOrg.util.js";
 import { assertActiveOrgAndMembershipOrNotFound } from "../utils/orgMembership.util.js";
 import { HttpError } from "../utils/httpError.js";
+import {
+    BUSINESS_NAME_MAX,
+    BUSINESS_SUBTITLE_MAX,
+    BUSINESS_SLOGAN_MAX,
+    BUSINESS_CITY_MAX,
+} from "../utils/business.util.js";
 
 // --- Feature flag -----------------------------------------------------------
 
@@ -365,15 +371,15 @@ export async function suggestAbout(req, res) {
     }
 
     // 8. Derive trusted card context (server-side only)
-    const businessName =
+    let businessName =
         typeof card.business?.name === "string"
             ? card.business.name.trim()
             : "";
-    const category =
+    let category =
         typeof card.business?.category === "string"
             ? card.business.category.trim()
             : "";
-    const slogan =
+    let slogan =
         typeof card.business?.slogan === "string"
             ? card.business.slogan.trim()
             : "";
@@ -387,6 +393,11 @@ export async function suggestAbout(req, res) {
                 "Business name and category are required before AI generation",
         });
     }
+
+    // 8b-out. Outbound caps (prompt payload only — does not affect stored data)
+    if (businessName.length > BUSINESS_NAME_MAX) businessName = businessName.slice(0, BUSINESS_NAME_MAX);
+    if (category.length > BUSINESS_SUBTITLE_MAX) category = category.slice(0, BUSINESS_SUBTITLE_MAX);
+    if (slogan.length > BUSINESS_SLOGAN_MAX) slogan = slogan.slice(0, BUSINESS_SLOGAN_MAX);
 
     // 8c. Derive existing about with outbound caps (prompt-only, not DB)
     const OUTBOUND_TITLE_CAP = 500;
@@ -418,8 +429,9 @@ export async function suggestAbout(req, res) {
 
     // 9. Call Gemini
     let suggestion;
+    let usageMeta = null;
     try {
-        suggestion = await generateAboutSuggestion({
+        const _r = await generateAboutSuggestion({
             businessName,
             category,
             slogan,
@@ -429,6 +441,8 @@ export async function suggestAbout(req, res) {
             target,
             paragraphIndex,
         });
+        suggestion = _r?.suggestion;
+        usageMeta = _r?.usageMeta ?? null;
     } catch (err) {
         const code = err?.code || "AI_UNAVAILABLE";
         const status =
@@ -482,6 +496,12 @@ export async function suggestAbout(req, res) {
         language,
         target,
         latencyMs: Date.now() - startMs,
+        tokenCounts: {
+            promptTokenCount: usageMeta?.promptTokenCount ?? null,
+            candidatesTokenCount: usageMeta?.candidatesTokenCount ?? null,
+            thoughtsTokenCount: usageMeta?.thoughtsTokenCount ?? null,
+            totalTokenCount: usageMeta?.totalTokenCount ?? null,
+        },
     });
 
     // 12. Return suggestion + fresh quota (shape per target)
@@ -755,11 +775,11 @@ export async function suggestSeo(req, res) {
     }
 
     // 8. Derive trusted card context (server-side only)
-    const businessName =
+    let businessName =
         typeof card.business?.name === "string"
             ? card.business.name.trim()
             : "";
-    const category =
+    let category =
         typeof card.business?.category === "string"
             ? card.business.category.trim()
             : "";
@@ -774,15 +794,21 @@ export async function suggestSeo(req, res) {
         });
     }
 
+    // 8b-out. Outbound caps (prompt payload only — does not affect stored data)
+    if (businessName.length > BUSINESS_NAME_MAX) businessName = businessName.slice(0, BUSINESS_NAME_MAX);
+    if (category.length > BUSINESS_SUBTITLE_MAX) category = category.slice(0, BUSINESS_SUBTITLE_MAX);
+
     // 8c. Optional short context (token-efficient)
-    const slogan =
+    let slogan =
         typeof card.business?.slogan === "string"
             ? card.business.slogan.trim()
             : "";
-    const city =
+    let city =
         typeof card.business?.city === "string"
             ? card.business.city.trim()
             : "";
+    if (slogan.length > BUSINESS_SLOGAN_MAX) slogan = slogan.slice(0, BUSINESS_SLOGAN_MAX);
+    if (city.length > BUSINESS_CITY_MAX) city = city.slice(0, BUSINESS_CITY_MAX);
 
     let aboutTitle =
         typeof card.content?.aboutTitle === "string"
@@ -812,8 +838,9 @@ export async function suggestSeo(req, res) {
 
     // 9. Call Gemini
     let suggestion;
+    let usageMeta = null;
     try {
-        suggestion = await generateSeoSuggestion({
+        const _r = await generateSeoSuggestion({
             businessName,
             category,
             slogan,
@@ -824,6 +851,8 @@ export async function suggestSeo(req, res) {
             existingSeoTitle,
             existingSeoDescription,
         });
+        suggestion = _r?.suggestion;
+        usageMeta = _r?.usageMeta ?? null;
     } catch (err) {
         const code = err?.code || "AI_UNAVAILABLE";
         const status =
@@ -875,6 +904,12 @@ export async function suggestSeo(req, res) {
         mode,
         language,
         latencyMs: Date.now() - startMs,
+        tokenCounts: {
+            promptTokenCount: usageMeta?.promptTokenCount ?? null,
+            candidatesTokenCount: usageMeta?.candidatesTokenCount ?? null,
+            thoughtsTokenCount: usageMeta?.thoughtsTokenCount ?? null,
+            totalTokenCount: usageMeta?.totalTokenCount ?? null,
+        },
     });
 
     // 12. Return suggestion + fresh quota
@@ -895,7 +930,6 @@ export async function suggestSeo(req, res) {
 const ALLOWED_FAQ_LANGUAGES = new Set(["he", "en"]);
 
 // Outbound caps for optional enrichment context
-const FAQ_OUTBOUND_SLOGAN_CAP = 300;
 const FAQ_OUTBOUND_ABOUT_TITLE_CAP = 200;
 const FAQ_OUTBOUND_ABOUT_SNIPPET_CAP = 500;
 
@@ -1058,11 +1092,11 @@ export async function suggestFaq(req, res) {
     }
 
     // 8. Derive trusted card context (server-side only - never trust client)
-    const businessName =
+    let businessName =
         typeof card.business?.name === "string"
             ? card.business.name.trim()
             : "";
-    const category =
+    let category =
         typeof card.business?.category === "string"
             ? card.business.category.trim()
             : "";
@@ -1077,13 +1111,17 @@ export async function suggestFaq(req, res) {
         });
     }
 
+    // 8b-out. Outbound caps (prompt payload only — does not affect stored data)
+    if (businessName.length > BUSINESS_NAME_MAX) businessName = businessName.slice(0, BUSINESS_NAME_MAX);
+    if (category.length > BUSINESS_SUBTITLE_MAX) category = category.slice(0, BUSINESS_SUBTITLE_MAX);
+
     // 8c. Optional bounded enrichment context (safe short fields from card)
     let slogan =
         typeof card.business?.slogan === "string"
             ? card.business.slogan.trim()
             : "";
-    if (slogan.length > FAQ_OUTBOUND_SLOGAN_CAP) {
-        slogan = slogan.slice(0, FAQ_OUTBOUND_SLOGAN_CAP);
+    if (slogan.length > BUSINESS_SLOGAN_MAX) {
+        slogan = slogan.slice(0, BUSINESS_SLOGAN_MAX);
     }
 
     let aboutTitle =
@@ -1109,8 +1147,9 @@ export async function suggestFaq(req, res) {
 
     // 9. Call Gemini
     let suggestion;
+    let usageMeta = null;
     try {
-        suggestion = await generateFaqSuggestion({
+        const _r = await generateFaqSuggestion({
             businessName,
             category,
             slogan,
@@ -1118,6 +1157,8 @@ export async function suggestFaq(req, res) {
             aboutSnippet,
             language,
         });
+        suggestion = _r?.suggestion;
+        usageMeta = _r?.usageMeta ?? null;
     } catch (err) {
         const code = err?.code || "AI_UNAVAILABLE";
         const status =
@@ -1169,6 +1210,12 @@ export async function suggestFaq(req, res) {
         language,
         itemCount: suggestion?.items?.length ?? 0,
         latencyMs: Date.now() - startMs,
+        tokenCounts: {
+            promptTokenCount: usageMeta?.promptTokenCount ?? null,
+            candidatesTokenCount: usageMeta?.candidatesTokenCount ?? null,
+            thoughtsTokenCount: usageMeta?.thoughtsTokenCount ?? null,
+            totalTokenCount: usageMeta?.totalTokenCount ?? null,
+        },
     });
 
     // 12. Return suggestion + fresh quota

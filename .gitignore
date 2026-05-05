@@ -41,4 +41,46 @@ _tmp_*.json
 _gallery_*.txt
 *_gallery_*.txt
 
+# Cardigo local smoke/API artifacts — never commit
+
+# Header dumps
+*.hdr
+
+# Cookie jars / gate cookies
+cookies.txt
+cg_cookies.txt
+.smoke-gate-cookies.txt
+*-cookies.txt
+*_cookies.txt
+*.cookie
+
+# Root-level API response dumps only
+/login.json
+/reg.json
+/me.json
+/my_mine.json
+/visits-response.json
+/anon_create.json
+/anon_mine.json
+/claim.json
+/claim2.json
+
+# Root-level HTML/header diagnostics
+/cardigo_home.html
+/cardigo_api_headers_*.txt
+/structure.txt
+
+# Accidental zero-byte shell-command artifacts
+/curl.exe
+/dir
+/findstr
+/powershell
+/type
+/new
+
+# Local test images / temp artifacts
+/tiny.png
+
+# Extra defense for frontend build output
+/frontend/dist/
 

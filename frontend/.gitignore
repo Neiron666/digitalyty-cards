@@ -22,3 +22,8 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Defense-in-depth: explicit .env coverage (root .gitignore also covers these)
+.env
+.env.*
+!.env.example

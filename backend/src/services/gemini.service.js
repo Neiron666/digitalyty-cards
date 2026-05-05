@@ -514,7 +514,17 @@ export async function generateAboutSuggestion({
         });
     }
 
-    return suggestion;
+    const rawMeta = result?.response?.usageMetadata;
+    const usageMeta = rawMeta
+        ? {
+              promptTokenCount: rawMeta.promptTokenCount ?? null,
+              candidatesTokenCount: rawMeta.candidatesTokenCount ?? null,
+              thoughtsTokenCount: rawMeta.thoughtsTokenCount ?? null,
+              totalTokenCount: rawMeta.totalTokenCount ?? null,
+          }
+        : null;
+
+    return { suggestion, usageMeta };
 }
 
 // ============================================================================
@@ -722,7 +732,17 @@ export async function generateSeoSuggestion({
         });
     }
 
-    return suggestion;
+    const rawMeta = result?.response?.usageMetadata;
+    const usageMeta = rawMeta
+        ? {
+              promptTokenCount: rawMeta.promptTokenCount ?? null,
+              candidatesTokenCount: rawMeta.candidatesTokenCount ?? null,
+              thoughtsTokenCount: rawMeta.thoughtsTokenCount ?? null,
+              totalTokenCount: rawMeta.totalTokenCount ?? null,
+          }
+        : null;
+
+    return { suggestion, usageMeta };
 }
 
 // ============================================================================
@@ -943,5 +963,15 @@ export async function generateFaqSuggestion({
         });
     }
 
-    return suggestion;
+    const rawMeta = result?.response?.usageMetadata;
+    const usageMeta = rawMeta
+        ? {
+              promptTokenCount: rawMeta.promptTokenCount ?? null,
+              candidatesTokenCount: rawMeta.candidatesTokenCount ?? null,
+              thoughtsTokenCount: rawMeta.thoughtsTokenCount ?? null,
+              totalTokenCount: rawMeta.totalTokenCount ?? null,
+          }
+        : null;
+
+    return { suggestion, usageMeta };
 }
