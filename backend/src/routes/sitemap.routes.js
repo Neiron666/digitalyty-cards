@@ -41,7 +41,7 @@ router.get("/sitemap.xml", async (req, res) => {
             status: "published",
             user: { $exists: true, $ne: null },
         }).select(
-            "slug orgId user trialEndsAt billing plan adminOverride adminTier adminTierUntil",
+            "slug orgId user trialEndsAt billing plan adminOverride adminTier adminTierUntil updatedAt",
         );
 
         const now = new Date();
@@ -141,10 +141,13 @@ router.get("/sitemap.xml", async (req, res) => {
             .map((c) => {
                 const slug = String(c.slug || "");
                 const orgId = c?.orgId ? String(c.orgId) : "";
+                const lastmod = c.updatedAt
+                    ? `<lastmod>${c.updatedAt.toISOString()}</lastmod>`
+                    : "";
 
                 const isPersonal = !orgId || orgId === personalOrgIdStr;
                 if (isPersonal) {
-                    return `<url><loc>${siteUrl}/card/${slug}</loc></url>`;
+                    return `<url><loc>${siteUrl}/card/${slug}</loc>${lastmod}</url>`;
                 }
 
                 const orgSlug = orgSlugById.get(orgId);
@@ -153,7 +156,7 @@ router.get("/sitemap.xml", async (req, res) => {
                 const userId = c?.user ? String(c.user) : "";
                 if (!userId) return "";
                 if (!activeMembershipPairs.has(`${orgId}:${userId}`)) return "";
-                return `<url><loc>${siteUrl}/c/${orgSlug}/${slug}</loc></url>`;
+                return `<url><loc>${siteUrl}/c/${orgSlug}/${slug}</loc>${lastmod}</url>`;
             })
             .filter(Boolean)
             .join("");
