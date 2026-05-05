@@ -2,7 +2,10 @@ import mongoose from "mongoose";
 
 import { normalizeReviews } from "../utils/reviews.util.js";
 import { BOOKING_HORIZON_ALLOWED } from "../utils/bookingHorizon.util.js";
-import { ABOUT_PARAGRAPHS_MAX, ABOUT_PARAGRAPH_ITEM_MAX } from "../config/about.js";
+import {
+    ABOUT_PARAGRAPHS_MAX,
+    ABOUT_PARAGRAPH_ITEM_MAX,
+} from "../config/about.js";
 import { REVIEWS_MAX } from "../config/reviews.js";
 import {
     BUSINESS_NAME_MAX,
@@ -560,11 +563,29 @@ const CardSchema = new mongoose.Schema(
 
         content: {
             // required minimal fields
-            title: { type: String, maxlength: [200, "content.title must not exceed 200 characters"] },
-            description: { type: String, maxlength: [500, "content.description must not exceed 500 characters"] },
+            title: {
+                type: String,
+                maxlength: [
+                    200,
+                    "content.title must not exceed 200 characters",
+                ],
+            },
+            description: {
+                type: String,
+                maxlength: [
+                    500,
+                    "content.description must not exceed 500 characters",
+                ],
+            },
 
             // legacy fields (kept for backward compatibility)
-            aboutTitle: { type: String, maxlength: [300, "content.aboutTitle must not exceed 300 characters"] },
+            aboutTitle: {
+                type: String,
+                maxlength: [
+                    300,
+                    "content.aboutTitle must not exceed 300 characters",
+                ],
+            },
             aboutParagraphs: {
                 type: [String],
                 default: undefined,
@@ -590,7 +611,13 @@ const CardSchema = new mongoose.Schema(
                     },
                 ],
             },
-            aboutText: { type: String, maxlength: [6500, "content.aboutText must not exceed 6500 characters"] },
+            aboutText: {
+                type: String,
+                maxlength: [
+                    6500,
+                    "content.aboutText must not exceed 6500 characters",
+                ],
+            },
             videoUrl: String,
 
             // Additive (V1): descriptive services list.
@@ -625,8 +652,17 @@ const CardSchema = new mongoose.Schema(
         faq: { type: FaqSchema, default: null },
 
         seo: {
-            title: { type: String, maxlength: [200, "seo.title must not exceed 200 characters"] },
-            description: { type: String, maxlength: [500, "seo.description must not exceed 500 characters"] },
+            title: {
+                type: String,
+                maxlength: [200, "seo.title must not exceed 200 characters"],
+            },
+            description: {
+                type: String,
+                maxlength: [
+                    500,
+                    "seo.description must not exceed 500 characters",
+                ],
+            },
 
             // Advanced SEO:
             canonicalUrl: {
