@@ -142,7 +142,7 @@ export function incrementMetric(name, tags = {}) {
 
     const safeTags = sanitizeTags(tags);
     try {
-        Sentry.metrics.increment(name, 1, { tags: safeTags });
+        Sentry.metrics.increment(name, 1, { attributes: safeTags });
     } catch {
         // Swallow — metric failure must never affect callers.
     }
@@ -164,7 +164,7 @@ export function gaugeMetric(name, value, tags = {}) {
 
     const safeTags = sanitizeTags(tags);
     try {
-        Sentry.metrics.gauge(name, value, { tags: safeTags });
+        Sentry.metrics.gauge(name, value, { attributes: safeTags });
     } catch {
         // Swallow — metric failure must never affect callers.
     }
