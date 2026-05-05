@@ -423,6 +423,11 @@ export default function GuidePost() {
                 image={post.heroImageUrl || GUIDE_OG_FALLBACK}
                 ogType="article"
                 jsonLdItems={jsonLdItems}
+                articlePublishedTime={post.publishedAt || undefined}
+                articleModifiedTime={
+                    post.updatedAt || post.publishedAt || undefined
+                }
+                articleAuthor={post.authorName || DEFAULT_AUTHOR_NAME}
             />
             <article className={styles.article}>
                 <div className={styles.articleInner}>

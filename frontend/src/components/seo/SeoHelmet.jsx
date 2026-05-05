@@ -146,6 +146,9 @@ export default function SeoHelmet({
     gtmId,
     gaMeasurementId,
     metaPixelId,
+    articlePublishedTime,
+    articleModifiedTime,
+    articleAuthor,
 }) {
     const scripts = normalizeJsonLdItems(jsonLd, jsonLdItems);
 
@@ -207,6 +210,21 @@ export default function SeoHelmet({
             ) : null}
             {image ? <meta property="og:image" content={image} /> : null}
             {url ? <meta property="og:url" content={url} /> : null}
+            {articlePublishedTime ? (
+                <meta
+                    property="article:published_time"
+                    content={articlePublishedTime}
+                />
+            ) : null}
+            {articleModifiedTime ? (
+                <meta
+                    property="article:modified_time"
+                    content={articleModifiedTime}
+                />
+            ) : null}
+            {articleAuthor ? (
+                <meta property="article:author" content={articleAuthor} />
+            ) : null}
 
             {/* Twitter */}
             <meta name="twitter:card" content="summary_large_image" />

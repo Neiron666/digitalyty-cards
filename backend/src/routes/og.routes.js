@@ -100,6 +100,8 @@ function buildCardOgMetadata(card, siteUrl) {
     };
 }
 
+const DEFAULT_BLOG_AUTHOR_NAME = "\u05D5\u05DC\u05E0\u05D8\u05D9\u05DF";
+
 /* ── Blog OG ──────────────────────────────────────────────────── */
 
 router.get("/og/blog/:slug", async (req, res) => {
@@ -125,6 +127,16 @@ router.get("/og/blog/:slug", async (req, res) => {
         "\u05D1\u05DC\u05D5\u05D2 | Cardigo";
     const description = collapseWs(post.seo?.description || post.excerpt || "");
 
+    const articlePublishedTime = post.publishedAt
+        ? new Date(post.publishedAt).toISOString()
+        : "";
+    const articleModifiedTime =
+        post.updatedAt || post.publishedAt
+            ? new Date(post.updatedAt || post.publishedAt).toISOString()
+            : "";
+    const articleAuthor =
+        collapseWs(post.authorName) || DEFAULT_BLOG_AUTHOR_NAME;
+
     const heroPath =
         post.heroImage?.storagePath ||
         (post.heroImage && typeof post.heroImage === "object"
@@ -137,6 +149,20 @@ router.get("/og/blog/:slug", async (req, res) => {
     <meta property="og:image" content="${escapeHtml(image)}" />
     <meta name="twitter:image" content="${escapeHtml(image)}" />`
         : "";
+
+    const articleMeta = [
+        articlePublishedTime
+            ? `    <meta property="article:published_time" content="${escapeHtml(articlePublishedTime)}" />`
+            : "",
+        articleModifiedTime
+            ? `    <meta property="article:modified_time" content="${escapeHtml(articleModifiedTime)}" />`
+            : "",
+        articleAuthor
+            ? `    <meta property="article:author" content="${escapeHtml(articleAuthor)}" />`
+            : "",
+    ]
+        .filter(Boolean)
+        .join("\n");
 
     const html = `<!doctype html>
 <html lang="he" dir="rtl">
@@ -152,7 +178,7 @@ router.get("/og/blog/:slug", async (req, res) => {
     <meta property="og:title" content="${escapeHtml(title)}" />
     <meta property="og:description" content="${escapeHtml(description)}" />
     <meta property="og:url" content="${escapeHtml(publicUrl)}" />${imageMeta}
-
+${articleMeta ? "\n" + articleMeta : ""}
     <meta name="twitter:card" content="${image ? "summary_large_image" : "summary"}" />
     <meta name="twitter:title" content="${escapeHtml(title)}" />
     <meta name="twitter:description" content="${escapeHtml(description)}" />
@@ -192,6 +218,16 @@ router.get("/og/guides/:slug", async (req, res) => {
         "\u05DE\u05D3\u05E8\u05D9\u05DB\u05D9\u05DD | Cardigo";
     const description = collapseWs(post.seo?.description || post.excerpt || "");
 
+    const articlePublishedTime = post.publishedAt
+        ? new Date(post.publishedAt).toISOString()
+        : "";
+    const articleModifiedTime =
+        post.updatedAt || post.publishedAt
+            ? new Date(post.updatedAt || post.publishedAt).toISOString()
+            : "";
+    const articleAuthor =
+        collapseWs(post.authorName) || DEFAULT_BLOG_AUTHOR_NAME;
+
     const heroPath =
         post.heroImage?.storagePath ||
         (post.heroImage && typeof post.heroImage === "object"
@@ -204,6 +240,20 @@ router.get("/og/guides/:slug", async (req, res) => {
     <meta property="og:image" content="${escapeHtml(image)}" />
     <meta name="twitter:image" content="${escapeHtml(image)}" />`
         : "";
+
+    const articleMeta = [
+        articlePublishedTime
+            ? `    <meta property="article:published_time" content="${escapeHtml(articlePublishedTime)}" />`
+            : "",
+        articleModifiedTime
+            ? `    <meta property="article:modified_time" content="${escapeHtml(articleModifiedTime)}" />`
+            : "",
+        articleAuthor
+            ? `    <meta property="article:author" content="${escapeHtml(articleAuthor)}" />`
+            : "",
+    ]
+        .filter(Boolean)
+        .join("\n");
 
     const html = `<!doctype html>
 <html lang="he" dir="rtl">
@@ -219,7 +269,7 @@ router.get("/og/guides/:slug", async (req, res) => {
     <meta property="og:title" content="${escapeHtml(title)}" />
     <meta property="og:description" content="${escapeHtml(description)}" />
     <meta property="og:url" content="${escapeHtml(publicUrl)}" />${imageMeta}
-
+${articleMeta ? "\n" + articleMeta : ""}
     <meta name="twitter:card" content="${image ? "summary_large_image" : "summary"}" />
     <meta name="twitter:title" content="${escapeHtml(title)}" />
     <meta name="twitter:description" content="${escapeHtml(description)}" />
