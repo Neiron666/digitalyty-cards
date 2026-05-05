@@ -146,7 +146,7 @@ const PRESENCE_FEATURES = [
     { Icon: QuestionIcon, label: "שאלות נפוצות" },
     { Icon: ContentIcon, label: "טופס פניות" },
     { Icon: AnalyticsIcon, label: "אנליטיקה" },
-    { Icon: SeoIcon, label: "מופיע בגוגל" },
+    { Icon: SeoIcon, label: "יכול להופיע בגוגל" },
 ];
 
 const SECTION_1_IMG = "/images/home-page/main-sections/Section-1";

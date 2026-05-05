@@ -10,6 +10,59 @@ import {
     BUSINESS_SUBTITLE_MAX,
 } from "../utils/business.util.js";
 
+// --- Private URL validator helpers (not exported) ---
+// Mirrors the scheme-blocking logic of frontend ensureHttpUrl for storage-level safety.
+// Does NOT normalize or mutate the stored value — protocol-less values are accepted
+// for backward compatibility and validated by internally prepending https://.
+
+function isValidContactUrl(v) {
+    if (!v) return true;
+    const s = String(v).trim();
+    if (!s) return true;
+    // Reject inner whitespace (e.g. "not a url").
+    if (/\s/.test(s)) return false;
+    const lower = s.toLowerCase();
+    // Reject dangerous schemes.
+    if (
+        lower.startsWith("javascript:") ||
+        lower.startsWith("data:") ||
+        lower.startsWith("vbscript:")
+    ) {
+        return false;
+    }
+    // Reject any other non-http(s) scheme (ftp:, file:, chrome:, mailto:, etc.).
+    if (/^[a-z][a-z0-9+.-]*:/i.test(s)) {
+        return lower.startsWith("http://") || lower.startsWith("https://");
+    }
+    // Protocol-less: prepend https:// internally for validation only.
+    const candidate =
+        lower.startsWith("http://") || lower.startsWith("https://")
+            ? s
+            : `https://${s}`;
+    try {
+        const u = new URL(candidate);
+        return (
+            (u.protocol === "http:" || u.protocol === "https:") &&
+            Boolean(u.hostname)
+        );
+    } catch {
+        return false;
+    }
+}
+
+function isValidWazeOrHttpUrl(v) {
+    if (!v) return true;
+    const s = String(v).trim();
+    if (!s) return true;
+    const lower = s.toLowerCase();
+    // Allow waze:// (native app deep-link) — pass through after whitespace check.
+    if (lower.startsWith("waze://")) {
+        return !/\s/.test(s);
+    }
+    // All other values: delegate to the standard http(s) validator.
+    return isValidContactUrl(v);
+}
+
 const UploadItemSchema = new mongoose.Schema(
     {
         kind: { type: String, default: null, trim: true },
@@ -418,20 +471,83 @@ const CardSchema = new mongoose.Schema(
                         "contact.email must be a valid email address without query parameters",
                 },
             },
-            website: String,
+            website: {
+                type: String,
+                trim: true,
+                maxlength: 2048,
+                validate: {
+                    validator: isValidContactUrl,
+                    message:
+                        "contact.website must be a valid http:// or https:// URL",
+                },
+            },
 
             // extended social/contact links (additive; backward compatible)
-            twitter: String,
-            tiktok: String,
-            waze: String,
+            twitter: {
+                type: String,
+                trim: true,
+                maxlength: 2048,
+                validate: {
+                    validator: isValidContactUrl,
+                    message:
+                        "contact.twitter must be a valid http:// or https:// URL",
+                },
+            },
+            tiktok: {
+                type: String,
+                trim: true,
+                maxlength: 2048,
+                validate: {
+                    validator: isValidContactUrl,
+                    message:
+                        "contact.tiktok must be a valid http:// or https:// URL",
+                },
+            },
+            waze: {
+                type: String,
+                trim: true,
+                maxlength: 2048,
+                validate: {
+                    validator: isValidWazeOrHttpUrl,
+                    message:
+                        "contact.waze must be a valid http://, https://, or waze:// URL",
+                },
+            },
 
             // legacy fields (kept for backward compatibility)
             mobile: String,
             officePhone: String,
             fax: String,
-            facebook: String,
-            instagram: String,
-            linkedin: String,
+            facebook: {
+                type: String,
+                trim: true,
+                maxlength: 2048,
+                validate: {
+                    validator: isValidContactUrl,
+                    message:
+                        "contact.facebook must be a valid http:// or https:// URL",
+                },
+            },
+            instagram: {
+                type: String,
+                trim: true,
+                maxlength: 2048,
+                validate: {
+                    validator: isValidContactUrl,
+                    message:
+                        "contact.instagram must be a valid http:// or https:// URL",
+                },
+            },
+            linkedin: {
+                type: String,
+                trim: true,
+                maxlength: 2048,
+                validate: {
+                    validator: isValidContactUrl,
+                    message:
+                        "contact.linkedin must be a valid http:// or https:// URL",
+                },
+            },
             extraLines: [String],
         },
 
