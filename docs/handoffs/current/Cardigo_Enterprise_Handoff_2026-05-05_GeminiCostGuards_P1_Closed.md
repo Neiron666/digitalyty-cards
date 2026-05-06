@@ -101,7 +101,7 @@ The following are explicitly out of scope for this contour and intentionally def
 
 - **`AiUsageMonthly` token persistence**: Token counts are logged only. Persisting them to MongoDB for per-user cost tracking requires a schema migration and a separate contour.
 - **SDK upgrade / `thinkingBudget` compatibility**: The installed SDK version (`@google/generative-ai@0.24.1`) does not support `thinkingConfig`. Evaluating and upgrading is a separate contour.
-- **Broader input bounds / security audit**: The current caps cover the main business-context fields. A full input-boundary audit of all prompt-contributing fields (e.g., `aboutTitle`, `aboutSnippet`, `existingSeoTitle`) is deferred as a lower-priority future hardening pass.
+- **Broader input bounds / security audit**: **Update 2026-05-06:** The broad storage-side input-bounds hardening for card fields has since been substantially closed in the dedicated Input Bounds and Editor UX Validation Closure batch. That closure covered schema validators, normalizer-first truncation/clamping, anonymous PATCH entitlement gates, and editor-side limit UX for the relevant card fields. The residual deferred scope here is narrower: Gemini outbound prompt-payload hardening for AI-service-internal prompt fields at the provider API boundary, such as `existingSeoTitle`/`aboutSnippet`-style values when assembled for Gemini calls. This residual prompt-payload scope remains separate from storage-side schema validation and is not closed by this handoff.
 
 ---
 
