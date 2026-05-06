@@ -373,6 +373,7 @@ The helper's allowlist prevents these from ever reaching Sentry as tag values:
 ### Post-Batch-1 Fixes — 2026-05-06
 
 **ATTRIBUTES_FIX_P1**
+
 - Root cause: helper passed `{ tags: safeTags }` to the Sentry Node SDK.
 - The correct SDK option key is `{ attributes: safeTags }`.
 - Fix scope: `backend/src/utils/sentryMetrics.util.js` only — helper-level change, no call-site changes.
@@ -380,6 +381,7 @@ The helper's allowlist prevents these from ever reaching Sentry as tag values:
 - Verification result: PASS_ATTRIBUTES_FIX_VERIFICATION.
 
 **COUNTER_METHOD_FIX_P1**
+
 - Root cause: helper called `Sentry.metrics.increment` which does not exist in `@sentry/node ^10.40.0`.
 - SDK inspection: `typeof Sentry.metrics.increment === "undefined"`, `typeof Sentry.metrics.count === "function"`. `Object.keys(Sentry.metrics)` = `["count", "distribution", "gauge"]`.
 - The guard `typeof Sentry.metrics?.increment !== "function"` returned `true`, causing silent early exits on every counter call.

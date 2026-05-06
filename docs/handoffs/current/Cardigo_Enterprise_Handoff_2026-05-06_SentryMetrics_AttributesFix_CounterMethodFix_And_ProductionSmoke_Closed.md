@@ -1,8 +1,10 @@
 # Cardigo Enterprise Handoff — 2026-05-06
+
 # Sentry Metrics: AttributesFix + CounterMethodFix + Production Smoke
 
 **Date:** 2026-05-06
 **Contours:**
+
 - SENTRY_APPLICATION_METRICS_ATTRIBUTES_FIX_P1
 - SENTRY_APPLICATION_METRICS_COUNTER_METHOD_FIX_P1
 - PAYMENT_PRODUCTION_SMOKE_AND_OBSERVABILITY_P1
@@ -24,6 +26,7 @@ After Batch 1 implementation, two bugs were identified and fixed in the helper (
 Both bugs were helper-level only. No call-site changes were required.
 
 After both fixes, the helper now:
+
 - Uses `Sentry.metrics.count()` for all counter metrics (5 of 6 metrics).
 - Uses `Sentry.metrics.gauge()` for the gauge metric (1 of 6 metrics).
 - Passes `{ attributes: safeTags }` as the SDK dimension option for both.
@@ -43,10 +46,10 @@ After both fixes, the helper now:
 
 - **Original issue:** Helper called `Sentry.metrics.increment` — undefined in the installed SDK version.
 - **SDK inspection proof:**
-  - `typeof Sentry.metrics.increment === "undefined"`
-  - `typeof Sentry.metrics.count === "function"`
-  - `typeof Sentry.metrics.gauge === "function"`
-  - `Object.keys(Sentry.metrics)` = `["count", "distribution", "gauge"]`
+    - `typeof Sentry.metrics.increment === "undefined"`
+    - `typeof Sentry.metrics.count === "function"`
+    - `typeof Sentry.metrics.gauge === "function"`
+    - `Object.keys(Sentry.metrics)` = `["count", "distribution", "gauge"]`
 - **Effect before fix:** Guard `typeof Sentry.metrics?.increment !== "function"` evaluated to `true` on every invocation, causing all counter calls to exit silently without emitting.
 - **Fix:** Guard and call updated from `increment` to `count` in the helper.
 - **Scope:** `backend/src/utils/sentryMetrics.util.js` — helper-level, no call-site changes.

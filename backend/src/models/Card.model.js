@@ -17,6 +17,11 @@ import {
     BUSINESS_NAME_MAX,
     BUSINESS_SLOGAN_MAX,
     BUSINESS_SUBTITLE_MAX,
+    BUSINESS_ADDRESS_MAX,
+    BUSINESS_LAT_MIN,
+    BUSINESS_LAT_MAX,
+    BUSINESS_LNG_MIN,
+    BUSINESS_LNG_MAX,
 } from "../utils/business.util.js";
 
 // --- Private URL validator helpers (not exported) ---
@@ -502,10 +507,39 @@ const CardSchema = new mongoose.Schema(
                 default: "",
                 maxlength: BUSINESS_SUBTITLE_MAX,
             },
-            address: String,
+            address: {
+                type: String,
+                trim: true,
+                maxlength: [
+                    BUSINESS_ADDRESS_MAX,
+                    "business.address must not exceed 300 characters",
+                ],
+            },
             city: String,
-            lat: Number,
-            lng: Number,
+            lat: {
+                type: Number,
+                validate: {
+                    validator: (v) =>
+                        v == null ||
+                        (Number.isFinite(v) &&
+                            v >= BUSINESS_LAT_MIN &&
+                            v <= BUSINESS_LAT_MAX),
+                    message:
+                        "business.lat must be null or a valid latitude (-90 to 90)",
+                },
+            },
+            lng: {
+                type: Number,
+                validate: {
+                    validator: (v) =>
+                        v == null ||
+                        (Number.isFinite(v) &&
+                            v >= BUSINESS_LNG_MIN &&
+                            v <= BUSINESS_LNG_MAX),
+                    message:
+                        "business.lng must be null or a valid longitude (-180 to 180)",
+                },
+            },
 
             // legacy fields (kept for backward compatibility)
             businessName: String,
