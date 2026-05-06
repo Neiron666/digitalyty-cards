@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
 import SeoHelmet from "../components/seo/SeoHelmet";
+import { DEFAULT_OG_IMAGE_PATH } from "../utils/seoConstants.js";
 import {
     trackSitePageView,
     trackSiteClick,
@@ -167,7 +168,7 @@ export default function Blog() {
                 description="מאמרים, מדריכים ותובנות בנושא כרטיסי ביקור דיגיטליים, נוכחות עסקית, SEO ותקשורת חכמה עם לקוחות."
                 canonicalUrl={canonicalUrl}
                 url={canonicalUrl}
-                image={`${ORIGIN}/images/og/cardigo-home-og-1200x630.jpg`}
+                image={`${ORIGIN}${DEFAULT_OG_IMAGE_PATH}`}
                 jsonLdItems={[blogFaqJsonLd]}
             />
 

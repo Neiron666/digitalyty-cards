@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { Link } from "react-router-dom";
 import Button from "../components/ui/Button";
 import SeoHelmet from "../components/seo/SeoHelmet";
+import { DEFAULT_OG_IMAGE_PATH } from "../utils/seoConstants.js";
 import {
     trackSiteClick,
     trackSitePageView,
@@ -446,7 +447,7 @@ export default function Home() {
                 description="כרטיס ביקור דיגיטלי של Cardigo מאפשר ליצור עמוד עסקי מקצועי, לשתף ב-QR, בוואטסאפ ובקישורים ייעודיים, ולעדכן הכול בקלות - עם תבניות, אנליטיקה וכלי שיתוף לעסק שלכם."
                 canonicalUrl={`${ORIGIN}/`}
                 url={`${ORIGIN}/`}
-                image={`${ORIGIN}/images/og/cardigo-home-og-1200x630.jpg`}
+                image={`${ORIGIN}${DEFAULT_OG_IMAGE_PATH}`}
                 jsonLdItems={[
                     homeWebSiteJsonLd,
                     homeOrganizationJsonLd,

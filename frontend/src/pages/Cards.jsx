@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { Link } from "react-router-dom";
 import Button from "../components/ui/Button";
 import SeoHelmet from "../components/seo/SeoHelmet";
+import { DEFAULT_OG_IMAGE_PATH } from "../utils/seoConstants.js";
 import {
     trackSitePageView,
     trackSiteClick,
@@ -198,7 +199,7 @@ export default function Cards() {
                 description="דוגמאות ויזואליות לכרטיסי ביקור דיגיטליים בסגנונות שונים - ראו איך Cardigo מציג עסקים, קישורים ודרכי יצירת קשר לפני שיוצרים כרטיס משלכם."
                 canonicalUrl={`${ORIGIN}/cards`}
                 url={`${ORIGIN}/cards`}
-                image={`${ORIGIN}/images/og/cardigo-home-og-1200x630.jpg`}
+                image={`${ORIGIN}${DEFAULT_OG_IMAGE_PATH}`}
                 jsonLdItems={[cardsFaqJsonLd]}
             />
 

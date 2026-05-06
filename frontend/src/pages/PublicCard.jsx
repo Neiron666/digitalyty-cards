@@ -3,6 +3,7 @@ import { useParams } from "react-router-dom";
 import { getCardBySlug, getCompanyCardBySlug } from "../services/cards.service";
 import { trackView } from "../services/analytics.client";
 import { getCardConsentState } from "../utils/cookieConsent";
+import { DEFAULT_OG_IMAGE_PATH } from "../utils/seoConstants.js";
 import CardOwnerConsentBanner from "../components/ui/CardOwnerConsentBanner/CardOwnerConsentBanner";
 import CardRenderer from "../components/card/CardRenderer";
 import SeoHelmet, {
@@ -162,7 +163,7 @@ function PublicCard() {
     const image =
         card.design?.coverImage ||
         card.design?.logo ||
-        "https://cardigo.co.il/images/og/cardigo-home-og-1200x630.jpg";
+        getPublicOrigin() + DEFAULT_OG_IMAGE_PATH;
 
     const publicOrigin = getPublicOrigin();
     const seoCanonicalCandidate =

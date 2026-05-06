@@ -3,6 +3,7 @@ import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import Button from "../components/ui/Button";
 import SeoHelmet from "../components/seo/SeoHelmet";
+import { DEFAULT_OG_IMAGE_PATH } from "../utils/seoConstants.js";
 import FlashBanner from "../components/ui/FlashBanner/FlashBanner";
 import { trackSitePageView } from "../services/siteAnalytics.client";
 import { trackSiteClick } from "../services/siteAnalytics.client";
@@ -338,7 +339,7 @@ export default function Pricing() {
                 description="המחירים של Cardigo לכרטיס ביקור דיגיטלי מקצועי: מסלול חינמי לתמיד, 10 ימי פרימיום לכל משתמש חדש, מסלול חודשי גמיש ומסלול שנתי משתלם לעסקים שרוצים נוכחות דיגיטלית מקצועית."
                 canonicalUrl={`${ORIGIN}/pricing`}
                 url={`${ORIGIN}/pricing`}
-                image={`${ORIGIN}/images/og/cardigo-home-og-1200x630.jpg`}
+                image={`${ORIGIN}${DEFAULT_OG_IMAGE_PATH}`}
                 jsonLdItems={[pricingFaqJsonLd]}
             />
 
