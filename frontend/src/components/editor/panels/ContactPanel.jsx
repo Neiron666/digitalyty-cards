@@ -62,6 +62,9 @@ export default function ContactPanel({
                 maxLength={activePhoneMax}
                 meta={`נשארו ${remaining(activePhoneMax, phone)} תווים`}
                 error={fieldErrors["contact.phone"]}
+                dir="ltr"
+                inputMode="tel"
+                autoComplete="tel"
             />
 
             <label className={styles.syncRow}>
@@ -83,6 +86,9 @@ export default function ContactPanel({
                 onChange={(e) => emit({ whatsapp: e.target.value })}
                 maxLength={WHATSAPP_MAX}
                 error={fieldErrors["contact.whatsapp"]}
+                dir="ltr"
+                inputMode="tel"
+                autoComplete="tel"
             />
 
             <Input

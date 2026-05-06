@@ -2,6 +2,10 @@ import styles from "../layout/ContactButtons.module.css";
 import { trackClick } from "../../../services/analytics.client";
 import ensureHttpUrl from "../../../utils/ensureHttpUrl";
 import { extractWazeUrl } from "../../../utils/ensureHttpUrl";
+import {
+    normalizeForTel,
+    normalizeForWaMe,
+} from "../../../utils/phoneNormalize";
 
 const cx = (...classes) => classes.filter(Boolean).join(" ");
 
@@ -23,6 +27,9 @@ function ContactButtons({ card }) {
         "";
 
     const whatsapp = contact?.whatsapp || contact?.whatsappPhone || "";
+
+    const telHref = normalizeForTel(phone);
+    const waHref = normalizeForWaMe(whatsapp);
 
     const hasCoords =
         typeof business?.lat === "number" && typeof business?.lng === "number";
@@ -50,8 +57,8 @@ function ContactButtons({ card }) {
     const websiteHref = ensureHttpUrl(contact?.website);
 
     if (
-        !phone &&
-        !whatsapp &&
+        !telHref &&
+        !waHref &&
         !facebookHref &&
         !instagramHref &&
         !twitterHref &&
@@ -65,11 +72,11 @@ function ContactButtons({ card }) {
 
     return (
         <div className={styles.buttons}>
-            {phone && (
+            {telHref && (
                 <a
-                    href={`tel:${phone}`}
+                    href={`tel:${telHref}`}
                     className={styles.item}
-                    aria-label={`Call ${phone}`}
+                    aria-label={`Call ${phone || telHref}`}
                     onClick={() => trackClick(card?.slug, "call")}
                 >
                     <span className={styles.bubble} aria-hidden="true">
@@ -82,13 +89,13 @@ function ContactButtons({ card }) {
                 </a>
             )}
 
-            {whatsapp && (
+            {waHref && (
                 <a
-                    href={`https://wa.me/${whatsapp}`}
+                    href={`https://wa.me/${waHref}`}
                     target="_blank"
                     rel="noreferrer"
                     className={styles.item}
-                    aria-label={`Open WhatsApp chat ${whatsapp}`}
+                    aria-label={`Open WhatsApp chat ${whatsapp || waHref}`}
                     onClick={() => trackClick(card?.slug, "whatsapp")}
                 >
                     <span className={styles.bubble} aria-hidden="true">
