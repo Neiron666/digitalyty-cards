@@ -73,6 +73,58 @@ function isValidSelfThemeHexColor(value) {
     return /^#[0-9a-f]{6}$/.test(v) || /^#[0-9a-f]{3}$/.test(v);
 }
 
+function isValidVideoUrl(value) {
+    // Allow null/undefined — clearing the optional field.
+    if (value == null) return true;
+    // Reject non-string (booleans, objects, arrays, etc.).
+    if (typeof value !== "string") return false;
+    const input = value.trim();
+    // Allow explicit empty or whitespace-only — represents clearing the field.
+    if (!input) return true;
+    // Build candidate URL: normalise protocol-less inputs for validation only.
+    // The stored value is never mutated.
+    const candidate = /^https?:\/\//i.test(input) ? input : `https://${input}`;
+    let url;
+    try {
+        url = new URL(candidate);
+    } catch {
+        return false;
+    }
+    const hostname = url.hostname.toLowerCase();
+    // Exact hostname whitelist — mirrors frontend pre-filter (VideoSection.jsx:10-12).
+    // Do NOT use hostname.endsWith(".youtube.com") — that would accept m.youtube.com,
+    // music.youtube.com, etc. which the frontend pre-filter rejects.
+    const isYouTubeCom =
+        hostname === "youtube.com" || hostname === "www.youtube.com";
+    const isYoutuBe = hostname === "youtu.be";
+    if (!isYouTubeCom && !isYoutuBe) return false;
+    // Extract videoId exactly as frontend toYouTubeEmbedUrl does.
+    let videoId = null;
+    if (isYoutuBe) {
+        // https://youtu.be/{id}
+        const parts = url.pathname.split("/").filter(Boolean);
+        videoId = parts[0] || null;
+    } else {
+        const path = url.pathname;
+        // https://www.youtube.com/watch?v={id}
+        if (path === "/watch") {
+            videoId = url.searchParams.get("v");
+        }
+        // https://www.youtube.com/shorts/{id}
+        if (!videoId && path.startsWith("/shorts/")) {
+            videoId = path.split("/shorts/")[1]?.split("/")[0] || null;
+        }
+        // https://www.youtube.com/embed/{id}
+        if (!videoId && path.startsWith("/embed/")) {
+            videoId = path.split("/embed/")[1]?.split("/")[0] || null;
+        }
+        // All other youtube.com paths (/live, /playlist, /channel, /@handle, etc.) → no videoId → reject.
+    }
+    if (!videoId) return false;
+    // YouTube video IDs are exactly 11 chars: [A-Za-z0-9_-]
+    return /^[A-Za-z0-9_-]{11}$/.test(videoId);
+}
+
 const UploadItemSchema = new mongoose.Schema(
     {
         kind: { type: String, default: null, trim: true },
@@ -618,7 +670,14 @@ const CardSchema = new mongoose.Schema(
                     "content.aboutText must not exceed 6500 characters",
                 ],
             },
-            videoUrl: String,
+            videoUrl: {
+                type: String,
+                validate: {
+                    validator: isValidVideoUrl,
+                    message:
+                        "content.videoUrl must be a valid YouTube video URL",
+                },
+            },
 
             // Additive (V1): descriptive services list.
             services: { type: ServicesSchema, default: null },

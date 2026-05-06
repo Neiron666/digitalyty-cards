@@ -138,11 +138,11 @@ function isSentryActive() {
 export function incrementMetric(name, tags = {}) {
     if (!ALLOWED_METRIC_NAMES.has(name)) return;
     if (!isSentryActive()) return;
-    if (typeof Sentry.metrics?.increment !== "function") return;
+    if (typeof Sentry.metrics?.count !== "function") return;
 
     const safeTags = sanitizeTags(tags);
     try {
-        Sentry.metrics.increment(name, 1, { attributes: safeTags });
+        Sentry.metrics.count(name, 1, { attributes: safeTags });
     } catch {
         // Swallow — metric failure must never affect callers.
     }
