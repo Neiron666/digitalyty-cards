@@ -1210,7 +1210,7 @@ export default function SettingsPanel({
                                                 </span>
                                             </div>
 
-                                            <div className={styles.billingRow}>
+                                            {/* <div className={styles.billingRow}>
                                                 <span
                                                     className={
                                                         styles.billingLabel
@@ -1226,7 +1226,7 @@ export default function SettingsPanel({
                                                 >
                                                     {providerLabel}
                                                 </span>
-                                            </div>
+                                            </div> */}
 
                                             {showCta && (
                                                 <>
