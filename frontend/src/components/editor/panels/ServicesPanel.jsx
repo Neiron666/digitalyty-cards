@@ -4,6 +4,13 @@ import Input from "../../ui/Input";
 import styles from "./ServicesPanel.module.css";
 
 const SERVICES_MAX = 10;
+const SERVICES_TITLE_MAX = 120;
+const SERVICES_ITEM_MAX = 120;
+
+function remaining(max, value) {
+    const s = typeof value === "string" ? value : String(value || "");
+    return Math.max(0, max - s.length);
+}
 
 function normalizeServices(value) {
     if (!value || typeof value !== "object" || Array.isArray(value)) {
@@ -144,6 +151,8 @@ export default function ServicesPanel({
                         disabled={disabled}
                         placeholder="לדוגמה: שירותים"
                         onChange={(e) => setTitle(e.target.value)}
+                        maxLength={SERVICES_TITLE_MAX}
+                        meta={`נשארו ${remaining(SERVICES_TITLE_MAX, draftTitle)} תווים`}
                     />
                 </div>
 
@@ -161,6 +170,8 @@ export default function ServicesPanel({
                                         onChange={(e) =>
                                             setItem(index, e.target.value)
                                         }
+                                        maxLength={SERVICES_ITEM_MAX}
+                                        meta={`נשארו ${remaining(SERVICES_ITEM_MAX, value)} תווים`}
                                     />
                                     {canRemove && (
                                         <div className={styles.itemActionRow}>

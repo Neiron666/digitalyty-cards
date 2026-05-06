@@ -8,6 +8,14 @@ import { suggestAbout, fetchAiQuota } from "../../../services/ai.service";
 import AiQuotaHint from "./AiQuotaHint";
 import useFocusTrap from "../../../hooks/useFocusTrap";
 
+const ABOUT_TITLE_MAX = 300;
+const ABOUT_PARAGRAPH_ITEM_MAX = 2000;
+
+function remaining(max, value) {
+    const s = typeof value === "string" ? value : String(value || "");
+    return Math.max(0, max - s.length);
+}
+
 // --- localStorage consent key ------------------------------------------------
 const AI_ABOUT_CONSENT_KEY = "cardigo_ai_about_consent";
 
@@ -408,6 +416,8 @@ export default function ContentPanel({
                 label="כותרת אודות"
                 value={content.aboutTitle || ""}
                 onChange={(e) => onChange({ aboutTitle: e.target.value })}
+                maxLength={ABOUT_TITLE_MAX}
+                meta={`נשארו ${remaining(ABOUT_TITLE_MAX, content.aboutTitle || "")} תווים`}
             />
 
             {cardId && !aiLocked && !aiReady && (
@@ -463,8 +473,12 @@ export default function ContentPanel({
                                     commitAboutParagraphs(next);
                                 }}
                                 className={formStyles.textarea}
+                                maxLength={ABOUT_PARAGRAPH_ITEM_MAX}
                             />
                         </label>
+                        <span className={styles.paragraphCounter}>
+                            {`נשארו ${remaining(ABOUT_PARAGRAPH_ITEM_MAX, value)} תווים`}
+                        </span>
 
                         {cardId && (
                             <div className={styles.paragraphActionRow}>
