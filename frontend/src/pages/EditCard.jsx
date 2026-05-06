@@ -165,6 +165,7 @@ function EditCard() {
     const [dirtyPaths, setDirtyPaths] = useState(() => new Set());
     const [saveState, setSaveState] = useState("idle");
     const [saveErrorText, setSaveErrorText] = useState(null);
+    const [fieldErrors, setFieldErrors] = useState({});
     const [isInitializing, setIsInitializing] = useState(true);
     const [needsCreateUserCard, setNeedsCreateUserCard] = useState(false);
     const [createUserCardBusy, setCreateUserCardBusy] = useState(false);
@@ -1399,6 +1400,7 @@ function EditCard() {
 
         setSaveState("saving");
         setSaveErrorText(null);
+        setFieldErrors({});
 
         try {
             const res = await api.patch(`/cards/${cardId}`, payload);
@@ -1425,6 +1427,7 @@ function EditCard() {
             if (code === "INVALID_ID") {
                 setSaveState("error");
                 setSaveErrorText("מזהה לא תקין");
+                setFieldErrors({});
                 return false;
             }
 
@@ -1463,6 +1466,29 @@ function EditCard() {
                     setSaveState("error");
                     setSaveErrorText(messageByField[first]);
                     return false;
+                }
+
+                const contactMessageByField = {
+                    "contact.phone": "מספר הטלפון לא תקין או ארוך מדי",
+                    "contact.whatsapp": "מספר ה-WhatsApp לא תקין או ארוך מדי",
+                    "contact.email": "כתובת האימייל לא תקינה",
+                    "contact.website":
+                        "יש להזין קישור תקין שמתחיל ב-http:// או https://",
+                    "contact.instagram": "יש להזין קישור Instagram תקין",
+                    "contact.facebook": "יש להזין קישור Facebook תקין",
+                    "contact.twitter": "יש להזין קישור X / Twitter תקין",
+                    "contact.tiktok": "יש להזין קישור TikTok תקין",
+                    "contact.waze":
+                        "יש להזין קישור Waze או קישור http/https תקין",
+                };
+                const nextFieldErrors = {};
+                for (const field of list) {
+                    if (contactMessageByField[field]) {
+                        nextFieldErrors[field] = contactMessageByField[field];
+                    }
+                }
+                if (Object.keys(nextFieldErrors).length > 0) {
+                    setFieldErrors(nextFieldErrors);
                 }
             }
 
@@ -1956,6 +1982,7 @@ function EditCard() {
 
             setSaveState("dirty");
             setSaveErrorText(null);
+            setFieldErrors({});
         },
         [editingDisabled],
     );
@@ -2390,6 +2417,7 @@ function EditCard() {
                         dirtyPaths={dirtyPaths}
                         saveState={saveState}
                         saveErrorText={saveErrorText}
+                        fieldErrors={fieldErrors}
                         // Mobile: compact context bar in topbar
                         activeOrgSlug={activeOrgSlug}
                         myOrgs={myOrgs}

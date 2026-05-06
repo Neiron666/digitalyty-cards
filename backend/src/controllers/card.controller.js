@@ -23,7 +23,7 @@ import {
     normalizeSupabasePaths,
 } from "../utils/supabasePaths.js";
 import { deleteCardCascade } from "../utils/cardDeleteCascade.js";
-import { GALLERY_LIMIT } from "../config/galleryLimit.js";
+
 import { resolveActor, assertCardOwner } from "../utils/actor.js";
 import {
     ensureTrialStarted,
@@ -44,6 +44,7 @@ import { resolveEffectiveTier } from "../utils/tier.js";
 import { normalizeAboutParagraphs } from "../utils/about.js";
 import { normalizeFaqForWrite } from "../utils/faq.util.js";
 import { normalizeBusinessForWrite } from "../utils/business.util.js";
+import { normalizeServicesForWrite } from "../utils/services.util.js";
 import { toIsrael } from "../utils/time.util.js";
 import { DEFAULT_TENANT_KEY } from "../utils/tenant.util.js";
 import { getPersonalOrgId } from "../utils/personalOrg.util.js";
@@ -983,6 +984,17 @@ export async function createCard(req, res) {
         data.business = normalizeBusinessForWrite(data.business);
     }
 
+    // Services: normalizer-first (trim + truncate title/items before write gates).
+    if (
+        data.content &&
+        typeof data.content === "object" &&
+        Object.prototype.hasOwnProperty.call(data.content, "services")
+    ) {
+        data.content.services = normalizeServicesForWrite(
+            data.content.services,
+        );
+    }
+
     // Client must not set billing or server-only flags.
     if (data && typeof data === "object") {
         delete data.billing;
@@ -1493,25 +1505,29 @@ export async function updateCard(req, res) {
             ? await resolveFeaturePlanForCard(existingCard, owner.id, now)
             : null;
 
+    // Write-side effective plan: anonymous owner (featurePlan=null) is treated as "free"
+    // for all PATCH write gates to mirror the CREATE path behaviour.
+    // NOTE: aboutTouched paragraph-limit has a separate gap tracked under
+    // ANON_PATCH_ABOUT_PARAGRAPHS_NULL_GUARD — do not use effectiveWritePlan there yet.
+    const effectiveWritePlan = featurePlan ?? "free";
+
     // Gate: advanced SEO requires premium.
     // Auto-computed title/description are NOT advanced - they remain free.
     if (
-        featurePlan !== null &&
         patch.seo &&
         isPlainObject(patch.seo) &&
         Object.keys(patch.seo).some((k) => ADVANCED_SEO_KEYS.has(k)) &&
-        !hasAccess(featurePlan, "seo")
+        !hasAccess(effectiveWritePlan, "seo")
     ) {
         return res.status(403).json({ ok: false, code: "PREMIUM_REQUIRED" });
     }
 
     // Gate: enabling booking requires entitlement (disabling is always allowed).
     if (
-        featurePlan !== null &&
         patch.bookingSettings &&
         isPlainObject(patch.bookingSettings) &&
         patch.bookingSettings.enabled === true &&
-        !hasAccess(featurePlan, "booking")
+        !hasAccess(effectiveWritePlan, "booking")
     ) {
         return res.status(403).json({ ok: false, code: "PREMIUM_REQUIRED" });
     }
@@ -1596,10 +1612,10 @@ export async function updateCard(req, res) {
 
         // --- Batch 3: strip premium content fields before merge ---
         // Deleting from `incoming` before merge preserves existing stored values.
-        if (featurePlan !== null) {
-            if (!hasAccess(featurePlan, "services")) delete incoming.services;
-            if (!hasAccess(featurePlan, "video")) delete incoming.videoUrl;
-        }
+        // effectiveWritePlan ensures anonymous (featurePlan=null) is treated as free.
+        if (!hasAccess(effectiveWritePlan, "services"))
+            delete incoming.services;
+        if (!hasAccess(effectiveWritePlan, "video")) delete incoming.videoUrl;
 
         const hasAboutParagraphs = Object.prototype.hasOwnProperty.call(
             incoming,
@@ -1638,13 +1654,17 @@ export async function updateCard(req, res) {
     // About: tolerant writer (accept aboutText or aboutParagraphs),
     // but only when the incoming PATCH shows intent to modify About.
     // Batch 3: plan-aware paragraph limit + non-destructive tail preservation.
+    // effectiveWritePlan ensures anonymous (featurePlan=null) is treated as free,
+    // matching the anonymous CREATE behavior (1-paragraph cap).
     if (aboutTouched) {
-        if (featurePlan !== null) {
-            const paragraphsLimit = getContentParagraphsLimit(featurePlan);
-            normalizeAboutFieldsInContent(patch, { max: paragraphsLimit });
+        const paragraphsLimit = getContentParagraphsLimit(effectiveWritePlan);
+        normalizeAboutFieldsInContent(patch, { max: paragraphsLimit });
 
-            // Non-destructive: preserve stored tail paragraphs beyond the
-            // plan's editable limit so premium content is not lost on downgrade.
+        // Non-destructive: preserve stored tail paragraphs beyond the
+        // plan's editable limit so premium content is not lost on downgrade.
+        // Anonymous owners never accumulate premium tails, so this is
+        // intentionally gated to authenticated (user) owners only.
+        if (featurePlan !== null) {
             const existingParas = existingCard?.content?.aboutParagraphs || [];
             if (
                 existingParas.length > paragraphsLimit &&
@@ -1658,8 +1678,6 @@ export async function updateCard(req, res) {
                 patch.content.aboutText =
                     patch.content.aboutParagraphs.join("\n\n");
             }
-        } else {
-            normalizeAboutFieldsInContent(patch);
         }
     }
 
@@ -1785,9 +1803,9 @@ export async function updateCard(req, res) {
     };
 
     // Batch 7A: gallery is fully premium-only - strip from patch on free.
+    // effectiveWritePlan ensures anonymous (featurePlan=null) is treated as free.
     if (
-        featurePlan !== null &&
-        !hasAccess(featurePlan, "gallery") &&
+        !hasAccess(effectiveWritePlan, "gallery") &&
         Object.prototype.hasOwnProperty.call(patch, "gallery")
     ) {
         delete patch.gallery;
@@ -1809,8 +1827,7 @@ export async function updateCard(req, res) {
             ? incomingGallery
             : [];
 
-        const galleryLimitForPlan =
-            featurePlan !== null ? getGalleryLimit(featurePlan) : GALLERY_LIMIT;
+        const galleryLimitForPlan = getGalleryLimit(effectiveWritePlan);
         if (nextGallery.length > galleryLimitForPlan) {
             return res.status(422).json({
                 message: `Gallery limit reached (${galleryLimitForPlan})`,
@@ -1911,9 +1928,9 @@ export async function updateCard(req, res) {
     }
 
     // --- Batch 3: gate businessHours for free plan ---
+    // effectiveWritePlan ensures anonymous (featurePlan=null) is treated as free.
     if (
-        featurePlan !== null &&
-        !hasAccess(featurePlan, "businessHours") &&
+        !hasAccess(effectiveWritePlan, "businessHours") &&
         Object.prototype.hasOwnProperty.call(patch, "businessHours")
     ) {
         delete patch.businessHours;
@@ -1999,8 +2016,9 @@ export async function updateCard(req, res) {
     }
 
     // --- Batch 3: gate premium contact fields for free plan ---
+    // effectiveWritePlan ensures anonymous (featurePlan=null) is treated as free.
     if (
-        featurePlan === "free" &&
+        effectiveWritePlan === "free" &&
         patch.contact &&
         typeof patch.contact === "object"
     ) {
@@ -2142,6 +2160,11 @@ export async function updateCard(req, res) {
                 delete $set[key];
             }
         }
+        // Normalizer-first: trim/truncate before the atomic write so oversized
+        // in-DB values are silently corrected on next services touch.
+        patch.content.services = normalizeServicesForWrite(
+            patch.content.services,
+        );
         // patch.content.services is already the merged value (null or a plain ServicesSchema object).
         $set["content.services"] = patch.content.services;
     }

@@ -23,6 +23,11 @@ import {
     BUSINESS_LNG_MIN,
     BUSINESS_LNG_MAX,
 } from "../utils/business.util.js";
+import {
+    SERVICES_TITLE_MAX,
+    SERVICES_ITEMS_MAX,
+    SERVICES_ITEM_MAX,
+} from "../config/services.js";
 
 // --- Private URL validator helpers (not exported) ---
 // Mirrors the scheme-blocking logic of frontend ensureHttpUrl for storage-level safety.
@@ -217,15 +222,32 @@ const FaqSchema = new mongoose.Schema(
 
 const ServicesSchema = new mongoose.Schema(
     {
-        title: { type: String, trim: true, default: null, maxlength: 120 },
+        title: {
+            type: String,
+            trim: true,
+            default: null,
+            maxlength: [
+                SERVICES_TITLE_MAX,
+                "content.services.title must not exceed 120 characters",
+            ],
+        },
         items: {
-            type: [String],
+            type: [
+                {
+                    type: String,
+                    trim: true,
+                    maxlength: [
+                        SERVICES_ITEM_MAX,
+                        "content.services.items[*] must not exceed 120 characters",
+                    ],
+                },
+            ],
             default: undefined,
             validate: {
                 validator: (arr) => {
                     if (arr === undefined || arr === null) return true;
                     if (!Array.isArray(arr)) return false;
-                    return arr.length <= 10;
+                    return arr.length <= SERVICES_ITEMS_MAX;
                 },
                 message: "content.services.items must contain at most 10 items",
             },

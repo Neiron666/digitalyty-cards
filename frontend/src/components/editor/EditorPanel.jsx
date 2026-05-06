@@ -28,6 +28,7 @@ export default function EditorPanel({
     onPublish,
     onUnpublish,
     onUpdateSlug,
+    fieldErrors = {},
 }) {
     const effectivePlan = card?.effectiveBilling?.plan || "free";
     const galleryLimit = card?.entitlements?.galleryLimit;
@@ -73,6 +74,7 @@ export default function EditorPanel({
                         onFieldChange?.("contact", patch);
                     }}
                     entitlements={card?.entitlements}
+                    fieldErrors={fieldErrors}
                 />
             );
 

@@ -29,6 +29,7 @@ export default function Editor({
     dirtyPaths,
     saveState,
     saveErrorText,
+    fieldErrors,
     // Mobile: compact context bar in topbar
     activeOrgSlug,
     myOrgs,
@@ -366,6 +367,7 @@ export default function Editor({
                         onPublish={onPublish}
                         onUnpublish={onUnpublish}
                         onUpdateSlug={onUpdateSlug}
+                        fieldErrors={fieldErrors}
                     />
                     <EditorSaveBar
                         dirtyCount={dirtyCount}

@@ -3,11 +3,22 @@ import Panel from "./Panel";
 import Input from "../../ui/Input";
 import styles from "./ContactPanel.module.css";
 
+const PHONE_MAX = 30;
+const WHATSAPP_MAX = 20;
+const EMAIL_MAX = 254;
+const URL_MAX = 2048;
+
+function remaining(max, value) {
+    const s = typeof value === "string" ? value : String(value || "");
+    return Math.max(0, max - s.length);
+}
+
 export default function ContactPanel({
     contact = {},
     onFieldChange,
     editingDisabled = false,
     entitlements,
+    fieldErrors = {},
 }) {
     const showPremiumFields = entitlements?.canUseServices !== false;
     const phone = contact.phone || "";
@@ -39,6 +50,8 @@ export default function ContactPanel({
         }
     };
 
+    const activePhoneMax = whatsappLinked ? WHATSAPP_MAX : PHONE_MAX;
+
     return (
         <Panel title="פרטי קשר">
             <Input
@@ -46,6 +59,9 @@ export default function ContactPanel({
                 value={phone}
                 disabled={editingDisabled}
                 onChange={handlePhoneChange}
+                maxLength={activePhoneMax}
+                meta={`נשארו ${remaining(activePhoneMax, phone)} תווים`}
+                error={fieldErrors["contact.phone"]}
             />
 
             <label className={styles.syncRow}>
@@ -65,6 +81,8 @@ export default function ContactPanel({
                 value={whatsapp}
                 disabled={editingDisabled || whatsappLinked}
                 onChange={(e) => emit({ whatsapp: e.target.value })}
+                maxLength={WHATSAPP_MAX}
+                error={fieldErrors["contact.whatsapp"]}
             />
 
             <Input
@@ -73,6 +91,9 @@ export default function ContactPanel({
                 value={contact.email || ""}
                 disabled={editingDisabled}
                 onChange={(e) => emit({ email: e.target.value })}
+                maxLength={EMAIL_MAX}
+                meta={`נשארו ${remaining(EMAIL_MAX, contact.email || "")} תווים`}
+                error={fieldErrors["contact.email"]}
             />
 
             <Input
@@ -80,6 +101,8 @@ export default function ContactPanel({
                 value={contact.website || ""}
                 disabled={editingDisabled}
                 onChange={(e) => emit({ website: e.target.value })}
+                maxLength={URL_MAX}
+                error={fieldErrors["contact.website"]}
             />
 
             <Input
@@ -87,6 +110,8 @@ export default function ContactPanel({
                 value={contact.instagram || ""}
                 disabled={editingDisabled}
                 onChange={(e) => emit({ instagram: e.target.value })}
+                maxLength={URL_MAX}
+                error={fieldErrors["contact.instagram"]}
             />
 
             {showPremiumFields ? (
@@ -96,6 +121,8 @@ export default function ContactPanel({
                         value={contact.facebook || ""}
                         disabled={editingDisabled}
                         onChange={(e) => emit({ facebook: e.target.value })}
+                        maxLength={URL_MAX}
+                        error={fieldErrors["contact.facebook"]}
                     />
 
                     <Input
@@ -103,6 +130,8 @@ export default function ContactPanel({
                         value={contact.twitter || ""}
                         disabled={editingDisabled}
                         onChange={(e) => emit({ twitter: e.target.value })}
+                        maxLength={URL_MAX}
+                        error={fieldErrors["contact.twitter"]}
                     />
 
                     <Input
@@ -110,6 +139,8 @@ export default function ContactPanel({
                         value={contact.tiktok || ""}
                         disabled={editingDisabled}
                         onChange={(e) => emit({ tiktok: e.target.value })}
+                        maxLength={URL_MAX}
+                        error={fieldErrors["contact.tiktok"]}
                     />
 
                     <Input
@@ -117,6 +148,8 @@ export default function ContactPanel({
                         value={contact.waze || ""}
                         disabled={editingDisabled}
                         onChange={(e) => emit({ waze: e.target.value })}
+                        maxLength={URL_MAX}
+                        error={fieldErrors["contact.waze"]}
                     />
                 </>
             ) : (
