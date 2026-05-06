@@ -1,4 +1,11 @@
-import { REVIEWS_MAX, REVIEWS_TEXT_MAX } from "../config/reviews.js";
+import {
+    REVIEWS_MAX,
+    REVIEWS_TEXT_MAX,
+    REVIEWS_NAME_MAX,
+    REVIEWS_ROLE_MAX,
+    REVIEWS_RATING_MIN,
+    REVIEWS_RATING_MAX,
+} from "../config/reviews.js";
 
 export function normalizeReviews(input) {
     const arr = Array.isArray(input) ? input : [];
@@ -27,12 +34,15 @@ export function normalizeReviews(input) {
 
         const name =
             typeof item.name === "string"
-                ? item.name.trim()
+                ? item.name.trim().slice(0, REVIEWS_NAME_MAX)
                 : typeof item.author === "string"
-                  ? item.author.trim()
+                  ? item.author.trim().slice(0, REVIEWS_NAME_MAX)
                   : "";
 
-        const role = typeof item.role === "string" ? item.role.trim() : "";
+        const role =
+            typeof item.role === "string"
+                ? item.role.trim().slice(0, REVIEWS_ROLE_MAX)
+                : "";
 
         const ratingRaw =
             typeof item.rating === "number" || typeof item.rating === "string"
@@ -40,7 +50,10 @@ export function normalizeReviews(input) {
                 : null;
         const rating =
             typeof ratingRaw === "number" && Number.isFinite(ratingRaw)
-                ? ratingRaw
+                ? Math.min(
+                      REVIEWS_RATING_MAX,
+                      Math.max(REVIEWS_RATING_MIN, Math.round(ratingRaw)),
+                  )
                 : null;
 
         const date = item.date ? new Date(item.date) : null;

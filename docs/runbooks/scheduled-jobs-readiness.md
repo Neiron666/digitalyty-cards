@@ -295,8 +295,8 @@ Before relying on scheduled jobs for production SLAs, all of the following must 
 
 ## 11) Sentry Application Metrics — Billing + Receipt (Batch 1)
 
-**Contour:** SENTRY_APPLICATION_METRICS_MVP_P1_BATCH1
-**Status:** IMPLEMENTED — code-verified 2026-05-06. No dashboards, alerts, or Sentry monitors created in this contour. No Sentry plan or PAYG billing changes made.
+**Contours:** SENTRY_APPLICATION_METRICS_MVP_P1_BATCH1 · SENTRY_APPLICATION_METRICS_ATTRIBUTES_FIX_P1 · SENTRY_APPLICATION_METRICS_COUNTER_METHOD_FIX_P1 · PAYMENT_PRODUCTION_SMOKE_AND_OBSERVABILITY_P1
+**Status:** IMPLEMENTED — initial code-verified 2026-05-06. Post-Batch-1 fixes applied and production smoke performed 2026-05-06 (see subsections below). No dashboards, alerts, or Sentry monitors created. No Sentry plan or PAYG billing changes made.
 
 ### Helper
 
@@ -315,19 +315,22 @@ Before relying on scheduled jobs for production SLAs, all of the following must 
 All 6 metrics are backend-only. Scope: payment notify + receipt creation + receipt retry only.
 
 **payment.notify.success**
-Type: increment
+Type: counter
+SDK method: Sentry.metrics.count()
 Tags: `provider` (tranzila), `flow` (first_payment | sto_recurring), `plan` (monthly | yearly | unknown)
 Source: `handleNotify` and `handleStoNotify` in `tranzila.provider.js`
 Safety: fires after all persistence (`user.save`, `Card.updateOne` x2) completes. Never fires on E11000 duplicate replay path.
 
 **payment.notify.failed**
-Type: increment
+Type: counter
+SDK method: Sentry.metrics.count()
 Tags: `provider` (tranzila), `flow` (first_payment | sto_recurring), `reason` (allowlisted — see helper)
 Source: `handleNotify` (inside `!isPaid` guard only) and `handleStoNotify` (charge rejection / sto_cancelled / invalid_plan / amount_mismatch paths)
 Safety: fires on non-paid and STO-rejected paths only. Never fires on duplicate replay. Never fires on `no_provider_txn_id` early-return path.
 
 **receipt.create.failed**
-Type: increment
+Type: counter
+SDK method: Sentry.metrics.count()
 Tags: `provider` (yeshinvoice), `flow` (first_payment | sto_recurring), `plan` (monthly | yearly | unknown), `reason` (create_failed)
 Source: inside `!receiptResult.ok` block in `handleNotify` and `handleStoNotify` in `tranzila.provider.js`
 Safety: fires only when YeshInvoice receipt creation returns a non-ok result. Payment ACK is never blocked by this metric.
@@ -340,13 +343,15 @@ Source: `receiptRetry.js` — emitted immediately after candidate query, before 
 Safety: fires on every sweep including zero-candidate sweeps. This is intentional heartbeat-style signal — zero does not indicate an error.
 
 **receipt.retry.success**
-Type: increment
+Type: counter
+SDK method: Sentry.metrics.count()
 Tags: `provider` (yeshinvoice), `flow` (retry_job), `plan` (monthly | yearly | unknown)
 Source: `processReceipt` in `receiptRetry.js` — after `Receipt.updateOne(status: "created")` completes
 Safety: fires only after DB persistence confirms success.
 
 **receipt.retry.failed**
-Type: increment
+Type: counter
+SDK method: Sentry.metrics.count()
 Tags: `provider` (yeshinvoice), `flow` (retry_job), `plan` (monthly | yearly | unknown), `reason` (create_failed)
 Source: `processReceipt` in `receiptRetry.js` — after `Receipt.updateOne(retryCount++)` and backoff scheduling complete
 Safety: fires only after DB persistence confirms failure record written.
@@ -363,6 +368,56 @@ The helper's allowlist prevents these from ever reaching Sentry as tag values:
 - `sanitizeReason` has no case normalization — uppercase inputs fall to `"unknown"`. Current call sites are all lowercase; no runtime impact.
 - `receipt.retry.candidate_count` emits `0` on every zero-candidate sweep — intentional; bounded cardinality.
 
+---
+
+### Post-Batch-1 Fixes — 2026-05-06
+
+**ATTRIBUTES_FIX_P1**
+- Root cause: helper passed `{ tags: safeTags }` to the Sentry Node SDK.
+- The correct SDK option key is `{ attributes: safeTags }`.
+- Fix scope: `backend/src/utils/sentryMetrics.util.js` only — helper-level change, no call-site changes.
+- Production proof: `receipt.retry.candidate_count` was observed in Sentry with custom attributes `provider=yeshinvoice`, `flow=retry_job` in the production environment, confirming gauge metric ingestion and attribute transmission work in production.
+- Verification result: PASS_ATTRIBUTES_FIX_VERIFICATION.
+
+**COUNTER_METHOD_FIX_P1**
+- Root cause: helper called `Sentry.metrics.increment` which does not exist in `@sentry/node ^10.40.0`.
+- SDK inspection: `typeof Sentry.metrics.increment === "undefined"`, `typeof Sentry.metrics.count === "function"`. `Object.keys(Sentry.metrics)` = `["count", "distribution", "gauge"]`.
+- The guard `typeof Sentry.metrics?.increment !== "function"` returned `true`, causing silent early exits on every counter call.
+- Fix scope: `backend/src/utils/sentryMetrics.util.js` only — guard and call updated from `increment` to `count`.
+- Counter metrics are expected to emit on the next natural successful payment event after this fix is deployed.
+- Verification result: PASS_COUNTER_METHOD_FIX_VERIFICATION.
+
+---
+
+### Production Payment Smoke — 2026-05-06
+
+A first-payment production smoke was performed manually after Batch 1 implementation. Findings:
+
+- Tranzila payment approved: ₪39.90 (amountAgorot=3990).
+- PaymentIntent status: completed.
+- PaymentTransaction status: paid, amountAgorot=3990.
+- User plan: monthly active.
+- Tranzila token: captured.
+- STO schedule: created.
+- YeshInvoice קבלה: created via API.
+- Receipt cabinet: visible and contains the receipt.
+- `receipt.retry.candidate_count` (gauge): observed in Sentry with `provider=yeshinvoice`, `flow=retry_job`, custom attributes present — confirms gauge ingestion and attribute dimensions work in production.
+- `payment.notify.success` (counter): NOT observed during this smoke. Root cause: counter helper still called the nonexistent `Sentry.metrics.increment` at the time of the smoke. This is resolved by COUNTER_METHOD_FIX_P1.
+
+No real customer PII, ObjectIds, providerTxnId, stoId, receipt numbers, confirmation codes, or raw provider payloads are included in this runbook.
+
+---
+
+### Next Expected Signal — After COUNTER_METHOD_FIX_P1 Deploy
+
+After COUNTER_METHOD_FIX_P1 is deployed to production, the next natural successful payment (first_payment or sto_recurring) should emit:
+
+- Metric: `payment.notify.success`
+- Attributes: `provider=tranzila`, `flow=first_payment`, `plan=monthly` or `plan=yearly`
+- This signal does not require triggering another payment smoke solely for Sentry counter metric verification.
+
+---
+
 ### Explicit Non-Goals for This Batch
 
 - No AI / Gemini metrics implemented.
@@ -370,7 +425,7 @@ The helper's allowlist prevents these from ever reaching Sentry as tag values:
 - No frontend metrics.
 - No global API request metrics.
 - No Sentry dashboards, alerts, or new monitors created.
-- No real payment or provider smoke was performed to verify metrics in this contour. Metric correctness was verified by code proof and a no-network Node smoke test only.
+- Production payment smoke was performed 2026-05-06 (see Production Payment Smoke — 2026-05-06 subsection above). Gauge metric ingestion and custom attributes were verified in production. Counter metric correctness was verified by SDK inspection and code fix (see Post-Batch-1 Fixes — 2026-05-06 subsection above).
 - Sentry Application Metrics availability depends on the active Sentry subscription tier. No plan or PAYG billing changes were made.
 
 ---

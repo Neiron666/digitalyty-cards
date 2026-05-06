@@ -6,7 +6,13 @@ import {
     ABOUT_PARAGRAPHS_MAX,
     ABOUT_PARAGRAPH_ITEM_MAX,
 } from "../config/about.js";
-import { REVIEWS_MAX } from "../config/reviews.js";
+import {
+    REVIEWS_MAX,
+    REVIEWS_NAME_MAX,
+    REVIEWS_ROLE_MAX,
+    REVIEWS_RATING_MIN,
+    REVIEWS_RATING_MAX,
+} from "../config/reviews.js";
 import {
     BUSINESS_NAME_MAX,
     BUSINESS_SLOGAN_MAX,
@@ -138,9 +144,38 @@ const UploadItemSchema = new mongoose.Schema(
 const ReviewSchema = new mongoose.Schema(
     {
         text: { type: String, required: true, trim: true },
-        name: { type: String, trim: true, default: "" },
-        role: { type: String, trim: true, default: "" },
-        rating: { type: Number, default: null },
+        name: {
+            type: String,
+            trim: true,
+            default: "",
+            maxlength: [
+                REVIEWS_NAME_MAX,
+                `reviews[].name must not exceed ${REVIEWS_NAME_MAX} characters`,
+            ],
+        },
+        role: {
+            type: String,
+            trim: true,
+            default: "",
+            maxlength: [
+                REVIEWS_ROLE_MAX,
+                `reviews[].role must not exceed ${REVIEWS_ROLE_MAX} characters`,
+            ],
+        },
+        rating: {
+            type: Number,
+            default: null,
+            validate: {
+                validator: (v) =>
+                    v == null ||
+                    (Number.isFinite(v) &&
+                        Number.isInteger(v) &&
+                        v >= REVIEWS_RATING_MIN &&
+                        v <= REVIEWS_RATING_MAX),
+                message:
+                    "reviews[].rating must be null or an integer from 1 to 5",
+            },
+        },
         // Stored as ISO string for simplicity/compat.
         date: { type: String, default: null, trim: true },
     },
