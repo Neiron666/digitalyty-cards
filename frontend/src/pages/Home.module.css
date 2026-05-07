@@ -140,11 +140,11 @@
         #d4af37 100%
     );
     background-size: 300% auto;
+    background-position: 50% center;
     -webkit-background-clip: text;
     background-clip: text;
     -webkit-text-fill-color: transparent;
     filter: drop-shadow(0 0 18px rgba(212, 175, 55, 0.2));
-    animation: heroShine 6s ease-in-out infinite;
     /* box-shadow: #d4af37 0px 0px 2px; */
 }
 
