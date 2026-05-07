@@ -10,7 +10,7 @@ import {
 const cx = (...classes) => classes.filter(Boolean).join(" ");
 
 function ContactButtons({ card }) {
-    const { contact, business } = card;
+    const { contact } = card;
 
     // Defense-in-depth: premium extras only render when entitlements allow.
     // Free baseline: phone, whatsapp, email, website, instagram.
@@ -31,23 +31,10 @@ function ContactButtons({ card }) {
     const telHref = normalizeForTel(phone);
     const waHref = normalizeForWaMe(whatsapp);
 
-    const hasCoords =
-        typeof business?.lat === "number" && typeof business?.lng === "number";
-
-    const addressQuery = [business?.address, business?.city]
-        .filter(Boolean)
-        .join(", ");
-
-    const wazeUrl = hasCoords
-        ? `https://waze.com/ul?ll=${business.lat},${business.lng}&navigate=yes`
-        : addressQuery
-          ? `https://waze.com/ul?q=${encodeURIComponent(addressQuery)}`
-          : "";
-
     const wazeHref = isPremium
         ? ensureHttpUrl(extractWazeUrl(contact?.waze), {
               extraSchemes: ["waze"],
-          }) || wazeUrl
+          })
         : "";
 
     const facebookHref = isPremium ? ensureHttpUrl(contact?.facebook) : "";
