@@ -188,6 +188,26 @@ The guides section mirrors the blog structure:
 - `/blog/page/:pageNum` - paginated archive pages.
 - Invalid or out-of-range page numbers (< 1, > totalPages, non-numeric) are normalized: redirect to `/blog` (page 1) or `/blog/page/<totalPages>` respectively.
 
+### FAQPage JSON-LD conditional emission on archive pages
+
+**Contour: SCHEMA_BLOG_GUIDES_PAGINATION_FAQ_SCHEMA_P1 — CLOSED / PASS (2026-05-07)**
+
+`Blog.jsx` and `Guides.jsx` emit the archive FAQPage JSON-LD block conditionally based on `effectivePage`:
+
+- `effectivePage <= 1` (i.e. `/blog` and `/guides` base routes): FAQPage JSON-LD **is emitted**.
+- `effectivePage > 1` (i.e. `/blog/page/2+` and `/guides/page/2+`): `jsonLdItems=[]` is passed to SeoHelmet and **no FAQPage JSON-LD is emitted**.
+
+This prevents a schema/canonical mismatch where FAQPage `@id` and `url` pointed to `/blog` (the base route) while the page canonical was `/blog/page/N`.
+
+Unchanged by this contour:
+
+- `buildBlogFaqJsonLd()` and `buildGuidesFaqJsonLd()` functions.
+- FAQ `@id` values (`${ORIGIN}/blog#faq`, `${ORIGIN}/guides#faq`).
+- FAQ `url` values (`${ORIGIN}/blog`, `${ORIGIN}/guides`).
+- canonicalUrl logic, title, description, url, image, imageAlt props.
+- Visible FAQ UI rendered on the page.
+- SeoHelmet, router, sitemap, OG routes, og-preview.js edge function.
+
 ### Sitemap
 
 - `GET /sitemap.xml` includes all `published` blog post and guide post URLs with `<lastmod>` from `updatedAt`.
