@@ -174,7 +174,7 @@ export default function Blog() {
                 url={canonicalUrl}
                 image={CARDIGO_OG_IMAGE_URL}
                 imageAlt={meta.imageAlt}
-                jsonLdItems={[blogFaqJsonLd]}
+                jsonLdItems={effectivePage <= 1 ? [blogFaqJsonLd] : []}
             />
 
             {/* ── Hero ─────────────────────────────────────── */}

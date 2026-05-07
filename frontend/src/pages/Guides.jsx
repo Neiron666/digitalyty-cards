@@ -168,7 +168,7 @@ export default function Guides() {
                 url={canonicalUrl}
                 image={CARDIGO_OG_IMAGE_URL}
                 imageAlt={meta.imageAlt}
-                jsonLdItems={[guidesFaqJsonLd]}
+                jsonLdItems={effectivePage <= 1 ? [guidesFaqJsonLd] : []}
             />
 
             {/* ── Hero ─────────────────────────────────────── */}
