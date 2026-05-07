@@ -1271,9 +1271,11 @@ function EditCard() {
                 }
             };
 
+            const MAX_JSONLD_LENGTH = 5000;
             const isValidJsonLdString = (raw) => {
                 const v = pickString(raw);
                 if (!v) return true;
+                if (v.length > MAX_JSONLD_LENGTH) return false;
                 try {
                     const parsed = JSON.parse(v);
                     return (
@@ -1306,7 +1308,8 @@ function EditCard() {
             const seoErrorMessageByField = {
                 "seo.canonicalUrl":
                     "Canonical URL חייב להיות כתובת מלאה (https://...)",
-                "seo.jsonLd": "JSON-LD חייב להיות JSON תקין (אובייקט או מערך)",
+                "seo.jsonLd":
+                    "JSON-LD חייב להיות JSON תקין (אובייקט או מערך) ועד 5000 תווים",
                 "seo.robots": "Robots לא תקין (ללא < או >)",
                 "seo.gtmId": "GTM ID לא תקין. פורמט: GTM-XXXXXXX",
                 "seo.gaMeasurementId":
@@ -1451,7 +1454,7 @@ function EditCard() {
                     "seo.canonicalUrl":
                         "Canonical URL חייב להיות כתובת מלאה (https://...)",
                     "seo.jsonLd":
-                        "JSON-LD חייב להיות JSON תקין (אובייקט או מערך)",
+                        "JSON-LD חייב להיות JSON תקין (אובייקט או מערך) ועד 5000 תווים",
                     "seo.robots": "Robots לא תקין (ללא < או >)",
                     "seo.gtmId": "GTM ID לא תקין. פורמט: GTM-XXXXXXX",
                     "seo.gaMeasurementId":

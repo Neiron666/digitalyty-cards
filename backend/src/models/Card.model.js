@@ -864,6 +864,8 @@ const CardSchema = new mongoose.Schema(
                 validate: {
                     validator: (v) => {
                         if (!v) return true;
+                        const MAX_JSONLD_LENGTH = 5000;
+                        if (v.length > MAX_JSONLD_LENGTH) return false;
                         try {
                             const parsed = JSON.parse(v);
                             return (
@@ -875,7 +877,8 @@ const CardSchema = new mongoose.Schema(
                             return false;
                         }
                     },
-                    message: "seo.jsonLd must be a valid JSON string",
+                    message:
+                        "seo.jsonLd must be a valid JSON object or array string up to 5000 characters",
                 },
             },
 

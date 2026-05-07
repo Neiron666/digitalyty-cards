@@ -1119,6 +1119,7 @@ export default function SeoPanel({
                                         <textarea
                                             className={formStyles.textarea}
                                             rows={6}
+                                            maxLength={5000}
                                             value={value.jsonLd || ""}
                                             onChange={(e) =>
                                                 update("jsonLd", e.target.value)
