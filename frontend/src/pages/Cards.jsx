@@ -2,7 +2,10 @@ import { useEffect } from "react";
 import { Link } from "react-router-dom";
 import Button from "../components/ui/Button";
 import SeoHelmet from "../components/seo/SeoHelmet";
-import { DEFAULT_OG_IMAGE_PATH } from "../utils/seoConstants.js";
+import {
+    CARDIGO_OG_IMAGE_URL,
+    getMarketingMeta,
+} from "../seo/marketingMeta.config.js";
 import {
     trackSitePageView,
     trackSiteClick,
@@ -186,6 +189,7 @@ function buildCardsFaqJsonLd() {
 }
 
 const cardsFaqJsonLd = buildCardsFaqJsonLd();
+const meta = getMarketingMeta("cards");
 
 export default function Cards() {
     useEffect(() => {
@@ -195,11 +199,12 @@ export default function Cards() {
     return (
         <main data-page="site">
             <SeoHelmet
-                title="דוגמאות לכרטיסי ביקור דיגיטליים | Cardigo"
-                description="דוגמאות ויזואליות לכרטיסי ביקור דיגיטליים בסגנונות שונים - ראו איך Cardigo מציג עסקים, קישורים ודרכי יצירת קשר לפני שיוצרים כרטיס משלכם."
+                title={meta.title}
+                description={meta.description}
                 canonicalUrl={`${ORIGIN}/cards`}
                 url={`${ORIGIN}/cards`}
-                image={`${ORIGIN}${DEFAULT_OG_IMAGE_PATH}`}
+                image={CARDIGO_OG_IMAGE_URL}
+                imageAlt={meta.imageAlt}
                 jsonLdItems={[cardsFaqJsonLd]}
             />
 

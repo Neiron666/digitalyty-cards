@@ -2,7 +2,10 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import Button from "../components/ui/Button";
 import SeoHelmet from "../components/seo/SeoHelmet";
-import { DEFAULT_OG_IMAGE_PATH } from "../utils/seoConstants.js";
+import {
+    CARDIGO_OG_IMAGE_URL,
+    getMarketingMeta,
+} from "../seo/marketingMeta.config.js";
 import {
     trackSitePageView,
     trackSiteClick,
@@ -71,6 +74,8 @@ function buildContactFaqJsonLd() {
     };
 }
 
+const meta = getMarketingMeta("contact");
+
 export default function Contact() {
     const [form, setForm] = useState(INITIAL_FORM);
     const [sent, setSent] = useState(false);
@@ -124,11 +129,12 @@ export default function Contact() {
     return (
         <main data-page="site">
             <SeoHelmet
-                title="צור קשר | Cardigo"
-                description="צרו קשר עם Cardigo לשאלות על כרטיס ביקור דיגיטלי לעסקים - מחירים, התאמה ודרכי התחלה."
+                title={meta.title}
+                description={meta.description}
                 canonicalUrl={`${ORIGIN}/contact`}
                 url={`${ORIGIN}/contact`}
-                image={`${ORIGIN}${DEFAULT_OG_IMAGE_PATH}`}
+                image={CARDIGO_OG_IMAGE_URL}
+                imageAlt={meta.imageAlt}
                 jsonLdItems={[contactFaqJsonLd]}
             />
 

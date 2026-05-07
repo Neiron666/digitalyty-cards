@@ -1,7 +1,10 @@
 import { useEffect, useState } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
 import SeoHelmet from "../components/seo/SeoHelmet";
-import { DEFAULT_OG_IMAGE_PATH } from "../utils/seoConstants.js";
+import {
+    CARDIGO_OG_IMAGE_URL,
+    getMarketingMeta,
+} from "../seo/marketingMeta.config.js";
 import {
     trackSitePageView,
     trackSiteClick,
@@ -64,6 +67,7 @@ function buildGuidesFaqJsonLd() {
 }
 
 const guidesFaqJsonLd = buildGuidesFaqJsonLd();
+const meta = getMarketingMeta("guides");
 
 /* ── Helpers ──────────────────────────────────────────────────── */
 
@@ -158,11 +162,12 @@ export default function Guides() {
     return (
         <main data-page="site">
             <SeoHelmet
-                title="מדריכים | Cardigo"
-                description="מדריכים מעשיים, צעד אחרי צעד, על כרטיסי ביקור דיגיטליים, עיצוב כרטיס, SEO, נוכחות עסקית ושימוש בכלים הדיגיטליים של Cardigo."
+                title={meta.title}
+                description={meta.description}
                 canonicalUrl={canonicalUrl}
                 url={canonicalUrl}
-                image={`${ORIGIN}${DEFAULT_OG_IMAGE_PATH}`}
+                image={CARDIGO_OG_IMAGE_URL}
+                imageAlt={meta.imageAlt}
                 jsonLdItems={[guidesFaqJsonLd]}
             />
 

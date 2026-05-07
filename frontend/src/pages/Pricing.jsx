@@ -3,7 +3,10 @@ import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import Button from "../components/ui/Button";
 import SeoHelmet from "../components/seo/SeoHelmet";
-import { DEFAULT_OG_IMAGE_PATH } from "../utils/seoConstants.js";
+import {
+    CARDIGO_OG_IMAGE_URL,
+    getMarketingMeta,
+} from "../seo/marketingMeta.config.js";
 import FlashBanner from "../components/ui/FlashBanner/FlashBanner";
 import { trackSitePageView } from "../services/siteAnalytics.client";
 import { trackSiteClick } from "../services/siteAnalytics.client";
@@ -299,6 +302,7 @@ function buildPricingFaqJsonLd() {
 }
 
 const pricingFaqJsonLd = buildPricingFaqJsonLd();
+const meta = getMarketingMeta("pricing");
 
 export default function Pricing() {
     const [searchParams, setSearchParams] = useSearchParams();
@@ -335,11 +339,12 @@ export default function Pricing() {
     return (
         <main data-page="site">
             <SeoHelmet
-                title="מחירים לכרטיס ביקור דיגיטלי | Cardigo"
-                description="המחירים של Cardigo לכרטיס ביקור דיגיטלי מקצועי: מסלול חינמי לתמיד, 10 ימי פרימיום לכל משתמש חדש, מסלול חודשי גמיש ומסלול שנתי משתלם לעסקים שרוצים נוכחות דיגיטלית מקצועית."
+                title={meta.title}
+                description={meta.description}
                 canonicalUrl={`${ORIGIN}/pricing`}
                 url={`${ORIGIN}/pricing`}
-                image={`${ORIGIN}${DEFAULT_OG_IMAGE_PATH}`}
+                image={CARDIGO_OG_IMAGE_URL}
+                imageAlt={meta.imageAlt}
                 jsonLdItems={[pricingFaqJsonLd]}
             />
 
