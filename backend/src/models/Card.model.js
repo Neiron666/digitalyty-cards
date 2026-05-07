@@ -868,17 +868,105 @@ const CardSchema = new mongoose.Schema(
                         if (v.length > MAX_JSONLD_LENGTH) return false;
                         try {
                             const parsed = JSON.parse(v);
-                            return (
-                                parsed !== null &&
-                                (typeof parsed === "object" ||
-                                    Array.isArray(parsed))
-                            );
+                            if (
+                                parsed === null ||
+                                (typeof parsed !== "object" &&
+                                    !Array.isArray(parsed))
+                            )
+                                return false;
+
+                            const JSONLD_ALLOWED_TYPES = new Set([
+                                "LocalBusiness",
+                                "Organization",
+                                "Person",
+                                "Service",
+                            ]);
+                            const JSONLD_NESTED_BLOCKED_TYPES = new Set([
+                                "Review",
+                                "AggregateRating",
+                                "Rating",
+                            ]);
+                            const MAX_NESTING_DEPTH = 10;
+
+                            function isAllowedTypeValue(typeVal) {
+                                if (typeof typeVal === "string")
+                                    return JSONLD_ALLOWED_TYPES.has(typeVal);
+                                if (Array.isArray(typeVal)) {
+                                    if (typeVal.length === 0) return false;
+                                    return typeVal.every(
+                                        (t) =>
+                                            typeof t === "string" &&
+                                            JSONLD_ALLOWED_TYPES.has(t),
+                                    );
+                                }
+                                return false;
+                            }
+
+                            function containsBlockedNestedType(val, depth) {
+                                if (depth > MAX_NESTING_DEPTH) return true;
+                                if (val === null || typeof val !== "object")
+                                    return false;
+                                if (Array.isArray(val)) {
+                                    return val.some((item) =>
+                                        containsBlockedNestedType(
+                                            item,
+                                            depth + 1,
+                                        ),
+                                    );
+                                }
+                                if ("@graph" in val) return true;
+                                const typeVal = val["@type"];
+                                if (typeVal !== undefined) {
+                                    const types = Array.isArray(typeVal)
+                                        ? typeVal
+                                        : [typeVal];
+                                    if (
+                                        types.some(
+                                            (t) =>
+                                                typeof t === "string" &&
+                                                JSONLD_NESTED_BLOCKED_TYPES.has(
+                                                    t,
+                                                ),
+                                        )
+                                    )
+                                        return true;
+                                }
+                                return Object.values(val).some((child) =>
+                                    containsBlockedNestedType(child, depth + 1),
+                                );
+                            }
+
+                            function isValidJsonLdRootNode(node) {
+                                if (
+                                    !node ||
+                                    typeof node !== "object" ||
+                                    Array.isArray(node)
+                                )
+                                    return false;
+                                if ("@graph" in node) return false;
+                                if (!isAllowedTypeValue(node["@type"]))
+                                    return false;
+                                if (containsBlockedNestedType(node, 0))
+                                    return false;
+                                return true;
+                            }
+
+                            if (Array.isArray(parsed)) {
+                                return parsed.every(
+                                    (item) =>
+                                        item !== null &&
+                                        typeof item === "object" &&
+                                        !Array.isArray(item) &&
+                                        isValidJsonLdRootNode(item),
+                                );
+                            }
+                            return isValidJsonLdRootNode(parsed);
                         } catch {
                             return false;
                         }
                     },
                     message:
-                        "seo.jsonLd must be a valid JSON object or array string up to 5000 characters",
+                        "seo.jsonLd must be a valid JSON object or array up to 5000 characters with an allowed @type",
                 },
             },
 

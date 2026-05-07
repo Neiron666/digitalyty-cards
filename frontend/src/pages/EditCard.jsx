@@ -1272,16 +1272,89 @@ function EditCard() {
             };
 
             const MAX_JSONLD_LENGTH = 5000;
+            const JSONLD_ALLOWED_TYPES = new Set([
+                "LocalBusiness",
+                "Organization",
+                "Person",
+                "Service",
+            ]);
+            const JSONLD_NESTED_BLOCKED_TYPES = new Set([
+                "Review",
+                "AggregateRating",
+                "Rating",
+            ]);
+            const MAX_NESTING_DEPTH = 10;
+
+            function isAllowedJsonLdTypeValue(typeVal) {
+                if (typeof typeVal === "string")
+                    return JSONLD_ALLOWED_TYPES.has(typeVal);
+                if (Array.isArray(typeVal)) {
+                    if (typeVal.length === 0) return false;
+                    return typeVal.every(
+                        (t) =>
+                            typeof t === "string" &&
+                            JSONLD_ALLOWED_TYPES.has(t),
+                    );
+                }
+                return false;
+            }
+
+            function containsBlockedJsonLdNestedType(val, depth) {
+                if (depth > MAX_NESTING_DEPTH) return true;
+                if (val === null || typeof val !== "object") return false;
+                if (Array.isArray(val)) {
+                    return val.some((item) =>
+                        containsBlockedJsonLdNestedType(item, depth + 1),
+                    );
+                }
+                if ("@graph" in val) return true;
+                const typeVal = val["@type"];
+                if (typeVal !== undefined) {
+                    const types = Array.isArray(typeVal) ? typeVal : [typeVal];
+                    if (
+                        types.some(
+                            (t) =>
+                                typeof t === "string" &&
+                                JSONLD_NESTED_BLOCKED_TYPES.has(t),
+                        )
+                    )
+                        return true;
+                }
+                return Object.values(val).some((child) =>
+                    containsBlockedJsonLdNestedType(child, depth + 1),
+                );
+            }
+
+            function isValidJsonLdRootNode(node) {
+                if (!node || typeof node !== "object" || Array.isArray(node))
+                    return false;
+                if ("@graph" in node) return false;
+                if (!isAllowedJsonLdTypeValue(node["@type"])) return false;
+                if (containsBlockedJsonLdNestedType(node, 0)) return false;
+                return true;
+            }
+
             const isValidJsonLdString = (raw) => {
                 const v = pickString(raw);
                 if (!v) return true;
                 if (v.length > MAX_JSONLD_LENGTH) return false;
                 try {
                     const parsed = JSON.parse(v);
-                    return (
-                        parsed !== null &&
-                        (typeof parsed === "object" || Array.isArray(parsed))
-                    );
+                    if (
+                        parsed === null ||
+                        (typeof parsed !== "object" && !Array.isArray(parsed))
+                    )
+                        return false;
+                    if (Array.isArray(parsed)) {
+                        return parsed.every(
+                            (item) =>
+                                item !== null &&
+                                typeof item === "object" &&
+                                !Array.isArray(item) &&
+                                isValidJsonLdRootNode(item),
+                        );
+                    }
+                    return isValidJsonLdRootNode(parsed);
                 } catch {
                     return false;
                 }
@@ -1309,7 +1382,7 @@ function EditCard() {
                 "seo.canonicalUrl":
                     "Canonical URL חייב להיות כתובת מלאה (https://...)",
                 "seo.jsonLd":
-                    "JSON-LD חייב להיות JSON תקין (אובייקט או מערך) ועד 5000 תווים",
+                    "JSON-LD לא תקין — יש לוודא: JSON תקין, אובייקט או מערך, עד 5000 תווים, וסוג (@type) מורשה",
                 "seo.robots": "Robots לא תקין (ללא < או >)",
                 "seo.gtmId": "GTM ID לא תקין. פורמט: GTM-XXXXXXX",
                 "seo.gaMeasurementId":
@@ -1454,7 +1527,7 @@ function EditCard() {
                     "seo.canonicalUrl":
                         "Canonical URL חייב להיות כתובת מלאה (https://...)",
                     "seo.jsonLd":
-                        "JSON-LD חייב להיות JSON תקין (אובייקט או מערך) ועד 5000 תווים",
+                        "JSON-LD לא תקין — יש לוודא: JSON תקין, אובייקט או מערך, עד 5000 תווים, וסוג (@type) מורשה",
                     "seo.robots": "Robots לא תקין (ללא < או >)",
                     "seo.gtmId": "GTM ID לא תקין. פורמט: GTM-XXXXXXX",
                     "seo.gaMeasurementId":
