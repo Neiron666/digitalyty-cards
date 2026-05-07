@@ -396,6 +396,11 @@ export default function GuidePost() {
     if (error || !post) {
         return (
             <main className={styles.guideWrap} data-page="site">
+                <SeoHelmet
+                    title="שגיאה בטעינת המדריך | Cardigo"
+                    description="לא ניתן לטעון את המדריך כרגע. אנא נסה שוב מאוחר יותר."
+                    robots="noindex, nofollow"
+                />
                 <p className={styles.statusError}>{error || "שגיאה בטעינה"}</p>
                 <div className={styles.backRow}>
                     <Link to="/guides" className={styles.backLink}>

@@ -110,6 +110,7 @@ function PublicCard() {
     const [card, setCard] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [errorStatus, setErrorStatus] = useState(null);
     const trackedRef = useRef(false);
     const [cardConsentAllowed, setCardConsentAllowed] = useState(
         () => getCardConsentState()?.ownerTrackingAllowed ?? false,
@@ -117,6 +118,8 @@ function PublicCard() {
 
     useEffect(() => {
         async function loadCard() {
+            setError(null);
+            setErrorStatus(null);
             try {
                 const data = orgSlug
                     ? await getCompanyCardBySlug(orgSlug, slug)
@@ -126,6 +129,7 @@ function PublicCard() {
                 const status = err?.response?.status;
                 if (status === 410) setError("הניסיון הסתיים");
                 else setError("כרטיס לא נמצא");
+                setErrorStatus(typeof status === "number" ? status : null);
             } finally {
                 setLoading(false);
             }
@@ -141,7 +145,30 @@ function PublicCard() {
     }, [card?.slug, orgSlug]);
 
     if (loading) return <p>טוען כרטיס...</p>;
-    if (error) return <p>{error}</p>;
+    if (error) {
+        const errorTitle =
+            errorStatus === 410
+                ? "הכרטיס אינו זמין | Cardigo"
+                : errorStatus !== null
+                  ? "הכרטיס לא נמצא | Cardigo"
+                  : "שגיאה בטעינת הכרטיס | Cardigo";
+        const errorDescription =
+            errorStatus === 410
+                ? "כרטיס הביקור הדיגיטלי אינו זמין כרגע."
+                : errorStatus !== null
+                  ? "כרטיס הביקור הדיגיטלי לא נמצא או שאינו פעיל."
+                  : "לא ניתן לטעון את כרטיס הביקור הדיגיטלי כרגע. אנא נסה שוב מאוחר יותר.";
+        return (
+            <>
+                <SeoHelmet
+                    title={errorTitle}
+                    description={errorDescription}
+                    robots="noindex, nofollow"
+                />
+                <p>{error}</p>
+            </>
+        );
+    }
     if (!card) return null;
 
     function handleUpgrade() {

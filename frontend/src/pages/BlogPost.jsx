@@ -395,6 +395,11 @@ export default function BlogPost() {
     if (error || !post) {
         return (
             <main className={styles.blogWrap} data-page="site">
+                <SeoHelmet
+                    title="שגיאה בטעינת המאמר | Cardigo"
+                    description="לא ניתן לטעון את המאמר כרגע. אנא נסה שוב מאוחר יותר."
+                    robots="noindex, nofollow"
+                />
                 <p className={styles.statusError}>{error || "שגיאה בטעינה"}</p>
                 <div className={styles.backRow}>
                     <Link to="/blog" className={styles.backLink}>
