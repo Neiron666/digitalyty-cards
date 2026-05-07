@@ -11,7 +11,8 @@ import { getPublicUrlForPath } from "../services/supabaseStorage.js";
 
 // Canonical Cardigo OG fallback image — matches seoConstants.js and marketingMeta.config.js SSoT.
 // Keep in sync manually if the path ever changes; do NOT import from frontend modules.
-const DEFAULT_OG_IMAGE_SUFFIX = "/images/og/cardigo-home-og-1200x630.jpg?v=20260506";
+const DEFAULT_OG_IMAGE_SUFFIX =
+    "/images/og/cardigo-home-og-1200x630.jpg?v=20260506";
 
 const router = Router();
 
@@ -146,7 +147,9 @@ router.get("/og/blog/:slug", async (req, res) => {
         (post.heroImage && typeof post.heroImage === "object"
             ? post.heroImage.storagePath
             : "");
-    const image = getPublicUrlForPath({ path: heroPath }) || siteUrl + DEFAULT_OG_IMAGE_SUFFIX;
+    const image =
+        getPublicUrlForPath({ path: heroPath }) ||
+        siteUrl + DEFAULT_OG_IMAGE_SUFFIX;
 
     const imageAlt = image
         ? collapseWs(post.heroImage?.alt) || collapseWs(post.title) || ""
@@ -251,7 +254,9 @@ router.get("/og/guides/:slug", async (req, res) => {
         (post.heroImage && typeof post.heroImage === "object"
             ? post.heroImage.storagePath
             : "");
-    const image = getPublicUrlForPath({ path: heroPath }) || siteUrl + DEFAULT_OG_IMAGE_SUFFIX;
+    const image =
+        getPublicUrlForPath({ path: heroPath }) ||
+        siteUrl + DEFAULT_OG_IMAGE_SUFFIX;
 
     const imageAlt = image
         ? collapseWs(post.heroImage?.alt) || collapseWs(post.title) || ""
