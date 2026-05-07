@@ -42,14 +42,13 @@ export default function CookieConsentBanner({ reopenPrefs }) {
                 {view === "notice" ? (
                     <>
                         <p className={styles.text}>
-                            האתר עשוי להשתמש בכלי מדידה ושיווק של צדדים שלישיים
-                            בהתאם להעדפות שתבחרו. מידע נוסף{" "}
+                            האתר משתמש בקובצי Cookie 🍪 למדידה ושיפור החוויה.{" "}
                             <Link to="/privacy" className={styles.link}>
-                                במדיניות הפרטיות
+                                למדיניות הפרטיות
                             </Link>{" "}
-                            ו
+                            ו{" "}
                             <Link to="/terms" className={styles.link}>
-                                בתנאי השימוש
+                                תנאי השימוש
                             </Link>
                             .
                         </p>
