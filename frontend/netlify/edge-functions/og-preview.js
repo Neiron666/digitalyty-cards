@@ -12,6 +12,12 @@
 // Fail-open is intentional: unexpected backend failures or runtime errors fall through
 // to context.next(), which serves the existing SPA shell rather than breaking the route.
 
+import {
+    CARDIGO_OG_IMAGE_URL,
+    buildMarketingUrl,
+    getMarketingMeta,
+} from "../../src/seo/marketingMeta.config.js";
+
 const BACKEND_ORIGIN = "https://cardigo-backend.onrender.com";
 const PROXY_SECRET_HEADER = "x-cardigo-proxy-secret";
 const SECRET_ENV_KEY = "CARDIGO_PROXY_SHARED_SECRET";
@@ -31,8 +37,7 @@ function buildStaticMarketingOgHtml({ title, description, url, imageAlt }) {
     const d = escapeHtml(description);
     const u = escapeHtml(url);
     const a = escapeHtml(imageAlt);
-    const img =
-        "https://cardigo.co.il/images/og/cardigo-home-og-1200x630.jpg?v=20260506";
+    const img = CARDIGO_OG_IMAGE_URL;
     return `<!doctype html>
 <html lang="he" dir="rtl">
 <head>
@@ -92,13 +97,14 @@ export default async function ogPreview(request, context) {
 
         // Static OG for marketing listing routes — no backend call needed
         if (segments.length === 1 && segments[0] === "cards") {
+            const meta = getMarketingMeta("cards");
+            if (!meta) return context.next();
             return new Response(
                 buildStaticMarketingOgHtml({
-                    title: "דוגמאות לכרטיסי ביקור דיגיטליים | Cardigo",
-                    description:
-                        "דוגמאות ויזואליות לכרטיסי ביקור דיגיטליים בסגנונות שונים - ראו איך Cardigo מציג עסקים, קישורים ודרכי יצירת קשר לפני שיוצרים כרטיס משלכם.",
-                    url: "https://cardigo.co.il/cards",
-                    imageAlt: "Cardigo \u2013 דוגמאות לכרטיסי ביקור דיגיטליים",
+                    title: meta.title,
+                    description: meta.description,
+                    url: buildMarketingUrl(meta.path),
+                    imageAlt: meta.imageAlt,
                 }),
                 {
                     status: 200,
@@ -112,13 +118,14 @@ export default async function ogPreview(request, context) {
         }
 
         if (segments.length === 1 && segments[0] === "pricing") {
+            const meta = getMarketingMeta("pricing");
+            if (!meta) return context.next();
             return new Response(
                 buildStaticMarketingOgHtml({
-                    title: "מחירים לכרטיס ביקור דיגיטלי | Cardigo",
-                    description:
-                        "המחירים של Cardigo לכרטיס ביקור דיגיטלי מקצועי: מסלול חינמי לתמיד, 10 ימי פרימיום לכל משתמש חדש, מסלול חודשי גמיש ומסלול שנתי משתלם לעסקים שרוצים נוכחות דיגיטלית מקצועית.",
-                    url: "https://cardigo.co.il/pricing",
-                    imageAlt: "Cardigo \u2013 מחירים לכרטיס ביקור דיגיטלי",
+                    title: meta.title,
+                    description: meta.description,
+                    url: buildMarketingUrl(meta.path),
+                    imageAlt: meta.imageAlt,
                 }),
                 {
                     status: 200,
@@ -132,13 +139,14 @@ export default async function ogPreview(request, context) {
         }
 
         if (segments.length === 1 && segments[0] === "contact") {
+            const meta = getMarketingMeta("contact");
+            if (!meta) return context.next();
             return new Response(
                 buildStaticMarketingOgHtml({
-                    title: "צור קשר | Cardigo",
-                    description:
-                        "צרו קשר עם Cardigo לשאלות על כרטיס ביקור דיגיטלי לעסקים - מחירים, התאמה ודרכי התחלה.",
-                    url: "https://cardigo.co.il/contact",
-                    imageAlt: "Cardigo \u2013 צור קשר",
+                    title: meta.title,
+                    description: meta.description,
+                    url: buildMarketingUrl(meta.path),
+                    imageAlt: meta.imageAlt,
                 }),
                 {
                     status: 200,
@@ -152,13 +160,14 @@ export default async function ogPreview(request, context) {
         }
 
         if (segments[0] === "blog" && segments.length === 1) {
+            const meta = getMarketingMeta("blog");
+            if (!meta) return context.next();
             return new Response(
                 buildStaticMarketingOgHtml({
-                    title: "בלוג | Cardigo",
-                    description:
-                        "מאמרים, מדריכים ותובנות בנושא כרטיסי ביקור דיגיטליים, נוכחות עסקית, SEO ותקשורת חכמה עם לקוחות.",
-                    url: "https://cardigo.co.il/blog",
-                    imageAlt: "Cardigo \u2013 בלוג",
+                    title: meta.title,
+                    description: meta.description,
+                    url: buildMarketingUrl(meta.path),
+                    imageAlt: meta.imageAlt,
                 }),
                 {
                     status: 200,
@@ -172,13 +181,14 @@ export default async function ogPreview(request, context) {
         }
 
         if (segments[0] === "guides" && segments.length === 1) {
+            const meta = getMarketingMeta("guides");
+            if (!meta) return context.next();
             return new Response(
                 buildStaticMarketingOgHtml({
-                    title: "מדריכים | Cardigo",
-                    description:
-                        "מדריכים מעשיים, צעד אחרי צעד, על כרטיסי ביקור דיגיטליים, עיצוב כרטיס, SEO, נוכחות עסקית ושימוש בכלים הדיגיטליים של Cardigo.",
-                    url: "https://cardigo.co.il/guides",
-                    imageAlt: "Cardigo \u2013 מדריכים",
+                    title: meta.title,
+                    description: meta.description,
+                    url: buildMarketingUrl(meta.path),
+                    imageAlt: meta.imageAlt,
                 }),
                 {
                     status: 200,
