@@ -192,6 +192,13 @@ function PublicCard() {
         card.design?.logo ||
         getPublicOrigin() + DEFAULT_OG_IMAGE_PATH;
 
+    const imageAltBusinessName = String(card.business?.name || "")
+        .replace(/\s+/g, " ")
+        .trim();
+    const imageAlt = imageAltBusinessName
+        ? `${imageAltBusinessName} – Cardigo`
+        : "Cardigo – כרטיס ביקור דיגיטלי לעסקים";
+
     const publicOrigin = getPublicOrigin();
     const seoCanonicalCandidate =
         typeof card.seo?.canonicalUrl === "string"
@@ -251,6 +258,7 @@ function PublicCard() {
                     canonicalUrl={canonicalUrl}
                     url={url}
                     image={image}
+                    imageAlt={imageAlt}
                     jsonLd={card.seo?.jsonLd}
                     jsonLdItems={faqJsonLd ? [faqJsonLd] : []}
                     gtmId={cardConsentAllowed ? card.seo?.gtmId : undefined}
