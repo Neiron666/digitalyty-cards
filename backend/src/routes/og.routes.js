@@ -5,7 +5,7 @@ import GuidePost from "../models/GuidePost.model.js";
 import Organization from "../models/Organization.model.js";
 import OrganizationMember from "../models/OrganizationMember.model.js";
 import { isEntitled, isTrialExpired, resolveBilling } from "../utils/trial.js";
-import { resolveEffectiveTier } from "../utils/tier.js";
+import { resolveSeoIndexability } from "../utils/seoIndexability.js";
 import { resolveOrgEntitlementBilling } from "../utils/orgEntitlement.util.js";
 import { getSiteUrl } from "../utils/siteUrl.util.js";
 import { getPersonalOrgId } from "../utils/personalOrg.util.js";
@@ -364,9 +364,12 @@ router.get("/og/card/:slug", async (req, res) => {
     const publicUrl = `${siteUrl}/card/${card.slug}`;
 
     const effectiveBilling = resolveBilling(card, now);
-    const tier = resolveEffectiveTier({ card, effectiveBilling, now });
-    const isFree = (tier?.tier || "free") === "free";
-    const robotsValue = isFree
+    const { platformForcedNoindex } = resolveSeoIndexability(
+        card,
+        effectiveBilling,
+        now,
+    );
+    const robotsValue = platformForcedNoindex
         ? "noindex"
         : String(card.seo?.robots || "").trim();
     const robotsMeta = robotsValue
@@ -469,9 +472,12 @@ router.get("/og/c/:orgSlug/:slug", async (req, res) => {
 
     const orgBilling = resolveOrgEntitlementBilling(org, now);
     const effectiveBilling = orgBilling || resolveBilling(card, now);
-    const tier = resolveEffectiveTier({ card, effectiveBilling, now });
-    const isFree = (tier?.tier || "free") === "free";
-    const robotsValue = isFree
+    const { platformForcedNoindex } = resolveSeoIndexability(
+        card,
+        effectiveBilling,
+        now,
+    );
+    const robotsValue = platformForcedNoindex
         ? "noindex"
         : String(card.seo?.robots || "").trim();
     const robotsMeta = robotsValue

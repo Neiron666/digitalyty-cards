@@ -5,7 +5,10 @@ import GuidePost from "../models/GuidePost.model.js";
 import Organization from "../models/Organization.model.js";
 import OrganizationMember from "../models/OrganizationMember.model.js";
 import { isEntitled, isTrialExpired, resolveBilling } from "../utils/trial.js";
-import { resolveEffectiveTier } from "../utils/tier.js";
+import {
+    resolveSeoIndexability,
+    robotsContainsNoindex,
+} from "../utils/seoIndexability.js";
 import { resolveOrgEntitlementBilling } from "../utils/orgEntitlement.util.js";
 import { getSiteUrl } from "../utils/siteUrl.util.js";
 import { getPersonalOrgId } from "../utils/personalOrg.util.js";
@@ -44,7 +47,7 @@ router.get("/sitemap.xml", async (req, res) => {
             status: "published",
             user: { $exists: true, $ne: null },
         }).select(
-            "slug orgId user trialEndsAt billing plan adminOverride adminTier adminTierUntil updatedAt",
+            "slug orgId user trialEndsAt billing plan adminOverride adminTier adminTierUntil seo.robots updatedAt",
         );
 
         const now = new Date();
@@ -90,12 +93,12 @@ router.get("/sitemap.xml", async (req, res) => {
                 ? resolveOrgEntitlementBilling(org, now)
                 : null;
             const effectiveBilling = orgBilling || resolveBilling(c, now);
-            const tier = resolveEffectiveTier({
-                card: c,
+            const { indexable } = resolveSeoIndexability(
+                c,
                 effectiveBilling,
                 now,
-            });
-            return (tier?.tier || "free") !== "free";
+            );
+            return indexable && !robotsContainsNoindex(c.seo?.robots);
         });
 
         // Recompute company org IDs from the final visible set for the membership gate.

@@ -1,6 +1,7 @@
 import { hasAccess, getGalleryLimit } from "./planAccess.js";
 import { resolveBilling } from "./trial.js";
 import { resolveEffectiveTier } from "./tier.js";
+import { resolveSeoIndexability } from "./seoIndexability.js";
 import { formatIsrael, toIsrael } from "./time.util.js";
 import { PLANS } from "../config/plans.js";
 import { normalizeAboutParagraphs } from "./about.js";
@@ -304,9 +305,15 @@ export function toCardDTO(
     if (!minimal && !includePrivate) {
         const tier = effectiveTier?.tier || "free";
 
-        // SEO: free-tier public cards get noindex (no nofollow).
-        if (tier === "free" && dto.seo && typeof dto.seo === "object") {
-            dto.seo = { ...dto.seo, robots: "noindex" };
+        // SEO: non-indexable cards (free, trial-premium, anonymous) get forced noindex.
+        // Uses resolveSeoIndexability to apply the enterprise state model.
+        // Closes the null-seo-object gap: works even when dto.seo is null/absent.
+        const seoIdx = resolveSeoIndexability(cardObj, effectiveBilling, now);
+        if (seoIdx.platformForcedNoindex) {
+            dto.seo = {
+                ...(dto.seo && typeof dto.seo === "object" ? dto.seo : {}),
+                robots: "noindex",
+            };
         }
 
         // Content gates.
