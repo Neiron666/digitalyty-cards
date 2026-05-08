@@ -92,6 +92,8 @@ Trial-premium users receive the same feature gates as `monthly` plan:
 
 **AI access:** Trial-premium maps to the **free AI profile** (10 generations/month). SEO AI is gated: `billingSource !== "trial-premium"`.
 
+**Note on SEO:** `seo: true` grants access to SEO editor fields such as title, description, canonical, robots and structured data. It does **not** grant Google indexability. Trial-premium cards remain `platformForcedNoindex: true`, are excluded from the sitemap, and receive `robots: "noindex"` via cardDTO. Google indexability requires real paid billing (`source: "billing"`), active org entitlement (`source: "organization"`), `adminOverride`, or active `card.adminTier`. See `backend/src/utils/seoIndexability.js`.
+
 ---
 
 ## 6) Frontend UX - Editor Sidebar

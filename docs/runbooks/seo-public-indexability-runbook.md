@@ -128,13 +128,14 @@ Any change to robots.txt requires explicit contour with rationale and WRS impact
 
 ### Dynamic card paths
 
-- `/card/:slug` — active personal cards with premium entitlement only (free-tier excluded via resolveEffectiveTier)
-- `/c/:orgSlug/:slug` — active org cards: org must be active + orgEntitlement loaded + membership active (premium only)
+- `/card/:slug` — active personal cards with real paid billing, active org entitlement, adminOverride, or active card.adminTier only (free-tier and trial-premium both excluded via `resolveSeoIndexability` in `seoIndexability.js`; trial-premium has isPaid:true but is intentionally platformForcedNoindex)
+- `/c/:orgSlug/:slug` — active org cards: org must be active + orgEntitlement loaded + membership active (org entitlement grants indexability via resolveSeoIndexability)
 - `<lastmod>` from `card.updatedAt`
 
 ### Explicitly excluded from sitemap
 
-- Free-tier public cards (noindex by policy)
+- Free-tier public cards (noindex by policy via resolveSeoIndexability)
+- Trial-premium cards (platformForcedNoindex despite isPaid:true; SEO editor access during trial does not grant indexability)
 - Draft/unpublished blog and guide posts
 - Private, admin, editor, payment, preview routes
 
@@ -142,28 +143,31 @@ Any change to robots.txt requires explicit contour with rationale and WRS impact
 
 ## 5. Public Indexability Matrix
 
-| Route                       | Indexable? | noindex source                           | Metadata source                     | Notes                         |
-| --------------------------- | ---------- | ---------------------------------------- | ----------------------------------- | ----------------------------- |
-| /                           | YES        | —                                        | SeoHelmet (Home.jsx)                | Marketing page                |
-| /blog                       | YES        | —                                        | SeoHelmet (Blog.jsx)                | Listing page                  |
-| /blog/:slug (published)     | YES        | —                                        | SeoHelmet + JSON-LD (BlogPost.jsx)  | article meta + Breadcrumbs    |
-| /blog/:slug (not found)     | NO         | SeoHelmet robots="noindex,nofollow"      | notFound branch                     | Hebrew not-found title        |
-| /guides                     | YES        | —                                        | SeoHelmet (Guides.jsx)              | Listing page                  |
-| /guides/:slug (published)   | YES        | —                                        | SeoHelmet + JSON-LD (GuidePost.jsx) | article meta + Breadcrumbs    |
-| /guides/:slug (not found)   | NO         | SeoHelmet robots="noindex,nofollow"      | notFound branch                     | Hebrew not-found title        |
-| /pricing                    | YES        | —                                        | SeoHelmet (Pricing.jsx)             | Marketing page                |
-| /contact                    | YES        | —                                        | SeoHelmet (Contact.jsx)             | Marketing page                |
-| /cards                      | YES        | —                                        | SeoHelmet (Cards.jsx)               | Marketing page                |
-| /privacy                    | YES        | —                                        | SeoHelmet (Privacy.jsx)             | Legal                         |
-| /terms                      | YES        | —                                        | SeoHelmet (Terms.jsx)               | Legal                         |
-| /accessibility-statement    | YES        | —                                        | SeoHelmet                           | Legal                         |
-| /payment-policy             | YES        | —                                        | SeoHelmet                           | Legal                         |
-| /card/:slug (premium)       | YES        | —                                        | SeoHelmet (PublicCard.jsx)          | Backend DTO provides metadata |
-| /card/:slug (free-tier)     | NO         | cardDTO.js robots: "noindex" → SeoHelmet | Free-tier policy                    | noindex via card DTO          |
-| /c/:orgSlug/:slug (premium) | YES        | —                                        | SeoHelmet (PublicCard.jsx)          | Org card                      |
-| /preview/\*                 | NO         | SeoHelmet hardcoded noindex              | PreviewCard.jsx                     | Always noindex                |
-| /payment/checkout           | NO         | SeoHelmet robots="noindex,nofollow"      | CheckoutPage.jsx                    | Always noindex                |
-| /payment/iframe-return      | NO         | SeoHelmet robots="noindex,nofollow"      | IframeReturnPage.jsx                | Always noindex                |
+| Route                            | Indexable? | noindex source                                                    | Metadata source                     | Notes                                                                                                                                        |
+| -------------------------------- | ---------- | ----------------------------------------------------------------- | ----------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| /                                | YES        | —                                                                 | SeoHelmet (Home.jsx)                | Marketing page                                                                                                                               |
+| /blog                            | YES        | —                                                                 | SeoHelmet (Blog.jsx)                | Listing page                                                                                                                                 |
+| /blog/:slug (published)          | YES        | —                                                                 | SeoHelmet + JSON-LD (BlogPost.jsx)  | article meta + Breadcrumbs                                                                                                                   |
+| /blog/:slug (not found)          | NO         | SeoHelmet robots="noindex,nofollow"                               | notFound branch                     | Hebrew not-found title                                                                                                                       |
+| /guides                          | YES        | —                                                                 | SeoHelmet (Guides.jsx)              | Listing page                                                                                                                                 |
+| /guides/:slug (published)        | YES        | —                                                                 | SeoHelmet + JSON-LD (GuidePost.jsx) | article meta + Breadcrumbs                                                                                                                   |
+| /guides/:slug (not found)        | NO         | SeoHelmet robots="noindex,nofollow"                               | notFound branch                     | Hebrew not-found title                                                                                                                       |
+| /pricing                         | YES        | —                                                                 | SeoHelmet (Pricing.jsx)             | Marketing page                                                                                                                               |
+| /contact                         | YES        | —                                                                 | SeoHelmet (Contact.jsx)             | Marketing page                                                                                                                               |
+| /cards                           | YES        | —                                                                 | SeoHelmet (Cards.jsx)               | Marketing page                                                                                                                               |
+| /privacy                         | YES        | —                                                                 | SeoHelmet (Privacy.jsx)             | Legal                                                                                                                                        |
+| /terms                           | YES        | —                                                                 | SeoHelmet (Terms.jsx)               | Legal                                                                                                                                        |
+| /accessibility-statement         | YES        | —                                                                 | SeoHelmet                           | Legal                                                                                                                                        |
+| /payment-policy                  | YES        | —                                                                 | SeoHelmet                           | Legal                                                                                                                                        |
+| /card/:slug (paid billing)       | YES        | —                                                                 | SeoHelmet (PublicCard.jsx)          | resolveSeoIndexability source=billing, isPaid:true                                                                                           |
+| /card/:slug (org entitled)       | YES        | —                                                                 | SeoHelmet (PublicCard.jsx)          | resolveSeoIndexability source=organization                                                                                                   |
+| /card/:slug (adminTier/override) | YES        | —                                                                 | SeoHelmet (PublicCard.jsx)          | resolveSeoIndexability source=adminTier or adminOverride                                                                                     |
+| /card/:slug (free-tier)          | NO         | resolveSeoIndexability → cardDTO.js robots: "noindex" → SeoHelmet | Free-tier policy                    | noindex via card DTO                                                                                                                         |
+| /card/:slug (trial-premium)      | NO         | resolveSeoIndexability → cardDTO.js robots: "noindex" → SeoHelmet | Trial policy                        | isPaid:true but intentionally platformForcedNoindex; sitemap excluded; SEO editor access (seo:true) during trial does NOT grant indexability |
+| /c/:orgSlug/:slug (org entitled) | YES        | —                                                                 | SeoHelmet (PublicCard.jsx)          | Org card; resolveSeoIndexability source=organization                                                                                         |
+| /preview/\*                      | NO         | SeoHelmet hardcoded noindex                                       | PreviewCard.jsx                     | Always noindex                                                                                                                               |
+| /payment/checkout                | NO         | SeoHelmet robots="noindex,nofollow"                               | CheckoutPage.jsx                    | Always noindex                                                                                                                               |
+| /payment/iframe-return           | NO         | SeoHelmet robots="noindex,nofollow"                               | IframeReturnPage.jsx                | Always noindex                                                                                                                               |
 
 ---
 
