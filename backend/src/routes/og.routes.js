@@ -4,7 +4,9 @@ import BlogPost from "../models/BlogPost.model.js";
 import GuidePost from "../models/GuidePost.model.js";
 import Organization from "../models/Organization.model.js";
 import OrganizationMember from "../models/OrganizationMember.model.js";
-import { isEntitled, isTrialExpired } from "../utils/trial.js";
+import { isEntitled, isTrialExpired, resolveBilling } from "../utils/trial.js";
+import { resolveEffectiveTier } from "../utils/tier.js";
+import { resolveOrgEntitlementBilling } from "../utils/orgEntitlement.util.js";
 import { getSiteUrl } from "../utils/siteUrl.util.js";
 import { getPersonalOrgId } from "../utils/personalOrg.util.js";
 import { getPublicUrlForPath } from "../services/supabaseStorage.js";
@@ -23,6 +25,16 @@ function escapeHtml(value = "") {
         .replace(/>/g, "&gt;")
         .replace(/\"/g, "&quot;")
         .replace(/'/g, "&#39;");
+}
+
+function isValidAbsoluteHttpUrl(value) {
+    if (typeof value !== "string" || !value.trim()) return false;
+    try {
+        const u = new URL(value.trim());
+        return u.protocol === "http:" || u.protocol === "https:";
+    } catch {
+        return false;
+    }
 }
 
 const GENERIC_CARD_OG_TITLES = new Set([
@@ -351,6 +363,19 @@ router.get("/og/card/:slug", async (req, res) => {
 
     const publicUrl = `${siteUrl}/card/${card.slug}`;
 
+    const effectiveBilling = resolveBilling(card, now);
+    const tier = resolveEffectiveTier({ card, effectiveBilling, now });
+    const isFree = (tier?.tier || "free") === "free";
+    const robotsValue = isFree
+        ? "noindex"
+        : String(card.seo?.robots || "").trim();
+    const robotsMeta = robotsValue
+        ? `    <meta name="robots" content="${escapeHtml(robotsValue)}" />`
+        : "";
+    const canonicalUrl = isValidAbsoluteHttpUrl(card.seo?.canonicalUrl)
+        ? card.seo.canonicalUrl.trim()
+        : publicUrl;
+
     const { title, description, image, imageMetaHtml } = buildCardOgMetadata(
         card,
         siteUrl,
@@ -364,7 +389,8 @@ router.get("/og/card/:slug", async (req, res) => {
 
     <title>${escapeHtml(title)}</title>
     <meta name="description" content="${escapeHtml(description)}" />
-
+    <link rel="canonical" href="${escapeHtml(canonicalUrl)}" />
+${robotsMeta ? robotsMeta + "\n" : ""}
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="Cardigo" />
     <meta property="og:title" content="${escapeHtml(title)}" />
@@ -402,7 +428,7 @@ router.get("/og/c/:orgSlug/:slug", async (req, res) => {
     }
 
     const org = await Organization.findOne({ slug: orgSlug, isActive: true })
-        .select("_id")
+        .select("_id orgEntitlement isActive")
         .lean();
     if (!org?._id) {
         return res.status(404).send("Not found");
@@ -441,6 +467,20 @@ router.get("/og/c/:orgSlug/:slug", async (req, res) => {
 
     const publicUrl = `${siteUrl}/c/${orgSlug}/${card.slug}`;
 
+    const orgBilling = resolveOrgEntitlementBilling(org, now);
+    const effectiveBilling = orgBilling || resolveBilling(card, now);
+    const tier = resolveEffectiveTier({ card, effectiveBilling, now });
+    const isFree = (tier?.tier || "free") === "free";
+    const robotsValue = isFree
+        ? "noindex"
+        : String(card.seo?.robots || "").trim();
+    const robotsMeta = robotsValue
+        ? `    <meta name="robots" content="${escapeHtml(robotsValue)}" />`
+        : "";
+    const canonicalUrl = isValidAbsoluteHttpUrl(card.seo?.canonicalUrl)
+        ? card.seo.canonicalUrl.trim()
+        : publicUrl;
+
     const { title, description, image, imageMetaHtml } = buildCardOgMetadata(
         card,
         siteUrl,
@@ -454,7 +494,8 @@ router.get("/og/c/:orgSlug/:slug", async (req, res) => {
 
     <title>${escapeHtml(title)}</title>
     <meta name="description" content="${escapeHtml(description)}" />
-
+    <link rel="canonical" href="${escapeHtml(canonicalUrl)}" />
+${robotsMeta ? robotsMeta + "\n" : ""}
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="Cardigo" />
     <meta property="og:title" content="${escapeHtml(title)}" />
