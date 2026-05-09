@@ -448,6 +448,7 @@ export default function Home() {
                 canonicalUrl={`${ORIGIN}/`}
                 url={`${ORIGIN}/`}
                 image={`${ORIGIN}${DEFAULT_OG_IMAGE_PATH}`}
+                imageAlt="Cardigo – כרטיס ביקור דיגיטלי לעסקים"
                 jsonLdItems={[
                     homeWebSiteJsonLd,
                     homeOrganizationJsonLd,
