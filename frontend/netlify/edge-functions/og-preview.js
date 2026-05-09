@@ -79,10 +79,14 @@ function injectMetadataIntoShell(ogHtml, shellHtml) {
     const titleMatch = ogHead.match(/<title[^>]*>[\s\S]*?<\/title>/i);
     const extractedTitle = titleMatch ? titleMatch[0] : null;
 
-    const descMatch = ogHead.match(/<meta\s[^>]*name=["']description["'][^>]*>/i);
+    const descMatch = ogHead.match(
+        /<meta\s[^>]*name=["']description["'][^>]*>/i,
+    );
     const extractedDesc = descMatch ? descMatch[0] : null;
 
-    const canonicalMatch = ogHead.match(/<link\s[^>]*rel=["']canonical["'][^>]*>/i);
+    const canonicalMatch = ogHead.match(
+        /<link\s[^>]*rel=["']canonical["'][^>]*>/i,
+    );
     const extractedCanonical = canonicalMatch ? canonicalMatch[0] : null;
 
     // robots may be absent for indexed cards — do not insert if not present in ogHtml
@@ -113,7 +117,10 @@ function injectMetadataIntoShell(ogHtml, shellHtml) {
 
     // Replace title in-place to preserve head ordering
     if (extractedTitle) {
-        result = result.replace(/<title[^>]*>[\s\S]*?<\/title>/i, extractedTitle);
+        result = result.replace(
+            /<title[^>]*>[\s\S]*?<\/title>/i,
+            extractedTitle,
+        );
     }
 
     // Replace meta description in-place
@@ -131,7 +138,10 @@ function injectMetadataIntoShell(ogHtml, shellHtml) {
     result = result.replace(/<meta\s[^>]*name=["']robots["'][^>]*>/gi, "");
 
     // Remove all existing og:* metas wholesale
-    result = result.replace(/<meta\s[^>]*property=["']og:[^"']*["'][^>]*>/gi, "");
+    result = result.replace(
+        /<meta\s[^>]*property=["']og:[^"']*["'][^>]*>/gi,
+        "",
+    );
 
     // Remove all existing twitter:* metas wholesale
     result = result.replace(
