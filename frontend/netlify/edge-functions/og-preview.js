@@ -37,7 +37,13 @@ function escapeHtml(str) {
         .replace(/'/g, "&#39;");
 }
 
-function buildStaticMarketingOgHtml({ title, description, url, imageAlt }) {
+function buildStaticMarketingOgHtml({
+    title,
+    description,
+    url,
+    imageAlt,
+    includeCanonical = false,
+}) {
     const t = escapeHtml(title);
     const d = escapeHtml(description);
     const u = escapeHtml(url);
@@ -47,7 +53,7 @@ function buildStaticMarketingOgHtml({ title, description, url, imageAlt }) {
 <html lang="he" dir="rtl">
 <head>
 <meta charset="utf-8">
-<title>${t}</title>
+${includeCanonical ? `<link rel="canonical" href="${u}">\n` : ``}<title>${t}</title>
 <meta name="description" content="${d}">
 <meta property="og:locale" content="he_IL">
 <meta property="og:type" content="website">
@@ -401,7 +407,49 @@ export default async function ogPreview(request, context) {
                     "/" +
                     encodeURIComponent(slug);
             } else {
-                // Marketing, blog, guides, and all other routes fall through to SPA shell
+                // Top-level marketing routes — inject route-specific metadata for crawlers
+                if (segments.length === 1) {
+                    const marketingMeta = getMarketingMeta(segments[0]);
+                    if (marketingMeta) {
+                        const routeUrl = buildMarketingUrl(marketingMeta.path);
+                        const sourceHtml = buildStaticMarketingOgHtml({
+                            title: marketingMeta.title,
+                            description: marketingMeta.description,
+                            url: routeUrl,
+                            imageAlt: marketingMeta.imageAlt,
+                            includeCanonical: true,
+                        });
+                        const shellResponse = await context.next();
+                        if (shellResponse.status !== 200) {
+                            return shellResponse;
+                        }
+                        const shellCt =
+                            shellResponse.headers.get("content-type") || "";
+                        if (!shellCt.startsWith("text/html")) {
+                            return shellResponse;
+                        }
+                        try {
+                            const shellClone = shellResponse.clone();
+                            const shellHtml = await shellClone.text();
+                            const injectedHtml = injectMetadataIntoShell(
+                                sourceHtml,
+                                shellHtml,
+                            );
+                            return new Response(injectedHtml, {
+                                status: 200,
+                                headers: {
+                                    "content-type": "text/html; charset=utf-8",
+                                    "cache-control": "no-store",
+                                    vary: "User-Agent",
+                                },
+                            });
+                        } catch (_injErr) {
+                            // Injection failed — return original shell unchanged
+                            return shellResponse;
+                        }
+                    }
+                }
+                // All other non-card, non-marketing crawler routes fall through to SPA shell
                 return context.next();
             }
 
