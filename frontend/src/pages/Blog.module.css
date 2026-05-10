@@ -178,7 +178,10 @@
     line-height: 1.6;
     margin: 0 0 12px;
     overflow-wrap: break-word;
-    flex: 1;
+    display: -webkit-box;
+    -webkit-line-clamp: 6;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
 }
 
 .cardCta {
@@ -187,6 +190,7 @@
     text-decoration: none;
     font-weight: 600;
     align-self: center;
+    margin-block-start: auto;
 }
 
 .cardCta:hover {

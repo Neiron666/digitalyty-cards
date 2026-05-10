@@ -1,7 +1,7 @@
-# SEO Public Indexability — Operational Runbook (Cardigo)
+# SEO Public Indexability вЂ” Operational Runbook (Cardigo)
 
-**Scope:** Full public indexability of cardigo.co.il — blog, guides, cards, marketing pages.
-**Status:** Live (gate removed 2026-05-03). 12 SEO contours CLOSED as of 2026-05-09. PUBLIC_CARD_OG_INITIAL_METADATA_EDGE_INJECTION_P2A CLOSED/PRODUCTION VERIFIED 2026-05-09. STATIC_SOCIAL_META_HELMET_DEDUP_P2 CLOSED/PRODUCTION VERIFIED 2026-05-09.
+**Scope:** Full public indexability of cardigo.co.il вЂ” blog, guides, cards, marketing pages.
+**Status:** Live (gate removed 2026-05-03). 13 SEO contours CLOSED as of 2026-05-09. PUBLIC_CARD_OG_INITIAL_METADATA_EDGE_INJECTION_P2A CLOSED/PRODUCTION VERIFIED 2026-05-09. STATIC_SOCIAL_META_HELMET_DEDUP_P2 CLOSED/PRODUCTION VERIFIED 2026-05-09. MARKETING_STATIC_ROUTES_INITIAL_METADATA_AUDIT_P1 CLOSED/PRODUCTION VERIFIED 2026-05-09.
 **Canonical domain SSoT:** https://cardigo.co.il (non-www; www redirects at DNS/hosting layer)
 
 ---
@@ -28,55 +28,71 @@ For the full closure record, see `docs/handoffs/current/Cardigo_Enterprise_Hando
 Two render paths serve two distinct audiences:
 
 ```
-Request → cardigo.co.il
-          │
-          ├─ UA in social bot allowlist?
-          │  AND path is /card/*, /c/*, /blog/*, /guides/*?
-          │        │
-          │       YES
-          │        ↓
-          │  Netlify Edge Function (og-preview.js) — SOCIAL branch
-          │  → proxies to backend /og/* with shared proxy secret header
-          │  → backend generates static OG HTML (article/card meta, image:alt,
-          │    article:published_time, article:modified_time, article:author)
-          │  → social bot sees static HTML (no JS execution needed)
-          │        │
-          │       [bot reads <meta> tags, returns to user]
-          │
-          ├─ UA is Googlebot / Googlebot-Image / bingbot?
-          │  AND path is /card/:slug or /c/:orgSlug/:slug?
-          │        │
-          │       YES
-          │        ↓
-          │  Netlify Edge Function (og-preview.js) — CRAWLER branch
-          │  → fetches backend /og/* for metadata only (not served directly)
-          │  → fetches SPA shell via context.next()
-          │  → extracts whitelisted head tags from /og HTML:
-          │    title, meta description, canonical, robots (if present),
-          │    og:* metas, twitter:* metas
-          │  → injects extracted tags into SPA shell head (remove-then-insert)
-          │  → returns SPA shell with route-specific head, no meta http-equiv=refresh
-          │  → Cache-Control: no-store, Vary: User-Agent
-          │        │
-          │       [Googlebot sees SPA shell with correct per-card metadata]
-          │
-          ├─ UA is Googlebot / Googlebot-Image / bingbot?
-          │  AND path is NOT /card/:slug or /c/:orgSlug/:slug?
-          │        │
-          │       YES (marketing, blog, guides, etc.)
-          │        ↓
-          │  context.next() → normal SPA shell (no injection)
-          │
-          └─ Browser / other UA?
-                    │
+Request в†’ cardigo.co.il
+          в”‚
+          в”њв”Ђ UA in social bot allowlist?
+          в”‚  AND path is /card/*, /c/*, /blog/*, /guides/*?
+          в”‚        в”‚
+          в”‚       YES
+          в”‚        в†“
+          в”‚  Netlify Edge Function (og-preview.js) вЂ” SOCIAL branch
+          в”‚  в†’ proxies to backend /og/* with shared proxy secret header
+          в”‚  в†’ backend generates static OG HTML (article/card meta, image:alt,
+          в”‚    article:published_time, article:modified_time, article:author)
+          в”‚  в†’ social bot sees static HTML (no JS execution needed)
+          в”‚        в”‚
+          в”‚       [bot reads <meta> tags, returns to user]
+          в”‚
+          в”њв”Ђ UA is Googlebot / Googlebot-Image / bingbot?
+          в”‚  AND path is /card/:slug or /c/:orgSlug/:slug?
+          в”‚        в”‚
+          в”‚       YES
+          в”‚        в†“
+          в”‚  Netlify Edge Function (og-preview.js) вЂ” CRAWLER branch
+          в”‚  в†’ fetches backend /og/* for metadata only (not served directly)
+          в”‚  в†’ fetches SPA shell via context.next()
+          в”‚  в†’ extracts whitelisted head tags from /og HTML:
+          в”‚    title, meta description, canonical, robots (if present),
+          в”‚    og:* metas, twitter:* metas
+          в”‚  в†’ injects extracted tags into SPA shell head (remove-then-insert)
+          в”‚  в†’ returns SPA shell with route-specific head, no meta http-equiv=refresh
+          в”‚  в†’ Cache-Control: no-store, Vary: User-Agent
+          в”‚        в”‚
+          в”‚       [Googlebot sees SPA shell with correct per-card metadata]
+          в”‚
+          в”њв”Ђ UA is Googlebot / Googlebot-Image / bingbot?
+          в”‚  AND path is a top-level marketing route?
+          в”‚  (/pricing, /blog, /guides, /cards, /contact)
+          в”‚        в”‚
+          в”‚       YES
+          в”‚        в†“
+          в”‚  Netlify Edge Function (og-preview.js) вЂ” CRAWLER branch
+          в”‚  в†’ builds route-specific metadata from marketingMeta.config.js
+          в”‚  в†’ builds static OG HTML with canonical (includeCanonical=true)
+          в”‚  в†’ fetches SPA shell via context.next()
+          в”‚  в†’ injects canonical + og:* + title into SPA shell head
+          в”‚  в†’ Cache-Control: no-store, Vary: User-Agent
+          в”‚        в”‚
+          в”‚       [Googlebot sees SPA shell with route-specific head]
+          в”‚
+          в”њв”Ђ UA is Googlebot / Googlebot-Image / bingbot?
+          в”‚  AND path is NOT /card/:slug, /c/:orgSlug/:slug,
+          в”‚  or a top-level marketing route?
+          в”‚        в”‚
+          в”‚       YES (blog/:slug, guides/:slug, /, other paths)
+          в”‚        в†“
+          в”‚  context.next() в†’ normal SPA shell (no injection)
+          в”‚
+          в””в”Ђ Browser / other UA?
+                    в”‚
                    YES
-                    ↓
-             Netlify _redirects SPA fallback → SPA (index.html + JS bundle)
-             → react-helmet-async SeoHelmet
-             → head tags injected at JS runtime
-             → Googlebot (WRS) executes JS, sees rendered head for blog/guides
-             → Blog/GuidePost.jsx emits JSON-LD + BreadcrumbList
-             → SeoHelmet emits og:*, article:*, twitter:*, og:locale, og:site_name
+                    в†“
+             Netlify _redirects SPA fallback в†’ SPA (index.html + JS bundle)
+             в†’ react-helmet-async SeoHelmet
+             в†’ head tags injected at JS runtime
+             в†’ Googlebot (WRS) executes JS, sees rendered head for blog/guides
+             в†’ Blog/GuidePost.jsx emits JSON-LD + BreadcrumbList
+             в†’ SeoHelmet emits og:*, article:*, twitter:*, og:locale, og:site_name
 ```
 
 **Static fallback (index.html):**
@@ -97,7 +113,7 @@ Request → cardigo.co.il
 
 Contour history: `HOMEPAGE_STATIC_OG_PREVIEW` (2026-05-03) added the static OG block including a static canonical. `SEO_CANONICAL_DEDUP_STATIC_SHELL_P0` (2026-05-07) removed the static canonical; the `og:url` was intentionally preserved. `SEO_STATIC_SHELL_POLICY_GATE_P1` (2026-05-07) added a CI gate protecting both invariants.
 
-Enforcement gate: `npm.cmd run check:seo-static-shell` (`frontend/scripts/check-seo-static-shell.mjs`) — runs locally and in CI. No production runtime impact.
+Enforcement gate: `npm.cmd run check:seo-static-shell` (`frontend/scripts/check-seo-static-shell.mjs`) вЂ” runs locally and in CI. No production runtime impact.
 
 ---
 
@@ -116,11 +132,11 @@ Sitemap: https://cardigo.co.il/sitemap.xml
 
 **Rule rationale:**
 
-- `Allow: /` — all user-facing public pages are open to crawlers.
-- `Disallow: /.netlify/` — Netlify internal function paths. Not user pages.
-- `Disallow: /og/` — backend social-preview OG HTML. Not user pages. Social bots reach these via Edge Function proxy, not direct crawl.
-- `/api/` intentionally NOT disallowed — Google WRS depends on `/api/*` for fetching public card, blog, and guide data during SPA rendering. A `Disallow: /api/` would prevent WRS from rendering public pages correctly and harm indexation.
-- Private/auth/admin/editor route Disallow: **deferred** — wait for GSC to confirm noindex processing on these pages before adding. Adding too early could prevent crawling needed for noindex to be processed.
+- `Allow: /` вЂ” all user-facing public pages are open to crawlers.
+- `Disallow: /.netlify/` вЂ” Netlify internal function paths. Not user pages.
+- `Disallow: /og/` вЂ” backend social-preview OG HTML. Not user pages. Social bots reach these via Edge Function proxy, not direct crawl.
+- `/api/` intentionally NOT disallowed вЂ” Google WRS depends on `/api/*` for fetching public card, blog, and guide data during SPA rendering. A `Disallow: /api/` would prevent WRS from rendering public pages correctly and harm indexation.
+- Private/auth/admin/editor route Disallow: **deferred** вЂ” wait for GSC to confirm noindex processing on these pages before adding. Adding too early could prevent crawling needed for noindex to be processed.
 
 **Modification policy:**
 Any change to robots.txt requires explicit contour with rationale and WRS impact analysis. Do not add `Disallow: /api/`.
@@ -134,26 +150,26 @@ Any change to robots.txt requires explicit contour with rationale and WRS impact
 
 **Composition:**
 
-### Static paths (10) — lastmod="2026-05-03"
+### Static paths (10) вЂ” lastmod="2026-05-03"
 
 `/` `/blog` `/pricing` `/contact` `/guides` `/cards` `/privacy` `/terms` `/accessibility-statement` `/payment-policy`
 
 ### Dynamic blog paths
 
-- `/blog/:slug` — status: "published" posts only
+- `/blog/:slug` вЂ” status: "published" posts only
 - Excludes: drafts, previousSlugs (aliases)
 - `<lastmod>` from `post.updatedAt`
 
 ### Dynamic guide paths
 
-- `/guides/:slug` — status: "published" guides only
+- `/guides/:slug` вЂ” status: "published" guides only
 - Excludes: drafts
 - `<lastmod>` from `guide.updatedAt`
 
 ### Dynamic card paths
 
-- `/card/:slug` — active personal cards with real paid billing, active org entitlement, adminOverride, or active card.adminTier only (free-tier and trial-premium both excluded via `resolveSeoIndexability` in `seoIndexability.js`; trial-premium has isPaid:true but is intentionally platformForcedNoindex)
-- `/c/:orgSlug/:slug` — active org cards: org must be active + orgEntitlement loaded + membership active (org entitlement grants indexability via resolveSeoIndexability)
+- `/card/:slug` вЂ” active personal cards with real paid billing, active org entitlement, adminOverride, or active card.adminTier only (free-tier and trial-premium both excluded via `resolveSeoIndexability` in `seoIndexability.js`; trial-premium has isPaid:true but is intentionally platformForcedNoindex)
+- `/c/:orgSlug/:slug` вЂ” active org cards: org must be active + orgEntitlement loaded + membership active (org entitlement grants indexability via resolveSeoIndexability)
 - `<lastmod>` from `card.updatedAt`
 
 ### Explicitly excluded from sitemap
@@ -167,54 +183,55 @@ Any change to robots.txt requires explicit contour with rationale and WRS impact
 
 ## 5. Public Indexability Matrix
 
-| Route                            | Indexable? | noindex source                                                    | Metadata source                     | Notes                                                                                                                                        |
-| -------------------------------- | ---------- | ----------------------------------------------------------------- | ----------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
-| /                                | YES        | —                                                                 | SeoHelmet (Home.jsx)                | Marketing page                                                                                                                               |
-| /blog                            | YES        | —                                                                 | SeoHelmet (Blog.jsx)                | Listing page                                                                                                                                 |
-| /blog/:slug (published)          | YES        | —                                                                 | SeoHelmet + JSON-LD (BlogPost.jsx)  | article meta + Breadcrumbs                                                                                                                   |
-| /blog/:slug (not found)          | NO         | SeoHelmet robots="noindex,nofollow"                               | notFound branch                     | Hebrew not-found title                                                                                                                       |
-| /guides                          | YES        | —                                                                 | SeoHelmet (Guides.jsx)              | Listing page                                                                                                                                 |
-| /guides/:slug (published)        | YES        | —                                                                 | SeoHelmet + JSON-LD (GuidePost.jsx) | article meta + Breadcrumbs                                                                                                                   |
-| /guides/:slug (not found)        | NO         | SeoHelmet robots="noindex,nofollow"                               | notFound branch                     | Hebrew not-found title                                                                                                                       |
-| /pricing                         | YES        | —                                                                 | SeoHelmet (Pricing.jsx)             | Marketing page                                                                                                                               |
-| /contact                         | YES        | —                                                                 | SeoHelmet (Contact.jsx)             | Marketing page                                                                                                                               |
-| /cards                           | YES        | —                                                                 | SeoHelmet (Cards.jsx)               | Marketing page                                                                                                                               |
-| /privacy                         | YES        | —                                                                 | SeoHelmet (Privacy.jsx)             | Legal                                                                                                                                        |
-| /terms                           | YES        | —                                                                 | SeoHelmet (Terms.jsx)               | Legal                                                                                                                                        |
-| /accessibility-statement         | YES        | —                                                                 | SeoHelmet                           | Legal                                                                                                                                        |
-| /payment-policy                  | YES        | —                                                                 | SeoHelmet                           | Legal                                                                                                                                        |
-| /card/:slug (paid billing)       | YES        | —                                                                 | SeoHelmet (PublicCard.jsx)          | resolveSeoIndexability source=billing, isPaid:true                                                                                           |
-| /card/:slug (org entitled)       | YES        | —                                                                 | SeoHelmet (PublicCard.jsx)          | resolveSeoIndexability source=organization                                                                                                   |
-| /card/:slug (adminTier/override) | YES        | —                                                                 | SeoHelmet (PublicCard.jsx)          | resolveSeoIndexability source=adminTier or adminOverride                                                                                     |
-| /card/:slug (free-tier)          | NO         | resolveSeoIndexability → cardDTO.js robots: "noindex" → SeoHelmet | Free-tier policy                    | noindex via card DTO                                                                                                                         |
-| /card/:slug (trial-premium)      | NO         | resolveSeoIndexability → cardDTO.js robots: "noindex" → SeoHelmet | Trial policy                        | isPaid:true but intentionally platformForcedNoindex; sitemap excluded; SEO editor access (seo:true) during trial does NOT grant indexability |
-| /c/:orgSlug/:slug (org entitled) | YES        | —                                                                 | SeoHelmet (PublicCard.jsx)          | Org card; resolveSeoIndexability source=organization                                                                                         |
-| /preview/\*                      | NO         | SeoHelmet hardcoded noindex                                       | PreviewCard.jsx                     | Always noindex                                                                                                                               |
-| /payment/checkout                | NO         | SeoHelmet robots="noindex,nofollow"                               | CheckoutPage.jsx                    | Always noindex                                                                                                                               |
-| /payment/iframe-return           | NO         | SeoHelmet robots="noindex,nofollow"                               | IframeReturnPage.jsx                | Always noindex                                                                                                                               |
+| Route                            | Indexable? | noindex source                                                        | Metadata source                     | Notes                                                                                                                                        |
+| -------------------------------- | ---------- | --------------------------------------------------------------------- | ----------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| /                                | YES        | вЂ”                                                                   | SeoHelmet (Home.jsx)                | Marketing page                                                                                                                               |
+| /blog                            | YES        | вЂ”                                                                   | SeoHelmet (Blog.jsx)                | Listing page                                                                                                                                 |
+| /blog/:slug (published)          | YES        | вЂ”                                                                   | SeoHelmet + JSON-LD (BlogPost.jsx)  | article meta + Breadcrumbs                                                                                                                   |
+| /blog/:slug (not found)          | NO         | SeoHelmet robots="noindex,nofollow"                                   | notFound branch                     | Hebrew not-found title                                                                                                                       |
+| /guides                          | YES        | вЂ”                                                                   | SeoHelmet (Guides.jsx)              | Listing page                                                                                                                                 |
+| /guides/:slug (published)        | YES        | вЂ”                                                                   | SeoHelmet + JSON-LD (GuidePost.jsx) | article meta + Breadcrumbs                                                                                                                   |
+| /guides/:slug (not found)        | NO         | SeoHelmet robots="noindex,nofollow"                                   | notFound branch                     | Hebrew not-found title                                                                                                                       |
+| /pricing                         | YES        | вЂ”                                                                   | SeoHelmet (Pricing.jsx)             | Marketing page                                                                                                                               |
+| /contact                         | YES        | вЂ”                                                                   | SeoHelmet (Contact.jsx)             | Marketing page                                                                                                                               |
+| /cards                           | YES        | вЂ”                                                                   | SeoHelmet (Cards.jsx)               | Marketing page                                                                                                                               |
+| /privacy                         | YES        | вЂ”                                                                   | SeoHelmet (Privacy.jsx)             | Legal                                                                                                                                        |
+| /terms                           | YES        | вЂ”                                                                   | SeoHelmet (Terms.jsx)               | Legal                                                                                                                                        |
+| /accessibility-statement         | YES        | вЂ”                                                                   | SeoHelmet                           | Legal                                                                                                                                        |
+| /payment-policy                  | YES        | вЂ”                                                                   | SeoHelmet                           | Legal                                                                                                                                        |
+| /card/:slug (paid billing)       | YES        | вЂ”                                                                   | SeoHelmet (PublicCard.jsx)          | resolveSeoIndexability source=billing, isPaid:true                                                                                           |
+| /card/:slug (org entitled)       | YES        | вЂ”                                                                   | SeoHelmet (PublicCard.jsx)          | resolveSeoIndexability source=organization                                                                                                   |
+| /card/:slug (adminTier/override) | YES        | вЂ”                                                                   | SeoHelmet (PublicCard.jsx)          | resolveSeoIndexability source=adminTier or adminOverride                                                                                     |
+| /card/:slug (free-tier)          | NO         | resolveSeoIndexability в†’ cardDTO.js robots: "noindex" в†’ SeoHelmet | Free-tier policy                    | noindex via card DTO                                                                                                                         |
+| /card/:slug (trial-premium)      | NO         | resolveSeoIndexability в†’ cardDTO.js robots: "noindex" в†’ SeoHelmet | Trial policy                        | isPaid:true but intentionally platformForcedNoindex; sitemap excluded; SEO editor access (seo:true) during trial does NOT grant indexability |
+| /c/:orgSlug/:slug (org entitled) | YES        | вЂ”                                                                   | SeoHelmet (PublicCard.jsx)          | Org card; resolveSeoIndexability source=organization                                                                                         |
+| /preview/\*                      | NO         | SeoHelmet hardcoded noindex                                           | PreviewCard.jsx                     | Always noindex                                                                                                                               |
+| /payment/checkout                | NO         | SeoHelmet robots="noindex,nofollow"                                   | CheckoutPage.jsx                    | Always noindex                                                                                                                               |
+| /payment/iframe-return           | NO         | SeoHelmet robots="noindex,nofollow"                                   | IframeReturnPage.jsx                | Always noindex                                                                                                                               |
 
 ---
 
 ## 6. OG/Social Preview Route Matrix
 
-| Path                  | Edge intercept?                      | Backend route                        | Bot UA required                                                                                                               |
-| --------------------- | ------------------------------------ | ------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------- |
-| /blog/:slug           | YES — SOCIAL branch (og-preview.js)  | /og/blog/:slug                       | facebookexternalhit, WhatsApp, Twitterbot, LinkedInBot, TelegramBot, Slackbot, Slack-ImgProxy, Discordbot, Pinterest, vkShare |
-| /guides/:slug         | YES — SOCIAL branch (og-preview.js)  | /og/guides/:slug                     | same social allowlist                                                                                                         |
-| /card/:slug           | YES — SOCIAL branch (og-preview.js)  | /og/card/:slug                       | same social allowlist                                                                                                         |
-| /card/:slug           | YES — CRAWLER branch (og-preview.js) | /og/card/:slug (metadata only)       | Googlebot, Googlebot-Image, bingbot — SPA shell with injected head                                                            |
-| /c/:orgSlug/:slug     | YES — SOCIAL branch (og-preview.js)  | /og/c/:orgSlug/:slug                 | same social allowlist                                                                                                         |
-| /c/:orgSlug/:slug     | YES — CRAWLER branch (og-preview.js) | /og/c/:orgSlug/:slug (metadata only) | Googlebot, Googlebot-Image, bingbot — SPA shell with injected head                                                            |
-| / and marketing pages | NO (falls through)                   | —                                    | — (uses index.html static fallback)                                                                                           |
+| Path                                       | Edge intercept?                        | Backend route                                  | Bot UA required                                                                                                                                   |
+| ------------------------------------------ | -------------------------------------- | ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| /blog/:slug                                | YES вЂ” SOCIAL branch (og-preview.js)  | /og/blog/:slug                                 | facebookexternalhit, WhatsApp, Twitterbot, LinkedInBot, TelegramBot, Slackbot, Slack-ImgProxy, Discordbot, Pinterest, vkShare                     |
+| /guides/:slug                              | YES вЂ” SOCIAL branch (og-preview.js)  | /og/guides/:slug                               | same social allowlist                                                                                                                             |
+| /card/:slug                                | YES вЂ” SOCIAL branch (og-preview.js)  | /og/card/:slug                                 | same social allowlist                                                                                                                             |
+| /card/:slug                                | YES вЂ” CRAWLER branch (og-preview.js) | /og/card/:slug (metadata only)                 | Googlebot, Googlebot-Image, bingbot вЂ” SPA shell with injected head                                                                              |
+| /c/:orgSlug/:slug                          | YES вЂ” SOCIAL branch (og-preview.js)  | /og/c/:orgSlug/:slug                           | same social allowlist                                                                                                                             |
+| /c/:orgSlug/:slug                          | YES вЂ” CRAWLER branch (og-preview.js) | /og/c/:orgSlug/:slug (metadata only)           | Googlebot, Googlebot-Image, bingbot вЂ” SPA shell with injected head                                                                              |
+| /pricing, /blog, /guides, /cards, /contact | YES вЂ” CRAWLER branch (og-preview.js) | marketingMeta.config.js (no backend /og fetch) | Googlebot, Googlebot-Image, bingbot вЂ” SPA shell with route-specific head injected. See Section 18.                                              |
+| / and marketing pages (social/browser)     | NO (falls through)                     | вЂ”                                            | Social bots and browsers use index.html static fallback. Social bot OG for marketing routes deferred under SEO_MARKETING_PAGES_SOCIAL_PREVIEW_P1. |
 
 **Googlebot and Bingbot routing note (updated 2026-05-09):**
-Googlebot/Googlebot-Image/bingbot are intercepted by the Edge Function ONLY for /card/:slug and /c/:orgSlug/:slug (CRAWLER branch). For all other paths (blog, guides, marketing, pricing, etc.) they receive the normal SPA shell and WRS renders head tags from react-helmet-async. The CRAWLER branch uses backend /og as a metadata source only — backend /og HTML is never served directly to Googlebot. See Section 16 for full CRAWLER branch specification and production smoke record.
+Googlebot/Googlebot-Image/bingbot are intercepted by the Edge Function in two cases: (1) /card/:slug and /c/:orgSlug/:slug вЂ” CRAWLER branch using backend /og as metadata source (Section 16); (2) top-level marketing routes /pricing, /blog, /guides, /cards, /contact вЂ” CRAWLER branch using marketingMeta.config.js as metadata source, no backend /og fetch (Section 18). For all other paths (blog/:slug, guides/:slug, /, etc.) they receive the normal SPA shell and WRS renders head tags from react-helmet-async. The card/org-card CRAWLER branch uses backend /og as a metadata source only вЂ” backend /og HTML is never served directly to Googlebot.
 
 ---
 
 ## 7. Blog/Guides JSON-LD Inventory
 
-### BlogPost.jsx — emits two scripts in successful branch
+### BlogPost.jsx вЂ” emits two scripts in successful branch
 
 **Script 1: BlogPosting**
 
@@ -242,23 +259,27 @@ Googlebot/Googlebot-Image/bingbot are intercepted by the Edge Function ONLY for 
 {
     "@type": "BreadcrumbList",
     "itemListElement": [
-        { "position": 1, "name": "בית", "item": "https://cardigo.co.il" },
-        { "position": 2, "name": "בלוג", "item": "https://cardigo.co.il/blog" },
+        { "position": 1, "name": "Ч‘Ч™ЧЄ", "item": "https://cardigo.co.il" },
+        {
+            "position": 2,
+            "name": "Ч‘ЧњЧ•Ч’",
+            "item": "https://cardigo.co.il/blog"
+        },
         { "position": 3, "name": "<post.title>" }
     ]
 }
 ```
 
-### GuidePost.jsx — emits same structure
+### GuidePost.jsx вЂ” emits same structure
 
-- Script 1: `@type: "Article"` (not BlogPosting) — same fields
-- Script 2: BreadcrumbList — `/guides` instead of `/blog`
+- Script 1: `@type: "Article"` (not BlogPosting) вЂ” same fields
+- Script 2: BreadcrumbList вЂ” `/guides` instead of `/blog`
 
 ---
 
 ## 8. Article Meta Inventory
 
-### Path A — SeoHelmet.jsx props (Googlebot / browsers)
+### Path A вЂ” SeoHelmet.jsx props (Googlebot / browsers)
 
 | Meta tag               | Prop                 | Source in BlogPost.jsx / GuidePost.jsx |
 | ---------------------- | -------------------- | -------------------------------------- |
@@ -268,7 +289,7 @@ Googlebot/Googlebot-Image/bingbot are intercepted by the Edge Function ONLY for 
 
 Only emitted in the successful (published) branch. notFound/loading/error branches do not pass article meta props.
 
-### Path B — Backend og.routes.js (social bots)
+### Path B вЂ” Backend og.routes.js (social bots)
 
 Both `/og/blog/:slug` and `/og/guides/:slug` handlers emit:
 
@@ -280,7 +301,7 @@ Both `/og/blog/:slug` and `/og/guides/:slug` handlers emit:
 
 ## 9. Image Alt Meta Inventory
 
-### Path A — SeoHelmet.jsx
+### Path A вЂ” SeoHelmet.jsx
 
 New prop: `imageAlt`
 Guard: emitted only when both `image` AND `imageAlt` are truthy. No empty alt emitted.
@@ -299,7 +320,7 @@ imageAlt={post.heroImageAlt || post.title || undefined}
 `post.heroImageAlt` = `post.heroImage?.alt` (admin-authored field, max 200 chars).
 `post.title` = fallback (required field).
 
-### Path B — og.routes.js
+### Path B вЂ” og.routes.js
 
 ```js
 const imageAlt = image
@@ -332,7 +353,7 @@ When a blog or guide slug is not found (API 404) or not published:
 - Does NOT emit article meta (article:published_time etc.)
 - Does NOT emit JSON-LD (noJSON-LD in notFound branch)
 
-**Backend Path B:** missing slug → 404 response from backend OG handler (anti-enumeration, no existence leak).
+**Backend Path B:** missing slug в†’ 404 response from backend OG handler (anti-enumeration, no existence leak).
 
 **Loading/error branches:** deliberately do NOT emit noindex. Reason: a transient fetch error during WRS crawl would emit noindex on a valid URL, potentially causing incorrect deindexation.
 
@@ -345,36 +366,36 @@ $UA = "facebookexternalhit/1.1"
 $BLOG_SLUG = "post-7a9572f4"
 $GUIDE_SLUG = "seo"
 
-# Blog social preview — expect og:type=article, og:image:alt, article:published_time
+# Blog social preview вЂ” expect og:type=article, og:image:alt, article:published_time
 curl.exe -s -A $UA "https://cardigo.co.il/blog/$BLOG_SLUG" `
   | findstr /i "og:type" "og:image:alt" "article:published_time" "twitter:image:alt"
 
-# Guide social preview — same expectations
+# Guide social preview вЂ” same expectations
 curl.exe -s -A $UA "https://cardigo.co.il/guides/$GUIDE_SLUG" `
   | findstr /i "og:type" "og:image:alt" "article:published_time" "twitter:image:alt"
 
-# Missing blog slug — must return HTTP 404
+# Missing blog slug вЂ” must return HTTP 404
 curl.exe -s -o NUL -w "%{http_code}" -A $UA "https://cardigo.co.il/blog/nonexistent-zzz999"
 
-# Card regression — must still return card-specific OG
+# Card regression вЂ” must still return card-specific OG
 curl.exe -s -A $UA "https://cardigo.co.il/card/cardigo" `
   | findstr /i "og:title" "og:image:alt" "og:url"
 
-# robots.txt — must include BOTH Disallow rules
+# robots.txt вЂ” must include BOTH Disallow rules
 curl.exe -s "https://cardigo.co.il/robots.txt"
 
-# Sitemap — must include blog, guides, card entries with lastmod
+# Sitemap вЂ” must include blog, guides, card entries with lastmod
 curl.exe -s "https://cardigo.co.il/sitemap.xml" `
   | findstr /i "blog" "guides" "lastmod" "cardigo"
 ```
 
 **Rendered head verification (browser devtools):**
 
-1. Open https://cardigo.co.il/pricing → inspect `<head>` → confirm:
+1. Open https://cardigo.co.il/pricing в†’ inspect `<head>` в†’ confirm:
     - `meta property="og:locale" content="he_IL"`
     - `meta property="og:site_name" content="Cardigo"`
 
-2. Open https://cardigo.co.il/blog/<slug-with-hero> → inspect `<head>` → confirm:
+2. Open https://cardigo.co.il/blog/<slug-with-hero> в†’ inspect `<head>` в†’ confirm:
     - `meta property="og:image:alt"` present (non-empty)
     - `meta property="article:published_time"` present
 
@@ -387,9 +408,9 @@ curl.exe -s "https://cardigo.co.il/sitemap.xml" `
 
 ## 12. GSC Checklist
 
-**Updated: 2026-05-07 — SEO_GSC_DISCOVERED_NOT_INDEXED_TRIAGE_P1 Phase 1 accepted**
+**Updated: 2026-05-07 вЂ” SEO_GSC_DISCOVERED_NOT_INDEXED_TRIAGE_P1 Phase 1 accepted**
 
-As of 2026-05-07, GSC shows the following six URLs as "Discovered — currently not indexed" with last crawl date absent:
+As of 2026-05-07, GSC shows the following six URLs as "Discovered вЂ” currently not indexed" with last crawl date absent:
 
 - /privacy
 - /terms
@@ -398,19 +419,19 @@ As of 2026-05-07, GSC shows the following six URLs as "Discovered — currently 
 - /card/cardigo
 - /c/digitalyty/digital-card
 
-A read-only triage audit found no known code/config blocker from read-only audit (HTTP 200 for all six, no X-Robots-Tag noindex, all six in sitemap, robots.txt allows all six, no global noindex in index.html). "Discovered — currently not indexed" with absent last-crawl is consistent with normal CSR/SPA crawl queue behavior.
+A read-only triage audit found no known code/config blocker from read-only audit (HTTP 200 for all six, no X-Robots-Tag noindex, all six in sitemap, robots.txt allows all six, no global noindex in index.html). "Discovered вЂ” currently not indexed" with absent last-crawl is consistent with normal CSR/SPA crawl queue behavior.
 
 Formal GSC ownership verification and sitemap submission status still require operator confirmation if not already completed. Manual URL Inspection, Test Live URL, and Request Indexing are pending under SEO_GSC_MANUAL_URL_INSPECTION_AND_REQUEST_INDEXING_P0_OPS.
 
-Note: /c/digitalyty/digital-card requires a product/operator decision before requesting indexing — see SEO_ORG_CARD_DIGITALYTY_BOUNDARY_DECISION_P1.
+Note: /c/digitalyty/digital-card requires a product/operator decision before requesting indexing вЂ” see SEO_ORG_CARD_DIGITALYTY_BOUNDARY_DECISION_P1.
 
 When ready, steps:
 
 1. Add GSC HTML verification file to `frontend/public/` OR use DNS TXT record verification (preferred, avoids deploying a file).
 2. Verify property: https://cardigo.co.il
 3. Submit sitemap: https://cardigo.co.il/sitemap.xml
-4. For each of the six triage URLs: GSC → URL Inspection → Test Live URL → Request Indexing.
-5. Check Index Coverage report after 48–72 hours for crawl errors.
+4. For each of the six triage URLs: GSC в†’ URL Inspection в†’ Test Live URL в†’ Request Indexing.
+5. Check Index Coverage report after 48вЂ“72 hours for crawl errors.
 6. Check Rich Results in GSC for Blog and Guides structured data.
 7. Monitor for any WRS rendering errors under "Enhancements" tab.
 
@@ -418,36 +439,37 @@ When ready, steps:
 
 ## 13. Deferred SEO Register
 
-| Item                                             | Contour                                                   | Priority                                | Notes                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
-| ------------------------------------------------ | --------------------------------------------------------- | --------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| GSC ownership + sitemap submission               | POST_LAUNCH_SEARCH_CONSOLE_AND_SITEMAP_SUBMISSION_P1      | P1                                      | Cannot monitor indexing without this                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
-| Marketing page imageAlt                          | SEO_IMAGE_ALT_META_MARKETING_P1                           | P1                                      | 6 files: Home, Cards, Pricing, Contact, Blog, Guides listing                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
-| PublicCard.jsx imageAlt                          | SEO_PUBLIC_CARD_IMAGE_ALT_META_P2                         | P2                                      | Scoped audit required — card fields are user-controlled                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
-| twitter:image:alt for /og/card/\*                | —                                                         | P2                                      | Pre-existing gap in og.routes.js card handlers                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
-| og:image:secure_url, width, height, type         | —                                                         | P3                                      | Blog/guides OG HTML, backend path                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
-| Private/admin route Disallow                     | —                                                         | P2                                      | Deferred until GSC confirms noindex processed                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
-| og-drift CI check                                | —                                                         | P3                                      | Alignment check: index.html vs Home.jsx OG                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
-| sitemap index / image sitemap                    | —                                                         | Scale                                   | Post-GSC-data decision                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
-| True HTTP 404 for SPA not-found                  | —                                                         | P2                                      | Infrastructure/hosting contour                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
-| SSR/prerender indexability                       | —                                                         | P2                                      | Defer until GSC shows WRS issues                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
-| fb:app_id / Meta app governance                  | —                                                         | P3                                      | Product decision required                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
-| Free-tier card noindex policy review             | —                                                         | P3                                      | Product decision: OG preview vs noindex                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
-| Static shell canonical policy gate               | SEO_STATIC_SHELL_POLICY_GATE_P1                           | CLOSED                                  | CI/local gate preventing static canonical reintroduction and preserving homepage og:url fallback. Command: `npm.cmd run check:seo-static-shell`. Invariants protected: (1) no static `rel="canonical"` in `frontend/index.html`; (2) exactly one static `og:url`; (3) `og:url` value is `https://cardigo.co.il/`. Production result: initial HTML has no canonical; runtime canonical supplied by SeoHelmet; homepage og:url fallback remains. No source code, package.json, or handoff changes in this contour.            |
-| Marketing page route-specific OG/social preview  | SEO_MARKETING_PAGES_SOCIAL_PREVIEW_P1                     | P1 / DEFERRED                           | Routes `/cards`, `/pricing`, `/contact`, `/blog` listing, `/guides` listing still fall through to the homepage `og:url`/`og:title` static fallback for social bots. These routes are not covered by the Netlify Edge Function. This is separate from Google canonical/indexing. Do not mark as closed.                                                                                                                                                                                                                      |
-| Owner JSON-LD 5000-char length limit             | SCHEMA_OWNER_JSONLD_LENGTH_LIMIT_P1                       | CLOSED / PASS                           | `card.seo.jsonLd` — backend Card.model.js + frontend EditCard.jsx + SeoPanel.jsx maxLength={5000}. Empty/null allowed. >5000 chars or invalid JSON rejected. Existing oversized DB values fail on rewrite only.                                                                                                                                                                                                                                                                                                             |
-| Owner JSON-LD @type allowlist + nested blocklist | SCHEMA_OWNER_JSONLD_TYPE_ALLOWLIST_P1                     | CLOSED / PASS                           | Allowed top-level @type: LocalBusiness, Organization, Person, Service. @graph rejected. Missing @type rejected. Nested Review/AggregateRating/Rating rejected. MAX_NESTING_DEPTH=10 fail-closed. Files: Card.model.js, EditCard.jsx.                                                                                                                                                                                                                                                                                        |
-| Blog/Guides paginated archive FAQPage suppress   | SCHEMA_BLOG_GUIDES_PAGINATION_FAQ_SCHEMA_P1               | CLOSED / PASS                           | Blog.jsx and Guides.jsx emit FAQPage JSON-LD only on effectivePage <= 1. /blog/page/N and /guides/page/N (N>1) receive jsonLdItems=[]. Fixes schema/canonical mismatch on paginated archive pages.                                                                                                                                                                                                                                                                                                                          |
-| Public card Googlebot metadata injection         | PUBLIC_CARD_OG_INITIAL_METADATA_EDGE_INJECTION_P2A        | CLOSED / PRODUCTION VERIFIED 2026-05-09 | Googlebot/bingbot hitting /card/:slug and /c/:orgSlug/:slug now receive SPA shell with route-specific head tags injected from backend /og metadata. No meta http-equiv=refresh. Cache-Control: no-store, Vary: User-Agent. Production smoke script final verdict: FINAL: PASS — production Edge smoke passed. Smoke groups G1–G10 all passed. See Section 16.                                                                                                                                                               |
-| Hydrated social metadata deduplication           | STATIC_SOCIAL_META_HELMET_DEDUP_P2                        | CLOSED / PRODUCTION VERIFIED 2026-05-09 | Static social/meta fallback tags in frontend/index.html were missing data-rh="true". react-helmet-async only removes tags it manages (data-rh="true"). Result: duplicate social tags persisted after hydration; querySelector returned the first (stale homepage) value on all non-home routes. Fix: added data-rh="true" to all 18 static fallback tags. Added imageAlt prop to Home.jsx SeoHelmet callsite. Production DOM smoke: all verified routes emit exactly one set of social tags post-hydration. See Section 17. |
-| GSC six-URL triage                               | SEO_GSC_DISCOVERED_NOT_INDEXED_TRIAGE_P1                  | Phase 1 accepted                        | No known code/config blocker found from read-only audit. Six URLs: /privacy, /terms, /accessibility-statement, /payment-policy, /card/cardigo, /c/digitalyty/digital-card. All HTTP 200, no noindex, all in sitemap. Manual GSC operator steps pending.                                                                                                                                                                                                                                                                     |
-| GSC manual URL Inspection + Request Indexing     | SEO_GSC_MANUAL_URL_INSPECTION_AND_REQUEST_INDEXING_P0_OPS | PENDING OPERATOR ACTION                 | GSC URL Inspection → Test Live URL → Request Indexing for each of the six triage URLs. /c/digitalyty/digital-card requires product decision first. No code change required.                                                                                                                                                                                                                                                                                                                                                 |
-| Digitalyty org-card indexability decision        | SEO_ORG_CARD_DIGITALYTY_BOUNDARY_DECISION_P1              | PENDING PRODUCT DECISION                | Is /c/digitalyty/digital-card intentionally public/demo or internal test? If internal test: set robots=noindex or unpublish. If intentional: leave as-is and proceed with GSC request.                                                                                                                                                                                                                                                                                                                                      |
-| Legal pages metadata gap                         | SEO_LEGAL_PAGES_METADATA_GAP_P2                           | P2 / PENDING                            | Privacy.jsx, Terms.jsx, Accessibility.jsx, PaymentPolicy.jsx: hardcoded canonical strings instead of ORIGIN constant; no image/imageAlt passed to SeoHelmet. Future contour.                                                                                                                                                                                                                                                                                                                                                |
-| Internal linking and sitemap signal              | SEO_INTERNAL_LINKING_AND_SITEMAP_SIGNAL_P2                | P2 / DEFERRED                           | Footer/nav link audit for crawl discoverability. Post-GSC-data decision.                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
-| Dynamic Googlebot rendering governance           | SEO_DYNAMIC_GOOGLEBOT_RENDERING_GOVERNANCE_P2             | P2 / DEFERRED                           | Defer until GSC shows WRS rendering errors. No current evidence of WRS issues.                                                                                                                                                                                                                                                                                                                                                                                                                                              |
-| GuidePost @type decision                         | SCHEMA_GUIDEPOST_TYPE_DECISION_P2                         | P2 / DEFERRED                           | GuidePost.jsx emits @type: "Article". Product/SEO decision whether to keep Article or change to HowTo or another type.                                                                                                                                                                                                                                                                                                                                                                                                      |
-| Schema builders centralization                   | SCHEMA_BUILDERS_CENTRALIZATION_P2                         | P2 / DEFERRED                           | JSON-LD builder functions spread across Blog.jsx, Guides.jsx, BlogPost.jsx, GuidePost.jsx. Future centralization refactor.                                                                                                                                                                                                                                                                                                                                                                                                  |
-| Schema drift gate                                | SCHEMA_DRIFT_GATE_P2                                      | P2 / DEFERRED                           | CI gate to detect schema drift between SeoHelmet output and expected JSON-LD shape. No gate exists yet.                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| Item                                             | Contour                                                   | Priority                                | Notes                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| ------------------------------------------------ | --------------------------------------------------------- | --------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| GSC ownership + sitemap submission               | POST_LAUNCH_SEARCH_CONSOLE_AND_SITEMAP_SUBMISSION_P1      | P1                                      | Cannot monitor indexing without this                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| Marketing page imageAlt                          | SEO_IMAGE_ALT_META_MARKETING_P1                           | P1                                      | 6 files: Home, Cards, Pricing, Contact, Blog, Guides listing                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| PublicCard.jsx imageAlt                          | SEO_PUBLIC_CARD_IMAGE_ALT_META_P2                         | P2                                      | Scoped audit required вЂ” card fields are user-controlled                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| twitter:image:alt for /og/card/\*                | вЂ”                                                       | P2                                      | Pre-existing gap in og.routes.js card handlers                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| og:image:secure_url, width, height, type         | вЂ”                                                       | P3                                      | Blog/guides OG HTML, backend path                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| Private/admin route Disallow                     | вЂ”                                                       | P2                                      | Deferred until GSC confirms noindex processed                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| og-drift CI check                                | вЂ”                                                       | P3                                      | Alignment check: index.html vs Home.jsx OG                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| sitemap index / image sitemap                    | вЂ”                                                       | Scale                                   | Post-GSC-data decision                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| True HTTP 404 for SPA not-found                  | вЂ”                                                       | P2                                      | Infrastructure/hosting contour                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| SSR/prerender indexability                       | вЂ”                                                       | P2                                      | Defer until GSC shows WRS issues                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| fb:app_id / Meta app governance                  | вЂ”                                                       | P3                                      | Product decision required                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| Free-tier card noindex policy review             | вЂ”                                                       | P3                                      | Product decision: OG preview vs noindex                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| Static shell canonical policy gate               | SEO_STATIC_SHELL_POLICY_GATE_P1                           | CLOSED                                  | CI/local gate preventing static canonical reintroduction and preserving homepage og:url fallback. Command: `npm.cmd run check:seo-static-shell`. Invariants protected: (1) no static `rel="canonical"` in `frontend/index.html`; (2) exactly one static `og:url`; (3) `og:url` value is `https://cardigo.co.il/`. Production result: initial HTML has no canonical; runtime canonical supplied by SeoHelmet; homepage og:url fallback remains. No source code, package.json, or handoff changes in this contour.                                                                                               |
+| Marketing page route-specific OG/social preview  | SEO_MARKETING_PAGES_SOCIAL_PREVIEW_P1                     | P1 / DEFERRED                           | Googlebot initial metadata gap (canonical + og:url) for /pricing, /blog, /guides, /cards, /contact is CLOSED under MARKETING_STATIC_ROUTES_INITIAL_METADATA_AUDIT_P1 (Section 18). Social bot OG preview remains deferred: /cards, /pricing, /contact, /blog listing, /guides listing now receive route-specific og:url and og:title via buildStaticMarketingOgHtml. Social branch remains canonical-absent by design. The remaining deferred gap is og:image differentiation вЂ” all 5 routes still share the homepage og:image. Do not conflate with the Googlebot contour. Do not mark this item as closed. |
+| Owner JSON-LD 5000-char length limit             | SCHEMA_OWNER_JSONLD_LENGTH_LIMIT_P1                       | CLOSED / PASS                           | `card.seo.jsonLd` вЂ” backend Card.model.js + frontend EditCard.jsx + SeoPanel.jsx maxLength={5000}. Empty/null allowed. >5000 chars or invalid JSON rejected. Existing oversized DB values fail on rewrite only.                                                                                                                                                                                                                                                                                                                                                                                              |
+| Owner JSON-LD @type allowlist + nested blocklist | SCHEMA_OWNER_JSONLD_TYPE_ALLOWLIST_P1                     | CLOSED / PASS                           | Allowed top-level @type: LocalBusiness, Organization, Person, Service. @graph rejected. Missing @type rejected. Nested Review/AggregateRating/Rating rejected. MAX_NESTING_DEPTH=10 fail-closed. Files: Card.model.js, EditCard.jsx.                                                                                                                                                                                                                                                                                                                                                                           |
+| Blog/Guides paginated archive FAQPage suppress   | SCHEMA_BLOG_GUIDES_PAGINATION_FAQ_SCHEMA_P1               | CLOSED / PASS                           | Blog.jsx and Guides.jsx emit FAQPage JSON-LD only on effectivePage <= 1. /blog/page/N and /guides/page/N (N>1) receive jsonLdItems=[]. Fixes schema/canonical mismatch on paginated archive pages.                                                                                                                                                                                                                                                                                                                                                                                                             |
+| Public card Googlebot metadata injection         | PUBLIC_CARD_OG_INITIAL_METADATA_EDGE_INJECTION_P2A        | CLOSED / PRODUCTION VERIFIED 2026-05-09 | Googlebot/bingbot hitting /card/:slug and /c/:orgSlug/:slug now receive SPA shell with route-specific head tags injected from backend /og metadata. No meta http-equiv=refresh. Cache-Control: no-store, Vary: User-Agent. Production smoke script final verdict: FINAL: PASS вЂ” production Edge smoke passed. Smoke groups G1вЂ“G10 all passed. See Section 16.                                                                                                                                                                                                                                              |
+| Hydrated social metadata deduplication           | STATIC_SOCIAL_META_HELMET_DEDUP_P2                        | CLOSED / PRODUCTION VERIFIED 2026-05-09 | Static social/meta fallback tags in frontend/index.html were missing data-rh="true". react-helmet-async only removes tags it manages (data-rh="true"). Result: duplicate social tags persisted after hydration; querySelector returned the first (stale homepage) value on all non-home routes. Fix: added data-rh="true" to all 18 static fallback tags. Added imageAlt prop to Home.jsx SeoHelmet callsite. Production DOM smoke: all verified routes emit exactly one set of social tags post-hydration. See Section 17.                                                                                    |
+| Marketing routes Googlebot initial metadata      | MARKETING_STATIC_ROUTES_INITIAL_METADATA_AUDIT_P1         | CLOSED / PRODUCTION VERIFIED 2026-05-09 | Closes the raw initial metadata gap for top-level marketing routes (/pricing, /blog, /guides, /cards, /contact) when accessed by Googlebot/bingbot. Root cause: isCrawler branch fell through to context.next() for all non-card paths, returning raw SPA shell with no route-specific canonical or og:url. Fix: og-preview.js buildStaticMarketingOgHtml extended with optional includeCanonical param; new crawler injection block added for marketing route keys from marketingMeta.config.js. File changed: frontend/netlify/edge-functions/og-preview.js only. G1вЂ“G6 all PASS. See Section 18.          |
+| GSC six-URL triage                               | SEO_GSC_DISCOVERED_NOT_INDEXED_TRIAGE_P1                  | Phase 1 accepted                        | No known code/config blocker found from read-only audit. Six URLs: /privacy, /terms, /accessibility-statement, /payment-policy, /card/cardigo, /c/digitalyty/digital-card. All HTTP 200, no noindex, all in sitemap. Manual GSC operator steps pending.                                                                                                                                                                                                                                                                                                                                                        |
+| GSC manual URL Inspection + Request Indexing     | SEO_GSC_MANUAL_URL_INSPECTION_AND_REQUEST_INDEXING_P0_OPS | PENDING OPERATOR ACTION                 | GSC URL Inspection в†’ Test Live URL в†’ Request Indexing for each of the six triage URLs. /c/digitalyty/digital-card requires product decision first. No code change required.                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| Digitalyty org-card indexability decision        | SEO_ORG_CARD_DIGITALYTY_BOUNDARY_DECISION_P1              | PENDING PRODUCT DECISION                | Is /c/digitalyty/digital-card intentionally public/demo or internal test? If internal test: set robots=noindex or unpublish. If intentional: leave as-is and proceed with GSC request.                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| Legal pages metadata gap                         | SEO_LEGAL_PAGES_METADATA_GAP_P2                           | P2 / PENDING                            | Privacy.jsx, Terms.jsx, Accessibility.jsx, PaymentPolicy.jsx: hardcoded canonical strings instead of ORIGIN constant; no image/imageAlt passed to SeoHelmet. Future contour.                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| Internal linking and sitemap signal              | SEO_INTERNAL_LINKING_AND_SITEMAP_SIGNAL_P2                | P2 / DEFERRED                           | Footer/nav link audit for crawl discoverability. Post-GSC-data decision.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| Dynamic Googlebot rendering governance           | SEO_DYNAMIC_GOOGLEBOT_RENDERING_GOVERNANCE_P2             | P2 / DEFERRED                           | Defer until GSC shows WRS rendering errors. No current evidence of WRS issues.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| GuidePost @type decision                         | SCHEMA_GUIDEPOST_TYPE_DECISION_P2                         | P2 / DEFERRED                           | GuidePost.jsx emits @type: "Article". Product/SEO decision whether to keep Article or change to HowTo or another type.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| Schema builders centralization                   | SCHEMA_BUILDERS_CENTRALIZATION_P2                         | P2 / DEFERRED                           | JSON-LD builder functions spread across Blog.jsx, Guides.jsx, BlogPost.jsx, GuidePost.jsx. Future centralization refactor.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| Schema drift gate                                | SCHEMA_DRIFT_GATE_P2                                      | P2 / DEFERRED                           | CI gate to detect schema drift between SeoHelmet output and expected JSON-LD shape. No gate exists yet.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
 
 ---
 
@@ -506,23 +528,24 @@ Expected: 0 matches outside anti-drift sections.
 ## 16. Edge Crawler Behavior for Public Card Routes
 
 **Contour:** PUBLIC_CARD_OG_INITIAL_METADATA_EDGE_INJECTION_P2A
-**Status:** CLOSED / PRODUCTION VERIFIED / PASS — 2026-05-09
+**Status:** CLOSED / PRODUCTION VERIFIED / PASS вЂ” 2026-05-09
 **Implemented in:** `frontend/netlify/edge-functions/og-preview.js`
 
 ---
 
 ### 16.1 UA Class Routing Summary
 
-| UA class                                                                                                                    | Routes intercepted                              | Response                                                                                                                                |
-| --------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
-| Social bots (facebookexternalhit, WhatsApp, Twitterbot, LinkedInBot, TelegramBot, Slackbot, Discordbot, Pinterest, vkShare) | /card/_, /c/_, /blog/_, /guides/_               | Full backend /og HTML served directly. meta http-equiv=refresh present. Cache-Control: public, max-age=300.                             |
-| Search crawlers (Googlebot, Googlebot-Image, bingbot)                                                                       | /card/:slug and /c/:orgSlug/:slug only          | SPA shell with route-specific head tags injected from backend /og metadata. No meta refresh. Cache-Control: no-store. Vary: User-Agent. |
-| Search crawlers (Googlebot, Googlebot-Image, bingbot)                                                                       | All other paths (blog, guides, marketing, etc.) | Normal SPA shell via context.next(). No injection.                                                                                      |
-| Browsers and all other UAs                                                                                                  | All paths                                       | Normal SPA shell via context.next(). No injection.                                                                                      |
+| UA class                                                                                                                    | Routes intercepted                                  | Response                                                                                                                                                   |
+| --------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Social bots (facebookexternalhit, WhatsApp, Twitterbot, LinkedInBot, TelegramBot, Slackbot, Discordbot, Pinterest, vkShare) | /card/_, /c/_, /blog/_, /guides/_                   | Full backend /og HTML served directly. meta http-equiv=refresh present. Cache-Control: public, max-age=300.                                                |
+| Search crawlers (Googlebot, Googlebot-Image, bingbot)                                                                       | /card/:slug and /c/:orgSlug/:slug only              | SPA shell with route-specific head tags injected from backend /og metadata. No meta refresh. Cache-Control: no-store. Vary: User-Agent.                    |
+| Search crawlers (Googlebot, Googlebot-Image, bingbot)                                                                       | /pricing, /blog, /guides, /cards, /contact          | SPA shell with route-specific head injected from marketingMeta.config.js. No backend /og fetch. Cache-Control: no-store. Vary: User-Agent. See Section 18. |
+| Search crawlers (Googlebot, Googlebot-Image, bingbot)                                                                       | All other paths (blog/:slug, guides/:slug, /, etc.) | Normal SPA shell via context.next(). No injection.                                                                                                         |
+| Browsers and all other UAs                                                                                                  | All paths                                           | Normal SPA shell via context.next(). No injection.                                                                                                         |
 
 ---
 
-### 16.2 CRAWLER Branch — Technical Specification
+### 16.2 CRAWLER Branch вЂ” Technical Specification
 
 **Source of truth for metadata:** backend /og routes (`/og/card/:slug`, `/og/c/:orgSlug/:slug`)
 
@@ -531,13 +554,13 @@ Expected: 0 matches outside anti-drift sections.
 - `<title>`
 - `<meta name="description">`
 - `<link rel="canonical">`
-- `<meta name="robots">` (only if present — absent for indexable cards, present for noindex cards)
+- `<meta name="robots">` (only if present вЂ” absent for indexable cards, present for noindex cards)
 - All `<meta property="og:*">` tags
 - All `<meta name="twitter:*">` tags
 
 **Explicitly NOT injected:**
 
-- `<meta http-equiv="refresh">` — backend /og HTML contains this for browser fallback redirect. It is NOT present in search crawler responses. Google would treat meta refresh as a permanent redirect signal (cloaking risk) if injected. The whitelist extraction ensures it is always excluded.
+- `<meta http-equiv="refresh">` вЂ” backend /og HTML contains this for browser fallback redirect. It is NOT present in search crawler responses. Google would treat meta refresh as a permanent redirect signal (cloaking risk) if injected. The whitelist extraction ensures it is always excluded.
 - Scripts, styles, body content, any other head tags not on the whitelist.
 
 **Anti-duplication:** remove-then-insert pattern. Shell's existing og:_, twitter:_, canonical, and robots tags are removed globally before the extracted block is inserted before `</head>`. Duplicate tags cannot occur.
@@ -546,8 +569,8 @@ Expected: 0 matches outside anti-drift sections.
 
 **Response headers for CRAWLER branch:**
 
-- `Cache-Control: no-store` — search crawlers must not receive stale/cached injected responses
-- `Vary: User-Agent` — CDN must not serve crawler-injected response to browsers or vice versa
+- `Cache-Control: no-store` вЂ” search crawlers must not receive stale/cached injected responses
+- `Vary: User-Agent` вЂ” CDN must not serve crawler-injected response to browsers or vice versa
 
 **Scope limit:** Injection applies only to /card/:slug (exactly 2 path segments after split/filter) and /c/:orgSlug/:slug (exactly 3 path segments). All other paths fall through via context.next() with no injection.
 
@@ -555,9 +578,9 @@ Expected: 0 matches outside anti-drift sections.
 
 ### 16.3 Production Smoke Record (2026-05-09)
 
-Production smoke script final verdict: FINAL: PASS — production Edge smoke passed. All smoke groups G1–G10 passed. Smoke run performed against https://cardigo.co.il with real Googlebot UA, facebookexternalhit UA, and browser UA.
+Production smoke script final verdict: FINAL: PASS вЂ” production Edge smoke passed. All smoke groups G1вЂ“G10 passed. Smoke run performed against https://cardigo.co.il with real Googlebot UA, facebookexternalhit UA, and browser UA.
 
-G1 — Googlebot /card/cardigo:
+G1 вЂ” Googlebot /card/cardigo:
 G1.1 status 200: PASS
 G1.2 div#root present (SPA shell body): PASS
 G1.3 canonical = https://cardigo.co.il/card/cardigo: PASS
@@ -566,13 +589,13 @@ G1.5 robots noindex present (free-tier card): PASS
 G1.6 no meta http-equiv=refresh: PASS
 G1.7 no homepage og:url: PASS
 
-G2 — Googlebot /card/eyagrrmqui6q:
+G2 вЂ” Googlebot /card/eyagrrmqui6q:
 G2.1 status 200: PASS
 G2.2 canonical = https://cardigo.co.il/card/eyagrrmqui6q: PASS
 G2.3 robots noindex present: PASS
 G2.4 no meta http-equiv=refresh: PASS
 
-G3 — Googlebot /card/nitay-tours (paid/indexable):
+G3 вЂ” Googlebot /card/nitay-tours (paid/indexable):
 G3.1 status 200: PASS
 G3.2 div#root present: PASS
 G3.3 canonical = https://cardigo.co.il/card/nitay-tours: PASS
@@ -581,7 +604,7 @@ G3.5 robots meta absent (indexable card): PASS
 G3.6 no meta http-equiv=refresh: PASS
 G3.7 no homepage og:url: PASS
 
-G4 — Googlebot /c/digitalyty/digital-card (org card):
+G4 вЂ” Googlebot /c/digitalyty/digital-card (org card):
 G4.1 status 200: PASS
 G4.2 div#root present: PASS
 G4.3 canonical = https://cardigo.co.il/c/digitalyty/digital-card: PASS
@@ -589,30 +612,30 @@ G4.4 og:url = https://cardigo.co.il/c/digitalyty/digital-card: PASS
 G4.5 robots meta absent (indexable org card): PASS
 G4.6 no meta http-equiv=refresh: PASS
 
-G5 — Googlebot response headers (/card/nitay-tours):
+G5 вЂ” Googlebot response headers (/card/nitay-tours):
 G5.1 Cache-Control: no-store: PASS
 G5.2 Vary: User-Agent: PASS
 
-G6 — facebookexternalhit /card/nitay-tours (social branch unchanged):
+G6 вЂ” facebookexternalhit /card/nitay-tours (social branch unchanged):
 G6.1 status 200: PASS
 G6.2 og:url = https://cardigo.co.il/card/nitay-tours: PASS
 G6.3 meta http-equiv=refresh present (full /og HTML): PASS
 G6.4 no div#root (full /og HTML, not SPA shell): PASS
 
-G7 — Browser UA /card/nitay-tours (normal SPA):
+G7 вЂ” Browser UA /card/nitay-tours (normal SPA):
 G7.1 status 200: PASS
 G7.2 div#root present: PASS
 G7.3 no robots noindex injected: PASS
 
-G8 — Googlebot nonexistent slug:
+G8 вЂ” Googlebot nonexistent slug:
 G8.1 status 404: PASS
 
-G9 — Googlebot /pricing (out-of-scope, no injection):
+G9 вЂ” Googlebot /pricing (out-of-scope, no injection):
 G9.1 status 200: PASS
 G9.2 div#root present: PASS
 G9.3 no card metadata injected: PASS
 
-G10 — Duplicate tag guard (Googlebot /card/nitay-tours):
+G10 вЂ” Duplicate tag guard (Googlebot /card/nitay-tours):
 G10.1 title count = 1: PASS
 G10.2 canonical count = 1: PASS
 G10.3 robots count = 0 (indexable card): PASS
@@ -659,7 +682,7 @@ The following items are explicitly out of scope for this contour and require the
 ## 17. Hydrated Social Metadata Deduplication
 
 **Contour:** STATIC_SOCIAL_META_HELMET_DEDUP_P2
-**Status:** CLOSED / PRODUCTION VERIFIED / PASS — 2026-05-09
+**Status:** CLOSED / PRODUCTION VERIFIED / PASS вЂ” 2026-05-09
 **Files changed:** `frontend/index.html`, `frontend/src/pages/Home.jsx`
 
 ---
@@ -668,9 +691,9 @@ The following items are explicitly out of scope for this contour and require the
 
 `frontend/index.html` is the shared SPA shell served for every route via the Netlify catchall `/* /index.html 200`. It contains 18 static social/meta fallback tags (description, og:locale, og:type, og:site_name, og:title, og:description, og:url, og:image, og:image:secure_url, og:image:width, og:image:height, og:image:type, og:image:alt, twitter:card, twitter:title, twitter:description, twitter:image, twitter:image:alt) intended as homepage brand identity fallback before hydration.
 
-Before this fix, none of these static tags had `data-rh="true"`. react-helmet-async only removes and replaces tags it considers managed — tags marked with `data-rh="true"`. Tags without this attribute are unmanaged and are never removed by Helmet.
+Before this fix, none of these static tags had `data-rh="true"`. react-helmet-async only removes and replaces tags it considers managed вЂ” tags marked with `data-rh="true"`. Tags without this attribute are unmanaged and are never removed by Helmet.
 
-On each route hydration, `SeoHelmet` (via react-helmet-async) appended new route-specific `data-rh="true"` tags without removing the pre-existing unmanaged static tags. Both sets coexisted in the DOM simultaneously. `document.querySelector` returns the first match — the stale, unmanaged homepage value — causing all social meta reads on non-home routes to return homepage-brand values instead of route-specific ones.
+On each route hydration, `SeoHelmet` (via react-helmet-async) appended new route-specific `data-rh="true"` tags without removing the pre-existing unmanaged static tags. Both sets coexisted in the DOM simultaneously. `document.querySelector` returns the first match вЂ” the stale, unmanaged homepage value вЂ” causing all social meta reads on non-home routes to return homepage-brand values instead of route-specific ones.
 
 Confirmed by manual DOM inspection on `/card/nitay-tours` after hydration:
 
@@ -684,7 +707,7 @@ Confirmed by manual DOM inspection on `/card/nitay-tours` after hydration:
 
 **frontend/index.html:** `data-rh="true"` added as the first attribute (after `<meta`) to all 18 static social/meta fallback tags. Content values, tag order, tag structure, multiline layout, title element, charset, viewport, theme-color, GTM scripts, icons, manifest, and preconnect links are all unchanged. The addition of `data-rh="true"` to static tags causes react-helmet-async to treat them as managed: when a Helmet instance renders route-specific tags, the static ones are removed first and the new route-specific ones are inserted. The DOM always has exactly one set of social tags post-hydration.
 
-**frontend/src/pages/Home.jsx:** `imageAlt` prop added to the `SeoHelmet` callsite. The static `og:image:alt` and `twitter:image:alt` tags in `index.html` are now Helmet-managed (data-rh="true") and will be removed during hydration. `SeoHelmet` only re-renders `og:image:alt` / `twitter:image:alt` when both `image` and `imageAlt` props are truthy. Without the `imageAlt` prop, the homepage hydration would silently drop both alt tags after removing the static ones. The imageAlt value (`Cardigo – כרטיס ביקור דיגיטלי לעסקים`, U+2013 EN DASH) is identical to the static `og:image:alt` content in `index.html`.
+**frontend/src/pages/Home.jsx:** `imageAlt` prop added to the `SeoHelmet` callsite. The static `og:image:alt` and `twitter:image:alt` tags in `index.html` are now Helmet-managed (data-rh="true") and will be removed during hydration. `SeoHelmet` only re-renders `og:image:alt` / `twitter:image:alt` when both `image` and `imageAlt` props are truthy. Without the `imageAlt` prop, the homepage hydration would silently drop both alt tags after removing the static ones. The imageAlt value (`Cardigo вЂ“ Ч›ЧЁЧЧ™ЧЎ Ч‘Ч™Ч§Ч•ЧЁ Ч“Ч™Ч’Ч™ЧЧњЧ™ ЧњЧўЧЎЧ§Ч™Чќ`, U+2013 EN DASH) is identical to the static `og:image:alt` content in `index.html`.
 
 **No other files were changed.** `SeoHelmet.jsx`, `og-preview.js`, and `check-seo-static-shell.mjs` are unmodified. The Edge Function behavior and Googlebot CRAWLER branch are unaffected.
 
@@ -693,13 +716,13 @@ Confirmed by manual DOM inspection on `/card/nitay-tours` after hydration:
 ### 17.3 Runtime Behavior After Fix
 
 **Pre-hydration (browser initial load, before JS executes):**
-The static fallback tags remain in the DOM with `data-rh="true"`. Homepage OG values are visible as the initial shell state. This is correct and intentional — social bots that receive the SPA shell without JS execution see homepage brand identity. The static `og:url` value (`https://cardigo.co.il/`) remains correct for this pre-hydration state on all routes.
+The static fallback tags remain in the DOM with `data-rh="true"`. Homepage OG values are visible as the initial shell state. This is correct and intentional вЂ” social bots that receive the SPA shell without JS execution see homepage brand identity. The static `og:url` value (`https://cardigo.co.il/`) remains correct for this pre-hydration state on all routes.
 
 **Post-hydration (after SeoHelmet renders):**
 react-helmet-async removes all `data-rh="true"` tags, then inserts route-specific ones. Result: exactly one set of social tags in the DOM with route-correct values.
 
 **Homepage hydration (`/`):**
-Home.jsx passes `imageAlt="Cardigo – כרטיס ביקור דיגיטלי לעסקים"` to SeoHelmet. After hydration: one homepage-specific set including `og:image:alt` and `twitter:image:alt`.
+Home.jsx passes `imageAlt="Cardigo вЂ“ Ч›ЧЁЧЧ™ЧЎ Ч‘Ч™Ч§Ч•ЧЁ Ч“Ч™Ч’Ч™ЧЧњЧ™ ЧњЧўЧЎЧ§Ч™Чќ"` to SeoHelmet. After hydration: one homepage-specific set including `og:image:alt` and `twitter:image:alt`.
 
 **Card and org-card routes (`/card/:slug`, `/c/:orgSlug/:slug`):**
 SeoHelmet receives card-specific url, image, imageAlt (if set), and description from PublicCard.jsx. After hydration: one card-specific set.
@@ -714,13 +737,13 @@ Unaffected. The Edge Function operates on raw HTML text (before browser renderin
 
 ### 17.4 Production Smoke Record (2026-05-09)
 
-**EDGE smoke: PASS** — Full edge smoke record is in Section 16.3. Edge behavior confirmed unaffected by this change.
+**EDGE smoke: PASS** вЂ” Full edge smoke record is in Section 16.3. Edge behavior confirmed unaffected by this change.
 
 **DOM hydrated smoke: PASS**
 
 Verification method: Playwright browser automation against production, loading each route and waiting for React hydration to complete before reading head tags.
 
-Note: Initial Playwright invocation failed because Playwright was not installed in the isolated smoke directory. After installing Playwright in the smoke directory, DOM smoke passed. This was a verification infrastructure issue only — not a Cardigo bug.
+Note: Initial Playwright invocation failed because Playwright was not installed in the isolated smoke directory. After installing Playwright in the smoke directory, DOM smoke passed. This was a verification infrastructure issue only вЂ” not a Cardigo bug.
 
 Route baselines verified (post-hydration DOM, all tag counts = 1):
 
@@ -748,7 +771,7 @@ Route baselines verified (post-hydration DOM, all tag counts = 1):
 - canonical: 1 tag, https://cardigo.co.il/
 - og:url: 1 tag, https://cardigo.co.il/
 - og:image: 1 tag, homepage OG image (v=20260506)
-- og:image:alt: 1 tag, "Cardigo – כרטיס ביקור דיגיטלי לעסקים"
+- og:image:alt: 1 tag, "Cardigo вЂ“ Ч›ЧЁЧЧ™ЧЎ Ч‘Ч™Ч§Ч•ЧЁ Ч“Ч™Ч’Ч™ЧЧњЧ™ ЧњЧўЧЎЧ§Ч™Чќ"
 - twitter:image:alt: 1 tag, same value
 - No duplicate social tags
 
@@ -790,3 +813,155 @@ The following behaviors are locked. Any proposed change that violates these must
 - og:image structured metadata (og:image:secure_url, og:image:width, og:image:height, og:image:type) for SPA routes: SeoHelmet currently does not render these four tags. If structured image metadata enhancement is desired for SPA routes, open a separate bounded SeoHelmet enhancement contour. Do not mix into the dedup closure.
 
 - Marketing page route-specific OG/social preview: Routes /cards, /pricing, /contact, /blog listing, /guides listing still use the shared homepage og:image for social bots. This is a separate gap tracked under SEO_MARKETING_PAGES_SOCIAL_PREVIEW_P1.
+
+---
+
+## 18. Marketing Routes Initial Metadata вЂ” Googlebot Crawler Injection
+
+**Contour:** MARKETING_STATIC_ROUTES_INITIAL_METADATA_AUDIT_P1
+**Status:** CLOSED / PRODUCTION VERIFIED / PASS вЂ” 2026-05-09
+**Files changed:** `frontend/netlify/edge-functions/og-preview.js` only
+
+This contour closes the raw initial metadata gap for the five top-level marketing routes when accessed by Googlebot/bingbot. It does NOT claim to fix all SEO or indexing issues globally. It closes the raw initial metadata gap only for the selected top-level marketing routes (/pricing, /blog, /guides, /cards, /contact) for search crawler UAs.
+
+---
+
+### 18.1 Root Cause
+
+Googlebot/Googlebot-Image/bingbot matched the Edge Function config (`config.path` includes `/pricing`, `/blog`, `/guides`, `/cards`, `/contact`; `config.header` UA matches Googlebot and bingbot). However, the `isCrawler` branch in `og-preview.js` only handled `/card/:slug` and `/c/:orgSlug/:slug` explicitly. All other paths fell through an `else` clause that immediately returned `context.next()`, causing Googlebot to receive the raw SPA shell with:
+
+- No route-specific canonical tag (static shell has none per policy)
+- No route-specific og:url (shell fallback = `https://cardigo.co.il/` homepage)
+- No route-specific title or description
+
+This is a raw initial-metadata gap only. The hydrated DOM (after WRS executes the SPA JS) emitted correct metadata via SeoHelmet. But the initial HTML received by Googlebot before JS execution was incorrect.
+
+---
+
+### 18.2 Fix Applied
+
+Two edits to `frontend/netlify/edge-functions/og-preview.js`:
+
+**Edit A вЂ” `buildStaticMarketingOgHtml` optional canonical param:**
+Function signature updated to accept `includeCanonical = false` optional parameter. When true, emits `<link rel="canonical" href="{escaped_url}">` using the already-computed escaped URL variable (no double-escaping). Social branch callers pass no `includeCanonical` argument в†’ default false в†’ social branch output unchanged.
+
+**Edit B вЂ” Marketing crawler injection block:**
+In the `isCrawler` branch `else` clause (before the final `context.next()` fallthrough), a new block was added for top-level single-segment paths that match a marketing route key via `getMarketingMeta(segments[0])`. For matching routes:
+
+1. `buildMarketingUrl(meta.path)` computes the canonical URL from SSoT.
+2. `buildStaticMarketingOgHtml({ ..., includeCanonical: true })` generates a source HTML fragment with canonical, og:url, og:title, og:description, og:image, og:image:alt, twitter:\* tags.
+3. `context.next()` is called exactly once to fetch the SPA shell.
+4. `injectMetadataIntoShell(shellHtml, sourceHtml)` extracts the whitelisted head tags from the source fragment and injects them into the SPA shell (remove-then-insert pattern вЂ” identical to the card CRAWLER branch).
+5. Response headers: `Cache-Control: no-store`, `Vary: User-Agent`, `Content-Type: text/html`.
+6. On any injection error, the original `shellResponse` (already cloned-before-read) is returned as fail-open.
+
+Non-matching paths (blog/:slug, guides/:slug, /, etc.) continue to the existing `return context.next()` fallthrough.
+
+Metadata SSoT: `frontend/src/seo/marketingMeta.config.js` (pure ESM, imported by og-preview.js).
+
+---
+
+### 18.3 Production Smoke Record (2026-05-09)
+
+All smoke groups run against https://cardigo.co.il. PowerShell EXIT:1 on some runs is a known PowerShell boolean-expression artifact (last expression evaluated to boolean $false); actual HTTP checks passed. Future smoke scripts should aggregate results and exit 0/1 explicitly.
+
+G1 вЂ” Googlebot crawler (5 marketing routes):
+
+G1-pricing: STATUS=200 CC=no-store VARY=Accept-Encoding,User-Agent XROBOT=(empty) CANON_COUNT=1 CANON_TAG=<link rel="canonical" href="https://cardigo.co.il/pricing"> OGURL_COUNT=1 OGURL=https://cardigo.co.il/pricing HOME_OGURL_ABSENT=True NOINDEX=False вЂ” PASS
+G1-blog: STATUS=200 CC=no-store CANON_COUNT=1 CANON_TAG=<link rel="canonical" href="https://cardigo.co.il/blog"> OGURL_COUNT=1 OGURL=https://cardigo.co.il/blog HOME_OGURL_ABSENT=True NOINDEX=False вЂ” PASS
+G1-guides: STATUS=200 CC=no-store CANON_COUNT=1 CANON_TAG=<link rel="canonical" href="https://cardigo.co.il/guides"> OGURL_COUNT=1 OGURL=https://cardigo.co.il/guides HOME_OGURL_ABSENT=True NOINDEX=False вЂ” PASS
+G1-cards: STATUS=200 CC=no-store CANON_COUNT=1 CANON_TAG=<link rel="canonical" href="https://cardigo.co.il/cards"> OGURL_COUNT=1 OGURL=https://cardigo.co.il/cards HOME_OGURL_ABSENT=True NOINDEX=False вЂ” PASS
+G1-contact: STATUS=200 CC=no-store VARY=Accept-Encoding,User-Agent XROBOT=(empty) CANON_COUNT=1 CANON_TAG=<link rel="canonical" href="https://cardigo.co.il/contact"> OGURL_COUNT=1 OGURL=https://cardigo.co.il/contact HOME_OGURL_ABSENT=True NOINDEX=False вЂ” PASS
+
+G2 вЂ” Social bot (facebookexternalhit, 5 marketing routes, social branch unchanged):
+
+G2-pricing: STATUS=200 CANON_ABSENT=True OGURL_COUNT=1 OGURL=https://cardigo.co.il/pricing HOME_OGURL_ABSENT=True DIV_ROOT_ABSENT=True NOINDEX=False вЂ” PASS
+G2-blog: STATUS=200 CANON_ABSENT=True OGURL_COUNT=1 OGURL=https://cardigo.co.il/blog HOME_OGURL_ABSENT=True DIV_ROOT_ABSENT=True NOINDEX=False вЂ” PASS
+G2-guides: STATUS=200 CANON_ABSENT=True OGURL_COUNT=1 OGURL=https://cardigo.co.il/guides HOME_OGURL_ABSENT=True DIV_ROOT_ABSENT=True NOINDEX=False вЂ” PASS
+G2-cards: STATUS=200 CANON_ABSENT=True OGURL_COUNT=1 OGURL=https://cardigo.co.il/cards HOME_OGURL_ABSENT=True DIV_ROOT_ABSENT=True NOINDEX=False вЂ” PASS
+G2-contact: STATUS=200 CANON_ABSENT=True OGURL_COUNT=1 OGURL=https://cardigo.co.il/contact HOME_OGURL_ABSENT=True DIV_ROOT_ABSENT=True NOINDEX=False вЂ” PASS
+
+Key: CANON_ABSENT=True is correct for social branch вЂ” social bots use the marketing static OG HTML which intentionally does not include a canonical by default (includeCanonical not passed в†’ false). OGURL is route-specific for all 5 routes.
+
+G3 вЂ” Browser pass-through (5 marketing routes, unchanged):
+
+G3-pricing: STATUS=200 CC=public,max-age=0,must-revalidate CANON_ABSENT=True DIV_ROOT=True SCRIPT=True HOME_OGURL=True NOINDEX=False вЂ” PASS
+G3-blog: STATUS=200 CC=public,max-age=0,must-revalidate CANON_ABSENT=True DIV_ROOT=True SCRIPT=True HOME_OGURL=True NOINDEX=False вЂ” PASS
+G3-guides: STATUS=200 CC=public,max-age=0,must-revalidate CANON_ABSENT=True DIV_ROOT=True SCRIPT=True HOME_OGURL=True NOINDEX=False вЂ” PASS
+G3-cards: STATUS=200 CC=public,max-age=0,must-revalidate CANON_ABSENT=True DIV_ROOT=True SCRIPT=True HOME_OGURL=True NOINDEX=False вЂ” PASS
+G3-contact: STATUS=200 CC=public,max-age=0,must-revalidate CANON_ABSENT=True DIV_ROOT=True SCRIPT=True HOME_OGURL=True NOINDEX=False вЂ” PASS
+
+Key: Browser receives normal SPA shell (unmodified). CANON_ABSENT=True correct (no canonical in static shell per policy). HOME_OGURL=True confirms static og:url fallback present pre-hydration (correct). DIV_ROOT=True and SCRIPT=True confirm SPA shell body intact.
+
+G4 вЂ” Hydrated DOM (SeoHelmet source analysis + live Playwright smoke):
+
+Static source analysis via Node.js (G4_STATIC_EXIT:0):
+G4-static /pricing: SeoHelmet=true canonicalUrl=true noindex=false PASS=true
+G4-static /blog: SeoHelmet=true canonicalUrl=true noindex=false PASS=true
+G4-static /guides: SeoHelmet=true canonicalUrl=true noindex=false PASS=true
+G4-static /cards: SeoHelmet=true canonicalUrl=true noindex=false PASS=true
+G4-static /contact: SeoHelmet=true canonicalUrl=true noindex=false PASS=true
+
+Live hydrated DOM smoke: PASS / EXIT:0 (all 5 routes, post-hydration DOM check via pwsh terminal).
+
+All 5 page components (Pricing.jsx, Blog.jsx, Guides.jsx, Cards.jsx, Contact.jsx) are UNMODIFIED in this contour. SeoHelmet.jsx is UNMODIFIED. Hydrated canonical and og:url are emitted by SeoHelmet as before.
+
+G5 вЂ” Card/org-card regression (CRAWLER branch unchanged):
+
+G5-card-nitay-googlebot: STATUS=200 CC=no-store VARY=Accept-Encoding,User-Agent CANON_COUNT=1 CANON_TAG=<link rel="canonical" href="https://cardigo.co.il/card/nitay-tours" /> OGURL=https://cardigo.co.il/card/nitay-tours HOME_OGURL_ABSENT=True NOINDEX=False вЂ” PASS
+G5-orgcard-googlebot: STATUS=200 CC=no-store VARY=Accept-Encoding,User-Agent CANON_COUNT=1 CANON_TAG=<link rel="canonical" href="https://cardigo.co.il/c/digitalyty/digital-card" /> OGURL=https://cardigo.co.il/c/digitalyty/digital-card HOME_OGURL_ABSENT=True NOINDEX=False вЂ” PASS
+G5-card-nitay-social: STATUS=200 CANON_ABSENT=False OGURL=https://cardigo.co.il/card/nitay-tours DIV_ROOT_ABSENT=True REFRESH_PRESENT=True NOINDEX=False вЂ” PASS
+G5-card-nitay-browser: STATUS=200 CC=public,max-age=0,must-revalidate DIV_ROOT=True SCRIPT=True CANON_ABSENT=True MKT_META_ABSENT=True NOINDEX=False вЂ” PASS
+
+G6 вЂ” Auth/private boundary (noindex preserved, no marketing injection):
+
+G6-login: STATUS=200 CANON_ABSENT=True XROBOT=noindex, nofollow NOINDEX_HEADER=True вЂ” PASS
+G6-dashboard: STATUS=200 CANON_ABSENT=True XROBOT=noindex, nofollow NOINDEX_HEADER=True вЂ” PASS
+G6-admin: STATUS=200 CANON_ABSENT=True XROBOT=noindex, nofollow NOINDEX_HEADER=True вЂ” PASS
+
+---
+
+### 18.4 Anti-Regression Notes
+
+The following behaviors are locked for this contour. Any proposed change requires a new bounded contour with explicit architect approval.
+
+1. Do NOT reintroduce a static `rel="canonical"` into `frontend/index.html`. The canonical for crawler responses is now provided by the Edge Function injection for marketing routes, and by SeoHelmet post-hydration for all routes. A static canonical in index.html would pollute all non-home routes before hydration. See Section 2 Static Shell Policy and the CI gate `npm.cmd run check:seo-static-shell`.
+
+2. Do NOT move marketing metadata source out of `frontend/src/seo/marketingMeta.config.js` without a separate audit. This file is the SSoT imported by both og-preview.js (Edge Function) and by the SPA pages. Moving or splitting this file breaks the injection metadata source without a migration plan.
+
+3. Do NOT apply marketing crawler injection to auth, admin, or private routes (/login, /dashboard, /admin, /editor, etc.). The injection block is gated to `getMarketingMeta(segments[0])` вЂ” only keys defined in marketingMeta.config.js match. Auth routes are not registered there. Do not register auth routes in marketingMeta.config.js.
+
+4. Do NOT change the card CRAWLER branch (backend /og fetch + injectMetadataIntoShell) casually. The card branch and marketing branch are separate code paths in og-preview.js. Changes to the card branch require their own audit under Section 16 anti-regression rules.
+
+5. Keep social and crawler branches behavior-distinct. Social branch for top-level marketing OG HTML intentionally remains canonical-absent (includeCanonical default false). This is by design вЂ” social bots do not follow canonical tags and canonical in social OG HTML adds no value. Do not add canonical to social branch output without a separate SEO/social policy change and explicit approval.
+
+6. Do NOT cache search crawler marketing injection responses without re-auditing cache-key behavior. Cache-Control: no-store and Vary: User-Agent are mandatory on all marketing crawler branch responses. Same invariant as the card CRAWLER branch (Section 16 anti-regression rule 5).
+
+7. PowerShell smoke EXIT:1 artifact: Some PowerShell snippets in smoke runs report EXIT:1 when the last expression evaluated is a boolean $false. This is not a command failure. Future smoke scripts for this contour should aggregate results and `exit $aggregatedPass ? 0 : 1` explicitly.
+
+---
+
+### 18.5 GSC Operator Next Steps
+
+After this production verification, the operator may proceed with GSC Live Test for the marketing routes. Recommended order:
+
+1. GSC URL Inspection в†’ Test Live URL for /pricing вЂ” confirm Googlebot sees correct canonical and og:url in the initial HTML.
+2. GSC URL Inspection в†’ Test Live URL for /blog вЂ” same.
+3. GSC URL Inspection в†’ Test Live URL for /guides вЂ” same.
+
+Only after Live Test confirms correct canonical and indexability:
+
+4. Request Indexing for each of the three routes.
+
+/cards and /contact may also be submitted via GSC URL Inspection after operator confirms product readiness.
+
+Note: GSC URL Inspection reflects Googlebot's actual crawl, not the smoke test result. If Live Test shows unexpected values, open a new contour вЂ” do not silently retry.
+
+---
+
+### 18.6 Future Tails (Separate Contours)
+
+- Social bot OG preview for marketing pages (/pricing, /blog, /guides, /cards, /contact): social bots (facebookexternalhit, WhatsApp, Twitterbot, etc.) now receive route-specific og:url and og:title via buildStaticMarketingOgHtml. Social branch remains canonical-absent by design (includeCanonical not passed в†’ false). The remaining deferred gap is og:image differentiation вЂ” all 5 routes still share the homepage og:image. This is a separate gap tracked under SEO_MARKETING_PAGES_SOCIAL_PREVIEW_P1. Do not conflate with this contour.
+- Marketing page og:image differentiation: all 5 marketing routes currently share the homepage OG image via the static shell fallback. If per-route OG images are desired for Googlebot or social bots, open a separate contour.
+- blog/:slug and guides/:slug Googlebot initial metadata: these slug routes continue via WRS + SeoHelmet. No injection is applied. If GSC shows rendering errors for these routes, open a separate contour.
+- Search Console recrawl timing: canonical/og:url improvements become visible to Googlebot at the next crawl, not immediately. Request Indexing via GSC is the fastest operator action.
