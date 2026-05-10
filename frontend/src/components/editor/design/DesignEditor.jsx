@@ -263,22 +263,6 @@ function DesignEditor({
                             שמור/י את הכרטיס כדי להעלות תמונות.
                         </p>
                     ) : null}
-
-                    <label className={styles.label}>
-                        <span className={styles.labelTitle}>שקיפות רקע</span>
-                        <input
-                            type="range"
-                            min={0}
-                            max={70}
-                            value={Number(safeDesign?.backgroundOverlay ?? 40)}
-                            onChange={(e) =>
-                                onChange({
-                                    ...safeDesign,
-                                    backgroundOverlay: Number(e.target.value),
-                                })
-                            }
-                        />
-                    </label>
                 </section>
             )}
 
