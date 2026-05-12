@@ -4,6 +4,7 @@ import styles from "./EditorPreview.module.css";
 import CardRenderer from "../card/CardRenderer";
 import { withDemoPreviewCard } from "./previewDemo";
 import { TEMPLATES } from "../../templates/templates.config";
+import { getAnonymousId } from "../../services/api";
 
 const cx = (...classes) => classes.filter(Boolean).join(" ");
 
@@ -111,21 +112,31 @@ export default function EditorPreview({
         };
     }, [previewCard, isSelfThemeTab, selfThemeAllowed, selfThemeTemplateId]);
 
+    const canOpenPreviewNoticeLink = Boolean(
+        previewHref && (isAuthenticated || getAnonymousId()),
+    );
+
     return (
         <PhoneFrame className={className}>
             <div className={styles.preview}>
                 {header ? <div className={styles.header}>{header}</div> : null}
-                {showDemoNotice && previewHref && isAuthenticated ? (
+                {showDemoNotice ? (
                     <div className={styles.demoNotice}>
                         תוכן "דוגמא" - לא יוצג ציבורית, רק{" "}
-                        <a
-                            className={styles.demoNoticeLink}
-                            href={previewHref}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                        >
-                            במצב תצוגה מקדימה
-                        </a>
+                        {canOpenPreviewNoticeLink ? (
+                            <a
+                                className={styles.demoNoticeLink}
+                                href={previewHref}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                            >
+                                במצב תצוגה מקדימה
+                            </a>
+                        ) : (
+                            <span className={styles.demoNoticeSuffix}>
+                                במצב תצוגה מקדימה
+                            </span>
+                        )}
                     </div>
                 ) : null}
                 <CardRenderer card={previewCardForRender} mode="editor" />

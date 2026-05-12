@@ -2251,7 +2251,12 @@ function getRequesterUserId(req) {
 
 export async function getPreviewCardBySlug(req, res) {
     const requesterUserId = getRequesterUserId(req);
-    if (!requesterUserId) {
+    const requesterAnonymousId =
+        typeof req.anonymousId === "string" && req.anonymousId
+            ? req.anonymousId
+            : null;
+
+    if (!requesterUserId && !requesterAnonymousId) {
         return res.status(404).json({ message: "Not found" });
     }
 
@@ -2278,12 +2283,31 @@ export async function getPreviewCardBySlug(req, res) {
         return res.status(404).json({ message: "Not found" });
     }
 
-    // Defense in depth: anon-owned cards must never be reachable by slug.
+    const now = new Date();
+
+    // Anonymous-owned cards must never be reachable by slug alone; they require matching req.anonymousId.
     if (card.anonymousId && !card.user) {
-        return res.status(404).json({ message: "Not found" });
+        if (
+            !requesterAnonymousId ||
+            String(requesterAnonymousId) !== String(card.anonymousId)
+        ) {
+            return res.status(404).json({ message: "Not found" });
+        }
+
+        const dto = toCardDTO(card, now);
+        if (dto?.slug) {
+            dto.publicPath = `/card/${dto.slug}`;
+            dto.ogPath = `/og/card/${dto.slug}`;
+        }
+        setDraftNoStore(res);
+        return res.json(dto);
     }
 
     if (!card.user) {
+        return res.status(404).json({ message: "Not found" });
+    }
+
+    if (!requesterUserId) {
         return res.status(404).json({ message: "Not found" });
     }
 
@@ -2291,8 +2315,6 @@ export async function getPreviewCardBySlug(req, res) {
     if (!isOwner) {
         return res.status(404).json({ message: "Not found" });
     }
-
-    const now = new Date();
 
     const userTier = await User.findById(String(card.user))
         .select("adminTier adminTierUntil")
