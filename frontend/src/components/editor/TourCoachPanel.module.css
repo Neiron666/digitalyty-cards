@@ -1,0 +1,82 @@
+.panel {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    padding-inline: 1rem;
+    padding-block: 0.75rem;
+    margin-block: 0.5rem;
+    background: var(--bg-card);
+    color: var(--text-main);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-soft);
+    width: 100%;
+}
+
+.content {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.text {
+    margin: 0;
+    font-size: var(--fs-body-sm);
+
+    line-height: 1.5;
+}
+
+.meta {
+    margin: 0;
+    color: var(--text-muted);
+    font-size: var(--fs-caption);
+}
+
+.actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.primaryButton {
+    flex: 1 1 auto;
+    padding-block: 0.5rem;
+    padding-inline: 1rem;
+    border: 1px solid var(--primary);
+    background: var(--primary);
+    color: var(--text-main);
+    border-radius: var(--radius-md);
+    font-size: var(--fs-body-sm);
+    cursor: pointer;
+}
+
+.primaryButton:hover {
+    background: var(--primary-hover);
+    border-color: var(--primary-hover);
+}
+
+.primaryButton:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
+}
+
+.skipButton {
+    flex: 0 1 auto;
+    padding-block: 0.5rem;
+    padding-inline: 1rem;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text-muted);
+    border-radius: var(--radius-md);
+    font-size: var(--fs-body-sm);
+    cursor: pointer;
+}
+
+.skipButton:hover {
+    color: var(--text-main);
+}
+
+.skipButton:focus-visible {
+    outline: 2px solid var(--border);
+    outline-offset: 2px;
+}

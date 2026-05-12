@@ -21,6 +21,7 @@ export default function EditorSaveBar({
                 className={styles.saveButton}
                 onClick={() => onSave?.()}
                 disabled={saveDisabled}
+                data-tour-id="editor-tour-save-changes"
             >
                 {isSaving ? "שומר…" : "שמור שינויים"}
             </button>

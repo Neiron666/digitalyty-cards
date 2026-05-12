@@ -360,6 +360,15 @@ export default function EditorSidebar({
                                     activeTab === tab.id ? styles.active : ""
                                 }`}
                                 onClick={() => onChangeTab(tab.id)}
+                                data-tour-id={
+                                    tab.id === "head"
+                                        ? "editor-tour-tab-head"
+                                        : tab.id === "business"
+                                          ? "editor-tour-tab-business"
+                                          : tab.id === "contact"
+                                            ? "editor-tour-tab-contact"
+                                            : undefined
+                                }
                             >
                                 <span className={styles.tabLabel}>
                                     {TabIcon && (

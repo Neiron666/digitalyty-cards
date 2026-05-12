@@ -41,6 +41,10 @@ export default function Editor({
     publicUrl,
     publicPath,
     isPublished,
+    // Phase 2C-6: drawer orchestration signal for guided tour (optional)
+    openDrawerForTourStepId,
+    // Phase 2C-7: open-only signal for sections-menu during any active tour
+    tourSectionsMenuOpenOnly = false,
 }) {
     const navigate = useNavigate();
     const { tab } = useParams(); // route: /edit/card/:tab
@@ -192,6 +196,15 @@ export default function Editor({
         }
     }, [dirtyCount, saveState, isMobile, mobileView]);
 
+    // Phase 2C-6: open drawer when tour step requires it (mobile only, open-only).
+    // drawerOpen state remains owned by Editor; EditCard only signals which step is active.
+    // Closing the drawer is left entirely to existing behaviors (Escape, overlay, tab nav).
+    useEffect(() => {
+        if (isMobile && openDrawerForTourStepId) {
+            setDrawerOpen(true);
+        }
+    }, [isMobile, openDrawerForTourStepId]);
+
     return (
         <div className={styles.editor} data-shell="editor">
             <div className={styles.topbar} dir="rtl">
@@ -205,8 +218,13 @@ export default function Editor({
                     aria-controls="editor-sections-drawer"
                     onClick={() => {
                         dismissToast();
-                        setDrawerOpen((v) => !v);
+                        if (tourSectionsMenuOpenOnly) {
+                            setDrawerOpen(true);
+                        } else {
+                            setDrawerOpen((v) => !v);
+                        }
                     }}
+                    data-tour-id="editor-tour-sections-menu"
                 >
                     <span className={styles.sectionsIcon} aria-hidden="true">
                         <span className={styles.sectionsDot} />
@@ -270,6 +288,7 @@ export default function Editor({
                         )}
                         role="tab"
                         aria-selected={mobileView === "edit"}
+                        data-tour-id="editor-tour-edit-toggle"
                         onClick={() => {
                             closeDrawer();
                             setMobileView("edit");
@@ -286,6 +305,7 @@ export default function Editor({
                         )}
                         role="tab"
                         aria-selected={mobileView === "preview"}
+                        data-tour-id="editor-tour-preview-toggle"
                         onClick={() => {
                             closeDrawer();
                             setMobileView("preview");
@@ -404,6 +424,7 @@ export default function Editor({
                             setMobileView("preview");
                             dismissToast();
                         }}
+                        data-tour-id="editor-tour-toast-preview"
                     >
                         צפה
                     </button>

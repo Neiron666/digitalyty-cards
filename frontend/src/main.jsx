@@ -7,6 +7,7 @@ import { UnreadCountProvider } from "./context/UnreadCountContext";
 import router from "./app/router";
 import "./lib/installPromptStore"; // early init — capture beforeinstallprompt before lazy routes
 import "./styles/globals.css";
+import "./styles/tour.css";
 
 createRoot(document.getElementById("root")).render(
     <HelmetProvider>

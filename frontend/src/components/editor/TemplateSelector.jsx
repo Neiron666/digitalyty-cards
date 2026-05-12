@@ -30,6 +30,7 @@ export default function TemplateSelector({ value, onSelect }) {
                     type="button"
                     className={`${styles.groupBtn} ${activeGroup === "dark" ? styles.groupBtnActive : ""}`}
                     onClick={() => setActiveGroup("dark")}
+                    data-tour-id="editor-tour-template-dark-group"
                 >
                     תבניות רקע שחור
                 </button>
@@ -65,6 +66,7 @@ export default function TemplateSelector({ value, onSelect }) {
                                 variant={selected ? "primary" : "secondary"}
                                 size="small"
                                 aria-label={`בחר תבנית: ${tpl.name}`}
+                                data-tour-id={`editor-tour-template-select-${tpl.id}`}
                                 onClick={() => onSelect(tpl.id)}
                             >
                                 {selected ? "נבחר" : "בחר תבנית"}

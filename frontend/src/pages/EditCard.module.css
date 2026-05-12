@@ -450,8 +450,36 @@ a.breakWord:focus-visible {
     color: var(--text-main);
 }
 
+/* ── Replay tour button (mobile-only) ── */
+.replayTourBtn {
+    display: none;
+}
+
 /* ── Mobile: single scroll zone ── */
 @media (max-width: 900px) {
+    .replayTourBtn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        padding-block: 0.5rem;
+        padding-inline: 1rem;
+        margin-block: 0.5rem;
+        background: transparent;
+        color: var(--text-muted);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-lg);
+        font-size: var(--fs-body-sm);
+        font-family: inherit;
+        cursor: pointer;
+        appearance: none;
+    }
+
+    .replayTourBtn:focus-visible {
+        outline: 2px solid var(--accent-cyan);
+        outline-offset: 2px;
+    }
+
     .editCard {
         height: calc(100dvh - 64px);
         overflow: hidden;

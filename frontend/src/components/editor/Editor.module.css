@@ -308,8 +308,17 @@
         display: inline-flex;
         border: 1px solid var(--border);
         border-radius: 10px;
-        overflow: hidden;
         background: rgba(255, 255, 255, 0.02);
+    }
+
+    .segment:first-child {
+        border-start-start-radius: 10px;
+        border-end-start-radius: 10px;
+    }
+
+    .segment:last-child {
+        border-start-end-radius: 10px;
+        border-end-end-radius: 10px;
     }
 
     .segment {
@@ -445,7 +454,7 @@
 
         position: fixed;
         inset-inline: 12px;
-        inset-block-end: 12px;
+        inset-block-end: 70px;
         z-index: 80;
 
         padding-block: 10px;

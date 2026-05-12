@@ -12,6 +12,8 @@ import { TEMPLATES } from "../templates/templates.config";
 import CrownIcon from "../components/icons/CrownIcon";
 import styles from "./EditCard.module.css";
 import SeoHelmet from "../components/seo/SeoHelmet";
+import { useEditorTour } from "../hooks/useEditorTour";
+import TourCoachPanel from "../components/editor/TourCoachPanel";
 
 const REFETCH_THROTTLE_MS = 15_000;
 
@@ -161,6 +163,13 @@ function EditCard() {
     // Phase 2: draft-first editing.
     // `draftCard` is the SSoT for editor UI (panels + preview).
     const [draftCard, setDraftCard] = useState(emptyCard);
+
+    // Phase 2C-5: editor guided onboarding tour (minimal integration).
+    // Hook must be called unconditionally, before any early returns below.
+    const editorTour = useEditorTour({
+        isAnonymous: !isAuthenticated && Boolean(getAnonymousId()),
+        enabled: section === "card" && Boolean(draftCard?._id),
+    });
 
     const [dirtyPaths, setDirtyPaths] = useState(() => new Set());
     const [saveState, setSaveState] = useState("idle");
@@ -2427,7 +2436,25 @@ function EditCard() {
                 </div>
             ) : null}
             <main className={styles.main}>
-                {shouldShowAnonCta ? (
+                {editorTour.isActive ? (
+                    <TourCoachPanel
+                        step={editorTour.currentStep}
+                        currentIndex={editorTour.currentIndex}
+                        totalSteps={editorTour.totalSteps}
+                        onNext={editorTour.advance}
+                        onSkip={editorTour.skip}
+                    />
+                ) : null}
+                {editorTour.isDone && !editorTour.isActive ? (
+                    <button
+                        type="button"
+                        className={styles.replayTourBtn}
+                        onClick={editorTour.restart}
+                    >
+                        הדריכו אותי שוב
+                    </button>
+                ) : null}
+                {shouldShowAnonCta && !editorTour.isActive ? (
                     <section className={styles.anonCta} dir="rtl" role="note">
                         <div className={styles.anonCtaText}>
                             הכרטיס שלך כמעט מוכן 🎉 שמרו אותו בחינם, פרסמו ושתפו
@@ -2508,6 +2535,14 @@ function EditCard() {
                         publicUrl={cardPublicUrl}
                         publicPath={cardPublicPath}
                         isPublished={cardIsPublished}
+                        // Phase 2C-6: drawer orchestration signal for guided tour
+                        openDrawerForTourStepId={
+                            editorTour.isActive &&
+                            editorTour.currentStep?.requiresDrawer
+                                ? editorTour.currentStep.id
+                                : null
+                        }
+                        tourSectionsMenuOpenOnly={editorTour.isActive}
                     />
                 ) : (
                     <div className={styles.comingSoon}>Coming soon</div>

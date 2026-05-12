@@ -79,6 +79,19 @@
     );
 }
 
+.card:has([data-tour-active="true"]) {
+    outline: none;
+    border-color: var(--accent-cyan);
+    box-shadow: 0 0 0 1px var(--accent-cyan-soft);
+    background: linear-gradient(
+        90deg,
+        transparent,
+        var(--accent-cyan-fade),
+        transparent
+    );
+    color: var(--text-main);
+}
+
 .preview {
     border-radius: var(--radius-md);
     overflow: hidden;
