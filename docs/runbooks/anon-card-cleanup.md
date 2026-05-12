@@ -270,3 +270,28 @@ node -e "
 - [ ] **Health check:** `GET /api/health` returns 200 (confirms server is running; job is registered at boot).
 - [ ] **Env vars present:** `ANON_CARD_TTL_DAYS` and `TRIAL_CLEANUP_INTERVAL_MS` appear in `.env` / hosting env config.
 - [ ] **Bucket exists:** Supabase dashboard shows the bucket(s) referenced by `SUPABASE_STORAGE_BUCKET` (and `SUPABASE_STORAGE_BUCKET_ANON_PRIVATE` if set).
+
+---
+
+## Access Control Invariant — Anonymous Owner Preview
+
+> _Added 2026-05-12 as part of DOCS_EDITOR_ANONYMOUS_DRAFT_PREVIEW_LINK_CLOSURE_P2._
+
+While an anonymous card exists — before it is cleaned up by the TTL job or claimed by a registering user — preview access to that card is owner-bound, not public-by-slug.
+
+**Backend personal preview API route:** `GET /api/preview/cards/:slug`
+
+For an anonymous-owned card (`card.anonymousId` truthy, `card.user` null), the controller requires that `req.anonymousId` — materialized from the `x-anonymous-id` request header by `anonymousMiddleware` after UUID validation — equals `card.anonymousId` exactly.
+
+**Access denial matrix (all → 404, anti-enumeration):**
+
+| Condition                                                       | Result |
+| --------------------------------------------------------------- | ------ |
+| No `requesterUserId` and no `req.anonymousId`                   | 404    |
+| `req.anonymousId` present but does not match `card.anonymousId` | 404    |
+| Anonymous request against a user-owned card                     | 404    |
+| Orphan card (`card.user` null, `card.anonymousId` null)         | 404    |
+
+Slug alone is not sufficient. A valid, matching `x-anonymous-id` header is required.
+
+This access-control invariant does **not** change the TTL cleanup candidate query, deletion order, claim flow, media cleanup, or any other aspect of this runbook. It documents the security boundary that governs who may reach an anonymous draft card while it is still alive.

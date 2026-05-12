@@ -649,3 +649,64 @@ After a user performs a full self-delete of their account, the email address is 
 ---
 
 _Last updated: 2026-04-29 (PASSWORD_POLICY_V1: §5 rewritten with full complexity rules + error code table + route coverage; WEAK_PASSWORD retired; /register, /reset, /signup-consume request + response tables updated; prior entry: 2026-04-03 deleted-email block)_
+
+---
+
+## 8. Preview Route — Access Control Model
+
+> _Added 2026-05-12 as part of DOCS_EDITOR_ANONYMOUS_DRAFT_PREVIEW_LINK_CLOSURE_P2._
+
+### Overview
+
+The personal card preview is an owner-only endpoint. It is not a public route. Both authenticated users and anonymous draft card owners may access their own card's preview, subject to identity verification.
+
+- **Backend personal preview API route:** `GET /api/preview/cards/:slug`
+- **Frontend preview page route:** `/preview/card/:slug`
+
+For org-owned cards there is a separate route (`GET /api/preview/c/:orgSlug/:slug`). The org preview controller/function was not changed by the 2026-05-12 workstream.
+
+### Middleware chain
+
+- `optionalAuth` — reads the `__Host-cardigo_auth` / `cardigo_auth` httpOnly cookie (or Bearer header for tooling). On a valid, fresh token, sets `req.user` / `req.userId` (`requesterUserId`). On a stale or absent token, silently drops credentials (no 401). The middleware result feeds `getRequesterUserId(req)`.
+- `anonymousMiddleware` — reads the `x-anonymous-id` request header. If present and a valid UUID v4, sets `req.anonymousId` (`requesterAnonymousId`). Otherwise leaves `req.anonymousId` absent/falsy.
+
+### Access decision tree
+
+```
+1. No requesterUserId AND no requesterAnonymousId
+   → 404 (no identity)
+
+2. Card is anonymous-owned (card.anonymousId truthy, card.user null):
+   a. req.anonymousId matches card.anonymousId exactly
+      → toCardDTO(card, now) returned; setDraftNoStore applied; 200
+   b. req.anonymousId absent or does not match
+      → 404
+
+3. Card is an orphan (card.user null, card.anonymousId null):
+   → 404
+
+4. Card is user-owned (card.user truthy):
+   a. No requesterUserId (anonymous actor)
+      → 404
+   b. requesterUserId does not match card.user
+      → 404
+   c. requesterUserId matches card.user
+      → User.findById, toCardDTO(card, now, { user: userTier }); setDraftNoStore applied; 200
+```
+
+All denial paths return `404 { message: "Not found" }`. No distinction between "not found", "wrong owner", and "wrong anonymousId" is exposed (anti-enumeration).
+
+### anonymousId DTO non-leakage
+
+`toCardDTO` does not include `anonymousId` in its output. The anonymous owner branch returns `toCardDTO(card, now)` without a `userTier` argument and without any extra field exposure. Confirmed by static source review.
+
+### setDraftNoStore
+
+Both the anonymous owner response and the registered owner response apply `setDraftNoStore` response headers, preventing caching of owner-only preview responses.
+
+### Verification status (2026-05-12)
+
+- Anonymous API smoke (no identity, own anonymousId, wrong anonymousId, user-owned card via anon request): PASS.
+- Anonymous browser smoke (preview link navigability): PASS.
+- Authenticated owner / non-owner runtime cookie smoke: NOT RUN — auth cookie sessions were unavailable. The registered-owner branch is source-preserved.
+- Production smoke: NOT RUN.
