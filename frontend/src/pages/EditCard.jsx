@@ -166,9 +166,15 @@ function EditCard() {
 
     // Phase 2C-5: editor guided onboarding tour (minimal integration).
     // Hook must be called unconditionally, before any early returns below.
+    // Tour is anonymous-only: authenticated users must not see guide, highlights, or replay.
+    const isAnonymousTourEligible =
+        !isAuthenticated && Boolean(getAnonymousId());
     const editorTour = useEditorTour({
-        isAnonymous: !isAuthenticated && Boolean(getAnonymousId()),
-        enabled: section === "card" && Boolean(draftCard?._id),
+        isAnonymous: isAnonymousTourEligible,
+        enabled:
+            section === "card" &&
+            Boolean(draftCard?._id) &&
+            isAnonymousTourEligible,
     });
 
     const [dirtyPaths, setDirtyPaths] = useState(() => new Set());
@@ -2445,7 +2451,9 @@ function EditCard() {
                         onSkip={editorTour.skip}
                     />
                 ) : null}
-                {editorTour.isDone && !editorTour.isActive ? (
+                {editorTour.isDone &&
+                !editorTour.isActive &&
+                isAnonymousTourEligible ? (
                     <button
                         type="button"
                         className={styles.replayTourBtn}
