@@ -2430,13 +2430,13 @@ function EditCard() {
                 {shouldShowAnonCta ? (
                     <section className={styles.anonCta} dir="rtl" role="note">
                         <div className={styles.anonCtaText}>
-                            זאת טיוטה. ללא רישום, המידע נשמר עד-14 ימים. הירשמו
-                            עכשיו וקבלו{" "}
+                            הכרטיס שלך כמעט מוכן 🎉 שמרו אותו בחינם, פרסמו ושתפו
+                            עם לקוחות! כולל{" "}
                             <Link
                                 to="/register"
                                 className={styles.anonConsentLink}
                             >
-                                ניסיון פרימיום חינם
+                                10 ימי פרימיום במתנה
                                 <CrownIcon className={styles.anonCrown} />
                             </Link>
                         </div>
@@ -2445,13 +2445,13 @@ function EditCard() {
                                 to="/register"
                                 className={styles.anonCtaPrimary}
                             >
-                                ניסיון פרימיום חינם
+                                שמרו בחינם{" "}
                             </Link>
                             <Link
                                 to="/login"
                                 className={styles.anonCtaSecondary}
                             >
-                                התחברות
+                                התחברו
                             </Link>
                         </div>
                     </section>
