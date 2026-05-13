@@ -2484,8 +2484,8 @@ function EditCard() {
                 {shouldShowAnonCta && !editorTour.isActive ? (
                     <section className={styles.anonCta} dir="rtl" role="note">
                         <div className={styles.anonCtaText}>
-                            הכרטיס שלך כמעט מוכן 🎉 שמרו אותו בחינם, פרסמו ושתפו
-                            עם לקוחות! כולל{" "}
+                            שמרו את הכרטיס שלכם בחינם, פרסמו ושתפו עם הלקוחות!
+                            כולל{" "}
                             <Link
                                 to="/register"
                                 className={styles.anonConsentLink}
