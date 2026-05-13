@@ -19,8 +19,8 @@ const PROFILES = {
     },
     avatar: { maxLongSide: 480, targetBytes: 200_000, qualityStart: 0.85 },
     gallerythumb: {
-        maxLongSide: 600,
-        targetBytes: 300_000,
+        maxLongSide: 480,
+        targetBytes: 120_000,
         qualityStart: 0.9,
     },
 };

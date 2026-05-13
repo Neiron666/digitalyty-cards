@@ -258,8 +258,8 @@ export default function GalleryPanel({
             const blob = await getCroppedBlob({
                 imageSrc: cropImageUrl,
                 cropPixels,
-                outputWidth: 600,
-                outputHeight: 600,
+                outputWidth: 480,
+                outputHeight: 480,
                 mimeType: "image/jpeg",
                 quality: 0.9,
             });

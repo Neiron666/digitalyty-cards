@@ -33,7 +33,7 @@ const PROFILES = {
     guidesectionimage: { maxLongSide: 1600, minLongSide: 800 },
     background: { maxLongSide: 1200, minLongSide: 800 },
     avatar: { maxLongSide: 480, minLongSide: 400 },
-    gallerythumb: { maxLongSide: 600, minLongSide: 400 },
+    gallerythumb: { maxLongSide: 480, minLongSide: 320 },
 };
 
 const DEFAULT_PROFILE = { maxLongSide: 2048, minLongSide: 1024 };
