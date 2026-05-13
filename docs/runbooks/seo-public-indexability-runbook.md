@@ -963,7 +963,7 @@ Note: GSC URL Inspection reflects Googlebot's actual crawl, not the smoke test r
 
 The following contours were identified during the /guides/seo WRS investigation (Phase 1D/1E/1F, 2026-05-13) and are deferred for separate handling. They are not in scope for Section 18 (marketing routes initial metadata).
 
-1. AUTHCONTEXT_PUBLIC_RENDER_GATE_AUDIT_P1 — Audit `AuthContext.jsx` line 82 (`{!loading && children}`) render gate on public routes. The gate blocks all page rendering until `/api/auth/me` resolves. Under WRS latency this may cause transient empty-root snapshots on any SPA route. Scope: AuthContext bootstrap timeout / public-route render gate strategy. Tracked separately — see Section 19.4.
+1. AUTHCONTEXT_PUBLIC_RENDER_GATE_AUDIT_P1 — Audit `AuthContext.jsx` line 82 (`{!loading && children}`) render gate on public routes. The gate blocks all page rendering until `/api/auth/me` resolves. Under WRS latency this may cause transient empty-root snapshots on any SPA route. Scope: AuthContext bootstrap timeout / public-route render gate strategy. Tracked separately — see Section 19.4. **(CLOSED 2026-05-13 by AUTHCONTEXT_PUBLIC_RENDER_GATE_RELAXATION. Public SPA rendering is no longer gated by `/api/auth/me`; `/api/auth/me` still runs in the background. See `docs/handoffs/current/Cardigo_Enterprise_Handoff_2026-05-13_AuthContext_PublicRender_GateRelaxation_Closed.md`.)**
 
 2. PUBLIC_SEO_RENDERING_ROADMAP — Long-term roadmap item: evaluate SSG / prerender / SSR for blog and guide slug routes to eliminate WRS latency dependency. No timeline. Not authorized as code change without separate workstream + architect approval.
 
@@ -1044,7 +1044,7 @@ Phase 2 implementation `SEO_BLOG_GUIDES_GOOGLEBOT_HEAD_INJECTION_P2` is NOT auth
 
 Classification: transient WRS/indexed snapshot mismatch + P2 architectural rendering debt.
 
-The architecture carries a structural latency risk: the `AuthContext` render gate + lazy chunk load + guide API call represent three sequential async steps that must all complete within WRS's execution window. This was the plausible contributor to the historical snapshot failure. It did not prevent a PASS in the fresh Live Test. It remains P2 architectural debt — not an emergency code fix.
+The architecture carries a structural latency risk: the `AuthContext` render gate + lazy chunk load + guide API call represent three sequential async steps that must all complete within WRS's execution window. This was the plausible contributor to the historical snapshot failure. It did not prevent a PASS in the fresh Live Test. It remains P2 architectural debt — not an emergency code fix. **(Update 2026-05-13: the AuthContext render-gate portion of this debt is CLOSED by AUTHCONTEXT_PUBLIC_RENDER_GATE_RELAXATION. The app remains a client-side SPA; no SSR or server HTML TTFB change was introduced.)**
 
 ---
 
@@ -1062,7 +1062,7 @@ Do not request indexing for other slug routes without individual Live Test confi
 
 ### 19.6 Deferred Follow-Ups (not in scope for this contour)
 
-1. **AUTHCONTEXT_PUBLIC_RENDER_GATE_AUDIT_P1** — Evaluate adding a bounded timeout to `AuthContext.jsx` `bootstrap()` so that public routes begin rendering even if `/api/auth/me` is slow. Scope: `frontend/src/context/AuthContext.jsx` only. Requires separate contour, architect approval, and regression testing of auth-dependent pages (dashboard, editor). Motivation: reduce WRS latency sensitivity on any public slug route.
+1. **AUTHCONTEXT_PUBLIC_RENDER_GATE_AUDIT_P1** — Evaluate adding a bounded timeout to `AuthContext.jsx` `bootstrap()` so that public routes begin rendering even if `/api/auth/me` is slow. Scope: `frontend/src/context/AuthContext.jsx` only. Requires separate contour, architect approval, and regression testing of auth-dependent pages (dashboard, editor). Motivation: reduce WRS latency sensitivity on any public slug route. **(CLOSED 2026-05-13 by AUTHCONTEXT_PUBLIC_RENDER_GATE_RELAXATION. Timeout resilience, route guards, EditCard guards, and provider gate relaxation were implemented and production-smoke verified. See closure handoff.)**
 
 2. **PUBLIC_SEO_RENDERING_ROADMAP** — Long-term: evaluate SSG, prerender, or Netlify On-Demand Builders for `/blog/:slug` and `/guides/:slug` to eliminate WRS JS-execution dependency entirely. No timeline. Not a near-term action.
 
@@ -1074,7 +1074,7 @@ Do not request indexing for other slug routes without individual Live Test confi
 
 - No source code files changed.
 - `frontend/netlify/edge-functions/og-preview.js` — not changed.
-- `frontend/src/context/AuthContext.jsx` — not changed.
+- `frontend/src/context/AuthContext.jsx` — not changed. **(True for the original Section 19 incident closure. Superseded on 2026-05-13: `AuthContext.jsx` was later changed by AUTHCONTEXT_PUBLIC_RENDER_GATE_RELAXATION to render `{children}` while auth bootstrap runs in the background.)**
 - `frontend/public/_redirects` — not changed.
 - No sitemap changes.
 - No analytics changes.
