@@ -1,5 +1,5 @@
 import { Suspense, lazy } from "react";
-import { createBrowserRouter } from "react-router-dom";
+import { createBrowserRouter, Navigate } from "react-router-dom";
 import Layout from "../components/layout/Layout";
 import ChunkErrorBoundary from "./ChunkErrorBoundary";
 import RouteFallback from "./RouteFallback";
@@ -51,8 +51,23 @@ const IframeReturnPage = lazy(
     () => import("../pages/payment/IframeReturnPage"),
 );
 
+function RequireAuth({ children }) {
+    const { isAuthenticated, loading } = useAuth();
+    if (loading) return <RouteFallback label="טוען…" />;
+    if (!isAuthenticated) return <Navigate to="/login" replace />;
+    return children;
+}
+
 function AdminRouteGate() {
-    const { user } = useAuth();
+    const { user, loading } = useAuth();
+    if (loading) {
+        return (
+            <>
+                <SeoHelmet robots="noindex, nofollow" />
+                <RouteFallback label="טוען…" />
+            </>
+        );
+    }
     if (user?.role !== "admin") {
         return (
             <>
@@ -228,13 +243,17 @@ const router = createBrowserRouter([
             {
                 path: "inbox",
                 element: (
-                    <ChunkErrorBoundary label="שגיאת טעינה בהודעות">
-                        <Suspense
-                            fallback={<RouteFallback label="טוען הודעות…" />}
-                        >
-                            <Inbox />
-                        </Suspense>
-                    </ChunkErrorBoundary>
+                    <RequireAuth>
+                        <ChunkErrorBoundary label="שגיאת טעינה בהודעות">
+                            <Suspense
+                                fallback={
+                                    <RouteFallback label="טוען הודעות…" />
+                                }
+                            >
+                                <Inbox />
+                            </Suspense>
+                        </ChunkErrorBoundary>
+                    </RequireAuth>
                 ),
             },
             {

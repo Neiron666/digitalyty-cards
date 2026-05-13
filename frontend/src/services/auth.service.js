@@ -18,13 +18,15 @@ export const register = (
 export const login = (email, password) =>
     api.post("/auth/login", { email, password });
 
-export async function getMe() {
+export async function getMe(config = {}) {
     const res = await api.get("/auth/me", {
         headers: {
             "Cache-Control": "no-cache",
             Pragma: "no-cache",
         },
         params: { _ts: Date.now() },
+        signal: config.signal,
+        timeout: config.timeout,
     });
     return res.data;
 }

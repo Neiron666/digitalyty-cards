@@ -8,6 +8,12 @@ import {
 
 const AuthContext = createContext(null);
 
+// Phase 2A resilience: bounded fail-open ceiling for the initial /auth/me
+// bootstrap call. Prevents the global gate ({!loading && children}) from
+// keeping the app blank indefinitely if the backend hangs. This value is
+// intentionally NOT env-driven in this phase.
+const AUTH_BOOTSTRAP_TIMEOUT_MS = 2500;
+
 export function AuthProvider({ children }) {
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -34,21 +40,62 @@ export function AuthProvider({ children }) {
     }
 
     // Bootstrap: verify active session via httpOnly cookie.
+    // Phase 2A resilience: each effect run owns its own AbortController,
+    // timer, and active/finished guards. If /auth/me does not settle within
+    // AUTH_BOOTSTRAP_TIMEOUT_MS, the request is aborted and the app renders
+    // as anonymous instead of staying blank forever. Late responses cannot
+    // flip user state after timeout or cleanup.
     useEffect(() => {
-        async function bootstrap() {
-            try {
-                const me = await getMe();
-                setUser({
-                    email: me?.email,
-                    role: me?.role,
-                    isVerified: Boolean(me?.isVerified),
-                });
-            } catch {
-                setUser(null);
-            }
+        const controller = new AbortController();
+        let active = true;
+        let finished = false;
+        let timer = null;
+
+        timer = setTimeout(() => {
+            if (!active || finished) return;
+            finished = true;
+            controller.abort();
+            setUser(null);
             setLoading(false);
-        }
-        bootstrap();
+        }, AUTH_BOOTSTRAP_TIMEOUT_MS);
+
+        (async function bootstrap() {
+            try {
+                const me = await getMe({
+                    signal: controller.signal,
+                    timeout: AUTH_BOOTSTRAP_TIMEOUT_MS,
+                });
+                if (!active || finished) return;
+                finished = true;
+                clearTimeout(timer);
+                if (me) {
+                    setUser({
+                        email: me.email,
+                        role: me.role,
+                        isVerified: Boolean(me.isVerified),
+                    });
+                } else {
+                    // Intentional hardening: a falsy /auth/me response must
+                    // not become a truthy user object (Boolean({}) === true).
+                    setUser(null);
+                }
+                setLoading(false);
+            } catch {
+                if (!active || finished) return;
+                finished = true;
+                clearTimeout(timer);
+                setUser(null);
+                setLoading(false);
+            }
+        })();
+
+        return () => {
+            active = false;
+            clearTimeout(timer);
+            if (!finished) {
+                controller.abort();
+            }
+        };
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
@@ -72,15 +119,13 @@ export function AuthProvider({ children }) {
     }
 
     const value = useMemo(
-        () => ({ user, isAuthenticated, login, register, logout }),
+        () => ({ user, isAuthenticated, loading, login, register, logout }),
         // eslint-disable-next-line react-hooks/exhaustive-deps
-        [user, isAuthenticated],
+        [user, isAuthenticated, loading],
     );
 
     return (
-        <AuthContext.Provider value={value}>
-            {!loading && children}
-        </AuthContext.Provider>
+        <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
     );
 }
 

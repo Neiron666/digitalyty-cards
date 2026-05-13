@@ -20,7 +20,7 @@ const REFETCH_THROTTLE_MS = 15_000;
 function EditCard() {
     const navigate = useNavigate();
     const { section, tab } = useParams();
-    const { isAuthenticated } = useAuth();
+    const { isAuthenticated, loading: authLoading } = useAuth();
 
     useEffect(() => {
         // Legacy section routes are redirected into the card editor tabs.
@@ -463,6 +463,8 @@ function EditCard() {
     const orgFromQueryAppliedRef = useRef(false);
 
     useEffect(() => {
+        if (authLoading) return;
+
         // Keep bootstrap behavior stable when auth state changes.
         // - Anonymous: no org bootstrap needed.
         // - Authenticated: require context resolve before first initCard.
@@ -472,7 +474,7 @@ function EditCard() {
         orgFromQueryRef.current = null;
         orgFromQueryLoadRequestedRef.current = false;
         orgFromQueryAppliedRef.current = false;
-    }, [isAuthenticated]);
+    }, [isAuthenticated, authLoading]);
 
     function isCreateInFlightError(err) {
         const status = err?.response?.status;
@@ -566,6 +568,9 @@ function EditCard() {
     const initCard = useCallback(
         async (isMounted = () => true) => {
             try {
+                // Phase 2A2: do not run any card fetch/branch while auth bootstrap is still loading.
+                if (authLoading) return;
+
                 // Enterprise: for authenticated users, do not start personal init until context is resolved.
                 if (isAuthenticated && !contextResolved) return;
 
@@ -761,7 +766,14 @@ function EditCard() {
                 setIsInitializing(false);
             }
         },
-        [navigate, activeOrgSlug, isOrgMode, isAuthenticated, contextResolved],
+        [
+            navigate,
+            activeOrgSlug,
+            isOrgMode,
+            isAuthenticated,
+            contextResolved,
+            authLoading,
+        ],
     );
 
     const loadMyOrgs = useCallback(async () => {
@@ -915,6 +927,13 @@ function EditCard() {
     useEffect(() => {
         let isMounted = true;
 
+        // Phase 2A2: do not call initCard while auth bootstrap is still loading.
+        if (authLoading) {
+            return () => {
+                isMounted = false;
+            };
+        }
+
         // Gate: do not initialize personal card for authenticated sessions
         // until context was resolved (query org / first org / personal).
         if (isAuthenticated && !contextResolved) {
@@ -928,7 +947,7 @@ function EditCard() {
         return () => {
             isMounted = false;
         };
-    }, [initCard, reloadKey, isAuthenticated, contextResolved]);
+    }, [initCard, reloadKey, isAuthenticated, contextResolved, authLoading]);
 
     useEffect(() => {
         if (!editingDisabled) return;
