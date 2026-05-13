@@ -13,11 +13,11 @@
 const PROFILES = {
     gallery: { maxLongSide: 2048, targetBytes: 1_200_000, qualityStart: 0.85 },
     background: {
-        maxLongSide: 1920,
-        targetBytes: 1_200_000,
+        maxLongSide: 1200,
+        targetBytes: 500_000,
         qualityStart: 0.85,
     },
-    avatar: { maxLongSide: 800, targetBytes: 600_000, qualityStart: 0.85 },
+    avatar: { maxLongSide: 480, targetBytes: 200_000, qualityStart: 0.85 },
     gallerythumb: {
         maxLongSide: 600,
         targetBytes: 300_000,
