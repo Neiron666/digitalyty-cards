@@ -153,6 +153,17 @@ export default function EditorSidebar({
         }
     }, [canCopy, publicUrl]);
 
+    const handleCopyHintSettingsLinkClick = (event) => {
+        if (event.defaultPrevented) return;
+        if (event.button !== 0) return;
+        if (event.metaKey) return;
+        if (event.ctrlKey) return;
+        if (event.shiftKey) return;
+        if (event.altKey) return;
+        event.preventDefault();
+        onChangeTab(PANEL_SETTINGS);
+    };
+
     const [account, setAccount] = useState(null);
     const [mktBusy, setMktBusy] = useState(false);
     const accountFetched = useRef(false);
@@ -265,8 +276,20 @@ export default function EditorSidebar({
                         {copied ? "הועתק!" : "העתק קישור"}
                     </button>
                     {!canCopy && (
-                        <div className={styles.copyHint}>
-                            אפשר להעתיק קישור רק אחרי פרסום הכרטיס.
+                        <div
+                            className={`${styles.copyHint} ${styles.copyHintAction}`}
+                        >
+                            <span className={styles.copyHintText}>
+                                אפשר להעתיק קישור רק אחרי פרסום הכרטיס.
+                            </span>{" "}
+                            <a
+                                href="/edit/card/settings"
+                                className={styles.copyHintLink}
+                                aria-label="מעבר להגדרות פרסום הכרטיס"
+                                onClick={handleCopyHintSettingsLinkClick}
+                            >
+                                להגדרות
+                            </a>
                         </div>
                     )}
                 </div>

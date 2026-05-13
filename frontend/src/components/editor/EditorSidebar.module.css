@@ -272,6 +272,29 @@ a.publicLinkUrl:focus-visible {
     line-height: 1.4;
 }
 
+.copyHintAction {
+    opacity: 1;
+}
+
+.copyHintText {
+    opacity: 0.55;
+}
+
+.copyHintLink {
+    color: var(--global-white-text, #fff);
+    text-decoration: underline var(--global-white-text, #fff);
+    text-underline-offset: 2px;
+}
+
+.copyHintLink:hover {
+    opacity: 0.8;
+}
+
+.copyHintLink:focus-visible {
+    outline: 2px solid var(--gold, #d4a017);
+    outline-offset: 2px;
+}
+
 /* ── Context (org/personal) selector ── */
 .contextBlock {
     display: flex;
