@@ -961,6 +961,127 @@ Note: GSC URL Inspection reflects Googlebot's actual crawl, not the smoke test r
 
 ### 18.6 Future Tails (Separate Contours)
 
+The following contours were identified during the /guides/seo WRS investigation (Phase 1D/1E/1F, 2026-05-13) and are deferred for separate handling. They are not in scope for Section 18 (marketing routes initial metadata).
+
+1. AUTHCONTEXT_PUBLIC_RENDER_GATE_AUDIT_P1 — Audit `AuthContext.jsx` line 82 (`{!loading && children}`) render gate on public routes. The gate blocks all page rendering until `/api/auth/me` resolves. Under WRS latency this may cause transient empty-root snapshots on any SPA route. Scope: AuthContext bootstrap timeout / public-route render gate strategy. Tracked separately — see Section 19.4.
+
+2. PUBLIC_SEO_RENDERING_ROADMAP — Long-term roadmap item: evaluate SSG / prerender / SSR for blog and guide slug routes to eliminate WRS latency dependency. No timeline. Not authorized as code change without separate workstream + architect approval.
+
+3. GOOGLEBOT_ANALYTICS_NOISE_CLEANUP — `/api/site-analytics/track` receives noise from Googlebot preflight requests (observed as failed resource in GSC Live Test for some routes). Currently 204-best-effort; no blocking. Optional: add UA allowlist guard at the endpoint to skip track for known bot UAs. Low priority, no rendering impact.
+
+---
+
+## 19. /guides/seo WRS Transient Incident — Closure Record
+
+**Contour:** SEO_GUIDE_SLUG_WRS_TRANSIENT_INCIDENT_CLOSURE_DOCS_P1F
+**Date:** 2026-05-13
+**Status:** CLOSED — transient WRS incident, not systemic. Phase 2 NOT authorized.
+**Files changed:** none — documentation only.
+
+---
+
+### 19.1 Background
+
+During GSC evidence collection on 2026-05-13 (Phase 1C), a historical GSC crawl snapshot for `/guides/seo` showed:
+
+- `<div id="root"></div>` empty
+- `<title>` = homepage fallback "כרטיס ביקור דיגיטלי לעסקים | Cardigo"
+- `og:url` = https://cardigo.co.il/ (homepage fallback)
+- `og:type` = website
+- No canonical link
+- No Article JSON-LD
+- No BreadcrumbList JSON-LD
+
+This triggered a read-only targeted investigation across Phase 1D and Phase 1E.
+
+---
+
+### 19.2 Runtime Evidence Collected (Phase 1D, 2026-05-13)
+
+All checks were read-only. No code was changed.
+
+Browser UA curl `/guides/seo`: raw SPA shell, empty root, homepage og fallback — expected pre-JS.
+Googlebot UA curl `/guides/seo`: same raw shell — expected; `og-preview.js` CRAWLER branch returns `context.next()` for `/guides/:slug` by design (no injection at this route in Phase 18 scope).
+Social UA curl `/guides/seo`: guide-specific og — `og:type=article`, `og:url=https://cardigo.co.il/guides/seo`, `article:published_time=2026-05-05T08:15:44.083Z`, `article:author` present. Backend `/og/guides/seo` is healthy.
+`/api/guides/seo`: HTTP 200, full guide JSON, `slug=seo`, `publishedAt=2026-05-05T08:15:44.083Z`, 11 sections, SEO fields present.
+Main assets: `index-DnZsl_3T.js` 200, `vendor-CAbl3aBL.js` 200, `index-CBPtTUas.css` 200 — all healthy.
+
+Source proof:
+
+- `frontend/netlify/edge-functions/og-preview.js` CRAWLER branch: for `segments=["guides","seo"]`, `segments.length=2` → not card/c → `if (segments.length===1)` fails → falls through to `return context.next()`. No injection at `/guides/:slug`. By design.
+- `frontend/src/context/AuthContext.jsx` line 82: `{!loading && children}` — all page rendering gated behind `/api/auth/me` bootstrap. If `/api/auth/me` is slow during a WRS window, root stays empty for the full WRS observation. Identified as plausible structural contributor to the historical empty-root snapshot. Not confirmed as definitive root cause.
+- `frontend/src/app/router.jsx` line 41: `GuidePost` is lazy-loaded. Requires auth gate to pass, then chunk load, then `/api/guides/:slug` fetch. Three sequential async steps before `SeoHelmet` is emitted.
+- `frontend/src/pages/GuidePost.jsx` lines 372-376: loading state renders inside root — not empty. Empty root means auth gate was not passed, not that GuidePost render hung.
+
+---
+
+### 19.3 GSC Live Test Result (Phase 1E, 2026-05-13)
+
+Operator ran GSC URL Inspection → Test Live URL for https://cardigo.co.il/guides/seo.
+
+Result: PASS.
+
+- Page can be indexed: YES
+- HTTP status: 200
+- Screenshot: full rendered guide page (not blank/shell)
+- `<title>`: guide-specific (not homepage fallback)
+- canonical: `https://cardigo.co.il/guides/seo`
+- `og:type`: article
+- `og:url`: `https://cardigo.co.il/guides/seo`
+- Article JSON-LD: present
+- BreadcrumbList JSON-LD: present
+- `<div id="root">`: full (not empty)
+- Failed resources: `/api/auth/me` and `/api/site-analytics/track` did not block rendering
+
+Verdict: The historical empty-root snapshot (Phase 1C, 08:42:08) was a transient WRS incident. Current WRS renders the guide correctly in a fresh Live Test. The failure was not reproducible.
+
+---
+
+### 19.4 Final Decision
+
+Phase 2 implementation `SEO_BLOG_GUIDES_GOOGLEBOT_HEAD_INJECTION_P2` is NOT authorized.
+`frontend/netlify/edge-functions/og-preview.js` is NOT modified.
+
+Classification: transient WRS/indexed snapshot mismatch + P2 architectural rendering debt.
+
+The architecture carries a structural latency risk: the `AuthContext` render gate + lazy chunk load + guide API call represent three sequential async steps that must all complete within WRS's execution window. This was the plausible contributor to the historical snapshot failure. It did not prevent a PASS in the fresh Live Test. It remains P2 architectural debt — not an emergency code fix.
+
+---
+
+### 19.5 Operator Action
+
+Request Indexing in GSC for `/guides/seo` now that Live Test is PASS:
+
+1. GSC → URL Inspection → `https://cardigo.co.il/guides/seo`
+2. Click "Request Indexing"
+3. Monitor Coverage report over the following days for indexing confirmation
+
+Do not request indexing for other slug routes without individual Live Test confirmation.
+
+---
+
+### 19.6 Deferred Follow-Ups (not in scope for this contour)
+
+1. **AUTHCONTEXT_PUBLIC_RENDER_GATE_AUDIT_P1** — Evaluate adding a bounded timeout to `AuthContext.jsx` `bootstrap()` so that public routes begin rendering even if `/api/auth/me` is slow. Scope: `frontend/src/context/AuthContext.jsx` only. Requires separate contour, architect approval, and regression testing of auth-dependent pages (dashboard, editor). Motivation: reduce WRS latency sensitivity on any public slug route.
+
+2. **PUBLIC_SEO_RENDERING_ROADMAP** — Long-term: evaluate SSG, prerender, or Netlify On-Demand Builders for `/blog/:slug` and `/guides/:slug` to eliminate WRS JS-execution dependency entirely. No timeline. Not a near-term action.
+
+3. **GOOGLEBOT_ANALYTICS_NOISE** — `/api/site-analytics/track` shows as a failed resource in some Googlebot Live Tests. Currently 204-best-effort and does not block rendering. Optional low-priority cleanup: add bot UA allowlist guard at the endpoint level. No rendering impact.
+
+---
+
+### 19.7 Explicit Non-Actions Confirmed
+
+- No source code files changed.
+- `frontend/netlify/edge-functions/og-preview.js` — not changed.
+- `frontend/src/context/AuthContext.jsx` — not changed.
+- `frontend/public/_redirects` — not changed.
+- No sitemap changes.
+- No analytics changes.
+- No backend changes.
+- No auth changes.
+- No git commands.
+
 - Social bot OG preview for marketing pages (/pricing, /blog, /guides, /cards, /contact): social bots (facebookexternalhit, WhatsApp, Twitterbot, etc.) now receive route-specific og:url and og:title via buildStaticMarketingOgHtml. Social branch remains canonical-absent by design (includeCanonical not passed в†’ false). The remaining deferred gap is og:image differentiation вЂ” all 5 routes still share the homepage og:image. This is a separate gap tracked under SEO_MARKETING_PAGES_SOCIAL_PREVIEW_P1. Do not conflate with this contour.
 - Marketing page og:image differentiation: all 5 marketing routes currently share the homepage OG image via the static shell fallback. If per-route OG images are desired for Googlebot or social bots, open a separate contour.
 - blog/:slug and guides/:slug Googlebot initial metadata: these slug routes continue via WRS + SeoHelmet. No injection is applied. If GSC shows rendering errors for these routes, open a separate contour.
