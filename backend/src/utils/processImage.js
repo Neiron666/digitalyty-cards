@@ -8,7 +8,7 @@
  *  1. Validate caps (dimensions / pixels).
  *  2. Auto-orient → strip metadata → resize (fit-inside, no upscale).
  *  3. Encode to WebP:
- *     a. gentle  (q 90) when input is small.
+ *     a. gentle  (q 90 or per-profile gentleQuality) when input is small.
  *     b. aggressive quality ladder (82→78→74) when input is large.
  *     c. if still > MAX_OUTPUT_BYTES after quality ladder, reduce maxLongSide
  *        stepwise (15 % per step, floor = profile.minLongSide) and retry
@@ -99,7 +99,7 @@ export async function processImage(inputBuffer, { kind }) {
     try {
         if (!aggressive) {
             // Gentle path: single encode at high quality.
-            chosenQuality = GENTLE_QUALITY;
+            chosenQuality = profile.gentleQuality ?? GENTLE_QUALITY;
             outBuf = await sharp(inputBuffer, { limitInputPixels: MAX_PIXELS })
                 .rotate() // EXIF auto-orient
                 .resize({
@@ -108,7 +108,7 @@ export async function processImage(inputBuffer, { kind }) {
                     fit: "inside",
                     withoutEnlargement: true,
                 })
-                .webp({ quality: GENTLE_QUALITY })
+                .webp({ quality: chosenQuality })
                 .toBuffer();
         } else {
             // Aggressive path: quality ladder.

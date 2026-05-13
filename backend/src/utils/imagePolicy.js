@@ -26,7 +26,7 @@ export const AGGRESSIVE_QUALITIES = [82, 78, 74];
 // ── Per-kind processing profiles ───────────────────────────────
 // Keys must be lowercase - resolveProfile() normalises input via .toLowerCase().
 const PROFILES = {
-    gallery: { maxLongSide: 2048, minLongSide: 1024 },
+    gallery: { maxLongSide: 2048, minLongSide: 1024, gentleQuality: 83 },
     bloghero: { maxLongSide: 2048, minLongSide: 1024 },
     blogsectionimage: { maxLongSide: 1600, minLongSide: 800 },
     guidehero: { maxLongSide: 2048, minLongSide: 1024 },
@@ -41,7 +41,7 @@ const DEFAULT_PROFILE = { maxLongSide: 2048, minLongSide: 1024 };
 /**
  * Returns the processing profile for a given upload kind.
  * @param {string} kind
- * @returns {{ maxLongSide: number, minLongSide: number }}
+ * @returns {{ maxLongSide: number, minLongSide: number, gentleQuality?: number }}
  */
 export function resolveProfile(kind) {
     const k = typeof kind === "string" ? kind.trim().toLowerCase() : "";
