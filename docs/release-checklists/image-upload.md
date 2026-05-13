@@ -6,7 +6,9 @@
 - **Server-side canonicalization**: all uploads pass through `processImage()` → always output **WebP**, EXIF stripped, auto-oriented.
 - **Decode-based allowlist**: `sharp.metadata().format` must be `jpeg | png | webp`. Rejects everything else (SVG, TIFF, GIF, HEIC, etc.) regardless of `Content-Type` header.
 - **Hard caps**: `MAX_DIMENSION = 8000 px` per side, `MAX_PIXELS = 24 MP`.
-- **Output budget**: aggressive quality ladder (82 → 78 → 74) + dimension step-down targets ≤ 1.5 MB best-effort.
+- **Output budget**: two encoding modes, chosen per-upload at runtime (SSoT: `backend/src/utils/imagePolicy.js` profiles + constants, `backend/src/utils/processImage.js` logic):
+    - **(a) Gentle** – single encode at `profile.gentleQuality ?? GENTLE_QUALITY`. Triggers when `inBytes < 1.5 MB` **and** `inPixels < 8 MP` **and** `longSide ≤ maxLongSide`. Current per-profile gentleQuality values: `gallery = 83`; all other roles (background, avatar, gallerythumb, bloghero, blogsectionimage, guidehero, guidesectionimage) fall back to the global `GENTLE_QUALITY = 90`.
+    - **(b) Aggressive** – quality ladder (82 → 78 → 74) + dimension step-down (15% per step, floor = `profile.minLongSide`), targets ≤ 1.5 MB best-effort. Triggers when any gentle threshold is exceeded.
 
 ## Expected Error Contracts
 
@@ -23,6 +25,9 @@
     1. Upload a 5–10 MB JPEG/PNG → image displays correctly; Supabase object has `content-type: image/webp`.
     2. Upload a file > 10 MB → rejected by UI pre-check **and** by backend (413).
     3. Upload a corrupt/spoofed file (e.g. `.jpg` with random bytes) → backend returns `422 IMAGE_DECODE_FAILED`.
+    4. Upload a gallery image ~1 MB → backend log must show `mode='gentle'`, `quality=83` (not 90). Confirms per-profile `gentleQuality` is active for gallery.
+    5. Upload a background image → backend log must show `quality=90` (no blast-radius from gallery change).
+    6. Confirm gallerythumb crop produces a `~77 KB` WebP at 480×480.
 
 ## Quick QA Commands (PowerShell + curl.exe)
 
@@ -69,5 +74,5 @@ curl.exe -s -w "`n%{http_code}" -X POST "$base/api/uploads/image" `
 
 ## Rollback
 
-- Revert backend changes: `imagePolicy.js`, `processImage.js`, controller `HttpError` pass-through in `upload.controller.js` + `adminBlog.controller.js`, and restore multer limit to 2 MB.
+- Revert backend changes: `imagePolicy.js`, `processImage.js`, controller `HttpError` pass-through in `upload.controller.js` + `adminBlog.controller.js`. **Do not restore multer limit to 2 MB — current production limit is 10 MB; reverting to 2 MB would break large legitimate uploads.**
 - No DB migration involved - rollback is code-only.

@@ -58,8 +58,13 @@ Backend stores objects under a stable prefix:
 
 Where:
 
-- `kind` is `gallery` for gallery uploads, or one of `background|avatar|design|asset` for design assets.
+- `kind` is `gallery` for full gallery image uploads, `gallerythumb` for gallery thumbnail crop uploads, or one of `background|avatar|design|asset` for design assets.
 - `ext` is derived from MIME type (`jpg|png|webp`).
+
+Examples:
+
+- `cards/user/{userId}/{cardId}/gallery/{uuid}.webp` — full gallery image
+- `cards/user/{userId}/{cardId}/gallerythumb/{uuid}.webp` — 480×480 crop thumbnail
 
 Actor:
 
@@ -95,8 +100,16 @@ Response (stable):
 Server-side validation:
 
 - MIME whitelist: `image/jpeg`, `image/png`, `image/webp`
-- Max file size: `2MB`
+- Max file size: `10MB` (multer memoryStorage cap; see `imagePolicy.js → MAX_UPLOAD_BYTES`)
 - Enforces plan gallery limit before uploading.
+
+Image processing:
+
+- `processImage` profile: `gallery { maxLongSide: 2048, minLongSide: 1024, gentleQuality: 83 }`.
+- In gentle mode, full gallery uploads use quality 83 via `profile.gentleQuality ?? GENTLE_QUALITY`.
+- The global `GENTLE_QUALITY` remains 90 and continues to apply to profiles without a per-profile override.
+- Aggressive path thresholds and ladder are unchanged.
+- Applies only to new full gallery uploads; existing Supabase images are immutable and not re-encoded.
 
 Trial enforcement:
 
@@ -107,7 +120,10 @@ Mongo writes:
 
 - `card.gallery[]` is backward compatible and may contain:
     - legacy string URL entries: `"https://..."`
-    - new object entries: `{ url, path, createdAt }`
+    - new object entries: `{ url, path, createdAt, thumbUrl?, thumbPath? }`
+        - `thumbUrl`: public URL of the 480×480 WebP crop, injected via a subsequent PATCH `/api/cards/:id` from `GalleryPanel` after `uploadDesignAsset(kind="galleryThumb")` completes.
+        - `thumbPath`: corresponding Supabase storage path, used for cleanup by `collectSupabasePathsFromCard()`.
+        - Both fields are **optional** — gallery items created before the gallerythumb contour have neither; `GallerySection` falls back to `item.url` (full image) when `thumbUrl` is absent.
 - `card.uploads[]` always tracks every uploaded object for cleanup:
     - `{ kind: "gallery", url, path, createdAt }`
 
@@ -141,23 +157,58 @@ Replace cleanup:
 - When uploading a new `avatar`/`background`, backend attempts a **best-effort** delete of the previous object using the stored path fields.
 - Upload success is not blocked if the cleanup fails.
 
+### 3) Upload gallery thumbnail (crop)
+
+- Route: `POST /api/uploads/asset`
+- `kind`: `"galleryThumb"`
+- Form fields:
+    - `image` (file) – required (480×480 JPEG crop from `GalleryPanel` `CropModal`)
+    - `cardId` (string) – required
+    - `kind` (string) – `"galleryThumb"`
+
+Response:
+
+```json
+{
+    "url": "https://<project>.supabase.co/storage/v1/object/public/<bucket>/...",
+    "path": "cards/user/<userId>/<cardId>/gallerythumb/<uuid>.webp"
+}
+```
+
+Server-side processing:
+
+- `processImage` profile: `gallerythumb { maxLongSide: 480, minLongSide: 320 }`, gentle mode quality 90.
+- Output: WebP, ~77 KB typical for a 480×480 crop.
+
+Mongo writes:
+
+- Appends to `card.uploads[]`: `{ kind: "galleryThumb", url, path, createdAt }`.
+- Does **not** inject `thumbUrl`/`thumbPath` into the gallery item directly — that is done by the frontend via a PATCH to `/api/cards/:id` after the upload completes (see `GalleryPanel.handleApplyCrop`).
+
+Cleanup:
+
+- `gallery[].thumbPath` is collected by `collectSupabasePathsFromCard()` and deleted on card deletion or gallery item removal.
+
 ## Frontend usage
 
 ### Upload calls
 
-- Gallery: `uploadGalleryImage(cardId, file)`
+- Gallery full image: `uploadGalleryImage(cardId, file)`
+- Gallery thumbnail crop: `uploadDesignAsset(cardId, croppedBlob, "galleryThumb")` — called by `GalleryPanel.handleApplyCrop()` after the user crops the image; result is injected as `thumbUrl`/`thumbPath` into the corresponding gallery item via PATCH.
 - Design assets: `uploadDesignAsset(cardId, file, kind)` where `kind` is `"background"` or `"avatar"`.
 
 ### Rendering compatibility
 
-Gallery rendering normalizes legacy and new formats:
+Gallery rendering:
 
-- If item is a string → use it as URL.
-- If item is an object with `{ url }` → use `url`.
+- Gallery **grid**: `src = item.thumbUrl` (falls back to `item.url` if `thumbUrl` is absent — backward compatible with pre-thumb items and legacy string entries).
+- Gallery **lightbox**: `src = item.url` (always the full gallery image).
+- Resolution SSoT: `galleryItemToThumbUrl()` and `galleryItemToOriginalUrl()` in `frontend/src/utils/gallery.js`.
+- Legacy string URL entries (`"https://..."`) still render via `galleryItemToOriginalUrl()`.
 
 Design rendering uses URL fields only:
 
 - Background: `design.backgroundImage` or `design.coverImage`
 - Avatar: `design.avatarImage` or `design.logo`
 
-Paths (`design.*Path` and `uploads[].path`) are for cleanup only.
+Paths (`design.*Path`, `gallery[].thumbPath`, and `uploads[].path`) are for cleanup only.

@@ -16,7 +16,7 @@ This is a minimal manual checklist to validate the upload chain locally (no rout
 ## 1) Gallery upload
 
 1. Login and open the card editor.
-2. Go to Gallery panel and upload a JPG/PNG/WebP under 2MB.
+2. Go to Gallery panel and upload a JPG/PNG/WebP under 10MB.
 3. Verify UI shows the new thumbnail.
 4. Save/persist the card (whatever your editor uses) and refresh the page.
 5. Verify gallery still renders after refresh.
