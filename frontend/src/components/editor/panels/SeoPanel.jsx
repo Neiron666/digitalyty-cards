@@ -396,6 +396,10 @@ export default function SeoPanel({
     const [aiError, setAiError] = useState("");
     const [showConsent, setShowConsent] = useState(false);
     const [aiQuota, setAiQuota] = useState(null);
+    const [orchestratorBusy, setOrchestratorBusy] = useState(false);
+    const [orchestratorNotice, setOrchestratorNotice] = useState(null);
+    const pendingMagicRef = useRef(false);
+    const magicSetupRef = useRef(null);
 
     const aiReady =
         Boolean(business?.name?.trim()) && Boolean(business?.category?.trim());
@@ -451,12 +455,22 @@ export default function SeoPanel({
     }, [requestSeoSuggestion]);
 
     const handleConsentConfirm = useCallback(() => {
+        if (pendingMagicRef.current) {
+            pendingMagicRef.current = false;
+            saveAiConsent();
+            setShowConsent(false);
+            magicSetupRef.current?.();
+            return;
+        }
         saveAiConsent();
         setShowConsent(false);
         requestSeoSuggestion();
     }, [requestSeoSuggestion]);
 
     const handleConsentCancel = useCallback(() => {
+        if (pendingMagicRef.current) {
+            pendingMagicRef.current = false;
+        }
         setShowConsent(false);
     }, []);
 
@@ -539,6 +553,18 @@ export default function SeoPanel({
         typeof value.jsonLd === "string" && value.jsonLd.trim(),
     );
 
+    // --- Magic SEO orchestrator readiness ----------------------------------------
+    const magicMissingReasons = [];
+    if (!business?.name?.trim()) magicMissingReasons.push("שם העסק");
+    if (!business?.category?.trim()) magicMissingReasons.push("תחום עיסוק");
+    if (!cardId || !computedPublicUrl)
+        magicMissingReasons.push("כתובת ציבורית לכרטיס");
+    if (aiFeatureEnabled === false) magicMissingReasons.push("זמינות AI");
+    if (quotaExhausted) magicMissingReasons.push("מכסת AI זמינה");
+    if (aiState === "loading")
+        magicMissingReasons.push("המתינו לסיום פעולת ה-AI הנוכחית");
+    const magicReady = !disabled && magicMissingReasons.length === 0;
+
     function update(key, nextValue) {
         onChange?.({ [key]: nextValue });
     }
@@ -607,9 +633,220 @@ export default function SeoPanel({
         update("jsonLd", JSON.stringify(next, null, 2));
     }
 
+    // --- Magic SEO orchestrator --------------------------------------------------
+    async function runMagicSeoSetup() {
+        // 1. Guard
+        if (
+            orchestratorBusy ||
+            disabled ||
+            magicMissingReasons.length > 0 ||
+            aiState === "loading"
+        ) {
+            return;
+        }
+
+        // 2. Consent
+        if (!hasAiConsent()) {
+            pendingMagicRef.current = true;
+            setShowConsent(true);
+            return;
+        }
+
+        // 3. Start
+        setOrchestratorBusy(true);
+        setOrchestratorNotice(null);
+
+        try {
+            // 4. Derive
+            const finalPublicUrl = computedPublicUrl;
+            if (!finalPublicUrl) {
+                setOrchestratorNotice({
+                    type: "warning",
+                    message:
+                        "לא נמצאה כתובת ציבורית לכרטיס. לא ניתן להמשיך.",
+                });
+                return;
+            }
+
+            const details = [];
+            let aiOk = false;
+            let jsonLdUnsupported = false;
+
+            // 5. AI step
+            try {
+                const mode = hasExistingSeo ? "improve" : "create";
+                const { suggestion, quota } = await suggestSeo(cardId, {
+                    mode,
+                    language: "he",
+                });
+                update("title", suggestion.seoTitle || "");
+                update("description", suggestion.seoDescription || "");
+                if (quota) setAiQuota(quota);
+                // Clear stale AI preview state
+                setAiState("idle");
+                setAiSuggestion(null);
+                setAiError("");
+                aiOk = true;
+            } catch (err) {
+                details.push(mapAiError(err));
+            }
+
+            // 6. Canonical step
+            update("canonicalUrl", finalPublicUrl);
+
+            // 7. JSON-LD step — use finalPublicUrl directly, not canonicalTrimmed
+            if (!jsonLdStatus.hasValue) {
+                // Empty — create
+                const name = resolveJsonLdName();
+                const obj = buildJsonLdTemplate(jsonLdTemplateType, {
+                    name,
+                    baseUrl: finalPublicUrl,
+                    business,
+                    contact,
+                    design,
+                });
+                update("jsonLd", JSON.stringify(obj, null, 2));
+            } else if (jsonLdStatus.valid && jsonLdStatus.root) {
+                // Valid root object — sync url/@id only
+                const next = { ...jsonLdStatus.root };
+                next.url = finalPublicUrl;
+                next["@id"] = finalPublicUrl;
+                update("jsonLd", JSON.stringify(next, null, 2));
+            } else {
+                // Invalid or array — preserve, record warning
+                jsonLdUnsupported = true;
+                details.push(
+                    "קיים מידע מובנה במבנה שלא ניתן לעדכן אוטומטית. השתמשו בהגדרות הידניות.",
+                );
+            }
+
+            // 8. Final notice
+            details.push(
+                "השדות עודכנו בטיוטה. כדי לפרסם את השינויים לחצו שמור שינויים.",
+            );
+
+            if (aiOk && !jsonLdUnsupported) {
+                setOrchestratorNotice({
+                    type: "success",
+                    message:
+                        "הגדרת ה-SEO הושלמה. בדקו את השדות ולחצו שמור שינויים.",
+                    details,
+                });
+            } else {
+                setOrchestratorNotice({
+                    type: "warning",
+                    message: aiOk
+                        ? "הגדרת ה-SEO הושלמה. בדקו את השדות ולחצו שמור שינויים."
+                        : "חלק מהפעולות הושלמו. ה-AI לא הצליח לקבל הצעה כרגע, אך שאר השדות עודכנו. בדקו ולחצו שמור שינויים.",
+                    details,
+                });
+            }
+        } finally {
+            // 9. Always release busy state
+            setOrchestratorBusy(false);
+        }
+    }
+    magicSetupRef.current = runMagicSeoSetup;
+
     return (
         <Panel title="SEO וסקריפטים">
             <div className={styles.stack}>
+                {/* ── Magic SEO Setup Orchestrator Card ── */}
+                <div className={styles.magicCard}>
+                    <div className={styles.magicTitle}>
+                        הגדרת SEO בלחיצה אחת
+                    </div>
+                    <div className={styles.magicDescription}>
+                        נמלא כותרת ותיאור בעזרת AI, נגדיר כתובת מועדפת
+                        וניצור מידע מובנה לכרטיס. לאחר מכן צריך ללחוץ על
+                        שמור שינויים.
+                    </div>
+
+                    {magicMissingReasons.length > 0 && (
+                        <div className={styles.magicRequirements}>
+                            <div className={styles.magicRequirementsLabel}>
+                                כדי להפעיל את ההגדרה האוטומטית, השלימו:
+                            </div>
+                            <ul className={styles.magicRequirementsList}>
+                                {magicMissingReasons.map((r) => (
+                                    <li
+                                        key={r}
+                                        className={styles.magicRequirementsItem}
+                                    >
+                                        {r}
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+                    )}
+
+                    {!hasAiConsent() &&
+                        magicMissingReasons.length === 0 && (
+                            <div className={styles.magicHelperText}>
+                                בלחיצה הראשונה תתבקשו לאשר שימוש ב-AI.
+                            </div>
+                        )}
+
+                    <div className={styles.magicActions}>
+                        <button
+                            type="button"
+                            className={styles.magicButton}
+                            disabled={!magicReady || orchestratorBusy}
+                            aria-busy={
+                                orchestratorBusy ? "true" : undefined
+                            }
+                            onClick={runMagicSeoSetup}
+                        >
+                            {orchestratorBusy
+                                ? "מגדירים SEO…"
+                                : "הגדירו לי SEO אוטומטית ✨"}
+                        </button>
+                    </div>
+
+                    <div className={styles.magicHelperText}>
+                        הכותרת והתיאור עשויים להתעדכן בעזרת AI.
+                    </div>
+                    <div className={styles.magicHelperText}>
+                        השינויים נשמרים בטיוטה בלבד עד ללחיצה על שמור
+                        שינויים.
+                    </div>
+
+                    <div aria-live="polite" aria-atomic="true" aria-label="סטטוס הגדרת SEO">
+                        {orchestratorNotice && (
+                            <div
+                                className={
+                                    orchestratorNotice.type === "success"
+                                        ? styles.magicNoticeSuccess
+                                        : orchestratorNotice.type ===
+                                            "error"
+                                          ? styles.magicNoticeError
+                                          : styles.magicNoticeWarning
+                                }
+                            >
+                                <div
+                                    className={styles.magicNoticeMessage}
+                                >
+                                    {orchestratorNotice.message}
+                                </div>
+                                {orchestratorNotice.details?.length >
+                                    0 && (
+                                    <ul
+                                        className={
+                                            styles.magicNoticeDetails
+                                        }
+                                    >
+                                        {orchestratorNotice.details.map(
+                                            (d, i) => (
+                                                <li key={i}>{d}</li>
+                                            ),
+                                        )}
+                                    </ul>
+                                )}
+                            </div>
+                        )}
+                    </div>
+                </div>
+
                 {/* ── Section 1: Basic - always open ── */}
                 <div className={styles.section}>
                     <div className={styles.sectionHeader}>
