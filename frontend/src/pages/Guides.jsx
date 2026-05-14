@@ -12,6 +12,7 @@ import {
 import { SITE_ACTIONS } from "../services/siteAnalytics.actions";
 import pub from "../styles/public-sections.module.css";
 import styles from "./Guides.module.css";
+import { CONTENT_DISPLAY_POLICY } from "../utils/contentDisplayPolicy.js";
 
 const ORIGIN = import.meta.env.VITE_PUBLIC_ORIGIN || "https://cardigo.co.il";
 const PAGE_LIMIT = 12;
@@ -237,7 +238,7 @@ export default function Guides() {
                                         loading="lazy"
                                     />
                                     <div className={styles.cardBody}>
-                                        {post.publishedAt && (
+                                        {CONTENT_DISPLAY_POLICY.showPublishedDates && post.publishedAt && (
                                             <time
                                                 className={styles.cardDate}
                                                 dateTime={post.publishedAt}

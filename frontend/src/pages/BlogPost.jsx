@@ -3,6 +3,7 @@ import { useParams, Link, useNavigate } from "react-router-dom";
 import SeoHelmet from "../components/seo/SeoHelmet";
 import { trackSitePageView } from "../services/siteAnalytics.client";
 import styles from "./BlogPost.module.css";
+import { CONTENT_DISPLAY_POLICY } from "../utils/contentDisplayPolicy.js";
 
 const ORIGIN = import.meta.env.VITE_PUBLIC_ORIGIN || "https://cardigo.co.il";
 
@@ -440,7 +441,7 @@ export default function BlogPost() {
             <article className={styles.article}>
                 <div className={styles.articleInner}>
                     <header className={styles.articleHeader}>
-                        {post.publishedAt && (
+                        {CONTENT_DISPLAY_POLICY.showPublishedDates && post.publishedAt && (
                             <time
                                 className={styles.date}
                                 dateTime={post.publishedAt}
