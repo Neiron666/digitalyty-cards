@@ -238,14 +238,17 @@ export default function Guides() {
                                         loading="lazy"
                                     />
                                     <div className={styles.cardBody}>
-                                        {CONTENT_DISPLAY_POLICY.showPublishedDates && post.publishedAt && (
-                                            <time
-                                                className={styles.cardDate}
-                                                dateTime={post.publishedAt}
-                                            >
-                                                {formatDate(post.publishedAt)}
-                                            </time>
-                                        )}
+                                        {CONTENT_DISPLAY_POLICY.showPublishedDates &&
+                                            post.publishedAt && (
+                                                <time
+                                                    className={styles.cardDate}
+                                                    dateTime={post.publishedAt}
+                                                >
+                                                    {formatDate(
+                                                        post.publishedAt,
+                                                    )}
+                                                </time>
+                                            )}
                                         <h3 className={styles.cardTitle}>
                                             <Link to={`/guides/${post.slug}`}>
                                                 {post.title}

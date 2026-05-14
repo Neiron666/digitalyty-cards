@@ -439,14 +439,15 @@ export default function GuidePost() {
             <article className={styles.article}>
                 <div className={styles.articleInner}>
                     <header className={styles.articleHeader}>
-                        {CONTENT_DISPLAY_POLICY.showPublishedDates && post.publishedAt && (
-                            <time
-                                className={styles.date}
-                                dateTime={post.publishedAt}
-                            >
-                                {formatDate(post.publishedAt)}
-                            </time>
-                        )}
+                        {CONTENT_DISPLAY_POLICY.showPublishedDates &&
+                            post.publishedAt && (
+                                <time
+                                    className={styles.date}
+                                    dateTime={post.publishedAt}
+                                >
+                                    {formatDate(post.publishedAt)}
+                                </time>
+                            )}
 
                         <h1 className={styles.articleTitle}>{post.title}</h1>
 

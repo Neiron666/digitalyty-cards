@@ -244,14 +244,17 @@ export default function Blog() {
                                         loading="lazy"
                                     />
                                     <div className={styles.cardBody}>
-                                        {CONTENT_DISPLAY_POLICY.showPublishedDates && post.publishedAt && (
-                                            <time
-                                                className={styles.cardDate}
-                                                dateTime={post.publishedAt}
-                                            >
-                                                {formatDate(post.publishedAt)}
-                                            </time>
-                                        )}
+                                        {CONTENT_DISPLAY_POLICY.showPublishedDates &&
+                                            post.publishedAt && (
+                                                <time
+                                                    className={styles.cardDate}
+                                                    dateTime={post.publishedAt}
+                                                >
+                                                    {formatDate(
+                                                        post.publishedAt,
+                                                    )}
+                                                </time>
+                                            )}
                                         <h3 className={styles.cardTitle}>
                                             <Link to={`/blog/${post.slug}`}>
                                                 {post.title}
