@@ -150,7 +150,7 @@ All DoD items were satisfied at production launch on 2026-05-03:
 
 ### Blog listing
 
-- `/blog` - premium public page. Displays published posts with thumbnails, excerpt, author, date.
+- `/blog` - premium public page. Displays published posts with thumbnails, excerpt, and author. Publication dates are intentionally not shown in the visible UI while the evergreen content display policy is disabled.
 - Footer site-shell includes a persistent `/blog` link for discoverability.
 
 ### Blog post page
@@ -178,6 +178,21 @@ The guides section mirrors the blog structure:
 - `/guides/:slug` — single guide page with `SeoHelmet`, JSON-LD (`Article`, `BreadcrumbList`), hero image, and article meta.
 - `GET /og/guides/:slug` — backend OG endpoint for social preview bots. Same tag inventory as `/og/blog/:slug`.
 - `GuidePost.jsx` mirrors `BlogPost.jsx`: passes article meta props, `imageAlt`, and emits soft-404 noindex for missing slugs.
+
+### Content Display Policy (blog/guides visible dates)
+
+**SSoT:** `frontend/src/utils/contentDisplayPolicy.js`
+
+**Contour: CONTENT_VISIBLE_PUBLISHED_DATE_HIDE_POLICY_SSoT — CLOSED / PASS (2026-05-14)**
+
+`CONTENT_DISPLAY_POLICY.showPublishedDates = false` — visible publication `<time>` elements are not rendered in Blog/Guides list cards or detail page headers.
+
+- **Blog/Guides list cards:** no visible date rendered.
+- **Blog/Guide detail page header:** no visible date rendered.
+- **Reversibility:** `formatDate` helpers and CSS classes (`.cardDate` in Blog/Guides listing, `.date` in BlogPost/GuidePost) are preserved. Setting `showPublishedDates: true` restores visible dates with no backend, sitemap, or SEO changes required.
+- **SEO invariant:** `datePublished` / `dateModified` in JSON-LD and `articlePublishedTime` / `articleModifiedTime` in `SeoHelmet` remain active and are independent of this flag.
+- **Backend/sitemap invariant:** backend `publishedAt` field is untouched; sitemap `<lastmod>` uses `updatedAt` and was not changed.
+- **Env invariant:** no `.env`, `VITE_*`, Netlify, or Render env var is required. This is source-controlled frontend display policy only.
 
 ---
 
