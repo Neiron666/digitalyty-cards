@@ -662,8 +662,7 @@ export default function SeoPanel({
             if (!finalPublicUrl) {
                 setOrchestratorNotice({
                     type: "warning",
-                    message:
-                        "לא נמצאה כתובת ציבורית לכרטיס. לא ניתן להמשיך.",
+                    message: "לא נמצאה כתובת ציבורית לכרטיס. לא ניתן להמשיך.",
                 });
                 return;
             }
@@ -757,9 +756,8 @@ export default function SeoPanel({
                         הגדרת SEO בלחיצה אחת
                     </div>
                     <div className={styles.magicDescription}>
-                        נמלא כותרת ותיאור בעזרת AI, נגדיר כתובת מועדפת
-                        וניצור מידע מובנה לכרטיס. לאחר מכן צריך ללחוץ על
-                        שמור שינויים.
+                        נמלא כותרת ותיאור בעזרת AI, נגדיר כתובת מועדפת וניצור
+                        מידע מובנה לכרטיס. לאחר מכן צריך ללחוץ על שמור שינויים.
                     </div>
 
                     {magicMissingReasons.length > 0 && (
@@ -780,21 +778,18 @@ export default function SeoPanel({
                         </div>
                     )}
 
-                    {!hasAiConsent() &&
-                        magicMissingReasons.length === 0 && (
-                            <div className={styles.magicHelperText}>
-                                בלחיצה הראשונה תתבקשו לאשר שימוש ב-AI.
-                            </div>
-                        )}
+                    {!hasAiConsent() && magicMissingReasons.length === 0 && (
+                        <div className={styles.magicHelperText}>
+                            בלחיצה הראשונה תתבקשו לאשר שימוש ב-AI.
+                        </div>
+                    )}
 
                     <div className={styles.magicActions}>
                         <button
                             type="button"
                             className={styles.magicButton}
                             disabled={!magicReady || orchestratorBusy}
-                            aria-busy={
-                                orchestratorBusy ? "true" : undefined
-                            }
+                            aria-busy={orchestratorBusy ? "true" : undefined}
                             onClick={runMagicSeoSetup}
                         >
                             {orchestratorBusy
@@ -807,34 +802,29 @@ export default function SeoPanel({
                         הכותרת והתיאור עשויים להתעדכן בעזרת AI.
                     </div>
                     <div className={styles.magicHelperText}>
-                        השינויים נשמרים בטיוטה בלבד עד ללחיצה על שמור
-                        שינויים.
+                        השינויים נשמרים בטיוטה בלבד עד ללחיצה על שמור שינויים.
                     </div>
 
-                    <div aria-live="polite" aria-atomic="true" aria-label="סטטוס הגדרת SEO">
+                    <div
+                        aria-live="polite"
+                        aria-atomic="true"
+                        aria-label="סטטוס הגדרת SEO"
+                    >
                         {orchestratorNotice && (
                             <div
                                 className={
                                     orchestratorNotice.type === "success"
                                         ? styles.magicNoticeSuccess
-                                        : orchestratorNotice.type ===
-                                            "error"
+                                        : orchestratorNotice.type === "error"
                                           ? styles.magicNoticeError
                                           : styles.magicNoticeWarning
                                 }
                             >
-                                <div
-                                    className={styles.magicNoticeMessage}
-                                >
+                                <div className={styles.magicNoticeMessage}>
                                     {orchestratorNotice.message}
                                 </div>
-                                {orchestratorNotice.details?.length >
-                                    0 && (
-                                    <ul
-                                        className={
-                                            styles.magicNoticeDetails
-                                        }
-                                    >
+                                {orchestratorNotice.details?.length > 0 && (
+                                    <ul className={styles.magicNoticeDetails}>
                                         {orchestratorNotice.details.map(
                                             (d, i) => (
                                                 <li key={i}>{d}</li>
