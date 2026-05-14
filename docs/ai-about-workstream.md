@@ -286,15 +286,15 @@ Existing About content (step 8c — About handler only):
 
 ### 4.1 Key files
 
-| File                                                            | Responsibility                                                          |
-| --------------------------------------------------------------- | ----------------------------------------------------------------------- |
-| `frontend/src/services/ai.service.js`                           | HTTP client: `suggestAbout`, `suggestSeo`, `suggestFaq`, `fetchAiQuota` |
-| `frontend/src/components/editor/panels/ContentPanel.jsx`        | About AI: state machine, consent, preview/apply/dismiss, error mapping  |
-| `frontend/src/components/editor/panels/ContentPanel.module.css` | CSS Module styles for About AI preview, buttons, consent modal          |
-| `frontend/src/components/editor/panels/SeoPanel.jsx`            | SEO AI: generation trigger, preview/apply/dismiss                       |
-| `frontend/src/components/editor/panels/FaqPanel.jsx`            | FAQ AI: empty-state CTA, generation, preview/apply/dismiss              |
-| `frontend/src/components/editor/panels/AiQuotaHint.jsx`         | **Shared** AI quota hint component used by all three panels             |
-| `frontend/src/components/editor/panels/AiQuotaHint.module.css`  | CSS Module for the shared quota hint                                    |
+| File                                                            | Responsibility                                                                                                                                                                                                                  |
+| --------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `frontend/src/services/ai.service.js`                           | HTTP client: `suggestAbout`, `suggestSeo`, `suggestFaq`, `fetchAiQuota`                                                                                                                                                         |
+| `frontend/src/components/editor/panels/ContentPanel.jsx`        | About AI: state machine, consent, preview/apply/dismiss, error mapping                                                                                                                                                          |
+| `frontend/src/components/editor/panels/ContentPanel.module.css` | CSS Module styles for About AI preview, buttons, consent modal                                                                                                                                                                  |
+| `frontend/src/components/editor/panels/SeoPanel.jsx`            | SEO AI: (1) generation trigger, preview/apply/dismiss (existing AI button); (2) Magic SEO Setup orchestrator — direct apply of title/description + canonicalUrl + JSON-LD, no preview step (see `docs/runbooks/seo-scripts.md`) |
+| `frontend/src/components/editor/panels/FaqPanel.jsx`            | FAQ AI: empty-state CTA, generation, preview/apply/dismiss                                                                                                                                                                      |
+| `frontend/src/components/editor/panels/AiQuotaHint.jsx`         | **Shared** AI quota hint component used by all three panels                                                                                                                                                                     |
+| `frontend/src/components/editor/panels/AiQuotaHint.module.css`  | CSS Module for the shared quota hint                                                                                                                                                                                            |
 
 ### 4.2 ContentPanel flow
 
