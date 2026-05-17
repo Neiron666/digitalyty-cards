@@ -56,6 +56,43 @@ Bridge payload shape:
 
 The bridge fires on every successful `trackSiteClick` call that passes the `shouldTrackSitePagePath` guard. It does **not** fire for `trackSitePageView` (page views are not bridged to dataLayer).
 
+## GTM-Side Mapping — Meta CardigoStartFreeCardIntent
+
+Added in GTM Version 7 (published 2026-05-17). See canonical detail in `docs/handoffs/current/Cardigo_Enterprise_Handoff_2026-05-17_GTM_V7_StartFreeCardIntent_Meta_Conversion_Closed.md`.
+
+The existing `cardigo_event` dataLayer pushes produced by `trackSiteClick()` are consumed on the GTM side by a new trigger that maps a subset of `SITE_ACTIONS` to a Meta Custom Event (`trackCustom`, `"CardigoStartFreeCardIntent"`).
+
+### Allowed actions (trigger allowlist)
+
+The following 8 `SITE_ACTIONS` values fire `CardigoStartFreeCardIntent`:
+
+| SITE_ACTIONS key              | Page     |
+| ----------------------------- | -------- |
+| `home_hero_primary_register`  | `/`      |
+| `home_templates_cta`          | `/`      |
+| `home_bottom_cta`             | `/`      |
+| `cards_hero_cta`              | `/cards` |
+| `cards_templates_cta`         | `/cards` |
+| `cards_showcase_card_cta`     | `/cards` |
+| `cards_showcase_view_all_cta` | `/cards` |
+| `cards_bottom_cta`            | `/cards` |
+
+All are primary register-intent CTAs. No frontend code changes were required — the GTM trigger reads from the existing bridge payload.
+
+### Excluded actions
+
+The following `SITE_ACTIONS` are **not** in the allowlist and will **not** fire `CardigoStartFreeCardIntent`:
+
+- `home_templates_see_all` — content-browse intent, explicitly verified negative in GTM Preview.
+- `home_hero_secondary_examples` — content-browse / discovery CTA.
+- `pricing_*` — maps to `InitiateCheckout` (separate downstream commercial intent event).
+- `contact_*` — maps to `Lead` / `Contact` (separate post-interest signals).
+- `blog_article_click` — content engagement signal.
+- `guide_article_click` — content engagement signal.
+- `registration_complete` — post-conversion signal, maps to `CompleteRegistration`.
+
+`Lead`, `Contact`, `InitiateCheckout`, and `CompleteRegistration` remain separate GTM tag mappings and are not affected by this addition.
+
 ## Conversion Signals
 
 These signals are product-lifecycle events emitted **outside** the `shouldTrackSitePagePath` path gate. They fire from auth routes (`/verify-email`, `/signup`) which are excluded from marketing-page path tracking by design.
