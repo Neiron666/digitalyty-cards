@@ -770,7 +770,7 @@ Route baselines verified (post-hydration DOM, all tag counts = 1):
 
 - canonical: 1 tag, https://cardigo.co.il/
 - og:url: 1 tag, https://cardigo.co.il/
-- og:image: 1 tag, homepage OG image (v=20260506)
+- og:image: 1 tag, homepage OG image (current v=20260517; previous smoke observed v=20260506 before DEFAULT_OG_IMAGE_CACHE_BUST)
 - og:image:alt: 1 tag, "Cardigo вЂ“ Ч›ЧЁЧЧ™ЧЎ Ч‘Ч™Ч§Ч•ЧЁ Ч“Ч™Ч’Ч™ЧЧњЧ™ ЧњЧўЧЎЧ§Ч™Чќ"
 - twitter:image:alt: 1 tag, same value
 - No duplicate social tags
