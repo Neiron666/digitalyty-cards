@@ -14,7 +14,7 @@ import { getPublicUrlForPath } from "../services/supabaseStorage.js";
 // Canonical Cardigo OG fallback image — matches seoConstants.js and marketingMeta.config.js SSoT.
 // Keep in sync manually if the path ever changes; do NOT import from frontend modules.
 const DEFAULT_OG_IMAGE_SUFFIX =
-    "/images/og/cardigo-home-og-1200x630.jpg?v=20260517";
+    "/images/og/cardigo-home-og-1200x630.jpg?v=20260518";
 
 const router = Router();
 
