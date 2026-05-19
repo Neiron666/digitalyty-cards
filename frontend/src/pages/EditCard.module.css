@@ -340,6 +340,8 @@
     display: flex;
     flex-direction: column;
     min-height: 0;
+    height: calc(100dvh - 64px);
+    overflow: hidden;
 }
 
 /* ── Main content area ── */
@@ -347,6 +349,9 @@
     display: flex;
     flex-direction: column;
     min-height: 0;
+    flex: 1 1 0;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
 }
 
 /* ── Delete notice bar ── */
@@ -478,18 +483,6 @@ a.breakWord:focus-visible {
     .replayTourBtn:focus-visible {
         outline: 2px solid var(--accent-cyan);
         outline-offset: 2px;
-    }
-
-    .editCard {
-        height: calc(100dvh - 64px);
-        overflow: hidden;
-    }
-
-    .main {
-        flex: 1 1 0;
-        min-height: 0;
-        overflow-y: auto;
-        -webkit-overflow-scrolling: touch;
     }
 
     .cardContextBar {

@@ -6,10 +6,7 @@
     padding: 0;
     margin-inline: 8px;
     margin-block: 8px;
-
-    /* Desktop viewport contract: fill available space below header.
-       64px header + 8px top margin + 8px bottom margin = 80px consumed. */
-    height: calc(100dvh - 80px);
+    flex: 1 1 0;
     overflow: hidden;
     min-height: 0;
 
@@ -164,7 +161,6 @@
         flex-direction: column;
         justify-content: flex-start;
         flex: 1 1 0;
-        height: auto;
         min-height: 0;
         overflow: hidden;
         margin: 0;
