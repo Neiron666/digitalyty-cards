@@ -14,8 +14,8 @@ import styles from "./CheckoutPage.module.css";
 const VALID_PLANS = ["monthly", "yearly"];
 
 const PLAN_LABELS = {
-    monthly: "₪39.90 לחודש",
-    yearly: "₪399.90 לשנה",
+    monthly: "₪29 לחודש",
+    yearly: "₪299 לשנה",
 };
 
 /* ── Validation ─────────────────────────────────────── */
