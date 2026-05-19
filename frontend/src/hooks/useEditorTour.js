@@ -63,7 +63,7 @@ export const EDITOR_TOUR_STEPS = [
     {
         id: "step-sections-menu-2",
         targetId: "editor-tour-sections-menu",
-        text: "פתחו שוב את התפריט כדי להמשיך לפרטי העסק",
+        text: "הכניסו תמונת רקע ותמונה אישית, ולאחר מכן פתחו את התפריט",
         anonymousOnly: false,
         requiresDrawer: false,
     },
@@ -77,7 +77,7 @@ export const EDITOR_TOUR_STEPS = [
     {
         id: "step-sections-menu-3",
         targetId: "editor-tour-sections-menu",
-        text: "פתחו שוב את התפריט כדי לעבור לפרטי קשר",
+        text: "מלאו את שם העסק ותחום עיסוק, ולאחר מכן פתחו שוב את התפריט",
         anonymousOnly: false,
         requiresDrawer: false,
     },
