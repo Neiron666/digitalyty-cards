@@ -127,3 +127,43 @@ This signal is the data source for the GTM `CompleteRegistration` → Meta tag. 
 2. Click Contact mail CTA once.
 3. Re-fetch diagnostics and confirm `counters.missing_action` does not change and `clicksTotal` in summary increments (or actionCounts increases, depending on your UI view).
 4. Click a blog article and a guides article. Confirm `blog_article_click` and `guide_article_click` appear in diagnostics and in GTM Preview as `cardigo_event` dataLayer pushes.
+
+## Google Ads Tag — Site-Level Search Retargeting (GTM V8)
+
+Added in GTM Version 8 (published 2026-05-18). See canonical detail in `docs/handoffs/current/Cardigo_Enterprise_Handoff_2026-05-18_GTM_V8_GoogleAds_Search_Retargeting_Closed.md`.
+
+| Property       | Value                                                      |
+| -------------- | ---------------------------------------------------------- |
+| Google tag     | `AW-18078197095`                                           |
+| Container      | `GTM-W6Q8DP6R`                                             |
+| Consent gate   | `DLV — Consent Optional Tracking` equals `true`            |
+| Route boundary | Same as Meta Pixel — approved marketing routes only        |
+| SPA coverage   | History Change trigger (`HC`) attached directly to the tag |
+
+### Approved route boundary
+
+The Google Ads tag fires only on the following routes (identical to `AD_MEASUREMENT_PATHS` in `frontend/src/components/layout/Layout.jsx` lines 16–24):
+
+`/`, `/cards`, `/pricing`, `/blog`, `/guides`, `/contact`
+
+Excluded from all auth, private, admin, editor, public card, and org card surfaces (`/login`, `/register`, `/edit`, `/admin`, `/card/:slug`, `/c/:orgSlug/:slug`).
+
+### SPA trigger note
+
+Client-side route transitions are covered by the History Change trigger `HC - Google Ads - Approved Routes + Optional Consent`, which is attached **directly** to the Google Ads tag — not nested inside the trigger group. This is the required pattern for SPA route-change tracking.
+
+### Audience and campaign context
+
+| Property             | Value                                                             |
+| -------------------- | ----------------------------------------------------------------- |
+| Audience segment     | `Cardigo \| Website Visitors \| Approved Marketing Routes \| 30d` |
+| Audience type        | Website visitors, 30-day membership                               |
+| Intended use         | Google Search retargeting only                                    |
+| Campaign             | `GOOGLE \| SEARCH \| IL \| RETARGETING \| CARDIGO \| V1`          |
+| Campaign type        | Search (AI Max off, Display off, Search Partners off)             |
+| Location / Languages | Israel / Hebrew, Russian, English                                 |
+| Landing URL          | `https://cardigo.co.il/cards`                                     |
+
+### Non-actions for this contour
+
+No GA4, no enhanced conversions, no Google Consent Mode (now a relevant deferred item), no manual source-code snippet installation.

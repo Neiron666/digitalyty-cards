@@ -221,23 +221,36 @@ async function main() {
     const dbName = mongoose.connection.db?.databaseName ?? "unknown";
     const stoTerminal = TRANZILA_CONFIG.stoTerminal || "";
     const terminalLooksProduction = PROD_TERMINAL_PATTERN.test(stoTerminal);
+    const dbLooksProduction = dbName === "cardigo_prod";
+    const requiresProdAllow = terminalLooksProduction || dbLooksProduction;
     const warnings = [];
 
-    // Production terminal guard
-    if (terminalLooksProduction) {
+    // Production target guard (dual: terminal + dbName)
+    if (requiresProdAllow) {
         if (EXECUTE && !ALLOW_PROD) {
             console.log(
                 JSON.stringify({
                     ok: false,
-                    blocked: "BLOCKED_PRODUCTION_TERMINAL",
-                    reason: "stoTerminal matches production pattern (/^fxp/i). Pass --allow-prod to override. Intended for sandbox only.",
+                    blocked: "BLOCKED_PRODUCTION_TARGET_REQUIRES_ALLOW_PROD",
+                    reason: "Production target detected (terminal or DB). Pass --allow-prod to override.",
+                    productionTargetDetails: `{ terminalLooksProduction: ${terminalLooksProduction}, dbLooksProduction: ${dbLooksProduction} }`,
                 }),
             );
             process.exitCode = 1;
             process.exit(1);
+        } else if (EXECUTE) {
+            warnings.push(
+                "Production target detected; --allow-prod was provided to proceed.",
+            );
+            warnings.push(
+                `productionTargetDetails={ terminalLooksProduction: ${terminalLooksProduction}, dbLooksProduction: ${dbLooksProduction} }`,
+            );
         } else {
             warnings.push(
-                "stoTerminal matches PROD_TERMINAL_PATTERN — this looks like a production terminal.",
+                "Production target detected; --allow-prod will be required for --execute.",
+            );
+            warnings.push(
+                `productionTargetDetails={ terminalLooksProduction: ${terminalLooksProduction}, dbLooksProduction: ${dbLooksProduction} }`,
             );
         }
     }
@@ -280,6 +293,8 @@ async function main() {
                     mode: EXECUTE ? "EXECUTE" : "DRY_RUN",
                     dbName,
                     terminalLooksProduction,
+                    dbLooksProduction,
+                    requiresProdAllow,
                     warnings,
                     user: null,
                     result: {
@@ -333,6 +348,8 @@ async function main() {
                     mode: "DRY_RUN",
                     dbName,
                     terminalLooksProduction,
+                    dbLooksProduction,
+                    requiresProdAllow,
                     warnings,
                     user: preflight,
                     result: {
@@ -358,6 +375,8 @@ async function main() {
                     mode: "EXECUTE",
                     dbName,
                     terminalLooksProduction,
+                    dbLooksProduction,
+                    requiresProdAllow,
                     warnings,
                     user: preflight,
                     result: {
@@ -388,6 +407,8 @@ async function main() {
                 mode: "EXECUTE",
                 dbName,
                 terminalLooksProduction,
+                dbLooksProduction,
+                requiresProdAllow,
                 warnings,
                 user: preflight,
                 result: {
