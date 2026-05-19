@@ -2418,6 +2418,14 @@ function EditCard() {
         isAuthenticated && draftCard?.status === "published",
     );
 
+    const showContextBar =
+        isAuthenticated && (myOrgs.length > 0 || Boolean(activeOrgSlug));
+    const showGuideDropdown =
+        isAuthenticated &&
+        contextResolved &&
+        orgsLoadState === "loaded" &&
+        !showContextBar;
+
     return (
         <div className={styles.editCard}>
             <SeoHelmet robots="noindex, nofollow" />
@@ -2553,10 +2561,8 @@ function EditCard() {
                         myOrgs={myOrgs}
                         onContextChange={handleContextChange}
                         onLoadOrgs={loadMyOrgs}
-                        showContextBar={
-                            isAuthenticated &&
-                            (myOrgs.length > 0 || Boolean(activeOrgSlug))
-                        }
+                        showContextBar={showContextBar}
+                        showGuideDropdown={showGuideDropdown}
                         isAuthenticated={isAuthenticated}
                         // Mobile: public link in sidebar drawer
                         publicUrl={cardPublicUrl}
