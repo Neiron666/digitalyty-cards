@@ -13,12 +13,12 @@ All internal amounts are **integers in agorot** (1/100 of ₪). No floats anywhe
 
 | Plan key  | Agorot | Display (₪) |
 | --------- | ------ | ----------- |
-| `monthly` | 3990   | ₪39.90      |
-| `yearly`  | 39990  | ₪399.90     |
+| `monthly` | 2900   | ₪29.00      |
+| `yearly`  | 29900  | ₪299.00     |
 
 **Canonical location:** `backend/src/config/plans.js` → `PRICES_AGOROT` export.
 
-> **⚠️ STO schedule price lock:** `PRICES_AGOROT` current code value: `monthly: 3990, yearly: 39990` (₪39.90 / ₪399.90). Confirmed in `backend/src/config/plans.js:72–73`. `TRANZILA_STO_NOTIFY_SANDBOX_E2E_P0` CLOSED/PASS (2026-05-02) — real webhook received 01/05/2026 and fully verified. Sandbox STO schedule (`dannybestboy@gmail.com`, terminal `testcardstok`) advanced to next charge 01/06/2026. **Cleanup required:** cancel/deactivate sandbox STO schedule before production cutover and before any unintended future sandbox charge. Operator will handle cleanup manually. **Do NOT change `PRICES_AGOROT` while active sandbox STO schedules remain** — any mismatch between the code value and the amount on the active STO schedule will cause every recurring notify to fail with `amount_mismatch`. After all sandbox STO schedules are cancelled/deactivated, restore production values only in a dedicated pre-production contour.
+> **✅ Price deployed (2026-05-19):** `PRICES_AGOROT` deployed to production: `monthly: 2900, yearly: 29900` (₪29 / ₪299). Confirmed in `backend/src/config/plans.js:71–74`. Sandbox STO schedules cancelled before cutover; production cutover complete (G6 CLOSED 2026-05-05). Existing monthly-plan users resumed through product UI; new STO schedules verified at ₪29.00, next billing 05/06/2026. No sandbox cleanup gate remains.
 
 **Conversion rules:**
 
@@ -31,7 +31,7 @@ All internal amounts are **integers in agorot** (1/100 of ₪). No floats anywhe
 
 - ~~`backend/src/services/payment/tranzila.provider.js` - local `PRICES` (29.9 / 299).~~ **RESOLVED:** provider now imports canonical `PRICES_AGOROT` from `backend/src/config/plans.js`.
 - ~~`backend/src/controllers/payment.controller.js` - dead code, local `PRICES` (29.9 / 200).~~ **RESOLVED:** file absent from codebase.
-- ~~`frontend/src/components/pricing/PricingPlans.jsx` - hardcoded ₪29.99 / ₪299.~~ **RESOLVED:** file removed; current prices (₪39.90 / ₪399.90) live in `frontend/src/pages/Pricing.jsx`.
+- ~~`frontend/src/components/pricing/PricingPlans.jsx` - hardcoded ₪29.99 / ₪299.~~ **RESOLVED:** file removed; current prices (₪29 / ₪299) live in `frontend/src/pages/Pricing.jsx`.
 
 ---
 
@@ -597,7 +597,7 @@ Implementation: `buildTranzilaApiAuthHeaders()` in `backend/src/services/payment
 3. ~~**Cancellation/deactivation runbook — no operator procedure**~~ — **FULLY RESOLVED (5.6 + 5.9a.1/5.9a.2):** `sto-cancel.mjs` operator script exists (sandbox proven). User self-service cancel-renewal shipped 2026-04-22: `POST /api/account/cancel-renewal` (requireAuth, provider-first via `cancelTranzilaStoForUser`, idempotent, rate-limited 3/10min). SettingsPanel UI shipped in 5.9a.2. Premium remains active until `subscription.expiresAt` / `Card.billing.paidUntil` — no immediate downgrade. Admin UI/button remains deferred and non-blocking.
 4. **Non-sensitive STO notify observability** — ✅ **RESOLVED (5.8f.LOG.1):** Safe structured logs deployed to Netlify edge function and backend `/sto-notify` route; verified 54/54 PASS with no sensitive data. ~~**STO create observability** (structured log on create result success/skip/failure) remains open _(separate item)_.~~ **RESOLVED (5.12.H):** `logStoCreateOutcome()` at `tranzila.provider.js:733–769`, wired in `handleNotify()` at L1020–1029.
 5. ~~**Gated startup validation**~~ — **FULLY RESOLVED (5.11):** `backend/src/services/payment/index.js` validates `TRANZILA_STO_TERMINAL`, `TRANZILA_STO_API_URL`, `TRANZILA_API_APP_KEY`, `TRANZILA_API_PRIVATE_KEY` at startup when `TRANZILA_STO_CREATE_ENABLED=true`. Throws fail-fast on missing vars.
-6. **Production terminal cutover** — Render STO env vars must be switched from sandbox terminal to production terminal values; `PRICES_AGOROT` must be restored to production values (`3990`/`39990`) **after** all active sandbox STO schedules are cancelled/deactivated (changing prices while active schedules charge old amounts causes `amount_mismatch`). Operator decision: price restore is deferred to a dedicated pre-production contour. _(open)_
+6. ~~**Production terminal cutover**~~ — **CLOSED / PRODUCTION-DEPLOYED (2026-05-19).** Render STO env vars switched to production terminal. `PRICES_AGOROT` deployed to production values (`2900`/`29900`) after all sandbox STO schedules were cancelled/deactivated. Two monthly-plan production users resumed at ₪29.00; next billing 05/06/2026. No remaining sandbox cleanup gate.
 7. ~~**Handshake V2 (thtk verification)**~~ — **CLOSED/SANDBOX-PROVEN (2026-04-28).** `TRANZILA_HANDSHAKE_ENABLED=true`; Handshake API V2 integrated via `buildTranzilaApiAuthHeaders()`. Checkout URL carries `thtk`; `PaymentIntent.handshakeThtkHash` stores `sha256(thtk)` (plaintext never stored). `thtk` is in `STRIP_KEYS` — never in `payloadAllowlisted`. Forged notify without `thtk` → `failReason=handshake_thtk_missing`. Forged notify with wrong `thtk` → `failReason=handshake_thtk_mismatch`. Real sandbox first payment passed. **`thtk` amount locking** (separate concern: STO amount locked at create time; price-change reconciliation) remains a future contour.
 8. ~~**YeshInvoice / קבלה**~~ — **IMPLEMENTED AND SANDBOX-PROVEN (2026-04-24).** See §9 for full implementation details. Production enablement blocked on G6 (production terminal cutover) and G7 (production recurring lifecycle proof) only.
 
@@ -707,7 +707,7 @@ User self-service cancel stops **future** recurring charges only. It does NOT tr
 - **Render cold-start / Netlify 9s timeout:** Public relay smoke may return 502 before Render backend warms up. Allow 30–60s warm-up time and retry. This is a false-negative infrastructure caveat, not a bug.
 - **Early polluted fake notify attempt:** One early direct-backend fake notify attempt was made before the real sandbox proof. It created no DB residue. Ledger is clean.
 - **Local sandbox env:** `TRANZILA_TERMINAL=testcards`, `TRANZILA_STO_TERMINAL=testcardstok` — these are sandbox values. Production terminal vars are commented out in `.env`.
-- **PRICES_AGOROT:** Current code value is `3990/39990` (₪39.90 / ₪399.90) — confirmed in `plans.js:72–73`. `TRANZILA_STO_NOTIFY_SANDBOX_E2E_P0` CLOSED/PASS (2026-05-02). Sandbox STO schedule (`dannybestboy@gmail.com`, terminal `testcardstok`) advanced to next charge 01/06/2026. **Do NOT change `PRICES_AGOROT` while active sandbox STO schedules remain** — `amount_mismatch` on every recurring notify. Operator will cancel/deactivate all sandbox STO schedules / test artifacts manually before production cutover. Restore production values in a dedicated pre-production contour only after all active sandbox schedules are cancelled/deactivated.
+- **PRICES_AGOROT:** ~~Sandbox value `3990/39990` (₪39.90 / ₪399.90) — pre-2026-05-19 historical note.~~ **Production deployed (2026-05-19):** `2900/29900` (₪29 / ₪299). Confirmed in `plans.js:71–74`. All sandbox STO schedules cancelled before cutover. No sandbox cleanup gate remains.
 
 ### Open Production Gates
 
@@ -822,7 +822,7 @@ All 4 micro-contours: frontend gates EXIT 0 on 2026-04-26 (`check:inline-styles`
 **This section closes sandbox documentation readiness only.** The following items were separate future contours at sandbox close; current status per §16:
 
 - ~~Production terminal cutover (swap `testcards`/`testcardstok` for production terminal IDs).~~ **CLOSED / OPERATOR-CONFIRMED (2026-05-05) — see G6 in §16.**
-- `PRICES_AGOROT` restore to production values (`3990`/`39990`) after all active sandbox STO schedules are cancelled. _(operator action — confirm before any price change)_
+- ~~`PRICES_AGOROT` restore to production values (`3990`/`39990`) after all active sandbox STO schedules are cancelled.~~ **CLOSED 2026-05-19.** Deployed to `2900`/`29900` (₪29 / ₪299). See §19 production smoke and G6 in §16.
 - `TRANZILA_SECRET` swap to production signing secret. _(part of G6 cutover — DONE)_
 - Full production E2E payment smoke on production terminal. _(completed as part of G6 — DONE)_
 - Production recurring lifecycle proof (STO charges on production terminal). **G7 — PARTIAL / SEPARATELY TRACKED** (see §16).
@@ -892,9 +892,9 @@ For full operator instructions (grant/extend/revoke flows, API contract, error c
 
 ---
 
-## 19) User Self-Service Resume Auto-Renewal — Sandbox-Proven (2026-05-02)
+## 19) User Self-Service Resume Auto-Renewal — Production-Proven (2026-05-19)
 
-**Status: IMPLEMENTED + SANDBOX-PROVEN. Production rollout: NOT STARTED.**
+**Status: IMPLEMENTED + PRODUCTION-PROVEN (2026-05-19).**
 
 ### Endpoint
 
@@ -955,6 +955,8 @@ POST /api/account/resume-auto-renewal
 }
 ```
 
+> **`cancelledAtPresent` note:** This DTO example shows the `false` case. For users resuming after a prior cancellation, `cancelledAtPresent` can remain `true` because `cancelledAt` is retained as historical audit metadata. Current STO state must be inferred from `autoRenewal.status` / `tranzilaSto.status`, not from `cancelledAtPresent`. See "STO Cancellation Audit Retention After Resume" below.
+
 `messageKey` values on error: `resume_unavailable` (503) | `account_not_found` | `subscription_not_active` | `subscription_expired` | `wrong_provider` | `unsupported_plan` | `already_active` | `renewal_in_progress` | `renewal_not_cancelled` | `token_missing` | `token_expired` | `resume_failed` | `resume_renewal_rate_limited` (429)
 
 > **State-sync note:** After a successful resume, the STO status transitions to `"created"`, which makes `canDelete` become `false`. The frontend merges the returned `paymentMethod` directly into its account state, so the delete payment method button becomes disabled immediately without a reload.
@@ -990,15 +992,31 @@ Resume does not trigger any payment. No `handleNotify` / `handleStoNotify` is ca
 
 **Redacted evidence note:** Raw stoId, TranzilaTK, providerTxnId, providerDocId, email are not documented here per doc hygiene policy. Use booleans only.
 
-### Production Rollout Boundary (explicit)
+### Production Smoke (2026-05-19) — PASS
 
-This section closes sandbox documentation readiness only. Resume auto-renewal in production requires:
+All production rollout conditions are confirmed closed:
 
-- Production terminal cutover complete (G6 closed).
+- Production terminal cutover complete (G6 CLOSED 2026-05-05).
 - `TRANZILA_STO_CREATE_ENABLED=true` armed in production Render env.
-- Full production E2E smoke on production terminal.
+- Two monthly-plan production users resumed via product UI; new STO schedules created at ₪29.00; next billing 05/06/2026.
+- `tranzilaSto.status=created`, `subscription.status=active`, `plan=monthly`, `lastErrorCode=null`, `lastErrorMessage=null` confirmed.
+- No raw user emails, STO IDs, or provider identifiers recorded per doc hygiene policy.
 
-**Cross-reference:** `docs/handoffs/current/Cardigo_Enterprise_Handoff_ResumeAutoRenewal_2026-05-02.md`
+**Cross-reference:** `docs/handoffs/current/Cardigo_Enterprise_Handoff_ResumeAutoRenewal_2026-05-02.md` (sandbox chronicle — do not edit)
+
+**Closure handoff:** `docs/handoffs/current/Cardigo_Enterprise_Handoff_Price_29_299_And_STO_Resume_Production_Closed_2026-05-19.md`
+
+### STO Cancellation Audit Retention After Resume
+
+**Invariant:** `tranzilaSto.status` is the **only source of truth** for current STO state. Do not infer current cancellation state from `cancelledAt`, `cancellationSource`, `cancellationReason`, or any other `cancellation_*` field.
+
+**Retention contract:** The `cancellation_*` fields (`cancelledAt`, `cancellationAttemptAt`, `cancellationErrorCode`, `cancellationErrorMessage`, `cancellationSource`, `cancellationReason`) are write-once-per-cancellation **historical audit metadata**. They are intentionally preserved after a successful resume. After resume, `tranzilaSto.status` returns to `"created"` while `cancelledAt` and related fields remain set from the prior cancellation event.
+
+**DTO note:** `autoRenewal.cancelledAtPresent` in the `/api/account/me` response reflects whether `cancelledAt` is non-null. After resume, this field remains `true` for users who were previously cancelled. This is informational/historical and is **not consumed by the frontend** (`canResumeAutoRenewal` reads only `autoRenewal.status`, not `cancelledAtPresent`).
+
+**Code anchors:** `backend/src/services/payment/tranzila.provider.js:2091–2092` (do-not-touch comment for `cancellation_*` fields in recurring-notify write path). `backend/src/models/User.model.js:120–143` (cancellation audit fields schema, all null-default, no migration required).
+
+**Payment/receipt:** Resume creates a new STO schedule only. It does **not** create a `PaymentTransaction` or `Receipt`. No YeshInvoice contact occurs on resume. The next charge is performed by the provider on `subscription.expiresAt`; only the resulting recurring-notify webhook creates `PaymentTransaction` and `Receipt`.
 
 ---
 

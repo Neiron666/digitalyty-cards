@@ -11,7 +11,7 @@
 Пока `PAYMENT_PROVIDER=mock`, мы всё равно можем проверить «боевую готовность» по контрактам:
 
 - UI: кнопки **חודשי** и **שנתי** существуют, дергают `createPayment("monthly"|"yearly")`, не ломают UX в dev.
-- Backend: `PRICES_AGOROT` корректные, `createPayment` (Tranzila‑провайдер) формирует `sum` как `"39.90"/"399.90"` (shekels string) из agorot.
+- Backend: `PRICES_AGOROT` корректные, `createPayment` (Tranzila‑провайдер) формирует `sum` как `"29.00"/"299.00"` (shekels string) из agorot.
 - Notify bypass: `_redirects` точечный матч `/api/payments/notify` → netlify function `payment-notify.js`.
 - Security: `?nt=` token в Netlify function + `x-cardigo-proxy-secret` + backend `x-cardigo-notify-token` (MUST-if-set).
 - Ledger: `PaymentTransaction` модель, миграционный скрипт индекса `providerTxnId_1`, idempotency via E11000.
@@ -244,7 +244,7 @@
 ### Production blockers (до production STO rollout)
 
 - [x] ~~STO notify handler~~ — **ПОЛНОСТЬЮ ЗАКРЫТ (5.8a–5.8f.9).** `handleStoNotify` имплементирован; Netlify `payment-sto-notify.js` + backend `POST /api/payments/sto-notify` деплоены с token gates и safe observability logs (5.8f.LOG.1). **Реальный provider-generated Tranzila My Billing webhook получен и полностью верифицирован 2026-04-22** (`valik@cardigo.co.il`, contour 5.8f.9, classification: `REAL_TRANZILA_STO_NOTIFY_E2E_SUCCESS_FULLY_VERIFIED`). Portal URL сконфигурирован для терминала `testcardstok`. Ledger baseline: `sto_recurring_notify_count=6`, `sto_prefix_txn_count=6`.
-- [ ] ⚠️ **Price gate** — `PRICES_AGOROT` должно совпадать с суммой, на которую созданы STO-расписания. **Текущее значение: `3990/39990` (₪39.90 / ₪399.90) — confirmed in `plans.js:72–73`.** `TRANZILA_STO_NOTIFY_SANDBOX_E2E_P0` CLOSED/PASS (2026-05-02). Webhook получен 01/05/2026. Sandbox STO-расписание (`dannybestboy@gmail.com`, terminal `testcardstok`) продвинуто на следующий charge 01/06/2026. **Cleanup required:** cancel/deactivate sandbox STO-расписание перед production cutover и перед любым нежелательным будущим sandbox charge. Operator выполнит cleanup вручную. **Менять `PRICES_AGOROT` НЕЛЬЗЯ пока активные sandbox STO-расписания существуют** — несовпадение вызовет `amount_mismatch` на каждом recurring notify. Восстановить production цены в отдельном pre-production contour **после** отмены/деактивации всех активных sandbox STO-расписаний/тестовых артефактов.
+- [x] ~~⚠️ **Price gate**~~ — **CLOSED / PRODUCTION-DEPLOYED (2026-05-19).** `PRICES_AGOROT` deployed to production values `2900/29900` (₪29 / ₪299), confirmed in `plans.js:71–74`. All sandbox STO schedules cancelled before cutover. Two monthly-plan production STO schedules verified at ₪29.00; next billing 05/06/2026. No sandbox cleanup gate remains. No `amount_mismatch` risk.
 - [x] ~~Failed-STO retry/recovery script или job~~ — **РЕАЛИЗОВАНО (5.12.H):** `backend/scripts/sto-retry-failed.mjs` — dry-run default, single-target (`--email`/`--user-id`), production-terminal block (`/^fxp/i` requires `--allow-prod`).
 - [x] ~~Cancellation/deactivation runbook~~ — **ПОЛНОСТЬЮ РЕАЛИЗОВАНО (5.6 + 5.9a.1/5.9a.2).** Пользователь может отменить будущее STO-списание через product UI: `POST /api/account/cancel-renewal` (SettingsPanel billing section, requireAuth, provider-first через `cancelTranzilaStoForUser`, idempotent, `cancellationSource: "self_service"`). Premium остаётся активным до `subscription.expiresAt` / `Card.billing.paidUntil` — немедленного downgrade нет. Operator script `sto-cancel.mjs` также существует для admin path. Admin UI/button остаётся deferred и не является блокером. Production terminal cutover и прочие gates — отдельные задачи.
 - [x] ~~Non-sensitive structured observability (STO create)~~ — **РЕАЛИЗОВАНО (5.12.H):** `logStoCreateOutcome()` в `tranzila.provider.js:733–769`, wired в `handleNotify()` L1020–1029.
@@ -267,7 +267,7 @@
 > This checklist applies when switching from sandbox terminals (`testcards` / `testcardstok`) to production terminals. Do not carry sandbox values to production.
 
 - [ ] Cancel / deactivate all active sandbox STO schedules in Tranzila `testcardstok` portal **before** cutover.
-- [ ] Verify `PRICES_AGOROT` in `plans.js` matches the production pricing intended (`3990/39990` — already confirmed in code as of 2026-04-28).
+- [x] ~~Verify `PRICES_AGOROT` in `plans.js` matches the production pricing intended (`3990/39990` — already confirmed in code as of 2026-04-28).~~ **CONFIRMED: `2900/29900` (₪29 / ₪299) deployed and verified 2026-05-19.**
 - [ ] Swap `TRANZILA_TERMINAL` to production clearing terminal ID on Render.
 - [ ] Swap `TRANZILA_STO_TERMINAL` to production STO/MyBilling terminal ID on Render.
 - [ ] Swap `TRANZILA_SECRET` to production HMAC signing secret on Render.

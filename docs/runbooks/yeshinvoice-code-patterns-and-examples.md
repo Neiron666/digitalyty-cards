@@ -498,7 +498,7 @@ export async function sendReceiptEmailMailjetBestEffort({
     toEmail,
     firstName,
     receiptUrl,
-    amountFormatted, // e.g. "₪39.90"
+    amountFormatted, // e.g. "₪29.00"
     plan, // "monthly" | "yearly"
     createdAt, // Date
     userId,
@@ -600,7 +600,7 @@ Relevant billing fields:
             "id": "663a1234...",
             "receiptStatus": "created",
             "pdfUrl": "https://...",
-            "amountAgorot": 3990,
+            "amountAgorot": 2900,
             "plan": "monthly",
             "createdAt": "2026-04-15T10:00:00.000Z"
         }
@@ -682,11 +682,11 @@ Do not:
 
 ---
 
-### D7. Sandbox pricing is not production truth
+### D7. Use actual charged amount, not a config constant
 
-**Rule:** `PRICES_AGOROT = { monthly: 500, yearly: 500 }` is the current sandbox configuration (`backend/src/config/plans.js`). Production values (`{ monthly: 3990, yearly: 39990 }`) are commented out.
+**Rule:** `PRICES_AGOROT = { monthly: 2900, yearly: 29900 }` is the current production configuration (`backend/src/config/plans.js:71–74`, deployed 2026-05-19). There is no sandbox 500/500 variant and no commented-out production variant; the production values are the live active values.
 
-The `amountAgorot` in `PaymentTransaction` reflects the actual charged amount. Receipt generation must use `paymentTransaction.amountAgorot`, not a config constant — config values may differ from actual charged amounts.
+The `amountAgorot` in `PaymentTransaction` reflects the actual charged amount. Receipt generation must use `paymentTransaction.amountAgorot`, not a config constant — config values may differ from actual charged amounts in historical records.
 
 ---
 
