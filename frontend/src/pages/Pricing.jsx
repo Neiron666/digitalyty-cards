@@ -473,7 +473,12 @@ export default function Pricing() {
                             >
                                 פרימיום חודשי
                             </span>
-                            <span className={styles.planPrice}>₪29</span>
+                            <span className={styles.planPrice}>
+                                <span className={styles.planPriceOnly}>
+                                    רק-
+                                </span>
+                                ₪29
+                            </span>
                             <span className={styles.planCadence}>לחודש</span>
                             <p className={styles.planNote}>
                                 כל יכולות הפרימיום בתשלום חודשי גמיש - בלי
@@ -505,7 +510,12 @@ export default function Pricing() {
                             >
                                 פרימיום שנתי
                             </span>
-                            <span className={styles.planPrice}>₪299</span>
+                            <span className={styles.planPrice}>
+                                <span className={styles.planPriceOnly}>
+                                    רק-
+                                </span>
+                                ₪299
+                            </span>
                             <span className={styles.planBadge}>
                                 המשתלם ביותר
                             </span>
