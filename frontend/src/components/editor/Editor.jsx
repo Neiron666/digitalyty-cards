@@ -7,6 +7,13 @@ import EditorPreview from "./EditorPreview";
 import EditorSaveBar from "./EditorSaveBar";
 
 import { EDITOR_CARD_TABS, PANEL_TEMPLATES } from "./editorTabs";
+import GuideVideoModal from "./GuideVideoModal";
+import useGuideDropdownAck from "../../hooks/useGuideDropdownAck";
+import { getGuideVideoUrls } from "../../utils/guideVideoUrls";
+
+// ── Module-level guide URL constants (resolved once at module load time) ──────
+const GUIDE_URLS = getGuideVideoUrls(import.meta.env);
+const HAS_ANY_GUIDE_URL = Boolean(GUIDE_URLS.mobile || GUIDE_URLS.desktop);
 
 const cx = (...classes) => classes.filter(Boolean).join(" ");
 
@@ -36,6 +43,7 @@ export default function Editor({
     onContextChange,
     onLoadOrgs,
     showContextBar,
+    showGuideDropdown = false,
     isAuthenticated,
     // Mobile: public link in sidebar drawer
     publicUrl,
@@ -58,6 +66,15 @@ export default function Editor({
     const [mobileView, setMobileView] = useState("edit"); // "edit" | "preview"
     const [drawerOpen, setDrawerOpen] = useState(false);
     const [toastOpen, setToastOpen] = useState(false);
+
+    // ── Guide dropdown state ───────────────────────────────────────────────────
+    const { isAcknowledged, acknowledge } = useGuideDropdownAck();
+    const [guideOpen, setGuideOpen] = useState(false);
+    const [guideModalUrl, setGuideModalUrl] = useState(null);
+    const [guideModalTitle, setGuideModalTitle] = useState("");
+    const guideBtnRef = useRef(null);
+    const guideDropdownRef = useRef(null);
+    const guideFirstItemRef = useRef(null);
 
     const toastTimerRef = useRef(null);
     const lastToastAtRef = useRef(0);
@@ -126,6 +143,47 @@ export default function Editor({
         return () => window.removeEventListener("keydown", onKeyDown);
     }, [drawerOpen]);
 
+    // Escape closes the guide dropdown (before the drawer handler so stopPropagation
+    // prevents the drawer from also triggering when guide is open).
+    useEffect(() => {
+        if (!guideOpen) return;
+
+        const onKeyDown = (e) => {
+            if (e.key === "Escape") {
+                e.stopPropagation();
+                setGuideOpen(false);
+                guideBtnRef.current?.focus();
+            }
+        };
+
+        window.addEventListener("keydown", onKeyDown);
+        return () => window.removeEventListener("keydown", onKeyDown);
+    }, [guideOpen]);
+
+    // Focus the first dropdown item when the guide dropdown opens.
+    useEffect(() => {
+        if (!guideOpen) return;
+        const t = window.setTimeout(() => {
+            guideFirstItemRef.current?.focus();
+        }, 0);
+        return () => window.clearTimeout(t);
+    }, [guideOpen]);
+
+    // Close guide dropdown when clicking outside the wrapper.
+    useEffect(() => {
+        if (!guideOpen) return;
+        const onMouseDown = (e) => {
+            if (
+                guideDropdownRef.current &&
+                !guideDropdownRef.current.contains(e.target)
+            ) {
+                setGuideOpen(false);
+            }
+        };
+        document.addEventListener("mousedown", onMouseDown);
+        return () => document.removeEventListener("mousedown", onMouseDown);
+    }, [guideOpen]);
+
     useEffect(() => {
         if (typeof document === "undefined") return;
 
@@ -157,6 +215,14 @@ export default function Editor({
 
     const showPanel = !isMobile || mobileView === "edit";
     const showPreview = !isMobile || mobileView === "preview";
+
+    // Show guide button only on mobile, on the templates tab, when the user is
+    // not in org mode, and when at least one guide URL is configured.
+    const showGuideBtn =
+        isMobile &&
+        showGuideDropdown &&
+        activeTab === PANEL_TEMPLATES &&
+        HAS_ANY_GUIDE_URL;
 
     function handleChangeTab(nextTab) {
         if (!nextTab || !allowedTabs.has(nextTab)) return;
@@ -232,7 +298,7 @@ export default function Editor({
                         <span className={styles.sectionsDot} />
                         <span className={styles.sectionsDot} />
                     </span>
-                    {!showContextBar ? (
+                    {!showContextBar && !showGuideBtn ? (
                         <span className={styles.sectionsLabel}>
                             תפריט עריכה
                         </span>
@@ -272,6 +338,72 @@ export default function Editor({
                                 </span>
                             ) : null}
                         </div>
+                    </div>
+                ) : null}
+
+                {showGuideBtn ? (
+                    <div className={styles.guideBtnWrap} ref={guideDropdownRef}>
+                        <button
+                            type="button"
+                            ref={guideBtnRef}
+                            className={cx(
+                                styles.guideBtn,
+                                isAcknowledged
+                                    ? styles.guideBtnAck
+                                    : styles.guideBtnPulse,
+                            )}
+                            aria-label="פתח מדריך"
+                            aria-expanded={guideOpen}
+                            aria-controls="editor-guide-dropdown"
+                            onClick={() => {
+                                acknowledge();
+                                setGuideOpen((v) => !v);
+                            }}
+                        >
+                            מדריך
+                        </button>
+
+                        {guideOpen ? (
+                            <div
+                                id="editor-guide-dropdown"
+                                className={styles.guideDropdown}
+                            >
+                                {GUIDE_URLS.mobile ? (
+                                    <button
+                                        type="button"
+                                        ref={guideFirstItemRef}
+                                        className={styles.guideDropdownItem}
+                                        onClick={() => {
+                                            setGuideOpen(false);
+                                            setGuideModalUrl(GUIDE_URLS.mobile);
+                                            setGuideModalTitle("מדריך לסלולר");
+                                        }}
+                                    >
+                                        מדריך לסלולר
+                                    </button>
+                                ) : null}
+                                {GUIDE_URLS.desktop ? (
+                                    <button
+                                        type="button"
+                                        ref={
+                                            GUIDE_URLS.mobile
+                                                ? undefined
+                                                : guideFirstItemRef
+                                        }
+                                        className={styles.guideDropdownItem}
+                                        onClick={() => {
+                                            setGuideOpen(false);
+                                            setGuideModalUrl(
+                                                GUIDE_URLS.desktop,
+                                            );
+                                            setGuideModalTitle("מדריך למחשב");
+                                        }}
+                                    >
+                                        מדריך למחשב
+                                    </button>
+                                ) : null}
+                            </div>
+                        ) : null}
                     </div>
                 ) : null}
 
@@ -430,6 +562,17 @@ export default function Editor({
                     </button>
                 </div>
             ) : null}
+
+            <GuideVideoModal
+                open={Boolean(guideModalUrl)}
+                url={guideModalUrl || ""}
+                title={guideModalTitle}
+                onClose={() => {
+                    setGuideModalUrl(null);
+                    setGuideModalTitle("");
+                    guideBtnRef.current?.focus();
+                }}
+            />
         </div>
     );
 }

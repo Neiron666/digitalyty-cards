@@ -490,4 +490,104 @@
         outline: 2px solid var(--gold);
         outline-offset: 2px;
     }
+
+    /* ── Guide dropdown (topbar, mobile only) ─────────────────────────────── */
+
+    .guideBtnWrap {
+        position: relative;
+        flex-shrink: 0;
+    }
+
+    .guideBtn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        height: 40px;
+        padding-inline: 12px;
+        border-radius: var(--radius-md);
+        border: 1px solid var(--border);
+        color: var(--text-main);
+        font-size: var(--fs-body-sm);
+        font-weight: 700;
+        cursor: pointer;
+        white-space: nowrap;
+        line-height: 1;
+    }
+
+    .guideBtn:focus-visible {
+        outline: 2px solid var(--accent-cyan);
+        outline-offset: 2px;
+    }
+
+    .guideBtnPulse {
+        background: rgba(34, 211, 238, 0.08);
+        border-color: var(--accent-cyan);
+        animation: guide-pulse var(--duration-slow, 2s) ease-in-out infinite;
+    }
+
+    .guideBtnAck {
+        background: transparent;
+        border-color: var(--accent-cyan);
+    }
+
+    @keyframes guide-pulse {
+        0%,
+        100% {
+            box-shadow:
+                0 0 0 0 var(--accent-cyan-fade, rgba(34, 211, 238, 0)),
+                0 0 0 0 var(--accent-cyan-soft, rgba(34, 211, 238, 0));
+        }
+        50% {
+            box-shadow:
+                0 0 0 3px var(--accent-cyan-fade, rgba(34, 211, 238, 0.18)),
+                0 0 12px 2px var(--accent-cyan-soft, rgba(34, 211, 238, 0.12));
+        }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        .guideBtnPulse {
+            animation: none;
+        }
+    }
+
+    .guideDropdown {
+        position: absolute;
+        top: calc(100% + 6px);
+        inset-inline-end: -50%;
+        z-index: 50;
+        min-width: 120px;
+        display: flex;
+        flex-direction: column;
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding-block: 4px;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+    }
+
+    .guideDropdownItem {
+        display: flex;
+        align-items: center;
+        width: 100%;
+        padding-block: 10px;
+        padding-inline: 14px;
+        font-size: var(--fs-body-sm);
+        font-weight: 700;
+        color: var(--text-main);
+        cursor: pointer;
+        text-align: center;
+        background: transparent;
+        border: 0;
+        white-space: nowrap;
+    }
+
+    .guideDropdownItem:hover {
+        background: rgba(255, 255, 255, 0.06);
+    }
+
+    .guideDropdownItem:focus-visible {
+        outline: 2px solid var(--accent-cyan);
+        outline-offset: -2px;
+        background: rgba(255, 255, 255, 0.06);
+    }
 }
