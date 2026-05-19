@@ -1243,7 +1243,7 @@ export default function SettingsPanel({
                                                         </span>
                                                         <span>
                                                             מסלול שנתי: תשלום
-                                                            ₪399.90 מראש. חידוש
+                                                            ₪299 מראש. חידוש
                                                             שנתי אוטומטי רק אם
                                                             תסמן/י את האפשרות
                                                             למטה.
@@ -1282,7 +1282,7 @@ export default function SettingsPanel({
                                                                 )
                                                             }
                                                         >
-                                                            חודשי - ₪39.90/חודש
+                                                            חודשי - ₪29/חודש
                                                         </Button>
                                                         <Button
                                                             variant="secondary"
@@ -1302,8 +1302,8 @@ export default function SettingsPanel({
                                                                 )
                                                             }
                                                         >
-                                                            שנתי - ₪399.90/שנה
-                                                            (חוסך ₪78.90)
+                                                            שנתי - ₪299/שנה
+                                                            (חוסך ₪49)
                                                         </Button>
                                                     </div>
                                                     <label
@@ -1330,7 +1330,7 @@ export default function SettingsPanel({
                                                         >
                                                             אני מאשר/ת חידוש
                                                             שנתי אוטומטי של
-                                                            ₪399.90 לפני תחילת
+                                                            ₪299 לפני תחילת
                                                             שנה שנייה
                                                         </span>
                                                     </label>

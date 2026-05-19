@@ -219,7 +219,7 @@ const ANNUAL_ACCORDIONS = [
     {
         title: "יתרונות המסלול השנתי",
         items: [
-            "חיסכון של ₪78.90 בשנה",
+            "חיסכון של ₪49 בשנה",
             "יציבות לעסק לאורך שנה",
             "שקט בלי חידוש חודשי מתמשך",
         ],
@@ -473,7 +473,7 @@ export default function Pricing() {
                             >
                                 פרימיום חודשי
                             </span>
-                            <span className={styles.planPrice}>₪39.90</span>
+                            <span className={styles.planPrice}>₪29</span>
                             <span className={styles.planCadence}>לחודש</span>
                             <p className={styles.planNote}>
                                 כל יכולות הפרימיום בתשלום חודשי גמיש - בלי
@@ -505,7 +505,7 @@ export default function Pricing() {
                             >
                                 פרימיום שנתי
                             </span>
-                            <span className={styles.planPrice}>₪399.90</span>
+                            <span className={styles.planPrice}>₪299</span>
                             <span className={styles.planBadge}>
                                 המשתלם ביותר
                             </span>
@@ -513,7 +513,7 @@ export default function Pricing() {
                             <p className={styles.planNote}>
                                 המסלול המשתלם: פרימיום מלא לשנה שלמה -{" "}
                                 <span className={pub.goldHilight}>
-                                    חיסכון של כ-80שח.
+                                    חיסכון של ₪49.
                                 </span>
                             </p>
                             <GroupedAccordions groups={ANNUAL_ACCORDIONS} />
