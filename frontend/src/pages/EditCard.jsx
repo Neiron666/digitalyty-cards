@@ -12,7 +12,11 @@ import { TEMPLATES } from "../templates/templates.config";
 import CrownIcon from "../components/icons/CrownIcon";
 import styles from "./EditCard.module.css";
 import SeoHelmet from "../components/seo/SeoHelmet";
-import { useEditorTour } from "../hooks/useEditorTour";
+import {
+    useEditorTour,
+    readEditorTourCtaHighlightPending,
+    clearEditorTourCtaHighlightPending,
+} from "../hooks/useEditorTour";
 import TourCoachPanel from "../components/editor/TourCoachPanel";
 
 const REFETCH_THROTTLE_MS = 15_000;
@@ -177,8 +181,45 @@ function EditCard() {
             isAnonymousTourEligible,
     });
 
+    // Keep latest tour snapshot for use inside async callbacks (commitDraft).
+    // Follows the same ref-sync pattern as draftCardRef / dirtyPathsRef.
+    const editorTourRef = useRef(null);
+    useEffect(() => {
+        editorTourRef.current = editorTour;
+    }, [editorTour]);
+
     const [dirtyPaths, setDirtyPaths] = useState(() => new Set());
     const [saveState, setSaveState] = useState("idle");
+    const [ctaHighlightPending, setCtaHighlightPending] = useState(() =>
+        readEditorTourCtaHighlightPending(),
+    );
+
+    // Sync CTA highlight pending state from localStorage whenever the guide
+    // transitions to done+inactive (natural completion or skip).
+    useEffect(() => {
+        if (editorTour.isDone && !editorTour.isActive) {
+            setCtaHighlightPending(readEditorTourCtaHighlightPending());
+        }
+    }, [editorTour.isDone, editorTour.isActive]);
+
+    // Guarded tour-next: blocks "המשך" from bypassing a required save.
+    // Reads tour state from editorTourRef (stable ref, never stale in callbacks).
+    // When the current step is a save step with unsaved changes or an in-progress
+    // save, do nothing. Otherwise advance normally.
+    const guardedTourNext = useCallback(() => {
+        const tour = editorTourRef.current;
+        const step = tour?.currentStep;
+
+        if (
+            step?.isSaveStep &&
+            (dirtyPaths.size > 0 || saveState === "saving")
+        ) {
+            return;
+        }
+
+        tour?.advance?.();
+    }, [dirtyPaths.size, saveState]);
+
     const [saveErrorText, setSaveErrorText] = useState(null);
     const [fieldErrors, setFieldErrors] = useState({});
     const [isInitializing, setIsInitializing] = useState(true);
@@ -1530,6 +1571,16 @@ function EditCard() {
             setDraftCard(normalizedWithLocks);
             setDirtyPaths(new Set());
             setSaveState("saved");
+
+            // Advance guided tour only when the active step is a save step.
+            // editorTourRef.current is used (not closure) to avoid stale state.
+            if (
+                editorTourRef.current?.isActive &&
+                editorTourRef.current?.currentStep?.isSaveStep
+            ) {
+                editorTourRef.current.advance();
+            }
+
             return true;
         } catch (err) {
             const code = err?.response?.data?.code;
@@ -2387,6 +2438,13 @@ function EditCard() {
     const shouldShowAnonCta = !isAuthenticated && Boolean(anonId);
     const authenticatedSession = isAuthenticated && !shouldShowAnonCta;
 
+    // Post-tour CTA glow: true only after natural guide completion, never after skip.
+    const showSaveFreeCtaHighlight =
+        shouldShowAnonCta &&
+        editorTour.isDone &&
+        !editorTour.isActive &&
+        ctaHighlightPending;
+
     const eb = draftCard?.effectiveBilling || null;
     const untilIso = eb?.until;
     const plan = eb?.plan;
@@ -2474,8 +2532,12 @@ function EditCard() {
                         step={editorTour.currentStep}
                         currentIndex={editorTour.currentIndex}
                         totalSteps={editorTour.totalSteps}
-                        onNext={editorTour.advance}
+                        onNext={guardedTourNext}
                         onSkip={editorTour.skip}
+                        onNextDisabled={Boolean(
+                            editorTour.currentStep?.isSaveStep &&
+                            (dirtyPaths.size > 0 || saveState === "saving"),
+                        )}
                     />
                 ) : null}
                 {editorTour.isDone &&
@@ -2506,6 +2568,15 @@ function EditCard() {
                             <Link
                                 to="/register"
                                 className={styles.anonCtaPrimary}
+                                data-tour-active={
+                                    showSaveFreeCtaHighlight
+                                        ? "true"
+                                        : undefined
+                                }
+                                onClick={() => {
+                                    clearEditorTourCtaHighlightPending();
+                                    setCtaHighlightPending(false);
+                                }}
                             >
                                 שמרו בחינם{" "}
                             </Link>

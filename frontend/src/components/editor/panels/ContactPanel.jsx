@@ -65,6 +65,7 @@ export default function ContactPanel({
                 dir="ltr"
                 inputMode="tel"
                 autoComplete="tel"
+                data-tour-id="editor-tour-field-contact-phone"
             />
 
             <label className={styles.syncRow}>
@@ -98,6 +99,7 @@ export default function ContactPanel({
                 disabled={editingDisabled}
                 onChange={(e) => emit({ email: e.target.value })}
                 maxLength={EMAIL_MAX}
+                data-tour-id="editor-tour-field-contact-email"
                 meta={`נשארו ${remaining(EMAIL_MAX, contact.email || "")} תווים`}
                 error={fieldErrors["contact.email"]}
             />

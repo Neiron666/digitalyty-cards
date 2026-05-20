@@ -159,6 +159,16 @@ function DesignEditor({
             });
         }
 
+        // Notify the tour engine that an upload was successfully applied.
+        // Capture cropKind before cleanup resets it to null.
+        const kindForEvent = cropKind;
+        document.dispatchEvent(
+            new CustomEvent("cardigo:upload-applied", {
+                detail: { kind: kindForEvent },
+                bubbles: false,
+            }),
+        );
+
         setCropOpen(false);
         setPendingFile(null);
         setCropKind(null);
@@ -192,7 +202,10 @@ function DesignEditor({
             {/* <h2>ראש הכרטיס</h2> */}
 
             {template?.supports?.backgroundImage && (
-                <section className={styles.section}>
+                <section
+                    className={styles.section}
+                    data-tour-id="editor-tour-upload-background-block"
+                >
                     <h3>תמונת רקע</h3>
                     <div className={styles.coverSlot}>
                         {hasBackgroundImage ? (
@@ -267,7 +280,10 @@ function DesignEditor({
             )}
 
             {template?.supports?.avatar && (
-                <section className={styles.section}>
+                <section
+                    className={styles.section}
+                    data-tour-id="editor-tour-upload-avatar-block"
+                >
                     <h3> תמונה אישית (או לוגו)</h3>
                     <div className={styles.avatarSlot}>
                         {hasAvatarImage ? (

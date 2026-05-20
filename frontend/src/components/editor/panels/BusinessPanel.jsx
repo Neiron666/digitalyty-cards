@@ -31,6 +31,7 @@ export default function BusinessPanel({
                 onBlur={(e) => emit({ name: e.target.value.trim() })}
                 maxLength={BUSINESS_NAME_MAX}
                 meta={`נשארו ${remaining(BUSINESS_NAME_MAX, business.name || "")} תווים`}
+                data-tour-id="editor-tour-field-business-name"
             />
 
             <Input
@@ -41,6 +42,7 @@ export default function BusinessPanel({
                 onBlur={(e) => emit({ category: e.target.value.trim() })}
                 maxLength={BUSINESS_SUBTITLE_MAX}
                 meta={`נשארו ${remaining(BUSINESS_SUBTITLE_MAX, business.category || "")} תווים`}
+                data-tour-id="editor-tour-field-business-category"
             />
 
             <Input

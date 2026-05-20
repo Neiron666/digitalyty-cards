@@ -22,6 +22,7 @@ import styles from "./TourCoachPanel.module.css";
  * @param {number} props.totalSteps
  * @param {() => void} [props.onSkip]
  * @param {() => void} [props.onNext]
+ * @param {boolean} [props.onNextDisabled]
  */
 export default function TourCoachPanel({
     step,
@@ -29,6 +30,7 @@ export default function TourCoachPanel({
     totalSteps,
     onSkip,
     onNext,
+    onNextDisabled,
 }) {
     if (!step) return null;
 
@@ -56,6 +58,7 @@ export default function TourCoachPanel({
                     type="button"
                     className={styles.primaryButton}
                     onClick={() => onNext?.()}
+                    disabled={Boolean(onNextDisabled)}
                 >
                     המשך
                 </button>
@@ -64,7 +67,7 @@ export default function TourCoachPanel({
                     className={styles.skipButton}
                     onClick={() => onSkip?.()}
                 >
-                    דלגו על ההדרכה
+                    דלג על ההדרכה
                 </button>
             </div>
         </section>
