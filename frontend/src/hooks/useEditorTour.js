@@ -473,16 +473,20 @@ export function useEditorTour({ isAnonymous = false, enabled = true } = {}) {
     // the active input target. Only active when currentStep.advanceOn === "input".
     //
     // Two listeners are registered on the element (not on document):
-    //   "input"  — covers typing, cut, autocomplete, and desktop paste
-    //              (fires after the DOM value has been updated by the browser).
-    //   "paste"  — covers mobile paste where the "input" event fires before
-    //              the pasted value is committed, or does not fire at all.
-    //              Uses setTimeout(0) to defer the value check until after
-    //              the browser has updated input.value.
+    //   "input"  — covers typing, cut, autocomplete, and desktop paste.
+    //   "paste"  — covers mobile paste.
+    //
+    // Both paths use a unified scheduleAdvance() that defers the value check
+    // via setTimeout(0). This ensures React's controlled onChange has committed
+    // the new value to state before advance() is called, preventing the first
+    // typed character from being wiped by React's controlled-input reconciler
+    // racing ahead of the onChange state update (React 18 DefaultEventPriority
+    // vs SyncLane priority gap for native vs React-dispatched setState calls).
     //
     // handled flag: prevents double-advance when both paste and input fire
-    // (the desktop scenario). The cleanup also sets handled = true so any
-    // in-flight paste timer cannot call advance() after the effect tears down.
+    // (the desktop scenario). clearTimeout before scheduling ensures only one
+    // timer is ever in flight at a time. The cleanup also sets handled = true
+    // so any in-flight timer cannot call advance() after the effect tears down.
     // StrictMode-safe: cleanup cancels timer + removes both listeners.
 
     useEffect(() => {
@@ -495,32 +499,32 @@ export function useEditorTour({ isAnonymous = false, enabled = true } = {}) {
         }
 
         let handled = false;
-        let pasteTimerId = null;
+        let timerId = null;
 
-        const tryAdvance = () => {
-            if (handled) return;
-            const val =
-                typeof activeTargetEl.value === "string"
-                    ? activeTargetEl.value
-                    : "";
-            if (val.trim().length > 0) {
-                handled = true;
-                advance();
+        const scheduleAdvance = () => {
+            if (timerId !== null) {
+                window.clearTimeout(timerId);
             }
+            timerId = window.setTimeout(() => {
+                timerId = null;
+                if (handled) return;
+                const val =
+                    typeof activeTargetEl.value === "string"
+                        ? activeTargetEl.value
+                        : "";
+                if (val.trim().length > 0) {
+                    handled = true;
+                    advance();
+                }
+            }, 0);
         };
 
         const handleInput = () => {
-            tryAdvance();
+            scheduleAdvance();
         };
 
         const handlePaste = () => {
-            if (pasteTimerId !== null) {
-                window.clearTimeout(pasteTimerId);
-            }
-            pasteTimerId = window.setTimeout(() => {
-                pasteTimerId = null;
-                tryAdvance();
-            }, 0);
+            scheduleAdvance();
         };
 
         activeTargetEl.addEventListener("input", handleInput);
@@ -528,8 +532,8 @@ export function useEditorTour({ isAnonymous = false, enabled = true } = {}) {
 
         return () => {
             handled = true;
-            if (pasteTimerId !== null) {
-                window.clearTimeout(pasteTimerId);
+            if (timerId !== null) {
+                window.clearTimeout(timerId);
             }
             activeTargetEl.removeEventListener("input", handleInput);
             activeTargetEl.removeEventListener("paste", handlePaste);
