@@ -3,6 +3,7 @@ import { useState, useCallback, useEffect, useRef } from "react";
 export const MINI_GUIDE_IDS = {
     SHARE_CARD: "share-card",
     SEO_AUTO: "seo-auto",
+    BOOKING_HOURS: "booking-hours",
 };
 
 // ── Step factories ─────────────────────────────────────────────────────────────
@@ -105,12 +106,115 @@ function buildSeoAutoSteps(/* context unused – steps are static */) {
     ];
 }
 
+const BOOKING_HOURS_GUIDE_DAYS = [
+    { key: "sun", label: "ראשון" },
+    { key: "mon", label: "שני" },
+    { key: "tue", label: "שלישי" },
+    { key: "wed", label: "רביעי" },
+    { key: "thu", label: "חמישי" },
+];
+
+function buildBookingHoursSteps({
+    canUseBooking,
+    bookingEnabled,
+    hoursEnabled,
+    week,
+} = {}) {
+    const steps = [];
+
+    steps.push({
+        id: "booking-hours-open",
+        targetId: "editor-tour-sections-menu",
+        text: "פתחו את תפריט העריכה.",
+        requiresDrawer: false,
+    });
+
+    steps.push({
+        id: "booking-hours-tab",
+        targetId: "editor-mini-guide-tab-hours",
+        text: "עברו לשעות פעילות.",
+        requiresDrawer: true,
+        isNextDisabledByDefault: true,
+    });
+
+    if (canUseBooking) {
+        if (bookingEnabled !== true) {
+            steps.push({
+                id: "booking-enable",
+                targetId: "editor-mini-guide-hours-booking-enable",
+                text: "אפשרו ללקוחות להזמין תורים מהכרטיס.",
+                requiresDrawer: false,
+                isCheckboxChangeStep: true,
+            });
+        }
+
+        steps.push({
+            id: "booking-horizon",
+            targetId: "editor-mini-guide-hours-horizon",
+            text: "בחרו כמה זמן קדימה לקוחות יוכלו להזמין.",
+            requiresDrawer: false,
+            isListboxSelectStep: true,
+        });
+    }
+
+    if (hoursEnabled !== true) {
+        steps.push({
+            id: "hours-show-in-card",
+            targetId: "editor-mini-guide-hours-show-in-card",
+            text: "הפעילו הצגה של שעות הפעילות בכרטיס.",
+            requiresDrawer: false,
+            isCheckboxChangeStep: true,
+        });
+    }
+
+    const safeWeek =
+        week && typeof week === "object" && !Array.isArray(week) ? week : {};
+    for (const { key, label } of BOOKING_HOURS_GUIDE_DAYS) {
+        const dayData = safeWeek[key];
+        const alreadyOpen = dayData?.open === true;
+        const hasIntervals =
+            Array.isArray(dayData?.intervals) && dayData.intervals.length > 0;
+
+        if (!alreadyOpen) {
+            steps.push({
+                id: `hours-${key}-open`,
+                targetId: `editor-mini-guide-hours-${key}-closed`,
+                text: `פתחו את יום ${label} לקבלת תורים.`,
+                requiresDrawer: false,
+                isCheckboxChangeStep: true,
+            });
+        }
+
+        if (!hasIntervals) {
+            steps.push({
+                id: `hours-${key}-add-range`,
+                targetId: `editor-mini-guide-hours-${key}-add-range`,
+                text: `הוסיפו טווח שעות ליום ${label}.`,
+                requiresDrawer: false,
+            });
+        }
+    }
+
+    steps.push({
+        id: "booking-hours-save",
+        targetId: "editor-tour-save-changes",
+        text: "שמרו את השינויים.",
+        requiresDrawer: false,
+        isFinalBlockStep: true,
+    });
+
+    return steps;
+}
+
 function computeActiveSteps(guideId, context) {
     if (guideId === MINI_GUIDE_IDS.SHARE_CARD) {
         return buildShareCardSteps(context);
     }
     if (guideId === MINI_GUIDE_IDS.SEO_AUTO) {
         return buildSeoAutoSteps(context);
+    }
+    if (guideId === MINI_GUIDE_IDS.BOOKING_HOURS) {
+        return buildBookingHoursSteps(context);
     }
     return [];
 }
@@ -154,12 +258,13 @@ export function useEditorMiniGuide({
     // ── Actions ───────────────────────────────────────────────────────────────
 
     const start = useCallback(
-        (newGuideId) => {
+        (newGuideId, extraContext = {}) => {
             if (!enabled) return;
             const context = {
                 cardIsPublished,
                 entCanPublish,
                 entCanChangeSlug,
+                ...extraContext,
             };
             const activeSteps = computeActiveSteps(newGuideId, context);
             if (!activeSteps.length) return;
@@ -275,6 +380,8 @@ export function useEditorMiniGuide({
         if (currentStep?.isPublishStep) return undefined;
         if (currentStep?.isSlugStep) return undefined;
         if (currentStep?.isFinalBlockStep) return undefined;
+        if (currentStep?.isCheckboxChangeStep) return undefined;
+        if (currentStep?.isListboxSelectStep) return undefined;
         if (activeTargetEl.getAttribute("data-tour-id") !== activeTargetId)
             return undefined;
 
@@ -358,6 +465,81 @@ export function useEditorMiniGuide({
         if (!cardIsPublished) return;
         advance();
     }, [isActive, cardIsPublished, currentStep?.isPublishStep, advance]);
+
+    // ── Checkbox change advance ────────────────────────────────────────────────
+    // For checkbox-backed toggle steps. Advances only when the real nested input
+    // fires a change event with checked=true. Uses deferred setTimeout(0) so
+    // React onChange / state update can complete before the guide advances.
+    // Handled guard + timerId cleanup. No preventDefault, no stopPropagation.
+
+    useEffect(() => {
+        if (!isActive || !activeTargetEl || !currentStep?.isCheckboxChangeStep)
+            return undefined;
+
+        const checkboxInput = activeTargetEl.querySelector(
+            'input[type="checkbox"]',
+        );
+        if (!checkboxInput || checkboxInput.disabled) return undefined;
+
+        let handled = false;
+        let timerId = null;
+
+        const handler = (e) => {
+            if (handled) return;
+            if (e.target.checked !== true) return;
+            handled = true;
+            timerId = window.setTimeout(() => {
+                timerId = null;
+                advance();
+            }, 0);
+        };
+
+        checkboxInput.addEventListener("change", handler);
+        return () => {
+            handled = true;
+            if (timerId !== null) {
+                window.clearTimeout(timerId);
+                timerId = null;
+            }
+            checkboxInput.removeEventListener("change", handler);
+        };
+    }, [isActive, activeTargetEl, currentStep, advance]);
+
+    // ── Listbox select advance ─────────────────────────────────────────────────
+    // For TimeListbox-backed steps. Advances after a [role="option"] button click
+    // bubbles up from inside the wrapper. Uses deferred setTimeout(0) so the
+    // option's own React onClick / onChange can complete before guide advances.
+    // Trigger button clicks (no [role="option"] ancestor) are ignored.
+    // Handled guard + timerId cleanup. No preventDefault, no stopPropagation.
+
+    useEffect(() => {
+        if (!isActive || !activeTargetEl || !currentStep?.isListboxSelectStep)
+            return undefined;
+
+        let handled = false;
+        let timerId = null;
+
+        const handler = (e) => {
+            if (handled) return;
+            const optionEl = e.target?.closest?.('[role="option"]');
+            if (!optionEl) return;
+            handled = true;
+            timerId = window.setTimeout(() => {
+                timerId = null;
+                advance();
+            }, 0);
+        };
+
+        activeTargetEl.addEventListener("click", handler);
+        return () => {
+            handled = true;
+            if (timerId !== null) {
+                window.clearTimeout(timerId);
+                timerId = null;
+            }
+            activeTargetEl.removeEventListener("click", handler);
+        };
+    }, [isActive, activeTargetEl, currentStep, advance]);
 
     // ── Dedicated final-block click completion ─────────────────────────────────
     // Separate from generic click-to-advance (which skips non-interactive elements).

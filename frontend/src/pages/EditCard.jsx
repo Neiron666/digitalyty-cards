@@ -2518,10 +2518,17 @@ function EditCard() {
     const miniSeoGuideAvailable =
         miniGuideAvailable && draftCard?.entitlements?.canEditSeo === true;
 
+    const miniBookingHoursGuideAvailable =
+        miniGuideAvailable &&
+        draftCard?.entitlements?.canUseBusinessHours === true &&
+        draftCard?.entitlements?.canUseBooking === true;
+
     const miniGuideTitle =
         miniGuide.currentGuideId === MINI_GUIDE_IDS.SEO_AUTO
             ? "מדריך SEO אוטומטי"
-            : "מדריך שיתוף כרטיס";
+            : miniGuide.currentGuideId === MINI_GUIDE_IDS.BOOKING_HOURS
+              ? "מדריך תורים ושעות"
+              : "מדריך שיתוף כרטיס";
 
     return (
         <div className={styles.editCard}>
@@ -2709,6 +2716,27 @@ function EditCard() {
                         onStartSeoMiniGuide={
                             miniSeoGuideAvailable
                                 ? () => miniGuide.start(MINI_GUIDE_IDS.SEO_AUTO)
+                                : undefined
+                        }
+                        onStartBookingHoursMiniGuide={
+                            miniBookingHoursGuideAvailable
+                                ? () =>
+                                      miniGuide.start(
+                                          MINI_GUIDE_IDS.BOOKING_HOURS,
+                                          {
+                                              bookingEnabled:
+                                                  draftCard?.bookingSettings
+                                                      ?.enabled === true,
+                                              hoursEnabled:
+                                                  draftCard?.businessHours
+                                                      ?.enabled === true,
+                                              week: draftCard?.businessHours
+                                                  ?.week,
+                                              canUseBooking:
+                                                  draftCard?.entitlements
+                                                      ?.canUseBooking === true,
+                                          },
+                                      )
                                 : undefined
                         }
                         tourSectionsMenuOpenOnly={

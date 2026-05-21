@@ -57,6 +57,7 @@ export default function Editor({
     // Mini-guide: authenticated mini-guide signals
     onStartShareMiniGuide,
     onStartSeoMiniGuide,
+    onStartBookingHoursMiniGuide,
     openDrawerForMiniGuideStepId,
 }) {
     const navigate = useNavigate();
@@ -258,7 +259,8 @@ export default function Editor({
         activeTab === PANEL_TEMPLATES &&
         (HAS_ANY_GUIDE_URL ||
             Boolean(onStartShareMiniGuide) ||
-            Boolean(onStartSeoMiniGuide));
+            Boolean(onStartSeoMiniGuide) ||
+            Boolean(onStartBookingHoursMiniGuide));
 
     function handleChangeTab(nextTab) {
         if (!nextTab || !allowedTabs.has(nextTab)) return;
@@ -434,6 +436,18 @@ export default function Editor({
                                         }}
                                     >
                                         SEO וסקריפטים
+                                    </button>
+                                ) : null}
+                                {onStartBookingHoursMiniGuide ? (
+                                    <button
+                                        type="button"
+                                        className={styles.guideDropdownItem}
+                                        onClick={() => {
+                                            setGuideOpen(false);
+                                            onStartBookingHoursMiniGuide();
+                                        }}
+                                    >
+                                        תורים ושעות
                                     </button>
                                 ) : null}
                                 {GUIDE_URLS.mobile ? (

@@ -303,7 +303,10 @@ export default function BusinessHoursPanel({
                     <div className={styles.section}>
                         <h3 className={styles.sectionTitle}>הזמנת תורים</h3>
                         <div className={styles.headerRow}>
-                            <label className={styles.switch}>
+                            <label
+                                className={styles.switch}
+                                data-tour-id="editor-mini-guide-hours-booking-enable"
+                            >
                                 <input
                                     type="checkbox"
                                     checked={bookingEnabled}
@@ -324,30 +327,32 @@ export default function BusinessHoursPanel({
                             כאשר מופעל, לקוחות יוכלו לשלוח בקשות לתורים דרך
                             הכרטיס.
                         </div>
-                        <TimeListbox
-                            label="כמה זמן קדימה ניתן להזמין?"
-                            value={
-                                BOOKING_HORIZON_OPTIONS.find(
-                                    (o) => o.value === effectiveHorizonDays,
-                                )?.label ?? ""
-                            }
-                            options={BOOKING_HORIZON_OPTIONS.map(
-                                (o) => o.label,
-                            )}
-                            disabled={disabled || !bookingEnabled}
-                            invalid={false}
-                            onChange={(selectedLabel) => {
-                                const opt = BOOKING_HORIZON_OPTIONS.find(
-                                    (o) => o.label === selectedLabel,
-                                );
-                                if (!opt) return;
-                                onBookingChange?.({
-                                    ...safeBookingSettings,
-                                    enabled: bookingEnabled,
-                                    horizonDays: opt.value,
-                                });
-                            }}
-                        />
+                        <div data-tour-id="editor-mini-guide-hours-horizon">
+                            <TimeListbox
+                                label="כמה זמן קדימה ניתן להזמין?"
+                                value={
+                                    BOOKING_HORIZON_OPTIONS.find(
+                                        (o) => o.value === effectiveHorizonDays,
+                                    )?.label ?? ""
+                                }
+                                options={BOOKING_HORIZON_OPTIONS.map(
+                                    (o) => o.label,
+                                )}
+                                disabled={disabled || !bookingEnabled}
+                                invalid={false}
+                                onChange={(selectedLabel) => {
+                                    const opt = BOOKING_HORIZON_OPTIONS.find(
+                                        (o) => o.label === selectedLabel,
+                                    );
+                                    if (!opt) return;
+                                    onBookingChange?.({
+                                        ...safeBookingSettings,
+                                        enabled: bookingEnabled,
+                                        horizonDays: opt.value,
+                                    });
+                                }}
+                            />
+                        </div>
                         <span className={styles.hint}>
                             קובע עד כמה זמן קדימה לקוחות יוכלו לבחור תור בכרטיס.
                         </span>
@@ -366,7 +371,10 @@ export default function BusinessHoursPanel({
                     <h3 className={styles.sectionTitle}>שעות פעילות</h3>
 
                     <div className={styles.headerRow}>
-                        <label className={styles.switch}>
+                        <label
+                            className={styles.switch}
+                            data-tour-id="editor-mini-guide-hours-show-in-card"
+                        >
                             <input
                                 type="checkbox"
                                 checked={bh.enabled === true}
@@ -397,7 +405,10 @@ export default function BusinessHoursPanel({
                                     <div className={styles.dayLabel}>
                                         {d.label}
                                     </div>
-                                    <label className={styles.openToggle}>
+                                    <label
+                                        className={styles.openToggle}
+                                        data-tour-id={`editor-mini-guide-hours-${d.key}-closed`}
+                                    >
                                         <input
                                             type="checkbox"
                                             checked={isOpen}
@@ -421,6 +432,7 @@ export default function BusinessHoursPanel({
                                     <button
                                         type="button"
                                         className={styles.addBtn}
+                                        data-tour-id={`editor-mini-guide-hours-${d.key}-add-range`}
                                         onClick={() => addInterval(d.key)}
                                         disabled={
                                             disabled ||

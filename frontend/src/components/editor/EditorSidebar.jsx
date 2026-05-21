@@ -398,7 +398,9 @@ export default function EditorSidebar({
                                               ? "editor-mini-guide-tab-settings"
                                               : tab.id === "seo"
                                                 ? "editor-mini-guide-tab-seo"
-                                                : undefined
+                                                : tab.id === "businessHours"
+                                                  ? "editor-mini-guide-tab-hours"
+                                                  : undefined
                                 }
                             >
                                 <span className={styles.tabLabel}>
