@@ -7,6 +7,33 @@
 
 ---
 
+## 0. Addendum — 2026-05-21: Post Booking-Hours Mini-Guide Drift Note
+
+This SEO handoff remains correct and complete for its original contour (`EDITOR_MOBILE_GUIDE_MINI_TOUR_SEO_AUTO`). No SEO behavior, AI service, `runMagicSeoSetup`, SEO panel business logic, or SEO guide step logic was changed by subsequent booking-hours work.
+
+After this handoff was written, a third authenticated mini-guide ("תורים ושעות") was added in contour `EDITOR_MOBILE_GUIDE_MINI_TOUR_BOOKING_HOURS`. The following items in this document are now stale due to those later additions:
+
+**Dropdown order (§3.4):** the current dropdown order has a third item between "SEO וסקריפטים" and the env-controlled video links:
+
+1. "איך לשתף כרטיס"
+2. "SEO וסקריפטים"
+3. "תורים ושעות" (added by EDITOR_MOBILE_GUIDE_MINI_TOUR_BOOKING_HOURS)
+4. env-controlled video links last
+
+**`miniGuideTitle` (§6):** the ternary is now 3-branch. Current form in `EditCard.jsx`:
+`miniGuide.currentGuideId === MINI_GUIDE_IDS.SEO_AUTO ? "מדריך SEO אוטומטי" : miniGuide.currentGuideId === MINI_GUIDE_IDS.BOOKING_HOURS ? "מדריך תורים ושעות" : "מדריך שיתוף כרטיס"`
+
+**`showGuideBtn` condition (§3.6 and §6):** now also includes `|| Boolean(onStartBookingHoursMiniGuide)` as the third Boolean prop.
+
+**Router version label (§9.1):** where this handoff said "React Router v6 warning", the current project uses `react-router-dom ^7.10.1`. The warning mechanism and production-safety analysis described in §9.1 remain accurate for v7. Classification upgraded to `DEFER_SAFE_CONFIRMED / NOT DEPLOY BLOCKER` after a subsequent production-preview smoke confirmed the warning does not reproduce outside StrictMode. See the booking-hours handoff §9.1 for the full production-preview smoke closure note.
+
+**Source line numbers throughout this document** are time-scoped to the SEO contour closure date (2026-05-21) and have drifted after booking-hours additions inserted code earlier in `useEditorMiniGuide.js`. The described logic and behavior remain accurate; only the line number references are stale.
+
+Current truth for the booking-hours guide is documented in:
+`docs/handoffs/current/Cardigo_Enterprise_Handoff_2026-05-21_EditorMobileMiniGuideBookingHours_Closed.md`
+
+---
+
 ## 1. Contour
 
 EDITOR_MOBILE_GUIDE_MINI_TOUR_SEO_AUTO
