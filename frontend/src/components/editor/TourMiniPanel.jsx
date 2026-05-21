@@ -12,6 +12,7 @@ export default function TourMiniPanel({
     onSkip,
     nextDisabled,
     isFinalStep,
+    guideTitle,
 }) {
     if (!step) return null;
 
@@ -20,7 +21,7 @@ export default function TourMiniPanel({
             className={styles.panel}
             dir="rtl"
             role="region"
-            aria-label="מדריך שיתוף כרטיס"
+            aria-label={guideTitle || "מדריך"}
         >
             <div className={styles.content}>
                 <p

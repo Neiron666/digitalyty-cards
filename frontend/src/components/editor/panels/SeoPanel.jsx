@@ -788,6 +788,7 @@ export default function SeoPanel({
                         <button
                             type="button"
                             className={styles.magicButton}
+                            data-tour-id="editor-mini-guide-seo-auto-btn"
                             disabled={!magicReady || orchestratorBusy}
                             aria-busy={orchestratorBusy ? "true" : undefined}
                             onClick={runMagicSeoSetup}

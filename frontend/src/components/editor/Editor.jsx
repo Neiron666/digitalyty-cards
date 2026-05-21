@@ -54,8 +54,9 @@ export default function Editor({
     openDrawerForTourStepId,
     // Phase 2C-7: open-only signal for sections-menu during any active tour
     tourSectionsMenuOpenOnly = false,
-    // Mini-guide: authenticated share-card guide signals
+    // Mini-guide: authenticated mini-guide signals
     onStartShareMiniGuide,
+    onStartSeoMiniGuide,
     openDrawerForMiniGuideStepId,
 }) {
     const navigate = useNavigate();
@@ -255,7 +256,9 @@ export default function Editor({
         isMobile &&
         showGuideDropdown &&
         activeTab === PANEL_TEMPLATES &&
-        (HAS_ANY_GUIDE_URL || Boolean(onStartShareMiniGuide));
+        (HAS_ANY_GUIDE_URL ||
+            Boolean(onStartShareMiniGuide) ||
+            Boolean(onStartSeoMiniGuide));
 
     function handleChangeTab(nextTab) {
         if (!nextTab || !allowedTabs.has(nextTab)) return;
@@ -419,6 +422,18 @@ export default function Editor({
                                         }}
                                     >
                                         איך לשתף כרטיס
+                                    </button>
+                                ) : null}
+                                {onStartSeoMiniGuide ? (
+                                    <button
+                                        type="button"
+                                        className={styles.guideDropdownItem}
+                                        onClick={() => {
+                                            setGuideOpen(false);
+                                            onStartSeoMiniGuide();
+                                        }}
+                                    >
+                                        SEO וסקריפטים
                                     </button>
                                 ) : null}
                                 {GUIDE_URLS.mobile ? (

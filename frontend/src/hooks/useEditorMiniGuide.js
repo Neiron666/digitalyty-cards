@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect, useRef } from "react";
 
 export const MINI_GUIDE_IDS = {
     SHARE_CARD: "share-card",
+    SEO_AUTO: "seo-auto",
 };
 
 // ── Step factories ─────────────────────────────────────────────────────────────
@@ -79,9 +80,37 @@ function buildShareCardSteps({
     return [sm1, settingsTab, slugInput, publishBtn, sm2, linkBlock];
 }
 
+function buildSeoAutoSteps(/* context unused – steps are static */) {
+    return [
+        {
+            id: "seo-open",
+            targetId: "editor-tour-sections-menu",
+            text: "פתחו את תפריט העריכה.",
+            requiresDrawer: false,
+        },
+        {
+            id: "seo-tab",
+            targetId: "editor-mini-guide-tab-seo",
+            text: "בחרו SEO וסקריפטים.",
+            requiresDrawer: true,
+            isNextDisabledByDefault: true,
+        },
+        {
+            id: "seo-auto-btn",
+            targetId: "editor-mini-guide-seo-auto-btn",
+            text: "לחצו על ״הגדירו לי SEO אוטומטית״. אם הכפתור לא פעיל, השלימו קודם את הפרטים החסרים.",
+            requiresDrawer: false,
+            isFinalBlockStep: true,
+        },
+    ];
+}
+
 function computeActiveSteps(guideId, context) {
     if (guideId === MINI_GUIDE_IDS.SHARE_CARD) {
         return buildShareCardSteps(context);
+    }
+    if (guideId === MINI_GUIDE_IDS.SEO_AUTO) {
+        return buildSeoAutoSteps(context);
     }
     return [];
 }

@@ -396,7 +396,9 @@ export default function EditorSidebar({
                                             ? "editor-tour-tab-contact"
                                             : tab.id === "settings"
                                               ? "editor-mini-guide-tab-settings"
-                                              : undefined
+                                              : tab.id === "seo"
+                                                ? "editor-mini-guide-tab-seo"
+                                                : undefined
                                 }
                             >
                                 <span className={styles.tabLabel}>

@@ -2515,6 +2515,14 @@ function EditCard() {
         Boolean(draftCard?._id) &&
         Boolean(draftCard?.publicPath);
 
+    const miniSeoGuideAvailable =
+        miniGuideAvailable && draftCard?.entitlements?.canEditSeo === true;
+
+    const miniGuideTitle =
+        miniGuide.currentGuideId === MINI_GUIDE_IDS.SEO_AUTO
+            ? "מדריך SEO אוטומטי"
+            : "מדריך שיתוף כרטיס";
+
     return (
         <div className={styles.editCard}>
             <SeoHelmet robots="noindex, nofollow" />
@@ -2580,6 +2588,7 @@ function EditCard() {
                         onSkip={miniGuide.skip}
                         nextDisabled={miniGuide.isNextDisabled}
                         isFinalStep={miniGuide.isFinalStep}
+                        guideTitle={miniGuideTitle}
                     />
                 ) : null}
                 {editorTour.isDone &&
@@ -2695,6 +2704,11 @@ function EditCard() {
                             miniGuideAvailable
                                 ? () =>
                                       miniGuide.start(MINI_GUIDE_IDS.SHARE_CARD)
+                                : undefined
+                        }
+                        onStartSeoMiniGuide={
+                            miniSeoGuideAvailable
+                                ? () => miniGuide.start(MINI_GUIDE_IDS.SEO_AUTO)
                                 : undefined
                         }
                         tourSectionsMenuOpenOnly={
