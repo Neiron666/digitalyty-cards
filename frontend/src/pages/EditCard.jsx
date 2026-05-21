@@ -18,6 +18,11 @@ import {
     clearEditorTourCtaHighlightPending,
 } from "../hooks/useEditorTour";
 import TourCoachPanel from "../components/editor/TourCoachPanel";
+import {
+    useEditorMiniGuide,
+    MINI_GUIDE_IDS,
+} from "../hooks/useEditorMiniGuide";
+import TourMiniPanel from "../components/editor/TourMiniPanel";
 
 const REFETCH_THROTTLE_MS = 15_000;
 
@@ -2237,6 +2242,26 @@ function EditCard() {
         }
     }, [draftCard?._id]);
 
+    // Mini-guide hook: must be called unconditionally before any early return.
+    // Uses inline null-safe booleans; showGuideDropdown / cardIsPublished below
+    // remain the render SSoT and are unaffected by this early placement.
+    const miniGuide = useEditorMiniGuide({
+        enabled: Boolean(
+            isAuthenticated &&
+            contextResolved &&
+            orgsLoadState === "loaded" &&
+            !(myOrgs.length > 0 || Boolean(activeOrgSlug)) &&
+            section === "card" &&
+            draftCard?._id &&
+            draftCard?.publicPath,
+        ),
+        cardIsPublished: Boolean(
+            isAuthenticated && draftCard?.status === "published",
+        ),
+        entCanPublish: draftCard?.entitlements?.canPublish === true,
+        entCanChangeSlug: draftCard?.entitlements?.canChangeSlug === true,
+    });
+
     if (isInitializing) {
         return <div className={styles.editCard}>טוען...</div>;
     }
@@ -2484,6 +2509,12 @@ function EditCard() {
         orgsLoadState === "loaded" &&
         !showContextBar;
 
+    const miniGuideAvailable =
+        showGuideDropdown &&
+        section === "card" &&
+        Boolean(draftCard?._id) &&
+        Boolean(draftCard?.publicPath);
+
     return (
         <div className={styles.editCard}>
             <SeoHelmet robots="noindex, nofollow" />
@@ -2538,6 +2569,17 @@ function EditCard() {
                             editorTour.currentStep?.isSaveStep &&
                             (dirtyPaths.size > 0 || saveState === "saving"),
                         )}
+                    />
+                ) : null}
+                {miniGuide.isActive ? (
+                    <TourMiniPanel
+                        step={miniGuide.currentStep}
+                        currentIndex={miniGuide.currentIndex}
+                        totalSteps={miniGuide.totalSteps}
+                        onNext={miniGuide.advance}
+                        onSkip={miniGuide.skip}
+                        nextDisabled={miniGuide.isNextDisabled}
+                        isFinalStep={miniGuide.isFinalStep}
                     />
                 ) : null}
                 {editorTour.isDone &&
@@ -2646,7 +2688,18 @@ function EditCard() {
                                 ? editorTour.currentStep.id
                                 : null
                         }
-                        tourSectionsMenuOpenOnly={editorTour.isActive}
+                        openDrawerForMiniGuideStepId={
+                            miniGuide.requiresDrawerStepId
+                        }
+                        onStartShareMiniGuide={
+                            miniGuideAvailable
+                                ? () =>
+                                      miniGuide.start(MINI_GUIDE_IDS.SHARE_CARD)
+                                : undefined
+                        }
+                        tourSectionsMenuOpenOnly={
+                            editorTour.isActive || miniGuide.isActive
+                        }
                     />
                 ) : (
                     <div className={styles.comingSoon}>Coming soon</div>

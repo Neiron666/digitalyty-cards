@@ -822,6 +822,7 @@ export default function SettingsPanel({
                                         variant="primary"
                                         disabled={!canPublish}
                                         onClick={() => onPublish?.()}
+                                        data-tour-id="editor-mini-guide-publish-btn"
                                     >
                                         פרסום
                                     </Button>
@@ -920,6 +921,7 @@ export default function SettingsPanel({
                                         className={styles.slugInput}
                                         error={slugError}
                                         disabled={!canEditSlug || slugBusy}
+                                        data-tour-id="editor-mini-guide-slug-input"
                                     />
 
                                     <div className={styles.slugHelp}>

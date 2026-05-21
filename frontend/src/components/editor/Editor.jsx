@@ -9,6 +9,7 @@ import EditorSaveBar from "./EditorSaveBar";
 import { EDITOR_CARD_TABS, PANEL_TEMPLATES } from "./editorTabs";
 import GuideVideoModal from "./GuideVideoModal";
 import useGuideDropdownAck from "../../hooks/useGuideDropdownAck";
+import useFocusTrap from "../../hooks/useFocusTrap";
 import { getGuideVideoUrls } from "../../utils/guideVideoUrls";
 
 // ── Module-level guide URL constants (resolved once at module load time) ──────
@@ -53,6 +54,9 @@ export default function Editor({
     openDrawerForTourStepId,
     // Phase 2C-7: open-only signal for sections-menu during any active tour
     tourSectionsMenuOpenOnly = false,
+    // Mini-guide: authenticated share-card guide signals
+    onStartShareMiniGuide,
+    openDrawerForMiniGuideStepId,
 }) {
     const navigate = useNavigate();
     const { tab } = useParams(); // route: /edit/card/:tab
@@ -75,11 +79,24 @@ export default function Editor({
     const guideBtnRef = useRef(null);
     const guideDropdownRef = useRef(null);
     const guideFirstItemRef = useRef(null);
+    const sectionsTriggerRef = useRef(null);
+    const drawerRef = useRef(null);
 
     const toastTimerRef = useRef(null);
     const lastToastAtRef = useRef(0);
 
-    const closeDrawer = () => setDrawerOpen(false);
+    useFocusTrap(drawerRef, isMobile && drawerOpen);
+
+    const closeDrawer = () => {
+        if (drawerRef.current?.contains(document.activeElement)) {
+            try {
+                sectionsTriggerRef.current?.focus({ preventScroll: true });
+            } catch (_) {
+                sectionsTriggerRef.current?.focus();
+            }
+        }
+        setDrawerOpen(false);
+    };
 
     const dismissToast = () => {
         setToastOpen(false);
@@ -142,6 +159,22 @@ export default function Editor({
         window.addEventListener("keydown", onKeyDown);
         return () => window.removeEventListener("keydown", onKeyDown);
     }, [drawerOpen]);
+
+    // Deliver initial focus into drawer when it opens on mobile.
+    useEffect(() => {
+        if (!drawerOpen || !isMobile) return;
+        const FOCUSABLE =
+            "a[href], button:not([disabled]), input:not([disabled])," +
+            " select:not([disabled]), textarea:not([disabled])," +
+            ' [tabindex]:not([tabindex="-1"])';
+        const first = drawerRef.current?.querySelector(FOCUSABLE);
+        if (!first) return;
+        try {
+            first.focus({ preventScroll: true });
+        } catch (_) {
+            first.focus();
+        }
+    }, [drawerOpen, isMobile]);
 
     // Escape closes the guide dropdown (before the drawer handler so stopPropagation
     // prevents the drawer from also triggering when guide is open).
@@ -217,12 +250,12 @@ export default function Editor({
     const showPreview = !isMobile || mobileView === "preview";
 
     // Show guide button only on mobile, on the templates tab, when the user is
-    // not in org mode, and when at least one guide URL is configured.
+    // not in org mode, and when at least one guide URL or mini-guide is available.
     const showGuideBtn =
         isMobile &&
         showGuideDropdown &&
         activeTab === PANEL_TEMPLATES &&
-        HAS_ANY_GUIDE_URL;
+        (HAS_ANY_GUIDE_URL || Boolean(onStartShareMiniGuide));
 
     function handleChangeTab(nextTab) {
         if (!nextTab || !allowedTabs.has(nextTab)) return;
@@ -271,10 +304,17 @@ export default function Editor({
         }
     }, [isMobile, openDrawerForTourStepId]);
 
+    useEffect(() => {
+        if (isMobile && openDrawerForMiniGuideStepId) {
+            setDrawerOpen(true);
+        }
+    }, [isMobile, openDrawerForMiniGuideStepId]);
+
     return (
         <div className={styles.editor} data-shell="editor">
             <div className={styles.topbar} dir="rtl">
                 <button
+                    ref={sectionsTriggerRef}
                     type="button"
                     className={styles.sectionsTrigger}
                     aria-label={
@@ -368,10 +408,27 @@ export default function Editor({
                                 id="editor-guide-dropdown"
                                 className={styles.guideDropdown}
                             >
-                                {GUIDE_URLS.mobile ? (
+                                {onStartShareMiniGuide ? (
                                     <button
                                         type="button"
                                         ref={guideFirstItemRef}
+                                        className={styles.guideDropdownItem}
+                                        onClick={() => {
+                                            setGuideOpen(false);
+                                            onStartShareMiniGuide();
+                                        }}
+                                    >
+                                        איך לשתף כרטיס
+                                    </button>
+                                ) : null}
+                                {GUIDE_URLS.mobile ? (
+                                    <button
+                                        type="button"
+                                        ref={
+                                            onStartShareMiniGuide
+                                                ? undefined
+                                                : guideFirstItemRef
+                                        }
                                         className={styles.guideDropdownItem}
                                         onClick={() => {
                                             setGuideOpen(false);
@@ -386,9 +443,10 @@ export default function Editor({
                                     <button
                                         type="button"
                                         ref={
-                                            GUIDE_URLS.mobile
-                                                ? undefined
-                                                : guideFirstItemRef
+                                            !onStartShareMiniGuide &&
+                                            !GUIDE_URLS.mobile
+                                                ? guideFirstItemRef
+                                                : undefined
                                         }
                                         className={styles.guideDropdownItem}
                                         onClick={() => {
@@ -462,12 +520,14 @@ export default function Editor({
             />
 
             <div
+                ref={drawerRef}
                 className={cx(
                     styles.sidebarSlot,
                     drawerOpen && styles.drawerOpen,
                 )}
                 id="editor-sections-drawer"
                 aria-hidden={isMobile && !drawerOpen}
+                inert={isMobile && !drawerOpen ? "" : undefined}
             >
                 {isMobile ? (
                     <div className={styles.drawerHeader}>

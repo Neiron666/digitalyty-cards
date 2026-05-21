@@ -240,7 +240,11 @@ export default function EditorSidebar({
             ) : null}
 
             {publicUrl ? (
-                <div className={styles.publicLink} dir="rtl">
+                <div
+                    className={styles.publicLink}
+                    dir="rtl"
+                    data-tour-id="editor-mini-guide-public-link-block"
+                >
                     <div className={styles.publicLinkTitle}>
                         {isPublished ? "קישור ציבורי" : "קישור עתידי"}
                     </div>
@@ -390,7 +394,9 @@ export default function EditorSidebar({
                                           ? "editor-tour-tab-business"
                                           : tab.id === "contact"
                                             ? "editor-tour-tab-contact"
-                                            : undefined
+                                            : tab.id === "settings"
+                                              ? "editor-mini-guide-tab-settings"
+                                              : undefined
                                 }
                             >
                                 <span className={styles.tabLabel}>

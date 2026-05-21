@@ -43,6 +43,11 @@
     color: var(--gold);
 }
 
+.tab:focus-visible {
+    outline: 2px solid var(--gold);
+    outline-offset: 2px;
+}
+
 .tabLabel {
     display: flex;
     align-items: center;

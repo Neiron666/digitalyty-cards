@@ -70,15 +70,15 @@ export default function Header() {
     }, [hasOrgAdmin, isAuth, user?.role]);
 
     const closeMobile = useCallback(() => {
+        if (drawerRef.current?.contains(document.activeElement)) {
+            try {
+                burgerRef.current?.focus({ preventScroll: true });
+            } catch (_) {
+                burgerRef.current?.focus();
+            }
+        }
         setMobileOpen(false);
     }, []);
-
-    // Restore focus to burger button when drawer closes.
-    useEffect(() => {
-        if (!mobileOpen) {
-            burgerRef.current?.focus?.();
-        }
-    }, [mobileOpen]);
 
     // Lock body scroll when mobile drawer is open (iOS-safe body-pinning).
     useEffect(() => {
@@ -297,6 +297,7 @@ export default function Header() {
                         : styles.drawer
                 }
                 aria-hidden={!mobileOpen}
+                inert={!mobileOpen ? "" : undefined}
                 onClick={(e) => e.stopPropagation()}
             >
                 <div className={styles.drawerHeader}>
