@@ -443,12 +443,12 @@ export default function Home() {
     return (
         <main className={styles.page} data-page="site">
             <SeoHelmet
-                title="כרטיס ביקור דיגיטלי לעסקים | Cardigo"
+                title="כרטיס ביקור דיגיטלי לעסק | Cardigo"
                 description="כרטיס ביקור דיגיטלי לעסק של Cardigo מאפשר ליצור עמוד עסקי מקצועי, לשתף ב-QR, בוואטסאפ ובקישורים ייעודיים, ולעדכן הכול בקלות - עם תבניות, אנליטיקה וכלי שיתוף לעסק שלכם."
                 canonicalUrl={`${ORIGIN}/`}
                 url={`${ORIGIN}/`}
                 image={`${ORIGIN}${DEFAULT_OG_IMAGE_PATH}`}
-                imageAlt="Cardigo – כרטיס ביקור דיגיטלי לעסקים"
+                imageAlt="Cardigo – כרטיס ביקור דיגיטלי לעסק"
                 jsonLdItems={[
                     homeWebSiteJsonLd,
                     homeOrganizationJsonLd,

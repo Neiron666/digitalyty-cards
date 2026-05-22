@@ -235,3 +235,15 @@ export function CopyIcon({ className, title }) {
         </svg>
     );
 }
+
+export function HelpIcon({ className, title }) {
+    return (
+        <svg {...svgProps(className, title)}>
+            {title ? <title>{title}</title> : null}
+            <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+            <circle cx="12" cy="12" r="9" />
+            <path d="M10 9.5a2 2 0 1 1 4 0c0 1 -2 1.5 -2 2.5" />
+            <path d="M12 16v.01" />
+        </svg>
+    );
+}

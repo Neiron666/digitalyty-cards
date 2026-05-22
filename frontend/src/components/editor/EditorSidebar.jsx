@@ -21,6 +21,7 @@ import {
     SettingsIcon,
     AnalyticsIcon,
     CopyIcon,
+    HelpIcon,
 } from "../icons/EditorTabIcons";
 
 import {
@@ -38,6 +39,7 @@ import {
     PANEL_SEO,
     PANEL_SETTINGS,
     PANEL_ANALYTICS,
+    PANEL_HELP,
 } from "./editorTabs";
 
 const TABS = [
@@ -55,6 +57,7 @@ const TABS = [
     { id: PANEL_SEO, label: "SEO וסקריפטים" },
     { id: PANEL_SETTINGS, label: "הגדרות" },
     { id: PANEL_ANALYTICS, label: "אנליטיקה" },
+    { id: PANEL_HELP, label: "עזרה" },
 ];
 
 const TAB_ICON = {
@@ -72,6 +75,7 @@ const TAB_ICON = {
     [PANEL_SEO]: SeoIcon,
     [PANEL_SETTINGS]: SettingsIcon,
     [PANEL_ANALYTICS]: AnalyticsIcon,
+    [PANEL_HELP]: HelpIcon,
 };
 
 function isPremiumTab(tabId, entitlements) {

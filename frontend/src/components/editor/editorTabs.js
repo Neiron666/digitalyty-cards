@@ -12,6 +12,7 @@ export const PANEL_FAQ = "faq";
 export const PANEL_SEO = "seo";
 export const PANEL_SETTINGS = "settings";
 export const PANEL_ANALYTICS = "analytics";
+export const PANEL_HELP = "help";
 
 export const EDITOR_CARD_TABS = Object.freeze([
     PANEL_TEMPLATES,
@@ -28,4 +29,5 @@ export const EDITOR_CARD_TABS = Object.freeze([
     PANEL_SEO,
     PANEL_SETTINGS,
     PANEL_ANALYTICS,
+    PANEL_HELP,
 ]);

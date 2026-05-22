@@ -11,6 +11,7 @@ import SelfThemePanel from "./panels/SelfThemePanel";
 import SettingsPanel from "./panels/SettingsPanel";
 import SeoPanel from "./panels/SeoPanel";
 import AnalyticsPanel from "./panels/AnalyticsPanel";
+import HelpPanel from "./panels/HelpPanel";
 import TemplateSelector from "./TemplateSelector";
 import { normalizeTemplateId } from "../../templates/templates.config";
 
@@ -217,6 +218,9 @@ export default function EditorPanel({
 
         case "analytics":
             return <AnalyticsPanel card={card} />;
+
+        case "help":
+            return <HelpPanel />;
 
         default:
             return null;
