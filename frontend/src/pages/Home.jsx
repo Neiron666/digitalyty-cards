@@ -444,7 +444,7 @@ export default function Home() {
         <main className={styles.page} data-page="site">
             <SeoHelmet
                 title="כרטיס ביקור דיגיטלי לעסקים | Cardigo"
-                description="כרטיס ביקור דיגיטלי של Cardigo מאפשר ליצור עמוד עסקי מקצועי, לשתף ב-QR, בוואטסאפ ובקישורים ייעודיים, ולעדכן הכול בקלות - עם תבניות, אנליטיקה וכלי שיתוף לעסק שלכם."
+                description="כרטיס ביקור דיגיטלי לעסק של Cardigo מאפשר ליצור עמוד עסקי מקצועי, לשתף ב-QR, בוואטסאפ ובקישורים ייעודיים, ולעדכן הכול בקלות - עם תבניות, אנליטיקה וכלי שיתוף לעסק שלכם."
                 canonicalUrl={`${ORIGIN}/`}
                 url={`${ORIGIN}/`}
                 image={`${ORIGIN}${DEFAULT_OG_IMAGE_PATH}`}
