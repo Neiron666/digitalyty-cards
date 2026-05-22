@@ -534,7 +534,7 @@ export default function Home() {
             <section className={pub.sectionLight}>
                 <div className={pub.sectionWrap}>
                     <h2 className={pub.h2Gold}>
-                        יותר מכרטיס ביקור
+                        יותר מכרטיס ביקור דיגיטלי לעסק
                         <span> העמוד העסקי שלכם שמוכן לשיתוף</span>
                     </h2>
                     <p className={styles.presenceLead}>
