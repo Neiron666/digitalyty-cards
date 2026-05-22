@@ -231,7 +231,10 @@ export default function SeoHelmet({
             ) : null}
 
             {/* Twitter */}
-            <meta name="twitter:card" content="summary_large_image" />
+            <meta
+                name="twitter:card"
+                content={image ? "summary_large_image" : "summary"}
+            />
             {title ? <meta name="twitter:title" content={title} /> : null}
             {description ? (
                 <meta name="twitter:description" content={description} />

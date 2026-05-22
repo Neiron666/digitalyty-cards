@@ -108,6 +108,11 @@ function buildCardOgMetadata(card, siteUrl) {
             escapeHtml(imageAlt) +
             '" />',
     );
+    imageParts.push(
+        '    <meta name="twitter:image:alt" content="' +
+            escapeHtml(imageAlt) +
+            '" />',
+    );
 
     return {
         title,
@@ -208,6 +213,7 @@ router.get("/og/blog/:slug", async (req, res) => {
 
     <meta property="og:type" content="article" />
     <meta property="og:site_name" content="Cardigo" />
+    <meta property="og:locale" content="he_IL" />
     <meta property="og:title" content="${escapeHtml(title)}" />
     <meta property="og:description" content="${escapeHtml(description)}" />
     <meta property="og:url" content="${escapeHtml(publicUrl)}" />${imageMeta}
@@ -315,6 +321,7 @@ router.get("/og/guides/:slug", async (req, res) => {
 
     <meta property="og:type" content="article" />
     <meta property="og:site_name" content="Cardigo" />
+    <meta property="og:locale" content="he_IL" />
     <meta property="og:title" content="${escapeHtml(title)}" />
     <meta property="og:description" content="${escapeHtml(description)}" />
     <meta property="og:url" content="${escapeHtml(publicUrl)}" />${imageMeta}
@@ -396,6 +403,7 @@ router.get("/og/card/:slug", async (req, res) => {
 ${robotsMeta ? robotsMeta + "\n" : ""}
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="Cardigo" />
+    <meta property="og:locale" content="he_IL" />
     <meta property="og:title" content="${escapeHtml(title)}" />
     <meta property="og:description" content="${escapeHtml(description)}" />
 ${imageMetaHtml}
@@ -504,6 +512,7 @@ router.get("/og/c/:orgSlug/:slug", async (req, res) => {
 ${robotsMeta ? robotsMeta + "\n" : ""}
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="Cardigo" />
+    <meta property="og:locale" content="he_IL" />
     <meta property="og:title" content="${escapeHtml(title)}" />
     <meta property="og:description" content="${escapeHtml(description)}" />
 ${imageMetaHtml}
