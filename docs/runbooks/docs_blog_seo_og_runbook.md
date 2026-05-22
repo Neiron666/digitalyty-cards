@@ -24,9 +24,11 @@
     - `og:image` (conditional on hero image), `og:image:alt` (conditional)
     - `twitter:image` (conditional), `twitter:image:alt` (conditional)
     - `article:published_time`, `article:modified_time`, `article:author`
+    - `og:locale` = `"he_IL"` (hardcoded constant, SEO_BACKEND_OG_METADATA_PARITY_P2, production verified 2026-05-23)
+    - `og:site_name` = `"Cardigo"` (hardcoded constant)
     - `meta refresh` redirect на canonical: `https://cardigo.co.il/blog/:slug`
 - **OG endpoint:** `GET /og/guides/:slug`
-    - Same tag inventory as `/og/blog/:slug`. Canonical redirect to `/guides/:slug`.
+    - Same tag inventory as `/og/blog/:slug` (including `og:locale` and `og:site_name`). Canonical redirect to `/guides/:slug`.
 - **Sitemap:** `GET /sitemap.xml`
     - включает blog и guide URLs для `published`, с `<lastmod>` из `updatedAt`
     - включает card URLs (personal + org-owned premium) с `<lastmod>` из `updatedAt`
@@ -86,6 +88,8 @@ curl.exe -i "$base/og/blog/nonexistent-slug-zzz"
 - `twitter:title`, `twitter:description`, `twitter:image` валидные, **single-line** `content="..."`
 - `twitter:image:alt` присутствует только если есть hero image
 - `article:published_time`, `article:modified_time`, `article:author` присутствуют
+- `og:locale` = `"he_IL"` присутствует (одна копия, без дублей)
+- `og:site_name` = `"Cardigo"` присутствует
 - `refresh` redirect на `https://cardigo.co.il/blog/<slug>`
 
 ---
