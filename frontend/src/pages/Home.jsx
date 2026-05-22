@@ -484,7 +484,7 @@ export default function Home() {
                             <span
                                 className={`${styles.h1Accent} ${pub.goldUnderline}`}
                             >
-                                שמביא יותר לקוחות
+                                לעסק שלך ב-5 דקות
                             </span>
                         </h1>
                     </div>
