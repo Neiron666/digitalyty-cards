@@ -23,6 +23,7 @@ A new editor sidebar tab "עזרה" was added to the card editor. The tab opens 
 צריכים עזרה ביצירת הכרטיס, בהגדרות או בכל דבר אחר? פשוט כתבו לנו - ונשמח לעזור.
 
 **CTAs (two only):**
+
 - WhatsApp button — opens https://wa.me/972545811900 in new tab
 - Email button — opens mailto: to support@cardigo.co.il
 
