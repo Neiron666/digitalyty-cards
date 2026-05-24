@@ -155,14 +155,14 @@ Allowed skin keys (контракт): frontend/scripts/check-template-contract.m
 - Tab navigation не пишет в draft/dirty (никаких hidden writes).
 - В “תבניות” self-theme template скрыт (registry-driven флаг `selfThemeV1`).
 - Во вкладке “עיצוב עצמי” preview сразу выглядит как self-template (SelfThemeSkin), но draft `design.templateId` не меняется до успешного Save.
-- Online изменения цветов видны до Save (preview-only + editor blob CSS), без скрытых записей и без доп. запросов.
+- Online изменения цветов видны до Save (preview-only + editor Helmet <style> injection), без скрытых записей и без доп. запросов.
 - Persist: `design.templateId` форсится только в `commitDraft` payload и только при `selfThemeDirty` + `entitlements.design.customColors` + order-guard.
-- Reset: кнопка “איפוס” и auto-reset возвращают к дефолтам SelfThemeSkin через очистку `design.selfThemeV1`, без второго PATCH.
+- Reset (кнопка "איפוס"): два варианта поведения — (1) если `design.selfThemeBaseTemplateId` валиден и соответствует реальному non-self template в registry (identity check `resolvedBase?.id === baseTemplateId`), восстанавливает базовый шаблон через editor flow (не пишет seed цвета напрямую в selfThemeV1); (2) если id отсутствует, невалиден или legacy — очищает `design.selfThemeV1`, возврат к дефолтам SelfThemeSkin. Второй PATCH не выполняется в обоих случаях.
 
 Implementation anchors (без line numbers):
 
 - frontend/src/templates/templates.config.js - registry templates (`selfThemeV1`, `skinKey`)
-- frontend/src/templates/TemplateRenderer.jsx - gating self-theme + CSS injection (editor blob / public endpoint)
+- frontend/src/templates/TemplateRenderer.jsx - gating self-theme + CSS injection (editor Helmet <style> / public endpoint)
 - frontend/src/components/editor/TemplateSelector.jsx - скрытие self-theme template в “תבניות”
 - frontend/src/components/editor/panels/SelfThemePanel.jsx - запись `design.selfThemeV1.*` + reset “איפוס”
 - frontend/src/components/editor/EditorPreview.jsx - preview-only override при tab "design"
@@ -172,7 +172,8 @@ Implementation anchors (без line numbers):
 ### 3) Data Model
 
 - `design.templateId` - SSoT выбора шаблона (registry template).
-- `design.selfThemeV1` - overrides (object / field absent). `null` допустим как transient значение в draft/patch, но запись в Mongo нормализуется (см. Reset semantics / Postmortem).
+- `design.selfThemeV1` - overrides (object / field absent). `null` допустим как transient значение в draft/patch, но запись в Mongo нормализуется (см. Reset semantics / Postmortem). Запись всегда полным объектом (5 полей), не точечными dot-path полями.
+- `design.selfThemeBaseTemplateId` - nullable String, non-indexed. Хранит `templateId` обычного (non-self) шаблона, из которого была создана customV1 карточка. Используется только для restore-ветви reset. Добавлен без миграции и backfill. Legacy customV1 карточки без этого поля не могут восстановить оригинальный базовый шаблон.
 - `entitlements.design.customColors` - write gate для персиста self-theme.
 
 ### 4) Preview-only override (Why)
@@ -189,7 +190,10 @@ Implementation anchors (без line numbers):
 
 ### 6) Reset semantics
 
-- “איפוס” = явный user-action: очищает `design.selfThemeV1` (возврат к дефолтам self skin) и применяется при следующем Save.
+- "איפוס" = явный user-action. Два варианта:
+    - Ветвь 1 (провенанс): если `design.selfThemeBaseTemplateId` присутствует и identity check `resolvedBase?.id === baseTemplateId` подтверждает реальный non-self template в registry, восстанавливает `design.templateId` к базовому шаблону через editor flow. Цвета определяются skin/seed этого шаблона — reset не пишет seed цвета напрямую в selfThemeV1. Identity check защищает от silent fallback getTemplateById → TEMPLATES[0].
+    - Ветвь 2 (legacy/fallback): если `selfThemeBaseTemplateId` отсутствует, null или не прошёл identity check — очищает `design.selfThemeV1` (возврат к дефолтам SelfThemeSkin). Поведение до Phase 2D.
+    - В обеих ветвях второй PATCH не выполняется; Save остаётся единственной точкой персиста.
 - Auto-reset = silent cleanup: при уходе с self-theme template на другой очищает `design.selfThemeV1` внутри обработчика смены `design.templateId`, не превращая это в self-theme user-change для order-guard.
 
 ### 7) Postmortem (P0 incident)
