@@ -1,5 +1,9 @@
 import { useMemo } from "react";
 import styles from "./SelfThemePanel.module.css";
+import {
+    resolveEffectiveSelfThemeV1,
+    getTemplateById,
+} from "../../../templates/templates.config";
 
 function clamp01(value) {
     return Math.min(1, Math.max(0, value));
@@ -97,16 +101,12 @@ export default function SelfThemePanel({
     disabled,
     onFieldChange,
 }) {
-    const selfTheme =
-        card?.design && typeof card.design === "object"
-            ? card.design.selfThemeV1
-            : null;
-
-    const bg = normalizeHex(selfTheme?.bg) || "#FFFFFF";
-    const text = normalizeHex(selfTheme?.text) || "#1A1A1A";
-    const primary = normalizeHex(selfTheme?.primary) || "#A9863E";
-    const secondary = normalizeHex(selfTheme?.secondary) || "#C18AA8";
-    const onPrimary = normalizeHex(selfTheme?.onPrimary) || "#FFFFFF";
+    const effectiveSelfTheme = resolveEffectiveSelfThemeV1(card);
+    const bg = effectiveSelfTheme.bg;
+    const text = effectiveSelfTheme.text;
+    const primary = effectiveSelfTheme.primary;
+    const secondary = effectiveSelfTheme.secondary;
+    const onPrimary = effectiveSelfTheme.onPrimary;
 
     const controlsDisabled = Boolean(disabled);
 
@@ -119,14 +119,13 @@ export default function SelfThemePanel({
     const passTextBg = (contrastTextBg || 0) >= 4.5;
     const passOnPrimary = (contrastOnPrimary || 0) >= 4.5;
 
-    function write(path, value) {
-        onFieldChange?.(path, value);
-    }
-
-    function writeSelfTheme(path, value) {
+    function writeSelfTheme(fieldKey, newValue) {
         if (disabled) return;
-        write(path, value);
-        write("design.selfThemeV1.version", 1);
+        onFieldChange?.("design.selfThemeV1", {
+            ...effectiveSelfTheme,
+            [fieldKey]: newValue,
+            version: 1,
+        });
     }
 
     return (
@@ -141,7 +140,7 @@ export default function SelfThemePanel({
                     value={bg}
                     disabled={controlsDisabled}
                     ariaLabel="בחר צבע רקע"
-                    onChange={(v) => writeSelfTheme("design.selfThemeV1.bg", v)}
+                    onChange={(v) => writeSelfTheme("bg", v)}
                 />
                 <ColorRow
                     id="selftheme-text"
@@ -150,9 +149,7 @@ export default function SelfThemePanel({
                     value={text}
                     disabled={controlsDisabled}
                     ariaLabel="בחר צבע טקסט"
-                    onChange={(v) =>
-                        writeSelfTheme("design.selfThemeV1.text", v)
-                    }
+                    onChange={(v) => writeSelfTheme("text", v)}
                 />
                 <ColorRow
                     id="selftheme-primary"
@@ -161,9 +158,7 @@ export default function SelfThemePanel({
                     value={primary}
                     disabled={controlsDisabled}
                     ariaLabel="בחר צבע ראשי"
-                    onChange={(v) =>
-                        writeSelfTheme("design.selfThemeV1.primary", v)
-                    }
+                    onChange={(v) => writeSelfTheme("primary", v)}
                 />
                 <ColorRow
                     id="selftheme-secondary"
@@ -172,9 +167,7 @@ export default function SelfThemePanel({
                     value={secondary}
                     disabled={controlsDisabled}
                     ariaLabel="בחר צבע משני"
-                    onChange={(v) =>
-                        writeSelfTheme("design.selfThemeV1.secondary", v)
-                    }
+                    onChange={(v) => writeSelfTheme("secondary", v)}
                 />
                 <ColorRow
                     id="selftheme-onprimary"
@@ -183,9 +176,7 @@ export default function SelfThemePanel({
                     value={onPrimary}
                     disabled={controlsDisabled}
                     ariaLabel="בחר צבע טקסט על כפתורים"
-                    onChange={(v) =>
-                        writeSelfTheme("design.selfThemeV1.onPrimary", v)
-                    }
+                    onChange={(v) => writeSelfTheme("onPrimary", v)}
                 />
             </div>
 
@@ -195,7 +186,29 @@ export default function SelfThemePanel({
                 disabled={controlsDisabled}
                 onClick={() => {
                     if (disabled) return;
-                    onFieldChange?.("design.selfThemeV1", null);
+                    const currentTemplateId = card?.design?.templateId;
+                    const baseTemplateId =
+                        card?.design?.selfThemeBaseTemplateId;
+                    const currentTemplate = getTemplateById(currentTemplateId);
+                    const resolvedBase = getTemplateById(baseTemplateId);
+                    const isCurrentSelfThemeTemplate =
+                        currentTemplate?.selfThemeV1 === true;
+                    // CRITICAL: resolvedBase?.id === baseTemplateId guards against
+                    // getTemplateById's silent fallback to TEMPLATES[0] for unknown ids.
+                    const isKnownBaseTemplate =
+                        typeof baseTemplateId === "string" &&
+                        baseTemplateId.trim().length > 0 &&
+                        resolvedBase?.id === baseTemplateId &&
+                        resolvedBase?.selfThemeV1 !== true;
+                    if (isCurrentSelfThemeTemplate && isKnownBaseTemplate) {
+                        // Restore base template; existing templateId-change handler
+                        // in EditCard already clears selfThemeV1 via silent cleanup.
+                        onFieldChange?.("design.templateId", baseTemplateId);
+                        onFieldChange?.("design.selfThemeBaseTemplateId", null);
+                    } else {
+                        // Legacy fallback: clear custom colors only.
+                        onFieldChange?.("design.selfThemeV1", null);
+                    }
                 }}
             >
                 איפוס
@@ -230,10 +243,7 @@ export default function SelfThemePanel({
                         disabled={controlsDisabled}
                         onClick={() => {
                             const best = pickBestOnPrimary(primary);
-                            writeSelfTheme(
-                                "design.selfThemeV1.onPrimary",
-                                best,
-                            );
+                            writeSelfTheme("onPrimary", best);
                         }}
                     >
                         תקן ניגודיות

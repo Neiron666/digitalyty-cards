@@ -1109,6 +1109,15 @@ const CardSchema = new mongoose.Schema(
                 version: { type: Number, default: 1 },
             },
 
+            // Provenance: which regular template this custom design was created from.
+            // Set when shouldForceSelfThemeTemplate fires and source was a non-selfTheme template.
+            // Cleared when card returns to a regular template. Non-indexed, nullable.
+            selfThemeBaseTemplateId: {
+                type: String,
+                default: null,
+                trim: true,
+            },
+
             // new template assets
             backgroundImage: String,
             backgroundOverlay: { type: Number, default: 40 },

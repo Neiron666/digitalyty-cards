@@ -1537,19 +1537,55 @@ function EditCard() {
         const blockForce =
             templateChangedAfterSelfTheme && Boolean(userChoseOtherTemplate);
 
+        const selfThemeValue = draftCard?.design?.selfThemeV1;
+        const selfThemeIsActive =
+            selfThemeValue &&
+            typeof selfThemeValue === "object" &&
+            !Array.isArray(selfThemeValue) &&
+            ["bg", "text", "primary", "secondary", "onPrimary"].some(
+                (field) => {
+                    const value = selfThemeValue[field];
+                    return typeof value === "string" && value.trim();
+                },
+            );
+
         const shouldForceSelfThemeTemplate =
             selfThemeAllowed &&
             selfThemeDirty &&
             Boolean(selfThemeTemplateId) &&
-            !blockForce;
+            !blockForce &&
+            selfThemeIsActive;
 
         if (shouldForceSelfThemeTemplate) {
+            const sourceTemplateId = String(payload.design?.templateId || "");
+            const isNewCustomSave =
+                sourceTemplateId.length > 0 &&
+                sourceTemplateId !== selfThemeTemplateId;
             payload.design = {
                 ...(payload.design && typeof payload.design === "object"
                     ? payload.design
                     : {}),
                 templateId: selfThemeTemplateId,
+                ...(isNewCustomSave
+                    ? { selfThemeBaseTemplateId: sourceTemplateId }
+                    : {}),
             };
+        }
+
+        // Clear stale provenance when final template is not the self-theme template.
+        // Prevents legacy base id from persisting on regular-template cards.
+        if (
+            payload.design &&
+            typeof payload.design === "object" &&
+            selfThemeTemplateId
+        ) {
+            const finalTemplateId = String(payload.design.templateId || "");
+            if (finalTemplateId && finalTemplateId !== selfThemeTemplateId) {
+                payload.design = {
+                    ...payload.design,
+                    selfThemeBaseTemplateId: null,
+                };
+            }
         }
 
         if (Object.keys(payload).length === 0) return false;

@@ -1977,3 +1977,247 @@ export function getTemplateById(id) {
     const normalized = normalizeTemplateId(id);
     return TEMPLATES.find((t) => t.id === normalized) || TEMPLATES[0];
 }
+
+// ---------------------------------------------------------------------------
+// Self-theme effective palette resolution
+// ---------------------------------------------------------------------------
+
+const SELF_THEME_FALLBACK_PALETTE = {
+    bg: "#ffffff",
+    text: "#1a1a1a",
+    primary: "#a9863e",
+    secondary: "#c18aa8",
+    onPrimary: "#ffffff",
+    version: 1,
+};
+
+// Self-theme seed colors mirror skin CSS variables for the custom-design entry
+// flow. Keep in sync with corresponding skin module brand tokens.
+const SELF_THEME_SEED_COLORS_BY_SKIN_KEY = {
+    roismanA11y: {
+        bg: "#ffffff",
+        text: "#063037",
+        primary: "#094a56",
+        secondary: "#0c6a7a",
+        onPrimary: "#ffffff",
+    },
+    lakmi: {
+        bg: "#ffffff",
+        text: "#1a1a1a",
+        primary: "#a9863e",
+        secondary: "#c18aa8",
+        onPrimary: "#ffffff",
+    },
+    beauty: {
+        bg: "#ffffff",
+        text: "#1a1a1a",
+        primary: "#d2a679",
+        secondary: "#895827",
+        onPrimary: "#ffffff",
+    },
+    galit: {
+        bg: "#ffffff",
+        text: "#1a1a1a",
+        primary: "#b8a796",
+        secondary: "#3c5888",
+        onPrimary: "#ffffff",
+    },
+    irisLayla: {
+        bg: "#ffffff",
+        text: "#1a1a1a",
+        primary: "#200772",
+        secondary: "#876ed7",
+        onPrimary: "#ffffff",
+    },
+    shkiyaLaguna: {
+        bg: "#ffffff",
+        text: "#1a1a1a",
+        primary: "#ff7400",
+        secondary: "#009999",
+        onPrimary: "#ffffff",
+    },
+    zahavLaguna: {
+        bg: "#ffffff",
+        text: "#1a1a1a",
+        primary: "#ffaa00",
+        secondary: "#009999",
+        onPrimary: "#ffffff",
+    },
+    rubyEsh: {
+        bg: "#ffffff",
+        text: "#1a1a1a",
+        primary: "#a60000",
+        secondary: "#ff0000",
+        onPrimary: "#ffffff",
+    },
+    shachorGraphit: {
+        bg: "#ffffff",
+        text: "#1a1a1a",
+        primary: "#000000",
+        secondary: "#5a5a5a",
+        onPrimary: "#ffffff",
+    },
+    pardesChai: {
+        bg: "#ffffff",
+        text: "#1a1a1a",
+        primary: "#00cc00",
+        secondary: "#ff7400",
+        onPrimary: "#ffffff",
+    },
+    bronzeSachlav: {
+        bg: "#0a0a0a",
+        text: "#ffffff",
+        primary: "#a9863e",
+        secondary: "#c18aa8",
+        onPrimary: "#ffffff",
+    },
+    tehomTurkiz: {
+        bg: "#0a0a0a",
+        text: "#ffffff",
+        primary: "#094a56",
+        secondary: "#0c6a7a",
+        onPrimary: "#ffffff",
+    },
+    inbarAdama: {
+        bg: "#0a0a0a",
+        text: "#ffffff",
+        primary: "#d2a679",
+        secondary: "#895827",
+        onPrimary: "#ffffff",
+    },
+    lavaLaguna: {
+        bg: "#0a0a0a",
+        text: "#ffffff",
+        primary: "#ff7400",
+        secondary: "#009999",
+        onPrimary: "#ffffff",
+    },
+    zahavTehom: {
+        bg: "#0a0a0a",
+        text: "#ffffff",
+        primary: "#ffaa00",
+        secondary: "#009999",
+        onPrimary: "#ffffff",
+    },
+    evenNil: {
+        bg: "#0a0a0a",
+        text: "#ffffff",
+        primary: "#b8a796",
+        secondary: "#3c5896",
+        onPrimary: "#ffffff",
+    },
+    irisChatzot: {
+        bg: "#0a0a0a",
+        text: "#ffffff",
+        primary: "#5537b9",
+        secondary: "#7059b9",
+        onPrimary: "#ffffff",
+    },
+    gacheletArgaman: {
+        bg: "#0a0a0a",
+        text: "#ffffff",
+        primary: "#a60000",
+        secondary: "#ff0000",
+        onPrimary: "#ffffff",
+    },
+    bronzeChol: {
+        bg: "#0a0a0a",
+        text: "#ffffff",
+        primary: "#a9863e",
+        secondary: "#d4b36f",
+        onPrimary: "#ffffff",
+    },
+    hadarGachelet: {
+        bg: "#0a0a0a",
+        text: "#ffffff",
+        primary: "#00cc00",
+        secondary: "#ff7400",
+        onPrimary: "#ffffff",
+    },
+    lagunaShkiya: {
+        bg: "#0a0a0a",
+        text: "#ffffff",
+        primary: "#33cccc",
+        secondary: "#ff9640",
+        onPrimary: "#ffffff",
+    },
+    mentaGachelet: {
+        bg: "#0a0a0a",
+        text: "#ffffff",
+        primary: "#36d792",
+        secondary: "#ff7640",
+        onPrimary: "#ffffff",
+    },
+    mentaShachar: {
+        bg: "#ffffff",
+        text: "#1a1a1a",
+        primary: "#36d792",
+        secondary: "#ff7640",
+        onPrimary: "#ffffff",
+    },
+    lagunaAfarsek: {
+        bg: "#ffffff",
+        text: "#1a1a1a",
+        primary: "#33cccc",
+        secondary: "#ff9640",
+        onPrimary: "#ffffff",
+    },
+};
+
+function normalizeSelfThemeHex(value) {
+    if (typeof value !== "string") return null;
+    const raw = value.trim().toLowerCase();
+    if (!raw || !raw.startsWith("#")) return null;
+    if (/^#[0-9a-f]{6}$/.test(raw)) return raw;
+    if (/^#[0-9a-f]{3}$/.test(raw)) {
+        const h = raw.slice(1);
+        return `#${h[0]}${h[0]}${h[1]}${h[1]}${h[2]}${h[2]}`;
+    }
+    return null;
+}
+
+export function resolveEffectiveSelfThemeV1(card) {
+    const templateId = normalizeTemplateId(card?.design?.templateId);
+    const template = getTemplateById(templateId);
+    const seed =
+        template &&
+        template.selfThemeV1 !== true &&
+        SELF_THEME_SEED_COLORS_BY_SKIN_KEY[template.skinKey];
+    const base = seed ? seed : SELF_THEME_FALLBACK_PALETTE;
+
+    const existing =
+        card?.design && typeof card.design === "object"
+            ? card.design.selfThemeV1
+            : null;
+
+    const result = {
+        bg: base.bg,
+        text: base.text,
+        primary: base.primary,
+        secondary: base.secondary,
+        onPrimary: base.onPrimary,
+        version: 1,
+    };
+
+    if (existing && typeof existing === "object") {
+        const validBg = normalizeSelfThemeHex(existing.bg);
+        if (validBg) result.bg = validBg;
+        const validText = normalizeSelfThemeHex(existing.text);
+        if (validText) result.text = validText;
+        const validPrimary = normalizeSelfThemeHex(existing.primary);
+        if (validPrimary) result.primary = validPrimary;
+        const validSecondary = normalizeSelfThemeHex(existing.secondary);
+        if (validSecondary) result.secondary = validSecondary;
+        const validOnPrimary = normalizeSelfThemeHex(existing.onPrimary);
+        if (validOnPrimary) result.onPrimary = validOnPrimary;
+        if (
+            typeof existing.version === "number" &&
+            Number.isFinite(existing.version) &&
+            existing.version >= 1
+        ) {
+            result.version = existing.version;
+        }
+    }
+
+    return result;
+}

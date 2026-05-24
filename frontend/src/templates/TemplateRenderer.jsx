@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 import { Helmet } from "react-helmet-async";
 import { getTemplateById, normalizeTemplateId } from "./templates.config";
 import CardLayout from "./layout/CardLayout";
@@ -136,8 +136,8 @@ export default function TemplateRenderer({ card, onUpgrade, mode }) {
     const skin = skinModules[skinKey] || SkinBase;
 
     // SSoT gating: self theme applies only to templates that declare it in registry.
-    // Editor mode uses a blob stylesheet (no backend fetch, no _id required).
-    // Public mode uses same-origin endpoint (requires _id).
+    // Editor mode injects scoped self-theme CSS via Helmet <style> (no backend fetch, no _id required).
+    // Public mode uses the backend self-theme CSS endpoint.
     const isCustomV1 = template?.selfThemeV1 === true;
     const hasSelfTheme = Boolean(card?.design?.selfThemeV1);
 
@@ -217,23 +217,6 @@ export default function TemplateRenderer({ card, onUpgrade, mode }) {
         card?.design?.selfThemeV1?.onPrimary,
     ]);
 
-    const [selfThemeBlobUrl, setSelfThemeBlobUrl] = useState(null);
-    useEffect(() => {
-        if (!selfThemeCssText) {
-            setSelfThemeBlobUrl(null);
-            return;
-        }
-
-        const url = URL.createObjectURL(
-            new Blob([selfThemeCssText], { type: "text/css" }),
-        );
-        setSelfThemeBlobUrl(url);
-
-        return () => {
-            URL.revokeObjectURL(url);
-        };
-    }, [selfThemeCssText]);
-
     // Fixed skins must be token-only CSS modules; layout stays shared (CardLayout).
 
     const extraThemeClass = Array.isArray(template?.customPalettes)
@@ -248,14 +231,10 @@ export default function TemplateRenderer({ card, onUpgrade, mode }) {
         <>
             {selfThemeScopeActive ? (
                 <Helmet>
-                    {selfThemeEditorActive ? (
-                        selfThemeBlobUrl ? (
-                            <link
-                                key={selfThemeBlobUrl}
-                                rel="stylesheet"
-                                href={selfThemeBlobUrl}
-                            />
-                        ) : null
+                    {selfThemeEditorActive && selfThemeCssText ? (
+                        <style key="cardigo-self-theme-editor-css">
+                            {selfThemeCssText}
+                        </style>
                     ) : selfThemePublicActive ? (
                         <link
                             rel="stylesheet"

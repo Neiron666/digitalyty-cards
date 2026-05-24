@@ -3,7 +3,10 @@ import { useParams } from "react-router-dom";
 import styles from "./EditorPreview.module.css";
 import CardRenderer from "../card/CardRenderer";
 import { withDemoPreviewCard } from "./previewDemo";
-import { TEMPLATES } from "../../templates/templates.config";
+import {
+    TEMPLATES,
+    resolveEffectiveSelfThemeV1,
+} from "../../templates/templates.config";
 import { getAnonymousId } from "../../services/api";
 
 const cx = (...classes) => classes.filter(Boolean).join(" ");
@@ -103,11 +106,13 @@ export default function EditorPreview({
             return previewCard;
         }
 
+        const effectiveSelfThemeV1 = resolveEffectiveSelfThemeV1(previewCard);
         return {
             ...previewCard,
             design: {
                 ...(previewCard?.design || {}),
                 templateId: selfThemeTemplateId,
+                selfThemeV1: effectiveSelfThemeV1,
             },
         };
     }, [previewCard, isSelfThemeTab, selfThemeAllowed, selfThemeTemplateId]);
