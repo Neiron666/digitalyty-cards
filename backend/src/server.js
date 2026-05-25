@@ -8,6 +8,7 @@ import { startRetentionPurgeJob } from "./jobs/retentionPurge.js";
 import { startTrialReminderJob } from "./jobs/trialReminderJob.js";
 import { startBillingReconcileJob } from "./jobs/billingReconcile.js";
 import { startReceiptRetryJob } from "./jobs/receiptRetry.js";
+import { startSlugRedirectReleaseJob } from "./jobs/slugRedirectRelease.js";
 
 // --- Sentry early init (before Express app loads) ---
 // Must run before app.js is imported so Sentry can instrument Express/http.
@@ -136,6 +137,14 @@ async function start() {
     startReceiptRetryJob({
         intervalMs:
             Number(process.env.RECEIPT_RETRY_INTERVAL_MS) || 30 * 60 * 1000,
+    });
+
+    // Slug redirect quarantine release: promotes expired redirect_quarantine → released.
+    // Disabled by default — requires SLUG_REDIRECT_RELEASE_ENABLED=true.
+    startSlugRedirectReleaseJob({
+        intervalMs:
+            Number(process.env.SLUG_REDIRECT_RELEASE_INTERVAL_MS) ||
+            24 * 60 * 60 * 1000,
     });
 
     app.listen(PORT, () => {

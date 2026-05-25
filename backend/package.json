@@ -58,7 +58,9 @@
         "sto:cancel:dry-run": "node scripts/sto-cancel.mjs --run",
         "sto:cancel:execute": "node scripts/sto-cancel.mjs --run --execute",
         "sto:create-custom-date:dry-run": "node scripts/sto-create-custom-date.mjs --run",
-        "sto:create-custom-date:execute": "node scripts/sto-create-custom-date.mjs --run --execute"
+        "sto:create-custom-date:execute": "node scripts/sto-create-custom-date.mjs --run --execute",
+        "slug-redirect:release:dry-run": "node scripts/release-expired-slug-redirects.mjs",
+        "slug-redirect:release:apply": "node scripts/release-expired-slug-redirects.mjs --apply"
     },
     "keywords": [],
     "author": "",
