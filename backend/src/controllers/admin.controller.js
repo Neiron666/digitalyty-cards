@@ -18,6 +18,7 @@ import {
     normalizeSupabasePaths,
 } from "../utils/supabasePaths.js";
 import { deleteCardCascade } from "../utils/cardDeleteCascade.js";
+import { createCardSlugTombstone } from "../utils/createCardSlugTombstone.js";
 import { isValidTier } from "../utils/tier.js";
 import {
     addIsraelDaysFromNow,
@@ -531,7 +532,10 @@ export async function getCardById(req, res) {
     );
 }
 
-async function deleteCardPermanentlyCore({ card }) {
+async function deleteCardPermanentlyCore({
+    card,
+    tombstoneReason = "card_deleted",
+}) {
     const rawPaths = collectSupabasePathsFromCard(card);
     const paths = normalizeSupabasePaths(rawPaths);
 
@@ -583,6 +587,21 @@ async function deleteCardPermanentlyCore({ card }) {
         e.status = 500;
         e.code = "CASCADE_DELETE_FAILED";
         throw e;
+    }
+
+    const now = new Date();
+    try {
+        await createCardSlugTombstone({
+            card,
+            reason: tombstoneReason,
+            createdBy: null,
+            now,
+        });
+    } catch (err) {
+        console.warn("[admin] tombstone write failed", {
+            cardId: String(card._id),
+            error: err?.message || err,
+        });
     }
 
     await Card.deleteOne({ _id: card._id });
@@ -744,7 +763,10 @@ export async function deleteUserPermanently(req, res) {
     let deletedCardsCount = 0;
     for (const card of cards) {
         try {
-            await deleteCardPermanentlyCore({ card });
+            await deleteCardPermanentlyCore({
+                card,
+                tombstoneReason: "account_deleted",
+            });
             deletedCardsCount += 1;
         } catch (err) {
             const status = Number(err?.status || 500);

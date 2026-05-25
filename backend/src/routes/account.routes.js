@@ -17,6 +17,7 @@ import {
     getAnonPrivateBucketName,
 } from "../services/supabaseStorage.js";
 import { deleteCardCascade } from "../utils/cardDeleteCascade.js";
+import { createCardSlugTombstone } from "../utils/createCardSlugTombstone.js";
 import { createEmailBlock } from "../utils/emailBlock.util.js";
 import {
     createMarketingOptOut,
@@ -958,6 +959,7 @@ router.post("/delete-account", requireAuth, async (req, res) => {
         }
 
         // ── Delete all user's cards (Supabase-first) ──
+        const now = new Date();
         const cards = await Card.find({ user: req.userId });
 
         for (const card of cards) {
@@ -996,6 +998,20 @@ router.post("/delete-account", requireAuth, async (req, res) => {
                 await deleteCardCascade({ cardId: card._id });
             } catch (_) {
                 // Non-fatal for user-delete: media already gone, continue.
+            }
+
+            try {
+                await createCardSlugTombstone({
+                    card,
+                    reason: "account_deleted",
+                    createdBy: null,
+                    now,
+                });
+            } catch (err) {
+                console.warn("[account] tombstone write failed", {
+                    cardId: String(card._id),
+                    error: err?.message || err,
+                });
             }
 
             await Card.deleteOne({ _id: card._id });

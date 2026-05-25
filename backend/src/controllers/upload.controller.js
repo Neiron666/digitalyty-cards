@@ -30,6 +30,7 @@ import {
     normalizeSupabasePaths,
 } from "../utils/supabasePaths.js";
 import { deleteCardCascade } from "../utils/cardDeleteCascade.js";
+import { createCardSlugTombstone } from "../utils/createCardSlugTombstone.js";
 
 const _uploadDebug = process.env.CARDIGO_UPLOAD_DEBUG === "1";
 function _rid(req) {
@@ -171,6 +172,20 @@ export async function uploadGalleryImage(req, res) {
                 return res
                     .status(500)
                     .json({ message: "Failed to delete related data" });
+            }
+
+            try {
+                await createCardSlugTombstone({
+                    card,
+                    reason: "trial_expired",
+                    createdBy: null,
+                    now,
+                });
+            } catch (err) {
+                console.warn("[upload] tombstone write failed", {
+                    cardId: String(card._id),
+                    error: err?.message || err,
+                });
             }
 
             await Card.deleteOne({ _id: card._id });
@@ -436,6 +451,20 @@ export async function uploadDesignAsset(req, res) {
                 return res
                     .status(500)
                     .json({ message: "Failed to delete related data" });
+            }
+
+            try {
+                await createCardSlugTombstone({
+                    card,
+                    reason: "trial_expired",
+                    createdBy: null,
+                    now,
+                });
+            } catch (err) {
+                console.warn("[upload] tombstone write failed", {
+                    cardId: String(card._id),
+                    error: err?.message || err,
+                });
             }
 
             await Card.deleteOne({ _id: card._id });

@@ -23,6 +23,7 @@ import {
     normalizeSupabasePaths,
 } from "../utils/supabasePaths.js";
 import { deleteCardCascade } from "../utils/cardDeleteCascade.js";
+import { createCardSlugTombstone } from "../utils/createCardSlugTombstone.js";
 
 import { resolveActor, assertCardOwner } from "../utils/actor.js";
 import {
@@ -3501,6 +3502,21 @@ export async function deleteCard(req, res) {
         return res
             .status(500)
             .json({ message: "Failed to delete related data" });
+    }
+
+    const now = new Date();
+    try {
+        await createCardSlugTombstone({
+            card,
+            reason: "card_deleted",
+            createdBy: actor?.type === "user" ? (actor.id ?? null) : null,
+            now,
+        });
+    } catch (err) {
+        console.warn("[cards] tombstone write failed", {
+            cardId: String(card._id),
+            error: err?.message || err,
+        });
     }
 
     await Card.deleteOne({ _id: card._id });
