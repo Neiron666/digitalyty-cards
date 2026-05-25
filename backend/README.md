@@ -65,6 +65,26 @@ Three independent feature flags control AI generation surfaces:
 
 Each accepts `1`, `true`, `on`, `yes` (case-insensitive). When disabled, the respective endpoint returns 503 `AI_DISABLED`; other surfaces remain unaffected. Also requires `GEMINI_API_KEY` (and optionally `GEMINI_MODEL`). See `docs/ai-about-workstream.md` §7 for full details.
 
+## Slug Redirect Lifecycle
+
+### Env vars
+
+| Variable                            | Default                     | Purpose                                                                         |
+| ----------------------------------- | --------------------------- | ------------------------------------------------------------------------------- |
+| `SLUG_REDIRECT_RELEASE_ENABLED`     | `false` (absent = disabled) | Set to `true` to enable the background release sweep job                        |
+| `SLUG_REDIRECT_RELEASE_INTERVAL_MS` | `86400000` (24 h)           | Job interval in ms; minimum guard: 1 h — values below fall back to 24 h default |
+
+### Operator scripts
+
+```
+npm.cmd run slug-redirect:release:dry-run
+npm.cmd run slug-redirect:release:apply
+```
+
+- `dry-run` (default): counts eligible expired quarantine records; does not modify any data; EXIT 0.
+- `apply`: runs `updateMany`; transitions eligible records to `status: "released"`; sets `releasedAt`. Only run after reviewing `candidateCount` from a dry-run. `SlugRedirect` records are never deleted.
+- Output fields: `ok`, `mode`, `dbName`, `checkedAt`, `candidateCount`, `durationMs`; plus `modifiedCount` when mode is `apply`.
+
 ## Index Governance
 
 Runtime ≠ Sanity ≠ Migration:
@@ -106,6 +126,12 @@ Runtime ≠ Sanity ≠ Migration:
     - Required as part of CI-only cluster bootstrap — see `docs/runbooks/ci-cluster-bootstrap.md` §5 Step 5.
     - Idempotent: re-running `--apply` on a cluster that already has the index is safe (no-op).
     - **Production status (2026-05-04):** read-only dry-run against `cardigo_prod` confirmed `orgId_1_userId_1 already exists and is unique — no-op`. No production apply was performed or required.
+- Migration (`migrate:slug-redirect-index:dry-run` / `migrate:slug-redirect-index:apply`): governs all 6 `SlugRedirect` indexes.
+    - Dry-run: `npm.cmd run migrate:slug-redirect-index:dry-run`
+    - Apply: `npm.cmd run migrate:slug-redirect-index:apply`
+    - Covers indexes: `routeType_1_slug_1_status_1`, `status_1_expiresAt_1`, `sourceCardId_1`, `targetCardId_1`, `slug_1_routeType_1`, `orgId_1_slug_1_status_1`.
+    - Idempotent. Dry-run by default; apply is explicit.
+    - **Production status (confirmed):** all 6 indexes present — `sanity:slug-redirect-index-drift` returns 6/6 PASS.
 
 Do NOT run `--apply` automatically in CI.
 
@@ -149,6 +175,7 @@ Windows commands (must-pass before release):
 `npm.cmd run sanity:ownership-consistency`
 `npm.cmd run sanity:claim-vs-create-race`
 `npm.cmd run sanity:slug-policy`
+`npm.cmd run sanity:slug-redirect-index-drift`
 
 Exit code semantics:
 
@@ -161,6 +188,7 @@ Notes:
 - The other gates are read-only as currently implemented.
 - `slugPolicy` is returned only from `GET /api/cards/mine` (user branch) when `exposeSlugPolicy:true`; `sanity:slug-policy` guards against leaking it via public/other endpoints.
 - WARNING: `sanity:slug-policy` does not currently gate on `remaining/limit` fields in the 429 payload (it records it as `checks.limitPayload` only).
+- `sanity:slug-redirect-index-drift` is read-only; checks that all 6 `SlugRedirect` indexes are present and correctly configured. EXIT 0 = all 6 PASS; EXIT 1 = drift detected.
 
 TENANT_HOST_ALLOWLIST:
 

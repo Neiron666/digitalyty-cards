@@ -13,7 +13,7 @@
 | ------------------------- | ------------------------ | ------------------------------------------------------------------- |
 | Render Cron Jobs          | **None configured**      | All scheduled work runs in-process                                  |
 | Render Background Workers | **None configured**      | All scheduled work runs in-process                                  |
-| In-process Node timers    | **7 active workers**     | Started inside the backend Web Service via `server.js`              |
+| In-process Node timers    | **8 active workers**     | Started inside the backend Web Service via `server.js`              |
 | GitHub Actions cron       | **1 workflow**           | `backend-admin-sanity.yml` — nightly sanity against CI-only cluster |
 | MongoDB TTL indexes       | **DB-engine automation** | Booking `purgeAt` TTL; not Node cron; not in-process                |
 
@@ -35,7 +35,7 @@ The backend is currently deployed as a **Render Free web service**, which sleeps
 
 ## 2) In-Process Worker Inventory
 
-All 7 workers are started in `backend/src/server.js` after `connectDB`. None require a separate deploy target.
+All 8 workers are started in `backend/src/server.js` after `connectDB`. None require a separate deploy target.
 
 ### 2.1 `reset-mail-worker`
 
@@ -135,6 +135,20 @@ All 7 workers are started in `backend/src/server.js` after `connectDB`. None req
 | Readiness status    | **ACTIVE** — `RECEIPT_RETRY_ENABLED=true` and `YESH_INVOICE_ENABLED=true` confirmed in production Render (2026-05-05)                                                                                                                                                          |
 | Key risks           | Per-item catch isolates failures. `running` flag prevents concurrent runs. Share failure does NOT increment `retryCount`. `$exists:false` arms in query handle pre-Phase-2B documents without `nextRetryAt`.                                                                   |
 
+### 2.8 `slug-redirect-release`
+
+| Property            | Value                                                                                                                                                                                                          |
+| ------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Purpose             | Releases expired `SlugRedirect` quarantine records: transitions `status: "redirect_quarantine"` → `"released"` and sets `releasedAt`. Skips `permanentQuarantine: true` and `manualReleaseRequired: true`.     |
+| Interval            | Default: **24 h** (`SLUG_REDIRECT_RELEASE_INTERVAL_MS`); min guard: 1 h — values below 1 h fall back to 24 h default                                                                                           |
+| Boot delay          | 120 s (slot 8, staggered after `receipt-retry` at 105 s)                                                                                                                                                       |
+| Auto-start / gate   | **Gated** — starts only if `SLUG_REDIRECT_RELEASE_ENABLED === "true"`; absent or any other value disables the job                                                                                              |
+| Classification      | Write — `updateMany` aggregate release; no records deleted                                                                                                                                                     |
+| Required env vars   | `SLUG_REDIRECT_RELEASE_ENABLED=true`; optional: `SLUG_REDIRECT_RELEASE_INTERVAL_MS`                                                                                                                            |
+| Sentry monitor slug | None — no Sentry monitor in Phase 2G                                                                                                                                                                           |
+| Readiness status    | **ACTIVE** — `SLUG_REDIRECT_RELEASE_ENABLED=true` confirmed in Render (2026-05-25)                                                                                                                             |
+| Key risks           | `SlugRedirect` is an audit trail — records are never deleted. `running` guard prevents concurrent sweeps. `permanentQuarantine` and `manualReleaseRequired` flags gate records that must not be auto-released. |
+
 ---
 
 ## 3) Render Free Sleeping Runtime — Operational Impact
@@ -208,6 +222,7 @@ Investigate (and consider disabling) only if **any** of the following appear:
 | `trial-lifecycle-reconcile` | trialLifecycleReconcile | No                          | Sentry free plan: 1 alert only |
 | `retention-purge`           | retentionPurge          | No                          | Sentry free plan: 1 alert only |
 | `trial-reminder`            | trialReminderJob        | No                          | Sentry free plan: 1 alert only |
+| `slug-redirect-release`     | slugRedirectRelease     | No                          | No Sentry monitor in Phase 2G  |
 
 **Current readiness**: PARTIAL.
 
@@ -261,18 +276,19 @@ The full billing/Tranzila/YeshInvoice/idempotency/distributed-locks/audit-log/re
 
 ## 9) Production Readiness Table
 
-| Job                         | Schedule source                         | Auto/gated                                               | Classification          | Production impact      | Monitoring               | Current status                                             | Notes                                                                                                  |
-| --------------------------- | --------------------------------------- | -------------------------------------------------------- | ----------------------- | ---------------------- | ------------------------ | ---------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
-| `reset-mail-worker`         | In-process 60 s                         | Auto                                                     | Email                   | Medium                 | Monitor: yes; Alert: no  | Active                                                     | MailJob stuck-processing has no auto-retry                                                             |
-| `trial-cleanup`             | In-process 1 h                          | Auto                                                     | Destructive + Storage   | Medium                 | Monitor: yes; Alert: yes | Active (missed check-ins)                                  | Sleeping runtime causes missed check-ins; candidates: 0 in recent runs                                 |
-| `trial-lifecycle-reconcile` | In-process 6 h                          | Auto                                                     | Write                   | Low                    | Monitor: yes; Alert: no  | Active                                                     | No blocking risks                                                                                      |
-| `retention-purge`           | In-process 6 h                          | Auto                                                     | Destructive + Storage   | High                   | Monitor: yes; Alert: no  | Active                                                     | Auto-enabled; deletes premium card contact data after grace period                                     |
-| `trial-reminder`            | In-process 2 h                          | Gated (`TRIAL_REMINDER_ENABLED`)                         | Email                   | Medium                 | Monitor: yes; Alert: no  | Active (TRIAL_REMINDER_ENABLED=true)                       | Consent/suppression/repeat-send protections verified                                                   |
-| `backend-admin-sanity`      | GitHub Actions cron 02:13 UTC           | Automated                                                | Read (CI-only cluster)  | None (production data) | GitHub Actions           | Active                                                     | CI-only; never touches production Mongo                                                                |
-| `Booking TTL purge`         | MongoDB engine (TTL index on `purgeAt`) | Automatic                                                | Destructive (DB-engine) | Medium                 | None (DB-engine)         | Active                                                     | Not Node cron; DB-engine TTL                                                                           |
-| `billing-reconcile`         | In-process 6 h                          | Auto                                                     | Write                   | High                   | Monitor: yes; Alert: no  | Active                                                     | Expires `User.subscription` when `expiresAt < now`. `BILLING_RECONCILE_INTERVAL_MS` (default 21600000) |
-| `receipt-retry`             | In-process 30 min                       | Gated (`RECEIPT_RETRY_ENABLED` + `YESH_INVOICE_ENABLED`) | Write                   | Medium                 | Monitor: yes; Alert: no  | Active (RECEIPT_RETRY_ENABLED=true, production 2026-05-05) | Max 5 retries; exponential backoff capped at 4h; MAX_BATCH=20 per run                                  |
-| Recurring billing cron      | N/A                                     | N/A                                                      | N/A                     | Critical               | N/A                      | **NOT IMPLEMENTED (deferred)**                             | Do not implement until full billing contour is closed                                                  |
+| Job                         | Schedule source                         | Auto/gated                                               | Classification          | Production impact      | Monitoring                 | Current status                                                     | Notes                                                                                                                  |
+| --------------------------- | --------------------------------------- | -------------------------------------------------------- | ----------------------- | ---------------------- | -------------------------- | ------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------- |
+| `reset-mail-worker`         | In-process 60 s                         | Auto                                                     | Email                   | Medium                 | Monitor: yes; Alert: no    | Active                                                             | MailJob stuck-processing has no auto-retry                                                                             |
+| `trial-cleanup`             | In-process 1 h                          | Auto                                                     | Destructive + Storage   | Medium                 | Monitor: yes; Alert: yes   | Active (missed check-ins)                                          | Sleeping runtime causes missed check-ins; candidates: 0 in recent runs                                                 |
+| `trial-lifecycle-reconcile` | In-process 6 h                          | Auto                                                     | Write                   | Low                    | Monitor: yes; Alert: no    | Active                                                             | No blocking risks                                                                                                      |
+| `retention-purge`           | In-process 6 h                          | Auto                                                     | Destructive + Storage   | High                   | Monitor: yes; Alert: no    | Active                                                             | Auto-enabled; deletes premium card contact data after grace period                                                     |
+| `trial-reminder`            | In-process 2 h                          | Gated (`TRIAL_REMINDER_ENABLED`)                         | Email                   | Medium                 | Monitor: yes; Alert: no    | Active (TRIAL_REMINDER_ENABLED=true)                               | Consent/suppression/repeat-send protections verified                                                                   |
+| `backend-admin-sanity`      | GitHub Actions cron 02:13 UTC           | Automated                                                | Read (CI-only cluster)  | None (production data) | GitHub Actions             | Active                                                             | CI-only; never touches production Mongo                                                                                |
+| `Booking TTL purge`         | MongoDB engine (TTL index on `purgeAt`) | Automatic                                                | Destructive (DB-engine) | Medium                 | None (DB-engine)           | Active                                                             | Not Node cron; DB-engine TTL                                                                                           |
+| `billing-reconcile`         | In-process 6 h                          | Auto                                                     | Write                   | High                   | Monitor: yes; Alert: no    | Active                                                             | Expires `User.subscription` when `expiresAt < now`. `BILLING_RECONCILE_INTERVAL_MS` (default 21600000)                 |
+| `receipt-retry`             | In-process 30 min                       | Gated (`RECEIPT_RETRY_ENABLED` + `YESH_INVOICE_ENABLED`) | Write                   | Medium                 | Monitor: yes; Alert: no    | Active (RECEIPT_RETRY_ENABLED=true, production 2026-05-05)         | Max 5 retries; exponential backoff capped at 4h; MAX_BATCH=20 per run                                                  |
+| `slug-redirect-release`     | In-process 24 h                         | Gated (`SLUG_REDIRECT_RELEASE_ENABLED`)                  | Write                   | Low                    | None (no monitor Phase 2G) | Active (SLUG_REDIRECT_RELEASE_ENABLED=true, production 2026-05-25) | Releases expired quarantine records; no deletes; `permanentQuarantine` / `manualReleaseRequired` flags gate exceptions |
+| Recurring billing cron      | N/A                                     | N/A                                                      | N/A                     | Critical               | N/A                        | **NOT IMPLEMENTED (deferred)**                                     | Do not implement until full billing contour is closed                                                                  |
 
 ---
 
@@ -280,16 +296,17 @@ The full billing/Tranzila/YeshInvoice/idempotency/distributed-locks/audit-log/re
 
 Before relying on scheduled jobs for production SLAs, all of the following must be resolved:
 
-| Requirement                      | Status                    | Action                                                                                                          |
-| -------------------------------- | ------------------------- | --------------------------------------------------------------------------------------------------------------- |
-| Always-on backend                | ❌ Render Free / sleeping | Upgrade to paid always-on instance OR migrate jobs to Render Cron Jobs / Background Workers                     |
-| Sentry alert coverage            | ❌ Partial (1/5 workers)  | Upgrade Sentry plan or adopt alternative alerting for all 5 monitor slugs                                       |
-| CI / prod secret separation      | ✅ Confirmed              | `MONGO_URI_DRIFT_CHECK` ≠ production. Unused `MONGO_URI` GitHub secret should be removed in a dedicated cleanup |
-| `retention-purge` sign-off       | ✅ Running                | No additional sign-off required for current scope                                                               |
-| `trial-cleanup` investigation    | ⚠️ Monitor                | Investigate only if exception stack or failed logs appear; do not disable for missed check-ins alone            |
-| `trial-reminder` sign-off        | ✅ Active                 | Owner confirmed `TRIAL_REMINDER_ENABLED=true`; consent/suppression/repeat-send protections verified             |
-| Recurring billing cron           | ❌ Deferred               | Do not implement until full billing contour is designed and signed off                                          |
-| Account inactivity deletion cron | ❌ Not implemented        | Do not enable destructive account inactivity automation without explicit sign-off and a complete runbook        |
+| Requirement                      | Status                    | Action                                                                                                                                                                                                                                                                                                       |
+| -------------------------------- | ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Always-on backend                | ❌ Render Free / sleeping | Upgrade to paid always-on instance OR migrate jobs to Render Cron Jobs / Background Workers                                                                                                                                                                                                                  |
+| Sentry alert coverage            | ❌ Partial (1/5 workers)  | Upgrade Sentry plan or adopt alternative alerting for all 5 monitor slugs                                                                                                                                                                                                                                    |
+| CI / prod secret separation      | ✅ Confirmed              | `MONGO_URI_DRIFT_CHECK` ≠ production. Unused `MONGO_URI` GitHub secret should be removed in a dedicated cleanup                                                                                                                                                                                              |
+| `retention-purge` sign-off       | ✅ Running                | No additional sign-off required for current scope                                                                                                                                                                                                                                                            |
+| `trial-cleanup` investigation    | ⚠️ Monitor                | Investigate only if exception stack or failed logs appear; do not disable for missed check-ins alone                                                                                                                                                                                                         |
+| `trial-reminder` sign-off        | ✅ Active                 | Owner confirmed `TRIAL_REMINDER_ENABLED=true`; consent/suppression/repeat-send protections verified                                                                                                                                                                                                          |
+| Recurring billing cron           | ❌ Deferred               | Do not implement until full billing contour is designed and signed off                                                                                                                                                                                                                                       |
+| Account inactivity deletion cron | ❌ Not implemented        | Do not enable destructive account inactivity automation without explicit sign-off and a complete runbook                                                                                                                                                                                                     |
+| `slug-redirect-release` rollout  | ✅ Active                 | Deploy with `SLUG_REDIRECT_RELEASE_ENABLED` absent/false first; run `npm run slug-redirect:release:dry-run`; review `candidateCount`; then set `SLUG_REDIRECT_RELEASE_ENABLED=true` in Render and redeploy. Do not set `SLUG_REDIRECT_RELEASE_INTERVAL_MS` unless intentionally overriding the 24 h default. |
 
 ---
 

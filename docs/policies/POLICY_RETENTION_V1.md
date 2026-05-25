@@ -136,7 +136,9 @@ Every inactivity-cleanup job or script must support a dry-run mode (log-only wit
 
 **Important:** `Card.status` must be re-confirmed as `"draft"` at the moment of deletion (not just at warning time). If the user publishes their card between warning and deletion, the card now falls under B4 and deletion must be aborted.
 
-**Fate:** Warning email 14 days before scheduled deletion. Hard delete of `User` document + draft card estate via `deleteCardCascade` + `Card.deleteOne` + Supabase media cleanup. No tombstone.
+**Fate:** Warning email 14 days before scheduled deletion. Hard delete of `User` document + draft card estate via `deleteCardCascade` + `Card.deleteOne` + Supabase media cleanup. No `DeletedEmailBlock` tombstone.
+
+**Slug quarantine tombstone:** If the deleted card had a user-owned claimed personal slug, `createCardSlugTombstone` creates a `SlugRedirect` record (`status: "redirect_quarantine"`, `reason: "card_deleted"` or `"trial_expired"`, `targetCardId: null`, `expiresAt: now+30d`). The slug returns a plain 404 during the quarantine window and is not an HTTP redirect. After `expiresAt`, the release sweep job transitions the record to `status: "released"`, making the slug claimable again. `SlugRedirect` records are **never deleted** — they are a permanent audit trail. This slug tombstone is distinct from `DeletedEmailBlock` and must not be confused with it. Org-card slug lifecycle on retention deletion is a separate future contour, not in V1.
 
 ---
 
