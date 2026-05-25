@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { getCardBySlug, getCompanyCardBySlug } from "../services/cards.service";
 import { trackView } from "../services/analytics.client";
 import { getCardConsentState } from "../utils/cookieConsent";
@@ -105,6 +105,23 @@ function normalizeAbsoluteUrl(origin, value) {
     return `${originTrimmed}/${rawValue}`;
 }
 
+const SLUG_MOVED_PERSONAL_PATH_RE = /^\/card\/[a-z0-9]+(?:-[a-z0-9]+)*$/;
+const SLUG_MOVED_ORG_PATH_RE =
+    /^\/c\/[a-z0-9]+(?:-[a-z0-9]+)*\/[a-z0-9]+(?:-[a-z0-9]+)*$/;
+
+function isSafeSlugMovedRedirectPath(value) {
+    if (typeof value !== "string") return false;
+    if (!value.startsWith("/") || value.startsWith("//")) return false;
+    if (value.includes("\\") || value.includes("\n") || value.includes("\r")) {
+        return false;
+    }
+
+    return (
+        SLUG_MOVED_PERSONAL_PATH_RE.test(value) ||
+        SLUG_MOVED_ORG_PATH_RE.test(value)
+    );
+}
+
 function PublicCard() {
     const { slug, orgSlug } = useParams();
     const [card, setCard] = useState(null);
@@ -112,6 +129,8 @@ function PublicCard() {
     const [error, setError] = useState(null);
     const [errorStatus, setErrorStatus] = useState(null);
     const trackedRef = useRef(false);
+    const navigate = useNavigate();
+    const slugMovedNavigatedRef = useRef(false);
     const [cardConsentAllowed, setCardConsentAllowed] = useState(
         () => getCardConsentState()?.ownerTrackingAllowed ?? false,
     );
@@ -124,9 +143,29 @@ function PublicCard() {
                 const data = orgSlug
                     ? await getCompanyCardBySlug(orgSlug, slug)
                     : await getCardBySlug(slug);
+                slugMovedNavigatedRef.current = false;
                 setCard(data);
             } catch (err) {
                 const status = err?.response?.status;
+                const data = err?.response?.data;
+
+                if (status === 404 && data?.code === "SLUG_MOVED") {
+                    const redirectTo = data?.redirectTo;
+                    const currentPath = orgSlug
+                        ? `/c/${orgSlug}/${slug}`
+                        : `/card/${slug}`;
+
+                    if (
+                        isSafeSlugMovedRedirectPath(redirectTo) &&
+                        redirectTo !== currentPath &&
+                        !slugMovedNavigatedRef.current
+                    ) {
+                        slugMovedNavigatedRef.current = true;
+                        navigate(redirectTo, { replace: true });
+                        return;
+                    }
+                }
+
                 if (status === 410) setError("הניסיון הסתיים");
                 else setError("כרטיס לא נמצא");
                 setErrorStatus(typeof status === "number" ? status : null);
@@ -136,7 +175,7 @@ function PublicCard() {
         }
 
         loadCard();
-    }, [slug, orgSlug]);
+    }, [slug, orgSlug, navigate]);
 
     useEffect(() => {
         if (!card?.slug || trackedRef.current) return;
