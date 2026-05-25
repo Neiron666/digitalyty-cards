@@ -2292,6 +2292,106 @@ function getRequesterUserId(req) {
     return req.user?.id || req.userId || req.user?.userId || null;
 }
 
+/**
+ * resolveSlugRedirectDTO — Phase 2C read-only helper.
+ *
+ * Returns a SLUG_MOVED DTO when a quarantined slug has an active redirect to a
+ * publicly accessible target card, or null in all other cases.
+ *
+ * IMPORTANT: read-only — makes no writes, no releases, no status updates.
+ * Routing source of truth is the live Card record resolved via targetCardId.
+ * targetSlugSnapshot is audit-only and is never used here.
+ *
+ * @param {"card"|"orgCard"} routeType
+ * @param {mongoose.Types.ObjectId|string} orgId - personalOrgId for "card", org._id for "orgCard"
+ * @param {string} slug - the old/quarantined slug being requested
+ * @param {Date} now
+ * @param {{ org?: object }} [options] - for orgCard: the already-verified active org document
+ * @returns {Promise<{code:string,redirectTo:string,publicPath:string,routeType:string}|null>}
+ */
+async function resolveSlugRedirectDTO(
+    routeType,
+    orgId,
+    slug,
+    now,
+    options = {},
+) {
+    const record = await SlugRedirect.findOne({
+        routeType,
+        orgId,
+        slug,
+        status: "redirect_quarantine",
+    })
+        .select(
+            "targetCardId expiresAt permanentQuarantine manualReleaseRequired",
+        )
+        .lean();
+
+    if (!record) return null;
+
+    // Expiry gate — permanent and manual-release records stay active past expiresAt.
+    const isForever =
+        record.permanentQuarantine === true ||
+        record.manualReleaseRequired === true;
+    if (!isForever && record.expiresAt <= now) return null;
+
+    // No targetCardId means tombstone (deleted/expired card) — no redirect DTO.
+    if (!record.targetCardId) return null;
+
+    // Resolve target from live Card._id — targetSlugSnapshot is audit-only, never routing.
+    const targetCard = await Card.findById(record.targetCardId)
+        .select(
+            "isActive status user anonymousId orgId slug trialEndsAt trialDeleteAt adminTier adminTierUntil billing plan",
+        )
+        .lean();
+
+    if (!targetCard) return null;
+    if (!targetCard.isActive) return null;
+    if (targetCard.status !== "published") return null;
+
+    // Defense: anon-only cards must not be publicly resolvable via redirect.
+    if (targetCard.anonymousId && !targetCard.user) return null;
+    if (!targetCard.user) return null;
+
+    // Trial-expired gate — target must be publicly accessible.
+    if (isTrialExpired(targetCard, now) && !isEntitled(targetCard, now))
+        return null;
+
+    let redirectTo;
+
+    if (routeType === "card") {
+        redirectTo = `/card/${targetCard.slug}`;
+    } else {
+        // orgCard: caller has already confirmed org is active — use passed org.
+        const { org } = options;
+        if (!org?._id) return null;
+
+        // Target card must still belong to the same org namespace.
+        if (String(targetCard.orgId) !== String(org._id)) return null;
+
+        // Anti-enumeration: owner membership must still be active.
+        const ownerMember = await OrganizationMember.findOne({
+            orgId: org._id,
+            userId: String(targetCard.user),
+            status: "active",
+        })
+            .select("_id")
+            .lean();
+
+        if (!ownerMember?._id) return null;
+
+        const liveOrgSlug = String(org.slug);
+        redirectTo = `/c/${liveOrgSlug}/${targetCard.slug}`;
+    }
+
+    return {
+        code: "SLUG_MOVED",
+        redirectTo,
+        publicPath: redirectTo,
+        routeType,
+    };
+}
+
 export async function getPreviewCardBySlug(req, res) {
     const requesterUserId = getRequesterUserId(req);
     const requesterAnonymousId =
@@ -2473,6 +2573,16 @@ export async function getCardBySlug(req, res) {
     });
 
     if (!card) {
+        const now = new Date();
+        const slugMovedDto = await resolveSlugRedirectDTO(
+            "card",
+            personalOrgId,
+            String(req.params.slug || "")
+                .trim()
+                .toLowerCase(),
+            now,
+        );
+        if (slugMovedDto) return res.status(404).json(slugMovedDto);
         return res.status(404).json({ message: "Not found" });
     }
 
@@ -2556,6 +2666,15 @@ export async function getCompanyCardByOrgSlugAndSlug(req, res) {
     });
 
     if (!card) {
+        const now = new Date();
+        const slugMovedDto = await resolveSlugRedirectDTO(
+            "orgCard",
+            org._id,
+            slug,
+            now,
+            { org },
+        );
+        if (slugMovedDto) return res.status(404).json(slugMovedDto);
         return res.status(404).json({ message: "Not found" });
     }
 
