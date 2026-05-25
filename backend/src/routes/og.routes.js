@@ -10,6 +10,7 @@ import { resolveOrgEntitlementBilling } from "../utils/orgEntitlement.util.js";
 import { getSiteUrl } from "../utils/siteUrl.util.js";
 import { getPersonalOrgId } from "../utils/personalOrg.util.js";
 import { getPublicUrlForPath } from "../services/supabaseStorage.js";
+import SlugRedirect from "../models/SlugRedirect.model.js";
 
 // Canonical Cardigo OG fallback image — matches seoConstants.js and marketingMeta.config.js SSoT.
 // Keep in sync manually if the path ever changes; do NOT import from frontend modules.
@@ -123,6 +124,71 @@ function buildCardOgMetadata(card, siteUrl) {
 }
 
 const DEFAULT_BLOG_AUTHOR_NAME = "\u05D5\u05DC\u05E0\u05D8\u05D9\u05DF";
+
+/* ── OG redirect resolver ─────────────────────────────────────── */
+
+async function resolveOgRedirectTarget(
+    routeType,
+    orgId,
+    slug,
+    now,
+    options = {},
+) {
+    const record = await SlugRedirect.findOne({
+        routeType,
+        orgId,
+        slug,
+        status: "redirect_quarantine",
+    })
+        .select(
+            "targetCardId expiresAt permanentQuarantine manualReleaseRequired",
+        )
+        .lean();
+
+    if (!record) return null;
+
+    const isForever =
+        record.permanentQuarantine === true ||
+        record.manualReleaseRequired === true;
+    if (!isForever && record.expiresAt <= now) return null;
+
+    if (!record.targetCardId) return null;
+
+    // Load full document — OG rendering needs seo, business, content, design.
+    // Do NOT use a limited visibility-only select (would produce generic fallback OG).
+    const targetCard = await Card.findById(record.targetCardId).lean();
+
+    if (!targetCard) return null;
+    if (!targetCard.isActive) return null;
+    if (targetCard.status !== "published") return null;
+    // Defense: anon-only cards must not be reachable via redirect.
+    if (targetCard.anonymousId && !targetCard.user) return null;
+    if (!targetCard.user) return null;
+
+    if (isTrialExpired(targetCard, now) && !isEntitled(targetCard, now))
+        return null;
+
+    if (routeType === "orgCard") {
+        const { org } = options;
+        if (!org?._id) return null;
+
+        // Target card must still belong to the same org namespace.
+        if (String(targetCard.orgId) !== String(org._id)) return null;
+
+        // Anti-enumeration: owner membership must still be active.
+        const ownerMember = await OrganizationMember.findOne({
+            orgId: org._id,
+            userId: String(targetCard.user),
+            status: "active",
+        })
+            .select("_id")
+            .lean();
+
+        if (!ownerMember?._id) return null;
+    }
+
+    return { targetCard };
+}
 
 /* ── Blog OG ──────────────────────────────────────────────────── */
 
@@ -346,9 +412,13 @@ ${articleMeta ? "\n" + articleMeta : ""}
 router.get("/og/card/:slug", async (req, res) => {
     const siteUrl = getSiteUrl();
     const personalOrgId = await getPersonalOrgId();
+    const slug = String(req.params.slug || "")
+        .trim()
+        .toLowerCase();
+    const now = new Date();
 
-    const card = await Card.findOne({
-        slug: req.params.slug,
+    let card = await Card.findOne({
+        slug,
         isActive: true,
         status: "published",
         user: { $exists: true, $ne: null },
@@ -360,10 +430,16 @@ router.get("/og/card/:slug", async (req, res) => {
     });
 
     if (!card) {
-        return res.status(404).send("Not found");
+        const ogRedirect = await resolveOgRedirectTarget(
+            "card",
+            personalOrgId,
+            slug,
+            now,
+        );
+        if (!ogRedirect) return res.status(404).send("Not found");
+        card = ogRedirect.targetCard;
     }
 
-    const now = new Date();
     if (isTrialExpired(card, now) && !isEntitled(card, now)) {
         return res.status(410).send("TRIAL_EXPIRED_PUBLIC");
     }
@@ -446,7 +522,9 @@ router.get("/og/c/:orgSlug/:slug", async (req, res) => {
         return res.status(404).send("Not found");
     }
 
-    const card = await Card.findOne({
+    const now = new Date();
+
+    let card = await Card.findOne({
         orgId: org._id,
         slug,
         isActive: true,
@@ -455,7 +533,15 @@ router.get("/og/c/:orgSlug/:slug", async (req, res) => {
     });
 
     if (!card) {
-        return res.status(404).send("Not found");
+        const ogRedirect = await resolveOgRedirectTarget(
+            "orgCard",
+            org._id,
+            slug,
+            now,
+            { org },
+        );
+        if (!ogRedirect) return res.status(404).send("Not found");
+        card = ogRedirect.targetCard;
     }
 
     // Anti-enumeration: revoked members must not be publicly resolvable.
@@ -472,7 +558,6 @@ router.get("/og/c/:orgSlug/:slug", async (req, res) => {
         return res.status(404).send("Not found");
     }
 
-    const now = new Date();
     if (isTrialExpired(card, now) && !isEntitled(card, now)) {
         return res.status(410).send("TRIAL_EXPIRED_PUBLIC");
     }
