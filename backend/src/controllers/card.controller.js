@@ -55,6 +55,7 @@ import {
     CURRENT_PRIVACY_VERSION,
 } from "../utils/consentVersions.js";
 import { isUserTrialEligible } from "../config/trial.js";
+import SlugRedirect from "../models/SlugRedirect.model.js";
 
 function resolveCleanupBucketsForCard(card) {
     const isAnonymousOwned = !card?.user && Boolean(card?.anonymousId);
@@ -303,7 +304,7 @@ function isSystemGeneratedDescription(value, card) {
 
 async function generateUniqueSlug(
     baseSlug,
-    { tenantKey, orgId, includeNullOrgFallback = false } = {},
+    { tenantKey, orgId, includeNullOrgFallback = false, routeType = null } = {},
 ) {
     let candidate = baseSlug;
     let counter = 2;
@@ -325,9 +326,30 @@ async function generateUniqueSlug(
         return tk ? { tenantKey: tk, slug } : { slug };
     };
 
-    while (await Card.exists(queryFor(candidate))) {
-        candidate = `${baseSlug}-${counter}`;
-        counter += 1;
+    let collision = true;
+    while (collision) {
+        // eslint-disable-next-line no-await-in-loop
+        if (await Card.exists(queryFor(candidate))) {
+            candidate = `${baseSlug}-${counter}`;
+            counter += 1;
+        } else if (routeType && orgId) {
+            // eslint-disable-next-line no-await-in-loop
+            if (
+                await isSlugQuarantinedForGeneration(
+                    routeType,
+                    orgId,
+                    candidate,
+                    new Date(),
+                )
+            ) {
+                candidate = `${baseSlug}-${counter}`;
+                counter += 1;
+            } else {
+                collision = false;
+            }
+        } else {
+            collision = false;
+        }
     }
 
     return candidate;
@@ -358,6 +380,7 @@ async function resolveCreateSlug(
         orgId,
         includeNullOrgFallback = false,
         allowRequestedSlug = true,
+        routeType = null,
     } = {},
 ) {
     const requested =
@@ -379,6 +402,7 @@ async function resolveCreateSlug(
                     tenantKey,
                     orgId,
                     includeNullOrgFallback,
+                    routeType,
                 });
         }
         return generateUniqueRandomSlug(12);
@@ -398,6 +422,7 @@ async function resolveCreateSlug(
         tenantKey,
         orgId,
         includeNullOrgFallback,
+        routeType,
     });
 }
 
@@ -1154,6 +1179,7 @@ export async function createCard(req, res) {
             orgId: personalOrgId,
             includeNullOrgFallback: true,
             allowRequestedSlug: true,
+            routeType: "card",
         });
 
         const computedSeo = buildSeo(data);
@@ -1340,6 +1366,7 @@ export async function createCard(req, res) {
         orgId: personalOrgId,
         includeNullOrgFallback: true,
         allowRequestedSlug: false,
+        routeType: "card",
     });
 
     const computedSeo = buildSeo(data);
@@ -2779,6 +2806,111 @@ const RESERVED_SLUGS = new Set(
     ].map((s) => String(s).toLowerCase()),
 );
 
+// ---------------------------------------------------------------------------
+// Phase 2B: Slug-redirect quarantine constants
+// ---------------------------------------------------------------------------
+const SLUG_QUARANTINE_WINDOW_MS = 30 * 24 * 60 * 60 * 1000;
+const SLUG_REDIRECT_SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+
+// ---------------------------------------------------------------------------
+// Phase 2B: Private slug-quarantine helpers
+// ---------------------------------------------------------------------------
+
+async function releaseExpiredQuarantine(
+    routeType,
+    orgId,
+    slug,
+    now,
+    options = {},
+) {
+    const { session } = options;
+    const updateOptions = session ? { session } : {};
+    await SlugRedirect.updateMany(
+        {
+            routeType,
+            orgId,
+            slug,
+            status: "redirect_quarantine",
+            permanentQuarantine: { $ne: true },
+            manualReleaseRequired: { $ne: true },
+            expiresAt: { $lte: now },
+        },
+        { $set: { status: "released", releasedAt: now } },
+        updateOptions,
+    );
+}
+
+async function findBlockingQuarantine(routeType, orgId, slug) {
+    return SlugRedirect.findOne(
+        { routeType, orgId, slug, status: "redirect_quarantine" },
+        { _id: 1, routeType: 1, slug: 1, expiresAt: 1 },
+    ).lean();
+}
+
+async function ensureSlugNotQuarantined(routeType, orgId, slug, now) {
+    await releaseExpiredQuarantine(routeType, orgId, slug, now);
+    const blocking = await findBlockingQuarantine(routeType, orgId, slug);
+    if (blocking) {
+        const err = new Error("Slug already in use");
+        err.code = "SLUG_TAKEN";
+        throw err;
+    }
+}
+
+async function isSlugQuarantinedForGeneration(routeType, orgId, slug, now) {
+    await releaseExpiredQuarantine(routeType, orgId, slug, now);
+    const blocking = await findBlockingQuarantine(routeType, orgId, slug);
+    return Boolean(blocking);
+}
+
+async function maybeCreateSlugRedirectForSlugChange({
+    routeType,
+    orgId,
+    oldSlug,
+    nextSlug,
+    sourceCardId,
+    targetCardId,
+    targetOrgSlugSnapshot,
+    createdBy,
+    now,
+    session,
+}) {
+    if (!oldSlug || typeof oldSlug !== "string") return;
+    if (!SLUG_REDIRECT_SLUG_PATTERN.test(oldSlug)) {
+        console.warn(
+            "[cards] maybeCreateSlugRedirectForSlugChange: oldSlug does not match pattern, skipping quarantine",
+            {
+                routeType,
+                oldSlug,
+                cardId: String(sourceCardId).slice(-6),
+                reason: "legacy_random_slug",
+            },
+        );
+        return;
+    }
+    await releaseExpiredQuarantine(routeType, orgId, oldSlug, now, { session });
+    await SlugRedirect.create(
+        [
+            {
+                routeType,
+                orgId,
+                slug: oldSlug,
+                sourceCardId,
+                targetCardId,
+                targetSlugSnapshot: nextSlug,
+                targetOrgSlugSnapshot,
+                status: "redirect_quarantine",
+                reason: "slug_change",
+                expiresAt: new Date(now.getTime() + SLUG_QUARANTINE_WINDOW_MS),
+                permanentQuarantine: false,
+                manualReleaseRequired: false,
+                createdBy,
+            },
+        ],
+        { session },
+    );
+}
+
 export async function updateSlug(req, res) {
     const actor = resolveOwnerContext(req);
     if (!actor) return res.status(401).json({ message: "Unauthorized" });
@@ -2833,17 +2965,26 @@ export async function updateSlug(req, res) {
             ? card.tenantKey
             : DEFAULT_TENANT_KEY;
     const orgIdToSet = card.orgId || personalOrgId;
+    const orgIdForRedirect = new mongoose.Types.ObjectId(String(orgIdToSet));
+    const oldSlug = String(card.slug || "");
 
     if (String(card.slug || "") === nextSlug) {
         return res.json({ slug: nextSlug });
     }
 
+    let session = null;
     try {
         const now = new Date();
         const monthKey = toIsrael(now).toFormat("yyyy-LL");
 
+        // Quarantine pre-check: ensure nextSlug is not under active quarantine.
+        await ensureSlugNotQuarantined("card", orgIdForRedirect, nextSlug, now);
+
+        session = await mongoose.startSession();
+        session.startTransaction();
+
         // Attempt 1: same-month increment when under limit
-        const updatedSameMonth = await Card.findOneAndUpdate(
+        let updatedCard = await Card.findOneAndUpdate(
             {
                 _id: card._id,
                 isActive: true,
@@ -2861,49 +3002,70 @@ export async function updateSlug(req, res) {
                 },
                 $inc: { "slugChange.count": 1 },
             },
-            { new: true, runValidators: true },
+            { new: true, runValidators: true, session },
         );
-
-        if (updatedSameMonth) {
-            return res.json({ slug: updatedSameMonth.slug });
-        }
 
         // Attempt 2: new month (or uninitialized) => reset count to 1
-        const updatedNewMonth = await Card.findOneAndUpdate(
-            {
-                _id: card._id,
-                isActive: true,
-                status: "draft",
-                slug: { $ne: nextSlug },
-                $or: [
-                    { "slugChange.monthKey": { $exists: false } },
-                    { "slugChange.monthKey": null },
-                    { "slugChange.monthKey": { $ne: monthKey } },
-                ],
-            },
-            {
-                $set: {
-                    slug: nextSlug,
-                    tenantKey,
-                    orgId: orgIdToSet,
-                    "slugChange.monthKey": monthKey,
-                    "slugChange.count": 1,
-                    "slugChange.updatedAt": now,
+        if (!updatedCard) {
+            updatedCard = await Card.findOneAndUpdate(
+                {
+                    _id: card._id,
+                    isActive: true,
+                    status: "draft",
+                    slug: { $ne: nextSlug },
+                    $or: [
+                        { "slugChange.monthKey": { $exists: false } },
+                        { "slugChange.monthKey": null },
+                        { "slugChange.monthKey": { $ne: monthKey } },
+                    ],
                 },
-            },
-            { new: true, runValidators: true },
-        );
-
-        if (updatedNewMonth) {
-            return res.json({ slug: updatedNewMonth.slug });
+                {
+                    $set: {
+                        slug: nextSlug,
+                        tenantKey,
+                        orgId: orgIdToSet,
+                        "slugChange.monthKey": monthKey,
+                        "slugChange.count": 1,
+                        "slugChange.updatedAt": now,
+                    },
+                },
+                { new: true, runValidators: true, session },
+            );
         }
 
-        return res.status(429).json({
-            code: "SLUG_CHANGE_LIMIT",
-            message: "Slug can be changed at most 2 times per month",
+        if (!updatedCard) {
+            await session.abortTransaction();
+            return res.status(429).json({
+                code: "SLUG_CHANGE_LIMIT",
+                message: "Slug can be changed at most 2 times per month",
+            });
+        }
+
+        await maybeCreateSlugRedirectForSlugChange({
+            routeType: "card",
+            orgId: orgIdForRedirect,
+            oldSlug,
+            nextSlug,
+            sourceCardId: card._id,
+            targetCardId: updatedCard._id,
+            targetOrgSlugSnapshot: null,
+            createdBy: new mongoose.Types.ObjectId(String(actor.id)),
+            now,
+            session,
         });
+
+        await session.commitTransaction();
+        return res.json({ slug: updatedCard.slug });
     } catch (err) {
+        if (session) {
+            try {
+                await session.abortTransaction();
+            } catch (_) {
+                /* ignore */
+            }
+        }
         if (
+            err?.code === "SLUG_TAKEN" ||
             err?.code === 11000 ||
             (err?.name === "MongoServerError" &&
                 String(err?.message || "").includes("E11000"))
@@ -2918,6 +3080,14 @@ export async function updateSlug(req, res) {
             error: err?.message || err,
         });
         return res.status(500).json({ message: "Failed to update slug" });
+    } finally {
+        if (session) {
+            try {
+                await session.endSession();
+            } catch (_) {
+                /* ignore */
+            }
+        }
     }
 }
 
@@ -2987,6 +3157,7 @@ export async function updateMyOrgCardSlug(req, res) {
             : DEFAULT_TENANT_KEY;
 
     const canonicalOrgSlug = org?.slug ? String(org.slug) : orgSlug;
+    const oldSlug = String(card.slug || "");
 
     if (String(card.slug || "") === nextSlug) {
         return res.json({
@@ -2996,12 +3167,19 @@ export async function updateMyOrgCardSlug(req, res) {
         });
     }
 
+    let session = null;
     try {
         const now = new Date();
         const monthKey = toIsrael(now).toFormat("yyyy-LL");
 
+        // Quarantine pre-check: ensure nextSlug is not under active quarantine.
+        await ensureSlugNotQuarantined("orgCard", org._id, nextSlug, now);
+
+        session = await mongoose.startSession();
+        session.startTransaction();
+
         // Attempt 1: same-month increment when under limit
-        const updatedSameMonth = await Card.findOneAndUpdate(
+        let updatedCard = await Card.findOneAndUpdate(
             {
                 _id: card._id,
                 orgId: org._id,
@@ -3020,60 +3198,76 @@ export async function updateMyOrgCardSlug(req, res) {
                 },
                 $inc: { "slugChange.count": 1 },
             },
-            { new: true, runValidators: true },
+            { new: true, runValidators: true, session },
         );
-
-        if (updatedSameMonth) {
-            const s = String(updatedSameMonth.slug || nextSlug);
-            return res.json({
-                slug: s,
-                publicPath: `/c/${canonicalOrgSlug}/${s}`,
-                ogPath: `/og/c/${canonicalOrgSlug}/${s}`,
-            });
-        }
 
         // Attempt 2: new month (or uninitialized) => reset count to 1
-        const updatedNewMonth = await Card.findOneAndUpdate(
-            {
-                _id: card._id,
-                orgId: org._id,
-                user: new mongoose.Types.ObjectId(userId),
-                isActive: true,
-                status: "draft",
-                slug: { $ne: nextSlug },
-                $or: [
-                    { "slugChange.monthKey": { $exists: false } },
-                    { "slugChange.monthKey": null },
-                    { "slugChange.monthKey": { $ne: monthKey } },
-                ],
-            },
-            {
-                $set: {
-                    slug: nextSlug,
-                    tenantKey,
-                    "slugChange.monthKey": monthKey,
-                    "slugChange.count": 1,
-                    "slugChange.updatedAt": now,
+        if (!updatedCard) {
+            updatedCard = await Card.findOneAndUpdate(
+                {
+                    _id: card._id,
+                    orgId: org._id,
+                    user: new mongoose.Types.ObjectId(userId),
+                    isActive: true,
+                    status: "draft",
+                    slug: { $ne: nextSlug },
+                    $or: [
+                        { "slugChange.monthKey": { $exists: false } },
+                        { "slugChange.monthKey": null },
+                        { "slugChange.monthKey": { $ne: monthKey } },
+                    ],
                 },
-            },
-            { new: true, runValidators: true },
-        );
+                {
+                    $set: {
+                        slug: nextSlug,
+                        tenantKey,
+                        "slugChange.monthKey": monthKey,
+                        "slugChange.count": 1,
+                        "slugChange.updatedAt": now,
+                    },
+                },
+                { new: true, runValidators: true, session },
+            );
+        }
 
-        if (updatedNewMonth) {
-            const s = String(updatedNewMonth.slug || nextSlug);
-            return res.json({
-                slug: s,
-                publicPath: `/c/${canonicalOrgSlug}/${s}`,
-                ogPath: `/og/c/${canonicalOrgSlug}/${s}`,
+        if (!updatedCard) {
+            await session.abortTransaction();
+            return res.status(429).json({
+                code: "SLUG_CHANGE_LIMIT",
+                message: "Slug can be changed at most 2 times per month",
             });
         }
 
-        return res.status(429).json({
-            code: "SLUG_CHANGE_LIMIT",
-            message: "Slug can be changed at most 2 times per month",
+        await maybeCreateSlugRedirectForSlugChange({
+            routeType: "orgCard",
+            orgId: org._id,
+            oldSlug,
+            nextSlug,
+            sourceCardId: card._id,
+            targetCardId: updatedCard._id,
+            targetOrgSlugSnapshot: canonicalOrgSlug,
+            createdBy: new mongoose.Types.ObjectId(String(userId)),
+            now,
+            session,
+        });
+
+        await session.commitTransaction();
+        const s = String(updatedCard.slug || nextSlug);
+        return res.json({
+            slug: s,
+            publicPath: `/c/${canonicalOrgSlug}/${s}`,
+            ogPath: `/og/c/${canonicalOrgSlug}/${s}`,
         });
     } catch (err) {
+        if (session) {
+            try {
+                await session.abortTransaction();
+            } catch (_) {
+                /* ignore */
+            }
+        }
         if (
+            err?.code === "SLUG_TAKEN" ||
             err?.code === 11000 ||
             (err?.name === "MongoServerError" &&
                 String(err?.message || "").includes("E11000"))
@@ -3089,6 +3283,14 @@ export async function updateMyOrgCardSlug(req, res) {
             error: err?.message || err,
         });
         return res.status(500).json({ message: "Failed to update slug" });
+    } finally {
+        if (session) {
+            try {
+                await session.endSession();
+            } catch (_) {
+                /* ignore */
+            }
+        }
     }
 }
 
