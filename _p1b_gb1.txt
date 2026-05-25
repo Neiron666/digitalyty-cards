@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <!-- Google Tag Manager -->
+  <script>(function (w, d, s, l, i) {
+      w[l] = w[l] || []; w[l].push({
+        'gtm.start':
+          new Date().getTime(), event: 'gtm.js'
+      }); var f = d.getElementsByTagName(s)[0],
+        j = d.createElement(s), dl = l != 'dataLayer' ? '&l=' + l : ''; j.async = true; j.src =
+          'https://www.googletagmanager.com/gtm.js?id=' + i + dl; f.parentNode.insertBefore(j, f);
+    })(window, document, 'script', 'dataLayer', 'GTM-W6Q8DP6R');</script>
+  <!-- End Google Tag Manager -->
+  <meta name="theme-color" content="#020617">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="icon" href="/favicon.ico" sizes="48x48">
+  <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/icons/favicon-16.png">
+  <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
+  <link rel="icon" type="image/png" sizes="512x512" href="/icons/icon-512.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <title>כרטיס ביקור דיגיטלי חינם לעסק | Cardigo</title>
+  <!-- Static crawler fallback for Facebook/WhatsApp. Keep aligned with Home.jsx SeoHelmet homepage metadata. -->
+  <meta name="description" content="צרו כרטיס ביקור דיגיטלי חינם עם Cardigo - עמוד עסקי מקצועי עם וואטסאפ, פרטי קשר, שירותים, תמונות וקישור לשיתוף." />
+
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  <script type="module" crossorigin src="/assets/index-B13o5uMs.js"></script>
+  <link rel="modulepreload" crossorigin href="/assets/vendor-CBNGrygU.js">
+  <link rel="stylesheet" crossorigin href="/assets/index-CaD9Dftr.css">
+<link rel="canonical" href="https://cardigo.co.il/card/cardigo" />
+<meta property="og:type" content="website" />
+<meta property="og:site_name" content="Cardigo" />
+<meta property="og:locale" content="he_IL" />
+<meta property="og:title" content="כרטיס ביקור דיגיטלי חינם לעסק | Cardigo" />
+<meta property="og:description" content="צרו כרטיס ביקור דיגיטלי חינם עם Cardigo - עמוד עסקי מקצועי עם וואטסאפ, פרטי קשר, שירותים, תמונות וקישור לשיתוף." />
+<meta property="og:image" content="https://bhoamjrocjvjzbkqmlwi.supabase.co/storage/v1/object/public/cards-images/cards/user/69f83ab4643fac2d9a41d469/69f83ace643fac2d9a41d48e/background/755912bc-04fb-4cff-9922-f1caa026da43.webp" />
+<meta property="og:image:secure_url" content="https://bhoamjrocjvjzbkqmlwi.supabase.co/storage/v1/object/public/cards-images/cards/user/69f83ab4643fac2d9a41d469/69f83ace643fac2d9a41d48e/background/755912bc-04fb-4cff-9922-f1caa026da43.webp" />
+<meta property="og:image:alt" content="כרטיס ביקור דיגיטלי חינם – Cardigo" />
+<meta property="og:url" content="https://cardigo.co.il/card/kartis-bikur-digitali-hinam" />
+<meta name="twitter:image:alt" content="כרטיס ביקור דיגיטלי חינם – Cardigo" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="כרטיס ביקור דיגיטלי חינם לעסק | Cardigo" />
+<meta name="twitter:description" content="צרו כרטיס ביקור דיגיטלי חינם עם Cardigo - עמוד עסקי מקצועי עם וואטסאפ, פרטי קשר, שירותים, תמונות וקישור לשיתוף." />
+<meta name="twitter:image" content="https://bhoamjrocjvjzbkqmlwi.supabase.co/storage/v1/object/public/cards-images/cards/user/69f83ab4643fac2d9a41d469/69f83ace643fac2d9a41d48e/background/755912bc-04fb-4cff-9922-f1caa026da43.webp" />
+</head>
+
+<body>
+  <!-- Google Tag Manager (noscript) -->
+  <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-W6Q8DP6R" height="0" width="0"
+      style="display:none;visibility:hidden"></iframe></noscript>
+  <!-- End Google Tag Manager (noscript) -->
+  <!-- Hidden Netlify form for deploy-time detection (SPA) -->
+  <form hidden method='post' name='contact'><input type='hidden' name='form-name' value='contact' />
+    <input name="bot-field" />
+    <input name="fullName" />
+    <input name="phone" />
+    <input name="email" />
+    <select name="subject">
+      <option value=""></option>
+    </select>
+    <textarea name="message"></textarea>
+    <input name="consent" type="checkbox" />
+  </form>
+
+  <div id="root"></div>
+  <script src="/accessibility-widget-embed.js" defer></script>
+</body>
+
+
+
+</html>

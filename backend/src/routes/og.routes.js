@@ -382,9 +382,10 @@ router.get("/og/card/:slug", async (req, res) => {
     const robotsMeta = robotsValue
         ? `    <meta name="robots" content="${escapeHtml(robotsValue)}" />`
         : "";
-    const canonicalUrl = isValidAbsoluteHttpUrl(card.seo?.canonicalUrl)
-        ? card.seo.canonicalUrl.trim()
-        : publicUrl;
+    // Card-route canonical is always self publicUrl.
+    // seo.canonicalUrl is ignored: same-origin and same-domain cross-card canonicals
+    // are both forbidden — the only valid canonical for a card route is the card's own URL.
+    const canonicalUrl = publicUrl;
 
     const { title, description, image, imageMetaHtml } = buildCardOgMetadata(
         card,
@@ -491,9 +492,10 @@ router.get("/og/c/:orgSlug/:slug", async (req, res) => {
     const robotsMeta = robotsValue
         ? `    <meta name="robots" content="${escapeHtml(robotsValue)}" />`
         : "";
-    const canonicalUrl = isValidAbsoluteHttpUrl(card.seo?.canonicalUrl)
-        ? card.seo.canonicalUrl.trim()
-        : publicUrl;
+    // Card-route canonical is always self publicUrl.
+    // seo.canonicalUrl is ignored: same-origin and same-domain cross-card canonicals
+    // are both forbidden — the only valid canonical for a card route is the card's own URL.
+    const canonicalUrl = publicUrl;
 
     const { title, description, image, imageMetaHtml } = buildCardOgMetadata(
         card,

@@ -647,8 +647,14 @@ function sanitizeWritablePatch(raw) {
     // seo.headSnippets is a dormant internal field frozen for client writes.
     // Stored DB values are preserved via the existingSeo spread in the PATCH merge;
     // only client-supplied mutations are blocked here.
+    //
+    // seo.canonicalUrl is stripped here (Step 1 of 2) so it never reaches the
+    // ADVANCED_SEO_KEYS gate below and does not cause false premium-gating
+    // for free users who save with only basic SEO fields.
+    // Step 2 (null after seo merge) neutralizes any existing dirty DB value.
     if (patch.seo && typeof patch.seo === "object") {
         delete patch.seo.headSnippets;
+        delete patch.seo.canonicalUrl;
     }
 
     return patch;
@@ -1801,6 +1807,16 @@ export async function updateCard(req, res) {
         title: resolvedTitle || computedSeo.title,
         description: resolvedDescription || computedSeo.description,
     };
+
+    // Card-route canonical guardrail (Step 2 of 2).
+    // After the existingSeo spread, any dirty seo.canonicalUrl from the DB would
+    // survive in patch.seo. Explicitly null it out here so buildSetUpdateFromPatch
+    // writes seo.canonicalUrl = null to the DB on the next save, making existing
+    // dirty values harmless without a manual per-card cleanup.
+    // null is a valid value: Card.model canonicalUrl validator treats falsy as valid.
+    if (patch.seo && typeof patch.seo === "object") {
+        patch.seo.canonicalUrl = null;
+    }
 
     // Batch 7A: gallery is fully premium-only - strip from patch on free.
     // effectiveWritePlan ensures anonymous (featurePlan=null) is treated as free.

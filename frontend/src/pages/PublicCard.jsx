@@ -200,17 +200,19 @@ function PublicCard() {
         : "Cardigo – כרטיס ביקור דיגיטלי לעסקים";
 
     const publicOrigin = getPublicOrigin();
-    const seoCanonicalCandidate =
-        typeof card.seo?.canonicalUrl === "string"
-            ? card.seo.canonicalUrl.trim()
-            : "";
 
-    const canonicalResolved = isValidAbsoluteHttpUrl(seoCanonicalCandidate)
-        ? seoCanonicalCandidate
-        : normalizeAbsoluteUrl(
-              publicOrigin,
-              card.publicPath || (card.slug ? `/card/${card.slug}` : ""),
-          );
+    // Card-route canonical is always self public URL.
+    // seo.canonicalUrl is ignored: cross-card and external canonicals are forbidden.
+    // Use card.publicPath from DTO (SSoT for both /card/:slug and /c/:orgSlug/:slug).
+    // Fallback is route-aware: org cards fall back to /c/:orgSlug/:slug, not /card/:slug.
+    const selfPath =
+        card.publicPath ||
+        (orgSlug && card.slug
+            ? `/c/${orgSlug}/${card.slug}`
+            : card.slug
+              ? `/card/${card.slug}`
+              : "");
+    const canonicalResolved = normalizeAbsoluteUrl(publicOrigin, selfPath);
 
     const canonicalUrl = canonicalResolved;
     const url = canonicalResolved;
