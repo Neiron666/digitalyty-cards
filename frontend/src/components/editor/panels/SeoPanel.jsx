@@ -206,17 +206,6 @@ function isValidAbsoluteHttpUrl(value) {
     }
 }
 
-function getUrlHost(value) {
-    const v = typeof value === "string" ? value.trim() : "";
-    if (!v) return "";
-    try {
-        const u = new URL(v);
-        return String(u.host || "");
-    } catch {
-        return "";
-    }
-}
-
 function getPublicOrigin() {
     const envOrigin = String(import.meta.env.VITE_PUBLIC_ORIGIN || "").trim();
     if (envOrigin) return envOrigin.replace(/\/$/, "");
@@ -503,16 +492,6 @@ export default function SeoPanel({
         return `${origin}${path}`;
     }, [publicPath, slug]);
 
-    const canonicalTrimmed =
-        typeof value.canonicalUrl === "string" ? value.canonicalUrl.trim() : "";
-    const computedHost = getUrlHost(computedPublicUrl);
-    const canonicalHost = getUrlHost(canonicalTrimmed);
-    const canonicalExampleCom = /example\.com/i.test(canonicalTrimmed);
-    const canonicalHostMismatch =
-        Boolean(canonicalHost) &&
-        Boolean(computedHost) &&
-        canonicalHost !== computedHost;
-
     const jsonLdStatus = useMemo(() => {
         const raw = typeof value.jsonLd === "string" ? value.jsonLd.trim() : "";
         if (!raw) {
@@ -534,8 +513,7 @@ export default function SeoPanel({
     }, [value.jsonLd]);
 
     const hasUrlsContent = Boolean(
-        canonicalTrimmed ||
-        (typeof value.robots === "string" && value.robots.trim()),
+        typeof value.robots === "string" && value.robots.trim(),
     );
     const hasVerificationContent = Boolean(
         (typeof value.googleSiteVerification === "string" &&
@@ -569,13 +547,7 @@ export default function SeoPanel({
         onChange?.({ [key]: nextValue });
     }
 
-    function handleUseAsCanonical() {
-        if (!computedPublicUrl) return;
-        update("canonicalUrl", computedPublicUrl);
-    }
-
     function resolveJsonLdBaseUrl() {
-        if (isValidAbsoluteHttpUrl(canonicalTrimmed)) return canonicalTrimmed;
         return computedPublicUrl;
     }
 
@@ -690,10 +662,7 @@ export default function SeoPanel({
                 details.push(mapAiError(err));
             }
 
-            // 6. Canonical step
-            update("canonicalUrl", finalPublicUrl);
-
-            // 7. JSON-LD step — use finalPublicUrl directly, not canonicalTrimmed
+            // 6. JSON-LD step
             if (!jsonLdStatus.hasValue) {
                 // Empty — create
                 const name = resolveJsonLdName();
@@ -719,7 +688,7 @@ export default function SeoPanel({
                 );
             }
 
-            // 8. Final notice
+            // 7. Final notice
             details.push(
                 "השדות עודכנו בטיוטה. כדי לפרסם את השינויים לחצו שמור שינויים.",
             );
@@ -741,7 +710,7 @@ export default function SeoPanel({
                 });
             }
         } finally {
-            // 9. Always release busy state
+            // 8. Always release busy state
             setOrchestratorBusy(false);
         }
     }
@@ -756,8 +725,8 @@ export default function SeoPanel({
                         הגדרת SEO בלחיצה אחת
                     </div>
                     <div className={styles.magicDescription}>
-                        נמלא כותרת ותיאור בעזרת AI, נגדיר כתובת מועדפת וניצור
-                        מידע מובנה לכרטיס. לאחר מכן צריך ללחוץ על שמור שינויים.
+                        נמלא כותרת ותיאור בעזרת AI וניצור מידע מובנה לכרטיס.
+                        לאחר מכן צריך ללחוץ על שמור שינויים.
                     </div>
 
                     {magicMissingReasons.length > 0 && (
@@ -980,16 +949,6 @@ export default function SeoPanel({
                                         <div className={styles.helperTitle}>
                                             כתובת URL הציבורית של הכרטיס
                                         </div>
-                                        <button
-                                            type="button"
-                                            className={styles.helperButton}
-                                            onClick={handleUseAsCanonical}
-                                            disabled={
-                                                disabled || !computedPublicUrl
-                                            }
-                                        >
-                                            העתק ככתובת URL מועדפת
-                                        </button>
                                     </div>
                                     <div className={styles.helperValue}>
                                         {computedPublicUrl || ""}
@@ -1004,42 +963,6 @@ export default function SeoPanel({
                         </div>
 
                         <div className={styles.row}>
-                            <label className={styles.field}>
-                                <span className={styles.labelText}>
-                                    כתובת URL מועדפת למנועי חיפוש
-                                </span>
-                                <input
-                                    className={formStyles.input}
-                                    type="url"
-                                    value={value.canonicalUrl || ""}
-                                    onChange={(e) =>
-                                        update("canonicalUrl", e.target.value)
-                                    }
-                                    disabled={disabled}
-                                    placeholder={
-                                        computedPublicUrl
-                                            ? `לדוגמה: ${computedPublicUrl}`
-                                            : "לדוגמה: https://…"
-                                    }
-                                />
-                                <div className={styles.hintText}>
-                                    רוב המשתמשים לא צריכים למלא שדה זה. כברירת
-                                    מחדל, המערכת משתמשת בכתובת URL הציבורית.
-                                </div>
-                                {canonicalExampleCom ? (
-                                    <div className={styles.warningText}>
-                                        נראה שזו כתובת דוגמה (example.com) -
-                                        כדאי להחליף לכתובת האמיתית.
-                                    </div>
-                                ) : null}
-                                {canonicalHostMismatch ? (
-                                    <div className={styles.warningText}>
-                                        הכתובת המועדפת מצביעה על דומיין שונה
-                                        מהכתובת הציבורית.
-                                    </div>
-                                ) : null}
-                            </label>
-
                             <div className={styles.field}>
                                 <span className={styles.labelText}>
                                     הוראות אינדוקס למנועי חיפוש

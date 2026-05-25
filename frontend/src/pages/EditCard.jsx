@@ -1340,17 +1340,6 @@ function EditCard() {
 
             const hasAngleBrackets = (s) => /[<>]/.test(String(s || ""));
 
-            const isValidAbsoluteHttpUrl = (raw) => {
-                const v = pickString(raw);
-                if (!v) return true;
-                try {
-                    const u = new URL(v);
-                    return u.protocol === "http:" || u.protocol === "https:";
-                } catch {
-                    return false;
-                }
-            };
-
             const MAX_JSONLD_LENGTH = 5000;
             const JSONLD_ALLOWED_TYPES = new Set([
                 "LocalBusiness",
@@ -1459,8 +1448,6 @@ function EditCard() {
             };
 
             const seoErrorMessageByField = {
-                "seo.canonicalUrl":
-                    "Canonical URL חייב להיות כתובת מלאה (https://...)",
                 "seo.jsonLd":
                     "JSON-LD לא תקין — יש לוודא: JSON תקין, אובייקט או מערך, עד 5000 תווים, וסוג (@type) מורשה",
                 "seo.robots": "Robots לא תקין (ללא < או >)",
@@ -1474,9 +1461,7 @@ function EditCard() {
 
             let firstInvalidField = null;
 
-            if (!isValidAbsoluteHttpUrl(seo?.canonicalUrl)) {
-                firstInvalidField = "seo.canonicalUrl";
-            } else if (!isValidJsonLdString(seo?.jsonLd)) {
+            if (!isValidJsonLdString(seo?.jsonLd)) {
                 firstInvalidField = "seo.jsonLd";
             } else if (!isValidGtmId(seo?.gtmId)) {
                 firstInvalidField = "seo.gtmId";
@@ -1638,7 +1623,6 @@ function EditCard() {
                 const list = Array.isArray(fields) ? fields : [];
 
                 const priority = [
-                    "seo.canonicalUrl",
                     "seo.jsonLd",
                     "seo.gtmId",
                     "seo.gaMeasurementId",
@@ -1650,8 +1634,6 @@ function EditCard() {
 
                 const first = priority.find((p) => list.includes(p)) || null;
                 const messageByField = {
-                    "seo.canonicalUrl":
-                        "Canonical URL חייב להיות כתובת מלאה (https://...)",
                     "seo.jsonLd":
                         "JSON-LD לא תקין — יש לוודא: JSON תקין, אובייקט או מערך, עד 5000 תווים, וסוג (@type) מורשה",
                     "seo.robots": "Robots לא תקין (ללא < או >)",
