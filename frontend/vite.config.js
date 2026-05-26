@@ -5,7 +5,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 // https://vite.dev/config/
-export default defineConfig(({ mode }) => {
+export default defineConfig(({ mode, isSsrBuild }) => {
     const __filename = fileURLToPath(import.meta.url);
     const __dirname = path.dirname(__filename);
 
@@ -45,7 +45,14 @@ export default defineConfig(({ mode }) => {
             },
         },
 
+        ssr: isSsrBuild
+            ? {
+                  noExternal: ["react-helmet-async"],
+              }
+            : undefined,
+
         build: {
+            ...(isSsrBuild ? { outDir: "dist_ssr" } : {}),
             rollupOptions: {
                 output: {
                     manualChunks(id) {

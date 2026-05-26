@@ -5,7 +5,11 @@
     "type": "module",
     "scripts": {
         "dev": "vite",
-        "build": "vite build",
+        "build": "npm run build:client && npm run build:ssr && npm run generate:ssg && npm run check:ssg-output",
+        "build:client": "vite build",
+        "build:ssr": "vite build --ssr src/entry-server.jsx",
+        "generate:ssg": "node scripts/generate-static.mjs",
+        "check:ssg-output": "node scripts/check-ssg-output.mjs",
         "lint": "eslint .",
         "preview": "vite preview",
         "check:inline-styles": "node scripts/check-no-inline-styles.mjs",

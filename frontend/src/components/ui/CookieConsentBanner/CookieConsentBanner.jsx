@@ -9,9 +9,13 @@ import {
 import styles from "./CookieConsentBanner.module.css";
 
 export default function CookieConsentBanner({ reopenPrefs }) {
-    const [visible, setVisible] = useState(() => !hasAcceptedConsent());
+    const [visible, setVisible] = useState(false);
     const [view, setView] = useState("notice");
     const [optionalTracking, setOptionalTracking] = useState(true);
+
+    useEffect(() => {
+        if (!hasAcceptedConsent()) setVisible(true);
+    }, []);
 
     useEffect(() => {
         if (!reopenPrefs) return;

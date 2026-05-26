@@ -1,5 +1,5 @@
 import { StrictMode } from "react";
-import { createRoot } from "react-dom/client";
+import { createRoot, hydrateRoot } from "react-dom/client";
 import { HelmetProvider } from "react-helmet-async";
 import { RouterProvider } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
@@ -9,7 +9,7 @@ import "./lib/installPromptStore"; // early init — capture beforeinstallprompt
 import "./styles/globals.css";
 import "./styles/tour.css";
 
-createRoot(document.getElementById("root")).render(
+const app = (
     <HelmetProvider>
         <StrictMode>
             <AuthProvider>
@@ -18,5 +18,17 @@ createRoot(document.getElementById("root")).render(
                 </UnreadCountProvider>
             </AuthProvider>
         </StrictMode>
-    </HelmetProvider>,
+    </HelmetProvider>
 );
+
+const rootEl = document.getElementById("root");
+
+if (!rootEl) {
+    throw new Error("Cardigo bootstrap failed: missing #root element.");
+}
+
+if (rootEl.hasChildNodes()) {
+    hydrateRoot(rootEl, app);
+} else {
+    createRoot(rootEl).render(app);
+}
