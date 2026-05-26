@@ -4572,7 +4572,7 @@ function Blog() {
   }, [pageNum, page2, navigate]);
   const effectivePage = page2 >= 1 ? page2 : 1;
   const initialSeed = useInitialListingData("blog");
-  const hasSeed = initialSeed && Array.isArray(initialSeed.items) && effectivePage === 1;
+  const hasSeed = initialSeed && Array.isArray(initialSeed.items) && initialSeed.page === effectivePage;
   const [posts, setPosts] = useState(
     () => hasSeed ? initialSeed.items : []
   );
@@ -4624,13 +4624,14 @@ function Blog() {
       });
     }
   }, [loading, effectivePage, totalPages, navigate]);
-  const canonicalUrl2 = effectivePage <= 1 ? BLOG_ROOT_URL : `${ORIGIN$3}/blog/page/${effectivePage}`;
+  const canonicalUrl2 = effectivePage <= 1 ? BLOG_ROOT_URL : `${ORIGIN$3}/blog/page/${effectivePage}/`;
   return /* @__PURE__ */ jsxs("main", { "data-page": "site", children: [
     /* @__PURE__ */ jsx(
       SeoHelmet,
       {
         title: meta$3.title,
         description: meta$3.description,
+        robots: effectivePage > 1 ? "noindex, follow" : void 0,
         canonicalUrl: canonicalUrl2,
         url: canonicalUrl2,
         image: CARDIGO_OG_IMAGE_URL,
@@ -4715,7 +4716,7 @@ function Blog() {
               Link,
               {
                 className: styles$b.pageBtn,
-                to: effectivePage === 2 ? "/blog/" : `/blog/page/${effectivePage - 1}`,
+                to: effectivePage === 2 ? "/blog/" : `/blog/page/${effectivePage - 1}/`,
                 children: "הקודם"
               }
             ),
@@ -4728,7 +4729,7 @@ function Blog() {
               Link,
               {
                 className: styles$b.pageBtn,
-                to: `/blog/page/${effectivePage + 1}`,
+                to: `/blog/page/${effectivePage + 1}/`,
                 children: "הבא"
               }
             )
@@ -5635,7 +5636,7 @@ function Guides() {
   }, [pageNum, page2, navigate]);
   const effectivePage = page2 >= 1 ? page2 : 1;
   const initialSeed = useInitialListingData("guides");
-  const hasSeed = initialSeed && Array.isArray(initialSeed.items) && effectivePage === 1;
+  const hasSeed = initialSeed && Array.isArray(initialSeed.items) && initialSeed.page === effectivePage;
   const [posts, setPosts] = useState(
     () => hasSeed ? initialSeed.items : []
   );
@@ -5689,13 +5690,14 @@ function Guides() {
       );
     }
   }, [loading, effectivePage, totalPages, navigate]);
-  const canonicalUrl2 = effectivePage <= 1 ? GUIDES_ROOT_URL : `${ORIGIN$2}/guides/page/${effectivePage}`;
+  const canonicalUrl2 = effectivePage <= 1 ? GUIDES_ROOT_URL : `${ORIGIN$2}/guides/page/${effectivePage}/`;
   return /* @__PURE__ */ jsxs("main", { "data-page": "site", children: [
     /* @__PURE__ */ jsx(
       SeoHelmet,
       {
         title: meta$1.title,
         description: meta$1.description,
+        robots: effectivePage > 1 ? "noindex, follow" : void 0,
         canonicalUrl: canonicalUrl2,
         url: canonicalUrl2,
         image: CARDIGO_OG_IMAGE_URL,
@@ -5780,7 +5782,7 @@ function Guides() {
               Link,
               {
                 className: styles$8.pageBtn,
-                to: effectivePage === 2 ? "/guides/" : `/guides/page/${effectivePage - 1}`,
+                to: effectivePage === 2 ? "/guides/" : `/guides/page/${effectivePage - 1}/`,
                 children: "הקודם"
               }
             ),
@@ -5793,7 +5795,7 @@ function Guides() {
               Link,
               {
                 className: styles$8.pageBtn,
-                to: `/guides/page/${effectivePage + 1}`,
+                to: `/guides/page/${effectivePage + 1}/`,
                 children: "הבא"
               }
             )

@@ -7,9 +7,9 @@
 /card/*       /spa-shell.html   200
 /c/*          /spa-shell.html   200
 /gate.html    /spa-shell.html   404
-# blog/guides pagination must stay above the /blog/* and /guides/* 404 fallback
-/blog/page/*    /spa-shell.html   200
+# blog/guides pagination: valid pages served by SSG (static-file precedence); invalid/out-of-range fall through to /404.html
+/blog/page/*    /404.html         404
 /blog/*         /404.html         404
-/guides/page/*  /spa-shell.html   200
+/guides/page/*  /404.html         404
 /guides/*       /404.html         404
 /*            /spa-shell.html   200

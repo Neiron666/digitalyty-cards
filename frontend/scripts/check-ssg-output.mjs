@@ -457,9 +457,9 @@ if (!fs.existsSync(redirectsPath)) {
         "/card/* /spa-shell.html 200",
         "/c/* /spa-shell.html 200",
         "/gate.html /spa-shell.html 404",
-        "/blog/page/* /spa-shell.html 200",
+        "/blog/page/* /404.html 404",
         "/blog/* /404.html 404",
-        "/guides/page/* /spa-shell.html 200",
+        "/guides/page/* /404.html 404",
         "/guides/* /404.html 404",
         "/* /spa-shell.html 200",
     ];
@@ -471,14 +471,7 @@ if (!fs.existsSync(redirectsPath)) {
     }
 
     // Reject old /index.html fallback for any SPA fallback source path.
-    const SPA_SOURCES = [
-        "/card/*",
-        "/c/*",
-        "/gate.html",
-        "/*",
-        "/blog/page/*",
-        "/guides/page/*",
-    ];
+    const SPA_SOURCES = ["/card/*", "/c/*", "/gate.html", "/*"];
     for (const line of normLines) {
         const parts = line.split(" ");
         if (
@@ -500,8 +493,6 @@ if (!fs.existsSync(redirectsPath)) {
         "/c/*",
         "/gate.html",
         "/*",
-        "/blog/page/*",
-        "/guides/page/*",
     ]);
     const actualSpaShellSources = new Set();
     for (const line of normLines) {
@@ -619,6 +610,294 @@ if (!fs.existsSync(fourOhFourPath)) {
     }
 }
 
+// ---- pagination guard (READY_FOR_PAGINATION_VALID_SSG_INVALID_404) ----
+
+const PAGINATION_PAGE_LIMIT = 12;
+const HOMEPAGE_TITLE_LITERAL = "כרטיס ביקור דיגיטלי לעסק | Cardigo";
+const HOMEPAGE_CANONICAL = "https://cardigo.co.il/";
+const PAGINATION_FAMILIES = [{ dir: "blog" }, { dir: "guides" }];
+const paginationStatus = { blog: "N/A", guides: "N/A" };
+const paginationCounts = { blog: 0, guides: 0 };
+
+function readListingIslandTotal(filePath, key) {
+    if (!fs.existsSync(filePath)) return null;
+    const html = fs.readFileSync(filePath, "utf8");
+    const islandRe = new RegExp(
+        `<script[^>]+type=["']application/json["'][^>]+id=["']${DATA_ISLAND_ELEMENT_ID}["'][^>]*>([\\s\\S]*?)</script>`,
+        "gi",
+    );
+    const m = [...html.matchAll(islandRe)];
+    if (m.length !== 1) return null;
+    let parsed = null;
+    try {
+        parsed = JSON.parse(m[0][1]);
+    } catch {
+        return null;
+    }
+    const keyed =
+        parsed && typeof parsed === "object" && !Array.isArray(parsed)
+            ? parsed[key]
+            : null;
+    if (!keyed || typeof keyed.total !== "number") return null;
+    return keyed.total;
+}
+
+for (const fam of PAGINATION_FAMILIES) {
+    const rootListingFile = path.join(DIST, fam.dir, "index.html");
+    const total = readListingIslandTotal(rootListingFile, fam.dir);
+    if (total === null) {
+        // listing root guard already failed above if missing/malformed; skip here.
+        paginationStatus[fam.dir] = "DEGRADED";
+        continue;
+    }
+    const totalPages = Math.ceil(total / PAGINATION_PAGE_LIMIT);
+
+    // No pagination expected: assert dist/<dir>/page/2/index.html does NOT exist.
+    if (totalPages < 2) {
+        const guard = path.join(DIST, fam.dir, "page", "2", "index.html");
+        if (fs.existsSync(guard)) {
+            fail(
+                `${fam.dir}/page/2`,
+                `must not exist when totalPages<2 (total=${total}) but file is present`,
+            );
+        }
+        paginationStatus[fam.dir] = "FULL";
+        continue;
+    }
+
+    let valid = 0;
+    let degraded = false;
+    for (let n = 2; n <= totalPages; n++) {
+        const file = path.join(DIST, fam.dir, "page", String(n), "index.html");
+        const label = `${fam.dir}/page/${n}`;
+        if (!fs.existsSync(file)) {
+            fail(label, `missing ${path.relative(DIST, file)}`);
+            degraded = true;
+            continue;
+        }
+        const html = fs.readFileSync(file, "utf8");
+        const size = html.length;
+        if (size < 10000) {
+            fail(label, `size ${size} < 10000`);
+            degraded = true;
+            continue;
+        }
+
+        // Root filled.
+        const rootMatch = html.match(
+            /<div id="root">([\s\S]*?)<\/div>\s*<script/,
+        );
+        if (!rootMatch || rootMatch[1].trim().length === 0) {
+            fail(label, `#root is empty (spa-shell leak)`);
+            degraded = true;
+            continue;
+        }
+
+        // Exactly one <title>.
+        const titleCount = (html.match(/<title[^>]*>[\s\S]*?<\/title>/g) || [])
+            .length;
+        if (titleCount !== 1) {
+            fail(label, `title count = ${titleCount}, expected 1`);
+            degraded = true;
+            continue;
+        }
+
+        const expectedSelf = `https://cardigo.co.il/${fam.dir}/page/${n}/`;
+
+        // Canonical = self trailing-slash.
+        const canonicalMatches = [
+            ...html.matchAll(
+                /<link\b[^>]*rel=["']canonical["'][^>]*href=["']([^"']+)["'][^>]*>/g,
+            ),
+        ];
+        if (canonicalMatches.length !== 1) {
+            fail(
+                label,
+                `canonical count = ${canonicalMatches.length}, expected 1`,
+            );
+            degraded = true;
+            continue;
+        }
+        if (canonicalMatches[0][1] !== expectedSelf) {
+            fail(
+                label,
+                `canonical = "${canonicalMatches[0][1]}", expected "${expectedSelf}"`,
+            );
+            degraded = true;
+            continue;
+        }
+
+        // og:url = self trailing-slash.
+        const ogUrlMatches = [
+            ...html.matchAll(
+                /<meta\b[^>]*property=["']og:url["'][^>]*content=["']([^"']+)["'][^>]*>/g,
+            ),
+        ];
+        if (ogUrlMatches.length !== 1) {
+            fail(label, `og:url count = ${ogUrlMatches.length}, expected 1`);
+            degraded = true;
+            continue;
+        }
+        if (ogUrlMatches[0][1] !== expectedSelf) {
+            fail(
+                label,
+                `og:url = "${ogUrlMatches[0][1]}", expected "${expectedSelf}"`,
+            );
+            degraded = true;
+            continue;
+        }
+
+        // robots = noindex, follow (flexible whitespace/case).
+        const robotsMatches = [
+            ...html.matchAll(
+                /<meta\b[^>]*name=["']robots["'][^>]*content=["']([^"']+)["'][^>]*>/gi,
+            ),
+        ];
+        const robotsValue = robotsMatches[0]?.[1] || "";
+        if (!/noindex\s*,\s*follow/i.test(robotsValue)) {
+            fail(
+                label,
+                `robots = "${robotsValue}", expected /noindex,\\s*follow/i`,
+            );
+            degraded = true;
+            continue;
+        }
+
+        // No JSON-LD (thin paginated archives must not carry FAQ/Article schema).
+        const jldCount = countJsonLd(html);
+        if (jldCount !== 0) {
+            fail(label, `JSON-LD count = ${jldCount}, expected 0`);
+            degraded = true;
+            continue;
+        }
+
+        // Homepage leak guards.
+        if (html.includes(HOMEPAGE_TITLE_LITERAL)) {
+            fail(label, `homepage title literal leak`);
+            degraded = true;
+            continue;
+        }
+        if (canonicalMatches[0][1] === HOMEPAGE_CANONICAL) {
+            fail(label, `homepage canonical leak`);
+            degraded = true;
+            continue;
+        }
+        if (ogUrlMatches[0][1] === HOMEPAGE_CANONICAL) {
+            fail(label, `homepage og:url leak`);
+            degraded = true;
+            continue;
+        }
+
+        // Listing data island = exactly 1, page===n, total matches root, items length matches expected.
+        const islandRe = new RegExp(
+            `<script[^>]+type=["']application/json["'][^>]+id=["']${DATA_ISLAND_ELEMENT_ID}["'][^>]*>([\\s\\S]*?)</script>`,
+            "gi",
+        );
+        const islandMatches = [...html.matchAll(islandRe)];
+        if (islandMatches.length !== 1) {
+            fail(
+                label,
+                `listing data island count = ${islandMatches.length}, expected 1`,
+            );
+            degraded = true;
+            continue;
+        }
+        let parsedIsland = null;
+        try {
+            parsedIsland = JSON.parse(islandMatches[0][1]);
+        } catch {
+            fail(label, `listing data island JSON.parse failed`);
+            degraded = true;
+            continue;
+        }
+        const keyed =
+            parsedIsland &&
+            typeof parsedIsland === "object" &&
+            !Array.isArray(parsedIsland)
+                ? parsedIsland[fam.dir]
+                : null;
+        if (
+            !keyed ||
+            typeof keyed !== "object" ||
+            !Array.isArray(keyed.items)
+        ) {
+            fail(
+                label,
+                `listing data island missing key "${fam.dir}" with items[] array`,
+            );
+            degraded = true;
+            continue;
+        }
+        if (keyed.page !== n) {
+            fail(
+                label,
+                `listing data island page = ${keyed.page}, expected ${n}`,
+            );
+            degraded = true;
+            continue;
+        }
+        if (keyed.total !== total) {
+            fail(
+                label,
+                `listing data island total = ${keyed.total}, expected ${total} (root)`,
+            );
+            degraded = true;
+            continue;
+        }
+        const expectedItems = Math.min(
+            PAGINATION_PAGE_LIMIT,
+            total - (n - 1) * PAGINATION_PAGE_LIMIT,
+        );
+        if (keyed.items.length !== expectedItems) {
+            fail(
+                label,
+                `listing data island items.length = ${keyed.items.length}, expected ${expectedItems}`,
+            );
+            degraded = true;
+            continue;
+        }
+        const firstSlug =
+            keyed.items[0] && typeof keyed.items[0].slug === "string"
+                ? keyed.items[0].slug
+                : "";
+        if (!firstSlug) {
+            fail(label, `listing data island first item missing string slug`);
+            degraded = true;
+            continue;
+        }
+        const hrefNeedle = `href="/${fam.dir}/${firstSlug}/"`;
+        if (!html.includes(hrefNeedle)) {
+            fail(
+                label,
+                `body missing detail link ${hrefNeedle} for first data-island item`,
+            );
+            degraded = true;
+            continue;
+        }
+
+        valid += 1;
+    }
+
+    // Assert dist/<dir>/page/<totalPages+1>/index.html does NOT exist.
+    const overshoot = path.join(
+        DIST,
+        fam.dir,
+        "page",
+        String(totalPages + 1),
+        "index.html",
+    );
+    if (fs.existsSync(overshoot)) {
+        fail(
+            `${fam.dir}/page/${totalPages + 1}`,
+            `must not exist (totalPages=${totalPages}) but file is present`,
+        );
+        degraded = true;
+    }
+
+    paginationCounts[fam.dir] = valid;
+    paginationStatus[fam.dir] = degraded ? "DEGRADED" : "FULL";
+}
+
 // ---- detail family guard (Phase 2C) ----
 
 const DETAIL_FAMILIES = [
@@ -639,7 +918,8 @@ for (const fam of DETAIL_FAMILIES) {
     const slugDirs = fs
         .readdirSync(famDir, { withFileTypes: true })
         .filter((e) => e.isDirectory())
-        .map((e) => e.name);
+        .map((e) => e.name)
+        .filter((name) => name !== "page");
 
     if (slugDirs.length === 0) {
         detailStatus[fam.dir] = "DEGRADED";
@@ -820,6 +1100,9 @@ if (errors.length > 0) {
 console.log("PASS: SSG output valid. Checked 7 files and _redirects contract.");
 console.log(
     `LISTING_FULLNESS: blog=${listingFullness.blog} guides=${listingFullness.guides}`,
+);
+console.log(
+    `SSG_PAGINATION_STATUS: blog=${paginationStatus.blog} count=${paginationCounts.blog} guides=${paginationStatus.guides} count=${paginationCounts.guides}`,
 );
 console.log(
     `SSG_DETAIL_STATUS: blog=${detailStatus.blog} count=${detailCounts.blog} guides=${detailStatus.guides} count=${detailCounts.guides}`,

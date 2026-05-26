@@ -117,10 +117,12 @@ export default function Blog() {
 
     const effectivePage = page >= 1 ? page : 1;
 
-    /* Phase 2B: consume build-time SSG initial listing data (page 1 only). */
+    /* Phase 2B: consume build-time SSG initial listing data (matched page only). */
     const initialSeed = useInitialListingData("blog");
     const hasSeed =
-        initialSeed && Array.isArray(initialSeed.items) && effectivePage === 1;
+        initialSeed &&
+        Array.isArray(initialSeed.items) &&
+        initialSeed.page === effectivePage;
 
     const [posts, setPosts] = useState(() =>
         hasSeed ? initialSeed.items : [],
@@ -184,13 +186,14 @@ export default function Blog() {
     const canonicalUrl =
         effectivePage <= 1
             ? BLOG_ROOT_URL
-            : `${ORIGIN}/blog/page/${effectivePage}`;
+            : `${ORIGIN}/blog/page/${effectivePage}/`;
 
     return (
         <main data-page="site">
             <SeoHelmet
                 title={meta.title}
                 description={meta.description}
+                robots={effectivePage > 1 ? "noindex, follow" : undefined}
                 canonicalUrl={canonicalUrl}
                 url={canonicalUrl}
                 image={CARDIGO_OG_IMAGE_URL}
@@ -313,7 +316,7 @@ export default function Blog() {
                                     to={
                                         effectivePage === 2
                                             ? "/blog/"
-                                            : `/blog/page/${effectivePage - 1}`
+                                            : `/blog/page/${effectivePage - 1}/`
                                     }
                                 >
                                     הקודם
@@ -325,7 +328,7 @@ export default function Blog() {
                             {effectivePage < totalPages && (
                                 <Link
                                     className={styles.pageBtn}
-                                    to={`/blog/page/${effectivePage + 1}`}
+                                    to={`/blog/page/${effectivePage + 1}/`}
                                 >
                                     הבא
                                 </Link>

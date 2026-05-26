@@ -184,14 +184,6 @@ router.get("/sitemap.xml", async (req, res) => {
             .filter(Boolean)
             .join("");
 
-        /* ── Blog archive pages (/blog/page/2 … /blog/page/N) ── */
-        const BLOG_PAGE_SIZE = 12;
-        const blogTotalPages = Math.ceil(blogPosts.length / BLOG_PAGE_SIZE);
-        let blogArchiveUrls = "";
-        for (let n = 2; n <= blogTotalPages; n++) {
-            blogArchiveUrls += `<url><loc>${siteUrl}/blog/page/${n}</loc></url>`;
-        }
-
         /* ── Guide posts (single query, published-only) ───────── */
         const guidePosts = await GuidePost.find({ status: "published" })
             .select("slug updatedAt")
@@ -209,17 +201,9 @@ router.get("/sitemap.xml", async (req, res) => {
             .filter(Boolean)
             .join("");
 
-        /* ── Guide archive pages (/guides/page/2 … /guides/page/N) ── */
-        const GUIDE_PAGE_SIZE = 12;
-        const guideTotalPages = Math.ceil(guidePosts.length / GUIDE_PAGE_SIZE);
-        let guideArchiveUrls = "";
-        for (let n = 2; n <= guideTotalPages; n++) {
-            guideArchiveUrls += `<url><loc>${siteUrl}/guides/page/${n}</loc></url>`;
-        }
-
         const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-${staticUrls}${urls}${blogUrls}${blogArchiveUrls}${guideUrls}${guideArchiveUrls}
+${staticUrls}${urls}${blogUrls}${guideUrls}
 </urlset>`;
 
         res.header("Content-Type", "application/xml");

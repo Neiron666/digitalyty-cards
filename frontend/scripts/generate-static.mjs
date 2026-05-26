@@ -206,6 +206,133 @@ console.log(
 );
 
 /* ------------------------------------------------------------------ */
+/* Pagination SSG for /blog/page/<n>/ and /guides/page/<n>/           */
+/* Valid pages only (n=2..totalPages). Missing/failed pages are       */
+/* intentionally NOT emitted so _redirects falls through to /404.html.*/
+/* ------------------------------------------------------------------ */
+
+const PAGINATION_PAGE_LIMIT = 12;
+const PAGINATION_FAMILIES = [
+    {
+        key: "blog",
+        endpoint: "/api/blog",
+        urlPrefix: "/blog/page/",
+        outDir: "blog",
+    },
+    {
+        key: "guides",
+        endpoint: "/api/guides",
+        urlPrefix: "/guides/page/",
+        outDir: "guides",
+    },
+];
+
+const paginationStatus = { blog: "N/A", guides: "N/A" };
+const paginationCounts = { blog: 0, guides: 0 };
+
+for (const family of PAGINATION_FAMILIES) {
+    const probe = await fetchListingForSsg({
+        key: family.key,
+        endpoint: family.endpoint,
+        origin: SSG_LISTING_API_ORIGIN,
+        page: 1,
+        limit: PAGINATION_PAGE_LIMIT,
+        timeoutMs: 8000,
+        logger: console,
+    });
+    if (!probe.ok) {
+        console.warn(
+            `[ssg] WARN: pagination probe failed for ${family.key} — skipping pagination generation`,
+        );
+        paginationStatus[family.key] = "DEGRADED";
+        continue;
+    }
+    const total = probe.total;
+    const totalPages = Math.ceil(total / PAGINATION_PAGE_LIMIT);
+    if (totalPages < 2) {
+        paginationStatus[family.key] = "FULL";
+        continue;
+    }
+
+    let written = 0;
+    let degraded = false;
+    for (let n = 2; n <= totalPages; n++) {
+        const pageRes = await fetchListingForSsg({
+            key: family.key,
+            endpoint: family.endpoint,
+            origin: SSG_LISTING_API_ORIGIN,
+            page: n,
+            limit: PAGINATION_PAGE_LIMIT,
+            timeoutMs: 8000,
+            logger: console,
+        });
+        if (!pageRes.ok || pageRes.items.length === 0) {
+            console.warn(
+                `[ssg] WARN: ${family.urlPrefix}${n}/ fetch failed or empty — skipping emission (will fall through to /404.html)`,
+            );
+            degraded = true;
+            continue;
+        }
+        const payload = {
+            page: pageRes.page,
+            total: pageRes.total,
+            items: pageRes.items,
+        };
+        const pageUrl = `${family.urlPrefix}${n}/`;
+        const outFile = path.join(
+            DIST,
+            family.outDir,
+            "page",
+            String(n),
+            "index.html",
+        );
+
+        try {
+            const { html, helmetContext } = await renderForRoute(pageUrl, {
+                initialListingData: { [family.key]: payload },
+            });
+            const { title, meta, link, script } = helmetContext.helmet;
+            const helmetHead = [title, meta, link, script]
+                .map((h) => h.toString().trim())
+                .filter(Boolean)
+                .join("\n  ");
+
+            let page = template;
+            page = page.replace(/<title>[^<]*<\/title>/, "");
+            page = page.replace(/<meta[^>]+data-rh="true"[^>]*>/g, "");
+            page = page.replace(/(\r?\n){3,}/g, "\n\n");
+            page = page.replace("</head>", `  ${helmetHead}\n</head>`);
+            page = page.replace(
+                '<div id="root"></div>',
+                `<div id="root">${html}</div>`,
+            );
+            const safeJson = serializeJsonForHtml({ [family.key]: payload });
+            const dataIsland = `<script type="application/json" id="${DATA_ISLAND_ELEMENT_ID}">${safeJson}</script>`;
+            page = page.replace("</body>", `  ${dataIsland}\n</body>`);
+
+            fs.mkdirSync(path.dirname(outFile), { recursive: true });
+            fs.writeFileSync(outFile, page, "utf8");
+            written += 1;
+            console.log(
+                `WROTE: ${path.relative(path.dirname(DIST), outFile)} (html=${html.length}, page=${n}/${totalPages})`,
+            );
+        } catch (err) {
+            console.warn(
+                `[ssg] WARN: pagination render failed for ${pageUrl} — ${err?.message || err}`,
+            );
+            degraded = true;
+        }
+    }
+
+    paginationCounts[family.key] = written;
+    paginationStatus[family.key] = degraded ? "DEGRADED" : "FULL";
+}
+
+console.log(
+    `SSG_PAGINATION_STATUS: blog=${paginationStatus.blog} count=${paginationCounts.blog} guides=${paginationStatus.guides} count=${paginationCounts.guides}`,
+);
+
+/* ------------------------------------------------------------------ */
 /* Phase 2C: detail SSG for /blog/<slug>/ and /guides/<slug>/         */
 /* ------------------------------------------------------------------ */
 

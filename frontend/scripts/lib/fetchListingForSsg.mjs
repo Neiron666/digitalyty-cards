@@ -42,6 +42,7 @@ export async function fetchListingForSsg({
     key,
     endpoint,
     origin,
+    page = 1,
     limit = 12,
     timeoutMs = 8000,
     logger = console,
@@ -56,7 +57,7 @@ export async function fetchListingForSsg({
         return { ok: false };
     }
 
-    const url = `${origin}${endpoint}?page=1&limit=${encodeURIComponent(String(limit))}`;
+    const url = `${origin}${endpoint}?page=${encodeURIComponent(String(page))}&limit=${encodeURIComponent(String(limit))}`;
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), timeoutMs);
 
