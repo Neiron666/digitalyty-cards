@@ -457,6 +457,10 @@ if (!fs.existsSync(redirectsPath)) {
         "/card/* /spa-shell.html 200",
         "/c/* /spa-shell.html 200",
         "/gate.html /spa-shell.html 404",
+        "/blog/page/* /spa-shell.html 200",
+        "/blog/* /404.html 404",
+        "/guides/page/* /spa-shell.html 200",
+        "/guides/* /404.html 404",
         "/* /spa-shell.html 200",
     ];
 
@@ -466,8 +470,15 @@ if (!fs.existsSync(redirectsPath)) {
         }
     }
 
-    // Reject old /index.html fallback only for the 4 SPA fallback source paths.
-    const SPA_SOURCES = ["/card/*", "/c/*", "/gate.html", "/*"];
+    // Reject old /index.html fallback for any SPA fallback source path.
+    const SPA_SOURCES = [
+        "/card/*",
+        "/c/*",
+        "/gate.html",
+        "/*",
+        "/blog/page/*",
+        "/guides/page/*",
+    ];
     for (const line of normLines) {
         const parts = line.split(" ");
         if (
@@ -482,16 +493,129 @@ if (!fs.existsSync(redirectsPath)) {
         }
     }
 
-    // 4 = current SPA fallback rule count; update in lockstep with
-    // frontend/public/_redirects when adding/removing spa-shell fallback rules.
-    const spaShellCount = normLines.filter((l) =>
-        l.includes("/spa-shell.html"),
-    ).length;
-    if (spaShellCount !== 4) {
+    // Exact-set verification of every source whose target is /spa-shell.html.
+    // Antidrift: any extra/missing source vs the expected set fails the gate.
+    const EXPECTED_SPA_SHELL_SOURCES = new Set([
+        "/card/*",
+        "/c/*",
+        "/gate.html",
+        "/*",
+        "/blog/page/*",
+        "/guides/page/*",
+    ]);
+    const actualSpaShellSources = new Set();
+    for (const line of normLines) {
+        const parts = line.split(" ");
+        if (parts.length >= 3 && parts[1] === "/spa-shell.html") {
+            actualSpaShellSources.add(parts[0]);
+        }
+    }
+    for (const src of EXPECTED_SPA_SHELL_SOURCES) {
+        if (!actualSpaShellSources.has(src)) {
+            fail("_redirects", `missing /spa-shell.html source: "${src}"`);
+        }
+    }
+    for (const src of actualSpaShellSources) {
+        if (!EXPECTED_SPA_SHELL_SOURCES.has(src)) {
+            fail("_redirects", `unexpected /spa-shell.html source: "${src}"`);
+        }
+    }
+
+    // Anti-force invariant: no Netlify force flag (!) on /blog/ or /guides/
+    // rules. Static-file precedence must continue to protect published SSG
+    // detail pages from the /blog/* and /guides/* 404 fallback rules.
+    for (const line of normLines) {
+        const parts = line.split(" ");
+        const source = parts[0] || "";
+        if (!source.startsWith("/blog/") && !source.startsWith("/guides/")) {
+            continue;
+        }
+        if (line.includes("!")) {
+            fail(
+                "_redirects",
+                `force flag "!" not allowed on /blog/ or /guides/ rule: "${line}"`,
+            );
+        }
+        const last = parts[parts.length - 1] || "";
+        if (last.toLowerCase() === "force") {
+            fail(
+                "_redirects",
+                `force flag not allowed on /blog/ or /guides/ rule: "${line}"`,
+            );
+        }
+    }
+}
+
+// ---- 404.html shape guard ----
+
+const fourOhFourPath = path.join(DIST, "404.html");
+if (!fs.existsSync(fourOhFourPath)) {
+    fail("404.html", `file not found: ${fourOhFourPath}`);
+} else {
+    const html = fs.readFileSync(fourOhFourPath, "utf8");
+    if (
+        !/<meta\s+name=["']robots["']\s+content=["']noindex,\s*nofollow["']/i.test(
+            html,
+        )
+    ) {
         fail(
-            "_redirects",
-            `/spa-shell.html rule count = ${spaShellCount}, expected 4`,
+            "404.html",
+            `missing <meta name="robots" content="noindex, nofollow">`,
         );
+    }
+    const titleMatch = html.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
+    if (!titleMatch) {
+        fail("404.html", `missing <title>`);
+    } else {
+        const titleText = titleMatch[1];
+        if (!titleText.includes("404")) {
+            fail("404.html", `<title> missing "404"`);
+        }
+        if (!titleText.includes("Cardigo")) {
+            fail("404.html", `<title> missing "Cardigo"`);
+        }
+    }
+    if (/rel=["']canonical["']/i.test(html)) {
+        fail("404.html", `must not contain rel="canonical"`);
+    }
+    if (/property=["']og:url["']/i.test(html)) {
+        fail("404.html", `must not contain property="og:url"`);
+    }
+    if (/application\/ld\+json/i.test(html)) {
+        fail("404.html", `must not contain application/ld+json`);
+    }
+    if (html.includes("cardigo-initial-listing-data")) {
+        fail("404.html", `must not contain cardigo-initial-listing-data`);
+    }
+    if (html.includes("cardigo-initial-detail-data")) {
+        fail("404.html", `must not contain cardigo-initial-detail-data`);
+    }
+    if (html.includes("כרטיס ביקור דיגיטלי לעסק | Cardigo")) {
+        fail("404.html", `must not contain homepage title`);
+    }
+    if (/<script\b/i.test(html)) {
+        fail("404.html", `must not contain <script>`);
+    }
+    if (/<style\b/i.test(html)) {
+        fail("404.html", `must not contain <style>`);
+    }
+    if (/\sstyle=/i.test(html)) {
+        fail("404.html", `must not contain inline style= attribute`);
+    }
+    // Homepage canonical/og value must not appear as a canonical or og:url value.
+    if (
+        /<link[^>]+rel=["']canonical["'][^>]+href=["']https:\/\/cardigo\.co\.il\/?["']/i.test(
+            html,
+        )
+    ) {
+        fail("404.html", `homepage URL must not appear as canonical`);
+    }
+    if (
+        /<meta[^>]+property=["']og:url["'][^>]+content=["']https:\/\/cardigo\.co\.il\/?["']/i.test(
+            html,
+        )
+    ) {
+        fail("404.html", `homepage URL must not appear as og:url`);
     }
 }
 
