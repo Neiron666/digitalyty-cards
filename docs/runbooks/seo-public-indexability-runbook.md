@@ -1,7 +1,7 @@
 # SEO Public Indexability вЂ” Operational Runbook (Cardigo)
 
 **Scope:** Full public indexability of cardigo.co.il вЂ” blog, guides, cards, marketing pages.
-**Status:** Live (gate removed 2026-05-03). 13 SEO contours CLOSED as of 2026-05-09. PUBLIC*CARD_OG_INITIAL_METADATA_EDGE_INJECTION_P2A CLOSED/PRODUCTION VERIFIED 2026-05-09. STATIC_SOCIAL_META_HELMET_DEDUP_P2 CLOSED/PRODUCTION VERIFIED 2026-05-09. MARKETING_STATIC_ROUTES_INITIAL_METADATA_AUDIT_P1 CLOSED/PRODUCTION VERIFIED 2026-05-09. SEO_HOMEPAGE_TITLE_SINGULAR_INTENT CLOSED/PRODUCTION VERIFIED 2026-05-23. SEO_TWITTER_CARD_GUARD_P2 CLOSED/PRODUCTION VERIFIED 2026-05-23. SEO_BACKEND_OG_METADATA_PARITY_P2 CLOSED/PRODUCTION VERIFIED 2026-05-23. (Count baseline 13 as of 2026-05-09 preserved; total not incremented — a comprehensive recount including post-2026-05-09 SCHEMA*_, AUTHCONTEXT\__, and WRS contour closures is needed before asserting a new total.)
+**Status:** Live (gate removed 2026-05-03). 13 SEO contours CLOSED as of 2026-05-09. PUBLIC*CARD_OG_INITIAL_METADATA_EDGE_INJECTION_P2A CLOSED/PRODUCTION VERIFIED 2026-05-09. STATIC_SOCIAL_META_HELMET_DEDUP_P2 CLOSED/PRODUCTION VERIFIED 2026-05-09. MARKETING_STATIC_ROUTES_INITIAL_METADATA_AUDIT_P1 CLOSED/PRODUCTION VERIFIED 2026-05-09. SEO_HOMEPAGE_TITLE_SINGULAR_INTENT CLOSED/PRODUCTION VERIFIED 2026-05-23. SEO_TWITTER_CARD_GUARD_P2 CLOSED/PRODUCTION VERIFIED 2026-05-23. SEO_BACKEND_OG_METADATA_PARITY_P2 CLOSED/PRODUCTION VERIFIED 2026-05-23. (Count baseline 13 as of 2026-05-09 preserved; total not incremented — a comprehensive recount including post-2026-05-09 SCHEMA*\_, AUTHCONTEXT\_\_, and WRS contour closures is needed before asserting a new total.)
 **Canonical domain SSoT:** https://cardigo.co.il (non-www; www redirects at DNS/hosting layer)
 
 ---
@@ -1120,3 +1120,127 @@ Do not request indexing for other slug routes without individual Live Test confi
 - Marketing page og:image differentiation: all 5 marketing routes currently share the homepage OG image via the static shell fallback. If per-route OG images are desired for Googlebot or social bots, open a separate contour.
 - blog/:slug and guides/:slug Googlebot initial metadata: these slug routes continue via WRS + SeoHelmet. No injection is applied. If GSC shows rendering errors for these routes, open a separate contour.
 - Search Console recrawl timing: canonical/og:url improvements become visible to Googlebot at the next crawl, not immediately. Request Indexing via GSC is the fastest operator action.
+
+---
+
+## 20. Public SSG Render Path for Marketing + Blog + Guides - 2026-05 Migration
+
+**Contour:** PUBLIC_SEO_SSG_MIGRATION_AND_PREVIOUSSLUGS_ALIASES - CLOSED (2026-05-26).
+**Status:** CLOSED. Production smoke classification: PRODUCTION_CONFIRMED_BY_OPERATOR_REPORT.
+**Authoritative for:** marketing + blog + guides routes listed below. Sections 1-19 of this runbook remain authoritative for `/card/:slug` and `/c/:orgSlug/:slug` (Edge CRAWLER + social UA branches) and for the historical /guides/seo WRS transient incident closure (which are still NOT SSG).
+
+### 20.1 Route table (SSG-first)
+
+The following routes are pre-rendered to static HTML at build time and published from `dist/`:
+
+- `/`
+- `/cards/`
+- `/pricing/`
+- `/contact/`
+- `/blog/`
+- `/guides/`
+- `/blog/page/N/` (for every valid N >= 2 derived from build-time data)
+- `/guides/page/N/` (mirror)
+- `/blog/:slug/` (for every published blog post)
+- `/guides/:slug/` (for every published guide)
+
+Trailing slash is the canonical form for all routes above. Browser path is SSG. Social UA path for `/blog/:slug` and `/guides/:slug` continues to use the Edge `og-preview.js` social branch.
+
+### 20.2 SSG build pipeline summary
+
+- `frontend/scripts/generate-static.mjs` enumerates the route table, performs build-time public API fetches via the helpers under `frontend/scripts/lib/`, renders each route with React `renderToString` + react-helmet-async, and writes per-route `index.html` into `dist/` with the Helmet head, the SSR body in `#root`, and the data island injected before `</body>`.
+- `frontend/scripts/check-ssg-output.mjs` is the SSG gate. It enforces FULL vs DEGRADED status, canonical/og:url presence, and the alias marker block guard.
+- Data is fetched at build time only; no client runtime requests are required to render the first paint.
+
+### 20.3 `_redirects` contract (build-materialized)
+
+`frontend/public/_redirects` is the static template. The build copies it to `dist/_redirects` and materializes the alias marker block in place.
+
+Final rule order in `dist/_redirects` (first-match-wins):
+
+1. `/api/*` proxy 200
+2. `/sitemap.xml` proxy 200
+3. `/og/*` proxy 200
+4. `/card/*` SPA shell 200
+5. `/c/*` SPA shell 200
+6. Alias marker block (`# cardigo-generated-alias-redirects:start` ... `:end`) - one `301` per alias pair, both with and without trailing slash
+7. `/blog/page/*` -> `/404.html` 404
+8. `/blog/*` -> `/404.html` 404
+9. `/guides/page/*` -> `/404.html` 404
+10. `/guides/*` -> `/404.html` 404
+11. `/*` SPA shell 200 (catch-all for routes not pre-rendered)
+
+Hard invariants:
+
+- The alias marker block MUST precede the `/blog/*` and `/guides/*` 404 wildcards, or the wildcards shadow alias 301s into 404s.
+- No `!` force flag on any alias line.
+- Static file precedence: a pre-rendered `/blog/page/N/index.html` wins over the `/blog/page/* /404.html 404` rule because Netlify serves the matching static file first. Invalid pagination falls through to the 404 rule.
+- Unknown `/blog/:slug/` and `/guides/:slug/` fall through to `/404.html` 404 because no pre-rendered static file exists.
+
+### 20.4 Data islands
+
+Two element IDs only:
+
+- `cardigo-initial-listing-data` - listing seed for `/blog/`, `/guides/`, `/blog/page/N/`, `/guides/page/N/`. DTO whitelist per item: `id`, `slug`, `title`, `excerpt`, `heroImageUrl`, `heroImageAlt`, `publishedAt`.
+- `cardigo-initial-detail-data` - detail seed for `/blog/:slug/`, `/guides/:slug/`. DTO whitelist: 15 public fields; sections filtered to `{ heading, body, imageUrl, imageAlt }`.
+
+`previousSlugs` is NEVER serialized into either island. Build-time fetchers fail open (`{ ok: false }`) on timeout / non-2xx / malformed JSON; the page still renders with an empty seed and the client effect performs a normal API fetch after hydration. The SSG gate marks the route as DEGRADED but does not abort the build.
+
+### 20.5 Soft-404 / static 404
+
+Unknown `/blog/:slug/` and `/guides/:slug/` return HTTP 404 served by the static `frontend/public/404.html`:
+
+- `<meta name="robots" content="noindex, nofollow" />`
+- No canonical, no og:url, no JSON-LD, no data island.
+- Hebrew page title preserved.
+
+This supersedes the previous in-SPA soft-404 noindex path for these routes. The previous SPA-soft-404 mechanism described in section 10 of this runbook still applies to non-SSG routes.
+
+### 20.6 Pagination SEO
+
+- Valid `/blog/page/N/` and `/guides/page/N/` are SSG with self canonical and `robots="noindex, follow"`.
+- Invalid pagination falls through to the static 404.
+- Page count is derived from build-time public API total; only valid pages are pre-rendered.
+
+### 20.7 Sitemap exclusions
+
+The backend `sitemap.xml` excludes `previousSlugs` alias source slugs, all `/blog/page/*` paths, and all `/guides/page/*` paths. Only canonical trailing-slash detail URLs and static marketing routes appear.
+
+### 20.8 previousSlugs alias marker block
+
+- Public read-only endpoints: `GET /api/blog/aliases` and `GET /api/guides/aliases`. Response shape `[{from,to}]`. `Cache-Control: no-store`. No auth, no CSRF, no `X-Requested-With`.
+- Build-time fetcher `frontend/scripts/lib/fetchAliasMapForSsg.mjs` consumes these endpoints, validates slugs, deduplicates, and drops ambiguous mappings.
+- The build emits a 301 line into `dist/_redirects` for each accepted pair, both with and without trailing slash on the source.
+- Browser GET on the alias source returns Netlify HTTP 301 to the canonical URL.
+- Social UA GET on the alias source returns HTTP 200 OG payload with canonical og:url (Edge intercept + backend exact-first resolution).
+- Sitemap excludes the alias source slug.
+- Frontend rebuild + deploy is required to materialize new alias 301s. The rebuild-on-publish hook does not yet exist; see the contour handoff for the tail list.
+
+### 20.9 Dual render model
+
+- SSG-first for the routes in 20.1.
+- Edge / SPA-shell still authoritative for `/card/:slug` and `/c/:orgSlug/:slug` (Edge CRAWLER branch + Edge social UA branch as documented in sections 2 and 16).
+
+### 20.10 Anti-regression rules (operator checklist)
+
+- Preserve alias marker block ordering before bucket 404 wildcards.
+- No `!` force flag.
+- Exact-first OG alias resolution preserved (current slug wins).
+- `previousSlugs` not in the per-post public DTO.
+- Sitemap excludes aliases and pagination.
+- Unknown blog / guides slugs return a real HTTP 404 (not SPA-shell 200).
+- Valid pagination stays `noindex, follow`.
+- Social UA path remains intentionally distinct from browser path.
+- `BlogPost` and `GuidePost` route components remain eager imports (no `React.lazy`) because `renderToString` does not resolve `Suspense`.
+- Listing DTO whitelist (7 fields) and detail DTO whitelist (15 fields) preserved.
+- `Cache-Control: no-store` preserved on the alias endpoints.
+- Frontend rebuild required after backend alias data changes.
+
+### 20.11 Cross-references
+
+- Contour handoff: `docs/handoffs/current/Cardigo_Enterprise_Handoff_2026-05-26_Public_SEO_SSG_Migration_And_PreviousSlugs_Aliases_Closed.md`.
+- Blog-specific runbook section: `docs/runbooks/docs_blog_seo_og_runbook.md` -> "## 9) Slug Continuity & Aliases" -> addendum "### 9.5 2026-05 previousSlugs alias redirects closure".
+
+### 20.12 Note on sections 1-19 of this runbook
+
+Sections 1-19 of this runbook were written for the SPA-shell + Edge-injected era and the /guides/seo WRS transient incident closure, and remain accurate for `/card/:slug` and `/c/:orgSlug/:slug` (which are still NOT SSG) and for the historical WRS incident record. For marketing, blog, and guides routes listed in 20.1, this section 20 is the new authority. The older sections were not removed because they remain operationally accurate for the card and org-card surfaces and as a historical incident record.

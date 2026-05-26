@@ -302,6 +302,66 @@ Unchanged by this contour:
 - Slug uniqueness is enforced across current slugs AND `previousSlugs` combined (admin controller checks both via `$or` before accepting a new slug).
 - DB-level: `slug_1` unique index on the collection.
 
+### 9.5 2026-05 previousSlugs alias redirects closure
+
+**Contour:** PUBLIC_SEO_SSG_MIGRATION_AND_PREVIOUSSLUGS_ALIASES - CLOSED (2026-05-26).
+**Production smoke classification:** PRODUCTION_CONFIRMED_BY_OPERATOR_REPORT.
+
+This addendum extends the §9 alias mechanism above with the SSG-era public alias endpoints, frontend build-time alias materialization, browser 301 path, and operator constraints introduced in the 2026-05 public SEO SSG migration.
+
+#### 9.5.1 Public read-only alias endpoints
+
+- `GET /api/blog/aliases` - public, read-only, GET-only. No auth, no CSRF, no `X-Requested-With` requirement. `Cache-Control: no-store`. Response body shape: `[{ "from": "<old-slug>", "to": "<canonical-slug>" }, ...]`.
+- `GET /api/guides/aliases` - mirror.
+- Both routes are registered BEFORE the `/:slug` detail route so the literal segment `aliases` is not interpreted as a slug.
+
+#### 9.5.2 Public DTO boundary
+
+`previousSlugs` is NEVER returned in the per-post public detail DTO (`/api/blog/:slug`, `/api/guides/:slug`) and is NEVER serialized into the SSG detail data island. The alias relationship is exposed only via the alias endpoints in 9.5.1, and only as `{from,to}` pairs - no draft data, no admin metadata, no private fields.
+
+#### 9.5.3 Backend OG alias parity (exact-first)
+
+The shared helper used by `/og/blog/:slug` and `/og/guides/:slug` performs:
+
+1. `Model.findOne({ slug, status: "published" })` (exact-first, current slug wins).
+2. If no match: `Model.findOne({ previousSlugs: slug, status: "published" })`.
+
+The OG `publicUrl` is built from the resolved `post.slug`, not from `req.params.slug`. A request to `/og/blog/<old-alias>` returns HTTP 200 with `og:url` pointing to the canonical trailing-slash URL (`https://cardigo.co.il/blog/<canonical-slug>/`). Reversed resolution order (`previousSlugs` first) is a regression and is forbidden. Note: the OG endpoint section earlier in this runbook describes the pre-2026-05 behavior where OG resolved only the current canonical slug; this addendum is the current authority.
+
+#### 9.5.4 Frontend SSG build-time consumption
+
+`frontend/scripts/lib/fetchAliasMapForSsg.mjs` fetches the two endpoints at build time, validates slugs, rejects reserved segments (e.g. `page`, `aliases`), deduplicates, and drops ambiguous mappings. `frontend/scripts/generate-static.mjs` emits a `301` line into `dist/_redirects` for each accepted pair, both with and without trailing slash on the source. The marker block is `# cardigo-generated-alias-redirects:start` ... `:end` and MUST precede the `/blog/*` and `/guides/*` 404 wildcards in `_redirects`.
+
+#### 9.5.5 Browser path vs social UA path
+
+- Browser GET on the alias source: Netlify HTTP 301 -> canonical trailing-slash URL. Verified across Chrome, Googlebot, Bingbot UAs.
+- Social UA GET on the alias source: Edge `og-preview.js` intercepts and serves the backend OG payload with canonical `og:url`; no browser 301 (Edge intercept upstream).
+
+Both paths keep `og:url` pointing to the canonical resolved slug. The two paths are intentionally distinct.
+
+#### 9.5.6 Sitemap exclusion
+
+The backend `sitemap.xml` does not include alias source slugs. Only the canonical `slug` of each published post is emitted. This restates and is consistent with the §9 "Canonical truth" rule above.
+
+#### 9.5.7 Operator constraint - rebuild required after alias data change
+
+Adding, changing, or removing a `previousSlugs` value on a published post does NOT automatically refresh the Netlify alias 301 lines. A frontend build + deploy must run so that `dist/_redirects` is regenerated from `/api/blog/aliases` and `/api/guides/aliases`. Until that build is deployed, the browser path will not 301 from the new alias source. The rebuild-on-publish hook is a known tail and is not closed by this contour.
+
+#### 9.5.8 Canary pair (operator-reported production proof)
+
+- from: `post-afa20c3c`
+- to: `digital-card-small-business`
+- Browser GET `https://cardigo.co.il/blog/post-afa20c3c` and `https://cardigo.co.il/blog/post-afa20c3c/` -> Netlify 301 -> `https://cardigo.co.il/blog/digital-card-small-business/`, final 200 with canonical and og:url both pointing to the canonical URL.
+- Social UA GET on the same source -> 200 with canonical `og:url`.
+- Sitemap does not contain the alias source.
+
+Evidence classification is PRODUCTION_CONFIRMED_BY_OPERATOR_REPORT (no repo-persisted log files).
+
+#### 9.5.9 Cross-references
+
+- Contour handoff: `docs/handoffs/current/Cardigo_Enterprise_Handoff_2026-05-26_Public_SEO_SSG_Migration_And_PreviousSlugs_Aliases_Closed.md`.
+- Operational runbook authoritative section: `docs/runbooks/seo-public-indexability-runbook.md` -> "## 20. Public SSG Render Path for Marketing + Blog + Guides - 2026-05 Migration".
+
 ---
 
 ## 10) Index Governance & Migration

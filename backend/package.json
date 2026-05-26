@@ -27,6 +27,7 @@
         "sanity:org-access": "node scripts/sanity-org-access.mjs",
         "sanity:admin-user-delete": "node scripts/sanity-admin-user-delete.mjs",
         "sanity:imports": "node scripts/sanity-imports.mjs",
+        "sanity:og-runtime-smoke": "node scripts/sanity-og-runtime-smoke.mjs",
         "sanity:site-analytics-visit-index-drift": "node scripts/sanity-site-analytics-visit-index-drift.mjs",
         "sanity:paymentintent-index-drift": "node scripts/sanity-paymentintent-index-drift.mjs",
         "sanity:analytics-daily-index-drift": "node scripts/sanity-analytics-daily-index-drift.mjs",
