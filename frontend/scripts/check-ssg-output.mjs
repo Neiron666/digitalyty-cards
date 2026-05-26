@@ -535,6 +535,253 @@ if (!fs.existsSync(redirectsPath)) {
             );
         }
     }
+
+    // ---- alias redirect block (previousSlugs) ----
+    {
+        const ALIAS_MARKER_START = "# cardigo-generated-alias-redirects:start";
+        const ALIAS_MARKER_END = "# cardigo-generated-alias-redirects:end";
+        const ALIAS_SLUG_RE = /^[a-z0-9][a-z0-9-]*$/;
+        const ALIAS_RESERVED = new Set(["page", "aliases"]);
+        const WILDCARD_404_RULES = [
+            "/blog/page/*",
+            "/blog/*",
+            "/guides/page/*",
+            "/guides/*",
+        ];
+
+        const rawLines = redirectsContent.split("\n");
+        const startIdxs = [];
+        const endIdxs = [];
+        for (let i = 0; i < rawLines.length; i++) {
+            const t = rawLines[i].trim();
+            if (t === ALIAS_MARKER_START) startIdxs.push(i);
+            if (t === ALIAS_MARKER_END) endIdxs.push(i);
+        }
+        if (startIdxs.length !== 1) {
+            fail(
+                "_redirects:alias",
+                `alias-block start marker count = ${startIdxs.length}, expected exactly 1`,
+            );
+        }
+        if (endIdxs.length !== 1) {
+            fail(
+                "_redirects:alias",
+                `alias-block end marker count = ${endIdxs.length}, expected exactly 1`,
+            );
+        }
+        if (startIdxs.length === 1 && endIdxs.length === 1) {
+            const startIdx = startIdxs[0];
+            const endIdx = endIdxs[0];
+            if (startIdx >= endIdx) {
+                fail(
+                    "_redirects:alias",
+                    `alias-block start marker (line ${startIdx + 1}) must come before end marker (line ${endIdx + 1})`,
+                );
+            }
+
+            // Marker block must appear before the first /blog/page/* or /blog/*
+            // or /guides/page/* or /guides/* 404 wildcard rule.
+            let firstWildcardIdx = -1;
+            for (let i = 0; i < rawLines.length; i++) {
+                const norm = rawLines[i].trim().replace(/\s+/g, " ");
+                if (!norm || norm.startsWith("#")) continue;
+                const src = norm.split(" ")[0] || "";
+                if (WILDCARD_404_RULES.includes(src)) {
+                    firstWildcardIdx = i;
+                    break;
+                }
+            }
+            if (firstWildcardIdx === -1) {
+                fail(
+                    "_redirects:alias",
+                    `no bucket 404 wildcard rule found; alias block has nothing to anchor before`,
+                );
+            } else if (endIdx >= firstWildcardIdx) {
+                fail(
+                    "_redirects:alias",
+                    `alias-block end marker (line ${endIdx + 1}) must come before first bucket 404 wildcard rule (line ${firstWildcardIdx + 1})`,
+                );
+            }
+
+            // Validate each alias line strictly.
+            const seenSources = new Set();
+            const targetByPair = new Map(); // bucket+from -> target
+            const writtenDetailCache = new Map();
+            function detailExists(bucket, slug) {
+                const key = `${bucket}/${slug}`;
+                if (writtenDetailCache.has(key))
+                    return writtenDetailCache.get(key);
+                const exists = fs.existsSync(
+                    path.join(DIST, bucket, slug, "index.html"),
+                );
+                writtenDetailCache.set(key, exists);
+                return exists;
+            }
+
+            for (let i = startIdx + 1; i < endIdx; i++) {
+                const raw = rawLines[i];
+                if (raw.includes("!")) {
+                    fail(
+                        "_redirects:alias",
+                        `force flag "!" not allowed inside alias block: "${raw}"`,
+                    );
+                }
+                const trimmed = raw.trim();
+                if (trimmed.length === 0) continue;
+                if (trimmed.startsWith("#")) {
+                    fail(
+                        "_redirects:alias",
+                        `comment lines not allowed inside alias block: "${raw}"`,
+                    );
+                    continue;
+                }
+                const parts = trimmed.split(/\s+/);
+                if (parts.length !== 3) {
+                    fail(
+                        "_redirects:alias",
+                        `alias line must have exactly 3 tokens: "${raw}"`,
+                    );
+                    continue;
+                }
+                const [source, target, status] = parts;
+                if (status !== "301") {
+                    fail(
+                        "_redirects:alias",
+                        `alias status must be 301: "${raw}"`,
+                    );
+                }
+                // Source: /blog/<slug> or /blog/<slug>/ ; same for guides.
+                const sourceRe = /^\/(blog|guides)\/([a-z0-9][a-z0-9-]*)(\/)?$/;
+                const sm = source.match(sourceRe);
+                if (!sm) {
+                    fail(
+                        "_redirects:alias",
+                        `alias source has invalid shape: "${source}"`,
+                    );
+                    continue;
+                }
+                const [, srcBucket, srcSlug] = sm;
+                // Target: /blog/<slug>/ or /guides/<slug>/ (trailing slash required).
+                const targetRe = /^\/(blog|guides)\/([a-z0-9][a-z0-9-]*)\/$/;
+                const tm = target.match(targetRe);
+                if (!tm) {
+                    fail(
+                        "_redirects:alias",
+                        `alias target has invalid shape (trailing slash mandatory): "${target}"`,
+                    );
+                    continue;
+                }
+                const [, tgtBucket, tgtSlug] = tm;
+                if (srcBucket !== tgtBucket) {
+                    fail(
+                        "_redirects:alias",
+                        `alias bucket mismatch: source="${source}" target="${target}"`,
+                    );
+                }
+                if (!ALIAS_SLUG_RE.test(srcSlug)) {
+                    fail(
+                        "_redirects:alias",
+                        `alias source slug fails regex: "${srcSlug}"`,
+                    );
+                }
+                if (!ALIAS_SLUG_RE.test(tgtSlug)) {
+                    fail(
+                        "_redirects:alias",
+                        `alias target slug fails regex: "${tgtSlug}"`,
+                    );
+                }
+                if (ALIAS_RESERVED.has(srcSlug)) {
+                    fail(
+                        "_redirects:alias",
+                        `alias source slug is reserved: "${srcSlug}"`,
+                    );
+                }
+                if (ALIAS_RESERVED.has(tgtSlug)) {
+                    fail(
+                        "_redirects:alias",
+                        `alias target slug is reserved: "${tgtSlug}"`,
+                    );
+                }
+                if (srcSlug === tgtSlug) {
+                    fail(
+                        "_redirects:alias",
+                        `alias source and target slug are identical: "${srcSlug}"`,
+                    );
+                }
+                // Forbidden chars/sequences anywhere in source/target.
+                for (const v of [source, target]) {
+                    if (
+                        /\/\//.test(v) ||
+                        /[\s?#:\\]/.test(v) ||
+                        /^https?:\/\//.test(v) ||
+                        // eslint-disable-next-line no-control-regex
+                        /[\u0000-\u001F\u007F]/.test(v)
+                    ) {
+                        fail(
+                            "_redirects:alias",
+                            `alias path contains forbidden characters/sequence: "${v}"`,
+                        );
+                    }
+                }
+                // Anti-overlap with pagination wildcards.
+                if (srcSlug === "page" || tgtSlug === "page") {
+                    fail(
+                        "_redirects:alias",
+                        `alias slug must not equal pagination segment "page"`,
+                    );
+                }
+                // Duplicate source guard.
+                if (seenSources.has(source)) {
+                    fail(
+                        "_redirects:alias",
+                        `duplicate alias source: "${source}"`,
+                    );
+                } else {
+                    seenSources.add(source);
+                }
+                // Pair invariant: from+target must be the same on both /<from>
+                // and /<from>/ variants.
+                const pairKey = `${srcBucket}/${srcSlug}`;
+                if (targetByPair.has(pairKey)) {
+                    if (targetByPair.get(pairKey) !== target) {
+                        fail(
+                            "_redirects:alias",
+                            `alias variant target mismatch for "${pairKey}": "${target}" vs "${targetByPair.get(pairKey)}"`,
+                        );
+                    }
+                } else {
+                    targetByPair.set(pairKey, target);
+                }
+                // Target detail page must exist on disk.
+                if (!detailExists(tgtBucket, tgtSlug)) {
+                    fail(
+                        "_redirects:alias",
+                        `alias target detail page missing on disk: dist/${tgtBucket}/${tgtSlug}/index.html`,
+                    );
+                }
+                // Source detail page must NOT exist (anti-shadow).
+                if (detailExists(srcBucket, srcSlug)) {
+                    fail(
+                        "_redirects:alias",
+                        `alias source slug shadows a real detail page: dist/${srcBucket}/${srcSlug}/index.html`,
+                    );
+                }
+            }
+            // Pairing invariant: every from must appear with BOTH slash and
+            // no-slash source variants.
+            for (const pairKey of targetByPair.keys()) {
+                const [bucket, fromSlug] = pairKey.split("/");
+                const a = `/${bucket}/${fromSlug}`;
+                const b = `/${bucket}/${fromSlug}/`;
+                if (!seenSources.has(a) || !seenSources.has(b)) {
+                    fail(
+                        "_redirects:alias",
+                        `alias "${pairKey}" missing one of the slash variants (expected both "${a}" and "${b}")`,
+                    );
+                }
+            }
+        }
+    }
 }
 
 // ---- 404.html shape guard ----

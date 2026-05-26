@@ -20,6 +20,7 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import { fetchListingForSsg } from "./lib/fetchListingForSsg.mjs";
 import { fetchAllSlugsForSsg } from "./lib/fetchAllSlugsForSsg.mjs";
 import { fetchDetailForSsg } from "./lib/fetchDetailForSsg.mjs";
+import { fetchAliasMapForSsg } from "./lib/fetchAliasMapForSsg.mjs";
 import { serializeJsonForHtml } from "./lib/jsonForHtml.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -440,4 +441,153 @@ for (const family of DETAIL_FAMILIES) {
 
 console.log(
     `SSG_DETAIL_STATUS: blog=${detailStatus.blog} count=${detailCounts.blog} guides=${detailStatus.guides} count=${detailCounts.guides}`,
+);
+
+/* ── Alias redirect block (previousSlugs) ─────────────────────── */
+
+const ALIAS_RESERVED = new Set(["page", "aliases"]);
+const ALIAS_SLUG_RE = /^[a-z0-9][a-z0-9-]*$/;
+const ALIAS_MARKER_START = "# cardigo-generated-alias-redirects:start";
+const ALIAS_MARKER_END = "# cardigo-generated-alias-redirects:end";
+const ALIAS_FAMILIES = [
+    { key: "blog", endpoint: "/api/blog/aliases", bucket: "blog" },
+    { key: "guides", endpoint: "/api/guides/aliases", bucket: "guides" },
+];
+const aliasStatus = { blog: "DEGRADED", guides: "DEGRADED" };
+const aliasCounts = { blog: 0, guides: 0 };
+const aliasReasons = { blog: "fetch-failed", guides: "fetch-failed" };
+
+function collectWrittenDetailSlugs(bucket) {
+    const dir = path.join(DIST, bucket);
+    if (!fs.existsSync(dir)) return new Set();
+    if (!fs.statSync(dir).isDirectory()) return new Set();
+    const entries = fs.readdirSync(dir, { withFileTypes: true });
+    const slugs = new Set();
+    for (const e of entries) {
+        if (!e.isDirectory()) continue;
+        if (e.name === "page") continue;
+        const indexHtml = path.join(dir, e.name, "index.html");
+        if (!fs.existsSync(indexHtml)) continue;
+        slugs.add(e.name);
+    }
+    return slugs;
+}
+
+const aliasLinesByFamily = { blog: [], guides: [] };
+
+for (const fam of ALIAS_FAMILIES) {
+    const writtenSlugs = collectWrittenDetailSlugs(fam.bucket);
+    const result = await fetchAliasMapForSsg({
+        key: fam.key,
+        endpoint: fam.endpoint,
+        origin: SSG_LISTING_API_ORIGIN,
+        timeoutMs: 8000,
+        logger: console,
+    });
+    if (!result.ok) {
+        aliasStatus[fam.key] = "DEGRADED";
+        aliasCounts[fam.key] = 0;
+        aliasReasons[fam.key] = result.reason || "fetch-failed";
+        aliasLinesByFamily[fam.key] = [];
+        continue;
+    }
+    const accepted = [];
+    for (const { from, to } of result.aliases) {
+        if (typeof from !== "string" || typeof to !== "string") continue;
+        if (!ALIAS_SLUG_RE.test(from) || !ALIAS_SLUG_RE.test(to)) continue;
+        if (ALIAS_RESERVED.has(from) || ALIAS_RESERVED.has(to)) continue;
+        if (from === to) continue;
+        // from must NOT shadow an existing static detail page.
+        if (writtenSlugs.has(from)) continue;
+        // to MUST exist as a written static detail page so the redirect target
+        // is real. If it doesn't, drop the alias rather than emit a 301 to a
+        // page that would itself 404.
+        if (!writtenSlugs.has(to)) continue;
+        accepted.push({ from, to });
+    }
+    aliasCounts[fam.key] = accepted.length;
+    aliasStatus[fam.key] = "FULL";
+    aliasReasons[fam.key] = "none";
+    const lines = [];
+    for (const { from, to } of accepted) {
+        const target = `/${fam.bucket}/${to}/`;
+        lines.push(`/${fam.bucket}/${from} ${target} 301`);
+        lines.push(`/${fam.bucket}/${from}/ ${target} 301`);
+    }
+    aliasLinesByFamily[fam.key] = lines;
+}
+
+// Emit the marker block into dist/_redirects before the bucket 404 wildcards.
+{
+    const redirectsPath = path.join(DIST, "_redirects");
+    if (!fs.existsSync(redirectsPath)) {
+        console.warn(
+            `[ssg] alias block: dist/_redirects not found at ${redirectsPath} \u2014 skipping marker emission.`,
+        );
+    } else {
+        const raw = fs.readFileSync(redirectsPath, "utf8");
+        // Strip any pre-existing marker block to keep the operation idempotent.
+        // Marker strings are control-character-free literals (letters, digits,
+        // hyphens, colons, hashes), so no regex-escape is required.
+        let stripped = raw;
+        const blockRe = new RegExp(
+            `${ALIAS_MARKER_START}[\\s\\S]*?${ALIAS_MARKER_END}\\n?`,
+            "g",
+        );
+        stripped = stripped.replace(blockRe, "");
+        const lines = stripped.split("\n");
+
+        // Find first occurrence of a bucket 404 wildcard rule, in declared order.
+        const WILDCARD_RULES = [
+            "/blog/page/*",
+            "/blog/*",
+            "/guides/page/*",
+            "/guides/*",
+        ];
+        let insertIdx = -1;
+        for (let i = 0; i < lines.length; i++) {
+            const norm = lines[i].trim().replace(/\s+/g, " ");
+            if (!norm || norm.startsWith("#")) continue;
+            const src = norm.split(" ")[0] || "";
+            if (WILDCARD_RULES.includes(src)) {
+                insertIdx = i;
+                break;
+            }
+        }
+
+        const allAliasLines = [
+            ...aliasLinesByFamily.blog,
+            ...aliasLinesByFamily.guides,
+        ];
+        const block = [ALIAS_MARKER_START, ...allAliasLines, ALIAS_MARKER_END];
+
+        let nextLines;
+        if (insertIdx === -1) {
+            // No bucket 404 found \u2014 append at end (safer than dropping).
+            console.warn(
+                "[ssg] alias block: no bucket 404 wildcard found; appending block at end of _redirects.",
+            );
+            nextLines = [...lines];
+            if (
+                nextLines.length > 0 &&
+                nextLines[nextLines.length - 1] !== ""
+            ) {
+                nextLines.push("");
+            }
+            nextLines.push(...block);
+        } else {
+            nextLines = [
+                ...lines.slice(0, insertIdx),
+                ...block,
+                ...lines.slice(insertIdx),
+            ];
+        }
+
+        const nextContent = nextLines.join("\n");
+        fs.writeFileSync(redirectsPath, nextContent, "utf8");
+    }
+}
+
+console.log(
+    `SSG_ALIAS_STATUS: blog=${aliasStatus.blog} count=${aliasCounts.blog} reason=${aliasReasons.blog} guides=${aliasStatus.guides} count=${aliasCounts.guides} reason=${aliasReasons.guides}`,
 );

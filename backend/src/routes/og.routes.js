@@ -125,6 +125,24 @@ function buildCardOgMetadata(card, siteUrl) {
 
 const DEFAULT_BLOG_AUTHOR_NAME = "\u05D5\u05DC\u05E0\u05D8\u05D9\u05DF";
 
+async function resolvePublishedBySlugOrAlias(Model, rawSlug) {
+    const slug = String(rawSlug || "")
+        .trim()
+        .toLowerCase();
+    if (!slug) return null;
+
+    const exact = await Model.findOne({
+        slug,
+        status: "published",
+    }).lean();
+    if (exact) return exact;
+
+    return Model.findOne({
+        previousSlugs: slug,
+        status: "published",
+    }).lean();
+}
+
 /* ── OG redirect resolver ─────────────────────────────────────── */
 
 async function resolveOgRedirectTarget(
@@ -198,11 +216,12 @@ router.get("/og/blog/:slug", async (req, res) => {
         .toLowerCase();
     if (!slug) return res.status(404).send("Not found");
 
-    const post = await BlogPost.findOne({ slug, status: "published" }).lean();
+    const post = await resolvePublishedBySlugOrAlias(BlogPost, slug);
     if (!post) return res.status(404).send("Not found");
 
     const siteUrl = getSiteUrl();
-    const publicUrl = `${siteUrl}/blog/${slug}/`;
+    // publicUrl built from resolved post.slug — alias requests get canonical URL.
+    const publicUrl = `${siteUrl}/blog/${post.slug}/`;
 
     // Collapse newlines → single space so meta content="..." stays single-line.
     const collapseWs = (s) =>
@@ -307,11 +326,12 @@ router.get("/og/guides/:slug", async (req, res) => {
         .toLowerCase();
     if (!slug) return res.status(404).send("Not found");
 
-    const post = await GuidePost.findOne({ slug, status: "published" }).lean();
+    const post = await resolvePublishedBySlugOrAlias(GuidePost, slug);
     if (!post) return res.status(404).send("Not found");
 
     const siteUrl = getSiteUrl();
-    const publicUrl = `${siteUrl}/guides/${slug}/`;
+    // publicUrl built from resolved post.slug — alias requests get canonical URL.
+    const publicUrl = `${siteUrl}/guides/${post.slug}/`;
 
     const collapseWs = (s) =>
         String(s || "")

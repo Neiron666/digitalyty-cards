@@ -117,3 +117,74 @@ export async function getPublishedPost(req, res) {
         return res.status(500).json({ message: "Server error" });
     }
 }
+
+// Reserved public-content path segments. Duplicated independently in
+// guide.controller.js and frontend SSG validation; check-ssg-output enforces
+// drift detection at build time.
+const RESERVED_PUBLIC_CONTENT_SEGMENTS = new Set(["page", "aliases"]);
+const ALIAS_SLUG_RE = /^[a-z0-9][a-z0-9-]*$/;
+
+export async function listBlogAliases(req, res) {
+    res.setHeader("Cache-Control", "no-store");
+    try {
+        const [withAliases, allPublished] = await Promise.all([
+            BlogPost.find({
+                status: "published",
+                previousSlugs: { $exists: true, $not: { $size: 0 } },
+            })
+                .select("slug previousSlugs")
+                .lean(),
+            BlogPost.find({ status: "published" }).select("slug").lean(),
+        ]);
+
+        const currentSlugs = new Set(
+            allPublished
+                .map((p) => String(p.slug || "").toLowerCase())
+                .filter(Boolean),
+        );
+
+        const accepted = new Map();
+        const conflicts = new Set();
+
+        for (const post of withAliases) {
+            const to = String(post.slug || "")
+                .toLowerCase()
+                .trim();
+            if (!to || !ALIAS_SLUG_RE.test(to)) continue;
+            if (RESERVED_PUBLIC_CONTENT_SEGMENTS.has(to)) continue;
+            const list = Array.isArray(post.previousSlugs)
+                ? post.previousSlugs
+                : [];
+            for (const raw of list) {
+                if (typeof raw !== "string") continue;
+                const from = raw.toLowerCase().trim();
+                if (!from || !ALIAS_SLUG_RE.test(from)) continue;
+                if (RESERVED_PUBLIC_CONTENT_SEGMENTS.has(from)) continue;
+                if (from === to) continue;
+                // anti-collision: a published canonical wins over an alias.
+                if (currentSlugs.has(from)) continue;
+                if (accepted.has(from)) {
+                    if (accepted.get(from) !== to) conflicts.add(from);
+                    continue;
+                }
+                accepted.set(from, to);
+            }
+        }
+
+        for (const f of conflicts) {
+            console.warn(
+                `[blog] listBlogAliases: alias ambiguity skipped from="${f}"`,
+            );
+            accepted.delete(f);
+        }
+
+        const aliases = [];
+        for (const [from, to] of accepted.entries()) {
+            aliases.push({ from, to });
+        }
+        return res.json(aliases);
+    } catch (err) {
+        console.error("[blog] listBlogAliases error:", err);
+        return res.status(500).json({ message: "Server error" });
+    }
+}
