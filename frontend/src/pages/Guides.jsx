@@ -1,10 +1,12 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
 import SeoHelmet from "../components/seo/SeoHelmet";
 import {
     CARDIGO_OG_IMAGE_URL,
+    buildMarketingUrl,
     getMarketingMeta,
 } from "../seo/marketingMeta.config.js";
+import { useInitialListingData } from "../seo/initialListingData";
 import {
     trackSitePageView,
     trackSiteClick,
@@ -49,12 +51,14 @@ const GUIDES_FAQ = [
     },
 ];
 
+const GUIDES_ROOT_URL = buildMarketingUrl(getMarketingMeta("guides").path);
+
 function buildGuidesFaqJsonLd() {
     return {
         "@context": "https://schema.org",
         "@type": "FAQPage",
-        "@id": `${ORIGIN}/guides#faq`,
-        url: `${ORIGIN}/guides`,
+        "@id": `${GUIDES_ROOT_URL}#faq`,
+        url: GUIDES_ROOT_URL,
         inLanguage: "he",
         mainEntity: GUIDES_FAQ.map((item) => ({
             "@type": "Question",
@@ -96,25 +100,41 @@ export default function Guides() {
     const page =
         Number.isFinite(parsed) && parsed >= 1 ? Math.floor(parsed) : 0;
 
-    /* Normalize invalid or page-1 via /guides/page/1 → /guides */
+    /* Normalize invalid or page-1 via /guides/page/1 → /guides/ */
     useEffect(() => {
         if (pageNum != null && page <= 1) {
-            navigate("/guides", { replace: true });
+            navigate("/guides/", { replace: true });
         }
     }, [pageNum, page, navigate]);
 
-    const [posts, setPosts] = useState([]);
-    const [total, setTotal] = useState(0);
-    const [loading, setLoading] = useState(true);
+    const effectivePage = page >= 1 ? page : 1;
+
+    /* Phase 2B: consume build-time SSG initial listing data (page 1 only). */
+    const initialSeed = useInitialListingData("guides");
+    const hasSeed =
+        initialSeed && Array.isArray(initialSeed.items) && effectivePage === 1;
+
+    const [posts, setPosts] = useState(() =>
+        hasSeed ? initialSeed.items : [],
+    );
+    const [total, setTotal] = useState(() =>
+        hasSeed ? initialSeed.total || 0 : 0,
+    );
+    const [loading, setLoading] = useState(() => (hasSeed ? false : true));
     const [error, setError] = useState(null);
 
-    const effectivePage = page >= 1 ? page : 1;
+    /* Phase 2B: suppress exactly the first effect-driven fetch when seeded. */
+    const skipFirstFetchRef = useRef(hasSeed);
 
     useEffect(() => {
         trackSitePageView();
     }, []);
 
     useEffect(() => {
+        if (skipFirstFetchRef.current) {
+            skipFirstFetchRef.current = false;
+            return;
+        }
         let cancelled = false;
         async function load() {
             setLoading(true);
@@ -149,7 +169,7 @@ export default function Guides() {
         if (loading || totalPages === 0) return;
         if (effectivePage > totalPages) {
             navigate(
-                totalPages <= 1 ? "/guides" : `/guides/page/${totalPages}`,
+                totalPages <= 1 ? "/guides/" : `/guides/page/${totalPages}`,
                 { replace: true },
             );
         }
@@ -157,7 +177,7 @@ export default function Guides() {
 
     const canonicalUrl =
         effectivePage <= 1
-            ? `${ORIGIN}/guides`
+            ? GUIDES_ROOT_URL
             : `${ORIGIN}/guides/page/${effectivePage}`;
 
     return (
@@ -286,7 +306,7 @@ export default function Guides() {
                                     className={styles.pageBtn}
                                     to={
                                         effectivePage === 2
-                                            ? "/guides"
+                                            ? "/guides/"
                                             : `/guides/page/${effectivePage - 1}`
                                     }
                                 >

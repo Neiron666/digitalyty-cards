@@ -5,16 +5,24 @@ import { RouterProvider } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
 import { UnreadCountProvider } from "./context/UnreadCountContext";
 import router from "./app/router";
+import {
+    InitialListingDataProvider,
+    readInitialListingDataFromDocument,
+} from "./seo/initialListingData";
 import "./lib/installPromptStore"; // early init — capture beforeinstallprompt before lazy routes
 import "./styles/globals.css";
 import "./styles/tour.css";
+
+const initialListingData = readInitialListingDataFromDocument();
 
 const app = (
     <HelmetProvider>
         <StrictMode>
             <AuthProvider>
                 <UnreadCountProvider>
-                    <RouterProvider router={router} />
+                    <InitialListingDataProvider value={initialListingData}>
+                        <RouterProvider router={router} />
+                    </InitialListingDataProvider>
                 </UnreadCountProvider>
             </AuthProvider>
         </StrictMode>

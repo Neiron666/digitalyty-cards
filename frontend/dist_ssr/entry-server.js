@@ -3734,13 +3734,13 @@ const MARKETING_META = Object.freeze({
     imageAlt: "Cardigo – צור קשר"
   }),
   blog: Object.freeze({
-    path: "/blog",
+    path: "/blog/",
     title: "בלוג | Cardigo",
     description: "מאמרים, מדריכים ותובנות בנושא כרטיסי ביקור דיגיטליים, נוכחות עסקית, SEO ותקשורת חכמה עם לקוחות.",
     imageAlt: "Cardigo – בלוג"
   }),
   guides: Object.freeze({
-    path: "/guides",
+    path: "/guides/",
     title: "מדריכים | Cardigo",
     description: "מדריכים מעשיים, צעד אחרי צעד, על כרטיסי ביקור דיגיטליים, עיצוב כרטיס, SEO, נוכחות עסקית ושימוש בכלים הדיגיטליים של Cardigo.",
     imageAlt: "Cardigo – מדריכים"
@@ -4434,6 +4434,18 @@ function Contact() {
     ] }) })
   ] });
 }
+const EMPTY = Object.freeze({});
+const InitialListingDataContext = createContext(EMPTY);
+function InitialListingDataProvider({ value, children }) {
+  const safeValue = value && typeof value === "object" && !Array.isArray(value) ? value : EMPTY;
+  return /* @__PURE__ */ jsx(InitialListingDataContext.Provider, { value: safeValue, children });
+}
+function useInitialListingData(key) {
+  const ctx = useContext(InitialListingDataContext) || EMPTY;
+  if (typeof key !== "string" || key.length === 0) return null;
+  const v = ctx[key];
+  return v === void 0 ? null : v;
+}
 const heroWrap$7 = "_heroWrap_thvgg_21";
 const heroCopy$3 = "_heroCopy_thvgg_29";
 const h1$7 = "_h1_thvgg_69";
@@ -4516,12 +4528,13 @@ const BLOG_FAQ = [
     a: "אם עדיין אין לכם כרטיס ביקור דיגיטלי, אפשר להתחיל קודם מלקרוא את המאמרים הרלוונטיים בבלוג, להבין מה חשוב באמת לעסק, ורק אחר כך לבנות כרטיס שמציג אתכם בצורה מקצועית, ברורה ונכונה יותר."
   }
 ];
+const BLOG_ROOT_URL = buildMarketingUrl(getMarketingMeta("blog").path);
 function buildBlogFaqJsonLd() {
   return {
     "@context": "https://schema.org",
     "@type": "FAQPage",
-    "@id": `${ORIGIN$1}/blog#faq`,
-    url: `${ORIGIN$1}/blog`,
+    "@id": `${BLOG_ROOT_URL}#faq`,
+    url: BLOG_ROOT_URL,
     inLanguage: "he",
     mainEntity: BLOG_FAQ.map((item) => ({
       "@type": "Question",
@@ -4554,18 +4567,29 @@ function Blog() {
   const page2 = Number.isFinite(parsed) && parsed >= 1 ? Math.floor(parsed) : 0;
   useEffect(() => {
     if (pageNum != null && page2 <= 1) {
-      navigate("/blog", { replace: true });
+      navigate("/blog/", { replace: true });
     }
   }, [pageNum, page2, navigate]);
-  const [posts, setPosts] = useState([]);
-  const [total, setTotal] = useState(0);
-  const [loading, setLoading] = useState(true);
-  const [error2, setError] = useState(null);
   const effectivePage = page2 >= 1 ? page2 : 1;
+  const initialSeed = useInitialListingData("blog");
+  const hasSeed = initialSeed && Array.isArray(initialSeed.items) && effectivePage === 1;
+  const [posts, setPosts] = useState(
+    () => hasSeed ? initialSeed.items : []
+  );
+  const [total, setTotal] = useState(
+    () => hasSeed ? initialSeed.total || 0 : 0
+  );
+  const [loading, setLoading] = useState(() => hasSeed ? false : true);
+  const [error2, setError] = useState(null);
+  const skipFirstFetchRef = useRef(hasSeed);
   useEffect(() => {
     trackSitePageView();
   }, []);
   useEffect(() => {
+    if (skipFirstFetchRef.current) {
+      skipFirstFetchRef.current = false;
+      return;
+    }
     let cancelled = false;
     async function load() {
       setLoading(true);
@@ -4595,12 +4619,12 @@ function Blog() {
   useEffect(() => {
     if (loading || totalPages === 0) return;
     if (effectivePage > totalPages) {
-      navigate(totalPages <= 1 ? "/blog" : `/blog/page/${totalPages}`, {
+      navigate(totalPages <= 1 ? "/blog/" : `/blog/page/${totalPages}`, {
         replace: true
       });
     }
   }, [loading, effectivePage, totalPages, navigate]);
-  const canonicalUrl2 = effectivePage <= 1 ? `${ORIGIN$1}/blog` : `${ORIGIN$1}/blog/page/${effectivePage}`;
+  const canonicalUrl2 = effectivePage <= 1 ? BLOG_ROOT_URL : `${ORIGIN$1}/blog/page/${effectivePage}`;
   return /* @__PURE__ */ jsxs("main", { "data-page": "site", children: [
     /* @__PURE__ */ jsx(
       SeoHelmet,
@@ -4691,7 +4715,7 @@ function Blog() {
               Link,
               {
                 className: styles$9.pageBtn,
-                to: effectivePage === 2 ? "/blog" : `/blog/page/${effectivePage - 1}`,
+                to: effectivePage === 2 ? "/blog/" : `/blog/page/${effectivePage - 1}`,
                 children: "הקודם"
               }
             ),
@@ -5567,12 +5591,13 @@ const GUIDES_FAQ = [
     a: "בחרו את הנושא שהכי קרוב לצורך שלכם כרגע - בניית כרטיס, עיצוב, שיתוף, SEO, או ניהול נוכחות עסקית - ועקבו אחרי ההוראות צעד אחרי צעד."
   }
 ];
+const GUIDES_ROOT_URL = buildMarketingUrl(getMarketingMeta("guides").path);
 function buildGuidesFaqJsonLd() {
   return {
     "@context": "https://schema.org",
     "@type": "FAQPage",
-    "@id": `${ORIGIN}/guides#faq`,
-    url: `${ORIGIN}/guides`,
+    "@id": `${GUIDES_ROOT_URL}#faq`,
+    url: GUIDES_ROOT_URL,
     inLanguage: "he",
     mainEntity: GUIDES_FAQ.map((item) => ({
       "@type": "Question",
@@ -5605,18 +5630,29 @@ function Guides() {
   const page2 = Number.isFinite(parsed) && parsed >= 1 ? Math.floor(parsed) : 0;
   useEffect(() => {
     if (pageNum != null && page2 <= 1) {
-      navigate("/guides", { replace: true });
+      navigate("/guides/", { replace: true });
     }
   }, [pageNum, page2, navigate]);
-  const [posts, setPosts] = useState([]);
-  const [total, setTotal] = useState(0);
-  const [loading, setLoading] = useState(true);
-  const [error2, setError] = useState(null);
   const effectivePage = page2 >= 1 ? page2 : 1;
+  const initialSeed = useInitialListingData("guides");
+  const hasSeed = initialSeed && Array.isArray(initialSeed.items) && effectivePage === 1;
+  const [posts, setPosts] = useState(
+    () => hasSeed ? initialSeed.items : []
+  );
+  const [total, setTotal] = useState(
+    () => hasSeed ? initialSeed.total || 0 : 0
+  );
+  const [loading, setLoading] = useState(() => hasSeed ? false : true);
+  const [error2, setError] = useState(null);
+  const skipFirstFetchRef = useRef(hasSeed);
   useEffect(() => {
     trackSitePageView();
   }, []);
   useEffect(() => {
+    if (skipFirstFetchRef.current) {
+      skipFirstFetchRef.current = false;
+      return;
+    }
     let cancelled = false;
     async function load() {
       setLoading(true);
@@ -5648,12 +5684,12 @@ function Guides() {
     if (loading || totalPages === 0) return;
     if (effectivePage > totalPages) {
       navigate(
-        totalPages <= 1 ? "/guides" : `/guides/page/${totalPages}`,
+        totalPages <= 1 ? "/guides/" : `/guides/page/${totalPages}`,
         { replace: true }
       );
     }
   }, [loading, effectivePage, totalPages, navigate]);
-  const canonicalUrl2 = effectivePage <= 1 ? `${ORIGIN}/guides` : `${ORIGIN}/guides/page/${effectivePage}`;
+  const canonicalUrl2 = effectivePage <= 1 ? GUIDES_ROOT_URL : `${ORIGIN}/guides/page/${effectivePage}`;
   return /* @__PURE__ */ jsxs("main", { "data-page": "site", children: [
     /* @__PURE__ */ jsx(
       SeoHelmet,
@@ -5744,7 +5780,7 @@ function Guides() {
               Link,
               {
                 className: styles$6.pageBtn,
-                to: effectivePage === 2 ? "/guides" : `/guides/page/${effectivePage - 1}`,
+                to: effectivePage === 2 ? "/guides/" : `/guides/page/${effectivePage - 1}`,
                 children: "הקודם"
               }
             ),
@@ -7495,7 +7531,7 @@ const routes = [
     element: /* @__PURE__ */ jsx(ChunkErrorBoundary, { label: "שגיאת טעינה", children: /* @__PURE__ */ jsx(Suspense, { fallback: /* @__PURE__ */ jsx(RouteFallback, { label: "טוען…" }), children: /* @__PURE__ */ jsx(IframeReturnPage, {}) }) })
   }
 ];
-async function renderForRoute(url) {
+async function renderForRoute(url, options = {}) {
   if (typeof url !== "string" || !url.startsWith("/")) {
     throw new TypeError(
       `renderForRoute: url must be a string starting with "/", got: ${JSON.stringify(url)}`
@@ -7509,8 +7545,9 @@ async function renderForRoute(url) {
   }
   const router = createStaticRouter(routes, context);
   const helmetContext = {};
+  const initialListingData = options && typeof options === "object" && options.initialListingData ? options.initialListingData : {};
   const html = renderToString(
-    /* @__PURE__ */ jsx(HelmetProvider, { context: helmetContext, children: /* @__PURE__ */ jsx(AuthProvider, { children: /* @__PURE__ */ jsx(UnreadCountProvider, { children: /* @__PURE__ */ jsx(StaticRouterProvider, { router, context }) }) }) })
+    /* @__PURE__ */ jsx(HelmetProvider, { context: helmetContext, children: /* @__PURE__ */ jsx(AuthProvider, { children: /* @__PURE__ */ jsx(UnreadCountProvider, { children: /* @__PURE__ */ jsx(InitialListingDataProvider, { value: initialListingData, children: /* @__PURE__ */ jsx(StaticRouterProvider, { router, context }) }) }) }) })
   );
   return { html, helmetContext };
 }

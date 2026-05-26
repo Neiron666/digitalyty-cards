@@ -120,7 +120,60 @@ const ROUTES = [
             '"https://cardigo.co.il/contact"',
         ],
     },
+    {
+        label: "blog",
+        file: "blog/index.html",
+        expectRootFilled: true,
+        sizeMin: 10001,
+        sizeMax: null,
+        canonicalCount: 1,
+        canonicalValue: "https://cardigo.co.il/blog/",
+        ogUrlCount: 1,
+        ogUrlValue: "https://cardigo.co.il/blog/",
+        homepageLeakCheck: true,
+        jsonLdExpected: null,
+        requireHebrew: true,
+        jsonLdMustInclude: [
+            "https://cardigo.co.il/blog/",
+            "https://cardigo.co.il/blog/#faq",
+        ],
+        jsonLdMustNotInclude: [
+            "https://cardigo.co.il/blog#faq",
+            '"https://cardigo.co.il/blog"',
+        ],
+        dataIslandRequired: true,
+        dataIslandKey: "blog",
+        detailHrefPrefix: "/blog/",
+    },
+    {
+        label: "guides",
+        file: "guides/index.html",
+        expectRootFilled: true,
+        sizeMin: 10001,
+        sizeMax: null,
+        canonicalCount: 1,
+        canonicalValue: "https://cardigo.co.il/guides/",
+        ogUrlCount: 1,
+        ogUrlValue: "https://cardigo.co.il/guides/",
+        homepageLeakCheck: true,
+        jsonLdExpected: null,
+        requireHebrew: true,
+        jsonLdMustInclude: [
+            "https://cardigo.co.il/guides/",
+            "https://cardigo.co.il/guides/#faq",
+        ],
+        jsonLdMustNotInclude: [
+            "https://cardigo.co.il/guides#faq",
+            '"https://cardigo.co.il/guides"',
+        ],
+        dataIslandRequired: true,
+        dataIslandKey: "guides",
+        detailHrefPrefix: "/guides/",
+    },
 ];
+
+const DATA_ISLAND_ELEMENT_ID = "cardigo-initial-listing-data";
+const listingFullness = { blog: "N/A", guides: "N/A" };
 
 // ---- helpers ----
 
@@ -321,6 +374,69 @@ for (const route of ROUTES) {
             }
         }
     }
+
+    // 12. Data island (listing routes only — blog, guides).
+    if (route.dataIslandRequired) {
+        const islandRe = new RegExp(
+            `<script[^>]+type=["']application/json["'][^>]+id=["']${DATA_ISLAND_ELEMENT_ID}["'][^>]*>([\\s\\S]*?)</script>`,
+            "gi",
+        );
+        const matches = [...html.matchAll(islandRe)];
+        if (matches.length !== 1) {
+            fail(
+                label,
+                `data island count = ${matches.length}, expected exactly 1 (id="${DATA_ISLAND_ELEMENT_ID}")`,
+            );
+            if (route.dataIslandKey) {
+                listingFullness[route.dataIslandKey] = "DEGRADED";
+            }
+        } else {
+            let parsed = null;
+            try {
+                parsed = JSON.parse(matches[0][1]);
+            } catch {
+                fail(label, `data island JSON.parse failed`);
+            }
+            const keyed =
+                parsed && typeof parsed === "object" && !Array.isArray(parsed)
+                    ? parsed[route.dataIslandKey]
+                    : null;
+            if (
+                !keyed ||
+                typeof keyed !== "object" ||
+                !Array.isArray(keyed.items)
+            ) {
+                fail(
+                    label,
+                    `data island missing key "${route.dataIslandKey}" with items[] array`,
+                );
+                if (route.dataIslandKey) {
+                    listingFullness[route.dataIslandKey] = "DEGRADED";
+                }
+            } else if (keyed.items.length === 0) {
+                listingFullness[route.dataIslandKey] = "DEGRADED";
+            } else {
+                const first = keyed.items[0];
+                const slug =
+                    first && typeof first.slug === "string" ? first.slug : "";
+                if (!slug) {
+                    fail(label, `data island first item missing string slug`);
+                    listingFullness[route.dataIslandKey] = "DEGRADED";
+                } else {
+                    const hrefNeedle = `href="${route.detailHrefPrefix}${slug}"`;
+                    if (!html.includes(hrefNeedle)) {
+                        fail(
+                            label,
+                            `body missing detail link ${hrefNeedle} for first data-island item`,
+                        );
+                        listingFullness[route.dataIslandKey] = "DEGRADED";
+                    } else {
+                        listingFullness[route.dataIslandKey] = "FULL";
+                    }
+                }
+            }
+        }
+    }
 }
 
 // ---- _redirects contract ----
@@ -391,4 +507,7 @@ if (errors.length > 0) {
     process.exit(1);
 }
 
-console.log("PASS: SSG output valid. Checked 5 files and _redirects contract.");
+console.log("PASS: SSG output valid. Checked 7 files and _redirects contract.");
+console.log(
+    `LISTING_FULLNESS: blog=${listingFullness.blog} guides=${listingFullness.guides}`,
+);

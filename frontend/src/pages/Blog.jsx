@@ -1,10 +1,12 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
 import SeoHelmet from "../components/seo/SeoHelmet";
 import {
     CARDIGO_OG_IMAGE_URL,
+    buildMarketingUrl,
     getMarketingMeta,
 } from "../seo/marketingMeta.config.js";
+import { useInitialListingData } from "../seo/initialListingData";
 import {
     trackSitePageView,
     trackSiteClick,
@@ -57,12 +59,14 @@ const BLOG_FAQ = [
     },
 ];
 
+const BLOG_ROOT_URL = buildMarketingUrl(getMarketingMeta("blog").path);
+
 function buildBlogFaqJsonLd() {
     return {
         "@context": "https://schema.org",
         "@type": "FAQPage",
-        "@id": `${ORIGIN}/blog#faq`,
-        url: `${ORIGIN}/blog`,
+        "@id": `${BLOG_ROOT_URL}#faq`,
+        url: BLOG_ROOT_URL,
         inLanguage: "he",
         mainEntity: BLOG_FAQ.map((item) => ({
             "@type": "Question",
@@ -104,25 +108,41 @@ export default function Blog() {
     const page =
         Number.isFinite(parsed) && parsed >= 1 ? Math.floor(parsed) : 0;
 
-    /* Normalize invalid or page-1 via /blog/page/1 → /blog */
+    /* Normalize invalid or page-1 via /blog/page/1 → /blog/ */
     useEffect(() => {
         if (pageNum != null && page <= 1) {
-            navigate("/blog", { replace: true });
+            navigate("/blog/", { replace: true });
         }
     }, [pageNum, page, navigate]);
 
-    const [posts, setPosts] = useState([]);
-    const [total, setTotal] = useState(0);
-    const [loading, setLoading] = useState(true);
+    const effectivePage = page >= 1 ? page : 1;
+
+    /* Phase 2B: consume build-time SSG initial listing data (page 1 only). */
+    const initialSeed = useInitialListingData("blog");
+    const hasSeed =
+        initialSeed && Array.isArray(initialSeed.items) && effectivePage === 1;
+
+    const [posts, setPosts] = useState(() =>
+        hasSeed ? initialSeed.items : [],
+    );
+    const [total, setTotal] = useState(() =>
+        hasSeed ? initialSeed.total || 0 : 0,
+    );
+    const [loading, setLoading] = useState(() => (hasSeed ? false : true));
     const [error, setError] = useState(null);
 
-    const effectivePage = page >= 1 ? page : 1;
+    /* Phase 2B: suppress exactly the first effect-driven fetch when seeded. */
+    const skipFirstFetchRef = useRef(hasSeed);
 
     useEffect(() => {
         trackSitePageView();
     }, []);
 
     useEffect(() => {
+        if (skipFirstFetchRef.current) {
+            skipFirstFetchRef.current = false;
+            return;
+        }
         let cancelled = false;
         async function load() {
             setLoading(true);
@@ -155,7 +175,7 @@ export default function Blog() {
     useEffect(() => {
         if (loading || totalPages === 0) return;
         if (effectivePage > totalPages) {
-            navigate(totalPages <= 1 ? "/blog" : `/blog/page/${totalPages}`, {
+            navigate(totalPages <= 1 ? "/blog/" : `/blog/page/${totalPages}`, {
                 replace: true,
             });
         }
@@ -163,7 +183,7 @@ export default function Blog() {
 
     const canonicalUrl =
         effectivePage <= 1
-            ? `${ORIGIN}/blog`
+            ? BLOG_ROOT_URL
             : `${ORIGIN}/blog/page/${effectivePage}`;
 
     return (
@@ -292,7 +312,7 @@ export default function Blog() {
                                     className={styles.pageBtn}
                                     to={
                                         effectivePage === 2
-                                            ? "/blog"
+                                            ? "/blog/"
                                             : `/blog/page/${effectivePage - 1}`
                                     }
                                 >

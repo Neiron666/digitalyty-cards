@@ -17,6 +17,8 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
+import { fetchListingForSsg } from "./lib/fetchListingForSsg.mjs";
+import { serializeJsonForHtml } from "./lib/jsonForHtml.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DIST = path.resolve(__dirname, "..", "dist");
@@ -27,12 +29,35 @@ const DIST_SSR_ENTRY = path.resolve(
     "entry-server.js",
 );
 
+// Phase 2B: build-time public-API origin for /blog/ and /guides/ initial listing data.
+// Env override → VITE_PUBLIC_ORIGIN → canonical production origin.
+const SSG_LISTING_API_ORIGIN =
+    process.env.SSG_LISTING_API_ORIGIN ||
+    process.env.VITE_PUBLIC_ORIGIN ||
+    "https://cardigo.co.il";
+
+const DATA_ISLAND_ELEMENT_ID = "cardigo-initial-listing-data";
+
 const SSG_ROUTES = [
     { url: "/", out: path.join(DIST, "index.html") },
     { url: "/cards/", out: path.join(DIST, "cards", "index.html") },
     { url: "/pricing/", out: path.join(DIST, "pricing", "index.html") },
     { url: "/contact/", out: path.join(DIST, "contact", "index.html") },
+    {
+        url: "/blog/",
+        out: path.join(DIST, "blog", "index.html"),
+        listingKey: "blog",
+        listingEndpoint: "/api/blog",
+    },
+    {
+        url: "/guides/",
+        out: path.join(DIST, "guides", "index.html"),
+        listingKey: "guides",
+        listingEndpoint: "/api/guides",
+    },
 ];
+
+const listingStatus = { blog: "N/A", guides: "N/A" };
 
 // Validate pre-conditions before starting.
 if (!fs.existsSync(DIST)) {
@@ -75,9 +100,45 @@ const spaShellPath = path.join(DIST, "spa-shell.html");
 fs.writeFileSync(spaShellPath, template, "utf8");
 console.log("WROTE: dist/spa-shell.html (SPA fallback shell)");
 
-for (const { url, out } of SSG_ROUTES) {
+for (const route of SSG_ROUTES) {
+    const { url, out, listingKey, listingEndpoint } = route;
     try {
-        const { html, helmetContext } = await renderForRoute(url);
+        // Phase 2B: build-time fetch (fail-open) for listing routes only.
+        let initialListingData = {};
+        let dataIslandPayload = null;
+        if (listingKey) {
+            const result = await fetchListingForSsg({
+                key: listingKey,
+                endpoint: listingEndpoint,
+                origin: SSG_LISTING_API_ORIGIN,
+                limit: 12,
+                timeoutMs: 8000,
+                logger: console,
+            });
+            if (result.ok) {
+                const payload = {
+                    page: result.page,
+                    total: result.total,
+                    items: result.items,
+                };
+                initialListingData = { [listingKey]: payload };
+                dataIslandPayload = { [listingKey]: payload };
+                listingStatus[listingKey] =
+                    result.items.length > 0 ? "FULL" : "DEGRADED";
+            } else {
+                console.warn(
+                    `[ssg] WARN: ${url} initial listing fetch failed — emitting DEGRADED data island`,
+                );
+                const empty = { page: 1, total: 0, items: [] };
+                initialListingData = { [listingKey]: empty };
+                dataIslandPayload = { [listingKey]: empty };
+                listingStatus[listingKey] = "DEGRADED";
+            }
+        }
+
+        const { html, helmetContext } = await renderForRoute(url, {
+            initialListingData,
+        });
         const { title, meta, link, script } = helmetContext.helmet;
 
         // Build the <head> injection string from all Helmet sections.
@@ -106,6 +167,15 @@ for (const { url, out } of SSG_ROUTES) {
             `<div id="root">${html}</div>`,
         );
 
+        // Phase 2B: Inject non-executable JSON data island immediately before </body>
+        // for listing routes only. Lives outside #root; consumed at hydrate time by
+        // readInitialListingDataFromDocument(). Never executable JS.
+        if (dataIslandPayload) {
+            const safeJson = serializeJsonForHtml(dataIslandPayload);
+            const dataIsland = `<script type="application/json" id="${DATA_ISLAND_ELEMENT_ID}">${safeJson}</script>`;
+            page = page.replace("</body>", `  ${dataIsland}\n</body>`);
+        }
+
         // Ensure output directory exists (handles /cards, /pricing, /contact subdirs).
         fs.mkdirSync(path.dirname(out), { recursive: true });
         fs.writeFileSync(out, page, "utf8");
@@ -128,3 +198,6 @@ for (const { url, out } of SSG_ROUTES) {
 }
 
 console.log("SSG_DONE: all routes complete");
+console.log(
+    `SSG_LISTING_STATUS: blog=${listingStatus.blog} guides=${listingStatus.guides}`,
+);

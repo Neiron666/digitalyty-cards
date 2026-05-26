@@ -33,14 +33,14 @@ export const MARKETING_META = Object.freeze({
         imageAlt: "Cardigo \u2013 צור קשר",
     }),
     blog: Object.freeze({
-        path: "/blog",
+        path: "/blog/",
         title: "בלוג | Cardigo",
         description:
             "מאמרים, מדריכים ותובנות בנושא כרטיסי ביקור דיגיטליים, נוכחות עסקית, SEO ותקשורת חכמה עם לקוחות.",
         imageAlt: "Cardigo \u2013 בלוג",
     }),
     guides: Object.freeze({
-        path: "/guides",
+        path: "/guides/",
         title: "מדריכים | Cardigo",
         description:
             "מדריכים מעשיים, צעד אחרי צעד, על כרטיסי ביקור דיגיטליים, עיצוב כרטיס, SEO, נוכחות עסקית ושימוש בכלים הדיגיטליים של Cardigo.",

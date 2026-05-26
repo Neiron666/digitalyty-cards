@@ -12,6 +12,7 @@ import { HelmetProvider } from "react-helmet-async";
 import { AuthProvider } from "./context/AuthContext";
 import { UnreadCountProvider } from "./context/UnreadCountContext";
 import routes from "./app/routes.config";
+import { InitialListingDataProvider } from "./seo/initialListingData";
 
 /**
  * Render a target marketing route to an HTML string for static generation.
@@ -24,9 +25,11 @@ import routes from "./app/routes.config";
  * helmetContext.helmet.{title,meta,link,script}.toString().
  *
  * @param {string} url - Absolute path starting with "/", e.g. "/cards"
+ * @param {object} [options]
+ * @param {object} [options.initialListingData] - Optional initial listing data map.
  * @returns {Promise<{ html: string, helmetContext: object }>}
  */
-export async function renderForRoute(url) {
+export async function renderForRoute(url, options = {}) {
     if (typeof url !== "string" || !url.startsWith("/")) {
         throw new TypeError(
             `renderForRoute: url must be a string starting with "/", got: ${JSON.stringify(url)}`,
@@ -44,12 +47,21 @@ export async function renderForRoute(url) {
 
     const router = createStaticRouter(routes, context);
     const helmetContext = {};
+    const initialListingData =
+        options && typeof options === "object" && options.initialListingData
+            ? options.initialListingData
+            : {};
 
     const html = renderToString(
         <HelmetProvider context={helmetContext}>
             <AuthProvider>
                 <UnreadCountProvider>
-                    <StaticRouterProvider router={router} context={context} />
+                    <InitialListingDataProvider value={initialListingData}>
+                        <StaticRouterProvider
+                            router={router}
+                            context={context}
+                        />
+                    </InitialListingDataProvider>
                 </UnreadCountProvider>
             </AuthProvider>
         </HelmetProvider>,
