@@ -202,7 +202,7 @@ router.get("/og/blog/:slug", async (req, res) => {
     if (!post) return res.status(404).send("Not found");
 
     const siteUrl = getSiteUrl();
-    const publicUrl = `${siteUrl}/blog/${slug}`;
+    const publicUrl = `${siteUrl}/blog/${slug}/`;
 
     // Collapse newlines → single space so meta content="..." stays single-line.
     const collapseWs = (s) =>
@@ -311,7 +311,7 @@ router.get("/og/guides/:slug", async (req, res) => {
     if (!post) return res.status(404).send("Not found");
 
     const siteUrl = getSiteUrl();
-    const publicUrl = `${siteUrl}/guides/${slug}`;
+    const publicUrl = `${siteUrl}/guides/${slug}/`;
 
     const collapseWs = (s) =>
         String(s || "")

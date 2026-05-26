@@ -179,7 +179,7 @@ router.get("/sitemap.xml", async (req, res) => {
                 const lastmod = p.updatedAt
                     ? `<lastmod>${p.updatedAt.toISOString()}</lastmod>`
                     : "";
-                return `<url><loc>${siteUrl}/blog/${s}</loc>${lastmod}</url>`;
+                return `<url><loc>${siteUrl}/blog/${s}/</loc>${lastmod}</url>`;
             })
             .filter(Boolean)
             .join("");
@@ -204,7 +204,7 @@ router.get("/sitemap.xml", async (req, res) => {
                 const lastmod = p.updatedAt
                     ? `<lastmod>${p.updatedAt.toISOString()}</lastmod>`
                     : "";
-                return `<url><loc>${siteUrl}/guides/${s}</loc>${lastmod}</url>`;
+                return `<url><loc>${siteUrl}/guides/${s}/</loc>${lastmod}</url>`;
             })
             .filter(Boolean)
             .join("");

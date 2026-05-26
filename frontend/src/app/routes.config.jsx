@@ -13,6 +13,8 @@ import Blog from "../pages/Blog";
 import Pricing from "../pages/Pricing";
 import Guides from "../pages/Guides";
 import Cards from "../pages/Cards";
+import BlogPost from "../pages/BlogPost";
+import GuidePost from "../pages/GuidePost";
 
 // legal
 import Privacy from "../pages/Privacy";
@@ -37,8 +39,6 @@ const EditCard = lazy(() => import("../pages/EditCard"));
 const Admin = lazy(() => import("../pages/Admin"));
 const OrgInvites = lazy(() => import("../pages/OrgInvites"));
 const Inbox = lazy(() => import("../pages/Inbox"));
-const BlogPost = lazy(() => import("../pages/BlogPost"));
-const GuidePost = lazy(() => import("../pages/GuidePost"));
 
 // public card
 const PublicCard = lazy(() => import("../pages/PublicCard"));

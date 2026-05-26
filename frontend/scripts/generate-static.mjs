@@ -18,6 +18,8 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { fetchListingForSsg } from "./lib/fetchListingForSsg.mjs";
+import { fetchAllSlugsForSsg } from "./lib/fetchAllSlugsForSsg.mjs";
+import { fetchDetailForSsg } from "./lib/fetchDetailForSsg.mjs";
 import { serializeJsonForHtml } from "./lib/jsonForHtml.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -37,6 +39,7 @@ const SSG_LISTING_API_ORIGIN =
     "https://cardigo.co.il";
 
 const DATA_ISLAND_ELEMENT_ID = "cardigo-initial-listing-data";
+const DETAIL_DATA_ISLAND_ELEMENT_ID = "cardigo-initial-detail-data";
 
 const SSG_ROUTES = [
     { url: "/", out: path.join(DIST, "index.html") },
@@ -200,4 +203,114 @@ for (const route of SSG_ROUTES) {
 console.log("SSG_DONE: all routes complete");
 console.log(
     `SSG_LISTING_STATUS: blog=${listingStatus.blog} guides=${listingStatus.guides}`,
+);
+
+/* ------------------------------------------------------------------ */
+/* Phase 2C: detail SSG for /blog/<slug>/ and /guides/<slug>/         */
+/* ------------------------------------------------------------------ */
+
+const DETAIL_FAMILIES = [
+    { key: "blog", endpoint: "/api/blog", urlPrefix: "/blog/", outDir: "blog" },
+    {
+        key: "guides",
+        endpoint: "/api/guides",
+        urlPrefix: "/guides/",
+        outDir: "guides",
+    },
+];
+
+const detailStatus = { blog: "N/A", guides: "N/A" };
+const detailCounts = { blog: 0, guides: 0 };
+
+for (const family of DETAIL_FAMILIES) {
+    const slugRes = await fetchAllSlugsForSsg({
+        key: family.key,
+        endpoint: family.endpoint,
+        origin: SSG_LISTING_API_ORIGIN,
+        limit: 50,
+        timeoutMs: 8000,
+        logger: console,
+    });
+    if (!slugRes.ok) {
+        console.warn(
+            `[ssg] WARN: detail slug enumeration for ${family.key} failed (${slugRes.reason}) — skipping detail generation for this family`,
+        );
+        detailStatus[family.key] = "DEGRADED";
+        continue;
+    }
+    const slugs = slugRes.slugs || [];
+    if (slugs.length === 0) {
+        detailStatus[family.key] = "DEGRADED";
+        continue;
+    }
+
+    let written = 0;
+    for (const slug of slugs) {
+        const detailRes = await fetchDetailForSsg({
+            key: family.key,
+            slug,
+            origin: SSG_LISTING_API_ORIGIN,
+            timeoutMs: 8000,
+            logger: console,
+        });
+        if (!detailRes.ok) {
+            console.warn(
+                `[ssg] WARN: detail fetch failed for ${family.key}/${slug} — skipping`,
+            );
+            continue;
+        }
+        const detail = detailRes.detail;
+        const url = `${family.urlPrefix}${detail.slug}/`;
+        const outFile = path.join(
+            DIST,
+            family.outDir,
+            detail.slug,
+            "index.html",
+        );
+
+        try {
+            const { html, helmetContext } = await renderForRoute(url, {
+                initialDetailData: { [family.key]: detail },
+            });
+            const { title, meta, link, script } = helmetContext.helmet;
+            const helmetHead = [title, meta, link, script]
+                .map((h) => h.toString().trim())
+                .filter(Boolean)
+                .join("\n  ");
+
+            let page = template;
+            page = page.replace(/<title>[^<]*<\/title>/, "");
+            page = page.replace(/<meta[^>]+data-rh="true"[^>]*>/g, "");
+            page = page.replace(/(\r?\n){3,}/g, "\n\n");
+            page = page.replace("</head>", `  ${helmetHead}\n</head>`);
+            page = page.replace(
+                '<div id="root"></div>',
+                `<div id="root">${html}</div>`,
+            );
+            const safeJson = serializeJsonForHtml({ [family.key]: detail });
+            const dataIsland = `<script type="application/json" id="${DETAIL_DATA_ISLAND_ELEMENT_ID}">${safeJson}</script>`;
+            page = page.replace("</body>", `  ${dataIsland}\n</body>`);
+
+            fs.mkdirSync(path.dirname(outFile), { recursive: true });
+            fs.writeFileSync(outFile, page, "utf8");
+            written += 1;
+        } catch (err) {
+            console.warn(
+                `[ssg] WARN: render failed for ${url} → ${err?.message || err}`,
+            );
+        }
+    }
+
+    detailCounts[family.key] = written;
+    if (written === 0) {
+        detailStatus[family.key] = "DEGRADED";
+    } else if (written < slugs.length) {
+        detailStatus[family.key] = "DEGRADED";
+    } else {
+        detailStatus[family.key] = "FULL";
+    }
+}
+
+console.log(
+    `SSG_DETAIL_STATUS: blog=${detailStatus.blog} count=${detailCounts.blog} guides=${detailStatus.guides} count=${detailCounts.guides}`,
 );

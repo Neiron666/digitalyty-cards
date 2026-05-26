@@ -1,7 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import SeoHelmet from "../components/seo/SeoHelmet";
 import { trackSitePageView } from "../services/siteAnalytics.client";
+import { useInitialDetailData } from "../seo/initialDetailData";
 import styles from "./BlogPost.module.css";
 import { CONTENT_DISPLAY_POLICY } from "../utils/contentDisplayPolicy.js";
 
@@ -243,13 +244,13 @@ function buildBlogPostingJsonLd(post) {
     const ld = {
         "@context": "https://schema.org",
         "@type": "BlogPosting",
-        "@id": `${ORIGIN}/blog/${post.slug}#article`,
+        "@id": `${ORIGIN}/blog/${post.slug}/#article`,
         headline: post.title || "",
         description: post.seo?.description || post.excerpt || "",
-        url: `${ORIGIN}/blog/${post.slug}`,
+        url: `${ORIGIN}/blog/${post.slug}/`,
         mainEntityOfPage: {
             "@type": "WebPage",
-            "@id": `${ORIGIN}/blog/${post.slug}`,
+            "@id": `${ORIGIN}/blog/${post.slug}/`,
         },
         inLanguage: "he",
         datePublished: post.publishedAt || undefined,
@@ -281,13 +282,13 @@ function buildBreadcrumbJsonLd(post) {
                 "@type": "ListItem",
                 position: 1,
                 name: "בלוג",
-                item: `${ORIGIN}/blog`,
+                item: `${ORIGIN}/blog/`,
             },
             {
                 "@type": "ListItem",
                 position: 2,
                 name: post.title || "",
-                item: `${ORIGIN}/blog/${post.slug}`,
+                item: `${ORIGIN}/blog/${post.slug}/`,
             },
         ],
     };
@@ -297,12 +298,16 @@ function buildBreadcrumbJsonLd(post) {
 
 export default function BlogPost() {
     const { slug } = useParams();
-    const [post, setPost] = useState(null);
-    const [loading, setLoading] = useState(true);
+    const initialSeed = useInitialDetailData("blog");
+    const hasSeed = !!(initialSeed && initialSeed.slug === slug);
+    const [post, setPost] = useState(() => (hasSeed ? initialSeed : null));
+    const [loading, setLoading] = useState(() => (hasSeed ? false : true));
     const [notFound, setNotFound] = useState(false);
     const [error, setError] = useState(null);
     const [related, setRelated] = useState([]);
     const navigate = useNavigate();
+
+    const skipFirstFetchRef = useRef(hasSeed);
 
     useEffect(() => {
         trackSitePageView();
@@ -310,6 +315,10 @@ export default function BlogPost() {
 
     useEffect(() => {
         if (!slug) return;
+        if (skipFirstFetchRef.current) {
+            skipFirstFetchRef.current = false;
+            return;
+        }
         let cancelled = false;
 
         async function load() {
@@ -362,7 +371,7 @@ export default function BlogPost() {
     /* ── Alias redirect: normalize URL to canonical slug ── */
     useEffect(() => {
         if (post && post.slug && post.slug !== slug) {
-            navigate(`/blog/${post.slug}`, { replace: true });
+            navigate(`/blog/${post.slug}/`, { replace: true });
         }
     }, [post, slug, navigate]);
     /* ── Loading state ──────────────── */
@@ -414,7 +423,7 @@ export default function BlogPost() {
     /* ── SEO ─────────────────────────── */
     const seoTitle = post.seo?.title || post.title || "בלוג | Cardigo";
     const seoDescription = post.seo?.description || post.excerpt || "";
-    const canonicalUrl = `${ORIGIN}/blog/${post.slug}`;
+    const canonicalUrl = `${ORIGIN}/blog/${post.slug}/`;
     const jsonLdItems = [
         buildBlogPostingJsonLd(post),
         buildBreadcrumbJsonLd(post),
@@ -530,7 +539,7 @@ export default function BlogPost() {
                                 {related.map((r) => (
                                     <Link
                                         key={r.id}
-                                        to={`/blog/${r.slug}`}
+                                        to={`/blog/${r.slug}/`}
                                         className={styles.relatedItem}
                                     >
                                         <img

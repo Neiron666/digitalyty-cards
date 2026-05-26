@@ -93,7 +93,7 @@ for (const route of ROUTES) {
         continue;
     }
 
-    const hrefNeedle = `href="${route.detailHrefPrefix}${slug}"`;
+    const hrefNeedle = `href="${route.detailHrefPrefix}${slug}/"`;
     if (!html.includes(hrefNeedle)) {
         errors.push(`[${route.label}] body missing detail link ${hrefNeedle}`);
         status[route.key] = "DEGRADED";

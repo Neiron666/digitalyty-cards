@@ -488,7 +488,7 @@ const label$1 = "_label_qwq5a_221";
 const small = "_small_qwq5a_241";
 const medium = "_medium_qwq5a_251";
 const large = "_large_qwq5a_261";
-const styles$j = {
+const styles$l = {
   btn,
   button: button$1,
   fullWidth,
@@ -515,14 +515,14 @@ function Button({
 }) {
   const isNativeButton = Component2 === "button";
   const classes = [
-    styles$j.btn,
-    styles$j[variant],
-    styles$j[size],
-    fullWidth2 ? styles$j.fullWidth : "",
+    styles$l.btn,
+    styles$l[variant],
+    styles$l[size],
+    fullWidth2 ? styles$l.fullWidth : "",
     className
   ].filter(Boolean).join(" ");
   const isDisabled = disabled || loading;
-  const content = /* @__PURE__ */ jsx("span", { className: styles$j.label, children: loading ? "טוען..." : children });
+  const content = /* @__PURE__ */ jsx("span", { className: styles$l.label, children: loading ? "טוען..." : children });
   if (isNativeButton) {
     return /* @__PURE__ */ jsx(
       "button",
@@ -886,7 +886,7 @@ const drawerClose = "_drawerClose_n3wgj_555";
 const drawerNav = "_drawerNav_n3wgj_575";
 const drawerBtnIcon = "_drawerBtnIcon_n3wgj_633";
 const drawerActions = "_drawerActions_n3wgj_645";
-const styles$i = {
+const styles$k = {
   scrollLock,
   header,
   inner: inner$1,
@@ -981,7 +981,7 @@ function Header() {
   }, []);
   useEffect(() => {
     if (typeof document === "undefined") return;
-    const lockClass = styles$i.scrollLock;
+    const lockClass = styles$k.scrollLock;
     const root2 = document.documentElement;
     const body2 = document.body;
     if (mobileOpen) {
@@ -1021,14 +1021,14 @@ function Header() {
     closeMobile();
     navigate("/", { replace: true });
   };
-  const navLinkClass = ({ isActive }) => isActive ? `${styles$i.navLink} ${styles$i.navLinkActive}` : styles$i.navLink;
+  const navLinkClass = ({ isActive }) => isActive ? `${styles$k.navLink} ${styles$k.navLinkActive}` : styles$k.navLink;
   return /* @__PURE__ */ jsxs(Fragment, { children: [
-    /* @__PURE__ */ jsx("header", { className: styles$i.header, children: /* @__PURE__ */ jsxs("div", { className: styles$i.inner, children: [
+    /* @__PURE__ */ jsx("header", { className: styles$k.header, children: /* @__PURE__ */ jsxs("div", { className: styles$k.inner, children: [
       /* @__PURE__ */ jsx(
         Link,
         {
           to: "/",
-          className: styles$i.logo,
+          className: styles$k.logo,
           "aria-label": "כרטיס ביקור דיגיטלי - כרדיגו",
           children: /* @__PURE__ */ jsxs("picture", { children: [
             /* @__PURE__ */ jsx(
@@ -1043,7 +1043,7 @@ function Header() {
               {
                 src: "/images/brand-logo/cardigo-logo.png",
                 alt: "כרטיס ביקור דיגיטלי - כרדיגו",
-                className: styles$i.logoImage,
+                className: styles$k.logoImage,
                 loading: "eager",
                 decoding: "async"
               }
@@ -1056,19 +1056,19 @@ function Header() {
         {
           ref: burgerRef,
           type: "button",
-          className: mobileOpen ? `${styles$i.burger} ${styles$i.burgerOpen}` : styles$i.burger,
+          className: mobileOpen ? `${styles$k.burger} ${styles$k.burgerOpen}` : styles$k.burger,
           "aria-label": mobileOpen ? "סגירת תפריט" : "פתיחת תפריט",
           "aria-expanded": mobileOpen,
           "aria-controls": "mobile-nav",
           onClick: () => setMobileOpen((v) => !v),
           children: [
-            /* @__PURE__ */ jsx("span", { className: styles$i.burgerLine }),
-            /* @__PURE__ */ jsx("span", { className: styles$i.burgerLine }),
-            /* @__PURE__ */ jsx("span", { className: styles$i.burgerLine })
+            /* @__PURE__ */ jsx("span", { className: styles$k.burgerLine }),
+            /* @__PURE__ */ jsx("span", { className: styles$k.burgerLine }),
+            /* @__PURE__ */ jsx("span", { className: styles$k.burgerLine })
           ]
         }
       ),
-      /* @__PURE__ */ jsx("nav", { className: styles$i.nav, children: navItems.map((item) => /* @__PURE__ */ jsx(
+      /* @__PURE__ */ jsx("nav", { className: styles$k.nav, children: navItems.map((item) => /* @__PURE__ */ jsx(
         NavLink,
         {
           to: item.to,
@@ -1078,7 +1078,7 @@ function Header() {
         },
         item.to
       )) }),
-      /* @__PURE__ */ jsx("div", { className: styles$i.actions, children: !isAuth ? /* @__PURE__ */ jsxs(Fragment, { children: [
+      /* @__PURE__ */ jsx("div", { className: styles$k.actions, children: !isAuth ? /* @__PURE__ */ jsxs(Fragment, { children: [
         /* @__PURE__ */ jsx(
           Button,
           {
@@ -1099,8 +1099,8 @@ function Header() {
             children: "צור כרטיס חינם"
           }
         )
-      ] }) : /* @__PURE__ */ jsxs("div", { className: styles$i.authBlock, children: [
-        /* @__PURE__ */ jsxs("div", { className: styles$i.authButtons, children: [
+      ] }) : /* @__PURE__ */ jsxs("div", { className: styles$k.authBlock, children: [
+        /* @__PURE__ */ jsxs("div", { className: styles$k.authButtons, children: [
           /* @__PURE__ */ jsx(
             Button,
             {
@@ -1125,13 +1125,13 @@ function Header() {
           Link,
           {
             to: "/inbox",
-            className: styles$i.inboxLink,
+            className: styles$k.inboxLink,
             "aria-label": "הודעות נכנסות",
             children: [
               /* @__PURE__ */ jsxs(
                 "svg",
                 {
-                  className: styles$i.inboxIcon,
+                  className: styles$k.inboxIcon,
                   viewBox: "0 0 24 24",
                   fill: "none",
                   stroke: "currentColor",
@@ -1145,14 +1145,14 @@ function Header() {
                   ]
                 }
               ),
-              unreadCount > 0 && /* @__PURE__ */ jsx("span", { className: styles$i.badge, children: unreadCount > 99 ? "99+" : unreadCount })
+              unreadCount > 0 && /* @__PURE__ */ jsx("span", { className: styles$k.badge, children: unreadCount > 99 ? "99+" : unreadCount })
             ]
           }
         ),
         user?.email && /* @__PURE__ */ jsx(
           "span",
           {
-            className: styles$i.userEmail,
+            className: styles$k.userEmail,
             title: user.email,
             children: user.email
           }
@@ -1162,7 +1162,7 @@ function Header() {
     /* @__PURE__ */ jsx(
       "div",
       {
-        className: mobileOpen ? `${styles$i.overlay} ${styles$i.overlayOpen}` : styles$i.overlay,
+        className: mobileOpen ? `${styles$k.overlay} ${styles$k.overlayOpen}` : styles$k.overlay,
         onClick: closeMobile,
         "aria-hidden": "true"
       }
@@ -1174,13 +1174,13 @@ function Header() {
         id: "mobile-nav",
         role: "dialog",
         "aria-modal": mobileOpen ? "true" : void 0,
-        className: mobileOpen ? `${styles$i.drawer} ${styles$i.drawerOpen}` : styles$i.drawer,
+        className: mobileOpen ? `${styles$k.drawer} ${styles$k.drawerOpen}` : styles$k.drawer,
         "aria-hidden": !mobileOpen,
         inert: !mobileOpen ? "" : void 0,
         onClick: (e) => e.stopPropagation(),
         children: [
-          /* @__PURE__ */ jsxs("div", { className: styles$i.drawerHeader, children: [
-            /* @__PURE__ */ jsxs("div", { className: styles$i.drawerTitle, children: [
+          /* @__PURE__ */ jsxs("div", { className: styles$k.drawerHeader, children: [
+            /* @__PURE__ */ jsxs("div", { className: styles$k.drawerTitle, children: [
               /* @__PURE__ */ jsxs("picture", { children: [
                 /* @__PURE__ */ jsx(
                   "source",
@@ -1194,26 +1194,26 @@ function Header() {
                   {
                     src: "/images/brand-logo/cardigo-logo.png",
                     alt: "כרדיגו",
-                    className: styles$i.drawerLogoImg,
+                    className: styles$k.drawerLogoImg,
                     loading: "eager",
                     decoding: "async"
                   }
                 )
               ] }),
-              /* @__PURE__ */ jsx("span", { className: styles$i.drawerTitleText, children: "תפריט" })
+              /* @__PURE__ */ jsx("span", { className: styles$k.drawerTitleText, children: "תפריט" })
             ] }),
             /* @__PURE__ */ jsx(
               "button",
               {
                 type: "button",
-                className: styles$i.drawerClose,
+                className: styles$k.drawerClose,
                 "aria-label": "סגירת תפריט",
                 onClick: closeMobile,
                 children: "✕"
               }
             )
           ] }),
-          /* @__PURE__ */ jsx("nav", { className: styles$i.drawerNav, children: navItems.map((item) => /* @__PURE__ */ jsx(
+          /* @__PURE__ */ jsx("nav", { className: styles$k.drawerNav, children: navItems.map((item) => /* @__PURE__ */ jsx(
             NavLink,
             {
               to: item.to,
@@ -1224,7 +1224,7 @@ function Header() {
             },
             item.to
           )) }),
-          /* @__PURE__ */ jsx("div", { className: styles$i.drawerActions, children: !isAuth ? /* @__PURE__ */ jsxs(Fragment, { children: [
+          /* @__PURE__ */ jsx("div", { className: styles$k.drawerActions, children: !isAuth ? /* @__PURE__ */ jsxs(Fragment, { children: [
             /* @__PURE__ */ jsx(
               Button,
               {
@@ -1251,7 +1251,7 @@ function Header() {
             user?.email ? /* @__PURE__ */ jsx(
               "span",
               {
-                className: styles$i.userEmail,
+                className: styles$k.userEmail,
                 title: user.email,
                 children: user.email
               }
@@ -1268,7 +1268,7 @@ function Header() {
                   /* @__PURE__ */ jsxs(
                     "svg",
                     {
-                      className: styles$i.drawerBtnIcon,
+                      className: styles$k.drawerBtnIcon,
                       viewBox: "0 0 24 24",
                       fill: "none",
                       stroke: "currentColor",
@@ -1283,7 +1283,7 @@ function Header() {
                     }
                   ),
                   "הודעות נכנסות",
-                  unreadCount > 0 && /* @__PURE__ */ jsx("span", { className: styles$i.mobileBadge, children: unreadCount > 99 ? "99+" : unreadCount })
+                  unreadCount > 0 && /* @__PURE__ */ jsx("span", { className: styles$k.mobileBadge, children: unreadCount > 99 ? "99+" : unreadCount })
                 ]
               }
             ),
@@ -1296,7 +1296,7 @@ function Header() {
                 fullWidth: true,
                 onClick: closeMobile,
                 children: [
-                  /* @__PURE__ */ jsx(HeadIcon, { className: styles$i.drawerBtnIcon }),
+                  /* @__PURE__ */ jsx(HeadIcon, { className: styles$k.drawerBtnIcon }),
                   "הכרטיס שלי"
                 ]
               }
@@ -1326,7 +1326,7 @@ const link$1 = "_link_6cv9e_103";
 const linkButton = "_linkButton_6cv9e_119";
 const text$1 = "_text_6cv9e_161";
 const bottom = "_bottom_6cv9e_173";
-const styles$h = {
+const styles$j = {
   footer,
   inner,
   col,
@@ -1448,7 +1448,7 @@ const wrap = "_wrap_zts44_1";
 const installBtn = "_installBtn_zts44_25";
 const helpText = "_helpText_zts44_77";
 const helpHighlight = "_helpHighlight_zts44_95";
-const styles$g = {
+const styles$i = {
   wrap,
   installBtn,
   helpText,
@@ -1484,13 +1484,13 @@ function InstallCta() {
     }
     setHighlighted((v) => !v);
   }
-  const helpClass = highlighted && helpText2 ? `${styles$g.helpText} ${styles$g.helpHighlight}` : styles$g.helpText;
-  return /* @__PURE__ */ jsxs("div", { className: styles$g.wrap, children: [
+  const helpClass = highlighted && helpText2 ? `${styles$i.helpText} ${styles$i.helpHighlight}` : styles$i.helpText;
+  return /* @__PURE__ */ jsxs("div", { className: styles$i.wrap, children: [
     /* @__PURE__ */ jsx(
       "button",
       {
         type: "button",
-        className: styles$g.installBtn,
+        className: styles$i.installBtn,
         onClick: handleClick,
         children: "התקינו את Cardigo"
       }
@@ -1499,14 +1499,14 @@ function InstallCta() {
   ] });
 }
 function Footer({ onOpenPrivacyPrefs }) {
-  return /* @__PURE__ */ jsxs("footer", { className: styles$h.footer, id: "contact", children: [
-    /* @__PURE__ */ jsxs("div", { className: styles$h.inner, children: [
-      /* @__PURE__ */ jsxs("div", { className: styles$h.col, children: [
+  return /* @__PURE__ */ jsxs("footer", { className: styles$j.footer, id: "contact", children: [
+    /* @__PURE__ */ jsxs("div", { className: styles$j.inner, children: [
+      /* @__PURE__ */ jsxs("div", { className: styles$j.col, children: [
         /* @__PURE__ */ jsx(
           Link,
           {
             to: "/",
-            className: styles$h.brand,
+            className: styles$j.brand,
             "aria-label": "כרטיס ביקור דיגיטלי - כרדיגו",
             children: /* @__PURE__ */ jsxs("picture", { children: [
               /* @__PURE__ */ jsx(
@@ -1521,7 +1521,7 @@ function Footer({ onOpenPrivacyPrefs }) {
                 {
                   src: "/images/brand-logo/cardigo-logo.png",
                   alt: "כרטיס ביקור דיגיטלי - כרדיגו",
-                  className: styles$h.brandLogoImage,
+                  className: styles$j.brandLogoImage,
                   loading: "lazy",
                   decoding: "async"
                 }
@@ -1529,44 +1529,44 @@ function Footer({ onOpenPrivacyPrefs }) {
             ] })
           }
         ),
-        /* @__PURE__ */ jsx("div", { className: styles$h.text, children: "כרטיסי ביקור דיגיטליים לעסקים - יצירה, התאמה אישית ושיתוף בלחיצה." })
+        /* @__PURE__ */ jsx("div", { className: styles$j.text, children: "כרטיסי ביקור דיגיטליים לעסקים - יצירה, התאמה אישית ושיתוף בלחיצה." })
       ] }),
-      /* @__PURE__ */ jsxs("div", { className: styles$h.col, children: [
-        /* @__PURE__ */ jsx("div", { className: styles$h.title, children: "קישורים" }),
-        /* @__PURE__ */ jsx(Link, { to: "/#features", className: styles$h.link, children: "תכונות" }),
-        /* @__PURE__ */ jsx(Link, { to: "/cards", className: styles$h.link, children: "דוגמאות" }),
-        /* @__PURE__ */ jsx(Link, { to: "/#how", className: styles$h.link, children: "איך זה עובד" }),
-        /* @__PURE__ */ jsx(Link, { to: "/#faq", className: styles$h.link, children: "שאלות נפוצות" }),
-        /* @__PURE__ */ jsx(Link, { to: "/pricing", className: styles$h.link, children: "מחירים" }),
-        /* @__PURE__ */ jsx(Link, { to: "/guides", className: styles$h.link, children: "מדריכים" }),
-        /* @__PURE__ */ jsx(Link, { to: "/blog", className: styles$h.link, children: "בלוג" })
+      /* @__PURE__ */ jsxs("div", { className: styles$j.col, children: [
+        /* @__PURE__ */ jsx("div", { className: styles$j.title, children: "קישורים" }),
+        /* @__PURE__ */ jsx(Link, { to: "/#features", className: styles$j.link, children: "תכונות" }),
+        /* @__PURE__ */ jsx(Link, { to: "/cards", className: styles$j.link, children: "דוגמאות" }),
+        /* @__PURE__ */ jsx(Link, { to: "/#how", className: styles$j.link, children: "איך זה עובד" }),
+        /* @__PURE__ */ jsx(Link, { to: "/#faq", className: styles$j.link, children: "שאלות נפוצות" }),
+        /* @__PURE__ */ jsx(Link, { to: "/pricing", className: styles$j.link, children: "מחירים" }),
+        /* @__PURE__ */ jsx(Link, { to: "/guides", className: styles$j.link, children: "מדריכים" }),
+        /* @__PURE__ */ jsx(Link, { to: "/blog", className: styles$j.link, children: "בלוג" })
       ] }),
-      /* @__PURE__ */ jsxs("div", { className: styles$h.col, children: [
-        /* @__PURE__ */ jsx("div", { className: styles$h.title, children: "חשבון" }),
-        /* @__PURE__ */ jsx(Link, { to: "/login", className: styles$h.link, children: "התחברות" }),
-        /* @__PURE__ */ jsx(Link, { to: "/register", className: styles$h.link, children: "יצירת חשבון" }),
-        /* @__PURE__ */ jsx(Link, { to: "/edit", className: styles$h.link, children: "עורך כרטיס" })
+      /* @__PURE__ */ jsxs("div", { className: styles$j.col, children: [
+        /* @__PURE__ */ jsx("div", { className: styles$j.title, children: "חשבון" }),
+        /* @__PURE__ */ jsx(Link, { to: "/login", className: styles$j.link, children: "התחברות" }),
+        /* @__PURE__ */ jsx(Link, { to: "/register", className: styles$j.link, children: "יצירת חשבון" }),
+        /* @__PURE__ */ jsx(Link, { to: "/edit", className: styles$j.link, children: "עורך כרטיס" })
       ] }),
-      /* @__PURE__ */ jsxs("div", { className: styles$h.col, children: [
-        /* @__PURE__ */ jsx("div", { className: styles$h.title, children: "מידע" }),
-        /* @__PURE__ */ jsx(Link, { to: "/privacy", className: styles$h.link, children: "מדיניות פרטיות" }),
-        /* @__PURE__ */ jsx(Link, { to: "/terms", className: styles$h.link, children: "תנאי שימוש" }),
-        /* @__PURE__ */ jsx(Link, { to: "/accessibility-statement", className: styles$h.link, children: "הצהרת נגישות" }),
-        /* @__PURE__ */ jsx(Link, { to: "/payment-policy", className: styles$h.link, children: "תנאי תשלום, חידוש, ביטול והחזרים" }),
+      /* @__PURE__ */ jsxs("div", { className: styles$j.col, children: [
+        /* @__PURE__ */ jsx("div", { className: styles$j.title, children: "מידע" }),
+        /* @__PURE__ */ jsx(Link, { to: "/privacy", className: styles$j.link, children: "מדיניות פרטיות" }),
+        /* @__PURE__ */ jsx(Link, { to: "/terms", className: styles$j.link, children: "תנאי שימוש" }),
+        /* @__PURE__ */ jsx(Link, { to: "/accessibility-statement", className: styles$j.link, children: "הצהרת נגישות" }),
+        /* @__PURE__ */ jsx(Link, { to: "/payment-policy", className: styles$j.link, children: "תנאי תשלום, חידוש, ביטול והחזרים" }),
         /* @__PURE__ */ jsx(
           "button",
           {
             type: "button",
-            className: styles$h.linkButton,
+            className: styles$j.linkButton,
             onClick: onOpenPrivacyPrefs,
             children: "העדפות פרטיות"
           }
         ),
-        /* @__PURE__ */ jsx("div", { className: styles$h.text, children: "אימייל: support@cardigo.co.il" })
+        /* @__PURE__ */ jsx("div", { className: styles$j.text, children: "אימייל: support@cardigo.co.il" })
       ] })
     ] }),
     /* @__PURE__ */ jsx(InstallCta, {}),
-    /* @__PURE__ */ jsxs("div", { className: styles$h.bottom, children: [
+    /* @__PURE__ */ jsxs("div", { className: styles$j.bottom, children: [
       "© ",
       (/* @__PURE__ */ new Date()).getFullYear(),
       " Cardigo. כל הזכויות שמורות."
@@ -1603,7 +1603,7 @@ const checkbox = "_checkbox_1cbxm_289";
 const prefsActions = "_prefsActions_1cbxm_305";
 const save = "_save_1cbxm_317";
 const back = "_back_1cbxm_379";
-const styles$f = {
+const styles$h = {
   overlay,
   banner,
   text,
@@ -1645,26 +1645,26 @@ function CookieConsentBanner({ reopenPrefs }) {
   return /* @__PURE__ */ jsx(
     "aside",
     {
-      className: styles$f.overlay,
+      className: styles$h.overlay,
       role: "region",
       "aria-label": "הודעת פרטיות ועוגיות",
-      children: /* @__PURE__ */ jsx("div", { className: styles$f.banner, children: view === "notice" ? /* @__PURE__ */ jsxs(Fragment, { children: [
-        /* @__PURE__ */ jsxs("p", { className: styles$f.text, children: [
+      children: /* @__PURE__ */ jsx("div", { className: styles$h.banner, children: view === "notice" ? /* @__PURE__ */ jsxs(Fragment, { children: [
+        /* @__PURE__ */ jsxs("p", { className: styles$h.text, children: [
           "האתר משתמש בקובצי Cookie 🍪 למדידה ושיפור החוויה.",
           " ",
-          /* @__PURE__ */ jsx(Link, { to: "/privacy", className: styles$f.link, children: "למדיניות הפרטיות" }),
+          /* @__PURE__ */ jsx(Link, { to: "/privacy", className: styles$h.link, children: "למדיניות הפרטיות" }),
           " ",
           "ו",
           " ",
-          /* @__PURE__ */ jsx(Link, { to: "/terms", className: styles$f.link, children: "תנאי השימוש" }),
+          /* @__PURE__ */ jsx(Link, { to: "/terms", className: styles$h.link, children: "תנאי השימוש" }),
           "."
         ] }),
-        /* @__PURE__ */ jsxs("div", { className: styles$f.actions, children: [
+        /* @__PURE__ */ jsxs("div", { className: styles$h.actions, children: [
           /* @__PURE__ */ jsx(
             "button",
             {
               type: "button",
-              className: styles$f.accept,
+              className: styles$h.accept,
               onClick: handleAccept,
               children: "הבנתי"
             }
@@ -1673,35 +1673,35 @@ function CookieConsentBanner({ reopenPrefs }) {
             "button",
             {
               type: "button",
-              className: styles$f.prefsToggle,
+              className: styles$h.prefsToggle,
               onClick: () => setView("prefs"),
               children: "ניהול העדפות"
             }
           )
         ] })
-      ] }) : /* @__PURE__ */ jsxs("div", { className: styles$f.prefsView, children: [
-        /* @__PURE__ */ jsxs("div", { className: styles$f.prefRow, children: [
-          /* @__PURE__ */ jsx("span", { className: styles$f.prefLabel, children: "עוגיות הכרחיות" }),
-          /* @__PURE__ */ jsx("span", { className: styles$f.prefAlways, children: "תמיד פעיל" })
+      ] }) : /* @__PURE__ */ jsxs("div", { className: styles$h.prefsView, children: [
+        /* @__PURE__ */ jsxs("div", { className: styles$h.prefRow, children: [
+          /* @__PURE__ */ jsx("span", { className: styles$h.prefLabel, children: "עוגיות הכרחיות" }),
+          /* @__PURE__ */ jsx("span", { className: styles$h.prefAlways, children: "תמיד פעיל" })
         ] }),
-        /* @__PURE__ */ jsxs("label", { className: styles$f.prefRow, children: [
-          /* @__PURE__ */ jsx("span", { className: styles$f.prefLabel, children: "כלי מדידה ושיווק של צדדים שלישיים" }),
+        /* @__PURE__ */ jsxs("label", { className: styles$h.prefRow, children: [
+          /* @__PURE__ */ jsx("span", { className: styles$h.prefLabel, children: "כלי מדידה ושיווק של צדדים שלישיים" }),
           /* @__PURE__ */ jsx(
             "input",
             {
               type: "checkbox",
-              className: styles$f.checkbox,
+              className: styles$h.checkbox,
               checked: optionalTracking,
               onChange: (e) => setOptionalTracking(e.target.checked)
             }
           )
         ] }),
-        /* @__PURE__ */ jsxs("div", { className: styles$f.prefsActions, children: [
+        /* @__PURE__ */ jsxs("div", { className: styles$h.prefsActions, children: [
           /* @__PURE__ */ jsx(
             "button",
             {
               type: "button",
-              className: styles$f.save,
+              className: styles$h.save,
               onClick: handleSavePrefs,
               children: "שמירה"
             }
@@ -1710,7 +1710,7 @@ function CookieConsentBanner({ reopenPrefs }) {
             "button",
             {
               type: "button",
-              className: styles$f.back,
+              className: styles$h.back,
               onClick: () => setView("notice"),
               children: "חזרה"
             }
@@ -1721,7 +1721,7 @@ function CookieConsentBanner({ reopenPrefs }) {
   );
 }
 const skipLink = "_skipLink_yas7b_9";
-const styles$e = {
+const styles$g = {
   skipLink
 };
 const AD_MEASUREMENT_PATHS = [
@@ -1750,7 +1750,7 @@ function Layout() {
     if (state) pushConsentToDataLayer(state);
   }, [location.pathname]);
   return /* @__PURE__ */ jsxs(Fragment, { children: [
-    /* @__PURE__ */ jsx("a", { href: "#main-content", className: styles$e.skipLink, children: "דלג לתוכן הראשי" }),
+    /* @__PURE__ */ jsx("a", { href: "#main-content", className: styles$g.skipLink, children: "דלג לתוכן הראשי" }),
     /* @__PURE__ */ jsx(ScrollToTop, {}),
     /* @__PURE__ */ jsx(Header, {}),
     /* @__PURE__ */ jsx("div", { id: "main-content", tabIndex: -1, children: /* @__PURE__ */ jsx(Outlet, {}) }),
@@ -1762,7 +1762,7 @@ const root$3 = "_root_1v1kt_1";
 const title = "_title_1v1kt_23";
 const subtitle = "_subtitle_1v1kt_35";
 const button = "_button_1v1kt_49";
-const styles$d = {
+const styles$f = {
   root: root$3,
   title,
   subtitle,
@@ -1812,14 +1812,14 @@ class ChunkErrorBoundary extends Component {
   render() {
     if (!this.state.hasError) return this.props.children;
     const label2 = typeof this.props.label === "string" && this.props.label.trim() ? this.props.label.trim() : "אירעה שגיאה בטעינת הדף";
-    return /* @__PURE__ */ jsxs("div", { className: styles$d.root, dir: "rtl", role: "alert", children: [
-      /* @__PURE__ */ jsx("div", { className: styles$d.title, children: label2 }),
-      /* @__PURE__ */ jsx("div", { className: styles$d.subtitle, children: "נסה לרענן את הדף. אם זה קורה אחרי עדכון גרסה, ייתכן שהדפדפן שמר קאש ישן." }),
+    return /* @__PURE__ */ jsxs("div", { className: styles$f.root, dir: "rtl", role: "alert", children: [
+      /* @__PURE__ */ jsx("div", { className: styles$f.title, children: label2 }),
+      /* @__PURE__ */ jsx("div", { className: styles$f.subtitle, children: "נסה לרענן את הדף. אם זה קורה אחרי עדכון גרסה, ייתכן שהדפדפן שמר קאש ישן." }),
       /* @__PURE__ */ jsx(
         "button",
         {
           type: "button",
-          className: styles$d.button,
+          className: styles$f.button,
           onClick: () => window.location.reload(),
           children: "רענן"
         }
@@ -1830,15 +1830,15 @@ class ChunkErrorBoundary extends Component {
 const root$2 = "_root_18vtn_1";
 const label = "_label_18vtn_23";
 const spinner = "_spinner_18vtn_33";
-const styles$c = {
+const styles$e = {
   root: root$2,
   label,
   spinner
 };
 function RouteFallback({ label: label2 = "טוען…" } = {}) {
-  return /* @__PURE__ */ jsxs("div", { className: styles$c.root, dir: "rtl", role: "status", "aria-live": "polite", children: [
-    /* @__PURE__ */ jsx("div", { className: styles$c.spinner, "aria-hidden": "true" }),
-    /* @__PURE__ */ jsx("div", { className: styles$c.label, children: label2 })
+  return /* @__PURE__ */ jsxs("div", { className: styles$e.root, dir: "rtl", role: "status", "aria-live": "polite", children: [
+    /* @__PURE__ */ jsx("div", { className: styles$e.spinner, "aria-hidden": "true" }),
+    /* @__PURE__ */ jsx("div", { className: styles$e.label, children: label2 })
   ] });
 }
 const EXACT_PLACEHOLDERS = /* @__PURE__ */ new Set(["GTM-XXXXXXX", "G-XXXXXXX"]);
@@ -2559,7 +2559,7 @@ const ctaImg$1 = "_ctaImg_8h001_2835";
 const ctaBtn = "_ctaBtn_8h001_2853";
 const heroShine = "_heroShine_8h001_1";
 const ctaGlow = "_ctaGlow_8h001_1";
-const styles$b = {
+const styles$d = {
   page: page$4,
   strongerZoom,
   dashboardZoom,
@@ -2936,10 +2936,10 @@ const PRESENCE_PROOF_CARDS = [
 ];
 function ProofCard({ title: title2, src, alt, posClass }) {
   const { ref } = useScrollProgress();
-  return /* @__PURE__ */ jsx("div", { className: `${styles$b.proofCard} ${styles$b[posClass]}`, children: /* @__PURE__ */ jsx("div", { className: scroll.scrollDriftInline, ref, children: /* @__PURE__ */ jsx(
+  return /* @__PURE__ */ jsx("div", { className: `${styles$d.proofCard} ${styles$d[posClass]}`, children: /* @__PURE__ */ jsx("div", { className: scroll.scrollDriftInline, ref, children: /* @__PURE__ */ jsx(
     "img",
     {
-      className: styles$b.proofCardImage,
+      className: styles$d.proofCardImage,
       src,
       alt,
       width: 200,
@@ -3031,7 +3031,7 @@ const STEPS = [
     alt: "שיתוף כרטיס ביקור דיגיטלי ומעקב אנליטיקס"
   }
 ];
-const ORIGIN$2 = "https://cardigo.co.il";
+const ORIGIN$4 = "https://cardigo.co.il";
 const HOME_FAQ = [
   {
     q: "כמה זמן לוקח ליצור כרטיס ביקור דיגיטלי?",
@@ -3098,8 +3098,8 @@ function buildHomeFaqJsonLd() {
   return {
     "@context": "https://schema.org",
     "@type": "FAQPage",
-    "@id": `${ORIGIN$2}/#faq`,
-    url: `${ORIGIN$2}/`,
+    "@id": `${ORIGIN$4}/#faq`,
+    url: `${ORIGIN$4}/`,
     inLanguage: "he",
     mainEntity: HOME_FAQ.map((item) => ({
       "@type": "Question",
@@ -3115,9 +3115,9 @@ function buildHomeWebSiteJsonLd() {
   return {
     "@context": "https://schema.org",
     "@type": "WebSite",
-    "@id": `${ORIGIN$2}/#website`,
+    "@id": `${ORIGIN$4}/#website`,
     name: "Cardigo",
-    url: `${ORIGIN$2}/`,
+    url: `${ORIGIN$4}/`,
     inLanguage: "he"
   };
 }
@@ -3125,10 +3125,10 @@ function buildHomeOrganizationJsonLd() {
   return {
     "@context": "https://schema.org",
     "@type": "Organization",
-    "@id": `${ORIGIN$2}/#organization`,
+    "@id": `${ORIGIN$4}/#organization`,
     name: "Cardigo",
-    url: `${ORIGIN$2}/`,
-    logo: `${ORIGIN$2}/images/brand-logo/cardigo-logo.png`
+    url: `${ORIGIN$4}/`,
+    logo: `${ORIGIN$4}/images/brand-logo/cardigo-logo.png`
   };
 }
 const HERO_CARDS = [
@@ -3168,15 +3168,15 @@ function Home() {
   const homeWebSiteJsonLd = buildHomeWebSiteJsonLd();
   const homeOrganizationJsonLd = buildHomeOrganizationJsonLd();
   const homeFaqJsonLd = buildHomeFaqJsonLd();
-  return /* @__PURE__ */ jsxs("main", { className: styles$b.page, "data-page": "site", children: [
+  return /* @__PURE__ */ jsxs("main", { className: styles$d.page, "data-page": "site", children: [
     /* @__PURE__ */ jsx(
       SeoHelmet,
       {
         title: "כרטיס ביקור דיגיטלי לעסק | Cardigo",
         description: "כרטיס ביקור דיגיטלי לעסק של Cardigo מאפשר ליצור עמוד עסקי מקצועי, לשתף ב-QR, בוואטסאפ ובקישורים ייעודיים, ולעדכן הכול בקלות - עם תבניות, אנליטיקה וכלי שיתוף לעסק שלכם.",
-        canonicalUrl: `${ORIGIN$2}/`,
-        url: `${ORIGIN$2}/`,
-        image: `${ORIGIN$2}${DEFAULT_OG_IMAGE_PATH}`,
+        canonicalUrl: `${ORIGIN$4}/`,
+        url: `${ORIGIN$4}/`,
+        image: `${ORIGIN$4}${DEFAULT_OG_IMAGE_PATH}`,
         imageAlt: "Cardigo – כרטיס ביקור דיגיטלי לעסק",
         jsonLdItems: [
           homeWebSiteJsonLd,
@@ -3185,13 +3185,13 @@ function Home() {
         ]
       }
     ),
-    /* @__PURE__ */ jsx("section", { className: styles$b.hero, children: /* @__PURE__ */ jsxs("div", { className: styles$b.heroInner, children: [
-      /* @__PURE__ */ jsxs("div", { className: styles$b.heroText, children: [
+    /* @__PURE__ */ jsx("section", { className: styles$d.hero, children: /* @__PURE__ */ jsxs("div", { className: styles$d.heroInner, children: [
+      /* @__PURE__ */ jsxs("div", { className: styles$d.heroText, children: [
         /* @__PURE__ */ jsx(
           Link,
           {
             to: "/",
-            className: styles$b.heroLogoLink,
+            className: styles$d.heroLogoLink,
             "aria-label": "כרטיס ביקור דיגיטלי - כרדיגו",
             children: /* @__PURE__ */ jsxs("picture", { children: [
               /* @__PURE__ */ jsx(
@@ -3206,7 +3206,7 @@ function Home() {
                 {
                   src: "/images/brand-logo/cardigo-logo.png",
                   alt: "כרטיס ביקור דיגיטלי - כרדיגו",
-                  className: styles$b.heroLogoImage,
+                  className: styles$d.heroLogoImage,
                   loading: "eager",
                   decoding: "async"
                 }
@@ -3214,23 +3214,23 @@ function Home() {
             ] })
           }
         ),
-        /* @__PURE__ */ jsxs("h1", { className: styles$b.h1, children: [
+        /* @__PURE__ */ jsxs("h1", { className: styles$d.h1, children: [
           "כרטיס ביקור דיגיטלי",
           /* @__PURE__ */ jsx(
             "span",
             {
-              className: `${styles$b.h1Accent} ${pub.goldUnderline}`,
+              className: `${styles$d.h1Accent} ${pub.goldUnderline}`,
               children: "לעסק שמביא תוצאות"
             }
           )
         ] })
       ] }),
-      /* @__PURE__ */ jsx("div", { className: styles$b.heroCards, "aria-hidden": "true", children: HERO_CARDS.map((card2, i) => /* @__PURE__ */ jsx(
+      /* @__PURE__ */ jsx("div", { className: styles$d.heroCards, "aria-hidden": "true", children: HERO_CARDS.map((card2, i) => /* @__PURE__ */ jsx(
         "img",
         {
           src: encodeURI(card2.src),
           alt: "",
-          className: styles$b.heroCardImg,
+          className: styles$d.heroCardImg,
           width: 280,
           height: 560,
           loading: i === 2 ? "eager" : "lazy",
@@ -3238,14 +3238,14 @@ function Home() {
         },
         i
       )) }),
-      /* @__PURE__ */ jsxs("div", { className: styles$b.heroActions, children: [
+      /* @__PURE__ */ jsxs("div", { className: styles$d.heroActions, children: [
         /* @__PURE__ */ jsx(
           Button,
           {
             as: Link,
             to: "/edit",
             variant: "primary",
-            className: `${styles$b.heroCta}  `,
+            className: `${styles$d.heroCta}  `,
             onClick: () => trackSiteClick({
               action: SITE_ACTIONS.home_hero_primary_register,
               pagePath: "/"
@@ -3253,9 +3253,9 @@ function Home() {
             children: "צרו כרטיס דיגיטלי בחינם"
           }
         ),
-        /* @__PURE__ */ jsxs("span", { className: styles$b.heroTrialNote, children: [
+        /* @__PURE__ */ jsxs("span", { className: styles$d.heroTrialNote, children: [
           "כולל 10 ימי פרימיום למשתמשים חדשים",
-          /* @__PURE__ */ jsx(CrownIcon, { className: styles$b.heroTrialCrown })
+          /* @__PURE__ */ jsx(CrownIcon, { className: styles$d.heroTrialCrown })
         ] }),
         /* @__PURE__ */ jsxs("p", { className: pub.illustrationOnlyTxt, children: [
           " ",
@@ -3268,10 +3268,10 @@ function Home() {
         "יותר מכרטיס ביקור דיגיטלי לעסק",
         /* @__PURE__ */ jsx("span", { children: " העמוד העסקי שלכם שמוכן לשיתוף" })
       ] }),
-      /* @__PURE__ */ jsxs("p", { className: styles$b.presenceLead, children: [
+      /* @__PURE__ */ jsxs("p", { className: styles$d.presenceLead, children: [
         "כרטיס ביקור דיגיטלי של",
         " ",
-        /* @__PURE__ */ jsx("strong", { className: styles$b.presenceLeadBrand, children: "Cardigo" }),
+        /* @__PURE__ */ jsx("strong", { className: styles$d.presenceLeadBrand, children: "Cardigo" }),
         " ",
         "זה לא רק פרטי קשר. זהו עמוד עסקי קומפקטי עם",
         " ",
@@ -3281,19 +3281,19 @@ function Home() {
         ] }),
         ", גלריה, וידאו, המלצות, שאלות נפוצות, טופס פנייה ועוד... -",
         " ",
-        /* @__PURE__ */ jsx("em", { className: styles$b.presenceLeadPunch, children: "הכל בקישור אחד שנראה מקצועי ונוח לשיתוף." })
+        /* @__PURE__ */ jsx("em", { className: styles$d.presenceLeadPunch, children: "הכל בקישור אחד שנראה מקצועי ונוח לשיתוף." })
       ] }),
-      /* @__PURE__ */ jsx("div", { className: styles$b.presenceMedia, children: /* @__PURE__ */ jsxs(
+      /* @__PURE__ */ jsx("div", { className: styles$d.presenceMedia, children: /* @__PURE__ */ jsxs(
         "div",
         {
-          className: `${styles$b.phoneStage} ${scroll.scrollZoomSoft} ${styles$b.strongerZoom}`,
+          className: `${styles$d.phoneStage} ${scroll.scrollZoomSoft} ${styles$d.strongerZoom}`,
           "aria-hidden": "true",
           ref: stageZoom.ref,
           children: [
             /* @__PURE__ */ jsx(
               "img",
               {
-                className: styles$b.phoneImage,
+                className: styles$d.phoneImage,
                 src: encodeURI(
                   `${SECTION_1_IMG}/יותר-מכרטיס-ביקור-טלפון עצמו.webp`
                 ),
@@ -3308,16 +3308,16 @@ function Home() {
           ]
         }
       ) }),
-      /* @__PURE__ */ jsx("div", { className: styles$b.presenceFeatures, children: PRESENCE_FEATURES.map((f, i) => /* @__PURE__ */ jsxs("div", { className: styles$b.presenceChip, children: [
-        /* @__PURE__ */ jsx(f.Icon, { className: styles$b.presenceIcon }),
+      /* @__PURE__ */ jsx("div", { className: styles$d.presenceFeatures, children: PRESENCE_FEATURES.map((f, i) => /* @__PURE__ */ jsxs("div", { className: styles$d.presenceChip, children: [
+        /* @__PURE__ */ jsx(f.Icon, { className: styles$d.presenceIcon }),
         /* @__PURE__ */ jsx("span", { children: f.label })
       ] }, i)) }),
-      /* @__PURE__ */ jsx("p", { className: styles$b.presenceMore, children: "ועוד הרבה כלים נוספים…" }),
+      /* @__PURE__ */ jsx("p", { className: styles$d.presenceMore, children: "ועוד הרבה כלים נוספים…" }),
       /* @__PURE__ */ jsxs("div", { className: pub.highlight, children: [
         " ",
         "כרטיס ביקור דיגיטלי של",
         " ",
-        /* @__PURE__ */ jsxs("span", { className: styles$b.presenceLeadBrand, children: [
+        /* @__PURE__ */ jsxs("span", { className: styles$d.presenceLeadBrand, children: [
           " ",
           "כרדיגו"
         ] }),
@@ -3354,13 +3354,13 @@ function Home() {
       /* @__PURE__ */ jsx(
         "div",
         {
-          className: styles$b.conversionRow,
+          className: styles$d.conversionRow,
           ref: conversionScroll.ref,
-          children: CONVERSION_ITEMS.map((item, i) => /* @__PURE__ */ jsxs("div", { className: styles$b.conversionCard, children: [
-            /* @__PURE__ */ jsx("div", { className: styles$b.conversionMedia, children: /* @__PURE__ */ jsx(
+          children: CONVERSION_ITEMS.map((item, i) => /* @__PURE__ */ jsxs("div", { className: styles$d.conversionCard, children: [
+            /* @__PURE__ */ jsx("div", { className: styles$d.conversionMedia, children: /* @__PURE__ */ jsx(
               "img",
               {
-                className: styles$b.conversionImg,
+                className: styles$d.conversionImg,
                 src: item.src,
                 alt: item.alt,
                 width: 400,
@@ -3369,15 +3369,15 @@ function Home() {
                 decoding: "async"
               }
             ) }),
-            /* @__PURE__ */ jsxs("div", { className: styles$b.conversionHeader, children: [
+            /* @__PURE__ */ jsxs("div", { className: styles$d.conversionHeader, children: [
               /* @__PURE__ */ jsx(
                 item.Icon,
                 {
-                  className: styles$b.conversionIcon
+                  className: styles$d.conversionIcon
                 }
               ),
-              /* @__PURE__ */ jsx("h3", { className: styles$b.conversionTitle, children: item.title }),
-              /* @__PURE__ */ jsx("p", { className: styles$b.conversionText, children: item.text })
+              /* @__PURE__ */ jsx("h3", { className: styles$d.conversionTitle, children: item.title }),
+              /* @__PURE__ */ jsx("p", { className: styles$d.conversionText, children: item.text })
             ] })
           ] }, i))
         }
@@ -3386,16 +3386,16 @@ function Home() {
     /* @__PURE__ */ jsx(
       "section",
       {
-        className: `${pub.sectionLight} ${styles$b.analyticsSection}`,
+        className: `${pub.sectionLight} ${styles$d.analyticsSection}`,
         children: /* @__PURE__ */ jsxs("div", { className: pub.sectionWrap, children: [
           /* @__PURE__ */ jsx("h2", { className: pub.h2Gold, children: "תדעו מה באמת מביא תוצאות" }),
           /* @__PURE__ */ jsxs("p", { className: pub.sectionLead, children: [
             " ",
-            /* @__PURE__ */ jsx("strong", { className: styles$b.analyticsLeadBrand, children: "Cardigo -" }),
+            /* @__PURE__ */ jsx("strong", { className: styles$d.analyticsLeadBrand, children: "Cardigo -" }),
             " ",
             "זאת",
             " ",
-            /* @__PURE__ */ jsxs("em", { className: styles$b.analyticsLeadPunch, children: [
+            /* @__PURE__ */ jsxs("em", { className: styles$d.analyticsLeadPunch, children: [
               "פלטפורמה חכמה עם אנליטיקה",
               " "
             ] }),
@@ -3404,7 +3404,7 @@ function Home() {
           /* @__PURE__ */ jsx(
             "img",
             {
-              className: `${styles$b.analyticsDashImg} ${scroll.scrollZoomSoft} ${styles$b.dashboardZoom}`,
+              className: `${styles$d.analyticsDashImg} ${scroll.scrollZoomSoft} ${styles$d.dashboardZoom}`,
               ref: dashZoom.ref,
               src: `${SECTION_3_IMG}/digital_business_card-analytics-dashboard-cardigo-platform.jpg`,
               alt: "דשבורד אנליטיקה לכרטיס ביקור דיגיטלי - Cardigo",
@@ -3416,13 +3416,13 @@ function Home() {
           /* @__PURE__ */ jsx(
             "div",
             {
-              className: styles$b.analyticsInsights,
+              className: styles$d.analyticsInsights,
               ref: insightScroll.ref,
-              children: ANALYTICS_INSIGHTS.map((item, i) => /* @__PURE__ */ jsxs("div", { className: styles$b.insightBullet, children: [
-                /* @__PURE__ */ jsx("div", { className: styles$b.insightMedia, children: /* @__PURE__ */ jsx(
+              children: ANALYTICS_INSIGHTS.map((item, i) => /* @__PURE__ */ jsxs("div", { className: styles$d.insightBullet, children: [
+                /* @__PURE__ */ jsx("div", { className: styles$d.insightMedia, children: /* @__PURE__ */ jsx(
                   "img",
                   {
-                    className: styles$b.insightImg,
+                    className: styles$d.insightImg,
                     src: item.src,
                     alt: item.alt,
                     width: 400,
@@ -3431,10 +3431,10 @@ function Home() {
                     decoding: "async"
                   }
                 ) }),
-                /* @__PURE__ */ jsxs("div", { className: styles$b.insightBody, children: [
-                  /* @__PURE__ */ jsx(item.Icon, { className: styles$b.insightIcon }),
-                  /* @__PURE__ */ jsx("div", { className: styles$b.insightTitle, children: item.title }),
-                  /* @__PURE__ */ jsx("div", { className: styles$b.insightText, children: item.text })
+                /* @__PURE__ */ jsxs("div", { className: styles$d.insightBody, children: [
+                  /* @__PURE__ */ jsx(item.Icon, { className: styles$d.insightIcon }),
+                  /* @__PURE__ */ jsx("div", { className: styles$d.insightTitle, children: item.title }),
+                  /* @__PURE__ */ jsx("div", { className: styles$d.insightText, children: item.text })
                 ] })
               ] }, i))
             }
@@ -3442,11 +3442,11 @@ function Home() {
           /* @__PURE__ */ jsxs("p", { className: pub.highlight, children: [
             "כל צפייה, כל לחיצה, כל מקור הגעה - הופך את הנתונים לתובנות שנותנות לכם",
             " ",
-            /* @__PURE__ */ jsx("em", { className: styles$b.analyticsLeadPunch, children: "שליטה אמיתית על התוצאות." })
+            /* @__PURE__ */ jsx("em", { className: styles$d.analyticsLeadPunch, children: "שליטה אמיתית על התוצאות." })
           ] }),
-          /* @__PURE__ */ jsxs("p", { className: styles$b.analyticsCaveat, children: [
+          /* @__PURE__ */ jsxs("p", { className: styles$d.analyticsCaveat, children: [
             "* ניתוח נתונים מלא זמין ב",
-            /* @__PURE__ */ jsx(Link, { to: "/pricing", className: styles$b.caveatLink, children: "מסלול פרימיום" }),
+            /* @__PURE__ */ jsx(Link, { to: "/pricing", className: styles$d.caveatLink, children: "מסלול פרימיום" }),
             ". במסלול חינמי ניתן לצפות בתצוגה לדוגמה."
           ] })
         ] })
@@ -3460,30 +3460,30 @@ function Home() {
         /* @__PURE__ */ jsx(
           "span",
           {
-            className: `${pub.h2Gold} ${pub.goldUnderline} ${styles$b.strongerUnderline}`,
+            className: `${pub.h2Gold} ${pub.goldUnderline} ${styles$d.strongerUnderline}`,
             children: "בקלות"
           }
         )
       ] }),
-      /* @__PURE__ */ jsxs("ul", { className: styles$b.shareChecklist, children: [
-        /* @__PURE__ */ jsx("li", { className: styles$b.shareCheckItem, children: /* @__PURE__ */ jsxs("div", { className: styles$b.shareCheckText, children: [
-          /* @__PURE__ */ jsx("span", { className: styles$b.shareCheckBold, children: "משתלב בכל ערוץ" }),
-          /* @__PURE__ */ jsx("span", { className: styles$b.shareCheckDesc, children: "אימייל, וואטסאפ, QR וקישורי קמפיין" })
+      /* @__PURE__ */ jsxs("ul", { className: styles$d.shareChecklist, children: [
+        /* @__PURE__ */ jsx("li", { className: styles$d.shareCheckItem, children: /* @__PURE__ */ jsxs("div", { className: styles$d.shareCheckText, children: [
+          /* @__PURE__ */ jsx("span", { className: styles$d.shareCheckBold, children: "משתלב בכל ערוץ" }),
+          /* @__PURE__ */ jsx("span", { className: styles$d.shareCheckDesc, children: "אימייל, וואטסאפ, QR וקישורי קמפיין" })
         ] }) }),
-        /* @__PURE__ */ jsx("li", { className: styles$b.shareCheckItem, children: /* @__PURE__ */ jsxs("div", { className: styles$b.shareCheckText, children: [
-          /* @__PURE__ */ jsx("span", { className: styles$b.shareCheckBold, children: "לא נשאר רק בקישור" }),
-          /* @__PURE__ */ jsx("span", { className: styles$b.shareCheckDesc, children: "הכרטיס חי בכל מקום שבו העסק שלכם כבר נמצא" })
+        /* @__PURE__ */ jsx("li", { className: styles$d.shareCheckItem, children: /* @__PURE__ */ jsxs("div", { className: styles$d.shareCheckText, children: [
+          /* @__PURE__ */ jsx("span", { className: styles$d.shareCheckBold, children: "לא נשאר רק בקישור" }),
+          /* @__PURE__ */ jsx("span", { className: styles$d.shareCheckDesc, children: "הכרטיס חי בכל מקום שבו העסק שלכם כבר נמצא" })
         ] }) }),
-        /* @__PURE__ */ jsx("li", { className: styles$b.shareCheckItem, children: /* @__PURE__ */ jsxs("div", { className: styles$b.shareCheckText, children: [
-          /* @__PURE__ */ jsx("span", { className: styles$b.shareCheckBold, children: "הפצה חכמה יותר" }),
-          /* @__PURE__ */ jsx("span", { className: styles$b.shareCheckDesc, children: "כל שיתוף הוא הזדמנות להגיע ללקוחות חדשים" })
+        /* @__PURE__ */ jsx("li", { className: styles$d.shareCheckItem, children: /* @__PURE__ */ jsxs("div", { className: styles$d.shareCheckText, children: [
+          /* @__PURE__ */ jsx("span", { className: styles$d.shareCheckBold, children: "הפצה חכמה יותר" }),
+          /* @__PURE__ */ jsx("span", { className: styles$d.shareCheckDesc, children: "כל שיתוף הוא הזדמנות להגיע ללקוחות חדשים" })
         ] }) })
       ] }),
-      /* @__PURE__ */ jsx("div", { className: styles$b.shareRow, ref: shareScroll.ref, children: SHARE_CHANNELS.map((ch, i) => /* @__PURE__ */ jsxs("div", { className: styles$b.shareCard, children: [
-        /* @__PURE__ */ jsx("div", { className: styles$b.shareMedia, children: /* @__PURE__ */ jsx(
+      /* @__PURE__ */ jsx("div", { className: styles$d.shareRow, ref: shareScroll.ref, children: SHARE_CHANNELS.map((ch, i) => /* @__PURE__ */ jsxs("div", { className: styles$d.shareCard, children: [
+        /* @__PURE__ */ jsx("div", { className: styles$d.shareMedia, children: /* @__PURE__ */ jsx(
           "img",
           {
-            className: styles$b.shareImg,
+            className: styles$d.shareImg,
             src: ch.src,
             alt: ch.alt,
             width: 400,
@@ -3492,38 +3492,38 @@ function Home() {
             decoding: "async"
           }
         ) }),
-        /* @__PURE__ */ jsxs("div", { className: styles$b.shareBody, children: [
-          /* @__PURE__ */ jsx(ch.Icon, { className: styles$b.shareIcon }),
-          /* @__PURE__ */ jsx("h3", { className: styles$b.shareTitle, children: ch.title }),
-          /* @__PURE__ */ jsx("p", { className: styles$b.shareText, children: ch.text })
+        /* @__PURE__ */ jsxs("div", { className: styles$d.shareBody, children: [
+          /* @__PURE__ */ jsx(ch.Icon, { className: styles$d.shareIcon }),
+          /* @__PURE__ */ jsx("h3", { className: styles$d.shareTitle, children: ch.title }),
+          /* @__PURE__ */ jsx("p", { className: styles$d.shareText, children: ch.text })
         ] })
       ] }, i)) })
     ] }) }),
     /* @__PURE__ */ jsx("section", { className: pub.sectionLight, children: /* @__PURE__ */ jsxs("div", { className: pub.sectionWrap, children: [
       /* @__PURE__ */ jsx("h2", { className: pub.h2Gold, children: "תעדכנו בעצמכם - 24/7" }),
-      /* @__PURE__ */ jsxs("ul", { className: styles$b.editChecklist, children: [
-        /* @__PURE__ */ jsx("li", { className: styles$b.editCheckItem, children: /* @__PURE__ */ jsxs("div", { className: styles$b.editCheckText, children: [
-          /* @__PURE__ */ jsx("span", { className: styles$b.editCheckBold, children: "עדכון תוכן עצמאי" }),
-          /* @__PURE__ */ jsx("span", { className: styles$b.editCheckDesc, children: "שנו מספר טלפון, תמונות, טקסטים וקישורים - הכל מתעדכן ברגע" })
+      /* @__PURE__ */ jsxs("ul", { className: styles$d.editChecklist, children: [
+        /* @__PURE__ */ jsx("li", { className: styles$d.editCheckItem, children: /* @__PURE__ */ jsxs("div", { className: styles$d.editCheckText, children: [
+          /* @__PURE__ */ jsx("span", { className: styles$d.editCheckBold, children: "עדכון תוכן עצמאי" }),
+          /* @__PURE__ */ jsx("span", { className: styles$d.editCheckDesc, children: "שנו מספר טלפון, תמונות, טקסטים וקישורים - הכל מתעדכן ברגע" })
         ] }) }),
-        /* @__PURE__ */ jsx("li", { className: styles$b.editCheckItem, children: /* @__PURE__ */ jsxs("div", { className: styles$b.editCheckText, children: [
-          /* @__PURE__ */ jsx("span", { className: styles$b.editCheckBold, children: "החלפת עיצוב בלחיצה" }),
-          /* @__PURE__ */ jsx("span", { className: styles$b.editCheckDesc, children: "בחרו תבנית חדשה בכל רגע - התוכן נשמר" })
+        /* @__PURE__ */ jsx("li", { className: styles$d.editCheckItem, children: /* @__PURE__ */ jsxs("div", { className: styles$d.editCheckText, children: [
+          /* @__PURE__ */ jsx("span", { className: styles$d.editCheckBold, children: "החלפת עיצוב בלחיצה" }),
+          /* @__PURE__ */ jsx("span", { className: styles$d.editCheckDesc, children: "בחרו תבנית חדשה בכל רגע - התוכן נשמר" })
         ] }) }),
-        /* @__PURE__ */ jsx("li", { className: styles$b.editCheckItem, children: /* @__PURE__ */ jsxs("div", { className: styles$b.editCheckText, children: [
-          /* @__PURE__ */ jsx("span", { className: styles$b.editCheckBold, children: "מכל מכשיר, בלי לחכות" }),
-          /* @__PURE__ */ jsx("span", { className: styles$b.editCheckDesc, children: "האזור האישי עובד גם מהנייד - בלי צורך במפתח" })
+        /* @__PURE__ */ jsx("li", { className: styles$d.editCheckItem, children: /* @__PURE__ */ jsxs("div", { className: styles$d.editCheckText, children: [
+          /* @__PURE__ */ jsx("span", { className: styles$d.editCheckBold, children: "מכל מכשיר, בלי לחכות" }),
+          /* @__PURE__ */ jsx("span", { className: styles$d.editCheckDesc, children: "האזור האישי עובד גם מהנייד - בלי צורך במפתח" })
         ] }) }),
-        /* @__PURE__ */ jsx("li", { className: styles$b.editCheckItem, children: /* @__PURE__ */ jsxs("div", { className: styles$b.editCheckText, children: [
-          /* @__PURE__ */ jsx("span", { className: styles$b.editCheckBold, children: "תמיכה מלאה" }),
-          /* @__PURE__ */ jsx("span", { className: styles$b.editCheckDesc, children: "לא מסתדרים? יש שאלה? צריכים עזרה עם הכרטיס? אנחנו כאן בשבילכם, עם תמיכה אישית וזמינה." })
+        /* @__PURE__ */ jsx("li", { className: styles$d.editCheckItem, children: /* @__PURE__ */ jsxs("div", { className: styles$d.editCheckText, children: [
+          /* @__PURE__ */ jsx("span", { className: styles$d.editCheckBold, children: "תמיכה מלאה" }),
+          /* @__PURE__ */ jsx("span", { className: styles$d.editCheckDesc, children: "לא מסתדרים? יש שאלה? צריכים עזרה עם הכרטיס? אנחנו כאן בשבילכם, עם תמיכה אישית וזמינה." })
         ] }) })
       ] }),
       /* @__PURE__ */ jsx("br", {}),
       /* @__PURE__ */ jsx(
         "img",
         {
-          className: `${styles$b.editorDashImg} ${scroll.scrollZoomSoft} ${styles$b.dashboardZoom}`,
+          className: `${styles$d.editorDashImg} ${scroll.scrollZoomSoft} ${styles$d.dashboardZoom}`,
           ref: editorZoom.ref,
           src: "/images/home-page/main-sections/Section-5/cardigo-digital-business-card-editor-dashboard.jpg",
           alt: "עורך כרטיס ביקור דיגיטלי - Cardigo",
@@ -3536,13 +3536,13 @@ function Home() {
       /* @__PURE__ */ jsx(
         "div",
         {
-          className: styles$b.controlItems,
+          className: styles$d.controlItems,
           ref: controlScroll.ref,
-          children: CONTROL_FEATURES.map((item, i) => /* @__PURE__ */ jsxs("div", { className: styles$b.controlItem, children: [
-            /* @__PURE__ */ jsx("div", { className: styles$b.controlMedia, children: /* @__PURE__ */ jsx(
+          children: CONTROL_FEATURES.map((item, i) => /* @__PURE__ */ jsxs("div", { className: styles$d.controlItem, children: [
+            /* @__PURE__ */ jsx("div", { className: styles$d.controlMedia, children: /* @__PURE__ */ jsx(
               "img",
               {
-                className: styles$b.controlImg,
+                className: styles$d.controlImg,
                 src: item.src,
                 alt: item.alt,
                 width: 400,
@@ -3551,15 +3551,15 @@ function Home() {
                 decoding: "async"
               }
             ) }),
-            /* @__PURE__ */ jsxs("div", { className: styles$b.controlBody, children: [
+            /* @__PURE__ */ jsxs("div", { className: styles$d.controlBody, children: [
               /* @__PURE__ */ jsx(
                 item.Icon,
                 {
-                  className: styles$b.controlItemIcon
+                  className: styles$d.controlItemIcon
                 }
               ),
-              /* @__PURE__ */ jsx("div", { className: styles$b.controlItemTitle, children: item.title }),
-              /* @__PURE__ */ jsx("div", { className: styles$b.controlItemDesc, children: item.text })
+              /* @__PURE__ */ jsx("div", { className: styles$d.controlItemTitle, children: item.title }),
+              /* @__PURE__ */ jsx("div", { className: styles$d.controlItemDesc, children: item.text })
             ] })
           ] }, i))
         }
@@ -3580,11 +3580,11 @@ function Home() {
           children: "הנה כמה מהתבניות לדוגמא…"
         }
       ),
-      /* @__PURE__ */ jsx("div", { className: styles$b.templatesShowcase, children: TEMPLATE_SKINS.map((skin, i) => /* @__PURE__ */ jsxs("div", { className: styles$b.templateCard, children: [
+      /* @__PURE__ */ jsx("div", { className: styles$d.templatesShowcase, children: TEMPLATE_SKINS.map((skin, i) => /* @__PURE__ */ jsxs("div", { className: styles$d.templateCard, children: [
         /* @__PURE__ */ jsx(
           "img",
           {
-            className: styles$b.templateCardImg,
+            className: styles$d.templateCardImg,
             src: skin.src,
             alt: `תבנית ${skin.name}`,
             loading: "lazy",
@@ -3592,9 +3592,9 @@ function Home() {
             height: "520"
           }
         ),
-        /* @__PURE__ */ jsx("div", { className: styles$b.templateCardName })
+        /* @__PURE__ */ jsx("div", { className: styles$d.templateCardName })
       ] }, i)) }),
-      /* @__PURE__ */ jsx("div", { className: styles$b.center, children: /* @__PURE__ */ jsx(
+      /* @__PURE__ */ jsx("div", { className: styles$d.center, children: /* @__PURE__ */ jsx(
         Button,
         {
           as: Link,
@@ -3607,11 +3607,11 @@ function Home() {
           children: "בחרו תבנית והתחילו חינם"
         }
       ) }),
-      /* @__PURE__ */ jsx("div", { className: styles$b.center, children: /* @__PURE__ */ jsx(
+      /* @__PURE__ */ jsx("div", { className: styles$d.center, children: /* @__PURE__ */ jsx(
         Link,
         {
           to: "/cards",
-          className: styles$b.templatesSeeAll,
+          className: styles$d.templatesSeeAll,
           onClick: () => trackSiteClick({
             action: SITE_ACTIONS.home_templates_see_all,
             pagePath: "/"
@@ -3622,15 +3622,15 @@ function Home() {
     ] }) }),
     /* @__PURE__ */ jsx("section", { className: pub.sectionLight, id: "how", children: /* @__PURE__ */ jsxs("div", { className: pub.sectionWrap, children: [
       /* @__PURE__ */ jsx("h2", { className: pub.h2Gold, children: "שלושה צעדים - וזה עובד" }),
-      /* @__PURE__ */ jsx("div", { className: styles$b.steps, ref: stepsScroll.ref, children: STEPS.map((s) => /* @__PURE__ */ jsxs(
+      /* @__PURE__ */ jsx("div", { className: styles$d.steps, ref: stepsScroll.ref, children: STEPS.map((s) => /* @__PURE__ */ jsxs(
         "div",
         {
-          className: `${styles$b.step} ${s.num === "3" ? styles$b.stepWide : ""}`,
+          className: `${styles$d.step} ${s.num === "3" ? styles$d.stepWide : ""}`,
           children: [
-            /* @__PURE__ */ jsx("div", { className: styles$b.stepMedia, children: /* @__PURE__ */ jsx(
+            /* @__PURE__ */ jsx("div", { className: styles$d.stepMedia, children: /* @__PURE__ */ jsx(
               "img",
               {
-                className: styles$b.stepImg,
+                className: styles$d.stepImg,
                 src: s.src,
                 alt: s.alt,
                 loading: "lazy",
@@ -3638,18 +3638,18 @@ function Home() {
                 height: "400"
               }
             ) }),
-            /* @__PURE__ */ jsxs("div", { className: styles$b.stepBody, children: [
-              /* @__PURE__ */ jsx("div", { className: styles$b.stepNum, children: s.num }),
-              /* @__PURE__ */ jsx("div", { className: styles$b.stepTitle, children: s.title }),
-              /* @__PURE__ */ jsx("div", { className: styles$b.stepText, children: s.text })
+            /* @__PURE__ */ jsxs("div", { className: styles$d.stepBody, children: [
+              /* @__PURE__ */ jsx("div", { className: styles$d.stepNum, children: s.num }),
+              /* @__PURE__ */ jsx("div", { className: styles$d.stepTitle, children: s.title }),
+              /* @__PURE__ */ jsx("div", { className: styles$d.stepText, children: s.text })
             ] })
           ]
         },
         s.num
       )) })
     ] }) }),
-    /* @__PURE__ */ jsx("section", { className: styles$b.ctaSection, children: /* @__PURE__ */ jsx("div", { className: pub.sectionWrap, children: /* @__PURE__ */ jsxs("div", { className: styles$b.ctaInner, children: [
-      /* @__PURE__ */ jsxs("h2", { className: styles$b.ctaTitle, children: [
+    /* @__PURE__ */ jsx("section", { className: styles$d.ctaSection, children: /* @__PURE__ */ jsx("div", { className: pub.sectionWrap, children: /* @__PURE__ */ jsxs("div", { className: styles$d.ctaInner, children: [
+      /* @__PURE__ */ jsxs("h2", { className: styles$d.ctaTitle, children: [
         " ",
         "צרו כרטיס דיגיטלי בחינם",
         " ",
@@ -3664,7 +3664,7 @@ function Home() {
           }
         )
       ] }),
-      /* @__PURE__ */ jsxs("p", { className: styles$b.ctaText, children: [
+      /* @__PURE__ */ jsxs("p", { className: styles$d.ctaText, children: [
         "יוצרים, משתפים ומעדכנים בקלות - עם",
         " ",
         /* @__PURE__ */ jsx(
@@ -3679,7 +3679,7 @@ function Home() {
       /* @__PURE__ */ jsx(
         "img",
         {
-          className: styles$b.ctaImg,
+          className: styles$d.ctaImg,
           src: "/images/home-page/main-sections/Section-8/cardigo-digital-business-card-israel-brand-illustration.webp",
           alt: "כרטיס ביקור דיגיטלי לעסקים - Cardigo",
           width: 800,
@@ -3694,7 +3694,7 @@ function Home() {
           as: Link,
           to: "/edit/card/templates",
           variant: "primary",
-          className: styles$b.ctaBtn,
+          className: styles$d.ctaBtn,
           onClick: () => trackSiteClick({
             action: SITE_ACTIONS.home_bottom_cta,
             pagePath: "/"
@@ -3804,7 +3804,7 @@ const qaLight = "_qaLight_1ydlx_1113";
 const answerLight = "_answerLight_1ydlx_1141";
 const brandLink = "_brandLink_1ydlx_1153";
 const closingActions = "_closingActions_1ydlx_1181";
-const styles$a = {
+const styles$c = {
   heroWrap: heroWrap$8,
   heroCopy: heroCopy$4,
   h1: h1$8,
@@ -3971,14 +3971,14 @@ function Contact() {
         jsonLdItems: [contactFaqJsonLd]
       }
     ),
-    /* @__PURE__ */ jsx("section", { className: pub.sectionDark, children: /* @__PURE__ */ jsxs("div", { className: `${pub.sectionWrap} ${styles$a.heroWrap}`, children: [
-      /* @__PURE__ */ jsxs("div", { className: styles$a.heroCopy, children: [
-        /* @__PURE__ */ jsxs("h1", { className: styles$a.h1, children: [
+    /* @__PURE__ */ jsx("section", { className: pub.sectionDark, children: /* @__PURE__ */ jsxs("div", { className: `${pub.sectionWrap} ${styles$c.heroWrap}`, children: [
+      /* @__PURE__ */ jsxs("div", { className: styles$c.heroCopy, children: [
+        /* @__PURE__ */ jsxs("h1", { className: styles$c.h1, children: [
           "דברו איתנו",
           /* @__PURE__ */ jsx(
             "span",
             {
-              className: `${styles$a.h1Accent} ${pub.goldUnderline}`,
+              className: `${styles$c.h1Accent} ${pub.goldUnderline}`,
               children: "נשמח לענות על כל שאלה"
             }
           )
@@ -3986,7 +3986,7 @@ function Contact() {
         /* @__PURE__ */ jsx(
           "img",
           {
-            className: styles$a.heroImg,
+            className: styles$c.heroImg,
             src: "/images/contact/hero/contact-cardigo-digital-bussines-card.webp",
             alt: "צור קשר עם Cardigo - כרטיס ביקור דיגיטלי לעסקים",
             width: "600",
@@ -3996,14 +3996,14 @@ function Contact() {
           }
         ),
         /* @__PURE__ */ jsx("p", { className: pub.sectionLeadLight, children: "רוצים לדעת מה מתאים לעסק שלכם, לשאול על מחירים או לברר פרטים לפני ההתחלה? כתבו לנו." }),
-        /* @__PURE__ */ jsxs("div", { className: styles$a.heroActions, children: [
+        /* @__PURE__ */ jsxs("div", { className: styles$c.heroActions, children: [
           /* @__PURE__ */ jsx(
             Button,
             {
               as: "a",
               href: `mailto:${EMAIL}`,
               variant: "primary",
-              className: styles$a.heroCta,
+              className: styles$c.heroCta,
               onClick: () => trackSiteClick({
                 action: SITE_ACTIONS.contact_email_click,
                 pagePath: "/contact"
@@ -4017,23 +4017,23 @@ function Contact() {
               as: Link,
               to: "/pricing",
               variant: "secondary",
-              className: styles$a.heroSecondary,
+              className: styles$c.heroSecondary,
               children: "לראות מסלולים ומחירים"
             }
           )
         ] })
       ] }),
-      /* @__PURE__ */ jsx("p", { className: styles$a.trustLine, children: EMAIL })
+      /* @__PURE__ */ jsx("p", { className: styles$c.trustLine, children: EMAIL })
     ] }) }),
     /* @__PURE__ */ jsx("section", { className: pub.sectionLight, children: /* @__PURE__ */ jsxs("div", { className: `${pub.sectionWrap}`, children: [
       /* @__PURE__ */ jsx("h2", { className: pub.h2Gold, children: "אנחנו כאן לכל שאלה" }),
       /* @__PURE__ */ jsx("p", { className: pub.sectionLead, children: "לפני שמתחילים, טבעי שיש שאלות. הנה כמה נושאים שבהם נשמח לעזור." }),
-      /* @__PURE__ */ jsx("div", { className: styles$a.valueBridgeRail, children: /* @__PURE__ */ jsxs("div", { className: styles$a.valueBridgeCards, children: [
-        /* @__PURE__ */ jsxs("article", { className: styles$a.valueBridgeCard, children: [
-          /* @__PURE__ */ jsx("div", { className: styles$a.valueBridgeMedia, children: /* @__PURE__ */ jsx(
+      /* @__PURE__ */ jsx("div", { className: styles$c.valueBridgeRail, children: /* @__PURE__ */ jsxs("div", { className: styles$c.valueBridgeCards, children: [
+        /* @__PURE__ */ jsxs("article", { className: styles$c.valueBridgeCard, children: [
+          /* @__PURE__ */ jsx("div", { className: styles$c.valueBridgeMedia, children: /* @__PURE__ */ jsx(
             "img",
             {
-              className: styles$a.valueBridgeImg,
+              className: styles$c.valueBridgeImg,
               src: "/images/contact/value-bridge/כרטיס-ביקור-דיגיטלי-כרדיגו-שאלות-לפני-ההתחלה.webp",
               alt: "שאלות לפני ההתחלה - כרטיס ביקור דיגיטלי Cardigo",
               width: "400",
@@ -4042,16 +4042,16 @@ function Contact() {
               decoding: "async"
             }
           ) }),
-          /* @__PURE__ */ jsxs("div", { className: styles$a.valueBridgeBody, children: [
-            /* @__PURE__ */ jsx("h3", { className: styles$a.valueBridgeTitle, children: "שאלות לפני ההתחלה" }),
-            /* @__PURE__ */ jsxs("p", { className: styles$a.valueBridgeText, children: [
+          /* @__PURE__ */ jsxs("div", { className: styles$c.valueBridgeBody, children: [
+            /* @__PURE__ */ jsx("h3", { className: styles$c.valueBridgeTitle, children: "שאלות לפני ההתחלה" }),
+            /* @__PURE__ */ jsxs("p", { className: styles$c.valueBridgeText, children: [
               "רוצים להבין איך",
               " ",
               /* @__PURE__ */ jsx(
                 Link,
                 {
                   to: "/",
-                  className: styles$a.brandLink,
+                  className: styles$c.brandLink,
                   children: "Cardigo"
                 }
               ),
@@ -4060,11 +4060,11 @@ function Contact() {
             ] })
           ] })
         ] }),
-        /* @__PURE__ */ jsxs("article", { className: styles$a.valueBridgeCard, children: [
-          /* @__PURE__ */ jsx("div", { className: styles$a.valueBridgeMedia, children: /* @__PURE__ */ jsx(
+        /* @__PURE__ */ jsxs("article", { className: styles$c.valueBridgeCard, children: [
+          /* @__PURE__ */ jsx("div", { className: styles$c.valueBridgeMedia, children: /* @__PURE__ */ jsx(
             "img",
             {
-              className: styles$a.valueBridgeImg,
+              className: styles$c.valueBridgeImg,
               src: "/images/contact/value-bridge/כרטיס-ביקור-דיגיטלי-כרדיגו-מחירים-ומסלולים.webp",
               alt: "מחירים ומסלולים - כרטיס ביקור דיגיטלי Cardigo",
               width: "400",
@@ -4073,16 +4073,16 @@ function Contact() {
               decoding: "async"
             }
           ) }),
-          /* @__PURE__ */ jsxs("div", { className: styles$a.valueBridgeBody, children: [
-            /* @__PURE__ */ jsx("h3", { className: styles$a.valueBridgeTitle, children: "מחירים ומסלולים" }),
-            /* @__PURE__ */ jsx("p", { className: styles$a.valueBridgeText, children: "לא בטוחים איזה מסלול מתאים? נשמח לפרט על ההבדלים בין המסלולים ולענות על כל שאלה." })
+          /* @__PURE__ */ jsxs("div", { className: styles$c.valueBridgeBody, children: [
+            /* @__PURE__ */ jsx("h3", { className: styles$c.valueBridgeTitle, children: "מחירים ומסלולים" }),
+            /* @__PURE__ */ jsx("p", { className: styles$c.valueBridgeText, children: "לא בטוחים איזה מסלול מתאים? נשמח לפרט על ההבדלים בין המסלולים ולענות על כל שאלה." })
           ] })
         ] }),
-        /* @__PURE__ */ jsxs("article", { className: styles$a.valueBridgeCard, children: [
-          /* @__PURE__ */ jsx("div", { className: styles$a.valueBridgeMedia, children: /* @__PURE__ */ jsx(
+        /* @__PURE__ */ jsxs("article", { className: styles$c.valueBridgeCard, children: [
+          /* @__PURE__ */ jsx("div", { className: styles$c.valueBridgeMedia, children: /* @__PURE__ */ jsx(
             "img",
             {
-              className: styles$a.valueBridgeImg,
+              className: styles$c.valueBridgeImg,
               src: "/images/contact/value-bridge/כרטיס-ביקור-דיגיטלי-כרדיגו-התאמה-לעסק-או-לצוות.webp",
               alt: "התאמה לעסק או לצוות - כרטיס ביקור דיגיטלי Cardigo",
               width: "400",
@@ -4091,28 +4091,28 @@ function Contact() {
               decoding: "async"
             }
           ) }),
-          /* @__PURE__ */ jsxs("div", { className: styles$a.valueBridgeBody, children: [
-            /* @__PURE__ */ jsx("h3", { className: styles$a.valueBridgeTitle, children: "התאמה לעסק או לצוות" }),
-            /* @__PURE__ */ jsx("p", { className: styles$a.valueBridgeText, children: "מחפשים פתרון לכמה אנשי צוות או לארגון? פנו אלינו ונבדוק ביחד מה מתאים." })
+          /* @__PURE__ */ jsxs("div", { className: styles$c.valueBridgeBody, children: [
+            /* @__PURE__ */ jsx("h3", { className: styles$c.valueBridgeTitle, children: "התאמה לעסק או לצוות" }),
+            /* @__PURE__ */ jsx("p", { className: styles$c.valueBridgeText, children: "מחפשים פתרון לכמה אנשי צוות או לארגון? פנו אלינו ונבדוק ביחד מה מתאים." })
           ] })
         ] })
       ] }) })
     ] }) }),
-    /* @__PURE__ */ jsx("section", { className: pub.sectionDark, children: /* @__PURE__ */ jsxs("div", { className: `${pub.sectionWrap} ${styles$a.sectionFormWrap}`, children: [
+    /* @__PURE__ */ jsx("section", { className: pub.sectionDark, children: /* @__PURE__ */ jsxs("div", { className: `${pub.sectionWrap} ${styles$c.sectionFormWrap}`, children: [
       /* @__PURE__ */ jsx("h2", { className: pub.h2White, children: "נשמח לשמוע מכם" }),
       /* @__PURE__ */ jsx("p", { className: pub.sectionLeadLight, children: "מלאו את הטופס ונחזור אליכם בהקדם, או פנו אלינו ישירות בכל דרך שנוחה לכם." }),
-      /* @__PURE__ */ jsxs("div", { className: styles$a.contactRow, children: [
-        /* @__PURE__ */ jsx("div", { className: styles$a.contactFormCol, children: sent ? /* @__PURE__ */ jsxs("div", { className: styles$a.successBox, children: [
-          /* @__PURE__ */ jsx("span", { className: styles$a.successIcon, children: "✓" }),
-          /* @__PURE__ */ jsx("h3", { className: styles$a.successTitle, children: "הפנייה נשלחה בהצלחה" }),
-          /* @__PURE__ */ jsx("p", { className: styles$a.successText, children: "קיבלנו את ההודעה שלכם ונחזור אליכם בהקדם האפשרי." }),
+      /* @__PURE__ */ jsxs("div", { className: styles$c.contactRow, children: [
+        /* @__PURE__ */ jsx("div", { className: styles$c.contactFormCol, children: sent ? /* @__PURE__ */ jsxs("div", { className: styles$c.successBox, children: [
+          /* @__PURE__ */ jsx("span", { className: styles$c.successIcon, children: "✓" }),
+          /* @__PURE__ */ jsx("h3", { className: styles$c.successTitle, children: "הפנייה נשלחה בהצלחה" }),
+          /* @__PURE__ */ jsx("p", { className: styles$c.successText, children: "קיבלנו את ההודעה שלכם ונחזור אליכם בהקדם האפשרי." }),
           /* @__PURE__ */ jsx(
             Button,
             {
               as: Link,
               to: "/",
               variant: "secondary",
-              className: styles$a.successCta,
+              className: styles$c.successCta,
               children: "חזרה לדף הבית"
             }
           )
@@ -4124,7 +4124,7 @@ function Contact() {
             "data-netlify": "true",
             "netlify-honeypot": "bot-field",
             onSubmit: handleSubmit,
-            className: styles$a.contactForm,
+            className: styles$c.contactForm,
             children: [
               /* @__PURE__ */ jsx(
                 "input",
@@ -4137,7 +4137,7 @@ function Contact() {
               /* @__PURE__ */ jsx(
                 "div",
                 {
-                  className: styles$a.honeypot,
+                  className: styles$c.honeypot,
                   "aria-hidden": "true",
                   children: /* @__PURE__ */ jsx(
                     "input",
@@ -4149,12 +4149,12 @@ function Contact() {
                   )
                 }
               ),
-              /* @__PURE__ */ jsxs("label", { className: styles$a.fieldLabel, children: [
+              /* @__PURE__ */ jsxs("label", { className: styles$c.fieldLabel, children: [
                 "שם מלא *",
                 /* @__PURE__ */ jsx(
                   "input",
                   {
-                    className: styles$a.fieldInput,
+                    className: styles$c.fieldInput,
                     type: "text",
                     name: "fullName",
                     value: form.fullName,
@@ -4164,12 +4164,12 @@ function Contact() {
                   }
                 )
               ] }),
-              /* @__PURE__ */ jsxs("label", { className: styles$a.fieldLabel, children: [
+              /* @__PURE__ */ jsxs("label", { className: styles$c.fieldLabel, children: [
                 "טלפון *",
                 /* @__PURE__ */ jsx(
                   "input",
                   {
-                    className: styles$a.fieldInput,
+                    className: styles$c.fieldInput,
                     type: "tel",
                     name: "phone",
                     value: form.phone,
@@ -4180,12 +4180,12 @@ function Contact() {
                   }
                 )
               ] }),
-              /* @__PURE__ */ jsxs("label", { className: styles$a.fieldLabel, children: [
+              /* @__PURE__ */ jsxs("label", { className: styles$c.fieldLabel, children: [
                 "אימייל",
                 /* @__PURE__ */ jsx(
                   "input",
                   {
-                    className: styles$a.fieldInput,
+                    className: styles$c.fieldInput,
                     type: "email",
                     name: "email",
                     value: form.email,
@@ -4194,12 +4194,12 @@ function Contact() {
                   }
                 )
               ] }),
-              /* @__PURE__ */ jsxs("label", { className: styles$a.fieldLabel, children: [
+              /* @__PURE__ */ jsxs("label", { className: styles$c.fieldLabel, children: [
                 "נושא הפנייה",
                 /* @__PURE__ */ jsxs(
                   "select",
                   {
-                    className: styles$a.fieldInput,
+                    className: styles$c.fieldInput,
                     name: "subject",
                     value: form.subject,
                     onChange: updateField,
@@ -4210,12 +4210,12 @@ function Contact() {
                   }
                 )
               ] }),
-              /* @__PURE__ */ jsxs("label", { className: styles$a.fieldLabel, children: [
+              /* @__PURE__ */ jsxs("label", { className: styles$c.fieldLabel, children: [
                 "הודעה",
                 /* @__PURE__ */ jsx(
                   "textarea",
                   {
-                    className: `${styles$a.fieldInput} ${styles$a.fieldTextarea}`,
+                    className: `${styles$c.fieldInput} ${styles$c.fieldTextarea}`,
                     name: "message",
                     value: form.message,
                     onChange: updateField,
@@ -4223,7 +4223,7 @@ function Contact() {
                   }
                 )
               ] }),
-              /* @__PURE__ */ jsxs("label", { className: styles$a.consentLabel, children: [
+              /* @__PURE__ */ jsxs("label", { className: styles$c.consentLabel, children: [
                 /* @__PURE__ */ jsx(
                   "input",
                   {
@@ -4232,10 +4232,10 @@ function Contact() {
                     checked: form.consent,
                     onChange: updateField,
                     required: true,
-                    className: styles$a.consentCheck
+                    className: styles$c.consentCheck
                   }
                 ),
-                /* @__PURE__ */ jsxs("span", { className: styles$a.consentText, children: [
+                /* @__PURE__ */ jsxs("span", { className: styles$c.consentText, children: [
                   "אני מסכים/ה ל",
                   /* @__PURE__ */ jsx(Link, { to: "/terms", children: "תנאי השימוש" }),
                   " ",
@@ -4249,7 +4249,7 @@ function Contact() {
                   as: "button",
                   type: "submit",
                   variant: "primary",
-                  className: styles$a.submitBtn,
+                  className: styles$c.submitBtn,
                   disabled: submitting,
                   loading: submitting,
                   children: submitting ? "שולח…" : "שליחה"
@@ -4258,14 +4258,14 @@ function Contact() {
             ]
           }
         ) }),
-        /* @__PURE__ */ jsxs("div", { className: styles$a.contactInfoCol, children: [
-          /* @__PURE__ */ jsx("h3", { className: styles$a.infoHeading, children: "דרכים נוספות ליצירת קשר" }),
-          /* @__PURE__ */ jsxs("ul", { className: styles$a.infoList, children: [
-            /* @__PURE__ */ jsxs("li", { className: styles$a.infoItem, children: [
+        /* @__PURE__ */ jsxs("div", { className: styles$c.contactInfoCol, children: [
+          /* @__PURE__ */ jsx("h3", { className: styles$c.infoHeading, children: "דרכים נוספות ליצירת קשר" }),
+          /* @__PURE__ */ jsxs("ul", { className: styles$c.infoList, children: [
+            /* @__PURE__ */ jsxs("li", { className: styles$c.infoItem, children: [
               /* @__PURE__ */ jsx(
                 "span",
                 {
-                  className: `${styles$a.infoIcon} ${styles$a.infoIconPhone}`,
+                  className: `${styles$c.infoIcon} ${styles$c.infoIconPhone}`,
                   "aria-hidden": "true"
                 }
               ),
@@ -4273,16 +4273,16 @@ function Contact() {
                 "a",
                 {
                   href: PHONE_TEL,
-                  className: styles$a.infoLink,
+                  className: styles$c.infoLink,
                   children: PHONE_DISPLAY
                 }
               )
             ] }),
-            /* @__PURE__ */ jsxs("li", { className: styles$a.infoItem, children: [
+            /* @__PURE__ */ jsxs("li", { className: styles$c.infoItem, children: [
               /* @__PURE__ */ jsx(
                 "span",
                 {
-                  className: `${styles$a.infoIcon} ${styles$a.infoIconWhatsapp}`,
+                  className: `${styles$c.infoIcon} ${styles$c.infoIconWhatsapp}`,
                   "aria-hidden": "true"
                 }
               ),
@@ -4292,7 +4292,7 @@ function Contact() {
                   href: WHATSAPP_URL,
                   target: "_blank",
                   rel: "noopener noreferrer",
-                  className: styles$a.infoLink,
+                  className: styles$c.infoLink,
                   onClick: () => trackSiteClick({
                     action: SITE_ACTIONS.contact_whatsapp_click,
                     pagePath: "/contact"
@@ -4301,11 +4301,11 @@ function Contact() {
                 }
               )
             ] }),
-            /* @__PURE__ */ jsxs("li", { className: styles$a.infoItem, children: [
+            /* @__PURE__ */ jsxs("li", { className: styles$c.infoItem, children: [
               /* @__PURE__ */ jsx(
                 "span",
                 {
-                  className: `${styles$a.infoIcon} ${styles$a.infoIconMail}`,
+                  className: `${styles$c.infoIcon} ${styles$c.infoIconMail}`,
                   "aria-hidden": "true"
                 }
               ),
@@ -4313,7 +4313,7 @@ function Contact() {
                 "a",
                 {
                   href: `mailto:${EMAIL}`,
-                  className: styles$a.infoLink,
+                  className: styles$c.infoLink,
                   onClick: () => trackSiteClick({
                     action: SITE_ACTIONS.contact_email_click,
                     pagePath: "/contact"
@@ -4322,11 +4322,11 @@ function Contact() {
                 }
               )
             ] }),
-            /* @__PURE__ */ jsxs("li", { className: styles$a.infoItem, children: [
+            /* @__PURE__ */ jsxs("li", { className: styles$c.infoItem, children: [
               /* @__PURE__ */ jsx(
                 "span",
                 {
-                  className: `${styles$a.infoIcon} ${styles$a.infoIconFacebook}`,
+                  className: `${styles$c.infoIcon} ${styles$c.infoIconFacebook}`,
                   "aria-hidden": "true"
                 }
               ),
@@ -4336,25 +4336,25 @@ function Contact() {
                   href: FACEBOOK_URL,
                   target: "_blank",
                   rel: "noopener noreferrer",
-                  className: styles$a.infoLink,
+                  className: styles$c.infoLink,
                   children: "Facebook"
                 }
               )
             ] })
           ] }),
-          /* @__PURE__ */ jsxs("div", { className: styles$a.infoCtaGroup, children: [
+          /* @__PURE__ */ jsxs("div", { className: styles$c.infoCtaGroup, children: [
             /* @__PURE__ */ jsxs(
               Button,
               {
                 as: "a",
                 href: PHONE_TEL,
                 variant: "primary",
-                className: styles$a.infoCta,
+                className: styles$c.infoCta,
                 children: [
                   /* @__PURE__ */ jsx(
                     "span",
                     {
-                      className: styles$a.ctaIconPhone,
+                      className: styles$c.ctaIconPhone,
                       "aria-hidden": "true"
                     }
                   ),
@@ -4370,7 +4370,7 @@ function Contact() {
                 target: "_blank",
                 rel: "noopener noreferrer",
                 variant: "secondary",
-                className: styles$a.infoCta,
+                className: styles$c.infoCta,
                 onClick: () => trackSiteClick({
                   action: SITE_ACTIONS.contact_whatsapp_click,
                   pagePath: "/contact"
@@ -4379,7 +4379,7 @@ function Contact() {
                   /* @__PURE__ */ jsx(
                     "span",
                     {
-                      className: styles$a.ctaIconWhatsapp,
+                      className: styles$c.ctaIconWhatsapp,
                       "aria-hidden": "true"
                     }
                   ),
@@ -4397,13 +4397,13 @@ function Contact() {
       /* @__PURE__ */ jsx("div", { className: pub.faq, children: CONTACT_FAQ.map((item, i) => /* @__PURE__ */ jsxs(
         "details",
         {
-          className: `${pub.qa} ${styles$a.qaLight}`,
+          className: `${pub.qa} ${styles$c.qaLight}`,
           children: [
             /* @__PURE__ */ jsx("summary", { children: item.q }),
             /* @__PURE__ */ jsx(
               "div",
               {
-                className: `${pub.answer} ${styles$a.answerLight}`,
+                className: `${pub.answer} ${styles$c.answerLight}`,
                 children: item.a
               }
             )
@@ -4415,7 +4415,7 @@ function Contact() {
     /* @__PURE__ */ jsx("section", { className: pub.sectionDark, children: /* @__PURE__ */ jsxs("div", { className: pub.sectionWrap, children: [
       /* @__PURE__ */ jsx("h2", { className: pub.h2White, children: "אפשר להמשיך מכאן" }),
       /* @__PURE__ */ jsx("p", { className: pub.sectionLeadLight, children: "יש שאלה? כתבו לנו. רוצים לראות מה כלול? עברו לדף המסלולים." }),
-      /* @__PURE__ */ jsxs("div", { className: styles$a.closingActions, children: [
+      /* @__PURE__ */ jsxs("div", { className: styles$c.closingActions, children: [
         /* @__PURE__ */ jsx(
           Button,
           {
@@ -4434,14 +4434,14 @@ function Contact() {
     ] }) })
   ] });
 }
-const EMPTY = Object.freeze({});
-const InitialListingDataContext = createContext(EMPTY);
+const EMPTY$1 = Object.freeze({});
+const InitialListingDataContext = createContext(EMPTY$1);
 function InitialListingDataProvider({ value, children }) {
-  const safeValue = value && typeof value === "object" && !Array.isArray(value) ? value : EMPTY;
+  const safeValue = value && typeof value === "object" && !Array.isArray(value) ? value : EMPTY$1;
   return /* @__PURE__ */ jsx(InitialListingDataContext.Provider, { value: safeValue, children });
 }
 function useInitialListingData(key) {
-  const ctx = useContext(InitialListingDataContext) || EMPTY;
+  const ctx = useContext(InitialListingDataContext) || EMPTY$1;
   if (typeof key !== "string" || key.length === 0) return null;
   const v = ctx[key];
   return v === void 0 ? null : v;
@@ -4460,13 +4460,13 @@ const cardDate$1 = "_cardDate_thvgg_293";
 const cardTitle$1 = "_cardTitle_thvgg_305";
 const cardExcerpt$1 = "_cardExcerpt_thvgg_349";
 const cardCta$1 = "_cardCta_thvgg_373";
-const status$1 = "_status_thvgg_419";
-const statusError$1 = "_statusError_thvgg_433";
+const status$3 = "_status_thvgg_419";
+const statusError$3 = "_statusError_thvgg_433";
 const pagination$1 = "_pagination_thvgg_455";
 const pageBtn$1 = "_pageBtn_thvgg_471";
 const pageInfo$1 = "_pageInfo_thvgg_509";
 const seeExamples$1 = "_seeExamples_thvgg_521";
-const styles$9 = {
+const styles$b = {
   heroWrap: heroWrap$7,
   heroCopy: heroCopy$3,
   h1: h1$7,
@@ -4481,8 +4481,8 @@ const styles$9 = {
   cardTitle: cardTitle$1,
   cardExcerpt: cardExcerpt$1,
   cardCta: cardCta$1,
-  status: status$1,
-  statusError: statusError$1,
+  status: status$3,
+  statusError: statusError$3,
   pagination: pagination$1,
   pageBtn: pageBtn$1,
   pageInfo: pageInfo$1,
@@ -4491,9 +4491,9 @@ const styles$9 = {
 const CONTENT_DISPLAY_POLICY = Object.freeze({
   showPublishedDates: false
 });
-const ORIGIN$1 = "https://cardigo.co.il";
+const ORIGIN$3 = "https://cardigo.co.il";
 const PAGE_LIMIT$1 = 12;
-const BLOG_COVER_FALLBACK = `${ORIGIN$1}/images/blog/fallback/blog-cardigo-bussines-img-fallback.webp`;
+const BLOG_COVER_FALLBACK = `${ORIGIN$3}/images/blog/fallback/blog-cardigo-bussines-img-fallback.webp`;
 const BLOG_FAQ = [
   {
     q: "מה אפשר למצוא בבלוג של Cardigo?",
@@ -4548,7 +4548,7 @@ function buildBlogFaqJsonLd() {
 }
 const blogFaqJsonLd = buildBlogFaqJsonLd();
 const meta$3 = getMarketingMeta("blog");
-function formatDate$1(iso) {
+function formatDate$3(iso) {
   if (!iso) return "";
   try {
     return new Date(iso).toLocaleDateString("he-IL", {
@@ -4624,7 +4624,7 @@ function Blog() {
       });
     }
   }, [loading, effectivePage, totalPages, navigate]);
-  const canonicalUrl2 = effectivePage <= 1 ? BLOG_ROOT_URL : `${ORIGIN$1}/blog/page/${effectivePage}`;
+  const canonicalUrl2 = effectivePage <= 1 ? BLOG_ROOT_URL : `${ORIGIN$3}/blog/page/${effectivePage}`;
   return /* @__PURE__ */ jsxs("main", { "data-page": "site", children: [
     /* @__PURE__ */ jsx(
       SeoHelmet,
@@ -4638,13 +4638,13 @@ function Blog() {
         jsonLdItems: effectivePage <= 1 ? [blogFaqJsonLd] : []
       }
     ),
-    /* @__PURE__ */ jsx("section", { className: pub.sectionDark, children: /* @__PURE__ */ jsx("div", { className: `${pub.sectionWrap} ${styles$9.heroWrap}`, children: /* @__PURE__ */ jsxs("div", { className: styles$9.heroCopy, children: [
-      /* @__PURE__ */ jsxs("h1", { className: styles$9.h1, children: [
+    /* @__PURE__ */ jsx("section", { className: pub.sectionDark, children: /* @__PURE__ */ jsx("div", { className: `${pub.sectionWrap} ${styles$b.heroWrap}`, children: /* @__PURE__ */ jsxs("div", { className: styles$b.heroCopy, children: [
+      /* @__PURE__ */ jsxs("h1", { className: styles$b.h1, children: [
         "הבלוג של Cardigo",
         /* @__PURE__ */ jsx(
           "span",
           {
-            className: `${styles$9.h1Accent} ${pub.goldUnderline}`,
+            className: `${styles$b.h1Accent} ${pub.goldUnderline}`,
             children: "כרטיס ביקור דיגיטלי שעובד נכון"
           }
         )
@@ -4652,7 +4652,7 @@ function Blog() {
       /* @__PURE__ */ jsx(
         "img",
         {
-          className: styles$9.heroImg,
+          className: styles$b.heroImg,
           src: "/images/blog/hero/blog-cardigo-digital-bussines-card.webp",
           alt: "כרטיס ביקור דיגיטלי של Cardigo - דוגמה חיה לכרטיס עסקי מעוצב",
           width: "600",
@@ -4662,40 +4662,40 @@ function Blog() {
       ),
       /* @__PURE__ */ jsx("p", { className: pub.sectionLeadLight, children: "מאמרים, מדריכים ותובנות פרקטיות על כרטיסי ביקור דיגיטליים, נוכחות עסקית, לידים, SEO ותקשורת עסקית חכמה לעסקים בישראל." })
     ] }) }) }),
-    /* @__PURE__ */ jsx("section", { className: pub.sectionLight, children: /* @__PURE__ */ jsxs("div", { className: `${pub.sectionWrap} ${styles$9.listingWrap}`, children: [
+    /* @__PURE__ */ jsx("section", { className: pub.sectionLight, children: /* @__PURE__ */ jsxs("div", { className: `${pub.sectionWrap} ${styles$b.listingWrap}`, children: [
       /* @__PURE__ */ jsx("h2", { className: pub.h2Gold, children: "מאמרים אחרונים" }),
       /* @__PURE__ */ jsx("p", { className: pub.sectionLead, children: "כאן תמצאו תוכן מעשי שיעזור לכם להבין איך להציג את העסק טוב יותר, לחזק נוכחות דיגיטלית, לשפר תקשורת עם לקוחות ולהפיק יותר ערך מכרטיס ביקור דיגיטלי." }),
-      loading && posts.length === 0 && /* @__PURE__ */ jsx("p", { className: styles$9.status, children: "טוען…" }),
-      error2 && /* @__PURE__ */ jsx("p", { className: styles$9.statusError, children: error2 }),
-      !loading && !error2 && posts.length === 0 && /* @__PURE__ */ jsx("p", { className: styles$9.status, children: "אין מאמרים עדיין." }),
-      posts.length > 0 && /* @__PURE__ */ jsx("div", { className: styles$9.grid, children: posts.map((post) => /* @__PURE__ */ jsxs("article", { className: styles$9.card, children: [
+      loading && posts.length === 0 && /* @__PURE__ */ jsx("p", { className: styles$b.status, children: "טוען…" }),
+      error2 && /* @__PURE__ */ jsx("p", { className: styles$b.statusError, children: error2 }),
+      !loading && !error2 && posts.length === 0 && /* @__PURE__ */ jsx("p", { className: styles$b.status, children: "אין מאמרים עדיין." }),
+      posts.length > 0 && /* @__PURE__ */ jsx("div", { className: styles$b.grid, children: posts.map((post) => /* @__PURE__ */ jsxs("article", { className: styles$b.card, children: [
         /* @__PURE__ */ jsx(
           "img",
           {
-            className: styles$9.cardImage,
+            className: styles$b.cardImage,
             src: post.heroImageUrl || BLOG_COVER_FALLBACK,
             alt: post.heroImageAlt || post.title || "",
             loading: "lazy"
           }
         ),
-        /* @__PURE__ */ jsxs("div", { className: styles$9.cardBody, children: [
+        /* @__PURE__ */ jsxs("div", { className: styles$b.cardBody, children: [
           CONTENT_DISPLAY_POLICY.showPublishedDates && post.publishedAt && /* @__PURE__ */ jsx(
             "time",
             {
-              className: styles$9.cardDate,
+              className: styles$b.cardDate,
               dateTime: post.publishedAt,
-              children: formatDate$1(
+              children: formatDate$3(
                 post.publishedAt
               )
             }
           ),
-          /* @__PURE__ */ jsx("h3", { className: styles$9.cardTitle, children: /* @__PURE__ */ jsx(Link, { to: `/blog/${post.slug}`, children: post.title }) }),
-          post.excerpt && /* @__PURE__ */ jsx("p", { className: styles$9.cardExcerpt, children: post.excerpt }),
+          /* @__PURE__ */ jsx("h3", { className: styles$b.cardTitle, children: /* @__PURE__ */ jsx(Link, { to: `/blog/${post.slug}/`, children: post.title }) }),
+          post.excerpt && /* @__PURE__ */ jsx("p", { className: styles$b.cardExcerpt, children: post.excerpt }),
           /* @__PURE__ */ jsx(
             Link,
             {
-              to: `/blog/${post.slug}`,
-              className: styles$9.cardCta,
+              to: `/blog/${post.slug}/`,
+              className: styles$b.cardCta,
               onClick: () => trackSiteClick({
                 action: SITE_ACTIONS.blog_article_click,
                 pagePath: "/blog"
@@ -4708,18 +4708,18 @@ function Blog() {
       totalPages > 1 && /* @__PURE__ */ jsxs(
         "nav",
         {
-          className: styles$9.pagination,
+          className: styles$b.pagination,
           "aria-label": "ניווט עמודים",
           children: [
             effectivePage > 1 && /* @__PURE__ */ jsx(
               Link,
               {
-                className: styles$9.pageBtn,
+                className: styles$b.pageBtn,
                 to: effectivePage === 2 ? "/blog/" : `/blog/page/${effectivePage - 1}`,
                 children: "הקודם"
               }
             ),
-            /* @__PURE__ */ jsxs("span", { className: styles$9.pageInfo, children: [
+            /* @__PURE__ */ jsxs("span", { className: styles$b.pageInfo, children: [
               effectivePage,
               " / ",
               totalPages
@@ -4727,7 +4727,7 @@ function Blog() {
             effectivePage < totalPages && /* @__PURE__ */ jsx(
               Link,
               {
-                className: styles$9.pageBtn,
+                className: styles$b.pageBtn,
                 to: `/blog/page/${effectivePage + 1}`,
                 children: "הבא"
               }
@@ -4736,7 +4736,7 @@ function Blog() {
         }
       )
     ] }) }),
-    /* @__PURE__ */ jsx("p", { className: styles$9.seeExamples, children: /* @__PURE__ */ jsx(Link, { to: "/cards", children: "ראו דוגמאות לכרטיסי ביקור דיגיטליים" }) }),
+    /* @__PURE__ */ jsx("p", { className: styles$b.seeExamples, children: /* @__PURE__ */ jsx(Link, { to: "/cards", children: "ראו דוגמאות לכרטיסי ביקור דיגיטליים" }) }),
     /* @__PURE__ */ jsx("section", { className: pub.sectionDark, id: "faq", children: /* @__PURE__ */ jsxs("div", { className: pub.sectionWrap, children: [
       /* @__PURE__ */ jsx("h2", { className: pub.h2Gold, children: "שאלות נפוצות על הבלוג של Cardigo" }),
       /* @__PURE__ */ jsx("div", { className: pub.faq, children: BLOG_FAQ.map((item, i) => /* @__PURE__ */ jsxs("details", { className: pub.qa, children: [
@@ -4752,7 +4752,7 @@ const close = "_close_36v69_45";
 const success = "_success_36v69_101";
 const error = "_error_36v69_109";
 const info = "_info_36v69_117";
-const styles$8 = {
+const styles$a = {
   root: root$1,
   body,
   close,
@@ -4774,8 +4774,8 @@ function FlashBanner({
   const role = type === "error" ? "alert" : "status";
   const className = useMemo(() => {
     return cx(
-      styles$8.root,
-      type === "success" ? styles$8.success : type === "error" ? styles$8.error : styles$8.info
+      styles$a.root,
+      type === "success" ? styles$a.success : type === "error" ? styles$a.error : styles$a.info
     );
   }, [type]);
   useEffect(() => {
@@ -4789,12 +4789,12 @@ function FlashBanner({
   }, [open, autoHideMs, onDismiss]);
   if (!open || !message) return null;
   return /* @__PURE__ */ jsxs("div", { className, role, "aria-live": "polite", dir: "rtl", children: [
-    /* @__PURE__ */ jsx("div", { className: styles$8.body, children: message }),
+    /* @__PURE__ */ jsx("div", { className: styles$a.body, children: message }),
     /* @__PURE__ */ jsx(
       "button",
       {
         type: "button",
-        className: styles$8.close,
+        className: styles$a.close,
         onClick: () => {
           setOpen(false);
           onDismiss?.();
@@ -4865,7 +4865,7 @@ const ctaList = "_ctaList_nsx4p_1267";
 const ctaItem = "_ctaItem_nsx4p_1285";
 const ctaButton = "_ctaButton_nsx4p_1317";
 const faqLink = "_faqLink_nsx4p_1345";
-const styles$7 = {
+const styles$9 = {
   paymentBanner,
   heroWrap: heroWrap$6,
   heroCopy: heroCopy$2,
@@ -4933,7 +4933,7 @@ const PRICING_FAQ = [
     a: /* @__PURE__ */ jsxs(Fragment, { children: [
       "המסלול החינמי של",
       " ",
-      /* @__PURE__ */ jsx(Link, { to: "/", className: styles$7.faqLink, children: "Cardigo" }),
+      /* @__PURE__ */ jsx(Link, { to: "/", className: styles$9.faqLink, children: "Cardigo" }),
       " ",
       "כולל כרטיס ביקור דיגיטלי מקצועי, שיתוף בוואטסאפ וברשתות, קוד QR ושמירת איש קשר - בחינם ולתמיד. בנוסף, כל משתמש חדש מקבל 10 ימי פרימיום כדי להכיר את כל היכולות המתקדמות."
     ] })
@@ -4953,7 +4953,7 @@ const PRICING_FAQ = [
   {
     q: "איך Cardigo עוזרת לעסק להיראות מקצועי יותר?",
     a: /* @__PURE__ */ jsxs(Fragment, { children: [
-      /* @__PURE__ */ jsx(Link, { to: "/", className: styles$7.faqLink, children: "Cardigo" }),
+      /* @__PURE__ */ jsx(Link, { to: "/", className: styles$9.faqLink, children: "Cardigo" }),
       " ",
       "עוזרת לעסק להציג פרטי קשר, תוכן, עיצוב ושיתוף במקום אחד, בצורה מסודרת ונוחה לנייד. כך הלקוח רואה עסק ברור, נגיש ומקצועי יותר."
     ] })
@@ -4975,7 +4975,7 @@ const PRICING_FAQ = [
     a: /* @__PURE__ */ jsxs(Fragment, { children: [
       "כן. לחברות וארגונים",
       " ",
-      /* @__PURE__ */ jsx(Link, { to: "/", className: styles$7.faqLink, children: "Cardigo" }),
+      /* @__PURE__ */ jsx(Link, { to: "/", className: styles$9.faqLink, children: "Cardigo" }),
       " ",
       "מציעה פתרון מסודר יותר, עם אפשרות לחשוב במונחים של צוות, ניהול מרכזי וכתובת ארגונית תחת המותג. אם מדובר בארגון, עדיף לדבר איתנו כדי להתאים פתרון נכון."
     ] })
@@ -5120,17 +5120,17 @@ const ANNUAL_ACCORDIONS = [
   }
 ];
 function GroupedAccordions({ groups }) {
-  return /* @__PURE__ */ jsx("div", { className: styles$7.accordionStack, children: groups.map((g) => /* @__PURE__ */ jsxs(
+  return /* @__PURE__ */ jsx("div", { className: styles$9.accordionStack, children: groups.map((g) => /* @__PURE__ */ jsxs(
     "details",
     {
-      className: g.tone === "highlight" ? `${styles$7.accordionBlock} ${styles$7.accordionBlockHighlight}` : styles$7.accordionBlock,
+      className: g.tone === "highlight" ? `${styles$9.accordionBlock} ${styles$9.accordionBlockHighlight}` : styles$9.accordionBlock,
       children: [
-        /* @__PURE__ */ jsx("summary", { className: styles$7.accordionTitle, children: g.title }),
-        g.body && /* @__PURE__ */ jsx("p", { className: styles$7.accordionBody, children: g.body }),
-        g.items && /* @__PURE__ */ jsx("ul", { className: styles$7.accordionList, children: g.items.map((item) => /* @__PURE__ */ jsx(
+        /* @__PURE__ */ jsx("summary", { className: styles$9.accordionTitle, children: g.title }),
+        g.body && /* @__PURE__ */ jsx("p", { className: styles$9.accordionBody, children: g.body }),
+        g.items && /* @__PURE__ */ jsx("ul", { className: styles$9.accordionList, children: g.items.map((item) => /* @__PURE__ */ jsx(
           "li",
           {
-            className: g.tone === "negative" ? `${styles$7.accordionItem} ${styles$7.accordionItemNegative}` : styles$7.accordionItem,
+            className: g.tone === "negative" ? `${styles$9.accordionItem} ${styles$9.accordionItemNegative}` : styles$9.accordionItem,
             children: item
           },
           item
@@ -5212,7 +5212,7 @@ function Pricing() {
         jsonLdItems: [pricingFaqJsonLd]
       }
     ),
-    flash && /* @__PURE__ */ jsx("div", { className: styles$7.paymentBanner, children: /* @__PURE__ */ jsx(
+    flash && /* @__PURE__ */ jsx("div", { className: styles$9.paymentBanner, children: /* @__PURE__ */ jsx(
       FlashBanner,
       {
         type: flash.type,
@@ -5221,39 +5221,39 @@ function Pricing() {
         onDismiss: dismissBanner
       }
     ) }),
-    /* @__PURE__ */ jsx("section", { className: pub.sectionDark, children: /* @__PURE__ */ jsxs("div", { className: `${pub.sectionWrap} ${styles$7.heroWrap}`, children: [
-      /* @__PURE__ */ jsxs("div", { className: styles$7.heroCopy, children: [
-        /* @__PURE__ */ jsxs("h1", { className: styles$7.h1, children: [
+    /* @__PURE__ */ jsx("section", { className: pub.sectionDark, children: /* @__PURE__ */ jsxs("div", { className: `${pub.sectionWrap} ${styles$9.heroWrap}`, children: [
+      /* @__PURE__ */ jsxs("div", { className: styles$9.heroCopy, children: [
+        /* @__PURE__ */ jsxs("h1", { className: styles$9.h1, children: [
           "בחרו את הדרך הנכונה",
           /* @__PURE__ */ jsx(
             "span",
             {
-              className: `${styles$7.h1Accent} ${pub.goldUnderline}`,
+              className: `${styles$9.h1Accent} ${pub.goldUnderline}`,
               children: "להתחיל עם Cardigo"
             }
           )
         ] }),
         /* @__PURE__ */ jsx("p", { className: pub.sectionLeadLight, children: "הכרטיס הדיגיטלי שמציג את העסק שלכם בצורה מקצועית, מדויקת ומעוצבת - בכל מכשיר, בכל רגע, עם כל מה שצריך בעמוד אחד." }),
-        /* @__PURE__ */ jsx("div", { className: styles$7.heroStage, children: /* @__PURE__ */ jsx(
+        /* @__PURE__ */ jsx("div", { className: styles$9.heroStage, children: /* @__PURE__ */ jsx(
           "img",
           {
             src: "/images/Pricing/Cardigo-bussines-digital-card-bussiness-growth.webp",
             alt: "כרטיס ביקור דיגיטלי לעסקים - Cardigo",
-            className: styles$7.stageImg,
+            className: styles$9.stageImg,
             width: 960,
             height: 540,
             loading: "eager",
             decoding: "async"
           }
         ) }),
-        /* @__PURE__ */ jsxs("div", { className: styles$7.heroActions, children: [
+        /* @__PURE__ */ jsxs("div", { className: styles$9.heroActions, children: [
           /* @__PURE__ */ jsx(
             Button,
             {
               as: Link,
               to: "/register",
               variant: "primary",
-              className: styles$7.heroCta,
+              className: styles$9.heroCta,
               onClick: () => trackSiteClick({
                 action: SITE_ACTIONS.pricing_trial_start,
                 pagePath: "/pricing"
@@ -5267,28 +5267,28 @@ function Pricing() {
               as: "a",
               href: "#plans",
               variant: "secondary",
-              className: styles$7.heroSecondary,
+              className: styles$9.heroSecondary,
               children: "לראות את המסלולים"
             }
           )
         ] })
       ] }),
-      /* @__PURE__ */ jsxs("span", { className: styles$7.heroTrialNote, children: [
+      /* @__PURE__ */ jsxs("span", { className: styles$9.heroTrialNote, children: [
         "כולל 10 ימי פרימיום למשתמשים חדשים",
-        /* @__PURE__ */ jsx(CrownIcon, { className: styles$7.heroTrialCrown })
+        /* @__PURE__ */ jsx(CrownIcon, { className: styles$9.heroTrialCrown })
       ] }),
-      /* @__PURE__ */ jsx("p", { className: styles$7.trustLine, children: "לעסק שרוצה להיראות מקצועי כבר מהיום הראשון." })
+      /* @__PURE__ */ jsx("p", { className: styles$9.trustLine, children: "לעסק שרוצה להיראות מקצועי כבר מהיום הראשון." })
     ] }) }),
     /* @__PURE__ */ jsx("section", { id: "plans", className: pub.sectionLight, children: /* @__PURE__ */ jsxs("div", { className: pub.sectionWrap, children: [
       /* @__PURE__ */ jsx("h2", { className: pub.h2Gold, children: "בחרו את המסלול שמתאים לעסק שלכם" }),
       /* @__PURE__ */ jsx("p", { className: pub.sectionLead, children: "מסלול חינמי לתמיד, מסלול חודשי גמיש או מסלול שנתי משתלם - לעסק שרוצה יציבות ונוכחות מקצועית לאורך זמן." }),
-      /* @__PURE__ */ jsxs("div", { className: styles$7.plansRow, children: [
-        /* @__PURE__ */ jsxs("div", { className: styles$7.planCard, children: [
-          /* @__PURE__ */ jsx("span", { className: styles$7.planTitle, children: "חינם" }),
-          /* @__PURE__ */ jsx("span", { className: styles$7.planPrice, children: "₪0" }),
-          /* @__PURE__ */ jsx("span", { className: styles$7.planBadge, children: "10 ימי פרימיום עלינו למשתמשים חדשים" }),
-          /* @__PURE__ */ jsx("span", { className: styles$7.planCadence, children: "לתמיד" }),
-          /* @__PURE__ */ jsx("p", { className: styles$7.planNote, children: "כרטיס ביקור דיגיטלי מקצועי - פעיל, ניתן לשיתוף ובחינם לתמיד." }),
+      /* @__PURE__ */ jsxs("div", { className: styles$9.plansRow, children: [
+        /* @__PURE__ */ jsxs("div", { className: styles$9.planCard, children: [
+          /* @__PURE__ */ jsx("span", { className: styles$9.planTitle, children: "חינם" }),
+          /* @__PURE__ */ jsx("span", { className: styles$9.planPrice, children: "₪0" }),
+          /* @__PURE__ */ jsx("span", { className: styles$9.planBadge, children: "10 ימי פרימיום עלינו למשתמשים חדשים" }),
+          /* @__PURE__ */ jsx("span", { className: styles$9.planCadence, children: "לתמיד" }),
+          /* @__PURE__ */ jsx("p", { className: styles$9.planNote, children: "כרטיס ביקור דיגיטלי מקצועי - פעיל, ניתן לשיתוף ובחינם לתמיד." }),
           /* @__PURE__ */ jsx(GroupedAccordions, { groups: FREE_ACCORDIONS }),
           /* @__PURE__ */ jsx(
             Button,
@@ -5296,7 +5296,7 @@ function Pricing() {
               as: Link,
               to: "/register",
               variant: "secondary",
-              className: styles$7.planCta,
+              className: styles$9.planCta,
               onClick: () => trackSiteClick({
                 action: SITE_ACTIONS.pricing_trial_start,
                 pagePath: "/pricing"
@@ -5305,26 +5305,26 @@ function Pricing() {
             }
           )
         ] }),
-        /* @__PURE__ */ jsxs("div", { className: styles$7.planCard, children: [
+        /* @__PURE__ */ jsxs("div", { className: styles$9.planCard, children: [
           /* @__PURE__ */ jsx(
             "span",
             {
-              className: `${styles$7.planTitle} ${pub.goldHilight}`,
+              className: `${styles$9.planTitle} ${pub.goldHilight}`,
               children: "פרימיום חודשי"
             }
           ),
-          /* @__PURE__ */ jsxs("span", { className: styles$7.planPrice, children: [
-            /* @__PURE__ */ jsx("span", { className: styles$7.planPriceOnly, children: "רק-" }),
+          /* @__PURE__ */ jsxs("span", { className: styles$9.planPrice, children: [
+            /* @__PURE__ */ jsx("span", { className: styles$9.planPriceOnly, children: "רק-" }),
             "₪29"
           ] }),
-          /* @__PURE__ */ jsx("span", { className: styles$7.planCadence, children: "לחודש" }),
-          /* @__PURE__ */ jsx("p", { className: styles$7.planNote, children: "כל יכולות הפרימיום בתשלום חודשי גמיש - בלי התחייבות שנתית." }),
+          /* @__PURE__ */ jsx("span", { className: styles$9.planCadence, children: "לחודש" }),
+          /* @__PURE__ */ jsx("p", { className: styles$9.planNote, children: "כל יכולות הפרימיום בתשלום חודשי גמיש - בלי התחייבות שנתית." }),
           /* @__PURE__ */ jsx(GroupedAccordions, { groups: MONTHLY_ACCORDIONS }),
           /* @__PURE__ */ jsx(
             Button,
             {
               variant: "secondary",
-              className: styles$7.planCta,
+              className: styles$9.planCta,
               disabled: payBusy,
               onClick: () => {
                 trackSiteClick({
@@ -5340,22 +5340,22 @@ function Pricing() {
         /* @__PURE__ */ jsxs(
           "div",
           {
-            className: `${styles$7.planCard} ${styles$7.planCardFeatured}`,
+            className: `${styles$9.planCard} ${styles$9.planCardFeatured}`,
             children: [
               /* @__PURE__ */ jsx(
                 "span",
                 {
-                  className: `${styles$7.planTitle} ${pub.goldHilight}`,
+                  className: `${styles$9.planTitle} ${pub.goldHilight}`,
                   children: "פרימיום שנתי"
                 }
               ),
-              /* @__PURE__ */ jsxs("span", { className: styles$7.planPrice, children: [
-                /* @__PURE__ */ jsx("span", { className: styles$7.planPriceOnly, children: "רק-" }),
+              /* @__PURE__ */ jsxs("span", { className: styles$9.planPrice, children: [
+                /* @__PURE__ */ jsx("span", { className: styles$9.planPriceOnly, children: "רק-" }),
                 "₪299"
               ] }),
-              /* @__PURE__ */ jsx("span", { className: styles$7.planBadge, children: "המשתלם ביותר" }),
-              /* @__PURE__ */ jsx("span", { className: styles$7.planCadence, children: "לשנה" }),
-              /* @__PURE__ */ jsxs("p", { className: styles$7.planNote, children: [
+              /* @__PURE__ */ jsx("span", { className: styles$9.planBadge, children: "המשתלם ביותר" }),
+              /* @__PURE__ */ jsx("span", { className: styles$9.planCadence, children: "לשנה" }),
+              /* @__PURE__ */ jsxs("p", { className: styles$9.planNote, children: [
                 "המסלול המשתלם: פרימיום מלא לשנה שלמה -",
                 " ",
                 /* @__PURE__ */ jsx("span", { className: pub.goldHilight, children: "חיסכון של ₪49." })
@@ -5365,7 +5365,7 @@ function Pricing() {
                 Button,
                 {
                   variant: "primary",
-                  className: styles$7.planCtaFeatured,
+                  className: styles$9.planCtaFeatured,
                   disabled: payBusy,
                   onClick: () => {
                     trackSiteClick({
@@ -5381,41 +5381,41 @@ function Pricing() {
           }
         )
       ] }),
-      /* @__PURE__ */ jsxs("p", { className: styles$7.plansLegalNote, children: [
+      /* @__PURE__ */ jsxs("p", { className: styles$9.plansLegalNote, children: [
         "השירותים בתשלום מיועדים לשימוש עסקי או מסחרי בלבד. לא יינתנו החזרים כספיים, למעט אם הדין החל מחייב אחרת.",
         " ",
         /* @__PURE__ */ jsx(
           Link,
           {
             to: "/payment-policy",
-            className: styles$7.plansLegalNoteLink,
+            className: styles$9.plansLegalNoteLink,
             children: "תנאי תשלום, חידוש, ביטול והחזרים"
           }
         )
       ] }),
-      /* @__PURE__ */ jsxs("div", { className: styles$7.b2bBlock, children: [
-        /* @__PURE__ */ jsxs("div", { className: styles$7.b2bHeader, children: [
-          /* @__PURE__ */ jsx("span", { className: styles$7.b2bKicker, children: "לחברות וארגונים" }),
-          /* @__PURE__ */ jsx("h3", { className: styles$7.b2bHeadline, children: "פתרון מרוכז לצוותים, חברות וארגונים" })
+      /* @__PURE__ */ jsxs("div", { className: styles$9.b2bBlock, children: [
+        /* @__PURE__ */ jsxs("div", { className: styles$9.b2bHeader, children: [
+          /* @__PURE__ */ jsx("span", { className: styles$9.b2bKicker, children: "לחברות וארגונים" }),
+          /* @__PURE__ */ jsx("h3", { className: styles$9.b2bHeadline, children: "פתרון מרוכז לצוותים, חברות וארגונים" })
         ] }),
-        /* @__PURE__ */ jsxs("div", { className: styles$7.b2bBody, children: [
-          /* @__PURE__ */ jsx("p", { className: styles$7.b2bLead, children: "כרטיס דיגיטלי לכל עובד, ניהול גישה לצוות וכתובת ארגונית תחת המותג שלכם - עם תהליך חיבור מסודר שמתאים לארגון." }),
-          /* @__PURE__ */ jsxs("ul", { className: styles$7.b2bList, children: [
-            /* @__PURE__ */ jsx("li", { className: styles$7.b2bItem, children: "כרטיס לכל עובד תחת המותג שלכם" }),
-            /* @__PURE__ */ jsx("li", { className: styles$7.b2bItem, children: "הזמנת עובדים וניהול גישה" }),
-            /* @__PURE__ */ jsx("li", { className: styles$7.b2bItem, children: "ניהול מרכזי של הצוות" }),
-            /* @__PURE__ */ jsx("li", { className: styles$7.b2bItem, children: "כתובת ארגונית לכל כרטיס" }),
-            /* @__PURE__ */ jsx("li", { className: styles$7.b2bItem, children: "חיוב מרוכז לארגון" })
+        /* @__PURE__ */ jsxs("div", { className: styles$9.b2bBody, children: [
+          /* @__PURE__ */ jsx("p", { className: styles$9.b2bLead, children: "כרטיס דיגיטלי לכל עובד, ניהול גישה לצוות וכתובת ארגונית תחת המותג שלכם - עם תהליך חיבור מסודר שמתאים לארגון." }),
+          /* @__PURE__ */ jsxs("ul", { className: styles$9.b2bList, children: [
+            /* @__PURE__ */ jsx("li", { className: styles$9.b2bItem, children: "כרטיס לכל עובד תחת המותג שלכם" }),
+            /* @__PURE__ */ jsx("li", { className: styles$9.b2bItem, children: "הזמנת עובדים וניהול גישה" }),
+            /* @__PURE__ */ jsx("li", { className: styles$9.b2bItem, children: "ניהול מרכזי של הצוות" }),
+            /* @__PURE__ */ jsx("li", { className: styles$9.b2bItem, children: "כתובת ארגונית לכל כרטיס" }),
+            /* @__PURE__ */ jsx("li", { className: styles$9.b2bItem, children: "חיוב מרוכז לארגון" })
           ] })
         ] }),
-        /* @__PURE__ */ jsxs("div", { className: styles$7.b2bFooter, children: [
+        /* @__PURE__ */ jsxs("div", { className: styles$9.b2bFooter, children: [
           /* @__PURE__ */ jsx(
             Button,
             {
               as: Link,
               to: "/contact",
               variant: "secondary",
-              className: styles$7.b2bCta,
+              className: styles$9.b2bCta,
               onClick: () => trackSiteClick({
                 action: SITE_ACTIONS.contact_email_click,
                 pagePath: "/pricing"
@@ -5423,32 +5423,32 @@ function Pricing() {
               children: "לקבלת הצעה לארגון"
             }
           ),
-          /* @__PURE__ */ jsx("p", { className: styles$7.b2bSupport, children: "נחזור אליכם עם פתרון שמתאים לגודל הצוות ולצרכים של הארגון." })
+          /* @__PURE__ */ jsx("p", { className: styles$9.b2bSupport, children: "נחזור אליכם עם פתרון שמתאים לגודל הצוות ולצרכים של הארגון." })
         ] })
       ] })
     ] }) }),
     /* @__PURE__ */ jsx("section", { className: pub.sectionDark, children: /* @__PURE__ */ jsxs("div", { className: pub.sectionWrap, children: [
       /* @__PURE__ */ jsx("h2", { className: pub.h2White, children: "למה עסקים בוחרים במסלול השנתי" }),
-      /* @__PURE__ */ jsx("div", { className: styles$7.annualStage, children: /* @__PURE__ */ jsx(
+      /* @__PURE__ */ jsx("div", { className: styles$9.annualStage, children: /* @__PURE__ */ jsx(
         "img",
         {
           src: "/images/Pricing/anual-section/כרטיס ביקור דיגיטלי שנתי.webp",
           alt: "כרטיס ביקור דיגיטלי במסלול שנתי לעסקים של Cardigo",
-          className: styles$7.annualImg,
+          className: styles$9.annualImg,
           width: 960,
           height: 540,
           loading: "lazy",
           decoding: "async"
         }
       ) }),
-      /* @__PURE__ */ jsxs("div", { className: styles$7.annualCopy, children: [
-        /* @__PURE__ */ jsxs("p", { className: styles$7.annualParagraph, children: [
+      /* @__PURE__ */ jsxs("div", { className: styles$9.annualCopy, children: [
+        /* @__PURE__ */ jsxs("p", { className: styles$9.annualParagraph, children: [
           "עסקים שבוחרים ב־",
-          /* @__PURE__ */ jsx(Link, { to: "/", className: styles$7.annualLink, children: "Cardigo" }),
+          /* @__PURE__ */ jsx(Link, { to: "/", className: styles$9.annualLink, children: "Cardigo" }),
           " ",
           "לטווח ארוך לא מחפשים רק כרטיס ביקור דיגיטלי יפה, אלא פתרון יציב שממשיך לעבוד בשביל העסק גם לאורך זמן. כאשר הכרטיס הוא חלק מהנוכחות הדיגיטלית, מהשיתוף עם לקוחות ומהדרך שבה העסק נראה אונליין - מסלול שנתי הופך לבחירה חכמה יותר."
         ] }),
-        /* @__PURE__ */ jsx("p", { className: styles$7.annualParagraph, children: "המסלול השנתי מתאים לעסקים שרוצים פחות התעסקות, יותר רצף וחיסכון אמיתי לעומת תשלום חודשי מצטבר. במקום לחשוב כל חודש מחדש, אפשר לבחור פעם אחת ולהמשיך קדימה עם נוכחות מקצועית, מסודרת ויציבה." })
+        /* @__PURE__ */ jsx("p", { className: styles$9.annualParagraph, children: "המסלול השנתי מתאים לעסקים שרוצים פחות התעסקות, יותר רצף וחיסכון אמיתי לעומת תשלום חודשי מצטבר. במקום לחשוב כל חודש מחדש, אפשר לבחור פעם אחת ולהמשיך קדימה עם נוכחות מקצועית, מסודרת ויציבה." })
       ] }),
       /* @__PURE__ */ jsx(
         Button,
@@ -5456,7 +5456,7 @@ function Pricing() {
           as: Link,
           to: "/register",
           variant: "primary",
-          className: styles$7.annualCta,
+          className: styles$9.annualCta,
           onClick: () => trackSiteClick({
             action: SITE_ACTIONS.pricing_trial_start,
             pagePath: "/pricing"
@@ -5467,32 +5467,32 @@ function Pricing() {
     ] }) }),
     /* @__PURE__ */ jsx("section", { className: pub.sectionLight, children: /* @__PURE__ */ jsxs("div", { className: pub.sectionWrap, children: [
       /* @__PURE__ */ jsx("h2", { className: pub.h2Gold, children: "מה העסק שלכם מקבל עם Cardigo" }),
-      /* @__PURE__ */ jsx("div", { className: styles$7.ctaStage, children: /* @__PURE__ */ jsx(
+      /* @__PURE__ */ jsx("div", { className: styles$9.ctaStage, children: /* @__PURE__ */ jsx(
         "img",
         {
           src: "/images/Pricing/cta-section/כרטיס ביקור דיגיטלי כרדיגו.webp",
           alt: "כרטיס ביקור דיגיטלי של Cardigo לעסק",
-          className: styles$7.ctaImg,
+          className: styles$9.ctaImg,
           width: 960,
           height: 540,
           loading: "lazy",
           decoding: "async"
         }
       ) }),
-      /* @__PURE__ */ jsxs("div", { className: styles$7.ctaCopy, children: [
-        /* @__PURE__ */ jsxs("p", { className: styles$7.ctaIntro, children: [
+      /* @__PURE__ */ jsxs("div", { className: styles$9.ctaCopy, children: [
+        /* @__PURE__ */ jsxs("p", { className: styles$9.ctaIntro, children: [
           "עם",
           " ",
-          /* @__PURE__ */ jsx(Link, { to: "/", className: styles$7.ctaLink, children: "Cardigo" }),
+          /* @__PURE__ */ jsx(Link, { to: "/", className: styles$9.ctaLink, children: "Cardigo" }),
           " ",
           "העסק שלכם מקבל נוכחות דיגיטלית מסודרת, דרך פשוטה לשיתוף עם לקוחות וכלי עבודה שעוזרים להיראות מקצועי כבר מהיום הראשון."
         ] }),
-        /* @__PURE__ */ jsxs("ul", { className: styles$7.ctaList, children: [
-          /* @__PURE__ */ jsx("li", { className: styles$7.ctaItem, children: "כרטיס ביקור דיגיטלי שנראה מקצועי ועובד היטב בנייד" }),
-          /* @__PURE__ */ jsx("li", { className: styles$7.ctaItem, children: "שיתוף מהיר עם לקוחות בוואטסאפ, בלינק וב־QR" }),
-          /* @__PURE__ */ jsx("li", { className: styles$7.ctaItem, children: "שליטה פשוטה בתוכן, בעיצוב ובנראות של העסק" }),
-          /* @__PURE__ */ jsx("li", { className: styles$7.ctaItem, children: "כלים שעוזרים לבנות אמון, לאסוף פניות ולעקוב אחרי פעילות" }),
-          /* @__PURE__ */ jsx("li", { className: styles$7.ctaItem, children: "פתרון שיכול להתחיל בקטן ולגדול יחד עם העסק" })
+        /* @__PURE__ */ jsxs("ul", { className: styles$9.ctaList, children: [
+          /* @__PURE__ */ jsx("li", { className: styles$9.ctaItem, children: "כרטיס ביקור דיגיטלי שנראה מקצועי ועובד היטב בנייד" }),
+          /* @__PURE__ */ jsx("li", { className: styles$9.ctaItem, children: "שיתוף מהיר עם לקוחות בוואטסאפ, בלינק וב־QR" }),
+          /* @__PURE__ */ jsx("li", { className: styles$9.ctaItem, children: "שליטה פשוטה בתוכן, בעיצוב ובנראות של העסק" }),
+          /* @__PURE__ */ jsx("li", { className: styles$9.ctaItem, children: "כלים שעוזרים לבנות אמון, לאסוף פניות ולעקוב אחרי פעילות" }),
+          /* @__PURE__ */ jsx("li", { className: styles$9.ctaItem, children: "פתרון שיכול להתחיל בקטן ולגדול יחד עם העסק" })
         ] })
       ] }),
       /* @__PURE__ */ jsx(
@@ -5501,7 +5501,7 @@ function Pricing() {
           as: Link,
           to: "/register",
           variant: "primary",
-          className: styles$7.ctaButton,
+          className: styles$9.ctaButton,
           onClick: () => trackSiteClick({
             action: SITE_ACTIONS.pricing_trial_start,
             pagePath: "/pricing"
@@ -5534,13 +5534,13 @@ const cardDate = "_cardDate_1xndu_293";
 const cardTitle = "_cardTitle_1xndu_305";
 const cardExcerpt = "_cardExcerpt_1xndu_349";
 const cardCta = "_cardCta_1xndu_373";
-const status = "_status_1xndu_413";
-const statusError = "_statusError_1xndu_427";
+const status$2 = "_status_1xndu_413";
+const statusError$2 = "_statusError_1xndu_427";
 const pagination = "_pagination_1xndu_443";
 const pageBtn = "_pageBtn_1xndu_459";
 const pageInfo = "_pageInfo_1xndu_497";
 const seeExamples = "_seeExamples_1xndu_509";
-const styles$6 = {
+const styles$8 = {
   heroWrap: heroWrap$5,
   heroCopy: heroCopy$1,
   h1: h1$5,
@@ -5555,16 +5555,16 @@ const styles$6 = {
   cardTitle,
   cardExcerpt,
   cardCta,
-  status,
-  statusError,
+  status: status$2,
+  statusError: statusError$2,
   pagination,
   pageBtn,
   pageInfo,
   seeExamples
 };
-const ORIGIN = "https://cardigo.co.il";
+const ORIGIN$2 = "https://cardigo.co.il";
 const PAGE_LIMIT = 12;
-const GUIDE_COVER_FALLBACK = `${ORIGIN}/images/guides/fallback/hero-cardigo-bussines-img-fallback.webp`;
+const GUIDE_COVER_FALLBACK = `${ORIGIN$2}/images/guides/fallback/hero-cardigo-bussines-img-fallback.webp`;
 const GUIDES_FAQ = [
   {
     q: "מה אפשר למצוא במדריכים של Cardigo?",
@@ -5611,7 +5611,7 @@ function buildGuidesFaqJsonLd() {
 }
 const guidesFaqJsonLd = buildGuidesFaqJsonLd();
 const meta$1 = getMarketingMeta("guides");
-function formatDate(iso) {
+function formatDate$2(iso) {
   if (!iso) return "";
   try {
     return new Date(iso).toLocaleDateString("he-IL", {
@@ -5689,7 +5689,7 @@ function Guides() {
       );
     }
   }, [loading, effectivePage, totalPages, navigate]);
-  const canonicalUrl2 = effectivePage <= 1 ? GUIDES_ROOT_URL : `${ORIGIN}/guides/page/${effectivePage}`;
+  const canonicalUrl2 = effectivePage <= 1 ? GUIDES_ROOT_URL : `${ORIGIN$2}/guides/page/${effectivePage}`;
   return /* @__PURE__ */ jsxs("main", { "data-page": "site", children: [
     /* @__PURE__ */ jsx(
       SeoHelmet,
@@ -5703,13 +5703,13 @@ function Guides() {
         jsonLdItems: effectivePage <= 1 ? [guidesFaqJsonLd] : []
       }
     ),
-    /* @__PURE__ */ jsx("section", { className: pub.sectionDark, children: /* @__PURE__ */ jsx("div", { className: `${pub.sectionWrap} ${styles$6.heroWrap}`, children: /* @__PURE__ */ jsxs("div", { className: styles$6.heroCopy, children: [
-      /* @__PURE__ */ jsxs("h1", { className: styles$6.h1, children: [
+    /* @__PURE__ */ jsx("section", { className: pub.sectionDark, children: /* @__PURE__ */ jsx("div", { className: `${pub.sectionWrap} ${styles$8.heroWrap}`, children: /* @__PURE__ */ jsxs("div", { className: styles$8.heroCopy, children: [
+      /* @__PURE__ */ jsxs("h1", { className: styles$8.h1, children: [
         "המדריכים של Cardigo",
         /* @__PURE__ */ jsx(
           "span",
           {
-            className: `${styles$6.h1Accent} ${pub.goldUnderline}`,
+            className: `${styles$8.h1Accent} ${pub.goldUnderline}`,
             children: "הדרכות מעשיות לכרטיס ביקור דיגיטלי"
           }
         )
@@ -5717,7 +5717,7 @@ function Guides() {
       /* @__PURE__ */ jsx(
         "img",
         {
-          className: styles$6.heroImg,
+          className: styles$8.heroImg,
           src: "/images/guides/hero/hero-cardigo-digital-bussines-card.webp",
           alt: "מדריכים של Cardigo - הדרכות מעשיות לכרטיס ביקור דיגיטלי",
           width: "600",
@@ -5727,40 +5727,40 @@ function Guides() {
       ),
       /* @__PURE__ */ jsx("p", { className: pub.sectionLeadLight, children: "מדריכים מעשיים, צעד אחרי צעד, שיעזרו לכם לבנות, לעצב ולשתף כרטיס ביקור דיגיטלי שעובד נכון - החל מהגדרות בסיסיות ועד טיפים מתקדמים." })
     ] }) }) }),
-    /* @__PURE__ */ jsx("section", { className: pub.sectionLight, children: /* @__PURE__ */ jsxs("div", { className: `${pub.sectionWrap} ${styles$6.listingWrap}`, children: [
+    /* @__PURE__ */ jsx("section", { className: pub.sectionLight, children: /* @__PURE__ */ jsxs("div", { className: `${pub.sectionWrap} ${styles$8.listingWrap}`, children: [
       /* @__PURE__ */ jsx("h2", { className: pub.h2Gold, children: "מדריכים אחרונים" }),
       /* @__PURE__ */ jsx("p", { className: pub.sectionLead, children: "כאן תמצאו הדרכות מעשיות שיעזרו לכם ליצור כרטיס ביקור דיגיטלי מקצועי, לנהל את הנוכחות העסקית שלכם, ולשפר את הדרך שבה לקוחות מוצאים ומכירים אתכם." }),
-      loading && posts.length === 0 && /* @__PURE__ */ jsx("p", { className: styles$6.status, children: "טוען…" }),
-      error2 && /* @__PURE__ */ jsx("p", { className: styles$6.statusError, children: error2 }),
-      !loading && !error2 && posts.length === 0 && /* @__PURE__ */ jsx("p", { className: styles$6.status, children: "אין מדריכים עדיין." }),
-      posts.length > 0 && /* @__PURE__ */ jsx("div", { className: styles$6.grid, children: posts.map((post) => /* @__PURE__ */ jsxs("article", { className: styles$6.card, children: [
+      loading && posts.length === 0 && /* @__PURE__ */ jsx("p", { className: styles$8.status, children: "טוען…" }),
+      error2 && /* @__PURE__ */ jsx("p", { className: styles$8.statusError, children: error2 }),
+      !loading && !error2 && posts.length === 0 && /* @__PURE__ */ jsx("p", { className: styles$8.status, children: "אין מדריכים עדיין." }),
+      posts.length > 0 && /* @__PURE__ */ jsx("div", { className: styles$8.grid, children: posts.map((post) => /* @__PURE__ */ jsxs("article", { className: styles$8.card, children: [
         /* @__PURE__ */ jsx(
           "img",
           {
-            className: styles$6.cardImage,
+            className: styles$8.cardImage,
             src: post.heroImageUrl || GUIDE_COVER_FALLBACK,
             alt: post.heroImageAlt || post.title || "",
             loading: "lazy"
           }
         ),
-        /* @__PURE__ */ jsxs("div", { className: styles$6.cardBody, children: [
+        /* @__PURE__ */ jsxs("div", { className: styles$8.cardBody, children: [
           CONTENT_DISPLAY_POLICY.showPublishedDates && post.publishedAt && /* @__PURE__ */ jsx(
             "time",
             {
-              className: styles$6.cardDate,
+              className: styles$8.cardDate,
               dateTime: post.publishedAt,
-              children: formatDate(
+              children: formatDate$2(
                 post.publishedAt
               )
             }
           ),
-          /* @__PURE__ */ jsx("h3", { className: styles$6.cardTitle, children: /* @__PURE__ */ jsx(Link, { to: `/guides/${post.slug}`, children: post.title }) }),
-          post.excerpt && /* @__PURE__ */ jsx("p", { className: styles$6.cardExcerpt, children: post.excerpt }),
+          /* @__PURE__ */ jsx("h3", { className: styles$8.cardTitle, children: /* @__PURE__ */ jsx(Link, { to: `/guides/${post.slug}/`, children: post.title }) }),
+          post.excerpt && /* @__PURE__ */ jsx("p", { className: styles$8.cardExcerpt, children: post.excerpt }),
           /* @__PURE__ */ jsx(
             Link,
             {
-              to: `/guides/${post.slug}`,
-              className: styles$6.cardCta,
+              to: `/guides/${post.slug}/`,
+              className: styles$8.cardCta,
               onClick: () => trackSiteClick({
                 action: SITE_ACTIONS.guide_article_click,
                 pagePath: "/guides"
@@ -5773,18 +5773,18 @@ function Guides() {
       totalPages > 1 && /* @__PURE__ */ jsxs(
         "nav",
         {
-          className: styles$6.pagination,
+          className: styles$8.pagination,
           "aria-label": "ניווט עמודים",
           children: [
             effectivePage > 1 && /* @__PURE__ */ jsx(
               Link,
               {
-                className: styles$6.pageBtn,
+                className: styles$8.pageBtn,
                 to: effectivePage === 2 ? "/guides/" : `/guides/page/${effectivePage - 1}`,
                 children: "הקודם"
               }
             ),
-            /* @__PURE__ */ jsxs("span", { className: styles$6.pageInfo, children: [
+            /* @__PURE__ */ jsxs("span", { className: styles$8.pageInfo, children: [
               effectivePage,
               " / ",
               totalPages
@@ -5792,7 +5792,7 @@ function Guides() {
             effectivePage < totalPages && /* @__PURE__ */ jsx(
               Link,
               {
-                className: styles$6.pageBtn,
+                className: styles$8.pageBtn,
                 to: `/guides/page/${effectivePage + 1}`,
                 children: "הבא"
               }
@@ -5801,7 +5801,7 @@ function Guides() {
         }
       )
     ] }) }),
-    /* @__PURE__ */ jsx("p", { className: styles$6.seeExamples, children: /* @__PURE__ */ jsx(Link, { to: "/cards", children: "ראו דוגמאות לכרטיסי ביקור דיגיטליים" }) }),
+    /* @__PURE__ */ jsx("p", { className: styles$8.seeExamples, children: /* @__PURE__ */ jsx(Link, { to: "/cards", children: "ראו דוגמאות לכרטיסי ביקור דיגיטליים" }) }),
     /* @__PURE__ */ jsx("section", { className: pub.sectionDark, id: "faq", children: /* @__PURE__ */ jsxs("div", { className: pub.sectionWrap, children: [
       /* @__PURE__ */ jsx("h2", { className: pub.h2Gold, children: "שאלות נפוצות על המדריכים של Cardigo" }),
       /* @__PURE__ */ jsx("div", { className: pub.faq, children: GUIDES_FAQ.map((item, i) => /* @__PURE__ */ jsxs("details", { className: pub.qa, children: [
@@ -5859,7 +5859,7 @@ const featureCard = "_featureCard_6dxxf_1145";
 const featureImg = "_featureImg_6dxxf_1173";
 const featureTitle = "_featureTitle_6dxxf_1191";
 const featureText = "_featureText_6dxxf_1205";
-const styles$5 = {
+const styles$7 = {
   heroWrap: heroWrap$4,
   heroCopy,
   h1: h1$4,
@@ -6094,9 +6094,9 @@ function Cards() {
         jsonLdItems: [cardsFaqJsonLd]
       }
     ),
-    /* @__PURE__ */ jsx("section", { className: pub.sectionDark, children: /* @__PURE__ */ jsxs("div", { className: `${pub.sectionWrap} ${styles$5.heroWrap}`, children: [
-      /* @__PURE__ */ jsxs("div", { className: styles$5.heroCopy, children: [
-        /* @__PURE__ */ jsxs("h1", { className: styles$5.h1, children: [
+    /* @__PURE__ */ jsx("section", { className: pub.sectionDark, children: /* @__PURE__ */ jsxs("div", { className: `${pub.sectionWrap} ${styles$7.heroWrap}`, children: [
+      /* @__PURE__ */ jsxs("div", { className: styles$7.heroCopy, children: [
+        /* @__PURE__ */ jsxs("h1", { className: styles$7.h1, children: [
           " ",
           "דוגמאות לכרטיסי ביקור דיגיטליים",
           " ",
@@ -6123,36 +6123,36 @@ function Cards() {
             ]
           }
         ),
-        /* @__PURE__ */ jsx("div", { className: styles$5.heroVisual, "aria-hidden": "true", children: HERO_PREVIEWS.map((p2, i) => /* @__PURE__ */ jsxs(
+        /* @__PURE__ */ jsx("div", { className: styles$7.heroVisual, "aria-hidden": "true", children: HERO_PREVIEWS.map((p2, i) => /* @__PURE__ */ jsxs(
           "figure",
           {
-            className: `${styles$5.previewCard} ${i === 1 ? styles$5.previewMain : styles$5.previewSide}`,
+            className: `${styles$7.previewCard} ${i === 1 ? styles$7.previewMain : styles$7.previewSide}`,
             children: [
               /* @__PURE__ */ jsx(
                 "img",
                 {
                   src: encodeURI(p2.src),
                   alt: "",
-                  className: styles$5.previewImg,
+                  className: styles$7.previewImg,
                   width: 280,
                   height: 560,
                   loading: i === 1 ? "eager" : "lazy",
                   decoding: "async"
                 }
               ),
-              /* @__PURE__ */ jsx("figcaption", { className: styles$5.previewNiche, children: p2.niche })
+              /* @__PURE__ */ jsx("figcaption", { className: styles$7.previewNiche, children: p2.niche })
             ]
           },
           i
         )) }),
-        /* @__PURE__ */ jsxs("div", { className: styles$5.heroActions, children: [
+        /* @__PURE__ */ jsxs("div", { className: styles$7.heroActions, children: [
           /* @__PURE__ */ jsx(
             Button,
             {
               as: Link,
               to: "/edit",
               variant: "primary",
-              className: styles$5.heroCta,
+              className: styles$7.heroCta,
               onClick: () => trackSiteClick({
                 action: SITE_ACTIONS.cards_hero_cta,
                 pagePath: "/cards"
@@ -6166,41 +6166,41 @@ function Cards() {
               as: Link,
               to: "/pricing",
               variant: "secondary",
-              className: styles$5.heroSecondary,
+              className: styles$7.heroSecondary,
               children: "מסלולים ומחירים"
             }
           )
         ] })
       ] }),
-      /* @__PURE__ */ jsxs("span", { className: styles$5.heroTrialNote, children: [
+      /* @__PURE__ */ jsxs("span", { className: styles$7.heroTrialNote, children: [
         "כולל 10 ימי פרימיום למשתמשים חדשים",
-        /* @__PURE__ */ jsx(CrownIcon, { className: styles$5.heroTrialCrown })
+        /* @__PURE__ */ jsx(CrownIcon, { className: styles$7.heroTrialCrown })
       ] }),
-      /* @__PURE__ */ jsx("p", { className: styles$5.heroNote, children: "הדוגמאות בעמוד זה מיועדות להמחשה" })
+      /* @__PURE__ */ jsx("p", { className: styles$7.heroNote, children: "הדוגמאות בעמוד זה מיועדות להמחשה" })
     ] }) }),
     /* @__PURE__ */ jsx("section", { className: pub.sectionLight, children: /* @__PURE__ */ jsxs("div", { className: pub.sectionWrap, children: [
       /* @__PURE__ */ jsx("h2", { className: pub.h2Gold, children: "כרטיסי ביקור דיגיטליים למגוון תחומים" }),
       /* @__PURE__ */ jsx("p", { className: pub.sectionLead, children: "כל עסק, כל מקצוע - כרטיס שנראה מקצועי ומותאם בדיוק לתחום שלכם. הנה כמה דוגמאות ויזואליות שממחישות איך זה נראה בפועל." }),
-      /* @__PURE__ */ jsxs("div", { className: styles$5.featured, children: [
-        /* @__PURE__ */ jsxs("div", { className: styles$5.featuredDevices, children: [
-          /* @__PURE__ */ jsx("div", { className: styles$5.featuredDesktop, children: /* @__PURE__ */ jsx(
+      /* @__PURE__ */ jsxs("div", { className: styles$7.featured, children: [
+        /* @__PURE__ */ jsxs("div", { className: styles$7.featuredDevices, children: [
+          /* @__PURE__ */ jsx("div", { className: styles$7.featuredDesktop, children: /* @__PURE__ */ jsx(
             "img",
             {
               src: FEATURED.desktop.src,
               alt: FEATURED.desktop.alt,
-              className: styles$5.featuredDesktopImg,
+              className: styles$7.featuredDesktopImg,
               width: 720,
               height: 450,
               loading: "lazy",
               decoding: "async"
             }
           ) }),
-          /* @__PURE__ */ jsx("div", { className: styles$5.featuredPhone, children: /* @__PURE__ */ jsx(
+          /* @__PURE__ */ jsx("div", { className: styles$7.featuredPhone, children: /* @__PURE__ */ jsx(
             "img",
             {
               src: FEATURED.phone.src,
               alt: FEATURED.phone.alt,
-              className: styles$5.featuredPhoneImg,
+              className: styles$7.featuredPhoneImg,
               width: 280,
               height: 560,
               loading: "lazy",
@@ -6208,10 +6208,10 @@ function Cards() {
             }
           ) })
         ] }),
-        /* @__PURE__ */ jsxs("div", { className: styles$5.featuredCopy, children: [
-          /* @__PURE__ */ jsx("span", { className: styles$5.featuredLabel, children: "נוכחות דיגיטלית מקצועית" }),
-          /* @__PURE__ */ jsx("h3", { className: styles$5.featuredTitle, children: "נראה מדהים בכל מסך - פלאפון, מחשב או טאבלט" }),
-          /* @__PURE__ */ jsxs("ul", { className: styles$5.featuredBullets, children: [
+        /* @__PURE__ */ jsxs("div", { className: styles$7.featuredCopy, children: [
+          /* @__PURE__ */ jsx("span", { className: styles$7.featuredLabel, children: "נוכחות דיגיטלית מקצועית" }),
+          /* @__PURE__ */ jsx("h3", { className: styles$7.featuredTitle, children: "נראה מדהים בכל מסך - פלאפון, מחשב או טאבלט" }),
+          /* @__PURE__ */ jsxs("ul", { className: styles$7.featuredBullets, children: [
             /* @__PURE__ */ jsx("li", { children: "הצגת העסק בעיצוב מקצועי עם מידע עדכני" }),
             /* @__PURE__ */ jsx("li", { children: "קישורים, לחצני יצירת קשר ורשתות חברתיות במקום אחד" }),
             /* @__PURE__ */ jsx("li", { children: "שיתוף בוואטסאפ, QR, SMS או אימייל - בקליק אחד" })
@@ -6222,7 +6222,7 @@ function Cards() {
               as: Link,
               to: "/edit/card/templates",
               variant: "secondary",
-              className: styles$5.featuredCta,
+              className: styles$7.featuredCta,
               onClick: () => trackSiteClick({
                 action: SITE_ACTIONS.cards_templates_cta,
                 pagePath: "/cards"
@@ -6232,30 +6232,30 @@ function Cards() {
           )
         ] })
       ] }),
-      /* @__PURE__ */ jsx("div", { className: styles$5.showcaseRail, children: /* @__PURE__ */ jsx("div", { className: styles$5.showcaseGrid, children: SHOWCASE_CARDS.map((card2, i) => /* @__PURE__ */ jsxs(
+      /* @__PURE__ */ jsx("div", { className: styles$7.showcaseRail, children: /* @__PURE__ */ jsx("div", { className: styles$7.showcaseGrid, children: SHOWCASE_CARDS.map((card2, i) => /* @__PURE__ */ jsxs(
         "article",
         {
-          className: styles$5.showcaseCard,
+          className: styles$7.showcaseCard,
           children: [
             /* @__PURE__ */ jsx(
               "img",
               {
                 src: encodeURI(card2.src),
                 alt: card2.alt,
-                className: styles$5.showcaseImg,
+                className: styles$7.showcaseImg,
                 width: 280,
                 height: 560,
                 loading: "lazy",
                 decoding: "async"
               }
             ),
-            /* @__PURE__ */ jsx("span", { className: styles$5.showcaseNiche, children: card2.niche }),
-            /* @__PURE__ */ jsx("p", { className: styles$5.showcaseDesc, children: card2.desc }),
+            /* @__PURE__ */ jsx("span", { className: styles$7.showcaseNiche, children: card2.niche }),
+            /* @__PURE__ */ jsx("p", { className: styles$7.showcaseDesc, children: card2.desc }),
             /* @__PURE__ */ jsx(
               Link,
               {
                 to: "/edit/card/templates",
-                className: styles$5.showcaseLink,
+                className: styles$7.showcaseLink,
                 onClick: () => trackSiteClick({
                   action: SITE_ACTIONS.cards_showcase_card_cta,
                   pagePath: "/cards"
@@ -6267,7 +6267,7 @@ function Cards() {
         },
         i
       )) }) }),
-      /* @__PURE__ */ jsx("div", { className: styles$5.showcaseBottom, children: /* @__PURE__ */ jsx(
+      /* @__PURE__ */ jsx("div", { className: styles$7.showcaseBottom, children: /* @__PURE__ */ jsx(
         Button,
         {
           as: Link,
@@ -6308,38 +6308,38 @@ function Cards() {
         " ",
         "פועלת מערכת חכמה שעוזרת לעסק להיראות מקצועי, לאסוף לידים ולהתחזק גם מאחורי הקלעים בגוגל."
       ] }),
-      /* @__PURE__ */ jsx("div", { className: styles$5.featuresRail, children: /* @__PURE__ */ jsx("div", { className: styles$5.featuresGrid, children: CARD_FEATURES.map((f, i) => /* @__PURE__ */ jsxs("article", { className: styles$5.featureCard, children: [
+      /* @__PURE__ */ jsx("div", { className: styles$7.featuresRail, children: /* @__PURE__ */ jsx("div", { className: styles$7.featuresGrid, children: CARD_FEATURES.map((f, i) => /* @__PURE__ */ jsxs("article", { className: styles$7.featureCard, children: [
         /* @__PURE__ */ jsx(
           "img",
           {
             src: f.src,
             alt: f.alt,
-            className: styles$5.featureImg,
+            className: styles$7.featureImg,
             loading: "lazy",
             decoding: "async"
           }
         ),
-        /* @__PURE__ */ jsx("h3", { className: styles$5.featureTitle, children: f.title }),
-        /* @__PURE__ */ jsx("p", { className: styles$5.featureText, children: f.text })
+        /* @__PURE__ */ jsx("h3", { className: styles$7.featureTitle, children: f.title }),
+        /* @__PURE__ */ jsx("p", { className: styles$7.featureText, children: f.text })
       ] }, i)) }) })
     ] }) }),
-    /* @__PURE__ */ jsx("section", { className: pub.sectionLight, children: /* @__PURE__ */ jsx("div", { className: pub.sectionWrap, children: /* @__PURE__ */ jsxs("div", { className: styles$5.ctaLayout, children: [
-      /* @__PURE__ */ jsxs("h2", { className: `${styles$5.ctaHeading}`, children: [
+    /* @__PURE__ */ jsx("section", { className: pub.sectionLight, children: /* @__PURE__ */ jsx("div", { className: pub.sectionWrap, children: /* @__PURE__ */ jsxs("div", { className: styles$7.ctaLayout, children: [
+      /* @__PURE__ */ jsxs("h2", { className: `${styles$7.ctaHeading}`, children: [
         "הפכו את כרטיס הביקור שלכם",
         " ",
         /* @__PURE__ */ jsx("span", { className: pub.h2Gold, children: "למכונת לידים! " })
       ] }),
-      /* @__PURE__ */ jsxs("div", { className: styles$5.ctaCopy, children: [
+      /* @__PURE__ */ jsxs("div", { className: styles$7.ctaCopy, children: [
         " ",
-        /* @__PURE__ */ jsx("p", { className: styles$5.ctaText, children: "תוך כמה דקות תוכלו לבחור תבנית, להוסיף תוכן ולשתף כרטיס שנראה מקצועי בכל מסך." }),
-        /* @__PURE__ */ jsxs("div", { className: styles$5.ctaActions, children: [
+        /* @__PURE__ */ jsx("p", { className: styles$7.ctaText, children: "תוך כמה דקות תוכלו לבחור תבנית, להוסיף תוכן ולשתף כרטיס שנראה מקצועי בכל מסך." }),
+        /* @__PURE__ */ jsxs("div", { className: styles$7.ctaActions, children: [
           /* @__PURE__ */ jsx(
             Button,
             {
               as: Link,
               to: "/edit",
               variant: "primary",
-              className: styles$5.ctaPrimary,
+              className: styles$7.ctaPrimary,
               onClick: () => trackSiteClick({
                 action: SITE_ACTIONS.cards_bottom_cta,
                 pagePath: "/cards"
@@ -6358,12 +6358,12 @@ function Cards() {
           )
         ] })
       ] }),
-      /* @__PURE__ */ jsx("div", { className: styles$5.ctaVisual, children: /* @__PURE__ */ jsx(
+      /* @__PURE__ */ jsx("div", { className: styles$7.ctaVisual, children: /* @__PURE__ */ jsx(
         "img",
         {
           src: "/images/sample-card-page/cards-cta/cards-cta.webp",
           alt: "כרטיס ביקור דיגיטלי לעסקים - Cardigo",
-          className: styles$5.ctaImage,
+          className: styles$7.ctaImage,
           width: 800,
           height: 450,
           loading: "lazy",
@@ -6378,6 +6378,959 @@ function Cards() {
         /* @__PURE__ */ jsx("summary", { children: item.q }),
         /* @__PURE__ */ jsx("div", { className: pub.answer, children: item.a })
       ] }, i)) })
+    ] }) })
+  ] });
+}
+const EMPTY = Object.freeze({});
+const InitialDetailDataContext = createContext(EMPTY);
+function InitialDetailDataProvider({ value, children }) {
+  const safeValue = value && typeof value === "object" && !Array.isArray(value) ? value : EMPTY;
+  return /* @__PURE__ */ jsx(InitialDetailDataContext.Provider, { value: safeValue, children });
+}
+function useInitialDetailData(key) {
+  const ctx = useContext(InitialDetailDataContext) || EMPTY;
+  if (typeof key !== "string" || key.length === 0) return null;
+  const v = ctx[key];
+  if (!v || typeof v !== "object" || Array.isArray(v)) return null;
+  if (typeof v.slug !== "string" || v.slug.length === 0) return null;
+  return v;
+}
+const blogWrap = "_blogWrap_1cb51_7";
+const article$1 = "_article_1cb51_7";
+const articleInner$1 = "_articleInner_1cb51_7";
+const articleHeader$1 = "_articleHeader_1cb51_135";
+const articleTitle$1 = "_articleTitle_1cb51_157";
+const articleExcerpt$1 = "_articleExcerpt_1cb51_215";
+const articleDivider$1 = "_articleDivider_1cb51_235";
+const backRow$1 = "_backRow_1cb51_257";
+const backLink$2 = "_backLink_1cb51_267";
+const date$1 = "_date_1cb51_303";
+const heroImage$1 = "_heroImage_1cb51_317";
+const section$1 = "_section_1cb51_335";
+const sectionHeading$1 = "_sectionHeading_1cb51_343";
+const sectionBody$1 = "_sectionBody_1cb51_435";
+const sectionImage$1 = "_sectionImage_1cb51_451";
+const authorCard$1 = "_authorCard_1cb51_525";
+const authorAvatar$1 = "_authorAvatar_1cb51_569";
+const authorInfo$1 = "_authorInfo_1cb51_587";
+const authorName$1 = "_authorName_1cb51_601";
+const authorBio$1 = "_authorBio_1cb51_615";
+const status$1 = "_status_1cb51_665";
+const statusError$1 = "_statusError_1cb51_679";
+const relatedWrap$1 = "_relatedWrap_1cb51_697";
+const relatedTitle$1 = "_relatedTitle_1cb51_709";
+const relatedList$1 = "_relatedList_1cb51_725";
+const relatedItem$1 = "_relatedItem_1cb51_749";
+const relatedName$1 = "_relatedName_1cb51_779";
+const relatedThumb$1 = "_relatedThumb_1cb51_799";
+const styles$6 = {
+  blogWrap,
+  article: article$1,
+  articleInner: articleInner$1,
+  articleHeader: articleHeader$1,
+  articleTitle: articleTitle$1,
+  articleExcerpt: articleExcerpt$1,
+  articleDivider: articleDivider$1,
+  backRow: backRow$1,
+  backLink: backLink$2,
+  date: date$1,
+  heroImage: heroImage$1,
+  section: section$1,
+  sectionHeading: sectionHeading$1,
+  sectionBody: sectionBody$1,
+  sectionImage: sectionImage$1,
+  authorCard: authorCard$1,
+  authorAvatar: authorAvatar$1,
+  authorInfo: authorInfo$1,
+  authorName: authorName$1,
+  authorBio: authorBio$1,
+  status: status$1,
+  statusError: statusError$1,
+  relatedWrap: relatedWrap$1,
+  relatedTitle: relatedTitle$1,
+  relatedList: relatedList$1,
+  relatedItem: relatedItem$1,
+  relatedName: relatedName$1,
+  relatedThumb: relatedThumb$1
+};
+const ORIGIN$1 = "https://cardigo.co.il";
+const BLOG_OG_FALLBACK = `${ORIGIN$1}/images/blog/fallback/blog-cardigo-bussines-img-fallback.webp`;
+const BLOG_THUMB_FALLBACK = "/images/blog/fallback/blog-cardigo-bussines-img-fallback.webp";
+const DEFAULT_AUTHOR_AVATAR$1 = "/images/blog/author-img/%D7%95%D7%9C%D7%A0%D7%98%D7%99%D7%9F.jpg";
+const DEFAULT_AUTHOR_IMG_ALT$1 = "תמונת מחבר המאמר - Cardigo Blog";
+const DEFAULT_AUTHOR_NAME$1 = "ולנטין";
+const DEFAULT_AUTHOR_BIO$1 = /* @__PURE__ */ jsxs(Fragment, { children: [
+  "מייסד ",
+  /* @__PURE__ */ jsx(Link, { to: "/", children: "Cardigo" }),
+  " - כרטיסי ביקור דיגיטליים"
+] });
+function formatDate$1(iso) {
+  if (!iso) return "";
+  try {
+    return new Date(iso).toLocaleDateString("he-IL", {
+      year: "numeric",
+      month: "long",
+      day: "numeric"
+    });
+  } catch {
+    return "";
+  }
+}
+function textToParagraphs$1(text2) {
+  if (!text2) return [];
+  return text2.split(/\n\s*\n|\n/).map((s) => s.trim()).filter(Boolean);
+}
+const CANONICAL_ORIGIN$1 = (() => {
+  try {
+    return new URL(ORIGIN$1).origin;
+  } catch {
+    return "https://cardigo.co.il";
+  }
+})();
+function validateLinkUrl$1(raw) {
+  if (!raw || typeof raw !== "string") return null;
+  const trimmed = raw.trim();
+  if (!trimmed) return null;
+  if (trimmed[0] === "/") {
+    if (trimmed[1] === "/") return null;
+    return { href: trimmed, isInternal: true };
+  }
+  let parsed;
+  try {
+    parsed = new URL(trimmed);
+  } catch {
+    return null;
+  }
+  if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+    return null;
+  }
+  const currentOrigin = typeof window !== "undefined" ? window.location.origin : "";
+  const isInternal = parsed.origin === CANONICAL_ORIGIN$1 || currentOrigin && parsed.origin === currentOrigin;
+  return { href: trimmed, isInternal };
+}
+const MD_LINK_RE$1 = /\[([^\[\]]+)\]\(([^()\s]+)\)/g;
+const BARE_URL_RE$1 = /https?:\/\/[^\s<>\[\]"']+/g;
+const TRAILING_PUNCT_RE$1 = /[.,;:!?]+$/;
+function renderLinkedText$1(text2) {
+  if (!text2) return [text2];
+  const parts = [];
+  let cursor = 0;
+  let keyIdx = 0;
+  let match;
+  MD_LINK_RE$1.lastIndex = 0;
+  while ((match = MD_LINK_RE$1.exec(text2)) !== null) {
+    const [full, anchorText, rawUrl] = match;
+    const idx = match.index;
+    if (idx > cursor) {
+      parts.push({ type: "text", value: text2.slice(cursor, idx) });
+    }
+    const linkInfo = validateLinkUrl$1(rawUrl);
+    if (linkInfo) {
+      parts.push({
+        type: "link",
+        href: linkInfo.href,
+        isInternal: linkInfo.isInternal,
+        display: anchorText
+      });
+    } else {
+      parts.push({ type: "text", value: full });
+    }
+    cursor = idx + full.length;
+  }
+  if (cursor < text2.length) {
+    parts.push({ type: "text", value: text2.slice(cursor) });
+  }
+  const final = [];
+  for (const part of parts) {
+    if (part.type === "link") {
+      final.push(part);
+      continue;
+    }
+    const segment = part.value;
+    let sCursor = 0;
+    BARE_URL_RE$1.lastIndex = 0;
+    let urlMatch;
+    while ((urlMatch = BARE_URL_RE$1.exec(segment)) !== null) {
+      const rawBare = urlMatch[0];
+      const sIdx = urlMatch.index;
+      if (sIdx > sCursor) {
+        final.push({
+          type: "text",
+          value: segment.slice(sCursor, sIdx)
+        });
+      }
+      const urlToValidate = rawBare.replace(TRAILING_PUNCT_RE$1, "") || rawBare;
+      const trailingChars = rawBare.slice(urlToValidate.length);
+      const linkInfo = validateLinkUrl$1(urlToValidate);
+      if (linkInfo) {
+        final.push({
+          type: "link",
+          href: linkInfo.href,
+          isInternal: linkInfo.isInternal,
+          display: urlToValidate
+        });
+        if (trailingChars) {
+          final.push({ type: "text", value: trailingChars });
+        }
+      } else {
+        final.push({ type: "text", value: rawBare });
+      }
+      sCursor = sIdx + rawBare.length;
+    }
+    if (sCursor < segment.length) {
+      final.push({ type: "text", value: segment.slice(sCursor) });
+    }
+  }
+  return final.map((node) => {
+    if (node.type === "text") return node.value;
+    const key = `bl-${keyIdx++}`;
+    if (node.isInternal) {
+      return /* @__PURE__ */ jsx("a", { href: node.href, children: node.display }, key);
+    }
+    return /* @__PURE__ */ jsx(
+      "a",
+      {
+        href: node.href,
+        target: "_blank",
+        rel: "noopener noreferrer",
+        children: node.display
+      },
+      key
+    );
+  });
+}
+function buildBlogPostingJsonLd(post) {
+  const ld = {
+    "@context": "https://schema.org",
+    "@type": "BlogPosting",
+    "@id": `${ORIGIN$1}/blog/${post.slug}/#article`,
+    headline: post.title || "",
+    description: post.seo?.description || post.excerpt || "",
+    url: `${ORIGIN$1}/blog/${post.slug}/`,
+    mainEntityOfPage: {
+      "@type": "WebPage",
+      "@id": `${ORIGIN$1}/blog/${post.slug}/`
+    },
+    inLanguage: "he",
+    datePublished: post.publishedAt || void 0,
+    dateModified: post.updatedAt || post.publishedAt || void 0,
+    author: {
+      "@type": "Person",
+      name: post.authorName || DEFAULT_AUTHOR_NAME$1
+    },
+    publisher: {
+      "@type": "Organization",
+      name: "Cardigo",
+      url: ORIGIN$1,
+      logo: {
+        "@type": "ImageObject",
+        url: `${ORIGIN$1}/images/brand-logo/cardigo-logo.png`
+      }
+    }
+  };
+  ld.image = post.heroImageUrl || BLOG_OG_FALLBACK;
+  return ld;
+}
+function buildBreadcrumbJsonLd$1(post) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      {
+        "@type": "ListItem",
+        position: 1,
+        name: "בלוג",
+        item: `${ORIGIN$1}/blog/`
+      },
+      {
+        "@type": "ListItem",
+        position: 2,
+        name: post.title || "",
+        item: `${ORIGIN$1}/blog/${post.slug}/`
+      }
+    ]
+  };
+}
+function BlogPost() {
+  const { slug } = useParams();
+  const initialSeed = useInitialDetailData("blog");
+  const hasSeed = !!(initialSeed && initialSeed.slug === slug);
+  const [post, setPost] = useState(() => hasSeed ? initialSeed : null);
+  const [loading, setLoading] = useState(() => hasSeed ? false : true);
+  const [notFound, setNotFound] = useState(false);
+  const [error2, setError] = useState(null);
+  const [related, setRelated] = useState([]);
+  const navigate = useNavigate();
+  const skipFirstFetchRef = useRef(hasSeed);
+  useEffect(() => {
+    trackSitePageView();
+  }, []);
+  useEffect(() => {
+    if (!slug) return;
+    if (skipFirstFetchRef.current) {
+      skipFirstFetchRef.current = false;
+      return;
+    }
+    let cancelled = false;
+    async function load() {
+      setLoading(true);
+      setError(null);
+      setNotFound(false);
+      try {
+        const res = await fetch(
+          `/api/blog/${encodeURIComponent(slug)}`
+        );
+        if (res.status === 404) {
+          if (!cancelled) setNotFound(true);
+          return;
+        }
+        if (!res.ok) throw new Error("שגיאה בטעינת המאמר");
+        const data = await res.json();
+        if (!cancelled) setPost(data);
+      } catch (err) {
+        if (!cancelled) setError(err.message || "שגיאה בטעינת המאמר");
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, [slug]);
+  useEffect(() => {
+    if (!slug) return;
+    let dead = false;
+    fetch("/api/blog?page=1&limit=4").then((r) => r.ok ? r.json() : null).then((data) => {
+      if (dead || !data) return;
+      const others = (data.items || []).filter((p2) => p2.slug !== slug).slice(0, 3);
+      setRelated(others);
+    }).catch(() => {
+    });
+    return () => {
+      dead = true;
+    };
+  }, [slug]);
+  useEffect(() => {
+    if (post && post.slug && post.slug !== slug) {
+      navigate(`/blog/${post.slug}/`, { replace: true });
+    }
+  }, [post, slug, navigate]);
+  if (loading) {
+    return /* @__PURE__ */ jsx("main", { className: styles$6.blogWrap, "data-page": "site", children: /* @__PURE__ */ jsx("p", { className: styles$6.status, children: "טוען מאמר…" }) });
+  }
+  if (notFound) {
+    return /* @__PURE__ */ jsxs("main", { className: styles$6.blogWrap, "data-page": "site", children: [
+      /* @__PURE__ */ jsx(
+        SeoHelmet,
+        {
+          robots: "noindex, nofollow",
+          title: "המאמר לא נמצא | Cardigo"
+        }
+      ),
+      /* @__PURE__ */ jsx("p", { className: styles$6.status, children: "המאמר לא נמצא." }),
+      /* @__PURE__ */ jsx("div", { className: styles$6.backRow, children: /* @__PURE__ */ jsx(Link, { to: "/blog", className: styles$6.backLink, children: "חזרה לבלוג" }) })
+    ] });
+  }
+  if (error2 || !post) {
+    return /* @__PURE__ */ jsxs("main", { className: styles$6.blogWrap, "data-page": "site", children: [
+      /* @__PURE__ */ jsx(
+        SeoHelmet,
+        {
+          title: "שגיאה בטעינת המאמר | Cardigo",
+          description: "לא ניתן לטעון את המאמר כרגע. אנא נסה שוב מאוחר יותר.",
+          robots: "noindex, nofollow"
+        }
+      ),
+      /* @__PURE__ */ jsx("p", { className: styles$6.statusError, children: error2 || "שגיאה בטעינה" }),
+      /* @__PURE__ */ jsx("div", { className: styles$6.backRow, children: /* @__PURE__ */ jsx(Link, { to: "/blog", className: styles$6.backLink, children: "חזרה לבלוג" }) })
+    ] });
+  }
+  const seoTitle = post.seo?.title || post.title || "בלוג | Cardigo";
+  const seoDescription = post.seo?.description || post.excerpt || "";
+  const canonicalUrl2 = `${ORIGIN$1}/blog/${post.slug}/`;
+  const jsonLdItems = [
+    buildBlogPostingJsonLd(post),
+    buildBreadcrumbJsonLd$1(post)
+  ];
+  return /* @__PURE__ */ jsxs("main", { className: styles$6.blogWrap, "data-page": "site", children: [
+    /* @__PURE__ */ jsx(
+      SeoHelmet,
+      {
+        title: seoTitle,
+        description: seoDescription,
+        canonicalUrl: canonicalUrl2,
+        url: canonicalUrl2,
+        image: post.heroImageUrl || BLOG_OG_FALLBACK,
+        ogType: "article",
+        jsonLdItems,
+        articlePublishedTime: post.publishedAt || void 0,
+        articleModifiedTime: post.updatedAt || post.publishedAt || void 0,
+        articleAuthor: post.authorName || DEFAULT_AUTHOR_NAME$1,
+        imageAlt: post.heroImageAlt || post.title || void 0
+      }
+    ),
+    /* @__PURE__ */ jsx("article", { className: styles$6.article, children: /* @__PURE__ */ jsxs("div", { className: styles$6.articleInner, children: [
+      /* @__PURE__ */ jsxs("header", { className: styles$6.articleHeader, children: [
+        CONTENT_DISPLAY_POLICY.showPublishedDates && post.publishedAt && /* @__PURE__ */ jsx(
+          "time",
+          {
+            className: styles$6.date,
+            dateTime: post.publishedAt,
+            children: formatDate$1(post.publishedAt)
+          }
+        ),
+        /* @__PURE__ */ jsx("h1", { className: styles$6.articleTitle, children: post.title }),
+        post.excerpt && /* @__PURE__ */ jsx("p", { className: styles$6.articleExcerpt, children: post.excerpt }),
+        /* @__PURE__ */ jsx(
+          "div",
+          {
+            className: styles$6.articleDivider,
+            "aria-hidden": "true"
+          }
+        )
+      ] }),
+      /* @__PURE__ */ jsx(
+        "img",
+        {
+          className: styles$6.heroImage,
+          src: post.heroImageUrl || BLOG_OG_FALLBACK,
+          alt: post.heroImageAlt || post.title || ""
+        }
+      ),
+      (post.sections || []).map((section2, i) => /* @__PURE__ */ jsxs("section", { className: styles$6.section, children: [
+        section2.heading && /* @__PURE__ */ jsx("h2", { className: styles$6.sectionHeading, children: section2.heading }),
+        section2.imageUrl && /* @__PURE__ */ jsx(
+          "img",
+          {
+            className: styles$6.sectionImage,
+            src: section2.imageUrl,
+            alt: section2.imageAlt || "",
+            loading: "lazy"
+          }
+        ),
+        textToParagraphs$1(section2.body).map((para, j) => /* @__PURE__ */ jsx("p", { className: styles$6.sectionBody, children: renderLinkedText$1(para) }, j))
+      ] }, i)),
+      post.authorName && /* @__PURE__ */ jsxs(
+        "aside",
+        {
+          className: styles$6.authorCard,
+          "aria-label": "מחבר הפוסט",
+          children: [
+            /* @__PURE__ */ jsx(
+              "img",
+              {
+                className: styles$6.authorAvatar,
+                src: post.authorImageUrl || DEFAULT_AUTHOR_AVATAR$1,
+                alt: post.authorImageAlt || DEFAULT_AUTHOR_IMG_ALT$1
+              }
+            ),
+            /* @__PURE__ */ jsxs("div", { className: styles$6.authorInfo, children: [
+              /* @__PURE__ */ jsx("span", { className: styles$6.authorName, children: DEFAULT_AUTHOR_NAME$1 }),
+              /* @__PURE__ */ jsx("span", { className: styles$6.authorBio, children: post.authorBio || DEFAULT_AUTHOR_BIO$1 })
+            ] })
+          ]
+        }
+      ),
+      related.length > 0 && /* @__PURE__ */ jsxs(
+        "nav",
+        {
+          className: styles$6.relatedWrap,
+          "aria-label": "מאמרים נוספים",
+          children: [
+            /* @__PURE__ */ jsx("h2", { className: styles$6.relatedTitle, children: "עוד מאמרים" }),
+            /* @__PURE__ */ jsx("div", { className: styles$6.relatedList, children: related.map((r) => /* @__PURE__ */ jsxs(
+              Link,
+              {
+                to: `/blog/${r.slug}/`,
+                className: styles$6.relatedItem,
+                children: [
+                  /* @__PURE__ */ jsx(
+                    "img",
+                    {
+                      className: styles$6.relatedThumb,
+                      src: r.heroImageUrl || BLOG_THUMB_FALLBACK,
+                      alt: r.heroImageAlt || r.title || "",
+                      loading: "lazy"
+                    }
+                  ),
+                  /* @__PURE__ */ jsx("span", { className: styles$6.relatedName, children: r.title })
+                ]
+              },
+              r.id
+            )) })
+          ]
+        }
+      ),
+      /* @__PURE__ */ jsx("div", { className: styles$6.backRow, children: /* @__PURE__ */ jsx(Link, { to: "/blog", className: styles$6.backLink, children: "חזרה לבלוג" }) })
+    ] }) })
+  ] });
+}
+const guideWrap = "_guideWrap_1wl4v_7";
+const article = "_article_1wl4v_7";
+const articleInner = "_articleInner_1wl4v_7";
+const articleHeader = "_articleHeader_1wl4v_135";
+const articleTitle = "_articleTitle_1wl4v_157";
+const articleExcerpt = "_articleExcerpt_1wl4v_215";
+const articleDivider = "_articleDivider_1wl4v_235";
+const backRow = "_backRow_1wl4v_257";
+const backLink$1 = "_backLink_1wl4v_267";
+const date = "_date_1wl4v_303";
+const heroImage = "_heroImage_1wl4v_317";
+const section = "_section_1wl4v_335";
+const sectionHeading = "_sectionHeading_1wl4v_343";
+const sectionBody = "_sectionBody_1wl4v_435";
+const sectionImage = "_sectionImage_1wl4v_451";
+const authorCard = "_authorCard_1wl4v_525";
+const authorAvatar = "_authorAvatar_1wl4v_569";
+const authorInfo = "_authorInfo_1wl4v_587";
+const authorName = "_authorName_1wl4v_601";
+const authorBio = "_authorBio_1wl4v_615";
+const status = "_status_1wl4v_665";
+const statusError = "_statusError_1wl4v_679";
+const relatedWrap = "_relatedWrap_1wl4v_697";
+const relatedTitle = "_relatedTitle_1wl4v_709";
+const relatedList = "_relatedList_1wl4v_725";
+const relatedItem = "_relatedItem_1wl4v_749";
+const relatedName = "_relatedName_1wl4v_779";
+const relatedThumb = "_relatedThumb_1wl4v_799";
+const styles$5 = {
+  guideWrap,
+  article,
+  articleInner,
+  articleHeader,
+  articleTitle,
+  articleExcerpt,
+  articleDivider,
+  backRow,
+  backLink: backLink$1,
+  date,
+  heroImage,
+  section,
+  sectionHeading,
+  sectionBody,
+  sectionImage,
+  authorCard,
+  authorAvatar,
+  authorInfo,
+  authorName,
+  authorBio,
+  status,
+  statusError,
+  relatedWrap,
+  relatedTitle,
+  relatedList,
+  relatedItem,
+  relatedName,
+  relatedThumb
+};
+const ORIGIN = "https://cardigo.co.il";
+const GUIDE_OG_FALLBACK = `${ORIGIN}/images/blog/fallback/blog-cardigo-bussines-img-fallback.webp`;
+const GUIDE_THUMB_FALLBACK = "/images/blog/fallback/blog-cardigo-bussines-img-fallback.webp";
+const DEFAULT_AUTHOR_AVATAR = "/images/blog/author-img/%D7%95%D7%9C%D7%A0%D7%98%D7%99%D7%9F.jpg";
+const DEFAULT_AUTHOR_IMG_ALT = "תמונת מחבר המדריך - Cardigo";
+const DEFAULT_AUTHOR_NAME = "ולנטין";
+const DEFAULT_AUTHOR_BIO = /* @__PURE__ */ jsxs(Fragment, { children: [
+  "מייסד ",
+  /* @__PURE__ */ jsx(Link, { to: "/", children: "Cardigo" }),
+  " - כרטיסי ביקור דיגיטליים"
+] });
+function formatDate(iso) {
+  if (!iso) return "";
+  try {
+    return new Date(iso).toLocaleDateString("he-IL", {
+      year: "numeric",
+      month: "long",
+      day: "numeric"
+    });
+  } catch {
+    return "";
+  }
+}
+function textToParagraphs(text2) {
+  if (!text2) return [];
+  return text2.split(/\n\s*\n|\n/).map((s) => s.trim()).filter(Boolean);
+}
+const CANONICAL_ORIGIN = (() => {
+  try {
+    return new URL(ORIGIN).origin;
+  } catch {
+    return "https://cardigo.co.il";
+  }
+})();
+function validateLinkUrl(raw) {
+  if (!raw || typeof raw !== "string") return null;
+  const trimmed = raw.trim();
+  if (!trimmed) return null;
+  if (trimmed[0] === "/") {
+    if (trimmed[1] === "/") return null;
+    return { href: trimmed, isInternal: true };
+  }
+  let parsed;
+  try {
+    parsed = new URL(trimmed);
+  } catch {
+    return null;
+  }
+  if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+    return null;
+  }
+  const currentOrigin = typeof window !== "undefined" ? window.location.origin : "";
+  const isInternal = parsed.origin === CANONICAL_ORIGIN || currentOrigin && parsed.origin === currentOrigin;
+  return { href: trimmed, isInternal };
+}
+const MD_LINK_RE = /\[([^\[\]]+)\]\(([^()\s]+)\)/g;
+const BARE_URL_RE = /https?:\/\/[^\s<>\[\]"']+/g;
+const TRAILING_PUNCT_RE = /[.,;:!?]+$/;
+function renderLinkedText(text2) {
+  if (!text2) return [text2];
+  const parts = [];
+  let cursor = 0;
+  let keyIdx = 0;
+  let match;
+  MD_LINK_RE.lastIndex = 0;
+  while ((match = MD_LINK_RE.exec(text2)) !== null) {
+    const [full, anchorText, rawUrl] = match;
+    const idx = match.index;
+    if (idx > cursor) {
+      parts.push({ type: "text", value: text2.slice(cursor, idx) });
+    }
+    const linkInfo = validateLinkUrl(rawUrl);
+    if (linkInfo) {
+      parts.push({
+        type: "link",
+        href: linkInfo.href,
+        isInternal: linkInfo.isInternal,
+        display: anchorText
+      });
+    } else {
+      parts.push({ type: "text", value: full });
+    }
+    cursor = idx + full.length;
+  }
+  if (cursor < text2.length) {
+    parts.push({ type: "text", value: text2.slice(cursor) });
+  }
+  const final = [];
+  for (const part of parts) {
+    if (part.type === "link") {
+      final.push(part);
+      continue;
+    }
+    const segment = part.value;
+    let sCursor = 0;
+    BARE_URL_RE.lastIndex = 0;
+    let urlMatch;
+    while ((urlMatch = BARE_URL_RE.exec(segment)) !== null) {
+      const rawBare = urlMatch[0];
+      const sIdx = urlMatch.index;
+      if (sIdx > sCursor) {
+        final.push({
+          type: "text",
+          value: segment.slice(sCursor, sIdx)
+        });
+      }
+      const urlToValidate = rawBare.replace(TRAILING_PUNCT_RE, "") || rawBare;
+      const trailingChars = rawBare.slice(urlToValidate.length);
+      const linkInfo = validateLinkUrl(urlToValidate);
+      if (linkInfo) {
+        final.push({
+          type: "link",
+          href: linkInfo.href,
+          isInternal: linkInfo.isInternal,
+          display: urlToValidate
+        });
+        if (trailingChars) {
+          final.push({ type: "text", value: trailingChars });
+        }
+      } else {
+        final.push({ type: "text", value: rawBare });
+      }
+      sCursor = sIdx + rawBare.length;
+    }
+    if (sCursor < segment.length) {
+      final.push({ type: "text", value: segment.slice(sCursor) });
+    }
+  }
+  return final.map((node) => {
+    if (node.type === "text") return node.value;
+    const key = `gl-${keyIdx++}`;
+    if (node.isInternal) {
+      return /* @__PURE__ */ jsx("a", { href: node.href, children: node.display }, key);
+    }
+    return /* @__PURE__ */ jsx(
+      "a",
+      {
+        href: node.href,
+        target: "_blank",
+        rel: "noopener noreferrer",
+        children: node.display
+      },
+      key
+    );
+  });
+}
+function buildArticleJsonLd(post) {
+  const ld = {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    "@id": `${ORIGIN}/guides/${post.slug}/#article`,
+    headline: post.title || "",
+    description: post.seo?.description || post.excerpt || "",
+    url: `${ORIGIN}/guides/${post.slug}/`,
+    mainEntityOfPage: {
+      "@type": "WebPage",
+      "@id": `${ORIGIN}/guides/${post.slug}/`
+    },
+    inLanguage: "he",
+    datePublished: post.publishedAt || void 0,
+    dateModified: post.updatedAt || post.publishedAt || void 0,
+    author: {
+      "@type": "Person",
+      name: post.authorName || DEFAULT_AUTHOR_NAME
+    },
+    publisher: {
+      "@type": "Organization",
+      name: "Cardigo",
+      url: ORIGIN,
+      logo: {
+        "@type": "ImageObject",
+        url: `${ORIGIN}/images/brand-logo/cardigo-logo.png`
+      }
+    }
+  };
+  ld.image = post.heroImageUrl || GUIDE_OG_FALLBACK;
+  return ld;
+}
+function buildBreadcrumbJsonLd(post) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      {
+        "@type": "ListItem",
+        position: 1,
+        name: "מדריכים",
+        item: `${ORIGIN}/guides/`
+      },
+      {
+        "@type": "ListItem",
+        position: 2,
+        name: post.title || "",
+        item: `${ORIGIN}/guides/${post.slug}/`
+      }
+    ]
+  };
+}
+function GuidePost() {
+  const { slug } = useParams();
+  const initialSeed = useInitialDetailData("guides");
+  const hasSeed = !!(initialSeed && initialSeed.slug === slug);
+  const [post, setPost] = useState(() => hasSeed ? initialSeed : null);
+  const [loading, setLoading] = useState(() => hasSeed ? false : true);
+  const [notFound, setNotFound] = useState(false);
+  const [error2, setError] = useState(null);
+  const [related, setRelated] = useState([]);
+  const navigate = useNavigate();
+  const skipFirstFetchRef = useRef(hasSeed);
+  useEffect(() => {
+    trackSitePageView();
+  }, []);
+  useEffect(() => {
+    if (!slug) return;
+    if (skipFirstFetchRef.current) {
+      skipFirstFetchRef.current = false;
+      return;
+    }
+    let cancelled = false;
+    async function load() {
+      setLoading(true);
+      setError(null);
+      setNotFound(false);
+      try {
+        const res = await fetch(
+          `/api/guides/${encodeURIComponent(slug)}`
+        );
+        if (res.status === 404) {
+          if (!cancelled) setNotFound(true);
+          return;
+        }
+        if (!res.ok) throw new Error("שגיאה בטעינת המדריך");
+        const data = await res.json();
+        if (!cancelled) setPost(data);
+      } catch (err) {
+        if (!cancelled) setError(err.message || "שגיאה בטעינת המדריך");
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, [slug]);
+  useEffect(() => {
+    if (!slug) return;
+    let dead = false;
+    fetch("/api/guides?page=1&limit=4").then((r) => r.ok ? r.json() : null).then((data) => {
+      if (dead || !data) return;
+      const others = (data.items || []).filter((p2) => p2.slug !== slug).slice(0, 3);
+      setRelated(others);
+    }).catch(() => {
+    });
+    return () => {
+      dead = true;
+    };
+  }, [slug]);
+  useEffect(() => {
+    if (post && post.slug && post.slug !== slug) {
+      navigate(`/guides/${post.slug}/`, { replace: true });
+    }
+  }, [post, slug, navigate]);
+  if (loading) {
+    return /* @__PURE__ */ jsx("main", { className: styles$5.guideWrap, "data-page": "site", children: /* @__PURE__ */ jsx("p", { className: styles$5.status, children: "טוען מדריך…" }) });
+  }
+  if (notFound) {
+    return /* @__PURE__ */ jsxs("main", { className: styles$5.guideWrap, "data-page": "site", children: [
+      /* @__PURE__ */ jsx(
+        SeoHelmet,
+        {
+          robots: "noindex, nofollow",
+          title: "המדריך לא נמצא | Cardigo"
+        }
+      ),
+      /* @__PURE__ */ jsx("p", { className: styles$5.status, children: "המדריך לא נמצא." }),
+      /* @__PURE__ */ jsx("div", { className: styles$5.backRow, children: /* @__PURE__ */ jsx(Link, { to: "/guides", className: styles$5.backLink, children: "חזרה למדריכים" }) })
+    ] });
+  }
+  if (error2 || !post) {
+    return /* @__PURE__ */ jsxs("main", { className: styles$5.guideWrap, "data-page": "site", children: [
+      /* @__PURE__ */ jsx(
+        SeoHelmet,
+        {
+          title: "שגיאה בטעינת המדריך | Cardigo",
+          description: "לא ניתן לטעון את המדריך כרגע. אנא נסה שוב מאוחר יותר.",
+          robots: "noindex, nofollow"
+        }
+      ),
+      /* @__PURE__ */ jsx("p", { className: styles$5.statusError, children: error2 || "שגיאה בטעינה" }),
+      /* @__PURE__ */ jsx("div", { className: styles$5.backRow, children: /* @__PURE__ */ jsx(Link, { to: "/guides", className: styles$5.backLink, children: "חזרה למדריכים" }) })
+    ] });
+  }
+  const seoTitle = post.seo?.title || post.title || "מדריכים | Cardigo";
+  const seoDescription = post.seo?.description || post.excerpt || "";
+  const canonicalUrl2 = `${ORIGIN}/guides/${post.slug}/`;
+  const jsonLdItems = [buildArticleJsonLd(post), buildBreadcrumbJsonLd(post)];
+  return /* @__PURE__ */ jsxs("main", { className: styles$5.guideWrap, "data-page": "site", children: [
+    /* @__PURE__ */ jsx(
+      SeoHelmet,
+      {
+        title: seoTitle,
+        description: seoDescription,
+        canonicalUrl: canonicalUrl2,
+        url: canonicalUrl2,
+        image: post.heroImageUrl || GUIDE_OG_FALLBACK,
+        ogType: "article",
+        jsonLdItems,
+        articlePublishedTime: post.publishedAt || void 0,
+        articleModifiedTime: post.updatedAt || post.publishedAt || void 0,
+        articleAuthor: post.authorName || DEFAULT_AUTHOR_NAME,
+        imageAlt: post.heroImageAlt || post.title || void 0
+      }
+    ),
+    /* @__PURE__ */ jsx("article", { className: styles$5.article, children: /* @__PURE__ */ jsxs("div", { className: styles$5.articleInner, children: [
+      /* @__PURE__ */ jsxs("header", { className: styles$5.articleHeader, children: [
+        CONTENT_DISPLAY_POLICY.showPublishedDates && post.publishedAt && /* @__PURE__ */ jsx(
+          "time",
+          {
+            className: styles$5.date,
+            dateTime: post.publishedAt,
+            children: formatDate(post.publishedAt)
+          }
+        ),
+        /* @__PURE__ */ jsx("h1", { className: styles$5.articleTitle, children: post.title }),
+        post.excerpt && /* @__PURE__ */ jsx("p", { className: styles$5.articleExcerpt, children: post.excerpt }),
+        /* @__PURE__ */ jsx(
+          "div",
+          {
+            className: styles$5.articleDivider,
+            "aria-hidden": "true"
+          }
+        )
+      ] }),
+      /* @__PURE__ */ jsx(
+        "img",
+        {
+          className: styles$5.heroImage,
+          src: post.heroImageUrl || GUIDE_OG_FALLBACK,
+          alt: post.heroImageAlt || post.title || ""
+        }
+      ),
+      (post.sections || []).map((section2, i) => /* @__PURE__ */ jsxs("section", { className: styles$5.section, children: [
+        section2.heading && /* @__PURE__ */ jsx("h2", { className: styles$5.sectionHeading, children: section2.heading }),
+        section2.imageUrl && /* @__PURE__ */ jsx(
+          "img",
+          {
+            className: styles$5.sectionImage,
+            src: section2.imageUrl,
+            alt: section2.imageAlt || "",
+            loading: "lazy"
+          }
+        ),
+        textToParagraphs(section2.body).map((para, j) => /* @__PURE__ */ jsx("p", { className: styles$5.sectionBody, children: renderLinkedText(para) }, j))
+      ] }, i)),
+      post.authorName && /* @__PURE__ */ jsxs(
+        "aside",
+        {
+          className: styles$5.authorCard,
+          "aria-label": "מחבר המדריך",
+          children: [
+            /* @__PURE__ */ jsx(
+              "img",
+              {
+                className: styles$5.authorAvatar,
+                src: post.authorImageUrl || DEFAULT_AUTHOR_AVATAR,
+                alt: post.authorImageAlt || DEFAULT_AUTHOR_IMG_ALT
+              }
+            ),
+            /* @__PURE__ */ jsxs("div", { className: styles$5.authorInfo, children: [
+              /* @__PURE__ */ jsx("span", { className: styles$5.authorName, children: DEFAULT_AUTHOR_NAME }),
+              /* @__PURE__ */ jsx("span", { className: styles$5.authorBio, children: post.authorBio || DEFAULT_AUTHOR_BIO })
+            ] })
+          ]
+        }
+      ),
+      related.length > 0 && /* @__PURE__ */ jsxs(
+        "nav",
+        {
+          className: styles$5.relatedWrap,
+          "aria-label": "מדריכים נוספים",
+          children: [
+            /* @__PURE__ */ jsx("h2", { className: styles$5.relatedTitle, children: "עוד מדריכים" }),
+            /* @__PURE__ */ jsx("div", { className: styles$5.relatedList, children: related.map((r) => /* @__PURE__ */ jsxs(
+              Link,
+              {
+                to: `/guides/${r.slug}/`,
+                className: styles$5.relatedItem,
+                children: [
+                  /* @__PURE__ */ jsx(
+                    "img",
+                    {
+                      className: styles$5.relatedThumb,
+                      src: r.heroImageUrl || GUIDE_THUMB_FALLBACK,
+                      alt: r.heroImageAlt || r.title || "",
+                      loading: "lazy"
+                    }
+                  ),
+                  /* @__PURE__ */ jsx("span", { className: styles$5.relatedName, children: r.title })
+                ]
+              },
+              r.id
+            )) })
+          ]
+        }
+      ),
+      /* @__PURE__ */ jsx("div", { className: styles$5.backRow, children: /* @__PURE__ */ jsx(Link, { to: "/guides", className: styles$5.backLink, children: "חזרה למדריכים" }) })
     ] }) })
   ] });
 }
@@ -7337,14 +8290,12 @@ const SignupConsume = lazy(() => import("./assets/SignupConsume-Ddi7LjmO.js"));
 const VerifyEmail = lazy(() => import("./assets/VerifyEmail-BdTNw4a4.js"));
 const Unsubscribe = lazy(() => import("./assets/Unsubscribe-cH0SJ-jv.js"));
 const Dashboard = lazy(() => import("./assets/Dashboard-CA_zW0ja.js"));
-const EditCard = lazy(() => import("./assets/EditCard-8APoVsVU.js"));
+const EditCard = lazy(() => import("./assets/EditCard-B6lBkfTO.js"));
 const Admin = lazy(() => import("./assets/Admin-FSagd0ZH.js"));
 const OrgInvites = lazy(() => import("./assets/OrgInvites-CPq8wF76.js"));
 const Inbox = lazy(() => import("./assets/Inbox-BwtOR49t.js"));
-const BlogPost = lazy(() => import("./assets/BlogPost-41GtYZeW.js"));
-const GuidePost = lazy(() => import("./assets/GuidePost-BvCyvAiZ.js"));
-const PublicCard = lazy(() => import("./assets/PublicCard-BUh62Dw0.js"));
-const PreviewCard = lazy(() => import("./assets/PreviewCard-BEyGqjlW.js"));
+const PublicCard = lazy(() => import("./assets/PublicCard-Cv7lQxHl.js"));
+const PreviewCard = lazy(() => import("./assets/PreviewCard-CmFwe_k1.js"));
 const CheckoutPage = lazy(() => import("./assets/CheckoutPage-v9B4yP1E.js"));
 const IframeReturnPage = lazy(
   () => import("./assets/IframeReturnPage-CYK0Rehj.js")
@@ -7546,13 +8497,20 @@ async function renderForRoute(url, options = {}) {
   const router = createStaticRouter(routes, context);
   const helmetContext = {};
   const initialListingData = options && typeof options === "object" && options.initialListingData ? options.initialListingData : {};
+  const initialDetailData = options && typeof options === "object" && options.initialDetailData ? options.initialDetailData : {};
   const html = renderToString(
-    /* @__PURE__ */ jsx(HelmetProvider, { context: helmetContext, children: /* @__PURE__ */ jsx(AuthProvider, { children: /* @__PURE__ */ jsx(UnreadCountProvider, { children: /* @__PURE__ */ jsx(InitialListingDataProvider, { value: initialListingData, children: /* @__PURE__ */ jsx(StaticRouterProvider, { router, context }) }) }) }) })
+    /* @__PURE__ */ jsx(HelmetProvider, { context: helmetContext, children: /* @__PURE__ */ jsx(AuthProvider, { children: /* @__PURE__ */ jsx(UnreadCountProvider, { children: /* @__PURE__ */ jsx(InitialListingDataProvider, { value: initialListingData, children: /* @__PURE__ */ jsx(InitialDetailDataProvider, { value: initialDetailData, children: /* @__PURE__ */ jsx(
+      StaticRouterProvider,
+      {
+        router,
+        context
+      }
+    ) }) }) }) }) })
   );
   return { html, helmetContext };
 }
 export {
-  getPublicAvailability as $,
+  createLead as $,
   AnalyticsIcon as A,
   Button as B,
   CopyIcon as C,
@@ -7565,24 +8523,22 @@ export {
   getMyBookings as J,
   approveMyBooking as K,
   cancelMyBooking as L,
-  trackSitePageView as M,
-  CONTENT_DISPLAY_POLICY as N,
-  hasAcceptedCardConsent as O,
-  saveCardConsent as P,
-  getCardConsentState as Q,
+  hasAcceptedCardConsent as M,
+  saveCardConsent as N,
+  getCardConsentState as O,
+  DEFAULT_OG_IMAGE_PATH as P,
+  normalizeGtmId as Q,
   ReviewsIcon as R,
   SeoHelmet as S,
   TemplatesIcon as T,
-  DEFAULT_OG_IMAGE_PATH as U,
-  normalizeGtmId as V,
+  normalizeGaMeasurementId as U,
+  normalizeMetaPixelId as V,
   WorkHoursIcon as W,
-  normalizeGaMeasurementId as X,
-  normalizeMetaPixelId as Y,
-  getUtm as Z,
-  useInstallPrompt as _,
+  getUtm as X,
+  useInstallPrompt as Y,
+  getPublicAvailability as Z,
+  createPublicBooking as _,
   api as a,
-  createPublicBooking as a0,
-  createLead as a1,
   resetPassword as b,
   requestSignupLink as c,
   consumeSignupToken as d,

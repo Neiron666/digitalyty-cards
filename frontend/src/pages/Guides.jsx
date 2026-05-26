@@ -270,7 +270,7 @@ export default function Guides() {
                                                 </time>
                                             )}
                                         <h3 className={styles.cardTitle}>
-                                            <Link to={`/guides/${post.slug}`}>
+                                            <Link to={`/guides/${post.slug}/`}>
                                                 {post.title}
                                             </Link>
                                         </h3>
@@ -280,7 +280,7 @@ export default function Guides() {
                                             </p>
                                         )}
                                         <Link
-                                            to={`/guides/${post.slug}`}
+                                            to={`/guides/${post.slug}/`}
                                             className={styles.cardCta}
                                             onClick={() =>
                                                 trackSiteClick({

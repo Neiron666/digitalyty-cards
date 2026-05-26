@@ -9,11 +9,16 @@ import {
     InitialListingDataProvider,
     readInitialListingDataFromDocument,
 } from "./seo/initialListingData";
+import {
+    InitialDetailDataProvider,
+    readInitialDetailDataFromDocument,
+} from "./seo/initialDetailData";
 import "./lib/installPromptStore"; // early init — capture beforeinstallprompt before lazy routes
 import "./styles/globals.css";
 import "./styles/tour.css";
 
 const initialListingData = readInitialListingDataFromDocument();
+const initialDetailData = readInitialDetailDataFromDocument();
 
 const app = (
     <HelmetProvider>
@@ -21,7 +26,9 @@ const app = (
             <AuthProvider>
                 <UnreadCountProvider>
                     <InitialListingDataProvider value={initialListingData}>
-                        <RouterProvider router={router} />
+                        <InitialDetailDataProvider value={initialDetailData}>
+                            <RouterProvider router={router} />
+                        </InitialDetailDataProvider>
                     </InitialListingDataProvider>
                 </UnreadCountProvider>
             </AuthProvider>

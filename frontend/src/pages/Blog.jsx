@@ -276,7 +276,7 @@ export default function Blog() {
                                                 </time>
                                             )}
                                         <h3 className={styles.cardTitle}>
-                                            <Link to={`/blog/${post.slug}`}>
+                                            <Link to={`/blog/${post.slug}/`}>
                                                 {post.title}
                                             </Link>
                                         </h3>
@@ -286,7 +286,7 @@ export default function Blog() {
                                             </p>
                                         )}
                                         <Link
-                                            to={`/blog/${post.slug}`}
+                                            to={`/blog/${post.slug}/`}
                                             className={styles.cardCta}
                                             onClick={() =>
                                                 trackSiteClick({

@@ -1,7 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import SeoHelmet from "../components/seo/SeoHelmet";
 import { trackSitePageView } from "../services/siteAnalytics.client";
+import { useInitialDetailData } from "../seo/initialDetailData";
 import styles from "./GuidePost.module.css";
 import { CONTENT_DISPLAY_POLICY } from "../utils/contentDisplayPolicy.js";
 
@@ -243,13 +244,13 @@ function buildArticleJsonLd(post) {
     const ld = {
         "@context": "https://schema.org",
         "@type": "Article",
-        "@id": `${ORIGIN}/guides/${post.slug}#article`,
+        "@id": `${ORIGIN}/guides/${post.slug}/#article`,
         headline: post.title || "",
         description: post.seo?.description || post.excerpt || "",
-        url: `${ORIGIN}/guides/${post.slug}`,
+        url: `${ORIGIN}/guides/${post.slug}/`,
         mainEntityOfPage: {
             "@type": "WebPage",
-            "@id": `${ORIGIN}/guides/${post.slug}`,
+            "@id": `${ORIGIN}/guides/${post.slug}/`,
         },
         inLanguage: "he",
         datePublished: post.publishedAt || undefined,
@@ -281,13 +282,13 @@ function buildBreadcrumbJsonLd(post) {
                 "@type": "ListItem",
                 position: 1,
                 name: "מדריכים",
-                item: `${ORIGIN}/guides`,
+                item: `${ORIGIN}/guides/`,
             },
             {
                 "@type": "ListItem",
                 position: 2,
                 name: post.title || "",
-                item: `${ORIGIN}/guides/${post.slug}`,
+                item: `${ORIGIN}/guides/${post.slug}/`,
             },
         ],
     };
@@ -297,12 +298,16 @@ function buildBreadcrumbJsonLd(post) {
 
 export default function GuidePost() {
     const { slug } = useParams();
-    const [post, setPost] = useState(null);
-    const [loading, setLoading] = useState(true);
+    const initialSeed = useInitialDetailData("guides");
+    const hasSeed = !!(initialSeed && initialSeed.slug === slug);
+    const [post, setPost] = useState(() => (hasSeed ? initialSeed : null));
+    const [loading, setLoading] = useState(() => (hasSeed ? false : true));
     const [notFound, setNotFound] = useState(false);
     const [error, setError] = useState(null);
     const [related, setRelated] = useState([]);
     const navigate = useNavigate();
+
+    const skipFirstFetchRef = useRef(hasSeed);
 
     useEffect(() => {
         trackSitePageView();
@@ -310,6 +315,10 @@ export default function GuidePost() {
 
     useEffect(() => {
         if (!slug) return;
+        if (skipFirstFetchRef.current) {
+            skipFirstFetchRef.current = false;
+            return;
+        }
         let cancelled = false;
 
         async function load() {
@@ -362,7 +371,7 @@ export default function GuidePost() {
     /* ── Alias redirect: normalize URL to canonical slug ── */
     useEffect(() => {
         if (post && post.slug && post.slug !== slug) {
-            navigate(`/guides/${post.slug}`, { replace: true });
+            navigate(`/guides/${post.slug}/`, { replace: true });
         }
     }, [post, slug, navigate]);
 
@@ -415,7 +424,7 @@ export default function GuidePost() {
     /* ── SEO ─────────────────────────── */
     const seoTitle = post.seo?.title || post.title || "מדריכים | Cardigo";
     const seoDescription = post.seo?.description || post.excerpt || "";
-    const canonicalUrl = `${ORIGIN}/guides/${post.slug}`;
+    const canonicalUrl = `${ORIGIN}/guides/${post.slug}/`;
     const jsonLdItems = [buildArticleJsonLd(post), buildBreadcrumbJsonLd(post)];
 
     /* ── Render ──────────────────────── */
@@ -528,7 +537,7 @@ export default function GuidePost() {
                                 {related.map((r) => (
                                     <Link
                                         key={r.id}
-                                        to={`/guides/${r.slug}`}
+                                        to={`/guides/${r.slug}/`}
                                         className={styles.relatedItem}
                                     >
                                         <img

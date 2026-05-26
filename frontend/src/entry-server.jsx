@@ -13,6 +13,7 @@ import { AuthProvider } from "./context/AuthContext";
 import { UnreadCountProvider } from "./context/UnreadCountContext";
 import routes from "./app/routes.config";
 import { InitialListingDataProvider } from "./seo/initialListingData";
+import { InitialDetailDataProvider } from "./seo/initialDetailData";
 
 /**
  * Render a target marketing route to an HTML string for static generation.
@@ -51,16 +52,22 @@ export async function renderForRoute(url, options = {}) {
         options && typeof options === "object" && options.initialListingData
             ? options.initialListingData
             : {};
+    const initialDetailData =
+        options && typeof options === "object" && options.initialDetailData
+            ? options.initialDetailData
+            : {};
 
     const html = renderToString(
         <HelmetProvider context={helmetContext}>
             <AuthProvider>
                 <UnreadCountProvider>
                     <InitialListingDataProvider value={initialListingData}>
-                        <StaticRouterProvider
-                            router={router}
-                            context={context}
-                        />
+                        <InitialDetailDataProvider value={initialDetailData}>
+                            <StaticRouterProvider
+                                router={router}
+                                context={context}
+                            />
+                        </InitialDetailDataProvider>
                     </InitialListingDataProvider>
                 </UnreadCountProvider>
             </AuthProvider>
