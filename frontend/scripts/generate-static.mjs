@@ -29,9 +29,9 @@ const DIST_SSR_ENTRY = path.resolve(
 
 const SSG_ROUTES = [
     { url: "/", out: path.join(DIST, "index.html") },
-    { url: "/cards", out: path.join(DIST, "cards", "index.html") },
-    { url: "/pricing", out: path.join(DIST, "pricing", "index.html") },
-    { url: "/contact", out: path.join(DIST, "contact", "index.html") },
+    { url: "/cards/", out: path.join(DIST, "cards", "index.html") },
+    { url: "/pricing/", out: path.join(DIST, "pricing", "index.html") },
+    { url: "/contact/", out: path.join(DIST, "contact", "index.html") },
 ];
 
 // Validate pre-conditions before starting.

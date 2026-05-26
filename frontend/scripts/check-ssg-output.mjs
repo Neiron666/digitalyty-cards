@@ -61,12 +61,20 @@ const ROUTES = [
         sizeMin: 10001,
         sizeMax: null,
         canonicalCount: 1,
-        canonicalValue: "https://cardigo.co.il/cards",
+        canonicalValue: "https://cardigo.co.il/cards/",
         ogUrlCount: 1,
-        ogUrlValue: "https://cardigo.co.il/cards",
+        ogUrlValue: "https://cardigo.co.il/cards/",
         homepageLeakCheck: true,
         jsonLdExpected: null,
         requireHebrew: true,
+        jsonLdMustInclude: [
+            "https://cardigo.co.il/cards/",
+            "https://cardigo.co.il/cards/#faq",
+        ],
+        jsonLdMustNotInclude: [
+            "https://cardigo.co.il/cards#faq",
+            '"https://cardigo.co.il/cards"',
+        ],
     },
     {
         label: "pricing",
@@ -75,12 +83,20 @@ const ROUTES = [
         sizeMin: 10001,
         sizeMax: null,
         canonicalCount: 1,
-        canonicalValue: "https://cardigo.co.il/pricing",
+        canonicalValue: "https://cardigo.co.il/pricing/",
         ogUrlCount: 1,
-        ogUrlValue: "https://cardigo.co.il/pricing",
+        ogUrlValue: "https://cardigo.co.il/pricing/",
         homepageLeakCheck: true,
         jsonLdExpected: null,
         requireHebrew: true,
+        jsonLdMustInclude: [
+            "https://cardigo.co.il/pricing/",
+            "https://cardigo.co.il/pricing/#faq",
+        ],
+        jsonLdMustNotInclude: [
+            "https://cardigo.co.il/pricing#faq",
+            '"https://cardigo.co.il/pricing"',
+        ],
     },
     {
         label: "contact",
@@ -89,12 +105,20 @@ const ROUTES = [
         sizeMin: 10001,
         sizeMax: null,
         canonicalCount: 1,
-        canonicalValue: "https://cardigo.co.il/contact",
+        canonicalValue: "https://cardigo.co.il/contact/",
         ogUrlCount: 1,
-        ogUrlValue: "https://cardigo.co.il/contact",
+        ogUrlValue: "https://cardigo.co.il/contact/",
         homepageLeakCheck: true,
         jsonLdExpected: null,
         requireHebrew: true,
+        jsonLdMustInclude: [
+            "https://cardigo.co.il/contact/",
+            "https://cardigo.co.il/contact/#faq",
+        ],
+        jsonLdMustNotInclude: [
+            "https://cardigo.co.il/contact#faq",
+            '"https://cardigo.co.il/contact"',
+        ],
     },
 ];
 
@@ -274,6 +298,28 @@ for (const route of ROUTES) {
             label,
             `Netlify hidden form missing (data-netlify="true" not found)`,
         );
+    }
+
+    // 11. JSON-LD URL identity guard (trailing-slash canonical policy).
+    if (Array.isArray(route.jsonLdMustInclude)) {
+        for (const needle of route.jsonLdMustInclude) {
+            if (!html.includes(needle)) {
+                fail(
+                    label,
+                    `JSON-LD must include "${needle}" but it is absent`,
+                );
+            }
+        }
+    }
+    if (Array.isArray(route.jsonLdMustNotInclude)) {
+        for (const needle of route.jsonLdMustNotInclude) {
+            if (html.includes(needle)) {
+                fail(
+                    label,
+                    `JSON-LD must NOT include "${needle}" but it is present`,
+                );
+            }
+        }
     }
 }
 

@@ -1926,7 +1926,7 @@ function SeoHelmet({
   robots,
   googleSiteVerification,
   facebookDomainVerification,
-  canonicalUrl,
+  canonicalUrl: canonicalUrl2,
   url,
   image,
   ogType = "website",
@@ -1955,7 +1955,7 @@ function SeoHelmet({
   return /* @__PURE__ */ jsxs(Helmet, { children: [
     title2 ? /* @__PURE__ */ jsx("title", { children: title2 }) : null,
     description ? /* @__PURE__ */ jsx("meta", { name: "description", content: description }) : null,
-    canonicalUrl ? /* @__PURE__ */ jsx("link", { rel: "canonical", href: canonicalUrl }) : null,
+    canonicalUrl2 ? /* @__PURE__ */ jsx("link", { rel: "canonical", href: canonicalUrl2 }) : null,
     robotsNormalized ? /* @__PURE__ */ jsx("meta", { name: "robots", content: robotsNormalized }) : null,
     googleSiteVerificationNormalized ? /* @__PURE__ */ jsx(
       "meta",
@@ -3031,7 +3031,7 @@ const STEPS = [
     alt: "שיתוף כרטיס ביקור דיגיטלי ומעקב אנליטיקס"
   }
 ];
-const ORIGIN$5 = "https://cardigo.co.il";
+const ORIGIN$2 = "https://cardigo.co.il";
 const HOME_FAQ = [
   {
     q: "כמה זמן לוקח ליצור כרטיס ביקור דיגיטלי?",
@@ -3098,8 +3098,8 @@ function buildHomeFaqJsonLd() {
   return {
     "@context": "https://schema.org",
     "@type": "FAQPage",
-    "@id": `${ORIGIN$5}/#faq`,
-    url: `${ORIGIN$5}/`,
+    "@id": `${ORIGIN$2}/#faq`,
+    url: `${ORIGIN$2}/`,
     inLanguage: "he",
     mainEntity: HOME_FAQ.map((item) => ({
       "@type": "Question",
@@ -3115,9 +3115,9 @@ function buildHomeWebSiteJsonLd() {
   return {
     "@context": "https://schema.org",
     "@type": "WebSite",
-    "@id": `${ORIGIN$5}/#website`,
+    "@id": `${ORIGIN$2}/#website`,
     name: "Cardigo",
-    url: `${ORIGIN$5}/`,
+    url: `${ORIGIN$2}/`,
     inLanguage: "he"
   };
 }
@@ -3125,10 +3125,10 @@ function buildHomeOrganizationJsonLd() {
   return {
     "@context": "https://schema.org",
     "@type": "Organization",
-    "@id": `${ORIGIN$5}/#organization`,
+    "@id": `${ORIGIN$2}/#organization`,
     name: "Cardigo",
-    url: `${ORIGIN$5}/`,
-    logo: `${ORIGIN$5}/images/brand-logo/cardigo-logo.png`
+    url: `${ORIGIN$2}/`,
+    logo: `${ORIGIN$2}/images/brand-logo/cardigo-logo.png`
   };
 }
 const HERO_CARDS = [
@@ -3174,9 +3174,9 @@ function Home() {
       {
         title: "כרטיס ביקור דיגיטלי לעסק | Cardigo",
         description: "כרטיס ביקור דיגיטלי לעסק של Cardigo מאפשר ליצור עמוד עסקי מקצועי, לשתף ב-QR, בוואטסאפ ובקישורים ייעודיים, ולעדכן הכול בקלות - עם תבניות, אנליטיקה וכלי שיתוף לעסק שלכם.",
-        canonicalUrl: `${ORIGIN$5}/`,
-        url: `${ORIGIN$5}/`,
-        image: `${ORIGIN$5}${DEFAULT_OG_IMAGE_PATH}`,
+        canonicalUrl: `${ORIGIN$2}/`,
+        url: `${ORIGIN$2}/`,
+        image: `${ORIGIN$2}${DEFAULT_OG_IMAGE_PATH}`,
         imageAlt: "Cardigo – כרטיס ביקור דיגיטלי לעסק",
         jsonLdItems: [
           homeWebSiteJsonLd,
@@ -3716,19 +3716,19 @@ const CARDIGO_SITE_ORIGIN = "https://cardigo.co.il";
 const CARDIGO_OG_IMAGE_URL = `${CARDIGO_SITE_ORIGIN}${DEFAULT_OG_IMAGE_PATH}`;
 const MARKETING_META = Object.freeze({
   cards: Object.freeze({
-    path: "/cards",
+    path: "/cards/",
     title: "דוגמאות לכרטיסי ביקור דיגיטליים | Cardigo",
     description: "דוגמאות ויזואליות לכרטיסי ביקור דיגיטליים בסגנונות שונים - ראו איך Cardigo מציג עסקים, קישורים ודרכי יצירת קשר לפני שיוצרים כרטיס משלכם.",
     imageAlt: "Cardigo – דוגמאות לכרטיסי ביקור דיגיטליים"
   }),
   pricing: Object.freeze({
-    path: "/pricing",
+    path: "/pricing/",
     title: "מחירים לכרטיס ביקור דיגיטלי | Cardigo",
     description: "המחירים של Cardigo לכרטיס ביקור דיגיטלי מקצועי: מסלול חינמי לתמיד, 10 ימי פרימיום לכל משתמש חדש, מסלול חודשי גמיש ומסלול שנתי משתלם לעסקים שרוצים נוכחות דיגיטלית מקצועית.",
     imageAlt: "Cardigo – מחירים לכרטיס ביקור דיגיטלי"
   }),
   contact: Object.freeze({
-    path: "/contact",
+    path: "/contact/",
     title: "צור קשר | Cardigo",
     description: "צרו קשר עם Cardigo לשאלות על כרטיס ביקור דיגיטלי לעסקים - מחירים, התאמה ודרכי התחלה.",
     imageAlt: "Cardigo – צור קשר"
@@ -3748,6 +3748,9 @@ const MARKETING_META = Object.freeze({
 });
 function getMarketingMeta(key) {
   return MARKETING_META[key] || null;
+}
+function buildMarketingUrl(path) {
+  return `${CARDIGO_SITE_ORIGIN}${path}`;
 }
 const heroWrap$8 = "_heroWrap_1ydlx_19";
 const heroCopy$4 = "_heroCopy_1ydlx_31";
@@ -3855,7 +3858,6 @@ const styles$a = {
   brandLink,
   closingActions
 };
-const ORIGIN$4 = "https://cardigo.co.il";
 const EMAIL = "support@cardigo.co.il";
 const PHONE_DISPLAY = "054-581-1900";
 const PHONE_TEL = "tel:+972545811900";
@@ -3893,12 +3895,12 @@ const CONTACT_FAQ = [
     a: "שום דבר מיוחד. אם יש לכם שאלה ספציפית או פרטים על העסק - מצוין, אבל אפשר גם סתם לשאול."
   }
 ];
-function buildContactFaqJsonLd() {
+function buildContactFaqJsonLd(canonicalBase) {
   return {
     "@context": "https://schema.org",
     "@type": "FAQPage",
-    "@id": `${ORIGIN$4}/contact#faq`,
-    url: `${ORIGIN$4}/contact`,
+    "@id": `${canonicalBase}#faq`,
+    url: canonicalBase,
     inLanguage: "he",
     mainEntity: CONTACT_FAQ.map((item) => ({
       "@type": "Question",
@@ -3911,11 +3913,12 @@ function buildContactFaqJsonLd() {
   };
 }
 const meta$4 = getMarketingMeta("contact");
+const canonicalUrl$2 = buildMarketingUrl(meta$4.path);
 function Contact() {
   const [form, setForm] = useState(INITIAL_FORM);
   const [sent, setSent] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const contactFaqJsonLd = buildContactFaqJsonLd();
+  const contactFaqJsonLd = buildContactFaqJsonLd(canonicalUrl$2);
   useEffect(() => {
     trackSitePageView();
   }, []);
@@ -3961,8 +3964,8 @@ function Contact() {
       {
         title: meta$4.title,
         description: meta$4.description,
-        canonicalUrl: `${ORIGIN$4}/contact`,
-        url: `${ORIGIN$4}/contact`,
+        canonicalUrl: canonicalUrl$2,
+        url: canonicalUrl$2,
         image: CARDIGO_OG_IMAGE_URL,
         imageAlt: meta$4.imageAlt,
         jsonLdItems: [contactFaqJsonLd]
@@ -4476,9 +4479,9 @@ const styles$9 = {
 const CONTENT_DISPLAY_POLICY = Object.freeze({
   showPublishedDates: false
 });
-const ORIGIN$3 = "https://cardigo.co.il";
+const ORIGIN$1 = "https://cardigo.co.il";
 const PAGE_LIMIT$1 = 12;
-const BLOG_COVER_FALLBACK = `${ORIGIN$3}/images/blog/fallback/blog-cardigo-bussines-img-fallback.webp`;
+const BLOG_COVER_FALLBACK = `${ORIGIN$1}/images/blog/fallback/blog-cardigo-bussines-img-fallback.webp`;
 const BLOG_FAQ = [
   {
     q: "מה אפשר למצוא בבלוג של Cardigo?",
@@ -4517,8 +4520,8 @@ function buildBlogFaqJsonLd() {
   return {
     "@context": "https://schema.org",
     "@type": "FAQPage",
-    "@id": `${ORIGIN$3}/blog#faq`,
-    url: `${ORIGIN$3}/blog`,
+    "@id": `${ORIGIN$1}/blog#faq`,
+    url: `${ORIGIN$1}/blog`,
     inLanguage: "he",
     mainEntity: BLOG_FAQ.map((item) => ({
       "@type": "Question",
@@ -4597,15 +4600,15 @@ function Blog() {
       });
     }
   }, [loading, effectivePage, totalPages, navigate]);
-  const canonicalUrl = effectivePage <= 1 ? `${ORIGIN$3}/blog` : `${ORIGIN$3}/blog/page/${effectivePage}`;
+  const canonicalUrl2 = effectivePage <= 1 ? `${ORIGIN$1}/blog` : `${ORIGIN$1}/blog/page/${effectivePage}`;
   return /* @__PURE__ */ jsxs("main", { "data-page": "site", children: [
     /* @__PURE__ */ jsx(
       SeoHelmet,
       {
         title: meta$3.title,
         description: meta$3.description,
-        canonicalUrl,
-        url: canonicalUrl,
+        canonicalUrl: canonicalUrl2,
+        url: canonicalUrl2,
         image: CARDIGO_OG_IMAGE_URL,
         imageAlt: meta$3.imageAlt,
         jsonLdItems: effectivePage <= 1 ? [blogFaqJsonLd] : []
@@ -4900,7 +4903,6 @@ const styles$7 = {
   ctaButton,
   faqLink
 };
-const ORIGIN$2 = "https://cardigo.co.il";
 const PRICING_FAQ = [
   {
     q: "מה כולל המסלול החינמי של Cardigo?",
@@ -5124,12 +5126,12 @@ const PAYMENT_FLASH = {
     message: "התשלום לא הושלם. אפשר לנסות שוב."
   }
 };
-function buildPricingFaqJsonLd() {
+function buildPricingFaqJsonLd(canonicalBase) {
   return {
     "@context": "https://schema.org",
     "@type": "FAQPage",
-    "@id": `${ORIGIN$2}/pricing#faq`,
-    url: `${ORIGIN$2}/pricing`,
+    "@id": `${canonicalBase}#faq`,
+    url: canonicalBase,
     inLanguage: "he",
     mainEntity: PRICING_FAQ.filter(
       (item) => typeof item.a === "string"
@@ -5143,8 +5145,9 @@ function buildPricingFaqJsonLd() {
     }))
   };
 }
-const pricingFaqJsonLd = buildPricingFaqJsonLd();
 const meta$2 = getMarketingMeta("pricing");
+const canonicalUrl$1 = buildMarketingUrl(meta$2.path);
+const pricingFaqJsonLd = buildPricingFaqJsonLd(canonicalUrl$1);
 function Pricing() {
   const [searchParams, setSearchParams] = useSearchParams();
   const payment = searchParams.get("payment");
@@ -5178,8 +5181,8 @@ function Pricing() {
       {
         title: meta$2.title,
         description: meta$2.description,
-        canonicalUrl: `${ORIGIN$2}/pricing`,
-        url: `${ORIGIN$2}/pricing`,
+        canonicalUrl: canonicalUrl$1,
+        url: canonicalUrl$1,
         image: CARDIGO_OG_IMAGE_URL,
         imageAlt: meta$2.imageAlt,
         jsonLdItems: [pricingFaqJsonLd]
@@ -5535,9 +5538,9 @@ const styles$6 = {
   pageInfo,
   seeExamples
 };
-const ORIGIN$1 = "https://cardigo.co.il";
+const ORIGIN = "https://cardigo.co.il";
 const PAGE_LIMIT = 12;
-const GUIDE_COVER_FALLBACK = `${ORIGIN$1}/images/guides/fallback/hero-cardigo-bussines-img-fallback.webp`;
+const GUIDE_COVER_FALLBACK = `${ORIGIN}/images/guides/fallback/hero-cardigo-bussines-img-fallback.webp`;
 const GUIDES_FAQ = [
   {
     q: "מה אפשר למצוא במדריכים של Cardigo?",
@@ -5568,8 +5571,8 @@ function buildGuidesFaqJsonLd() {
   return {
     "@context": "https://schema.org",
     "@type": "FAQPage",
-    "@id": `${ORIGIN$1}/guides#faq`,
-    url: `${ORIGIN$1}/guides`,
+    "@id": `${ORIGIN}/guides#faq`,
+    url: `${ORIGIN}/guides`,
     inLanguage: "he",
     mainEntity: GUIDES_FAQ.map((item) => ({
       "@type": "Question",
@@ -5650,15 +5653,15 @@ function Guides() {
       );
     }
   }, [loading, effectivePage, totalPages, navigate]);
-  const canonicalUrl = effectivePage <= 1 ? `${ORIGIN$1}/guides` : `${ORIGIN$1}/guides/page/${effectivePage}`;
+  const canonicalUrl2 = effectivePage <= 1 ? `${ORIGIN}/guides` : `${ORIGIN}/guides/page/${effectivePage}`;
   return /* @__PURE__ */ jsxs("main", { "data-page": "site", children: [
     /* @__PURE__ */ jsx(
       SeoHelmet,
       {
         title: meta$1.title,
         description: meta$1.description,
-        canonicalUrl,
-        url: canonicalUrl,
+        canonicalUrl: canonicalUrl2,
+        url: canonicalUrl2,
         image: CARDIGO_OG_IMAGE_URL,
         imageAlt: meta$1.imageAlt,
         jsonLdItems: effectivePage <= 1 ? [guidesFaqJsonLd] : []
@@ -5870,7 +5873,6 @@ const styles$5 = {
   featureTitle,
   featureText
 };
-const ORIGIN = "https://cardigo.co.il";
 const SAMPLE_IMG = "/images/sample-card-page";
 const SECTION6_IMG = "/images/home-page/main-sections/Section-6";
 const FEATURES_IMG = "/images/sample-card-page/cards-features";
@@ -6019,12 +6021,12 @@ const CARDS_FAQ = [
     a: "מבחינת מבנה ועיצוב - הן זהות. ההבדל היחיד הוא שהתוכן כאן להמחשה, ובכרטיס אמיתי תוסיפו את הפרטים שלכם."
   }
 ];
-function buildCardsFaqJsonLd() {
+function buildCardsFaqJsonLd(canonicalBase) {
   return {
     "@context": "https://schema.org",
     "@type": "FAQPage",
-    "@id": `${ORIGIN}/cards#faq`,
-    url: `${ORIGIN}/cards`,
+    "@id": `${canonicalBase}#faq`,
+    url: canonicalBase,
     inLanguage: "he",
     mainEntity: CARDS_FAQ.map((item) => ({
       "@type": "Question",
@@ -6036,8 +6038,9 @@ function buildCardsFaqJsonLd() {
     }))
   };
 }
-const cardsFaqJsonLd = buildCardsFaqJsonLd();
 const meta = getMarketingMeta("cards");
+const canonicalUrl = buildMarketingUrl(meta.path);
+const cardsFaqJsonLd = buildCardsFaqJsonLd(canonicalUrl);
 function Cards() {
   useEffect(() => {
     trackSitePageView();
@@ -6048,8 +6051,8 @@ function Cards() {
       {
         title: meta.title,
         description: meta.description,
-        canonicalUrl: `${ORIGIN}/cards`,
-        url: `${ORIGIN}/cards`,
+        canonicalUrl,
+        url: canonicalUrl,
         image: CARDIGO_OG_IMAGE_URL,
         imageAlt: meta.imageAlt,
         jsonLdItems: [cardsFaqJsonLd]

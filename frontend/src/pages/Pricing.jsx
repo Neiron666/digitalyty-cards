@@ -6,6 +6,7 @@ import SeoHelmet from "../components/seo/SeoHelmet";
 import {
     CARDIGO_OG_IMAGE_URL,
     getMarketingMeta,
+    buildMarketingUrl,
 } from "../seo/marketingMeta.config.js";
 import FlashBanner from "../components/ui/FlashBanner/FlashBanner";
 import { trackSitePageView } from "../services/siteAnalytics.client";
@@ -281,12 +282,12 @@ const PAYMENT_FLASH = {
     },
 };
 
-function buildPricingFaqJsonLd() {
+function buildPricingFaqJsonLd(canonicalBase) {
     return {
         "@context": "https://schema.org",
         "@type": "FAQPage",
-        "@id": `${ORIGIN}/pricing#faq`,
-        url: `${ORIGIN}/pricing`,
+        "@id": `${canonicalBase}#faq`,
+        url: canonicalBase,
         inLanguage: "he",
         mainEntity: PRICING_FAQ.filter(
             (item) => typeof item.a === "string",
@@ -301,8 +302,9 @@ function buildPricingFaqJsonLd() {
     };
 }
 
-const pricingFaqJsonLd = buildPricingFaqJsonLd();
 const meta = getMarketingMeta("pricing");
+const canonicalUrl = buildMarketingUrl(meta.path);
+const pricingFaqJsonLd = buildPricingFaqJsonLd(canonicalUrl);
 
 export default function Pricing() {
     const [searchParams, setSearchParams] = useSearchParams();
@@ -341,8 +343,8 @@ export default function Pricing() {
             <SeoHelmet
                 title={meta.title}
                 description={meta.description}
-                canonicalUrl={`${ORIGIN}/pricing`}
-                url={`${ORIGIN}/pricing`}
+                canonicalUrl={canonicalUrl}
+                url={canonicalUrl}
                 image={CARDIGO_OG_IMAGE_URL}
                 imageAlt={meta.imageAlt}
                 jsonLdItems={[pricingFaqJsonLd]}

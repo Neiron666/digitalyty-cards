@@ -12,21 +12,21 @@ export const CARDIGO_OG_IMAGE_URL = `${CARDIGO_SITE_ORIGIN}${DEFAULT_OG_IMAGE_PA
 
 export const MARKETING_META = Object.freeze({
     cards: Object.freeze({
-        path: "/cards",
+        path: "/cards/",
         title: "דוגמאות לכרטיסי ביקור דיגיטליים | Cardigo",
         description:
             "דוגמאות ויזואליות לכרטיסי ביקור דיגיטליים בסגנונות שונים - ראו איך Cardigo מציג עסקים, קישורים ודרכי יצירת קשר לפני שיוצרים כרטיס משלכם.",
         imageAlt: "Cardigo \u2013 דוגמאות לכרטיסי ביקור דיגיטליים",
     }),
     pricing: Object.freeze({
-        path: "/pricing",
+        path: "/pricing/",
         title: "מחירים לכרטיס ביקור דיגיטלי | Cardigo",
         description:
             "המחירים של Cardigo לכרטיס ביקור דיגיטלי מקצועי: מסלול חינמי לתמיד, 10 ימי פרימיום לכל משתמש חדש, מסלול חודשי גמיש ומסלול שנתי משתלם לעסקים שרוצים נוכחות דיגיטלית מקצועית.",
         imageAlt: "Cardigo \u2013 מחירים לכרטיס ביקור דיגיטלי",
     }),
     contact: Object.freeze({
-        path: "/contact",
+        path: "/contact/",
         title: "צור קשר | Cardigo",
         description:
             "צרו קשר עם Cardigo לשאלות על כרטיס ביקור דיגיטלי לעסקים - מחירים, התאמה ודרכי התחלה.",

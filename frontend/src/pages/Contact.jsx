@@ -5,6 +5,7 @@ import SeoHelmet from "../components/seo/SeoHelmet";
 import {
     CARDIGO_OG_IMAGE_URL,
     getMarketingMeta,
+    buildMarketingUrl,
 } from "../seo/marketingMeta.config.js";
 import {
     trackSitePageView,
@@ -56,12 +57,12 @@ const CONTACT_FAQ = [
     },
 ];
 
-function buildContactFaqJsonLd() {
+function buildContactFaqJsonLd(canonicalBase) {
     return {
         "@context": "https://schema.org",
         "@type": "FAQPage",
-        "@id": `${ORIGIN}/contact#faq`,
-        url: `${ORIGIN}/contact`,
+        "@id": `${canonicalBase}#faq`,
+        url: canonicalBase,
         inLanguage: "he",
         mainEntity: CONTACT_FAQ.map((item) => ({
             "@type": "Question",
@@ -75,13 +76,14 @@ function buildContactFaqJsonLd() {
 }
 
 const meta = getMarketingMeta("contact");
+const canonicalUrl = buildMarketingUrl(meta.path);
 
 export default function Contact() {
     const [form, setForm] = useState(INITIAL_FORM);
     const [sent, setSent] = useState(false);
     const [submitting, setSubmitting] = useState(false);
 
-    const contactFaqJsonLd = buildContactFaqJsonLd();
+    const contactFaqJsonLd = buildContactFaqJsonLd(canonicalUrl);
 
     useEffect(() => {
         trackSitePageView();
@@ -131,8 +133,8 @@ export default function Contact() {
             <SeoHelmet
                 title={meta.title}
                 description={meta.description}
-                canonicalUrl={`${ORIGIN}/contact`}
-                url={`${ORIGIN}/contact`}
+                canonicalUrl={canonicalUrl}
+                url={canonicalUrl}
                 image={CARDIGO_OG_IMAGE_URL}
                 imageAlt={meta.imageAlt}
                 jsonLdItems={[contactFaqJsonLd]}

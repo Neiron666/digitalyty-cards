@@ -5,6 +5,7 @@ import SeoHelmet from "../components/seo/SeoHelmet";
 import {
     CARDIGO_OG_IMAGE_URL,
     getMarketingMeta,
+    buildMarketingUrl,
 } from "../seo/marketingMeta.config.js";
 import {
     trackSitePageView,
@@ -170,12 +171,12 @@ const CARDS_FAQ = [
     },
 ];
 
-function buildCardsFaqJsonLd() {
+function buildCardsFaqJsonLd(canonicalBase) {
     return {
         "@context": "https://schema.org",
         "@type": "FAQPage",
-        "@id": `${ORIGIN}/cards#faq`,
-        url: `${ORIGIN}/cards`,
+        "@id": `${canonicalBase}#faq`,
+        url: canonicalBase,
         inLanguage: "he",
         mainEntity: CARDS_FAQ.map((item) => ({
             "@type": "Question",
@@ -188,8 +189,9 @@ function buildCardsFaqJsonLd() {
     };
 }
 
-const cardsFaqJsonLd = buildCardsFaqJsonLd();
 const meta = getMarketingMeta("cards");
+const canonicalUrl = buildMarketingUrl(meta.path);
+const cardsFaqJsonLd = buildCardsFaqJsonLd(canonicalUrl);
 
 export default function Cards() {
     useEffect(() => {
@@ -201,8 +203,8 @@ export default function Cards() {
             <SeoHelmet
                 title={meta.title}
                 description={meta.description}
-                canonicalUrl={`${ORIGIN}/cards`}
-                url={`${ORIGIN}/cards`}
+                canonicalUrl={canonicalUrl}
+                url={canonicalUrl}
                 image={CARDIGO_OG_IMAGE_URL}
                 imageAlt={meta.imageAlt}
                 jsonLdItems={[cardsFaqJsonLd]}

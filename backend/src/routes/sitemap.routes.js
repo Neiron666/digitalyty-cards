@@ -19,10 +19,10 @@ const router = Router();
 const STATIC_PATHS = [
     { path: "/", lastmod: "2026-05-03" },
     { path: "/blog", lastmod: "2026-05-03" },
-    { path: "/pricing", lastmod: "2026-05-03" },
-    { path: "/contact", lastmod: "2026-05-03" },
+    { path: "/pricing/", lastmod: "2026-05-03" },
+    { path: "/contact/", lastmod: "2026-05-03" },
     { path: "/guides", lastmod: "2026-05-03" },
-    { path: "/cards", lastmod: "2026-05-03" },
+    { path: "/cards/", lastmod: "2026-05-03" },
     { path: "/privacy", lastmod: "2026-05-03" },
     { path: "/terms", lastmod: "2026-05-03" },
     { path: "/accessibility-statement", lastmod: "2026-05-03" },
