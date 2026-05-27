@@ -105,9 +105,7 @@ function safePositiveInt(n) {
 }
 
 function validateLang(lang) {
-    return typeof lang === "string" && LANG_RE.test(lang)
-        ? lang
-        : DEFAULT_LANG;
+    return typeof lang === "string" && LANG_RE.test(lang) ? lang : DEFAULT_LANG;
 }
 
 function validateDir(dir) {
@@ -211,9 +209,7 @@ function renderHead(seo, h1) {
     );
     lines.push('<meta name="robots" content="' + escapeAttr(robots) + '">');
     lines.push(
-        '<link rel="canonical" href="' +
-            escapeAttr(seo.canonicalUrl) +
-            '">',
+        '<link rel="canonical" href="' + escapeAttr(seo.canonicalUrl) + '">',
     );
     lines.push(
         '<meta property="og:title" content="' + escapeAttr(title) + '">',
@@ -242,9 +238,7 @@ function renderHead(seo, h1) {
         }
     }
     lines.push(
-        '<meta name="twitter:card" content="' +
-            escapeAttr(twitterCard) +
-            '">',
+        '<meta name="twitter:card" content="' + escapeAttr(twitterCard) + '">',
     );
     lines.push(
         '<meta name="twitter:title" content="' + escapeAttr(title) + '">',
@@ -256,9 +250,7 @@ function renderHead(seo, h1) {
     );
     if (ogImage) {
         lines.push(
-            '<meta name="twitter:image" content="' +
-                escapeAttr(ogImage) +
-                '">',
+            '<meta name="twitter:image" content="' + escapeAttr(ogImage) + '">',
         );
     }
     for (const payload of serializeJsonLd(seo.jsonLdItems)) {
@@ -273,7 +265,9 @@ function renderHead(seo, h1) {
 /* ── BODY sections ─────────────────────────────────────────────── */
 
 function renderAbout(render) {
-    const text = nonEmptyString(render.aboutText) ? render.aboutText.trim() : "";
+    const text = nonEmptyString(render.aboutText)
+        ? render.aboutText.trim()
+        : "";
     const paragraphs = Array.isArray(render.aboutParagraphs)
         ? render.aboutParagraphs.filter((p) => nonEmptyString(p))
         : [];
@@ -306,9 +300,7 @@ function renderContactLinks(render) {
         const safe = safeHref(c.whatsapp.trim());
         if (safe && safe.startsWith("https:")) {
             items.push(
-                '<li><a href="' +
-                    escapeAttr(safe) +
-                    '">WhatsApp</a></li>',
+                '<li><a href="' + escapeAttr(safe) + '">WhatsApp</a></li>',
             );
         }
     }
@@ -357,9 +349,7 @@ function renderServices(render) {
         items.push("<article>" + parts.join("\n") + "</article>");
     }
     if (!items.length) return "";
-    return (
-        "<section><h2>שירותים</h2>\n" + items.join("\n") + "\n</section>"
-    );
+    return "<section><h2>שירותים</h2>\n" + items.join("\n") + "\n</section>";
 }
 
 function renderFaq(render) {
@@ -425,11 +415,7 @@ function renderGallery(render) {
         if (!src) continue;
         const alt = typeof g.alt === "string" ? g.alt : "";
         const parts = [
-            '<img src="' +
-                escapeAttr(src) +
-                '" alt="' +
-                escapeAttr(alt) +
-                '"',
+            '<img src="' + escapeAttr(src) + '" alt="' + escapeAttr(alt) + '"',
         ];
         const w = safePositiveInt(g.width);
         const h = safePositiveInt(g.height);
@@ -438,9 +424,7 @@ function renderGallery(render) {
         items.push(parts.join(" ") + ">");
     }
     if (!items.length) return "";
-    return (
-        "<section><h2>גלריה</h2>\n" + items.join("\n") + "\n</section>"
-    );
+    return "<section><h2>גלריה</h2>\n" + items.join("\n") + "\n</section>";
 }
 
 function renderSocialLinks(render) {

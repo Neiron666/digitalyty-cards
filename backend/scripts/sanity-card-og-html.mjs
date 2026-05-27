@@ -31,9 +31,7 @@ function assertThrowsTypeError(fn, label) {
             console.log("PASS  " + label + " — TypeError: " + e.message);
         } else {
             failed++;
-            console.log(
-                "FAIL  " + label + " — wrong error: " + (e && e.name),
-            );
+            console.log("FAIL  " + label + " — wrong error: " + (e && e.name));
         }
     }
 }
@@ -208,7 +206,10 @@ function baseRender(over) {
     assert(!/ftp:/i.test(out), "F3 no ftp: link");
     // Use precise attribute regexes: viewport meta legitimately contains
     // "width=device-width" but never width="..." with quote+digit.
-    assert(!/\swidth="/.test(out), "F3 no width= attribute (invalid 0 dropped)");
+    assert(
+        !/\swidth="/.test(out),
+        "F3 no width= attribute (invalid 0 dropped)",
+    );
     assert(
         !/\sheight="/.test(out),
         "F3 no height= attribute (invalid -5 dropped)",
@@ -310,10 +311,7 @@ function baseRender(over) {
         seo: baseSeo(),
         render: allClosed,
     });
-    assert(
-        !outAllClosed.includes("שעות פעילות"),
-        "F7 all-closed absent",
-    );
+    assert(!outAllClosed.includes("שעות פעילות"), "F7 all-closed absent");
 
     const outOpen = renderCardOgHtml({ seo: baseSeo(), render: baseRender() });
     assert(outOpen.includes("שעות פעילות"), "F7 mon open: section present");

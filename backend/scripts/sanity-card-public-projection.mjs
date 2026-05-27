@@ -228,11 +228,17 @@ expectThrow(
         ],
     };
     const out = toCardPublicRenderDTO(dto, CTX);
-    assert(out.gallery.length === 1, "F7 gallery length === 1 (no-url dropped)");
+    assert(
+        out.gallery.length === 1,
+        "F7 gallery length === 1 (no-url dropped)",
+    );
     const g0 = out.gallery[0];
     assert(g0.url === "https://cdn.example.com/i1.jpg", "F7 gallery[0].url");
     assert(g0.alt === "one", "F7 gallery[0].alt");
-    assert(g0.width === 800 && g0.height === 600, "F7 gallery[0] w/h preserved");
+    assert(
+        g0.width === 800 && g0.height === 600,
+        "F7 gallery[0] w/h preserved",
+    );
     for (const k of [
         "storagePath",
         "bucket",
@@ -342,7 +348,10 @@ expectThrow(
                 fri: { open: false, intervals: [] },
                 sat: { open: false, intervals: [] },
                 // Unexpected day key must not appear in projection.
-                holiday: { open: true, intervals: [{ start: "10:00", end: "12:00" }] },
+                holiday: {
+                    open: true,
+                    intervals: [{ start: "10:00", end: "12:00" }],
+                },
             },
         },
     };
@@ -367,7 +376,10 @@ expectThrow(
     // Week contains exactly the 7 weekday keys.
     const weekKeys = Object.keys(bh.week);
     assert(weekKeys.length === 7, "F10 week has exactly 7 day keys");
-    assert(!weekKeys.includes("holiday"), "F10 week excludes unexpected 'holiday'");
+    assert(
+        !weekKeys.includes("holiday"),
+        "F10 week excludes unexpected 'holiday'",
+    );
     for (const d of ["sun", "mon", "tue", "wed", "thu", "fri", "sat"]) {
         assert(weekKeys.includes(d), "F10 week has key " + d);
     }
