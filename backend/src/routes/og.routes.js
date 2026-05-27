@@ -11,6 +11,12 @@ import { getSiteUrl } from "../utils/siteUrl.util.js";
 import { getPersonalOrgId } from "../utils/personalOrg.util.js";
 import { getPublicUrlForPath } from "../services/supabaseStorage.js";
 import SlugRedirect from "../models/SlugRedirect.model.js";
+import { toCardDTO } from "../utils/cardDTO.js";
+import {
+    toCardPublicSeoDTO,
+    toCardPublicRenderDTO,
+} from "../utils/cardPublicProjection.util.js";
+import { renderCardOgHtml } from "../services/cardOgHtml.service.js";
 
 // Canonical Cardigo OG fallback image — matches seoConstants.js and marketingMeta.config.js SSoT.
 // Keep in sync manually if the path ever changes; do NOT import from frontend modules.
@@ -475,48 +481,21 @@ router.get("/og/card/:slug", async (req, res) => {
     const robotsValue = platformForcedNoindex
         ? "noindex"
         : String(card.seo?.robots || "").trim();
-    const robotsMeta = robotsValue
-        ? `    <meta name="robots" content="${escapeHtml(robotsValue)}" />`
-        : "";
     // Card-route canonical is always self publicUrl.
     // seo.canonicalUrl is ignored: same-origin and same-domain cross-card canonicals
     // are both forbidden — the only valid canonical for a card route is the card's own URL.
-    const canonicalUrl = publicUrl;
 
-    const { title, description, image, imageMetaHtml } = buildCardOgMetadata(
-        card,
+    const dto = toCardDTO(card, now, { includePrivate: false, org: null });
+    const dtoForProjection = {
+        ...dto,
+        seo: { ...(dto.seo || {}), robots: robotsValue },
+    };
+    const seo = toCardPublicSeoDTO(dtoForProjection, { siteUrl, publicUrl });
+    const render = toCardPublicRenderDTO(dtoForProjection, {
         siteUrl,
-    );
-
-    const html = `<!doctype html>
-<html lang="he" dir="rtl">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-
-    <title>${escapeHtml(title)}</title>
-    <meta name="description" content="${escapeHtml(description)}" />
-    <link rel="canonical" href="${escapeHtml(canonicalUrl)}" />
-${robotsMeta ? robotsMeta + "\n" : ""}
-    <meta property="og:type" content="website" />
-    <meta property="og:site_name" content="Cardigo" />
-    <meta property="og:locale" content="he_IL" />
-    <meta property="og:title" content="${escapeHtml(title)}" />
-    <meta property="og:description" content="${escapeHtml(description)}" />
-${imageMetaHtml}
-    <meta property="og:url" content="${escapeHtml(publicUrl)}" />
-
-    <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="${escapeHtml(title)}" />
-    <meta name="twitter:description" content="${escapeHtml(description)}" />
-    <meta name="twitter:image" content="${escapeHtml(image)}" />
-
-    <meta http-equiv="refresh" content="0; url=${escapeHtml(publicUrl)}" />
-  </head>
-  <body>
-    <a href="${escapeHtml(publicUrl)}">${escapeHtml(publicUrl)}</a>
-  </body>
-</html>`;
+        publicUrl,
+    });
+    const html = renderCardOgHtml({ seo, render, lang: "he", dir: "rtl" });
 
     res.setHeader("Content-Type", "text/html; charset=utf-8");
     res.send(html);
@@ -594,48 +573,21 @@ router.get("/og/c/:orgSlug/:slug", async (req, res) => {
     const robotsValue = platformForcedNoindex
         ? "noindex"
         : String(card.seo?.robots || "").trim();
-    const robotsMeta = robotsValue
-        ? `    <meta name="robots" content="${escapeHtml(robotsValue)}" />`
-        : "";
     // Card-route canonical is always self publicUrl.
     // seo.canonicalUrl is ignored: same-origin and same-domain cross-card canonicals
     // are both forbidden — the only valid canonical for a card route is the card's own URL.
-    const canonicalUrl = publicUrl;
 
-    const { title, description, image, imageMetaHtml } = buildCardOgMetadata(
-        card,
+    const dto = toCardDTO(card, now, { includePrivate: false, org });
+    const dtoForProjection = {
+        ...dto,
+        seo: { ...(dto.seo || {}), robots: robotsValue },
+    };
+    const seo = toCardPublicSeoDTO(dtoForProjection, { siteUrl, publicUrl });
+    const render = toCardPublicRenderDTO(dtoForProjection, {
         siteUrl,
-    );
-
-    const html = `<!doctype html>
-<html lang="he" dir="rtl">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-
-    <title>${escapeHtml(title)}</title>
-    <meta name="description" content="${escapeHtml(description)}" />
-    <link rel="canonical" href="${escapeHtml(canonicalUrl)}" />
-${robotsMeta ? robotsMeta + "\n" : ""}
-    <meta property="og:type" content="website" />
-    <meta property="og:site_name" content="Cardigo" />
-    <meta property="og:locale" content="he_IL" />
-    <meta property="og:title" content="${escapeHtml(title)}" />
-    <meta property="og:description" content="${escapeHtml(description)}" />
-${imageMetaHtml}
-    <meta property="og:url" content="${escapeHtml(publicUrl)}" />
-
-    <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="${escapeHtml(title)}" />
-    <meta name="twitter:description" content="${escapeHtml(description)}" />
-    <meta name="twitter:image" content="${escapeHtml(image)}" />
-
-    <meta http-equiv="refresh" content="0; url=${escapeHtml(publicUrl)}" />
-  </head>
-  <body>
-    <a href="${escapeHtml(publicUrl)}">${escapeHtml(publicUrl)}</a>
-  </body>
-</html>`;
+        publicUrl,
+    });
+    const html = renderCardOgHtml({ seo, render, lang: "he", dir: "rtl" });
 
     res.setHeader("Content-Type", "text/html; charset=utf-8");
     res.send(html);
