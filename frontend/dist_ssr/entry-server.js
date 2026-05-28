@@ -3031,7 +3031,7 @@ const STEPS = [
     alt: "שיתוף כרטיס ביקור דיגיטלי ומעקב אנליטיקס"
   }
 ];
-const ORIGIN$4 = "https://cardigo.co.il";
+const ORIGIN$5 = "https://cardigo.co.il";
 const HOME_FAQ = [
   {
     q: "כמה זמן לוקח ליצור כרטיס ביקור דיגיטלי?",
@@ -3098,8 +3098,8 @@ function buildHomeFaqJsonLd() {
   return {
     "@context": "https://schema.org",
     "@type": "FAQPage",
-    "@id": `${ORIGIN$4}/#faq`,
-    url: `${ORIGIN$4}/`,
+    "@id": `${ORIGIN$5}/#faq`,
+    url: `${ORIGIN$5}/`,
     inLanguage: "he",
     mainEntity: HOME_FAQ.map((item) => ({
       "@type": "Question",
@@ -3115,9 +3115,9 @@ function buildHomeWebSiteJsonLd() {
   return {
     "@context": "https://schema.org",
     "@type": "WebSite",
-    "@id": `${ORIGIN$4}/#website`,
+    "@id": `${ORIGIN$5}/#website`,
     name: "Cardigo",
-    url: `${ORIGIN$4}/`,
+    url: `${ORIGIN$5}/`,
     inLanguage: "he"
   };
 }
@@ -3125,10 +3125,10 @@ function buildHomeOrganizationJsonLd() {
   return {
     "@context": "https://schema.org",
     "@type": "Organization",
-    "@id": `${ORIGIN$4}/#organization`,
+    "@id": `${ORIGIN$5}/#organization`,
     name: "Cardigo",
-    url: `${ORIGIN$4}/`,
-    logo: `${ORIGIN$4}/images/brand-logo/cardigo-logo.png`
+    url: `${ORIGIN$5}/`,
+    logo: `${ORIGIN$5}/images/brand-logo/cardigo-logo.png`
   };
 }
 const HERO_CARDS = [
@@ -3174,9 +3174,9 @@ function Home() {
       {
         title: "כרטיס ביקור דיגיטלי לעסק | Cardigo",
         description: "כרטיס ביקור דיגיטלי לעסק של Cardigo מאפשר ליצור עמוד עסקי מקצועי, לשתף ב-QR, בוואטסאפ ובקישורים ייעודיים, ולעדכן הכול בקלות - עם תבניות, אנליטיקה וכלי שיתוף לעסק שלכם.",
-        canonicalUrl: `${ORIGIN$4}/`,
-        url: `${ORIGIN$4}/`,
-        image: `${ORIGIN$4}${DEFAULT_OG_IMAGE_PATH}`,
+        canonicalUrl: `${ORIGIN$5}/`,
+        url: `${ORIGIN$5}/`,
+        image: `${ORIGIN$5}${DEFAULT_OG_IMAGE_PATH}`,
         imageAlt: "Cardigo – כרטיס ביקור דיגיטלי לעסק",
         jsonLdItems: [
           homeWebSiteJsonLd,
@@ -4491,6 +4491,137 @@ const styles$b = {
 const CONTENT_DISPLAY_POLICY = Object.freeze({
   showPublishedDates: false
 });
+const __vite_import_meta_env__ = { "BASE_URL": "/", "DEV": false, "MODE": "production", "PROD": true, "SSR": true, "VITE_GUIDE_URL_DESKTOP": "https://www.youtube-nocookie.com/embed/fKVtDiv8_os", "VITE_GUIDE_URL_MOBILE": "https://www.youtube-nocookie.com/embed/FEKzClnuzto", "VITE_PUBLIC_ORIGIN": "https://cardigo.co.il", "VITE_SEO_DEBUG": "" };
+const ORIGIN$4 = typeof import.meta !== "undefined" && __vite_import_meta_env__ && "https://cardigo.co.il" || "https://cardigo.co.il";
+const CANONICAL_ORIGIN = (() => {
+  try {
+    return new URL(ORIGIN$4).origin;
+  } catch {
+    return "https://cardigo.co.il";
+  }
+})();
+const MD_LINK_RE = /\[([^\[\]]+)\]\(([^()\s]+)\)/g;
+const BARE_URL_RE = /https?:\/\/[^\s<>\[\]"']+/g;
+const TRAILING_PUNCT_RE = /[.,;:!?]+$/;
+function textToParagraphs(text2) {
+  if (!text2) return [];
+  return text2.split(/\n\s*\n|\n/).map((s) => s.trim()).filter(Boolean);
+}
+function validateLinkUrl(raw) {
+  if (!raw || typeof raw !== "string") return null;
+  const trimmed = raw.trim();
+  if (!trimmed) return null;
+  if (trimmed[0] === "/") {
+    if (trimmed[1] === "/") return null;
+    return { href: trimmed, isInternal: true };
+  }
+  let parsed;
+  try {
+    parsed = new URL(trimmed);
+  } catch {
+    return null;
+  }
+  if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+    return null;
+  }
+  const currentOrigin = typeof window !== "undefined" ? window.location.origin : "";
+  const isInternal = parsed.origin === CANONICAL_ORIGIN || currentOrigin && parsed.origin === currentOrigin;
+  return { href: trimmed, isInternal };
+}
+function renderLinkedText(text2) {
+  if (!text2) return [text2];
+  const parts = [];
+  let cursor = 0;
+  let keyIdx = 0;
+  let match;
+  MD_LINK_RE.lastIndex = 0;
+  while ((match = MD_LINK_RE.exec(text2)) !== null) {
+    const [full, anchorText, rawUrl] = match;
+    const idx = match.index;
+    if (idx > cursor) {
+      parts.push({ type: "text", value: text2.slice(cursor, idx) });
+    }
+    const linkInfo = validateLinkUrl(rawUrl);
+    if (linkInfo) {
+      parts.push({
+        type: "link",
+        href: linkInfo.href,
+        isInternal: linkInfo.isInternal,
+        display: anchorText
+      });
+    } else {
+      parts.push({ type: "text", value: full });
+    }
+    cursor = idx + full.length;
+  }
+  if (cursor < text2.length) {
+    parts.push({ type: "text", value: text2.slice(cursor) });
+  }
+  const final = [];
+  for (const part of parts) {
+    if (part.type === "link") {
+      final.push(part);
+      continue;
+    }
+    const segment = part.value;
+    let sCursor = 0;
+    BARE_URL_RE.lastIndex = 0;
+    let urlMatch;
+    while ((urlMatch = BARE_URL_RE.exec(segment)) !== null) {
+      const rawBare = urlMatch[0];
+      const sIdx = urlMatch.index;
+      if (sIdx > sCursor) {
+        final.push({
+          type: "text",
+          value: segment.slice(sCursor, sIdx)
+        });
+      }
+      const urlToValidate = rawBare.replace(TRAILING_PUNCT_RE, "") || rawBare;
+      const trailingChars = rawBare.slice(urlToValidate.length);
+      const linkInfo = validateLinkUrl(urlToValidate);
+      if (linkInfo) {
+        final.push({
+          type: "link",
+          href: linkInfo.href,
+          isInternal: linkInfo.isInternal,
+          display: urlToValidate
+        });
+        if (trailingChars) {
+          final.push({ type: "text", value: trailingChars });
+        }
+      } else {
+        final.push({ type: "text", value: rawBare });
+      }
+      sCursor = sIdx + rawBare.length;
+    }
+    if (sCursor < segment.length) {
+      final.push({ type: "text", value: segment.slice(sCursor) });
+    }
+  }
+  return final.map((node) => {
+    if (node.type === "text") return node.value;
+    const key = `lt-${keyIdx++}`;
+    if (node.isInternal) {
+      return /* @__PURE__ */ jsx("a", { href: node.href, children: node.display }, key);
+    }
+    return /* @__PURE__ */ jsx(
+      "a",
+      {
+        href: node.href,
+        target: "_blank",
+        rel: "noopener noreferrer",
+        children: node.display
+      },
+      key
+    );
+  });
+}
+const META_MD_LINK_RE = /\[([^\[\]]+)\]\(([^()\s]+)\)/g;
+function markdownLinksToPlainText(text2) {
+  if (typeof text2 !== "string" || text2.length === 0) return "";
+  META_MD_LINK_RE.lastIndex = 0;
+  return text2.replace(META_MD_LINK_RE, (_full, anchor) => anchor);
+}
 const ORIGIN$3 = "https://cardigo.co.il";
 const PAGE_LIMIT$1 = 12;
 const BLOG_COVER_FALLBACK = `${ORIGIN$3}/images/blog/fallback/blog-cardigo-bussines-img-fallback.webp`;
@@ -4691,7 +4822,7 @@ function Blog() {
             }
           ),
           /* @__PURE__ */ jsx("h3", { className: styles$b.cardTitle, children: /* @__PURE__ */ jsx(Link, { to: `/blog/${post.slug}/`, children: post.title }) }),
-          post.excerpt && /* @__PURE__ */ jsx("p", { className: styles$b.cardExcerpt, children: post.excerpt }),
+          post.excerpt && /* @__PURE__ */ jsx("p", { className: styles$b.cardExcerpt, children: renderLinkedText(post.excerpt) }),
           /* @__PURE__ */ jsx(
             Link,
             {
@@ -5757,7 +5888,7 @@ function Guides() {
             }
           ),
           /* @__PURE__ */ jsx("h3", { className: styles$8.cardTitle, children: /* @__PURE__ */ jsx(Link, { to: `/guides/${post.slug}/`, children: post.title }) }),
-          post.excerpt && /* @__PURE__ */ jsx("p", { className: styles$8.cardExcerpt, children: post.excerpt }),
+          post.excerpt && /* @__PURE__ */ jsx("p", { className: styles$8.cardExcerpt, children: renderLinkedText(post.excerpt) }),
           /* @__PURE__ */ jsx(
             Link,
             {
@@ -6478,136 +6609,15 @@ function formatDate$1(iso) {
     return "";
   }
 }
-function textToParagraphs$1(text2) {
-  if (!text2) return [];
-  return text2.split(/\n\s*\n|\n/).map((s) => s.trim()).filter(Boolean);
-}
-const CANONICAL_ORIGIN$1 = (() => {
-  try {
-    return new URL(ORIGIN$1).origin;
-  } catch {
-    return "https://cardigo.co.il";
-  }
-})();
-function validateLinkUrl$1(raw) {
-  if (!raw || typeof raw !== "string") return null;
-  const trimmed = raw.trim();
-  if (!trimmed) return null;
-  if (trimmed[0] === "/") {
-    if (trimmed[1] === "/") return null;
-    return { href: trimmed, isInternal: true };
-  }
-  let parsed;
-  try {
-    parsed = new URL(trimmed);
-  } catch {
-    return null;
-  }
-  if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
-    return null;
-  }
-  const currentOrigin = typeof window !== "undefined" ? window.location.origin : "";
-  const isInternal = parsed.origin === CANONICAL_ORIGIN$1 || currentOrigin && parsed.origin === currentOrigin;
-  return { href: trimmed, isInternal };
-}
-const MD_LINK_RE$1 = /\[([^\[\]]+)\]\(([^()\s]+)\)/g;
-const BARE_URL_RE$1 = /https?:\/\/[^\s<>\[\]"']+/g;
-const TRAILING_PUNCT_RE$1 = /[.,;:!?]+$/;
-function renderLinkedText$1(text2) {
-  if (!text2) return [text2];
-  const parts = [];
-  let cursor = 0;
-  let keyIdx = 0;
-  let match;
-  MD_LINK_RE$1.lastIndex = 0;
-  while ((match = MD_LINK_RE$1.exec(text2)) !== null) {
-    const [full, anchorText, rawUrl] = match;
-    const idx = match.index;
-    if (idx > cursor) {
-      parts.push({ type: "text", value: text2.slice(cursor, idx) });
-    }
-    const linkInfo = validateLinkUrl$1(rawUrl);
-    if (linkInfo) {
-      parts.push({
-        type: "link",
-        href: linkInfo.href,
-        isInternal: linkInfo.isInternal,
-        display: anchorText
-      });
-    } else {
-      parts.push({ type: "text", value: full });
-    }
-    cursor = idx + full.length;
-  }
-  if (cursor < text2.length) {
-    parts.push({ type: "text", value: text2.slice(cursor) });
-  }
-  const final = [];
-  for (const part of parts) {
-    if (part.type === "link") {
-      final.push(part);
-      continue;
-    }
-    const segment = part.value;
-    let sCursor = 0;
-    BARE_URL_RE$1.lastIndex = 0;
-    let urlMatch;
-    while ((urlMatch = BARE_URL_RE$1.exec(segment)) !== null) {
-      const rawBare = urlMatch[0];
-      const sIdx = urlMatch.index;
-      if (sIdx > sCursor) {
-        final.push({
-          type: "text",
-          value: segment.slice(sCursor, sIdx)
-        });
-      }
-      const urlToValidate = rawBare.replace(TRAILING_PUNCT_RE$1, "") || rawBare;
-      const trailingChars = rawBare.slice(urlToValidate.length);
-      const linkInfo = validateLinkUrl$1(urlToValidate);
-      if (linkInfo) {
-        final.push({
-          type: "link",
-          href: linkInfo.href,
-          isInternal: linkInfo.isInternal,
-          display: urlToValidate
-        });
-        if (trailingChars) {
-          final.push({ type: "text", value: trailingChars });
-        }
-      } else {
-        final.push({ type: "text", value: rawBare });
-      }
-      sCursor = sIdx + rawBare.length;
-    }
-    if (sCursor < segment.length) {
-      final.push({ type: "text", value: segment.slice(sCursor) });
-    }
-  }
-  return final.map((node) => {
-    if (node.type === "text") return node.value;
-    const key = `bl-${keyIdx++}`;
-    if (node.isInternal) {
-      return /* @__PURE__ */ jsx("a", { href: node.href, children: node.display }, key);
-    }
-    return /* @__PURE__ */ jsx(
-      "a",
-      {
-        href: node.href,
-        target: "_blank",
-        rel: "noopener noreferrer",
-        children: node.display
-      },
-      key
-    );
-  });
-}
 function buildBlogPostingJsonLd(post) {
   const ld = {
     "@context": "https://schema.org",
     "@type": "BlogPosting",
     "@id": `${ORIGIN$1}/blog/${post.slug}/#article`,
     headline: post.title || "",
-    description: post.seo?.description || post.excerpt || "",
+    description: markdownLinksToPlainText(
+      post.seo?.description || post.excerpt || ""
+    ),
     url: `${ORIGIN$1}/blog/${post.slug}/`,
     mainEntityOfPage: {
       "@type": "WebPage",
@@ -6749,7 +6759,9 @@ function BlogPost() {
     ] });
   }
   const seoTitle = post.seo?.title || post.title || "בלוג | Cardigo";
-  const seoDescription = post.seo?.description || post.excerpt || "";
+  const seoDescription = markdownLinksToPlainText(
+    post.seo?.description || post.excerpt || ""
+  );
   const canonicalUrl2 = `${ORIGIN$1}/blog/${post.slug}/`;
   const jsonLdItems = [
     buildBlogPostingJsonLd(post),
@@ -6783,7 +6795,7 @@ function BlogPost() {
           }
         ),
         /* @__PURE__ */ jsx("h1", { className: styles$6.articleTitle, children: post.title }),
-        post.excerpt && /* @__PURE__ */ jsx("p", { className: styles$6.articleExcerpt, children: post.excerpt }),
+        post.excerpt && /* @__PURE__ */ jsx("p", { className: styles$6.articleExcerpt, children: renderLinkedText(post.excerpt) }),
         /* @__PURE__ */ jsx(
           "div",
           {
@@ -6811,7 +6823,7 @@ function BlogPost() {
             loading: "lazy"
           }
         ),
-        textToParagraphs$1(section2.body).map((para, j) => /* @__PURE__ */ jsx("p", { className: styles$6.sectionBody, children: renderLinkedText$1(para) }, j))
+        textToParagraphs(section2.body).map((para, j) => /* @__PURE__ */ jsx("p", { className: styles$6.sectionBody, children: renderLinkedText(para) }, j))
       ] }, i)),
       post.authorName && /* @__PURE__ */ jsxs(
         "aside",
@@ -6949,136 +6961,15 @@ function formatDate(iso) {
     return "";
   }
 }
-function textToParagraphs(text2) {
-  if (!text2) return [];
-  return text2.split(/\n\s*\n|\n/).map((s) => s.trim()).filter(Boolean);
-}
-const CANONICAL_ORIGIN = (() => {
-  try {
-    return new URL(ORIGIN).origin;
-  } catch {
-    return "https://cardigo.co.il";
-  }
-})();
-function validateLinkUrl(raw) {
-  if (!raw || typeof raw !== "string") return null;
-  const trimmed = raw.trim();
-  if (!trimmed) return null;
-  if (trimmed[0] === "/") {
-    if (trimmed[1] === "/") return null;
-    return { href: trimmed, isInternal: true };
-  }
-  let parsed;
-  try {
-    parsed = new URL(trimmed);
-  } catch {
-    return null;
-  }
-  if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
-    return null;
-  }
-  const currentOrigin = typeof window !== "undefined" ? window.location.origin : "";
-  const isInternal = parsed.origin === CANONICAL_ORIGIN || currentOrigin && parsed.origin === currentOrigin;
-  return { href: trimmed, isInternal };
-}
-const MD_LINK_RE = /\[([^\[\]]+)\]\(([^()\s]+)\)/g;
-const BARE_URL_RE = /https?:\/\/[^\s<>\[\]"']+/g;
-const TRAILING_PUNCT_RE = /[.,;:!?]+$/;
-function renderLinkedText(text2) {
-  if (!text2) return [text2];
-  const parts = [];
-  let cursor = 0;
-  let keyIdx = 0;
-  let match;
-  MD_LINK_RE.lastIndex = 0;
-  while ((match = MD_LINK_RE.exec(text2)) !== null) {
-    const [full, anchorText, rawUrl] = match;
-    const idx = match.index;
-    if (idx > cursor) {
-      parts.push({ type: "text", value: text2.slice(cursor, idx) });
-    }
-    const linkInfo = validateLinkUrl(rawUrl);
-    if (linkInfo) {
-      parts.push({
-        type: "link",
-        href: linkInfo.href,
-        isInternal: linkInfo.isInternal,
-        display: anchorText
-      });
-    } else {
-      parts.push({ type: "text", value: full });
-    }
-    cursor = idx + full.length;
-  }
-  if (cursor < text2.length) {
-    parts.push({ type: "text", value: text2.slice(cursor) });
-  }
-  const final = [];
-  for (const part of parts) {
-    if (part.type === "link") {
-      final.push(part);
-      continue;
-    }
-    const segment = part.value;
-    let sCursor = 0;
-    BARE_URL_RE.lastIndex = 0;
-    let urlMatch;
-    while ((urlMatch = BARE_URL_RE.exec(segment)) !== null) {
-      const rawBare = urlMatch[0];
-      const sIdx = urlMatch.index;
-      if (sIdx > sCursor) {
-        final.push({
-          type: "text",
-          value: segment.slice(sCursor, sIdx)
-        });
-      }
-      const urlToValidate = rawBare.replace(TRAILING_PUNCT_RE, "") || rawBare;
-      const trailingChars = rawBare.slice(urlToValidate.length);
-      const linkInfo = validateLinkUrl(urlToValidate);
-      if (linkInfo) {
-        final.push({
-          type: "link",
-          href: linkInfo.href,
-          isInternal: linkInfo.isInternal,
-          display: urlToValidate
-        });
-        if (trailingChars) {
-          final.push({ type: "text", value: trailingChars });
-        }
-      } else {
-        final.push({ type: "text", value: rawBare });
-      }
-      sCursor = sIdx + rawBare.length;
-    }
-    if (sCursor < segment.length) {
-      final.push({ type: "text", value: segment.slice(sCursor) });
-    }
-  }
-  return final.map((node) => {
-    if (node.type === "text") return node.value;
-    const key = `gl-${keyIdx++}`;
-    if (node.isInternal) {
-      return /* @__PURE__ */ jsx("a", { href: node.href, children: node.display }, key);
-    }
-    return /* @__PURE__ */ jsx(
-      "a",
-      {
-        href: node.href,
-        target: "_blank",
-        rel: "noopener noreferrer",
-        children: node.display
-      },
-      key
-    );
-  });
-}
 function buildArticleJsonLd(post) {
   const ld = {
     "@context": "https://schema.org",
     "@type": "Article",
     "@id": `${ORIGIN}/guides/${post.slug}/#article`,
     headline: post.title || "",
-    description: post.seo?.description || post.excerpt || "",
+    description: markdownLinksToPlainText(
+      post.seo?.description || post.excerpt || ""
+    ),
     url: `${ORIGIN}/guides/${post.slug}/`,
     mainEntityOfPage: {
       "@type": "WebPage",
@@ -7220,7 +7111,9 @@ function GuidePost() {
     ] });
   }
   const seoTitle = post.seo?.title || post.title || "מדריכים | Cardigo";
-  const seoDescription = post.seo?.description || post.excerpt || "";
+  const seoDescription = markdownLinksToPlainText(
+    post.seo?.description || post.excerpt || ""
+  );
   const canonicalUrl2 = `${ORIGIN}/guides/${post.slug}/`;
   const jsonLdItems = [buildArticleJsonLd(post), buildBreadcrumbJsonLd(post)];
   return /* @__PURE__ */ jsxs("main", { className: styles$5.guideWrap, "data-page": "site", children: [
@@ -7251,7 +7144,7 @@ function GuidePost() {
           }
         ),
         /* @__PURE__ */ jsx("h1", { className: styles$5.articleTitle, children: post.title }),
-        post.excerpt && /* @__PURE__ */ jsx("p", { className: styles$5.articleExcerpt, children: post.excerpt }),
+        post.excerpt && /* @__PURE__ */ jsx("p", { className: styles$5.articleExcerpt, children: renderLinkedText(post.excerpt) }),
         /* @__PURE__ */ jsx(
           "div",
           {

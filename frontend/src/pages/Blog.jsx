@@ -15,6 +15,7 @@ import { SITE_ACTIONS } from "../services/siteAnalytics.actions";
 import pub from "../styles/public-sections.module.css";
 import styles from "./Blog.module.css";
 import { CONTENT_DISPLAY_POLICY } from "../utils/contentDisplayPolicy.js";
+import { renderLinkedText } from "../utils/safeLinkedText.jsx";
 
 const ORIGIN = import.meta.env.VITE_PUBLIC_ORIGIN || "https://cardigo.co.il";
 const PAGE_LIMIT = 12;
@@ -285,7 +286,7 @@ export default function Blog() {
                                         </h3>
                                         {post.excerpt && (
                                             <p className={styles.cardExcerpt}>
-                                                {post.excerpt}
+                                                {renderLinkedText(post.excerpt)}
                                             </p>
                                         )}
                                         <Link
