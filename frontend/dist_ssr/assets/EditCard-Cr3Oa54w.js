@@ -2,12 +2,12 @@ import { jsxs, jsx, Fragment } from "react/jsx-runtime";
 import { useState, useRef, useCallback, useEffect, useId, useMemo } from "react";
 import { useNavigate, useParams, useBlocker, Link } from "react-router-dom";
 import { g as getAccountSummary, u as updateEmailPreferences, a as getReceipts, d as deleteAccount, c as changePassword, b as cancelRenewal, r as resumeAutoRenewal, e as deletePaymentMethod, f as updateReceiptProfile, h as updateAccountName } from "./account.service-uDeHNjVm.js";
-import { C as CopyIcon, g as CrownIcon, H as HelpIcon, A as AnalyticsIcon, h as SettingsIcon, i as SeoIcon, j as FaqIcon, R as ReviewsIcon, G as GalleryIcon, W as WorkHoursIcon, k as ServicesIcon, l as ContentIcon, m as ContactIcon, n as BusinessIcon, o as HeadIcon, p as SelfDesignIcon, T as TemplatesIcon, a as api, B as Button, q as useFocusTrap, u as useAuth, s as getAnonymousId, w as clearAnonymousId, S as SeoHelmet } from "../entry-server.js";
+import { C as CopyIcon, g as CrownIcon, H as HelpIcon, A as AnalyticsIcon, h as SettingsIcon, i as SeoIcon, j as FaqIcon, R as ReviewsIcon, G as GalleryIcon, W as WorkHoursIcon, k as ServicesIcon, l as ContentIcon, m as ContactIcon, n as BusinessIcon, o as HeadIcon, p as SelfDesignIcon, T as TemplatesIcon, a as api, B as Button, q as useFocusTrap, u as useAuth, s as SUPPORT_WHATSAPP_URL, w as SUPPORT_EMAIL, x as getAnonymousId, y as clearAnonymousId, S as SeoHelmet } from "../entry-server.js";
 import { I as Input } from "./Input-CGCIIpQL.js";
-import { f as formStyles, g as galleryItemToUrl, u as uploadGalleryImage, a as uploadDesignAsset, b as getTemplateById, n as normalizeTemplateId, T as TEMPLATES, r as resolveEffectiveSelfThemeV1, C as CardRenderer } from "./CardRenderer-DTMXvOnI.js";
+import { f as formStyles, g as galleryItemToUrl, u as uploadGalleryImage, a as uploadDesignAsset, b as getTemplateById, n as normalizeTemplateId, T as TEMPLATES, r as resolveEffectiveSelfThemeV1, C as CardRenderer } from "./CardRenderer-C5zvSwxq.js";
 import Cropper from "react-easy-crop";
 import { P as PASSWORD_POLICY_HELPER_TEXT_HE, a as PASSWORD_POLICY, g as getPasswordPolicyChecklist, v as validatePasswordPolicy, b as getPasswordPolicyMessage } from "./passwordPolicy-XzlGEeig.js";
-import { w as withDemoPreviewCard } from "./previewDemo-BVDOFrBi.js";
+import { w as withDemoPreviewCard } from "./previewDemo-CU0vgzs9.js";
 import { u as updateCardSlug, d as deleteCard } from "./cards.service-CwGKgAdq.js";
 import "react-dom/server";
 import "./vendor-epyEJgau.js";
@@ -7987,8 +7987,6 @@ function AnalyticsPanel({ card: card2 }) {
     loading && /* @__PURE__ */ jsx("div", { className: styles$9.loadingText, children: "טוען…" })
   ] }) });
 }
-const SUPPORT_EMAIL = "support@cardigo.co.il";
-const SUPPORT_WHATSAPP_URL = "https://wa.me/972545811900";
 const root$2 = "_root_pyf3x_1";
 const intro = "_intro_pyf3x_13";
 const section = "_section_pyf3x_35";

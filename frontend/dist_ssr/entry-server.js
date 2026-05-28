@@ -484,11 +484,11 @@ const primary = "_primary_qwq5a_97";
 const secondary = "_secondary_qwq5a_151";
 const danger = "_danger_qwq5a_175";
 const ghost = "_ghost_qwq5a_201";
-const label$1 = "_label_qwq5a_221";
+const label$2 = "_label_qwq5a_221";
 const small = "_small_qwq5a_241";
 const medium = "_medium_qwq5a_251";
 const large = "_large_qwq5a_261";
-const styles$l = {
+const styles$m = {
   btn,
   button: button$1,
   fullWidth,
@@ -496,7 +496,7 @@ const styles$l = {
   secondary,
   danger,
   ghost,
-  label: label$1,
+  label: label$2,
   small,
   medium,
   large
@@ -515,14 +515,14 @@ function Button({
 }) {
   const isNativeButton = Component2 === "button";
   const classes = [
-    styles$l.btn,
-    styles$l[variant],
-    styles$l[size],
-    fullWidth2 ? styles$l.fullWidth : "",
+    styles$m.btn,
+    styles$m[variant],
+    styles$m[size],
+    fullWidth2 ? styles$m.fullWidth : "",
     className
   ].filter(Boolean).join(" ");
   const isDisabled = disabled || loading;
-  const content = /* @__PURE__ */ jsx("span", { className: styles$l.label, children: loading ? "טוען..." : children });
+  const content = /* @__PURE__ */ jsx("span", { className: styles$m.label, children: loading ? "טוען..." : children });
   if (isNativeButton) {
     return /* @__PURE__ */ jsx(
       "button",
@@ -886,7 +886,7 @@ const drawerClose = "_drawerClose_n3wgj_555";
 const drawerNav = "_drawerNav_n3wgj_575";
 const drawerBtnIcon = "_drawerBtnIcon_n3wgj_633";
 const drawerActions = "_drawerActions_n3wgj_645";
-const styles$k = {
+const styles$l = {
   scrollLock,
   header,
   inner: inner$1,
@@ -981,7 +981,7 @@ function Header() {
   }, []);
   useEffect(() => {
     if (typeof document === "undefined") return;
-    const lockClass = styles$k.scrollLock;
+    const lockClass = styles$l.scrollLock;
     const root2 = document.documentElement;
     const body2 = document.body;
     if (mobileOpen) {
@@ -1021,14 +1021,14 @@ function Header() {
     closeMobile();
     navigate("/", { replace: true });
   };
-  const navLinkClass = ({ isActive }) => isActive ? `${styles$k.navLink} ${styles$k.navLinkActive}` : styles$k.navLink;
+  const navLinkClass = ({ isActive }) => isActive ? `${styles$l.navLink} ${styles$l.navLinkActive}` : styles$l.navLink;
   return /* @__PURE__ */ jsxs(Fragment, { children: [
-    /* @__PURE__ */ jsx("header", { className: styles$k.header, children: /* @__PURE__ */ jsxs("div", { className: styles$k.inner, children: [
+    /* @__PURE__ */ jsx("header", { className: styles$l.header, children: /* @__PURE__ */ jsxs("div", { className: styles$l.inner, children: [
       /* @__PURE__ */ jsx(
         Link,
         {
           to: "/",
-          className: styles$k.logo,
+          className: styles$l.logo,
           "aria-label": "כרטיס ביקור דיגיטלי - כרדיגו",
           children: /* @__PURE__ */ jsxs("picture", { children: [
             /* @__PURE__ */ jsx(
@@ -1043,7 +1043,7 @@ function Header() {
               {
                 src: "/images/brand-logo/cardigo-logo.png",
                 alt: "כרטיס ביקור דיגיטלי - כרדיגו",
-                className: styles$k.logoImage,
+                className: styles$l.logoImage,
                 loading: "eager",
                 decoding: "async"
               }
@@ -1056,19 +1056,19 @@ function Header() {
         {
           ref: burgerRef,
           type: "button",
-          className: mobileOpen ? `${styles$k.burger} ${styles$k.burgerOpen}` : styles$k.burger,
+          className: mobileOpen ? `${styles$l.burger} ${styles$l.burgerOpen}` : styles$l.burger,
           "aria-label": mobileOpen ? "סגירת תפריט" : "פתיחת תפריט",
           "aria-expanded": mobileOpen,
           "aria-controls": "mobile-nav",
           onClick: () => setMobileOpen((v) => !v),
           children: [
-            /* @__PURE__ */ jsx("span", { className: styles$k.burgerLine }),
-            /* @__PURE__ */ jsx("span", { className: styles$k.burgerLine }),
-            /* @__PURE__ */ jsx("span", { className: styles$k.burgerLine })
+            /* @__PURE__ */ jsx("span", { className: styles$l.burgerLine }),
+            /* @__PURE__ */ jsx("span", { className: styles$l.burgerLine }),
+            /* @__PURE__ */ jsx("span", { className: styles$l.burgerLine })
           ]
         }
       ),
-      /* @__PURE__ */ jsx("nav", { className: styles$k.nav, children: navItems.map((item) => /* @__PURE__ */ jsx(
+      /* @__PURE__ */ jsx("nav", { className: styles$l.nav, children: navItems.map((item) => /* @__PURE__ */ jsx(
         NavLink,
         {
           to: item.to,
@@ -1078,7 +1078,7 @@ function Header() {
         },
         item.to
       )) }),
-      /* @__PURE__ */ jsx("div", { className: styles$k.actions, children: !isAuth ? /* @__PURE__ */ jsxs(Fragment, { children: [
+      /* @__PURE__ */ jsx("div", { className: styles$l.actions, children: !isAuth ? /* @__PURE__ */ jsxs(Fragment, { children: [
         /* @__PURE__ */ jsx(
           Button,
           {
@@ -1099,8 +1099,8 @@ function Header() {
             children: "צור כרטיס חינם"
           }
         )
-      ] }) : /* @__PURE__ */ jsxs("div", { className: styles$k.authBlock, children: [
-        /* @__PURE__ */ jsxs("div", { className: styles$k.authButtons, children: [
+      ] }) : /* @__PURE__ */ jsxs("div", { className: styles$l.authBlock, children: [
+        /* @__PURE__ */ jsxs("div", { className: styles$l.authButtons, children: [
           /* @__PURE__ */ jsx(
             Button,
             {
@@ -1125,13 +1125,13 @@ function Header() {
           Link,
           {
             to: "/inbox",
-            className: styles$k.inboxLink,
+            className: styles$l.inboxLink,
             "aria-label": "הודעות נכנסות",
             children: [
               /* @__PURE__ */ jsxs(
                 "svg",
                 {
-                  className: styles$k.inboxIcon,
+                  className: styles$l.inboxIcon,
                   viewBox: "0 0 24 24",
                   fill: "none",
                   stroke: "currentColor",
@@ -1145,14 +1145,14 @@ function Header() {
                   ]
                 }
               ),
-              unreadCount > 0 && /* @__PURE__ */ jsx("span", { className: styles$k.badge, children: unreadCount > 99 ? "99+" : unreadCount })
+              unreadCount > 0 && /* @__PURE__ */ jsx("span", { className: styles$l.badge, children: unreadCount > 99 ? "99+" : unreadCount })
             ]
           }
         ),
         user?.email && /* @__PURE__ */ jsx(
           "span",
           {
-            className: styles$k.userEmail,
+            className: styles$l.userEmail,
             title: user.email,
             children: user.email
           }
@@ -1162,7 +1162,7 @@ function Header() {
     /* @__PURE__ */ jsx(
       "div",
       {
-        className: mobileOpen ? `${styles$k.overlay} ${styles$k.overlayOpen}` : styles$k.overlay,
+        className: mobileOpen ? `${styles$l.overlay} ${styles$l.overlayOpen}` : styles$l.overlay,
         onClick: closeMobile,
         "aria-hidden": "true"
       }
@@ -1174,13 +1174,13 @@ function Header() {
         id: "mobile-nav",
         role: "dialog",
         "aria-modal": mobileOpen ? "true" : void 0,
-        className: mobileOpen ? `${styles$k.drawer} ${styles$k.drawerOpen}` : styles$k.drawer,
+        className: mobileOpen ? `${styles$l.drawer} ${styles$l.drawerOpen}` : styles$l.drawer,
         "aria-hidden": !mobileOpen,
         inert: !mobileOpen ? "" : void 0,
         onClick: (e) => e.stopPropagation(),
         children: [
-          /* @__PURE__ */ jsxs("div", { className: styles$k.drawerHeader, children: [
-            /* @__PURE__ */ jsxs("div", { className: styles$k.drawerTitle, children: [
+          /* @__PURE__ */ jsxs("div", { className: styles$l.drawerHeader, children: [
+            /* @__PURE__ */ jsxs("div", { className: styles$l.drawerTitle, children: [
               /* @__PURE__ */ jsxs("picture", { children: [
                 /* @__PURE__ */ jsx(
                   "source",
@@ -1194,26 +1194,26 @@ function Header() {
                   {
                     src: "/images/brand-logo/cardigo-logo.png",
                     alt: "כרדיגו",
-                    className: styles$k.drawerLogoImg,
+                    className: styles$l.drawerLogoImg,
                     loading: "eager",
                     decoding: "async"
                   }
                 )
               ] }),
-              /* @__PURE__ */ jsx("span", { className: styles$k.drawerTitleText, children: "תפריט" })
+              /* @__PURE__ */ jsx("span", { className: styles$l.drawerTitleText, children: "תפריט" })
             ] }),
             /* @__PURE__ */ jsx(
               "button",
               {
                 type: "button",
-                className: styles$k.drawerClose,
+                className: styles$l.drawerClose,
                 "aria-label": "סגירת תפריט",
                 onClick: closeMobile,
                 children: "✕"
               }
             )
           ] }),
-          /* @__PURE__ */ jsx("nav", { className: styles$k.drawerNav, children: navItems.map((item) => /* @__PURE__ */ jsx(
+          /* @__PURE__ */ jsx("nav", { className: styles$l.drawerNav, children: navItems.map((item) => /* @__PURE__ */ jsx(
             NavLink,
             {
               to: item.to,
@@ -1224,7 +1224,7 @@ function Header() {
             },
             item.to
           )) }),
-          /* @__PURE__ */ jsx("div", { className: styles$k.drawerActions, children: !isAuth ? /* @__PURE__ */ jsxs(Fragment, { children: [
+          /* @__PURE__ */ jsx("div", { className: styles$l.drawerActions, children: !isAuth ? /* @__PURE__ */ jsxs(Fragment, { children: [
             /* @__PURE__ */ jsx(
               Button,
               {
@@ -1251,7 +1251,7 @@ function Header() {
             user?.email ? /* @__PURE__ */ jsx(
               "span",
               {
-                className: styles$k.userEmail,
+                className: styles$l.userEmail,
                 title: user.email,
                 children: user.email
               }
@@ -1268,7 +1268,7 @@ function Header() {
                   /* @__PURE__ */ jsxs(
                     "svg",
                     {
-                      className: styles$k.drawerBtnIcon,
+                      className: styles$l.drawerBtnIcon,
                       viewBox: "0 0 24 24",
                       fill: "none",
                       stroke: "currentColor",
@@ -1283,7 +1283,7 @@ function Header() {
                     }
                   ),
                   "הודעות נכנסות",
-                  unreadCount > 0 && /* @__PURE__ */ jsx("span", { className: styles$k.mobileBadge, children: unreadCount > 99 ? "99+" : unreadCount })
+                  unreadCount > 0 && /* @__PURE__ */ jsx("span", { className: styles$l.mobileBadge, children: unreadCount > 99 ? "99+" : unreadCount })
                 ]
               }
             ),
@@ -1296,7 +1296,7 @@ function Header() {
                 fullWidth: true,
                 onClick: closeMobile,
                 children: [
-                  /* @__PURE__ */ jsx(HeadIcon, { className: styles$k.drawerBtnIcon }),
+                  /* @__PURE__ */ jsx(HeadIcon, { className: styles$l.drawerBtnIcon }),
                   "הכרטיס שלי"
                 ]
               }
@@ -1326,7 +1326,7 @@ const link$1 = "_link_6cv9e_103";
 const linkButton = "_linkButton_6cv9e_119";
 const text$1 = "_text_6cv9e_161";
 const bottom = "_bottom_6cv9e_173";
-const styles$j = {
+const styles$k = {
   footer,
   inner,
   col,
@@ -1448,7 +1448,7 @@ const wrap = "_wrap_zts44_1";
 const installBtn = "_installBtn_zts44_25";
 const helpText = "_helpText_zts44_77";
 const helpHighlight = "_helpHighlight_zts44_95";
-const styles$i = {
+const styles$j = {
   wrap,
   installBtn,
   helpText,
@@ -1484,13 +1484,13 @@ function InstallCta() {
     }
     setHighlighted((v) => !v);
   }
-  const helpClass = highlighted && helpText2 ? `${styles$i.helpText} ${styles$i.helpHighlight}` : styles$i.helpText;
-  return /* @__PURE__ */ jsxs("div", { className: styles$i.wrap, children: [
+  const helpClass = highlighted && helpText2 ? `${styles$j.helpText} ${styles$j.helpHighlight}` : styles$j.helpText;
+  return /* @__PURE__ */ jsxs("div", { className: styles$j.wrap, children: [
     /* @__PURE__ */ jsx(
       "button",
       {
         type: "button",
-        className: styles$i.installBtn,
+        className: styles$j.installBtn,
         onClick: handleClick,
         children: "התקינו את Cardigo"
       }
@@ -1499,14 +1499,14 @@ function InstallCta() {
   ] });
 }
 function Footer({ onOpenPrivacyPrefs }) {
-  return /* @__PURE__ */ jsxs("footer", { className: styles$j.footer, id: "contact", children: [
-    /* @__PURE__ */ jsxs("div", { className: styles$j.inner, children: [
-      /* @__PURE__ */ jsxs("div", { className: styles$j.col, children: [
+  return /* @__PURE__ */ jsxs("footer", { className: styles$k.footer, id: "contact", children: [
+    /* @__PURE__ */ jsxs("div", { className: styles$k.inner, children: [
+      /* @__PURE__ */ jsxs("div", { className: styles$k.col, children: [
         /* @__PURE__ */ jsx(
           Link,
           {
             to: "/",
-            className: styles$j.brand,
+            className: styles$k.brand,
             "aria-label": "כרטיס ביקור דיגיטלי - כרדיגו",
             children: /* @__PURE__ */ jsxs("picture", { children: [
               /* @__PURE__ */ jsx(
@@ -1521,7 +1521,7 @@ function Footer({ onOpenPrivacyPrefs }) {
                 {
                   src: "/images/brand-logo/cardigo-logo.png",
                   alt: "כרטיס ביקור דיגיטלי - כרדיגו",
-                  className: styles$j.brandLogoImage,
+                  className: styles$k.brandLogoImage,
                   loading: "lazy",
                   decoding: "async"
                 }
@@ -1529,44 +1529,44 @@ function Footer({ onOpenPrivacyPrefs }) {
             ] })
           }
         ),
-        /* @__PURE__ */ jsx("div", { className: styles$j.text, children: "כרטיסי ביקור דיגיטליים לעסקים - יצירה, התאמה אישית ושיתוף בלחיצה." })
+        /* @__PURE__ */ jsx("div", { className: styles$k.text, children: "כרטיסי ביקור דיגיטליים לעסקים - יצירה, התאמה אישית ושיתוף בלחיצה." })
       ] }),
-      /* @__PURE__ */ jsxs("div", { className: styles$j.col, children: [
-        /* @__PURE__ */ jsx("div", { className: styles$j.title, children: "קישורים" }),
-        /* @__PURE__ */ jsx(Link, { to: "/#features", className: styles$j.link, children: "תכונות" }),
-        /* @__PURE__ */ jsx(Link, { to: "/cards", className: styles$j.link, children: "דוגמאות" }),
-        /* @__PURE__ */ jsx(Link, { to: "/#how", className: styles$j.link, children: "איך זה עובד" }),
-        /* @__PURE__ */ jsx(Link, { to: "/#faq", className: styles$j.link, children: "שאלות נפוצות" }),
-        /* @__PURE__ */ jsx(Link, { to: "/pricing", className: styles$j.link, children: "מחירים" }),
-        /* @__PURE__ */ jsx(Link, { to: "/guides", className: styles$j.link, children: "מדריכים" }),
-        /* @__PURE__ */ jsx(Link, { to: "/blog", className: styles$j.link, children: "בלוג" })
+      /* @__PURE__ */ jsxs("div", { className: styles$k.col, children: [
+        /* @__PURE__ */ jsx("div", { className: styles$k.title, children: "קישורים" }),
+        /* @__PURE__ */ jsx(Link, { to: "/#features", className: styles$k.link, children: "תכונות" }),
+        /* @__PURE__ */ jsx(Link, { to: "/cards", className: styles$k.link, children: "דוגמאות" }),
+        /* @__PURE__ */ jsx(Link, { to: "/#how", className: styles$k.link, children: "איך זה עובד" }),
+        /* @__PURE__ */ jsx(Link, { to: "/#faq", className: styles$k.link, children: "שאלות נפוצות" }),
+        /* @__PURE__ */ jsx(Link, { to: "/pricing", className: styles$k.link, children: "מחירים" }),
+        /* @__PURE__ */ jsx(Link, { to: "/guides", className: styles$k.link, children: "מדריכים" }),
+        /* @__PURE__ */ jsx(Link, { to: "/blog", className: styles$k.link, children: "בלוג" })
       ] }),
-      /* @__PURE__ */ jsxs("div", { className: styles$j.col, children: [
-        /* @__PURE__ */ jsx("div", { className: styles$j.title, children: "חשבון" }),
-        /* @__PURE__ */ jsx(Link, { to: "/login", className: styles$j.link, children: "התחברות" }),
-        /* @__PURE__ */ jsx(Link, { to: "/register", className: styles$j.link, children: "יצירת חשבון" }),
-        /* @__PURE__ */ jsx(Link, { to: "/edit", className: styles$j.link, children: "עורך כרטיס" })
+      /* @__PURE__ */ jsxs("div", { className: styles$k.col, children: [
+        /* @__PURE__ */ jsx("div", { className: styles$k.title, children: "חשבון" }),
+        /* @__PURE__ */ jsx(Link, { to: "/login", className: styles$k.link, children: "התחברות" }),
+        /* @__PURE__ */ jsx(Link, { to: "/register", className: styles$k.link, children: "יצירת חשבון" }),
+        /* @__PURE__ */ jsx(Link, { to: "/edit", className: styles$k.link, children: "עורך כרטיס" })
       ] }),
-      /* @__PURE__ */ jsxs("div", { className: styles$j.col, children: [
-        /* @__PURE__ */ jsx("div", { className: styles$j.title, children: "מידע" }),
-        /* @__PURE__ */ jsx(Link, { to: "/privacy", className: styles$j.link, children: "מדיניות פרטיות" }),
-        /* @__PURE__ */ jsx(Link, { to: "/terms", className: styles$j.link, children: "תנאי שימוש" }),
-        /* @__PURE__ */ jsx(Link, { to: "/accessibility-statement", className: styles$j.link, children: "הצהרת נגישות" }),
-        /* @__PURE__ */ jsx(Link, { to: "/payment-policy", className: styles$j.link, children: "תנאי תשלום, חידוש, ביטול והחזרים" }),
+      /* @__PURE__ */ jsxs("div", { className: styles$k.col, children: [
+        /* @__PURE__ */ jsx("div", { className: styles$k.title, children: "מידע" }),
+        /* @__PURE__ */ jsx(Link, { to: "/privacy", className: styles$k.link, children: "מדיניות פרטיות" }),
+        /* @__PURE__ */ jsx(Link, { to: "/terms", className: styles$k.link, children: "תנאי שימוש" }),
+        /* @__PURE__ */ jsx(Link, { to: "/accessibility-statement", className: styles$k.link, children: "הצהרת נגישות" }),
+        /* @__PURE__ */ jsx(Link, { to: "/payment-policy", className: styles$k.link, children: "תנאי תשלום, חידוש, ביטול והחזרים" }),
         /* @__PURE__ */ jsx(
           "button",
           {
             type: "button",
-            className: styles$j.linkButton,
+            className: styles$k.linkButton,
             onClick: onOpenPrivacyPrefs,
             children: "העדפות פרטיות"
           }
         ),
-        /* @__PURE__ */ jsx("div", { className: styles$j.text, children: "אימייל: support@cardigo.co.il" })
+        /* @__PURE__ */ jsx("div", { className: styles$k.text, children: "אימייל: support@cardigo.co.il" })
       ] })
     ] }),
     /* @__PURE__ */ jsx(InstallCta, {}),
-    /* @__PURE__ */ jsxs("div", { className: styles$j.bottom, children: [
+    /* @__PURE__ */ jsxs("div", { className: styles$k.bottom, children: [
       "© ",
       (/* @__PURE__ */ new Date()).getFullYear(),
       " Cardigo. כל הזכויות שמורות."
@@ -1603,7 +1603,7 @@ const checkbox = "_checkbox_1cbxm_289";
 const prefsActions = "_prefsActions_1cbxm_305";
 const save = "_save_1cbxm_317";
 const back = "_back_1cbxm_379";
-const styles$h = {
+const styles$i = {
   overlay,
   banner,
   text,
@@ -1645,26 +1645,26 @@ function CookieConsentBanner({ reopenPrefs }) {
   return /* @__PURE__ */ jsx(
     "aside",
     {
-      className: styles$h.overlay,
+      className: styles$i.overlay,
       role: "region",
       "aria-label": "הודעת פרטיות ועוגיות",
-      children: /* @__PURE__ */ jsx("div", { className: styles$h.banner, children: view === "notice" ? /* @__PURE__ */ jsxs(Fragment, { children: [
-        /* @__PURE__ */ jsxs("p", { className: styles$h.text, children: [
+      children: /* @__PURE__ */ jsx("div", { className: styles$i.banner, children: view === "notice" ? /* @__PURE__ */ jsxs(Fragment, { children: [
+        /* @__PURE__ */ jsxs("p", { className: styles$i.text, children: [
           "האתר משתמש בקובצי Cookie 🍪 למדידה ושיפור החוויה.",
           " ",
-          /* @__PURE__ */ jsx(Link, { to: "/privacy", className: styles$h.link, children: "למדיניות הפרטיות" }),
+          /* @__PURE__ */ jsx(Link, { to: "/privacy", className: styles$i.link, children: "למדיניות הפרטיות" }),
           " ",
           "ו",
           " ",
-          /* @__PURE__ */ jsx(Link, { to: "/terms", className: styles$h.link, children: "תנאי השימוש" }),
+          /* @__PURE__ */ jsx(Link, { to: "/terms", className: styles$i.link, children: "תנאי השימוש" }),
           "."
         ] }),
-        /* @__PURE__ */ jsxs("div", { className: styles$h.actions, children: [
+        /* @__PURE__ */ jsxs("div", { className: styles$i.actions, children: [
           /* @__PURE__ */ jsx(
             "button",
             {
               type: "button",
-              className: styles$h.accept,
+              className: styles$i.accept,
               onClick: handleAccept,
               children: "הבנתי"
             }
@@ -1673,35 +1673,35 @@ function CookieConsentBanner({ reopenPrefs }) {
             "button",
             {
               type: "button",
-              className: styles$h.prefsToggle,
+              className: styles$i.prefsToggle,
               onClick: () => setView("prefs"),
               children: "ניהול העדפות"
             }
           )
         ] })
-      ] }) : /* @__PURE__ */ jsxs("div", { className: styles$h.prefsView, children: [
-        /* @__PURE__ */ jsxs("div", { className: styles$h.prefRow, children: [
-          /* @__PURE__ */ jsx("span", { className: styles$h.prefLabel, children: "עוגיות הכרחיות" }),
-          /* @__PURE__ */ jsx("span", { className: styles$h.prefAlways, children: "תמיד פעיל" })
+      ] }) : /* @__PURE__ */ jsxs("div", { className: styles$i.prefsView, children: [
+        /* @__PURE__ */ jsxs("div", { className: styles$i.prefRow, children: [
+          /* @__PURE__ */ jsx("span", { className: styles$i.prefLabel, children: "עוגיות הכרחיות" }),
+          /* @__PURE__ */ jsx("span", { className: styles$i.prefAlways, children: "תמיד פעיל" })
         ] }),
-        /* @__PURE__ */ jsxs("label", { className: styles$h.prefRow, children: [
-          /* @__PURE__ */ jsx("span", { className: styles$h.prefLabel, children: "כלי מדידה ושיווק של צדדים שלישיים" }),
+        /* @__PURE__ */ jsxs("label", { className: styles$i.prefRow, children: [
+          /* @__PURE__ */ jsx("span", { className: styles$i.prefLabel, children: "כלי מדידה ושיווק של צדדים שלישיים" }),
           /* @__PURE__ */ jsx(
             "input",
             {
               type: "checkbox",
-              className: styles$h.checkbox,
+              className: styles$i.checkbox,
               checked: optionalTracking,
               onChange: (e) => setOptionalTracking(e.target.checked)
             }
           )
         ] }),
-        /* @__PURE__ */ jsxs("div", { className: styles$h.prefsActions, children: [
+        /* @__PURE__ */ jsxs("div", { className: styles$i.prefsActions, children: [
           /* @__PURE__ */ jsx(
             "button",
             {
               type: "button",
-              className: styles$h.save,
+              className: styles$i.save,
               onClick: handleSavePrefs,
               children: "שמירה"
             }
@@ -1710,13 +1710,41 @@ function CookieConsentBanner({ reopenPrefs }) {
             "button",
             {
               type: "button",
-              className: styles$h.back,
+              className: styles$i.back,
               onClick: () => setView("notice"),
               children: "חזרה"
             }
           )
         ] })
       ] }) })
+    }
+  );
+}
+const SUPPORT_EMAIL = "support@cardigo.co.il";
+const SUPPORT_WHATSAPP_URL = "https://wa.me/972545811900";
+const cta = "_cta_1fokp_13";
+const icon = "_icon_1fokp_177";
+const label$1 = "_label_1fokp_205";
+const styles$h = {
+  cta,
+  icon,
+  label: label$1
+};
+const WA_MESSAGE = "שלום, ראיתי את Cardigo ואני רוצה להבין איך אפשר ליצור כרטיס ביקור דיגיטלי לעסק שלי. אשמח לעזרה 👋";
+const href = `${SUPPORT_WHATSAPP_URL}?text=${encodeURIComponent(WA_MESSAGE)}`;
+function FloatingWhatsAppCta() {
+  return /* @__PURE__ */ jsxs(
+    "a",
+    {
+      href,
+      target: "_blank",
+      rel: "noopener noreferrer",
+      "aria-label": "פנייה ב-WhatsApp ל-Cardigo",
+      className: styles$h.cta,
+      children: [
+        /* @__PURE__ */ jsx("span", { className: styles$h.icon, "aria-hidden": "true" }),
+        /* @__PURE__ */ jsx("span", { className: styles$h.label, children: "צריכים עזרה?" })
+      ]
     }
   );
 }
@@ -1737,6 +1765,23 @@ function isApprovedAdPath(pathname) {
     (p2) => pathname === p2 || p2 !== "/" && pathname.startsWith(p2 + "/")
   );
 }
+const WHATSAPP_CTA_EXACT = /* @__PURE__ */ new Set([
+  "/",
+  "/cards",
+  "/pricing",
+  "/contact",
+  "/blog",
+  "/guides"
+]);
+const WHATSAPP_CTA_PAGINATION = [
+  /^\/blog\/page\/\d+$/,
+  /^\/guides\/page\/\d+$/
+];
+function shouldShowMarketingWhatsAppCta(pathname) {
+  const normalized = pathname.replace(/\/+$/, "") || "/";
+  if (WHATSAPP_CTA_EXACT.has(normalized)) return true;
+  return WHATSAPP_CTA_PAGINATION.some((re) => re.test(normalized));
+}
 function Layout() {
   const [reopenPrefs, setReopenPrefs] = useState(0);
   const handleOpenPrivacyPrefs = useCallback(
@@ -1755,6 +1800,7 @@ function Layout() {
     /* @__PURE__ */ jsx(Header, {}),
     /* @__PURE__ */ jsx("div", { id: "main-content", tabIndex: -1, children: /* @__PURE__ */ jsx(Outlet, {}) }),
     /* @__PURE__ */ jsx(Footer, { onOpenPrivacyPrefs: handleOpenPrivacyPrefs }),
+    shouldShowMarketingWhatsAppCta(location.pathname) && /* @__PURE__ */ jsx(FloatingWhatsAppCta, {}),
     /* @__PURE__ */ jsx(CookieConsentBanner, { reopenPrefs })
   ] });
 }
@@ -8185,12 +8231,12 @@ const SignupConsume = lazy(() => import("./assets/SignupConsume-Ddi7LjmO.js"));
 const VerifyEmail = lazy(() => import("./assets/VerifyEmail-BdTNw4a4.js"));
 const Unsubscribe = lazy(() => import("./assets/Unsubscribe-cH0SJ-jv.js"));
 const Dashboard = lazy(() => import("./assets/Dashboard-CA_zW0ja.js"));
-const EditCard = lazy(() => import("./assets/EditCard-B6lBkfTO.js"));
+const EditCard = lazy(() => import("./assets/EditCard-Cr3Oa54w.js"));
 const Admin = lazy(() => import("./assets/Admin-FSagd0ZH.js"));
-const OrgInvites = lazy(() => import("./assets/OrgInvites-CPq8wF76.js"));
-const Inbox = lazy(() => import("./assets/Inbox-BwtOR49t.js"));
-const PublicCard = lazy(() => import("./assets/PublicCard-Cv7lQxHl.js"));
-const PreviewCard = lazy(() => import("./assets/PreviewCard-CmFwe_k1.js"));
+const OrgInvites = lazy(() => import("./assets/OrgInvites-F6NGH4uL.js"));
+const Inbox = lazy(() => import("./assets/Inbox-DkfIAa4C.js"));
+const PublicCard = lazy(() => import("./assets/PublicCard-BUh62Dw0.js"));
+const PreviewCard = lazy(() => import("./assets/PreviewCard-BEyGqjlW.js"));
 const CheckoutPage = lazy(() => import("./assets/CheckoutPage-v9B4yP1E.js"));
 const IframeReturnPage = lazy(
   () => import("./assets/IframeReturnPage-CYK0Rehj.js")
@@ -8405,35 +8451,37 @@ async function renderForRoute(url, options = {}) {
   return { html, helmetContext };
 }
 export {
-  createLead as $,
+  getPublicAvailability as $,
   AnalyticsIcon as A,
   Button as B,
   CopyIcon as C,
-  markLeadRead as D,
-  updateLeadFlags as E,
+  useUnreadCount as D,
+  getMyLeads as E,
   FlashBanner as F,
   GalleryIcon as G,
   HelpIcon as H,
-  hardDeleteLead as I,
-  getMyBookings as J,
-  approveMyBooking as K,
-  cancelMyBooking as L,
-  hasAcceptedCardConsent as M,
-  saveCardConsent as N,
-  getCardConsentState as O,
-  DEFAULT_OG_IMAGE_PATH as P,
-  normalizeGtmId as Q,
+  markLeadRead as I,
+  updateLeadFlags as J,
+  hardDeleteLead as K,
+  getMyBookings as L,
+  approveMyBooking as M,
+  cancelMyBooking as N,
+  hasAcceptedCardConsent as O,
+  saveCardConsent as P,
+  getCardConsentState as Q,
   ReviewsIcon as R,
   SeoHelmet as S,
   TemplatesIcon as T,
-  normalizeGaMeasurementId as U,
-  normalizeMetaPixelId as V,
+  DEFAULT_OG_IMAGE_PATH as U,
+  normalizeGtmId as V,
   WorkHoursIcon as W,
-  getUtm as X,
-  useInstallPrompt as Y,
-  getPublicAvailability as Z,
-  createPublicBooking as _,
+  normalizeGaMeasurementId as X,
+  normalizeMetaPixelId as Y,
+  getUtm as Z,
+  useInstallPrompt as _,
   api as a,
+  createPublicBooking as a0,
+  createLead as a1,
   resetPassword as b,
   requestSignupLink as c,
   consumeSignupToken as d,
@@ -8452,12 +8500,12 @@ export {
   useFocusTrap as q,
   register as r,
   renderForRoute,
-  getAnonymousId as s,
+  SUPPORT_WHATSAPP_URL as s,
   trackRegistrationComplete as t,
   useAuth as u,
   verifyEmail as v,
-  clearAnonymousId as w,
-  getHasOrgAdmin as x,
-  useUnreadCount as y,
-  getMyLeads as z
+  SUPPORT_EMAIL as w,
+  getAnonymousId as x,
+  clearAnonymousId as y,
+  getHasOrgAdmin as z
 };

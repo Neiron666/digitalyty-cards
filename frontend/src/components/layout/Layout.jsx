@@ -8,6 +8,7 @@ import Header from "./Header";
 import Footer from "./Footer";
 import ScrollToTop from "./ScrollToTop";
 import CookieConsentBanner from "../ui/CookieConsentBanner/CookieConsentBanner";
+import FloatingWhatsAppCta from "../marketing/FloatingWhatsAppCta";
 import styles from "./Layout.module.css";
 
 // Routes approved for site-level ad-measurement consent push.
@@ -26,6 +27,27 @@ function isApprovedAdPath(pathname) {
     return AD_MEASUREMENT_PATHS.some(
         (p) => pathname === p || (p !== "/" && pathname.startsWith(p + "/")),
     );
+}
+
+// WhatsApp CTA route guard – exact allowlist + pagination regex.
+// Do NOT use isApprovedAdPath: startsWith would include /blog/:slug and /guides/:slug.
+const WHATSAPP_CTA_EXACT = new Set([
+    "/",
+    "/cards",
+    "/pricing",
+    "/contact",
+    "/blog",
+    "/guides",
+]);
+const WHATSAPP_CTA_PAGINATION = [
+    /^\/blog\/page\/\d+$/,
+    /^\/guides\/page\/\d+$/,
+];
+
+function shouldShowMarketingWhatsAppCta(pathname) {
+    const normalized = pathname.replace(/\/+$/, "") || "/";
+    if (WHATSAPP_CTA_EXACT.has(normalized)) return true;
+    return WHATSAPP_CTA_PAGINATION.some((re) => re.test(normalized));
 }
 
 export default function Layout() {
@@ -53,6 +75,9 @@ export default function Layout() {
                 <Outlet />
             </div>
             <Footer onOpenPrivacyPrefs={handleOpenPrivacyPrefs} />
+            {shouldShowMarketingWhatsAppCta(location.pathname) && (
+                <FloatingWhatsAppCta />
+            )}
             <CookieConsentBanner reopenPrefs={reopenPrefs} />
         </>
     );

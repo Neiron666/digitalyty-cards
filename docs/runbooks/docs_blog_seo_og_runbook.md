@@ -362,6 +362,52 @@ Evidence classification is PRODUCTION_CONFIRMED_BY_OPERATOR_REPORT (no repo-pers
 - Contour handoff: `docs/handoffs/current/Cardigo_Enterprise_Handoff_2026-05-26_Public_SEO_SSG_Migration_And_PreviousSlugs_Aliases_Closed.md`.
 - Operational runbook authoritative section: `docs/runbooks/seo-public-indexability-runbook.md` -> "## 20. Public SSG Render Path for Marketing + Blog + Guides - 2026-05 Migration".
 
+### 9.6 Content freshness after admin edits — SSG staleness window
+
+**Contour:** BLOG_GUIDE_ADMIN_MARKDOWN_LINK_PARITY — CLOSED (2026-05-28).
+**Evidence classification:** SSG_REDEPLOY_REFRESH_PASS.
+**Authoritative handoff:** `docs/handoffs/current/Cardigo_Enterprise_Handoff_2026-05-28_BlogGuide_MarkdownLinks_And_SSGFreshness_Closed.md`.
+
+This addendum documents the SSG content-freshness behavior discovered operationally during the 2026-05-28 markdown-link contour. It extends the §9 alias-rebuild constraint (§9.5.7) with the equivalent constraint for content field edits (excerpt, title, section body).
+
+#### 9.6.1 API updates immediately
+
+When an admin saves a blog or guide post, the backend API endpoints (`/api/blog/:slug`, `/api/guides/:slug`, `/api/guides/list`, `/api/blog/list`) reflect the updated content immediately on the next request after the save. No rebuild is required for the API response to be fresh.
+
+#### 9.6.2 SSG HTML and JSON island remain stale until rebuild
+
+The SSG HTML for each detail page (`dist/blog/<slug>/index.html`, `dist/guides/<slug>/index.html`) and the `cardigo-initial-detail-data` JSON island embedded in it are frozen at the time of the last Netlify build. They do NOT update automatically when admin saves a post.
+
+This applies to all content fields: excerpt (`תקציר`), title, section bodies (`קטעי תוכן`), hero image, SEO fields.
+
+#### 9.6.3 Direct-load path uses stale island data
+
+When a browser performs a direct-load of a blog/guide detail URL, the React component reads the `cardigo-initial-detail-data` island. If the slug matches, `skipFirstFetchRef` is set and the initial API fetch is skipped. The page renders the stale island data from the last build without making a live API call.
+
+Implication: **a visitor who direct-loads a detail URL will see the pre-edit content until a frontend SSG rebuild is deployed.**
+
+#### 9.6.4 SPA navigation path sees fresh content sooner
+
+When a visitor navigates to a detail URL via an in-app link (SPA navigation from another route), the island slug does not match and the component performs a live API fetch. This path shows admin edits immediately without a rebuild.
+
+#### 9.6.5 SEO / Googlebot impact
+
+Raw SSG HTML is what Googlebot and Bingbot receive on direct crawl. Admin edits to SEO-sensitive fields are not reflected in the raw HTML or in the JSON island until a frontend SSG rebuild is deployed. Triggering a rebuild is required for content changes to be seen by search engine crawlers.
+
+#### 9.6.6 Operator action — content-edit rebuild
+
+The procedure is the same as §9.5.7 for alias changes. After an SEO-sensitive admin content edit that must be reflected in raw HTML promptly:
+
+1. Netlify → Deploys → "Trigger deploy" → "Clear cache and deploy site".
+2. Wait for build to complete.
+3. Verify updated content appears in the raw SSG HTML.
+
+#### 9.6.7 Deferred tail — BLOG_GUIDE_SSG_CONTENT_FRESHNESS_AFTER_ADMIN_UPDATE_P2_DECISION
+
+An auto-build hook, background revalidation fetch, or admin freshness-warning UI would close this freshness gap. None of these were implemented in the BLOG_GUIDE_ADMIN_MARKDOWN_LINK_PARITY contour. The decision is deferred.
+
+The rebuild-on-content-publish tail is a known gap, parallel to the rebuild-on-alias-change tail documented in §9.5.7, and is not closed by any existing contour as of 2026-05-28.
+
 ---
 
 ## 10) Index Governance & Migration
