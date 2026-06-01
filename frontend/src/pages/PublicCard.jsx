@@ -183,6 +183,12 @@ function PublicCard() {
         trackView(card.slug, undefined, undefined, orgSlug);
     }, [card?.slug, orgSlug]);
 
+    useEffect(() => {
+        if (!card) return;
+        const fallback = document.getElementById("cardigo-body-fallback");
+        if (fallback) fallback.remove();
+    }, [card]);
+
     if (loading) return <p>טוען כרטיס...</p>;
     if (error) {
         const errorTitle =

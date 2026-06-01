@@ -210,6 +210,68 @@ function injectMetadataIntoShell(ogHtml, shellHtml) {
     return result;
 }
 
+function extractOgMainContent(ogHtml) {
+    try {
+        const mainMatch = ogHtml.match(/<main\b[^>]*>([\s\S]*?)<\/main>/i);
+        if (mainMatch) return mainMatch[1];
+        const bodyMatch = ogHtml.match(/<body\b[^>]*>([\s\S]*?)<\/body>/i);
+        if (bodyMatch) return bodyMatch[1];
+        return null;
+    } catch {
+        return null;
+    }
+}
+
+function sanitizeOgBody(raw) {
+    if (!raw || typeof raw !== "string") return null;
+    try {
+        let s = raw;
+        s = s.replace(/<script\b[\s\S]*?<\/script>/gi, "");
+        s = s.replace(/<style\b[\s\S]*?<\/style>/gi, "");
+        s = s.replace(/<iframe\b[\s\S]*?<\/iframe>/gi, "");
+        s = s.replace(/<object\b[\s\S]*?<\/object>/gi, "");
+        s = s.replace(/<embed\b[^>]*>/gi, "");
+        s = s.replace(/<form\b[\s\S]*?<\/form>/gi, "");
+        s = s.replace(/<meta\b[^>]*>/gi, "");
+        s = s.replace(/<link\b[^>]*>/gi, "");
+        s = s.replace(/<title\b[\s\S]*?<\/title>/gi, "");
+        s = s.replace(/\bon\w+\s*=\s*"[^"]*"/gi, "");
+        s = s.replace(/\bon\w+\s*=\s*'[^']*'/gi, "");
+        s = s.replace(/\bon\w+\s*=\s*[^\s"'>]*/gi, "");
+        s = s.replace(/\bstyle\s*=\s*"[^"]*"/gi, "");
+        s = s.replace(/\bstyle\s*=\s*'[^']*'/gi, "");
+        s = s.replace(/\bstyle\s*=\s*[^\s"'>]*/gi, "");
+        s = s.replace(/\bhref\s*=\s*"javascript:[^"]*"/gi, 'href="#"');
+        s = s.replace(/\bhref\s*=\s*'javascript:[^']*'/gi, "href='#'");
+        s = s.replace(/\bsrc\s*=\s*"javascript:[^"]*"/gi, 'src=""');
+        s = s.replace(/\bsrc\s*=\s*'javascript:[^']*'/gi, "src=''");
+        s = s.replace(/\bdata-cardigo-edge-ld(?:-[\w-]*)?\s*=\s*"[^"]*"/gi, "");
+        s = s.replace(/\bdata-cardigo-edge-ld(?:-[\w-]*)?\s*=\s*'[^']*'/gi, "");
+        s = s.replace(
+            /\bdata-cardigo-edge-ld(?:-[\w-]*)?\s*=\s*[^\s"'>]*/gi,
+            "",
+        );
+        s = s.trim();
+        if (!s) return null;
+        return s;
+    } catch {
+        return null;
+    }
+}
+
+function injectBodyFallback(sanitizedBody, shellHtml) {
+    if (!sanitizedBody) return shellHtml;
+    const ROOT_MARKER = '<div id="root"></div>';
+    if (!shellHtml.includes(ROOT_MARKER)) return shellHtml;
+    return shellHtml.replace(
+        ROOT_MARKER,
+        '<div id="cardigo-body-fallback" data-cardigo-body-fallback="1">\n' +
+            sanitizedBody +
+            "\n</div>\n" +
+            ROOT_MARKER,
+    );
+}
+
 // Unified browser+crawler enriched-shell helper for /card and /c routes.
 // Behavior parity: both UA classes receive the same enriched SPA shell body
 // for 200 backend responses. Differs only on 404/410: crawlers get propagated
@@ -291,8 +353,16 @@ async function serveCardEnrichedShell(backendPath, context, { isCrawler }) {
     try {
         const shellClone = shellResponse.clone();
         const shellHtml = await shellClone.text();
-        const injectedHtml = injectMetadataIntoShell(ogHtml, shellHtml);
-        return new Response(injectedHtml, {
+        const headInjectedHtml = injectMetadataIntoShell(ogHtml, shellHtml);
+        let finalHtml = headInjectedHtml;
+        try {
+            const rawBody = extractOgMainContent(ogHtml);
+            const safeBody = sanitizeOgBody(rawBody);
+            finalHtml = injectBodyFallback(safeBody, headInjectedHtml);
+        } catch (_bodyErr) {
+            finalHtml = headInjectedHtml;
+        }
+        return new Response(finalHtml, {
             status: 200,
             headers: {
                 "content-type": "text/html; charset=utf-8",

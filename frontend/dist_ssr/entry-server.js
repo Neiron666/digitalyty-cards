@@ -8313,7 +8313,7 @@ const EditCard = lazy(() => import("./assets/EditCard-Cr3Oa54w.js"));
 const Admin = lazy(() => import("./assets/Admin-FSagd0ZH.js"));
 const OrgInvites = lazy(() => import("./assets/OrgInvites-F6NGH4uL.js"));
 const Inbox = lazy(() => import("./assets/Inbox-DkfIAa4C.js"));
-const PublicCard = lazy(() => import("./assets/PublicCard-BUh62Dw0.js"));
+const PublicCard = lazy(() => import("./assets/PublicCard-Hn1XifR1.js"));
 const PreviewCard = lazy(() => import("./assets/PreviewCard-BEyGqjlW.js"));
 const CheckoutPage = lazy(() => import("./assets/CheckoutPage-v9B4yP1E.js"));
 const IframeReturnPage = lazy(

@@ -204,6 +204,11 @@ function PublicCard() {
     trackedRef.current = true;
     trackView(card.slug, void 0, void 0, orgSlug);
   }, [card?.slug, orgSlug]);
+  useEffect(() => {
+    if (!card) return;
+    const fallback = document.getElementById("cardigo-body-fallback");
+    if (fallback) fallback.remove();
+  }, [card]);
   if (loading) return /* @__PURE__ */ jsx("p", { children: "טוען כרטיס..." });
   if (error) {
     const errorTitle = errorStatus === 410 ? "הכרטיס אינו זמין | Cardigo" : errorStatus !== null ? "הכרטיס לא נמצא | Cardigo" : "שגיאה בטעינת הכרטיס | Cardigo";
