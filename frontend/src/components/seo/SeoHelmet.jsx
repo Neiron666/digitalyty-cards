@@ -212,15 +212,20 @@ export default function SeoHelmet({
     useEffect(() => {
         setSuppressJsonLd(hasTrustedEdgeJsonLd(canonicalUrl));
     }, [canonicalUrl]);
+    // P2B-3: reuse the same canonical-matched trusted Edge signal for non-JSON-LD meta.
+    // No new DOM query or useEffect needed — same condition, same contract.
+    const suppressEdgeManagedMeta = suppressJsonLd;
 
     return (
         <Helmet>
             {title ? <title>{title}</title> : null}
-            {description ? (
+            {!suppressEdgeManagedMeta && description ? (
                 <meta name="description" content={description} />
             ) : null}
 
-            {canonicalUrl ? <link rel="canonical" href={canonicalUrl} /> : null}
+            {!suppressEdgeManagedMeta && canonicalUrl ? (
+                <link rel="canonical" href={canonicalUrl} />
+            ) : null}
 
             {robotsNormalized ? (
                 <meta name="robots" content={robotsNormalized} />
@@ -242,15 +247,21 @@ export default function SeoHelmet({
             <meta property="og:locale" content="he_IL" />
             <meta property="og:site_name" content="Cardigo" />
             <meta property="og:type" content={ogType} />
-            {title ? <meta property="og:title" content={title} /> : null}
-            {description ? (
+            {!suppressEdgeManagedMeta && title ? (
+                <meta property="og:title" content={title} />
+            ) : null}
+            {!suppressEdgeManagedMeta && description ? (
                 <meta property="og:description" content={description} />
             ) : null}
-            {image ? <meta property="og:image" content={image} /> : null}
-            {image && imageAlt ? (
+            {!suppressEdgeManagedMeta && image ? (
+                <meta property="og:image" content={image} />
+            ) : null}
+            {!suppressEdgeManagedMeta && image && imageAlt ? (
                 <meta property="og:image:alt" content={imageAlt} />
             ) : null}
-            {url ? <meta property="og:url" content={url} /> : null}
+            {!suppressEdgeManagedMeta && url ? (
+                <meta property="og:url" content={url} />
+            ) : null}
             {articlePublishedTime ? (
                 <meta
                     property="article:published_time"
@@ -272,11 +283,15 @@ export default function SeoHelmet({
                 name="twitter:card"
                 content={image ? "summary_large_image" : "summary"}
             />
-            {title ? <meta name="twitter:title" content={title} /> : null}
-            {description ? (
+            {!suppressEdgeManagedMeta && title ? (
+                <meta name="twitter:title" content={title} />
+            ) : null}
+            {!suppressEdgeManagedMeta && description ? (
                 <meta name="twitter:description" content={description} />
             ) : null}
-            {image ? <meta name="twitter:image" content={image} /> : null}
+            {!suppressEdgeManagedMeta && image ? (
+                <meta name="twitter:image" content={image} />
+            ) : null}
             {image && imageAlt ? (
                 <meta name="twitter:image:alt" content={imageAlt} />
             ) : null}

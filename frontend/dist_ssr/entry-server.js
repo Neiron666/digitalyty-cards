@@ -2030,10 +2030,11 @@ function SeoHelmet({
   useEffect(() => {
     setSuppressJsonLd(hasTrustedEdgeJsonLd(canonicalUrl2));
   }, [canonicalUrl2]);
+  const suppressEdgeManagedMeta = suppressJsonLd;
   return /* @__PURE__ */ jsxs(Helmet, { children: [
     title2 ? /* @__PURE__ */ jsx("title", { children: title2 }) : null,
-    description ? /* @__PURE__ */ jsx("meta", { name: "description", content: description }) : null,
-    canonicalUrl2 ? /* @__PURE__ */ jsx("link", { rel: "canonical", href: canonicalUrl2 }) : null,
+    !suppressEdgeManagedMeta && description ? /* @__PURE__ */ jsx("meta", { name: "description", content: description }) : null,
+    !suppressEdgeManagedMeta && canonicalUrl2 ? /* @__PURE__ */ jsx("link", { rel: "canonical", href: canonicalUrl2 }) : null,
     robotsNormalized ? /* @__PURE__ */ jsx("meta", { name: "robots", content: robotsNormalized }) : null,
     googleSiteVerificationNormalized ? /* @__PURE__ */ jsx(
       "meta",
@@ -2052,11 +2053,11 @@ function SeoHelmet({
     /* @__PURE__ */ jsx("meta", { property: "og:locale", content: "he_IL" }),
     /* @__PURE__ */ jsx("meta", { property: "og:site_name", content: "Cardigo" }),
     /* @__PURE__ */ jsx("meta", { property: "og:type", content: ogType }),
-    title2 ? /* @__PURE__ */ jsx("meta", { property: "og:title", content: title2 }) : null,
-    description ? /* @__PURE__ */ jsx("meta", { property: "og:description", content: description }) : null,
-    image ? /* @__PURE__ */ jsx("meta", { property: "og:image", content: image }) : null,
-    image && imageAlt ? /* @__PURE__ */ jsx("meta", { property: "og:image:alt", content: imageAlt }) : null,
-    url ? /* @__PURE__ */ jsx("meta", { property: "og:url", content: url }) : null,
+    !suppressEdgeManagedMeta && title2 ? /* @__PURE__ */ jsx("meta", { property: "og:title", content: title2 }) : null,
+    !suppressEdgeManagedMeta && description ? /* @__PURE__ */ jsx("meta", { property: "og:description", content: description }) : null,
+    !suppressEdgeManagedMeta && image ? /* @__PURE__ */ jsx("meta", { property: "og:image", content: image }) : null,
+    !suppressEdgeManagedMeta && image && imageAlt ? /* @__PURE__ */ jsx("meta", { property: "og:image:alt", content: imageAlt }) : null,
+    !suppressEdgeManagedMeta && url ? /* @__PURE__ */ jsx("meta", { property: "og:url", content: url }) : null,
     articlePublishedTime ? /* @__PURE__ */ jsx(
       "meta",
       {
@@ -2079,9 +2080,9 @@ function SeoHelmet({
         content: image ? "summary_large_image" : "summary"
       }
     ),
-    title2 ? /* @__PURE__ */ jsx("meta", { name: "twitter:title", content: title2 }) : null,
-    description ? /* @__PURE__ */ jsx("meta", { name: "twitter:description", content: description }) : null,
-    image ? /* @__PURE__ */ jsx("meta", { name: "twitter:image", content: image }) : null,
+    !suppressEdgeManagedMeta && title2 ? /* @__PURE__ */ jsx("meta", { name: "twitter:title", content: title2 }) : null,
+    !suppressEdgeManagedMeta && description ? /* @__PURE__ */ jsx("meta", { name: "twitter:description", content: description }) : null,
+    !suppressEdgeManagedMeta && image ? /* @__PURE__ */ jsx("meta", { name: "twitter:image", content: image }) : null,
     image && imageAlt ? /* @__PURE__ */ jsx("meta", { name: "twitter:image:alt", content: imageAlt }) : null,
     trackingMode === "gtm" ? /* @__PURE__ */ jsx("script", { children: buildGtmSnippet(gtmIdNormalized) }, "gtm-inline") : null,
     trackingMode === "ga" ? /* @__PURE__ */ jsx(
