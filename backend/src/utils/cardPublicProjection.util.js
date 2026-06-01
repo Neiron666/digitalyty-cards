@@ -25,6 +25,10 @@
  */
 
 import { robotsContainsNoindex } from "./seoIndexability.js";
+import {
+    buildCardFaqJsonLd,
+    getCardFaqJsonLdId,
+} from "./cardFaqJsonLd.util.js";
 
 // TEMP MIRROR of og.routes.js DEFAULT_OG_IMAGE_SUFFIX.
 // Must be consolidated when og.routes.js is wired to this projection
@@ -452,7 +456,30 @@ export function toCardPublicSeoDTO(dto, ctx) {
     const indexable = !robotsContainsNoindex(robotsResolved);
 
     const seoBlock = isPlainObject(dto.seo) ? dto.seo : {};
-    const jsonLdItems = normalizeJsonLd(seoBlock.jsonLd);
+    const userJsonLdItems = normalizeJsonLd(seoBlock.jsonLd);
+
+    // Phase 2A: auto-build FAQPage JSON-LD from already-public FAQ items.
+    // Canonical is the backend self-public URL (publicUrl); user-editable
+    // seo.canonicalUrl is never used. Owner-provided JSON-LD with the same
+    // FAQPage @id (${publicUrl}#faq) is suppressed so the auto item wins.
+    const rawFaq = Array.isArray(dto.faq) ? dto.faq : [];
+    const publicFaqItems = rawFaq.map(narrowFaqItem).filter((f) => f !== null);
+    const autoFaqJsonLd = buildCardFaqJsonLd(publicFaqItems, publicUrl);
+    const autoFaqId = getCardFaqJsonLdId(publicUrl);
+    const filteredUserItems = autoFaqJsonLd
+        ? userJsonLdItems.filter(
+              (it) =>
+                  !(
+                      isPlainObject(it) &&
+                      it["@type"] === "FAQPage" &&
+                      typeof it["@id"] === "string" &&
+                      it["@id"] === autoFaqId
+                  ),
+          )
+        : userJsonLdItems;
+    const jsonLdItems = autoFaqJsonLd
+        ? [autoFaqJsonLd, ...filteredUserItems]
+        : filteredUserItems;
 
     return {
         canonicalUrl: publicUrl,
