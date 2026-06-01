@@ -354,14 +354,9 @@ async function serveCardEnrichedShell(backendPath, context, { isCrawler }) {
         const shellClone = shellResponse.clone();
         const shellHtml = await shellClone.text();
         const headInjectedHtml = injectMetadataIntoShell(ogHtml, shellHtml);
+        // Visible body fallback temporarily disabled: P1 product-trust/perceived-performance issue.
+        // Preserve Edge head + JSON-LD only. Root fix: PUBLIC_CARD_DATA_ISLAND_FOR_FAST_HYDRATION_P1_AUDIT.
         let finalHtml = headInjectedHtml;
-        try {
-            const rawBody = extractOgMainContent(ogHtml);
-            const safeBody = sanitizeOgBody(rawBody);
-            finalHtml = injectBodyFallback(safeBody, headInjectedHtml);
-        } catch (_bodyErr) {
-            finalHtml = headInjectedHtml;
-        }
         return new Response(finalHtml, {
             status: 200,
             headers: {
