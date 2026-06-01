@@ -1465,6 +1465,10 @@ function InstallCta() {
     showIOSGuide
   } = useInstallPrompt();
   const [highlighted, setHighlighted] = useState(false);
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
   let helpText2;
   if (isInstalled) {
     helpText2 = "✓ Cardigo מותקן במכשיר שלכם";
@@ -1495,7 +1499,7 @@ function InstallCta() {
         children: "התקינו את Cardigo"
       }
     ),
-    helpText2 && /* @__PURE__ */ jsx("p", { className: helpClass, children: helpText2 })
+    mounted && helpText2 && /* @__PURE__ */ jsx("p", { className: helpClass, children: helpText2 })
   ] });
 }
 function Footer({ onOpenPrivacyPrefs }) {

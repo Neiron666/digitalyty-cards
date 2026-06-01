@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import useInstallPrompt from "../../hooks/useInstallPrompt";
 import styles from "./InstallCta.module.css";
 
@@ -14,6 +14,11 @@ export default function InstallCta() {
     } = useInstallPrompt();
 
     const [highlighted, setHighlighted] = useState(false);
+    const [mounted, setMounted] = useState(false);
+
+    useEffect(() => {
+        setMounted(true);
+    }, []);
 
     let helpText;
     if (isInstalled) {
@@ -51,7 +56,7 @@ export default function InstallCta() {
             >
                 התקינו את Cardigo
             </button>
-            {helpText && <p className={helpClass}>{helpText}</p>}
+            {mounted && helpText && <p className={helpClass}>{helpText}</p>}
         </div>
     );
 }
