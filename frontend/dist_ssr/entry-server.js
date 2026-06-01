@@ -1722,16 +1722,19 @@ function CookieConsentBanner({ reopenPrefs }) {
 }
 const SUPPORT_EMAIL = "support@cardigo.co.il";
 const SUPPORT_WHATSAPP_URL = "https://wa.me/972545811900";
+const SUPPORT_WHATSAPP_MESSAGE = "שלום, ראיתי את Cardigo ואני רוצה להבין איך אפשר ליצור כרטיס ביקור דיגיטלי לעסק שלי. אשמח לעזרה 👋";
+function buildSupportWhatsAppHref(message = SUPPORT_WHATSAPP_MESSAGE) {
+  return `${SUPPORT_WHATSAPP_URL}?text=${encodeURIComponent(message)}`;
+}
 const cta = "_cta_1fokp_13";
-const icon = "_icon_1fokp_177";
+const icon$1 = "_icon_1fokp_177";
 const label$1 = "_label_1fokp_205";
 const styles$h = {
   cta,
-  icon,
+  icon: icon$1,
   label: label$1
 };
-const WA_MESSAGE = "שלום, ראיתי את Cardigo ואני רוצה להבין איך אפשר ליצור כרטיס ביקור דיגיטלי לעסק שלי. אשמח לעזרה 👋";
-const href = `${SUPPORT_WHATSAPP_URL}?text=${encodeURIComponent(WA_MESSAGE)}`;
+const href = buildSupportWhatsAppHref();
 function FloatingWhatsAppCta() {
   return /* @__PURE__ */ jsxs(
     "a",
@@ -2725,6 +2728,12 @@ const styles$d = {
   heroShine,
   ctaGlow
 };
+const skin = "_skin_1l1dv_15";
+const icon = "_icon_1l1dv_107";
+const whatsappStyles = {
+  skin,
+  icon
+};
 function svgProps(className, title2) {
   const decorative = !title2;
   return {
@@ -3299,6 +3308,27 @@ function Home() {
             children: "צרו כרטיס דיגיטלי בחינם"
           }
         ),
+        /* @__PURE__ */ jsxs(
+          Button,
+          {
+            as: "a",
+            href: buildSupportWhatsAppHref(),
+            target: "_blank",
+            rel: "noopener noreferrer",
+            variant: "primary",
+            className: `${styles$d.heroCta} ${whatsappStyles.skin}`,
+            children: [
+              /* @__PURE__ */ jsx(
+                "span",
+                {
+                  className: whatsappStyles.icon,
+                  "aria-hidden": "true"
+                }
+              ),
+              "עזרו לי ליצור כרטיס בחינם"
+            ]
+          }
+        ),
         /* @__PURE__ */ jsxs("span", { className: styles$d.heroTrialNote, children: [
           "כולל 10 ימי פרימיום למשתמשים חדשים",
           /* @__PURE__ */ jsx(CrownIcon, { className: styles$d.heroTrialCrown })
@@ -3626,13 +3656,13 @@ function Home() {
           children: "הנה כמה מהתבניות לדוגמא…"
         }
       ),
-      /* @__PURE__ */ jsx("div", { className: styles$d.templatesShowcase, children: TEMPLATE_SKINS.map((skin, i) => /* @__PURE__ */ jsxs("div", { className: styles$d.templateCard, children: [
+      /* @__PURE__ */ jsx("div", { className: styles$d.templatesShowcase, children: TEMPLATE_SKINS.map((skin2, i) => /* @__PURE__ */ jsxs("div", { className: styles$d.templateCard, children: [
         /* @__PURE__ */ jsx(
           "img",
           {
             className: styles$d.templateCardImg,
-            src: skin.src,
-            alt: `תבנית ${skin.name}`,
+            src: skin2.src,
+            alt: `תבנית ${skin2.name}`,
             loading: "lazy",
             width: "300",
             height: "520"
@@ -6339,14 +6369,25 @@ function Cards() {
               children: "צרו כרטיס דיגיטלי בחינם"
             }
           ),
-          /* @__PURE__ */ jsx(
+          /* @__PURE__ */ jsxs(
             Button,
             {
-              as: Link,
-              to: "/pricing",
+              as: "a",
+              href: buildSupportWhatsAppHref(),
+              target: "_blank",
+              rel: "noopener noreferrer",
               variant: "secondary",
-              className: styles$7.heroSecondary,
-              children: "מסלולים ומחירים"
+              className: `${styles$7.heroSecondary} ${whatsappStyles.skin}`,
+              children: [
+                /* @__PURE__ */ jsx(
+                  "span",
+                  {
+                    className: whatsappStyles.icon,
+                    "aria-hidden": "true"
+                  }
+                ),
+                "עזרו לי ליצור כרטיס בחינם"
+              ]
             }
           )
         ] })

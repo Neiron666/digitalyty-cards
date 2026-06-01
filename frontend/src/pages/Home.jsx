@@ -13,6 +13,8 @@ import useScrollProgress from "../hooks/useScrollProgress";
 import pub from "../styles/public-sections.module.css";
 import CrownIcon from "../components/icons/CrownIcon";
 import styles from "./Home.module.css";
+import whatsappStyles from "../components/marketing/WhatsAppCtaSkin.module.css";
+import { buildSupportWhatsAppHref } from "../utils/supportContact";
 import {
     GalleryIcon,
     ContentIcon,
@@ -517,6 +519,20 @@ export default function Home() {
                             }
                         >
                             צרו כרטיס דיגיטלי בחינם
+                        </Button>
+                        <Button
+                            as="a"
+                            href={buildSupportWhatsAppHref()}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            variant="primary"
+                            className={`${styles.heroCta} ${whatsappStyles.skin}`}
+                        >
+                            <span
+                                className={whatsappStyles.icon}
+                                aria-hidden="true"
+                            />
+                            עזרו לי ליצור כרטיס בחינם
                         </Button>
                         <span className={styles.heroTrialNote}>
                             כולל 10 ימי פרימיום למשתמשים חדשים

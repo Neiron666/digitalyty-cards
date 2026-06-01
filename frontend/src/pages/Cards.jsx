@@ -14,6 +14,8 @@ import {
 import { SITE_ACTIONS } from "../services/siteAnalytics.actions";
 import pub from "../styles/public-sections.module.css";
 import styles from "./Cards.module.css";
+import whatsappStyles from "../components/marketing/WhatsAppCtaSkin.module.css";
+import { buildSupportWhatsAppHref } from "../utils/supportContact";
 import CrownIcon from "../components/icons/CrownIcon";
 const ORIGIN = import.meta.env.VITE_PUBLIC_ORIGIN || "https://cardigo.co.il";
 
@@ -276,12 +278,18 @@ export default function Cards() {
                             </Button>
 
                             <Button
-                                as={Link}
-                                to="/pricing"
+                                as="a"
+                                href={buildSupportWhatsAppHref()}
+                                target="_blank"
+                                rel="noopener noreferrer"
                                 variant="secondary"
-                                className={styles.heroSecondary}
+                                className={`${styles.heroSecondary} ${whatsappStyles.skin}`}
                             >
-                                מסלולים ומחירים
+                                <span
+                                    className={whatsappStyles.icon}
+                                    aria-hidden="true"
+                                />
+                                עזרו לי ליצור כרטיס בחינם
                             </Button>
                         </div>
                     </div>

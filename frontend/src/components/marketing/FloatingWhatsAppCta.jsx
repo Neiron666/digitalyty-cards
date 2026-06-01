@@ -1,10 +1,7 @@
-import { SUPPORT_WHATSAPP_URL } from "../../utils/supportContact";
+import { buildSupportWhatsAppHref } from "../../utils/supportContact";
 import styles from "./FloatingWhatsAppCta.module.css";
 
-const WA_MESSAGE =
-    "שלום, ראיתי את Cardigo ואני רוצה להבין איך אפשר ליצור כרטיס ביקור דיגיטלי לעסק שלי. אשמח לעזרה 👋";
-
-const href = `${SUPPORT_WHATSAPP_URL}?text=${encodeURIComponent(WA_MESSAGE)}`;
+const href = buildSupportWhatsAppHref();
 
 export default function FloatingWhatsAppCta() {
     return (
