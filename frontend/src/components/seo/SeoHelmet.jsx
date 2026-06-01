@@ -1,4 +1,36 @@
+import { useEffect, useState } from "react";
 import { Helmet } from "react-helmet-async";
+
+// P2B-1 cross-phase contract: P2B-2 Edge function MUST emit JSON-LD scripts
+// carrying both attributes below. Do not rename; do not remove as dead code.
+export const EDGE_LD_MARKER_SELECTOR =
+    'script[type="application/ld+json"][data-cardigo-edge-ld="1"]';
+export const EDGE_LD_CANONICAL_ATTR = "data-cardigo-edge-ld-canonical";
+
+function hasTrustedEdgeJsonLd(canonicalUrl) {
+    try {
+        if (typeof document === "undefined") return false;
+        const head = document.head;
+        if (!head) return false;
+        const nodes = head.querySelectorAll(EDGE_LD_MARKER_SELECTOR);
+        if (!nodes || nodes.length === 0) return false;
+        const current =
+            typeof canonicalUrl === "string" ? canonicalUrl.trim() : "";
+        let sawCanonicalAttr = false;
+        for (const n of nodes) {
+            if (n.hasAttribute(EDGE_LD_CANONICAL_ATTR)) {
+                sawCanonicalAttr = true;
+                if (n.getAttribute(EDGE_LD_CANONICAL_ATTR) === current) {
+                    return true;
+                }
+            }
+        }
+        if (sawCanonicalAttr) return false;
+        return true;
+    } catch {
+        return false;
+    }
+}
 
 const EXACT_PLACEHOLDERS = new Set(["GTM-XXXXXXX", "G-XXXXXXX"]);
 
@@ -176,6 +208,11 @@ export default function SeoHelmet({
                 : "none"
         : "none";
 
+    const [suppressJsonLd, setSuppressJsonLd] = useState(false);
+    useEffect(() => {
+        setSuppressJsonLd(hasTrustedEdgeJsonLd(canonicalUrl));
+    }, [canonicalUrl]);
+
     return (
         <Helmet>
             {title ? <title>{title}</title> : null}
@@ -269,15 +306,19 @@ export default function SeoHelmet({
                 </script>
             ) : null}
 
-            {scripts.map((obj, index) => (
-                <script
-                    // eslint-disable-next-line react/no-array-index-key
-                    key={`jsonld-${index}`}
-                    type="application/ld+json"
-                >
-                    {JSON.stringify(obj).replace(/<\/script>/gi, "<\\/script>")}
-                </script>
-            ))}
+            {!suppressJsonLd &&
+                scripts.map((obj, index) => (
+                    <script
+                        // eslint-disable-next-line react/no-array-index-key
+                        key={`jsonld-${index}`}
+                        type="application/ld+json"
+                    >
+                        {JSON.stringify(obj).replace(
+                            /<\/script>/gi,
+                            "<\\/script>",
+                        )}
+                    </script>
+                ))}
         </Helmet>
     );
 }

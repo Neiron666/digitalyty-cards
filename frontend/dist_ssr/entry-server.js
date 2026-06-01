@@ -1890,6 +1890,31 @@ function RouteFallback({ label: label2 = "טוען…" } = {}) {
     /* @__PURE__ */ jsx("div", { className: styles$e.label, children: label2 })
   ] });
 }
+const EDGE_LD_MARKER_SELECTOR = 'script[type="application/ld+json"][data-cardigo-edge-ld="1"]';
+const EDGE_LD_CANONICAL_ATTR = "data-cardigo-edge-ld-canonical";
+function hasTrustedEdgeJsonLd(canonicalUrl2) {
+  try {
+    if (typeof document === "undefined") return false;
+    const head = document.head;
+    if (!head) return false;
+    const nodes = head.querySelectorAll(EDGE_LD_MARKER_SELECTOR);
+    if (!nodes || nodes.length === 0) return false;
+    const current = typeof canonicalUrl2 === "string" ? canonicalUrl2.trim() : "";
+    let sawCanonicalAttr = false;
+    for (const n of nodes) {
+      if (n.hasAttribute(EDGE_LD_CANONICAL_ATTR)) {
+        sawCanonicalAttr = true;
+        if (n.getAttribute(EDGE_LD_CANONICAL_ATTR) === current) {
+          return true;
+        }
+      }
+    }
+    if (sawCanonicalAttr) return false;
+    return true;
+  } catch {
+    return false;
+  }
+}
 const EXACT_PLACEHOLDERS = /* @__PURE__ */ new Set(["GTM-XXXXXXX", "G-XXXXXXX"]);
 const BLOCKED_GTM_IDS = /* @__PURE__ */ new Set(["GTM-W6Q8DP6R"]);
 const BLOCKED_PIXEL_IDS = /* @__PURE__ */ new Set(["1901625820558020"]);
@@ -2001,6 +2026,10 @@ function SeoHelmet({
   const gaMeasurementIdNormalized = normalizeGaMeasurementId(gaMeasurementId);
   const metaPixelIdNormalized = normalizeMetaPixelId(metaPixelId);
   const trackingMode = gtmIdNormalized ? "gtm" : gaMeasurementIdNormalized ? "ga" : metaPixelIdNormalized ? "pixel" : "none";
+  const [suppressJsonLd, setSuppressJsonLd] = useState(false);
+  useEffect(() => {
+    setSuppressJsonLd(hasTrustedEdgeJsonLd(canonicalUrl2));
+  }, [canonicalUrl2]);
   return /* @__PURE__ */ jsxs(Helmet, { children: [
     title2 ? /* @__PURE__ */ jsx("title", { children: title2 }) : null,
     description ? /* @__PURE__ */ jsx("meta", { name: "description", content: description }) : null,
@@ -2065,11 +2094,14 @@ function SeoHelmet({
     ) : null,
     trackingMode === "ga" ? /* @__PURE__ */ jsx("script", { children: buildGtagInitSnippet(gaMeasurementIdNormalized) }, "gtag-inline") : null,
     trackingMode === "pixel" ? /* @__PURE__ */ jsx("script", { children: buildMetaPixelSnippet(metaPixelIdNormalized) }, "pixel-inline") : null,
-    scripts.map((obj, index) => /* @__PURE__ */ jsx(
+    !suppressJsonLd && scripts.map((obj, index) => /* @__PURE__ */ jsx(
       "script",
       {
         type: "application/ld+json",
-        children: JSON.stringify(obj).replace(/<\/script>/gi, "<\\/script>")
+        children: JSON.stringify(obj).replace(
+          /<\/script>/gi,
+          "<\\/script>"
+        )
       },
       `jsonld-${index}`
     ))
@@ -2728,8 +2760,8 @@ const styles$d = {
   heroShine,
   ctaGlow
 };
-const skin = "_skin_1l1dv_15";
-const icon = "_icon_1l1dv_107";
+const skin = "_skin_1khhr_15";
+const icon = "_icon_1khhr_109";
 const whatsappStyles = {
   skin,
   icon
