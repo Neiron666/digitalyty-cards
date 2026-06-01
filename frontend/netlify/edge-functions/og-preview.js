@@ -135,9 +135,7 @@ function injectMetadataIntoShell(ogHtml, shellHtml) {
     if (canonicalHref) {
         const canonicalAttr = escapeHtml(canonicalHref);
         const scriptMatches = [
-            ...ogHead.matchAll(
-                /<script\b([^>]*)>([\s\S]*?)<\/script>/gi,
-            ),
+            ...ogHead.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/gi),
         ];
         for (const m of scriptMatches) {
             if (jsonLdRebuilt.length >= MAX_LD_SCRIPTS) break;
@@ -610,11 +608,9 @@ export default async function ogPreview(request, context) {
             // public, max-age=60, stale-while-revalidate=300 (inside helper).
             // Browser and crawler now share the same enriched body; Vary:
             // User-Agent in helper response keeps social bucket separate.
-            return await serveCardEnrichedShell(
-                crawlerBackendPath,
-                context,
-                { isCrawler: true },
-            );
+            return await serveCardEnrichedShell(crawlerBackendPath, context, {
+                isCrawler: true,
+            });
         } else {
             // Browser or unclassified UA branch.
             // Fast-pass non-card/c routes BEFORE any backend fetch or proxy-secret
@@ -625,11 +621,9 @@ export default async function ogPreview(request, context) {
                 if (!SLUG_RE.test(slug)) return context.next();
                 const backendPath =
                     BACKEND_ORIGIN + "/og/card/" + encodeURIComponent(slug);
-                return await serveCardEnrichedShell(
-                    backendPath,
-                    context,
-                    { isCrawler: false },
-                );
+                return await serveCardEnrichedShell(backendPath, context, {
+                    isCrawler: false,
+                });
             }
             if (segments[0] === "c" && segments.length === 3) {
                 const orgSlug = segments[1];
@@ -642,11 +636,9 @@ export default async function ogPreview(request, context) {
                     encodeURIComponent(orgSlug) +
                     "/" +
                     encodeURIComponent(slug);
-                return await serveCardEnrichedShell(
-                    backendPath,
-                    context,
-                    { isCrawler: false },
-                );
+                return await serveCardEnrichedShell(backendPath, context, {
+                    isCrawler: false,
+                });
             }
             return context.next();
         }
