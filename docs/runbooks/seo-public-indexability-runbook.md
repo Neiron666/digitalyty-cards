@@ -1,7 +1,7 @@
 # SEO Public Indexability вЂ” Operational Runbook (Cardigo)
 
 **Scope:** Full public indexability of cardigo.co.il вЂ” blog, guides, cards, marketing pages.
-**Status:** Live (gate removed 2026-05-03). 13 SEO contours CLOSED as of 2026-05-09. PUBLIC*CARD_OG_INITIAL_METADATA_EDGE_INJECTION_P2A CLOSED/PRODUCTION VERIFIED 2026-05-09. STATIC_SOCIAL_META_HELMET_DEDUP_P2 CLOSED/PRODUCTION VERIFIED 2026-05-09. MARKETING_STATIC_ROUTES_INITIAL_METADATA_AUDIT_P1 CLOSED/PRODUCTION VERIFIED 2026-05-09. SEO_HOMEPAGE_TITLE_SINGULAR_INTENT CLOSED/PRODUCTION VERIFIED 2026-05-23. SEO_TWITTER_CARD_GUARD_P2 CLOSED/PRODUCTION VERIFIED 2026-05-23. SEO_BACKEND_OG_METADATA_PARITY_P2 CLOSED/PRODUCTION VERIFIED 2026-05-23. (Count baseline 13 as of 2026-05-09 preserved; total not incremented — a comprehensive recount including post-2026-05-09 SCHEMA*\_, AUTHCONTEXT\_\_, and WRS contour closures is needed before asserting a new total.) PUBLIC_CARD_SEO_RENDERING_D1_CHAIN CLOSED/PRODUCTION VERIFIED 2026-06-01: P2A-FIX CLOSED/PASS, P2B-1 CLOSED/PASS, P2B-2 CLOSED/PASS, P2B-3 CLOSED/PASS, PUBLIC_CARD_EDGE_VISIBLE_BODY_FALLBACK_D1 CLOSED/PASS. See Section 21 and `docs/handoffs/current/Cardigo_Enterprise_Handoff_2026-06-01_PublicCard_SEO_Rendering_D1_Closed.md`.
+**Status:** Live (gate removed 2026-05-03). 13 SEO contours CLOSED as of 2026-05-09. PUBLIC*CARD_OG_INITIAL_METADATA_EDGE_INJECTION_P2A CLOSED/PRODUCTION VERIFIED 2026-05-09. STATIC_SOCIAL_META_HELMET_DEDUP_P2 CLOSED/PRODUCTION VERIFIED 2026-05-09. MARKETING_STATIC_ROUTES_INITIAL_METADATA_AUDIT_P1 CLOSED/PRODUCTION VERIFIED 2026-05-09. SEO_HOMEPAGE_TITLE_SINGULAR_INTENT CLOSED/PRODUCTION VERIFIED 2026-05-23. SEO_TWITTER_CARD_GUARD_P2 CLOSED/PRODUCTION VERIFIED 2026-05-23. SEO_BACKEND_OG_METADATA_PARITY_P2 CLOSED/PRODUCTION VERIFIED 2026-05-23. (Count baseline 13 as of 2026-05-09 preserved; total not incremented — a comprehensive recount including post-2026-05-09 SCHEMA*\_, AUTHCONTEXT\_\_, and WRS contour closures is needed before asserting a new total.) PUBLIC_CARD_SEO_RENDERING_D1_CHAIN CLOSED/PRODUCTION VERIFIED 2026-06-01: P2A-FIX CLOSED/PASS, P2B-1 CLOSED/PASS, P2B-2 CLOSED/PASS, P2B-3 CLOSED/PASS, PUBLIC_CARD_EDGE_VISIBLE_BODY_FALLBACK_D1 CLOSED/PASS. See Section 21 and `docs/handoffs/current/Cardigo_Enterprise_Handoff_2026-06-01_PublicCard_SEO_Rendering_D1_Closed.md`. PUBLIC_CARD_FALLBACK_DISABLE_P2B_MINIMAL CLOSED/PRODUCTION VERIFIED 2026-06-01. See Section 22 and `docs/handoffs/current/Cardigo_Enterprise_Handoff_2026-06-01_PublicCard_Fallback_Disable_P2B_Closed.md`.
 **Canonical domain SSoT:** https://cardigo.co.il (non-www; www redirects at DNS/hosting layer)
 
 ---
@@ -42,19 +42,18 @@ Request в†’ cardigo.co.il
           в”‚    title, meta description, canonical, robots (if present),
           в”‚    og:* metas, twitter:* metas,
           в”‚    JSON-LD FAQPage + LocalBusiness (data-cardigo-edge-ld="1")
-          в”‚  в†’ injects visible semantic fallback body before <div id="root"></div>
-          в”‚    (id="cardigo-body-fallback"; fallback is VISIBLE вЂ“ not hidden;
-          в”‚     #root remains empty in raw Edge HTML)
+          в”‚  в†’ body fallback injection DISABLED (PUBLIC_CARD_FALLBACK_DISABLE_P2B_MINIMAL 2026-06-01) вЂ“ Edge head + JSON-LD only
+          в”‚    (no fallback body in raw Edge HTML; #root is empty; see Section 22)
           в”‚  в†’ Cache-Control: public, max-age=60, stale-while-revalidate=300, Vary: User-Agent
           в”‚  [Same enriched shell served to browsers AND Googlebot]
           в”‚        в”‚
           в”‚       [Crawler/browser sees SPA shell with per-card metadata,
-          в”‚        Edge-marked JSON-LD, and visible fallback body before empty #root]
+          в”‚        Edge-marked JSON-LD, empty #root вЂ“ body fallback DISABLED]
           в”‚        в”‚
           в”‚       React runtime (browser): #root empty вЂ“ createRoot().render(app)
           в”‚        SeoHelmet: suppresses duplicate JSON-LD (P2B-1) and
           в”‚                   selected duplicate non-JSON-LD meta (P2B-3)
-          в”‚        PublicCard: cleanup useEffect removes fallback after card loads
+          в”‚        PublicCard: hasEdgeFallback detection + cleanup useEffect remain as inert P2A residue (fallback absent)
           в”‚
           в”њв”Ђ UA is Googlebot / Googlebot-Image / bingbot?
           в”‚  AND path is a top-level marketing route?
@@ -1308,6 +1307,86 @@ Production smoke results:
 
 - Closure handoff: docs/handoffs/current/Cardigo_Enterprise_Handoff_2026-06-01_PublicCard_SEO_Rendering_D1_Closed.md
 - Edge Function: netlify/edge-functions/og-preview.js
-- Fallback body: frontend/src/components/PublicCard/CardBodyFallback.jsx
-- SeoHelmet: frontend/src/components/PublicCard/SeoHelmet.jsx
+- Fallback body (D1 injection DISABLED as of PUBLIC_CARD_FALLBACK_DISABLE_P2B_MINIMAL 2026-06-01; see Section 22): helper defs kept inert in og-preview.js
+- SeoHelmet: frontend/src/components/seo/SeoHelmet.jsx
 - PWA install hydration fix: frontend/src/components/InstallCta/InstallCta.jsx
+
+---
+
+## 22. PUBLIC_CARD_FALLBACK_DISABLE_P2B_MINIMAL (2026-06-01, CLOSED/PRODUCTION VERIFIED)
+
+### 22.1 Contour Summary
+
+Contour: PUBLIC_CARD_FALLBACK_DISABLE_P2B_MINIMAL
+Status: CLOSED / PASS / PRODUCTION VERIFIED 2026-06-01
+Canonical handoff: docs/handoffs/current/Cardigo_Enterprise_Handoff_2026-06-01_PublicCard_Fallback_Disable_P2B_Closed.md
+
+This contour is a bounded follow-on to PUBLIC_CARD_SEO_RENDERING_D1_CHAIN (Section 21).
+It disables the visible body fallback injection that was implemented in D1.
+It does NOT roll back the SEO head injection or Edge-marked JSON-LD (those remain active).
+
+### 22.2 What Changed
+
+File changed: frontend/netlify/edge-functions/og-preview.js only.
+
+The inner body-injection try/catch in serveCardEnrichedShell was removed.
+The call chain extractOgMainContent -> sanitizeOgBody -> injectBodyFallback is no longer executed.
+Helper function definitions (extractOgMainContent, sanitizeOgBody, injectBodyFallback) kept as dead code for re-enable path.
+finalHtml = headInjectedHtml is the only assignment (no body injection applied).
+Cache headers, social branch, marketing CRAWLER branch, direct /og routes: all UNCHANGED.
+
+### 22.3 Why
+
+D1 visible body fallback caused a visible flash of unstyled plain HTML before the React card UI rendered.
+This was confirmed as a P1 product-trust / perceived-performance issue by the operator at production load time.
+The disable was a product decision, not a technical defect.
+The root fix is a data island (separate contour: PUBLIC_CARD_DATA_ISLAND_FOR_FAST_HYDRATION_P1_AUDIT).
+
+### 22.4 Current /card and /c Flow (post-disable)
+
+Browser and Googlebot receive an enriched shell with:
+
+- Deterministic SEO head (title, description, canonical, robots, og:_, twitter:_)
+- Edge-marked JSON-LD FAQPage + LocalBusiness (data-cardigo-edge-ld="1") x2
+- <div id="root"></div> EMPTY -- no body fallback injected
+- NO cardigo-body-fallback element
+
+React runtime on mount: hasEdgeFallback = false (element absent), createRoot().render(app), API round-trip loads card.
+SeoHelmet P2B-1/P2B-3 suppression: unchanged and active.
+Social branch: unchanged (receives raw backend /og body, not SPA shell).
+Unknown slug (Googlebot): HTTP 404, no-store -- unchanged.
+
+This is NOT full SSR. CardLayout, templates, and skins are client-rendered. Full React SSR remains HOLD.
+
+### 22.5 P2A Residue (inert, do not clean casually)
+
+frontend/src/styles/globals.css: #cardigo-body-fallback CSS block (dead CSS, element never injected).
+frontend/src/pages/PublicCard.jsx: hasEdgeFallback detection + cleanup useEffect (dead code, element never present).
+Disposition: Wait for data island contour direction before cleaning.
+
+### 22.6 Production Smoke Summary (2026-06-01, 9 branches, all PASS)
+
+BROWSER /card: HTTP 200, fallback_present=FALSE, root_empty=TRUE, ld_count=2, edge_marks=2, faqPage=TRUE, localBiz=TRUE, CC=public max-age=60 SWR=300 PASS
+GOOGLEBOT /card: HTTP 200, fallback_present=FALSE, root_empty=TRUE, ld_count=2, edge_marks=2, faqPage=TRUE, CC=public max-age=60 SWR=300 PASS
+BROWSER /c: HTTP 200, fallback_present=FALSE, root_empty=TRUE, ld_count=2, edge_marks=2, faqPage=TRUE, localBiz=TRUE PASS
+SOCIAL /card: HTTP 200, has_root=FALSE, fallback_present=FALSE, ld_count=2, faqPage=TRUE, has_dt=TRUE, CC=public max-age=300 SWR=60 PASS
+SOCIAL /c: HTTP 200, has_root=FALSE, fallback_present=FALSE, ld_count=2, faqPage=TRUE, has_dt=TRUE PASS
+DIRECT /og/card: HTTP 200, has_root=FALSE, fallback_present=FALSE, ld_count=2, faqPage=TRUE, has_dt=TRUE PASS
+DIRECT /og/c: HTTP 200, has_root=FALSE, fallback_present=FALSE, ld_count=2, has_dt=TRUE PASS
+UNKNOWN-BROWSER /card: HTTP 200, has_root=TRUE, fallback_present=FALSE PASS
+UNKNOWN-GOOGLEBOT /card: HTTP 404, body=Not found, cc=no-store PASS
+
+### 22.7 Anti-Regression Rules
+
+Do NOT re-enable body fallback without a new bounded Phase 1 audit and operator approval.
+Do NOT hide any fallback if ever re-enabled (cloaking prohibition).
+Do NOT put content inside <div id="root"></div> in Edge HTML (triggers React hydration mismatch).
+Do NOT change data-cardigo-edge-ld="1" coupling without full P2B-1/P2B-2 cross-phase audit.
+Do NOT clean P2A residue without data island contour decision.
+Full React SSR remains HOLD.
+
+### 22.8 Open Tails
+
+PRIMARY: PUBLIC_CARD_DATA_ISLAND_FOR_FAST_HYDRATION_P1_AUDIT -- data island for zero-loading-state hydration.
+DEFERRED: P2A residue cleanup (globals.css, PublicCard.jsx) -- decide in data island contour.
+OPERATOR: GSC / WRS monitoring -- no regression expected (SEO head + JSON-LD active).
