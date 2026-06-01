@@ -76,12 +76,20 @@ ${includeCanonical ? `<link rel="canonical" href="${u}">\n` : ``}<title>${t}</ti
 <body></body>
 </html>`;
 }
+// JSON-LD whitelist bounds — defense-in-depth caps on Edge-injected trusted scripts
+const MAX_LD_SCRIPTS = 4;
+const MAX_LD_BODY_BYTES = 65536;
+// Reject any script tag carrying these attributes — application/ld+json must be pure inline data
+const FORBIDDEN_SCRIPT_ATTRS_RE =
+    /\b(?:src|nonce|crossorigin|integrity|referrerpolicy|defer|async)\b/i;
+const LD_TYPE_ATTR_RE = /\btype\s*=\s*["']application\/ld\+json["']/i;
+
 function injectMetadataIntoShell(ogHtml, shellHtml) {
     // Scope extraction to ogHtml head block only — never read body content
     const headBlockMatch = ogHtml.match(/<head[^>]*>([\s\S]*?)<\/head>/i);
     const ogHead = headBlockMatch ? headBlockMatch[1] : "";
 
-    // Whitelist-only extraction — never extract http-equiv, refresh, scripts, body
+    // Whitelist-only extraction — never extract http-equiv, refresh, body
     const titleMatch = ogHead.match(/<title[^>]*>[\s\S]*?<\/title>/i);
     const extractedTitle = titleMatch ? titleMatch[0] : null;
 
@@ -94,6 +102,15 @@ function injectMetadataIntoShell(ogHtml, shellHtml) {
         /<link\s[^>]*rel=["']canonical["'][^>]*>/i,
     );
     const extractedCanonical = canonicalMatch ? canonicalMatch[0] : null;
+
+    // Extract canonical href for JSON-LD marker attr; skip JSON-LD entirely if absent
+    let canonicalHref = null;
+    if (extractedCanonical) {
+        const hrefMatch = extractedCanonical.match(
+            /href\s*=\s*["']([^"']+)["']/i,
+        );
+        if (hrefMatch) canonicalHref = hrefMatch[1];
+    }
 
     // robots may be absent for indexed cards — do not insert if not present in ogHtml
     const robotsMatch = ogHead.match(/<meta\s[^>]*name=["']robots["'][^>]*>/i);
@@ -111,12 +128,37 @@ function injectMetadataIntoShell(ogHtml, shellHtml) {
         .map((m) => m[0])
         .join("\n");
 
+    // Trusted application/ld+json whitelist — scoped to ogHead only.
+    // Body is preserved byte-for-byte from backend serializer (already escapes
+    // </script, <!--, U+2028, U+2029). Each rebuilt with P2B-1 marker attrs.
+    const jsonLdRebuilt = [];
+    if (canonicalHref) {
+        const canonicalAttr = escapeHtml(canonicalHref);
+        const scriptMatches = [
+            ...ogHead.matchAll(
+                /<script\b([^>]*)>([\s\S]*?)<\/script>/gi,
+            ),
+        ];
+        for (const m of scriptMatches) {
+            if (jsonLdRebuilt.length >= MAX_LD_SCRIPTS) break;
+            const attrs = m[1] || "";
+            const body = m[2] || "";
+            if (!LD_TYPE_ATTR_RE.test(attrs)) continue;
+            if (FORBIDDEN_SCRIPT_ATTRS_RE.test(attrs)) continue;
+            if (body.length > MAX_LD_BODY_BYTES) continue;
+            jsonLdRebuilt.push(
+                `<script type="application/ld+json" data-cardigo-edge-ld="1" data-cardigo-edge-ld-canonical="${canonicalAttr}">${body}</script>`,
+            );
+        }
+    }
+
     // Build injection block to insert before </head>
     const injectionParts = [];
     if (extractedCanonical) injectionParts.push(extractedCanonical);
     if (extractedRobots) injectionParts.push(extractedRobots);
     if (ogMetaTags) injectionParts.push(ogMetaTags);
     if (twitterMetaTags) injectionParts.push(twitterMetaTags);
+    if (jsonLdRebuilt.length) injectionParts.push(jsonLdRebuilt.join("\n"));
     const injection = injectionParts.join("\n");
 
     let result = shellHtml;
@@ -155,6 +197,13 @@ function injectMetadataIntoShell(ogHtml, shellHtml) {
         "",
     );
 
+    // Remove pre-existing application/ld+json scripts from shell (none today; future-safe).
+    // Non-JSON-LD scripts are preserved intact.
+    result = result.replace(
+        /<script\b[^>]*type=["']application\/ld\+json["'][^>]*>[\s\S]*?<\/script>/gi,
+        "",
+    );
+
     // Insert extracted route-specific tags before </head>
     if (injection) {
         result = result.replace(/<\/head>/i, injection + "\n</head>");
@@ -162,6 +211,111 @@ function injectMetadataIntoShell(ogHtml, shellHtml) {
 
     return result;
 }
+
+// Unified browser+crawler enriched-shell helper for /card and /c routes.
+// Behavior parity: both UA classes receive the same enriched SPA shell body
+// for 200 backend responses. Differs only on 404/410: crawlers get propagated
+// status with no-store; browsers fail-open to context.next() to preserve the
+// existing browser route-status contract (unknown slug = SPA shell 200).
+async function serveCardEnrichedShell(backendPath, context, { isCrawler }) {
+    const proxySecret = Netlify.env.get(SECRET_ENV_KEY) || "";
+    if (!proxySecret) {
+        return context.next();
+    }
+
+    let ogResponse;
+    try {
+        ogResponse = await fetch(backendPath, {
+            method: "GET",
+            headers: {
+                [PROXY_SECRET_HEADER]: proxySecret,
+                accept: "text/html",
+            },
+        });
+    } catch (_fetchErr) {
+        return context.next();
+    }
+
+    const ogStatus = ogResponse.status;
+
+    if (ogStatus === 404) {
+        if (isCrawler) {
+            return new Response("Not found", {
+                status: 404,
+                headers: {
+                    "content-type": "text/html; charset=utf-8",
+                    "cache-control": "no-store",
+                },
+            });
+        }
+        // Browser route-status contract: do not propagate 404 to browser
+        return context.next();
+    }
+
+    if (ogStatus === 410) {
+        if (isCrawler) {
+            return new Response("Gone", {
+                status: 410,
+                headers: {
+                    "content-type": "text/html; charset=utf-8",
+                    "cache-control": "no-store",
+                },
+            });
+        }
+        // Browser route-status contract: do not propagate 410 to browser
+        return context.next();
+    }
+
+    if (ogStatus !== 200) {
+        // 401, 403, 5xx, or any unexpected status — fail open for both UA classes
+        return context.next();
+    }
+
+    const ogCt = ogResponse.headers.get("content-type") || "";
+    if (!ogCt.startsWith("text/html")) {
+        return context.next();
+    }
+
+    const ogHtml = await ogResponse.text();
+
+    // context.next() called exactly once — only after backend fetch succeeds
+    const shellResponse = await context.next();
+
+    if (shellResponse.status !== 200) {
+        return shellResponse;
+    }
+
+    const shellCt = shellResponse.headers.get("content-type") || "";
+    if (!shellCt.startsWith("text/html")) {
+        return shellResponse;
+    }
+
+    try {
+        const shellClone = shellResponse.clone();
+        const shellHtml = await shellClone.text();
+        const injectedHtml = injectMetadataIntoShell(ogHtml, shellHtml);
+        return new Response(injectedHtml, {
+            status: 200,
+            headers: {
+                "content-type": "text/html; charset=utf-8",
+                // Unified cache policy for browser + crawler enriched shell.
+                // Vary: User-Agent is REQUIRED because the same URL returns a
+                // different body to social UAs (backend OG body verbatim).
+                "cache-control":
+                    "public, max-age=60, stale-while-revalidate=300",
+                vary: "User-Agent",
+            },
+        });
+    } catch (_injErr) {
+        // Injection failed — return original shell unchanged
+        // Do NOT call context.next() again
+        return shellResponse;
+    }
+}
+// P2B-2: header.user-agent gate removed so browser UA can enter for /card/:slug
+// and /c/:orgSlug/:slug. Browser UA on non-card/c paths fast-passes via
+// context.next() inside the handler. UA classification (social/crawler/browser)
+// is performed inside the handler via SOCIAL_UA_RE / CRAWLER_UA_RE.
 export const config = {
     path: [
         "/card/*",
@@ -175,10 +329,6 @@ export const config = {
         "/guides",
     ],
     method: ["GET"],
-    header: {
-        "user-agent":
-            "(facebookexternalhit|Facebot|WhatsApp|whatsapp|Twitterbot|LinkedInBot|TelegramBot|Slackbot|Slack-ImgProxy|Discordbot|discordbot|Pinterest|pinterest|vkShare|Googlebot|Googlebot-Image|bingbot)",
-    },
 };
 
 export default async function ogPreview(request, context) {
@@ -359,6 +509,9 @@ export default async function ogPreview(request, context) {
                         "content-type": "text/html; charset=utf-8",
                         "cache-control":
                             "public, max-age=300, stale-while-revalidate=60",
+                        // P2B-2: Vary required — browser/crawler UA now receive
+                        // an enriched SPA shell for the same URL.
+                        vary: "User-Agent",
                     },
                 });
             }
@@ -453,87 +606,48 @@ export default async function ogPreview(request, context) {
                 return context.next();
             }
 
-            const crawlerProxySecret = Netlify.env.get(SECRET_ENV_KEY) || "";
-            if (!crawlerProxySecret) {
-                return context.next();
-            }
-
-            // Sequential fetch — do NOT use Promise.all with context.next()
-            const ogResponse = await fetch(crawlerBackendPath, {
-                method: "GET",
-                headers: {
-                    [PROXY_SECRET_HEADER]: crawlerProxySecret,
-                    accept: "text/html",
-                },
-            });
-
-            const ogStatus = ogResponse.status;
-
-            if (ogStatus === 404) {
-                return new Response("Not found", {
-                    status: 404,
-                    headers: {
-                        "content-type": "text/html; charset=utf-8",
-                        "cache-control": "no-store",
-                    },
-                });
-            }
-
-            if (ogStatus === 410) {
-                return new Response("Gone", {
-                    status: 410,
-                    headers: {
-                        "content-type": "text/html; charset=utf-8",
-                        "cache-control": "no-store",
-                    },
-                });
-            }
-
-            if (ogStatus !== 200) {
-                // 401, 403, 5xx, or any unexpected status — fail open
-                return context.next();
-            }
-
-            const ogCt = ogResponse.headers.get("content-type") || "";
-            if (!ogCt.startsWith("text/html")) {
-                return context.next();
-            }
-
-            const ogHtml = await ogResponse.text();
-
-            // context.next() called exactly once — after backend fetch succeeds
-            const shellResponse = await context.next();
-
-            if (shellResponse.status !== 200) {
-                return shellResponse;
-            }
-
-            const shellCt = shellResponse.headers.get("content-type") || "";
-            if (!shellCt.startsWith("text/html")) {
-                return shellResponse;
-            }
-
-            // Nested try/catch: if injection fails, return original shell without
-            // calling context.next() a second time
-            try {
-                const shellClone = shellResponse.clone();
-                const shellHtml = await shellClone.text();
-                const injectedHtml = injectMetadataIntoShell(ogHtml, shellHtml);
-                return new Response(injectedHtml, {
-                    status: 200,
-                    headers: {
-                        "content-type": "text/html; charset=utf-8",
-                        "cache-control": "no-store",
-                        vary: "User-Agent",
-                    },
-                });
-            } catch (_injErr) {
-                // Injection failed — return original shell unchanged
-                // Do NOT call context.next() again
-                return shellResponse;
-            }
+            // P2B-2: crawler card/c 200 cache policy changed from no-store to
+            // public, max-age=60, stale-while-revalidate=300 (inside helper).
+            // Browser and crawler now share the same enriched body; Vary:
+            // User-Agent in helper response keeps social bucket separate.
+            return await serveCardEnrichedShell(
+                crawlerBackendPath,
+                context,
+                { isCrawler: true },
+            );
         } else {
-            // Browser or unclassified UA — pass through to SPA shell
+            // Browser or unclassified UA branch.
+            // Fast-pass non-card/c routes BEFORE any backend fetch or proxy-secret
+            // access — marketing browser traffic (/cards, /pricing, /contact,
+            // /blog, /guides, /blog/*, /guides/*) costs one Edge invocation only.
+            if (segments[0] === "card" && segments.length === 2) {
+                const slug = segments[1];
+                if (!SLUG_RE.test(slug)) return context.next();
+                const backendPath =
+                    BACKEND_ORIGIN + "/og/card/" + encodeURIComponent(slug);
+                return await serveCardEnrichedShell(
+                    backendPath,
+                    context,
+                    { isCrawler: false },
+                );
+            }
+            if (segments[0] === "c" && segments.length === 3) {
+                const orgSlug = segments[1];
+                const slug = segments[2];
+                if (!SLUG_RE.test(orgSlug) || !SLUG_RE.test(slug))
+                    return context.next();
+                const backendPath =
+                    BACKEND_ORIGIN +
+                    "/og/c/" +
+                    encodeURIComponent(orgSlug) +
+                    "/" +
+                    encodeURIComponent(slug);
+                return await serveCardEnrichedShell(
+                    backendPath,
+                    context,
+                    { isCrawler: false },
+                );
+            }
             return context.next();
         }
     } catch (_err) {
