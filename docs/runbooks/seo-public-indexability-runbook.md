@@ -1,7 +1,7 @@
 # SEO Public Indexability вЂ” Operational Runbook (Cardigo)
 
 **Scope:** Full public indexability of cardigo.co.il вЂ” blog, guides, cards, marketing pages.
-**Status:** Live (gate removed 2026-05-03). 13 SEO contours CLOSED as of 2026-05-09. PUBLIC*CARD_OG_INITIAL_METADATA_EDGE_INJECTION_P2A CLOSED/PRODUCTION VERIFIED 2026-05-09. STATIC_SOCIAL_META_HELMET_DEDUP_P2 CLOSED/PRODUCTION VERIFIED 2026-05-09. MARKETING_STATIC_ROUTES_INITIAL_METADATA_AUDIT_P1 CLOSED/PRODUCTION VERIFIED 2026-05-09. SEO_HOMEPAGE_TITLE_SINGULAR_INTENT CLOSED/PRODUCTION VERIFIED 2026-05-23. SEO_TWITTER_CARD_GUARD_P2 CLOSED/PRODUCTION VERIFIED 2026-05-23. SEO_BACKEND_OG_METADATA_PARITY_P2 CLOSED/PRODUCTION VERIFIED 2026-05-23. (Count baseline 13 as of 2026-05-09 preserved; total not incremented — a comprehensive recount including post-2026-05-09 SCHEMA*\_, AUTHCONTEXT\_\_, and WRS contour closures is needed before asserting a new total.)
+**Status:** Live (gate removed 2026-05-03). 13 SEO contours CLOSED as of 2026-05-09. PUBLIC*CARD_OG_INITIAL_METADATA_EDGE_INJECTION_P2A CLOSED/PRODUCTION VERIFIED 2026-05-09. STATIC_SOCIAL_META_HELMET_DEDUP_P2 CLOSED/PRODUCTION VERIFIED 2026-05-09. MARKETING_STATIC_ROUTES_INITIAL_METADATA_AUDIT_P1 CLOSED/PRODUCTION VERIFIED 2026-05-09. SEO_HOMEPAGE_TITLE_SINGULAR_INTENT CLOSED/PRODUCTION VERIFIED 2026-05-23. SEO_TWITTER_CARD_GUARD_P2 CLOSED/PRODUCTION VERIFIED 2026-05-23. SEO_BACKEND_OG_METADATA_PARITY_P2 CLOSED/PRODUCTION VERIFIED 2026-05-23. (Count baseline 13 as of 2026-05-09 preserved; total not incremented — a comprehensive recount including post-2026-05-09 SCHEMA*\_, AUTHCONTEXT\_\_, and WRS contour closures is needed before asserting a new total.) PUBLIC_CARD_SEO_RENDERING_D1_CHAIN CLOSED/PRODUCTION VERIFIED 2026-06-01: P2A-FIX CLOSED/PASS, P2B-1 CLOSED/PASS, P2B-2 CLOSED/PASS, P2B-3 CLOSED/PASS, PUBLIC_CARD_EDGE_VISIBLE_BODY_FALLBACK_D1 CLOSED/PASS. See Section 21 and `docs/handoffs/current/Cardigo_Enterprise_Handoff_2026-06-01_PublicCard_SEO_Rendering_D1_Closed.md`.
 **Canonical domain SSoT:** https://cardigo.co.il (non-www; www redirects at DNS/hosting layer)
 
 ---
@@ -35,30 +35,26 @@ Request в†’ cardigo.co.il
           в”‚        в”‚
           в”‚       YES
           в”‚        в†“
-          в”‚  Netlify Edge Function (og-preview.js) вЂ” SOCIAL branch
-          в”‚  в†’ proxies to backend /og/* with shared proxy secret header
-          в”‚  в†’ backend generates static OG HTML (article/card meta, image:alt,
-          в”‚    article:published_time, article:modified_time, article:author)
-          в”‚  в†’ social bot sees static HTML (no JS execution needed)
-          в”‚        в”‚
-          в”‚       [bot reads <meta> tags, returns to user]
-          в”‚
-          в”њв”Ђ UA is Googlebot / Googlebot-Image / bingbot?
-          в”‚  AND path is /card/:slug or /c/:orgSlug/:slug?
-          в”‚        в”‚
-          в”‚       YES
-          в”‚        в†“
-          в”‚  Netlify Edge Function (og-preview.js) вЂ” CRAWLER branch
-          в”‚  в†’ fetches backend /og/* for metadata only (not served directly)
+          в”‚  Netlify Edge Function (og-preview.js) вЂ“ CRAWLER branch (updated 2026-06-01)
+          в”‚  в†’ fetches backend /og/* for metadata (not served directly)
           в”‚  в†’ fetches SPA shell via context.next()
-          в”‚  в†’ extracts whitelisted head tags from /og HTML:
+          в”‚  в†’ extracts/injects whitelisted head tags from /og HTML:
           в”‚    title, meta description, canonical, robots (if present),
-          в”‚    og:* metas, twitter:* metas
-          в”‚  в†’ injects extracted tags into SPA shell head (remove-then-insert)
-          в”‚  в†’ returns SPA shell with route-specific head, no meta http-equiv=refresh
-          в”‚  в†’ Cache-Control: no-store, Vary: User-Agent
+          в”‚    og:* metas, twitter:* metas,
+          в”‚    JSON-LD FAQPage + LocalBusiness (data-cardigo-edge-ld="1")
+          в”‚  в†’ injects visible semantic fallback body before <div id="root"></div>
+          в”‚    (id="cardigo-body-fallback"; fallback is VISIBLE вЂ“ not hidden;
+          в”‚     #root remains empty in raw Edge HTML)
+          в”‚  в†’ Cache-Control: public, max-age=60, stale-while-revalidate=300, Vary: User-Agent
+          в”‚  [Same enriched shell served to browsers AND Googlebot]
           в”‚        в”‚
-          в”‚       [Googlebot sees SPA shell with correct per-card metadata]
+          в”‚       [Crawler/browser sees SPA shell with per-card metadata,
+          в”‚        Edge-marked JSON-LD, and visible fallback body before empty #root]
+          в”‚        в”‚
+          в”‚       React runtime (browser): #root empty вЂ“ createRoot().render(app)
+          в”‚        SeoHelmet: suppresses duplicate JSON-LD (P2B-1) and
+          в”‚                   selected duplicate non-JSON-LD meta (P2B-3)
+          в”‚        PublicCard: cleanup useEffect removes fallback after card loads
           в”‚
           в”њв”Ђ UA is Googlebot / Googlebot-Image / bingbot?
           в”‚  AND path is a top-level marketing route?
@@ -183,31 +179,31 @@ Any change to robots.txt requires explicit contour with rationale and WRS impact
 
 ## 5. Public Indexability Matrix
 
-| Route                            | Indexable? | noindex source                                                        | Metadata source                     | Notes                                                                                                                                        |
-| -------------------------------- | ---------- | --------------------------------------------------------------------- | ----------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
-| /                                | YES        | вЂ”                                                                   | SeoHelmet (Home.jsx)                | Marketing page                                                                                                                               |
-| /blog                            | YES        | вЂ”                                                                   | SeoHelmet (Blog.jsx)                | Listing page                                                                                                                                 |
-| /blog/:slug (published)          | YES        | вЂ”                                                                   | SeoHelmet + JSON-LD (BlogPost.jsx)  | article meta + Breadcrumbs                                                                                                                   |
-| /blog/:slug (not found)          | NO         | SeoHelmet robots="noindex,nofollow"                                   | notFound branch                     | Hebrew not-found title                                                                                                                       |
-| /guides                          | YES        | вЂ”                                                                   | SeoHelmet (Guides.jsx)              | Listing page                                                                                                                                 |
-| /guides/:slug (published)        | YES        | вЂ”                                                                   | SeoHelmet + JSON-LD (GuidePost.jsx) | article meta + Breadcrumbs                                                                                                                   |
-| /guides/:slug (not found)        | NO         | SeoHelmet robots="noindex,nofollow"                                   | notFound branch                     | Hebrew not-found title                                                                                                                       |
-| /pricing                         | YES        | вЂ”                                                                   | SeoHelmet (Pricing.jsx)             | Marketing page                                                                                                                               |
-| /contact                         | YES        | вЂ”                                                                   | SeoHelmet (Contact.jsx)             | Marketing page                                                                                                                               |
-| /cards                           | YES        | вЂ”                                                                   | SeoHelmet (Cards.jsx)               | Marketing page                                                                                                                               |
-| /privacy                         | YES        | вЂ”                                                                   | SeoHelmet (Privacy.jsx)             | Legal                                                                                                                                        |
-| /terms                           | YES        | вЂ”                                                                   | SeoHelmet (Terms.jsx)               | Legal                                                                                                                                        |
-| /accessibility-statement         | YES        | вЂ”                                                                   | SeoHelmet                           | Legal                                                                                                                                        |
-| /payment-policy                  | YES        | вЂ”                                                                   | SeoHelmet                           | Legal                                                                                                                                        |
-| /card/:slug (paid billing)       | YES        | вЂ”                                                                   | SeoHelmet (PublicCard.jsx)          | resolveSeoIndexability source=billing, isPaid:true                                                                                           |
-| /card/:slug (org entitled)       | YES        | вЂ”                                                                   | SeoHelmet (PublicCard.jsx)          | resolveSeoIndexability source=organization                                                                                                   |
-| /card/:slug (adminTier/override) | YES        | вЂ”                                                                   | SeoHelmet (PublicCard.jsx)          | resolveSeoIndexability source=adminTier or adminOverride                                                                                     |
-| /card/:slug (free-tier)          | NO         | resolveSeoIndexability в†’ cardDTO.js robots: "noindex" в†’ SeoHelmet | Free-tier policy                    | noindex via card DTO                                                                                                                         |
-| /card/:slug (trial-premium)      | NO         | resolveSeoIndexability в†’ cardDTO.js robots: "noindex" в†’ SeoHelmet | Trial policy                        | isPaid:true but intentionally platformForcedNoindex; sitemap excluded; SEO editor access (seo:true) during trial does NOT grant indexability |
-| /c/:orgSlug/:slug (org entitled) | YES        | вЂ”                                                                   | SeoHelmet (PublicCard.jsx)          | Org card; resolveSeoIndexability source=organization                                                                                         |
-| /preview/\*                      | NO         | SeoHelmet hardcoded noindex                                           | PreviewCard.jsx                     | Always noindex                                                                                                                               |
-| /payment/checkout                | NO         | SeoHelmet robots="noindex,nofollow"                                   | CheckoutPage.jsx                    | Always noindex                                                                                                                               |
-| /payment/iframe-return           | NO         | SeoHelmet robots="noindex,nofollow"                                   | IframeReturnPage.jsx                | Always noindex                                                                                                                               |
+| Route                            | Indexable? | noindex source                                                        | Metadata source                                                               | Notes                                                                                                                                        |
+| -------------------------------- | ---------- | --------------------------------------------------------------------- | ----------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| /                                | YES        | вЂ”                                                                   | SeoHelmet (Home.jsx)                                                          | Marketing page                                                                                                                               |
+| /blog                            | YES        | вЂ”                                                                   | SeoHelmet (Blog.jsx)                                                          | Listing page                                                                                                                                 |
+| /blog/:slug (published)          | YES        | вЂ”                                                                   | SeoHelmet + JSON-LD (BlogPost.jsx)                                            | article meta + Breadcrumbs                                                                                                                   |
+| /blog/:slug (not found)          | NO         | SeoHelmet robots="noindex,nofollow"                                   | notFound branch                                                               | Hebrew not-found title                                                                                                                       |
+| /guides                          | YES        | вЂ”                                                                   | SeoHelmet (Guides.jsx)                                                        | Listing page                                                                                                                                 |
+| /guides/:slug (published)        | YES        | вЂ”                                                                   | SeoHelmet + JSON-LD (GuidePost.jsx)                                           | article meta + Breadcrumbs                                                                                                                   |
+| /guides/:slug (not found)        | NO         | SeoHelmet robots="noindex,nofollow"                                   | notFound branch                                                               | Hebrew not-found title                                                                                                                       |
+| /pricing                         | YES        | вЂ”                                                                   | SeoHelmet (Pricing.jsx)                                                       | Marketing page                                                                                                                               |
+| /contact                         | YES        | вЂ”                                                                   | SeoHelmet (Contact.jsx)                                                       | Marketing page                                                                                                                               |
+| /cards                           | YES        | вЂ”                                                                   | SeoHelmet (Cards.jsx)                                                         | Marketing page                                                                                                                               |
+| /privacy                         | YES        | вЂ”                                                                   | SeoHelmet (Privacy.jsx)                                                       | Legal                                                                                                                                        |
+| /terms                           | YES        | вЂ”                                                                   | SeoHelmet (Terms.jsx)                                                         | Legal                                                                                                                                        |
+| /accessibility-statement         | YES        | вЂ”                                                                   | SeoHelmet                                                                     | Legal                                                                                                                                        |
+| /payment-policy                  | YES        | вЂ”                                                                   | SeoHelmet                                                                     | Legal                                                                                                                                        |
+| /card/:slug (paid billing)       | YES        | вЂ”                                                                   | Initial HTML: Edge enriched shell + post-hydration SeoHelmet with suppression | resolveSeoIndexability source=billing, isPaid:true                                                                                           |
+| /card/:slug (org entitled)       | YES        | вЂ”                                                                   | Initial HTML: Edge enriched shell + post-hydration SeoHelmet with suppression | resolveSeoIndexability source=organization                                                                                                   |
+| /card/:slug (adminTier/override) | YES        | вЂ”                                                                   | Initial HTML: Edge enriched shell + post-hydration SeoHelmet with suppression | resolveSeoIndexability source=adminTier or adminOverride                                                                                     |
+| /card/:slug (free-tier)          | NO         | resolveSeoIndexability в†’ cardDTO.js robots: "noindex" в†’ SeoHelmet | Free-tier policy                                                              | noindex via card DTO                                                                                                                         |
+| /card/:slug (trial-premium)      | NO         | resolveSeoIndexability в†’ cardDTO.js robots: "noindex" в†’ SeoHelmet | Trial policy                                                                  | isPaid:true but intentionally platformForcedNoindex; sitemap excluded; SEO editor access (seo:true) during trial does NOT grant indexability |
+| /c/:orgSlug/:slug (org entitled) | YES        | вЂ”                                                                   | Initial HTML: Edge enriched shell + post-hydration SeoHelmet with suppression | Org card; resolveSeoIndexability source=organization                                                                                         |
+| /preview/\*                      | NO         | SeoHelmet hardcoded noindex                                           | PreviewCard.jsx                                                               | Always noindex                                                                                                                               |
+| /payment/checkout                | NO         | SeoHelmet robots="noindex,nofollow"                                   | CheckoutPage.jsx                                                              | Always noindex                                                                                                                               |
+| /payment/iframe-return           | NO         | SeoHelmet robots="noindex,nofollow"                                   | IframeReturnPage.jsx                                                          | Always noindex                                                                                                                               |
 
 ---
 
@@ -484,7 +480,7 @@ When ready, steps:
 | og-drift CI check                                | вЂ”                                                       | P3                                      | Alignment check: index.html vs Home.jsx OG                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
 | sitemap index / image sitemap                    | вЂ”                                                       | Scale                                   | Post-GSC-data decision                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
 | True HTTP 404 for SPA not-found                  | вЂ”                                                       | P2                                      | Infrastructure/hosting contour                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
-| SSR/prerender indexability                       | вЂ”                                                       | P2                                      | Defer until GSC shows WRS issues                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| SSR/prerender indexability (INTERMEDIATE)        | вЂ“                                                       | INTERMEDIATE CLOSED 2026-06-01          | D1 CHAIN closed 2026-06-01. Full SSR HOLD. See Section 21 and Cardigo_Enterprise_Handoff_2026-06-01_PublicCard_SEO_Rendering_D1_Closed.md                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
 | fb:app_id / Meta app governance                  | вЂ”                                                       | P3                                      | Product decision required                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
 | Free-tier card noindex policy review             | вЂ”                                                       | P3                                      | Product decision: OG preview vs noindex                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
 | Static shell canonical policy gate               | SEO_STATIC_SHELL_POLICY_GATE_P1                           | CLOSED                                  | CI/local gate preventing static canonical reintroduction and preserving homepage og:url fallback. Command: `npm.cmd run check:seo-static-shell`. Invariants protected: (1) no static `rel="canonical"` in `frontend/index.html`; (2) exactly one static `og:url`; (3) `og:url` value is `https://cardigo.co.il/`. Production result: initial HTML has no canonical; runtime canonical supplied by SeoHelmet; homepage og:url fallback remains. No source code, package.json, or handoff changes in this contour.                                                                                               |
@@ -575,7 +571,8 @@ Expected: 0 matches outside anti-drift sections.
 | Search crawlers (Googlebot, Googlebot-Image, bingbot)                                                                       | /card/:slug and /c/:orgSlug/:slug only              | SPA shell with route-specific head tags injected from backend /og metadata. No meta refresh. Cache-Control: no-store. Vary: User-Agent.                    |
 | Search crawlers (Googlebot, Googlebot-Image, bingbot)                                                                       | /pricing, /blog, /guides, /cards, /contact          | SPA shell with route-specific head injected from marketingMeta.config.js. No backend /og fetch. Cache-Control: no-store. Vary: User-Agent. See Section 18. |
 | Search crawlers (Googlebot, Googlebot-Image, bingbot)                                                                       | All other paths (blog/:slug, guides/:slug, /, etc.) | Normal SPA shell via context.next(). No injection.                                                                                                         |
-| Browsers and all other UAs                                                                                                  | All paths                                           | Normal SPA shell via context.next(). No injection.                                                                                                         |
+| Browsers and all other UAs                                                                                                  | /card/:slug, /c/:orgSlug/:slug                      | Enriched SPA shell: Edge-injected head + fallback body + JSON-LD. Same shell as Googlebot.                                                                 |
+| Browsers and all other UAs                                                                                                  | All other paths                                     | Normal SPA shell via context.next(). No injection.                                                                                                         |
 
 ---
 
@@ -1244,3 +1241,73 @@ The backend `sitemap.xml` excludes `previousSlugs` alias source slugs, all `/blo
 ### 20.12 Note on sections 1-19 of this runbook
 
 Sections 1-19 of this runbook were written for the SPA-shell + Edge-injected era and the /guides/seo WRS transient incident closure, and remain accurate for `/card/:slug` and `/c/:orgSlug/:slug` (which are still NOT SSG) and for the historical WRS incident record. For marketing, blog, and guides routes listed in 20.1, this section 20 is the new authority. The older sections were not removed because they remain operationally accurate for the card and org-card surfaces and as a historical incident record.
+
+---
+
+## Section 21 — D1 Chain Closure Record (2026-06-01)
+
+### 21.1 Executive Status
+
+All sub-contours of the PUBLIC_CARD_SEO_RENDERING_D1_CHAIN workstream are CLOSED as of 2026-06-01.
+
+Sub-contours closed:
+
+- P2A-FIX: Edge Function og-preview.js restored after accidental removal. Status: CLOSED.
+- P2B-1: SeoHelmet JSON-LD duplicate suppression (data-cardigo-edge-ld="1" guard). Status: CLOSED.
+- P2B-2: Edge Function JSON-LD injection (FAQPage + LocalBusiness). Status: CLOSED.
+- P2B-3: SeoHelmet non-JSON-LD head meta duplicate suppression. Status: CLOSED.
+- MARKETING_SSG_INSTALL_CTA_HYDRATION_MISMATCH: InstallCta helpText mounted-gate fix. Status: CLOSED.
+- D1: Visible semantic fallback body injection (id="cardigo-body-fallback") + cleanup useEffect. Status: CLOSED.
+
+This workstream is NOT full SSR. React SSR / hydrateRoot is not used. The card component renders entirely in the browser via createRoot(). The "fallback" is a visible but non-interactive body section injected by the Netlify Edge Function into the raw HTML delivered to crawlers and browsers alike.
+
+### 21.2 Architecture Truth (as of 2026-06-01)
+
+For /card/:slug and /c/:orgSlug/:slug:
+
+1. Netlify Edge Function (og-preview.js) — unified CRAWLER + BROWSER branch:
+    - Fetches backend /og/\* for metadata (not served directly)
+    - Fetches SPA shell via context.next()
+    - Injects per-card head: title, meta description, canonical, robots, og:_, twitter:_, JSON-LD (FAQPage + LocalBusiness, data-cardigo-edge-ld="1")
+    - Injects visible fallback body (id="cardigo-body-fallback") before <div id="root"></div>
+    - Cache-Control: public, max-age=60, stale-while-revalidate=300, Vary: User-Agent
+
+2. Browser / React runtime:
+    - <div id="root"></div> is empty in the raw Edge HTML
+    - createRoot().render(app) mounts the full React app
+    - SeoHelmet suppresses duplicate JSON-LD (P2B-1) and selected non-JSON-LD head meta (P2B-3)
+    - PublicCard cleanup useEffect removes #cardigo-body-fallback after card loads
+
+3. Googlebot and all non-social UAs: receive the same enriched SPA shell as browsers — Edge-injected head, Edge-marked JSON-LD, and visible semantic fallback body before empty #root.
+
+4. Social crawlers (facebookexternalhit, WhatsApp, Twitterbot, LinkedInBot, and similar social preview bots): NOT affected by D1. Social crawlers still receive the raw backend /og body through the unchanged SOCIAL branch in og-preview.js. D1 did not modify the SOCIAL branch. Social bots do not receive the fallback body and do not receive the SPA shell.
+
+### 21.3 Production Verification (2026-06-01)
+
+Production smoke results:
+
+- /card/:slug (existing card, browser UA): HTTP 200, fallback present, fallback before #root, #root empty in raw HTML, 2x JSON-LD in head (FAQPage + LocalBusiness), data-cardigo-edge-ld="1" present, canonical present, robots present, title present. PASS.
+- /card/:slug (existing card, Googlebot UA): HTTP 200, same enriched shell. PASS.
+- /card/:slug (missing slug, Googlebot UA): HTTP 404 from backend. PASS.
+- Social preview (existing card, social UA): correct og:title, og:description, og:image. PASS.
+
+### 21.4 Security / Privacy Invariants
+
+- Private card data (email, phone, address) is NOT present in fallback body or Edge-injected head.
+- Fallback body contains only: display name, job title, business name, category, city, FAQ pairs — all public-profile fields.
+- No auth tokens, org secrets, or internal IDs in any Edge-injected content.
+
+### 21.5 Open Tails (Not Blocking Closure)
+
+- GSC index coverage validation: operator task — monitor Google Search Console for rendering coverage improvements over 3–4 week window.
+- Cache purge at deploy: Netlify edge cache purge is automatic on deploy; no manual action required.
+- Full SSR (React/Node hydrateRoot): ON HOLD — not needed given current intermediate architecture. Re-evaluate if GSC coverage does not improve.
+- PUBLIC_CARD_EDGE_FALLBACK_VISUAL_SWAP_P1_AUDIT: The D1 fallback is plain semantic HTML, not styled CardLayout. On production, the operator confirmed the fallback can be visible long enough to screenshot before the styled React card UI replaces it. This is accepted D1 behavior and not a rollback reason. Audit whether to reduce or eliminate the visible plain-fallback flash using a data island, faster cleanup, loading-skeleton coordination, minimal static fallback CSS, or another safe approach. Must not use hidden SEO content, must not inject into #root, and must not reopen CardLayout/templates/skins casually. Full React SSR remains HOLD.
+
+### 21.6 Canonical References
+
+- Closure handoff: docs/handoffs/current/Cardigo_Enterprise_Handoff_2026-06-01_PublicCard_SEO_Rendering_D1_Closed.md
+- Edge Function: netlify/edge-functions/og-preview.js
+- Fallback body: frontend/src/components/PublicCard/CardBodyFallback.jsx
+- SeoHelmet: frontend/src/components/PublicCard/SeoHelmet.jsx
+- PWA install hydration fix: frontend/src/components/InstallCta/InstallCta.jsx

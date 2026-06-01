@@ -170,6 +170,12 @@ function PublicCard() {
   const [cardConsentAllowed, setCardConsentAllowed] = useState(
     () => getCardConsentState()?.ownerTrackingAllowed ?? false
   );
+  const [hasEdgeFallback, setHasEdgeFallback] = useState(false);
+  useEffect(() => {
+    setHasEdgeFallback(
+      Boolean(document.getElementById("cardigo-body-fallback"))
+    );
+  }, []);
   useEffect(() => {
     async function loadCard() {
       setError(null);
@@ -209,7 +215,7 @@ function PublicCard() {
     const fallback = document.getElementById("cardigo-body-fallback");
     if (fallback) fallback.remove();
   }, [card]);
-  if (loading) return /* @__PURE__ */ jsx("p", { children: "טוען כרטיס..." });
+  if (loading) return hasEdgeFallback ? null : /* @__PURE__ */ jsx("p", { children: "טוען כרטיס..." });
   if (error) {
     const errorTitle = errorStatus === 410 ? "הכרטיס אינו זמין | Cardigo" : errorStatus !== null ? "הכרטיס לא נמצא | Cardigo" : "שגיאה בטעינת הכרטיס | Cardigo";
     const errorDescription = errorStatus === 410 ? "כרטיס הביקור הדיגיטלי אינו זמין כרגע." : errorStatus !== null ? "כרטיס הביקור הדיגיטלי לא נמצא או שאינו פעיל." : "לא ניתן לטעון את כרטיס הביקור הדיגיטלי כרגע. אנא נסה שוב מאוחר יותר.";

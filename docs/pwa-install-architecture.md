@@ -65,6 +65,7 @@ Scope: frontend only. No backend, no analytics, no service worker.
 - Uses site-shell tokens only (`--fs-ui`, `--gold`, `--gold-fade`, `--text-muted`)
 - Button always visible; never disabled
 - On click: if `canPrompt` → `triggerPrompt()`, else → toggle highlighted help text
+- **[2026-06-01 addendum — MARKETING_SSG_INSTALL_CTA_HYDRATION_MISMATCH]** `helpText` is mounted-gated: rendered only after component mounts (`isMounted` state, `useEffect`). This prevents SSG/prerender hydration mismatch on the marketing homepage where InstallCta is server-rendered without browser PWA state. `CardFooter.jsx` was NOT changed — this fix is in `InstallCta.jsx` only.
 
 ### 2.5 Public card footer CTA
 
@@ -74,6 +75,7 @@ Scope: frontend only. No backend, no analytics, no service worker.
 - Uses card-scope tokens only (`--fs-12`, `--primary`, `--text-main`, `--card-bg`)
 - Hidden in embedded editor preview via `:global([data-preview="phone"]) .installRow { display: none }`
 - Identical behavioral pattern to site footer CTA
+- **[2026-06-01 note]** The mounted-gate fix (MARKETING_SSG_INSTALL_CTA_HYDRATION_MISMATCH) is in `InstallCta.jsx` (site footer CTA, section 2.4). `CardFooter.jsx` is not affected by that fix and renders on a dynamic route with no SSG.
 
 ---
 
@@ -196,5 +198,11 @@ All five sub-contours completed and verified:
 - Early shared install prompt capture runtime — store initialized at app boot, all routes now eligible
 
 All Phase 3 gates passed: `check:inline-styles`, `check:skins`, `check:contract`, `build` — all EXIT 0.
+
+**[2026-06-01 addendum — MARKETING_SSG_INSTALL_CTA_HYDRATION_MISMATCH closed]**
+
+A sixth sub-contour was closed on 2026-06-01 as part of the PUBLIC_CARD_SEO_RENDERING_D1_CHAIN workstream:
+
+- MARKETING_SSG_INSTALL_CTA_HYDRATION_MISMATCH — `InstallCta.jsx` helpText mounted-gate fix. `helpText` is now rendered only post-mount (`isMounted` state + `useEffect`). Prevents React hydration mismatch on the marketing homepage (SSG route). Verified: no hydration warning, all frontend gates EXIT 0. CLOSED.
 
 Do not casually reopen without a bounded reason and explicit Phase 1 audit.

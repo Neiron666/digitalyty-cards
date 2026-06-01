@@ -134,6 +134,13 @@ function PublicCard() {
     const [cardConsentAllowed, setCardConsentAllowed] = useState(
         () => getCardConsentState()?.ownerTrackingAllowed ?? false,
     );
+    const [hasEdgeFallback, setHasEdgeFallback] = useState(false);
+
+    useEffect(() => {
+        setHasEdgeFallback(
+            Boolean(document.getElementById("cardigo-body-fallback")),
+        );
+    }, []);
 
     useEffect(() => {
         async function loadCard() {
@@ -189,7 +196,7 @@ function PublicCard() {
         if (fallback) fallback.remove();
     }, [card]);
 
-    if (loading) return <p>טוען כרטיס...</p>;
+    if (loading) return hasEdgeFallback ? null : <p>טוען כרטיס...</p>;
     if (error) {
         const errorTitle =
             errorStatus === 410
