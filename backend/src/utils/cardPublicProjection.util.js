@@ -360,6 +360,32 @@ function narrowFaqItem(item) {
     return { question: clip(question, 200), answer: clip(answer, 1000) };
 }
 
+// Adapts on-disk public FAQ shape { faq: { items: [{q,a}] } } (also tolerant
+// of a raw array or pre-narrowed { question, answer } items) into the
+// { question, answer } contract narrowFaqItem enforces. Single SSoT used by
+// both SEO and Render DTOs to prevent shape drift.
+function extractPublicFaqItems(dto) {
+    const faq = dto ? dto.faq : null;
+    let rawItems;
+    if (Array.isArray(faq)) {
+        rawItems = faq;
+    } else if (isPlainObject(faq) && Array.isArray(faq.items)) {
+        rawItems = faq.items;
+    } else {
+        return [];
+    }
+    return rawItems
+        .map((it) => {
+            if (!isPlainObject(it)) return null;
+            const question =
+                typeof it.question === "string" ? it.question : it.q;
+            const answer = typeof it.answer === "string" ? it.answer : it.a;
+            return { question, answer };
+        })
+        .map(narrowFaqItem)
+        .filter((f) => f !== null);
+}
+
 function narrowContactLinks(dto) {
     const c = isPlainObject(dto.contact) ? dto.contact : {};
     const out = {};
@@ -462,8 +488,7 @@ export function toCardPublicSeoDTO(dto, ctx) {
     // Canonical is the backend self-public URL (publicUrl); user-editable
     // seo.canonicalUrl is never used. Owner-provided JSON-LD with the same
     // FAQPage @id (${publicUrl}#faq) is suppressed so the auto item wins.
-    const rawFaq = Array.isArray(dto.faq) ? dto.faq : [];
-    const publicFaqItems = rawFaq.map(narrowFaqItem).filter((f) => f !== null);
+    const publicFaqItems = extractPublicFaqItems(dto);
     const autoFaqJsonLd = buildCardFaqJsonLd(publicFaqItems, publicUrl);
     const autoFaqId = getCardFaqJsonLdId(publicUrl);
     const filteredUserItems = autoFaqJsonLd
@@ -522,8 +547,7 @@ export function toCardPublicRenderDTO(dto, ctx) {
         .map(narrowServiceItem)
         .filter((s) => s !== null);
 
-    const rawFaq = Array.isArray(dto.faq) ? dto.faq : [];
-    const faqItems = rawFaq.map(narrowFaqItem).filter((f) => f !== null);
+    const faqItems = extractPublicFaqItems(dto);
 
     const rawGallery = Array.isArray(dto.gallery) ? dto.gallery : [];
     const gallery = rawGallery.map(narrowGalleryItem).filter((g) => g !== null);
