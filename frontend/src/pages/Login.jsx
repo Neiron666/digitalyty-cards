@@ -3,6 +3,7 @@ import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import AuthLayout from "../components/auth/AuthLayout";
 import Input from "../components/ui/Input";
+import PasswordInput from "../components/ui/PasswordInput";
 import Button from "../components/ui/Button";
 import Notice from "../components/ui/Notice/Notice";
 import styles from "./Login.module.css";
@@ -95,9 +96,8 @@ function Login() {
                     error={fieldErrors.email}
                 />
 
-                <Input
+                <PasswordInput
                     label="סיסמה"
-                    type="password"
                     autoComplete="current-password"
                     value={form.password}
                     onChange={(e) => update("password", e.target.value)}

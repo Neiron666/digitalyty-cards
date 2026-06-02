@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { register as registerUser } from "../services/auth.service";
 import AuthLayout from "../components/auth/AuthLayout";
 import Input from "../components/ui/Input";
+import PasswordInput from "../components/ui/PasswordInput";
 import Button from "../components/ui/Button";
 import Notice from "../components/ui/Notice/Notice";
 import FieldValidationMessage from "../components/ui/FieldValidationMessage";
@@ -181,9 +182,8 @@ function Register() {
                     error={fieldErrors.email}
                 />
 
-                <Input
+                <PasswordInput
                     label="סיסמה"
-                    type="password"
                     autoComplete="new-password"
                     value={form.password}
                     onChange={(e) => update("password", e.target.value)}
@@ -215,9 +215,8 @@ function Register() {
                     </ul>
                 )}
 
-                <Input
+                <PasswordInput
                     label="אימות סיסמה"
-                    type="password"
                     autoComplete="new-password"
                     value={form.confirmPassword}
                     onChange={(e) => update("confirmPassword", e.target.value)}

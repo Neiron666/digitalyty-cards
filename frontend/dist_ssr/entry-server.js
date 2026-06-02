@@ -8299,8 +8299,8 @@ function NotFound() {
     /* @__PURE__ */ jsx(Link, { to: "/", className: styles.backLink, children: "חזרה לדף הבית" })
   ] });
 }
-const Login = lazy(() => import("./assets/Login-DChB9fSQ.js"));
-const Register = lazy(() => import("./assets/Register-3R5zr4Q3.js"));
+const Login = lazy(() => import("./assets/Login-BEO_965R.js"));
+const Register = lazy(() => import("./assets/Register-BOrCxqhp.js"));
 const InviteAccept = lazy(() => import("./assets/InviteAccept-sB3ZWcrJ.js"));
 const ForgotPassword = lazy(() => import("./assets/ForgotPassword-BX3mzTjn.js"));
 const ResetPassword = lazy(() => import("./assets/ResetPassword-CcNTD0qC.js"));

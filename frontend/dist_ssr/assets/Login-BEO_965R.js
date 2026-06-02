@@ -4,6 +4,7 @@ import { useNavigate, useSearchParams, Link } from "react-router-dom";
 import { u as useAuth, B as Button } from "../entry-server.js";
 import { A as AuthLayout } from "./AuthLayout-D5oAbuh9.js";
 import { I as Input } from "./Input-CGCIIpQL.js";
+import { P as PasswordInput } from "./PasswordInput-BD8q1tgz.js";
 import { N as Notice } from "./Notice-Rge9ZUBq.js";
 import "react-dom/server";
 import "./vendor-epyEJgau.js";
@@ -97,10 +98,9 @@ function Login() {
             }
           ),
           /* @__PURE__ */ jsx(
-            Input,
+            PasswordInput,
             {
               label: "סיסמה",
-              type: "password",
               autoComplete: "current-password",
               value: form.password,
               onChange: (e) => update("password", e.target.value),

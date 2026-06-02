@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import { B as Button, r as register } from "../entry-server.js";
 import { A as AuthLayout } from "./AuthLayout-D5oAbuh9.js";
 import { I as Input, F as FieldValidationMessage } from "./Input-CGCIIpQL.js";
+import { P as PasswordInput } from "./PasswordInput-BD8q1tgz.js";
 import { N as Notice } from "./Notice-Rge9ZUBq.js";
 import { P as PASSWORD_POLICY_HELPER_TEXT_HE, a as PASSWORD_POLICY, g as getPasswordPolicyChecklist, b as getPasswordPolicyMessage, v as validatePasswordPolicy } from "./passwordPolicy-XzlGEeig.js";
 import "react-dom/server";
@@ -194,10 +195,9 @@ function Register() {
           }
         ),
         /* @__PURE__ */ jsx(
-          Input,
+          PasswordInput,
           {
             label: "סיסמה",
-            type: "password",
             autoComplete: "new-password",
             value: form2.password,
             onChange: (e) => update("password", e.target.value),
@@ -227,10 +227,9 @@ function Register() {
           }
         ),
         /* @__PURE__ */ jsx(
-          Input,
+          PasswordInput,
           {
             label: "אימות סיסמה",
-            type: "password",
             autoComplete: "new-password",
             value: form2.confirmPassword,
             onChange: (e) => update("confirmPassword", e.target.value),
