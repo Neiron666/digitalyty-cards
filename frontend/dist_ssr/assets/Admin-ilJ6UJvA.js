@@ -3493,7 +3493,7 @@ function AdminMarketingView() {
       const status2 = e?.response?.status;
       if (status2 === 409) {
         setSendDisabledByFlag(true);
-        setSendError("שליחת מבחן אינה פעילה כרגע.");
+        setSendError("");
       } else if (status2 === 400) {
         setSendError(
           typeof e?.response?.data?.message === "string" ? e.response.data.message : "בקשת שליחת מבחן שגויה"

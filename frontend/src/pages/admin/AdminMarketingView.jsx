@@ -180,8 +180,11 @@ export default function AdminMarketingView() {
         } catch (e) {
             const status = e?.response?.status;
             if (status === 409) {
+                // Single source of truth: the persistent lock banner renders
+                // from sendDisabledByFlag. Clear sendError so the same lock copy
+                // is not shown twice.
                 setSendDisabledByFlag(true);
-                setSendError("שליחת מבחן אינה פעילה כרגע.");
+                setSendError("");
             } else if (status === 400) {
                 setSendError(
                     typeof e?.response?.data?.message === "string"
