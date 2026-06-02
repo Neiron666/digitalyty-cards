@@ -72,6 +72,7 @@ import {
     uploadGuideSectionImage,
     removeGuideSectionImage,
 } from "../controllers/adminGuide.controller.js";
+import { listMarketingRecipients } from "../controllers/adminMarketing.controller.js";
 import { upload } from "../middlewares/upload.middleware.js";
 
 const router = Router();
@@ -93,6 +94,9 @@ router.get("/site-analytics/summary", getAdminSiteAnalyticsSummary);
 router.get("/site-analytics/sources", getAdminSiteAnalyticsSources);
 router.get("/site-analytics/diagnostics", getAdminSiteAnalyticsDiagnostics);
 router.get("/site-analytics/visits", getAdminSiteAnalyticsVisits);
+
+// Marketing emails — read-only recipient foundation (no send, no campaign).
+router.get("/marketing/recipients", listMarketingRecipients);
 
 // safe write actions (no generic patch)
 router.post("/orgs", adminCreateOrganization);

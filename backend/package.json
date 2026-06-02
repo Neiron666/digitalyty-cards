@@ -21,6 +21,8 @@
         "migrate:deletedemailblock-indexes": "node scripts/migrate-deletedemailblock-indexes.mjs",
         "migrate:user-lastloginat:dry-run": "node scripts/migrate-user-lastloginat-index.mjs",
         "migrate:user-lastloginat:apply": "node scripts/migrate-user-lastloginat-index.mjs --apply --i-understand-index-downtime",
+        "migrate:user-marketing-recipient-index:dry-run": "node scripts/migrate-user-marketing-recipient-index.mjs",
+        "migrate:user-marketing-recipient-index:apply": "node scripts/migrate-user-marketing-recipient-index.mjs --apply --i-understand-index-downtime",
         "sanity:ownership-consistency": "node scripts/sanity-ownership-consistency.mjs",
         "sanity:slug-policy": "node scripts/sanity-slug-policy.mjs",
         "sanity:org-membership": "node scripts/sanity-org-membership.mjs",

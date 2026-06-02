@@ -156,6 +156,11 @@ export function getAdminSiteAnalyticsVisits(params = {}) {
     return api.get("/admin/site-analytics/visits", { params });
 }
 
+// Marketing emails — read-only recipient foundation (no send, no campaign)
+export function listAdminMarketingRecipients(params = {}) {
+    return api.get("/admin/marketing/recipients", { params });
+}
+
 // Organizations (admin)
 export function listAdminOrganizations(params = {}) {
     return api.get("/admin/orgs", { params });

@@ -558,6 +558,8 @@
 @media (max-width: 720px) {
     .topbar {
         flex-wrap: wrap;
+        min-width: 0;
+        max-width: 100%;
     }
 
     .topbarTitleWrap {
@@ -569,6 +571,8 @@
         justify-content: space-between;
         align-items: center;
         gap: 8px;
+        min-width: 0;
+        max-width: 100%;
     }
 
     .adminRoot {
@@ -630,8 +634,19 @@
     }
 
     .tabs {
+        flex: 1 1 100%;
         flex-wrap: nowrap;
         gap: 6px;
+        min-width: 0;
+        max-width: 100%;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: thin;
+        padding-bottom: 2px;
+    }
+
+    .tab {
+        flex: 0 0 auto;
     }
 
     .commandBarButtons {

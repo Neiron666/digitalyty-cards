@@ -284,4 +284,26 @@ const UserSchema = new mongoose.Schema(
     { timestamps: true },
 );
 
+// ── Governed index declarations (autoIndex OFF — migration is manual) ──
+// Marketing-recipient query index (admin marketing-eligible recipients list).
+// The hot predicate ALWAYS filters emailMarketingConsent === true AND
+// isVerified === true, then optionally narrows by subscription.status /
+// trialEndsAt (cohort) and email (search). A partial filter keeps the index
+// small (only consenting+verified users are indexed). Non-unique.
+//
+// autoIndex/autoCreate are OFF globally (see backend/src/config/db.js); this
+// index is NOT created at runtime. Apply manually via:
+//   npm run migrate:user-marketing-recipient-index:dry-run
+//   npm run migrate:user-marketing-recipient-index:apply
+UserSchema.index(
+    { "subscription.status": 1, trialEndsAt: 1, email: 1 },
+    {
+        name: "marketing_recipient_v1",
+        partialFilterExpression: {
+            emailMarketingConsent: true,
+            isVerified: true,
+        },
+    },
+);
+
 export default mongoose.model("User", UserSchema);

@@ -8310,7 +8310,7 @@ const VerifyEmail = lazy(() => import("./assets/VerifyEmail-BdTNw4a4.js"));
 const Unsubscribe = lazy(() => import("./assets/Unsubscribe-cH0SJ-jv.js"));
 const Dashboard = lazy(() => import("./assets/Dashboard-CA_zW0ja.js"));
 const EditCard = lazy(() => import("./assets/EditCard-Cr3Oa54w.js"));
-const Admin = lazy(() => import("./assets/Admin-BLIBCDbE.js"));
+const Admin = lazy(() => import("./assets/Admin-DRu0I0ef.js"));
 const OrgInvites = lazy(() => import("./assets/OrgInvites-F6NGH4uL.js"));
 const Inbox = lazy(() => import("./assets/Inbox-DkfIAa4C.js"));
 const PublicCard = lazy(() => import("./assets/PublicCard-DW6d0H_I.js"));
