@@ -57,6 +57,8 @@ import styles from "./Admin.module.css";
 // - "Cards" / headers "Slug", "Owner", "Status", "Active", "Updated" / "(no slug)"
 //   / owner label "anonymous" / "Loading card…"
 
+const ORIGIN = import.meta.env.VITE_PUBLIC_ORIGIN || "https://cardigo.co.il";
+
 const STR = {
     he: {
         title_admin: "לוח ניהול",
@@ -83,7 +85,8 @@ const STR = {
         placeholder_reason: "נדרש לצורך תיעוד פעולה",
 
         label_id: "מזהה כרטיס (ID פנימי)",
-        label_slug: "סלאג (כתובת קצרה לאחר /card/)",
+        label_slug: "סלאג",
+        label_card_public_url: "כתובת ציבורית",
         label_status: "סטטוס",
         label_active: "פעיל",
         label_owner: "בעלות",
@@ -618,6 +621,12 @@ export default function Admin() {
     const selectedTierUntil = useMemo(() => {
         if (!selectedCard) return "";
         return selectedCard?.tierUntil || "";
+    }, [selectedCard]);
+
+    const selectedCardPublicUrl = useMemo(() => {
+        const p = selectedCard?.publicPath;
+        if (typeof p !== "string" || !p.startsWith("/")) return null;
+        return `${ORIGIN}${p}`;
     }, [selectedCard]);
 
     const filteredCards = useMemo(() => {
@@ -2497,6 +2506,38 @@ export default function Admin() {
                                                     {selectedCard.slug || ""}
                                                 </span>
                                             </div>
+                                            {selectedCardPublicUrl && (
+                                                <div
+                                                    className={
+                                                        styles.selectedPrimary
+                                                    }
+                                                >
+                                                    <span
+                                                        className={
+                                                            styles.selectedLabel
+                                                        }
+                                                    >
+                                                        {t(
+                                                            "label_card_public_url",
+                                                        )}
+                                                        :
+                                                    </span>{" "}
+                                                    <a
+                                                        href={
+                                                            selectedCardPublicUrl
+                                                        }
+                                                        className={
+                                                            styles.cardPublicLink
+                                                        }
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        dir="ltr"
+                                                        aria-label="פתח כרטיס ציבורי בלשונית חדשה"
+                                                    >
+                                                        {selectedCardPublicUrl}
+                                                    </a>
+                                                </div>
+                                            )}
                                             <div
                                                 className={styles.selectedMeta}
                                             >
@@ -2814,6 +2855,42 @@ export default function Admin() {
                                                                     ""}
                                                             </span>
                                                         </dd>
+
+                                                        {selectedCardPublicUrl && (
+                                                            <>
+                                                                <dt
+                                                                    className={
+                                                                        styles.kvDt
+                                                                    }
+                                                                >
+                                                                    {t(
+                                                                        "label_card_public_url",
+                                                                    )}
+                                                                </dt>
+                                                                <dd
+                                                                    className={
+                                                                        styles.kvDd
+                                                                    }
+                                                                >
+                                                                    <a
+                                                                        href={
+                                                                            selectedCardPublicUrl
+                                                                        }
+                                                                        className={
+                                                                            styles.cardPublicLink
+                                                                        }
+                                                                        target="_blank"
+                                                                        rel="noopener noreferrer"
+                                                                        dir="ltr"
+                                                                        aria-label="פתח כרטיס ציבורי בלשונית חדשה"
+                                                                    >
+                                                                        {
+                                                                            selectedCardPublicUrl
+                                                                        }
+                                                                    </a>
+                                                                </dd>
+                                                            </>
+                                                        )}
 
                                                         <dt
                                                             className={
@@ -4786,6 +4863,38 @@ export default function Admin() {
                                                     {selectedCard.slug || ""}
                                                 </span>
                                             </div>
+                                            {selectedCardPublicUrl && (
+                                                <div
+                                                    className={
+                                                        styles.selectedPrimary
+                                                    }
+                                                >
+                                                    <span
+                                                        className={
+                                                            styles.selectedLabel
+                                                        }
+                                                    >
+                                                        {t(
+                                                            "label_card_public_url",
+                                                        )}
+                                                        :
+                                                    </span>{" "}
+                                                    <a
+                                                        href={
+                                                            selectedCardPublicUrl
+                                                        }
+                                                        className={
+                                                            styles.cardPublicLink
+                                                        }
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        dir="ltr"
+                                                        aria-label="פתח כרטיס ציבורי בלשונית חדשה"
+                                                    >
+                                                        {selectedCardPublicUrl}
+                                                    </a>
+                                                </div>
+                                            )}
                                             <div
                                                 className={styles.selectedMeta}
                                             >
@@ -5102,6 +5211,42 @@ export default function Admin() {
                                                                     ""}
                                                             </span>
                                                         </dd>
+
+                                                        {selectedCardPublicUrl && (
+                                                            <>
+                                                                <dt
+                                                                    className={
+                                                                        styles.kvDt
+                                                                    }
+                                                                >
+                                                                    {t(
+                                                                        "label_card_public_url",
+                                                                    )}
+                                                                </dt>
+                                                                <dd
+                                                                    className={
+                                                                        styles.kvDd
+                                                                    }
+                                                                >
+                                                                    <a
+                                                                        href={
+                                                                            selectedCardPublicUrl
+                                                                        }
+                                                                        className={
+                                                                            styles.cardPublicLink
+                                                                        }
+                                                                        target="_blank"
+                                                                        rel="noopener noreferrer"
+                                                                        dir="ltr"
+                                                                        aria-label="פתח כרטיס ציבורי בלשונית חדשה"
+                                                                    >
+                                                                        {
+                                                                            selectedCardPublicUrl
+                                                                        }
+                                                                    </a>
+                                                                </dd>
+                                                            </>
+                                                        )}
 
                                                         <dt
                                                             className={

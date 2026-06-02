@@ -2,6 +2,7 @@ import mongoose from "mongoose";
 import User from "../models/User.model.js";
 import Card from "../models/Card.model.js";
 import AdminAudit from "../models/AdminAudit.model.js";
+import Organization from "../models/Organization.model.js";
 import OrganizationMember from "../models/OrganizationMember.model.js";
 import OrgInvite from "../models/OrgInvite.model.js";
 import { logAdminAction } from "../services/adminAudit.service.js";
@@ -527,9 +528,23 @@ export async function getCardById(req, res) {
     if (!card) return res.status(404).json({ message: "Not found" });
     const now = new Date();
     const userTier = card?.user ? await loadUserTierById(card.user) : null;
-    return res.json(
-        toCardDTO(card, now, { includePrivate: true, user: userTier }),
-    );
+    const dto = toCardDTO(card, now, { includePrivate: true, user: userTier });
+    if (dto?.slug) {
+        const nonPersonal = await isNonPersonalOrgCard(card);
+        if (!nonPersonal) {
+            dto.publicPath = `/card/${dto.slug}`;
+        } else {
+            const org = await Organization.findById(card.orgId)
+                .select("_id slug isActive")
+                .lean();
+            if (org && org.isActive === true && org.slug) {
+                dto.publicPath = `/c/${org.slug}/${dto.slug}`;
+            } else {
+                dto.publicPath = null;
+            }
+        }
+    }
+    return res.json(dto);
 }
 
 async function deleteCardPermanentlyCore({

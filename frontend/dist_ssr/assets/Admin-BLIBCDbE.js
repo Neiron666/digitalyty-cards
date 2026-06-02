@@ -4224,90 +4224,91 @@ function AdminOrganizationsView() {
     ] })
   ] });
 }
-const adminRoot = "_adminRoot_ofwjv_1";
-const scrollArea = "_scrollArea_ofwjv_21";
-const body = "_body_ofwjv_59";
-const cardBody = "_cardBody_ofwjv_69";
-const topbar = "_topbar_ofwjv_97";
-const topbarTitleWrap = "_topbarTitleWrap_ofwjv_125";
-const topbarActions = "_topbarActions_ofwjv_139";
-const commandBar = "_commandBar_ofwjv_153";
-const commandBarButtons = "_commandBarButtons_ofwjv_169";
-const commandBtn = "_commandBtn_ofwjv_183";
-const commandBarHint = "_commandBarHint_ofwjv_201";
-const title = "_title_ofwjv_215";
-const subtitle = "_subtitle_ofwjv_229";
-const leftRail = "_leftRail_ofwjv_265";
-const queueCards = "_queueCards_ofwjv_273";
-const queueUsers = "_queueUsers_ofwjv_281";
-const queueOrgs = "_queueOrgs_ofwjv_289";
-const rightPanel = "_rightPanel_ofwjv_297";
-const statsCard = "_statsCard_ofwjv_305";
-const cardShell = "_cardShell_ofwjv_359";
-const mobileOnly = "_mobileOnly_ofwjv_377";
-const cardHeader = "_cardHeader_ofwjv_385";
-const directoryTools = "_directoryTools_ofwjv_401";
-const searchRow = "_searchRow_ofwjv_413";
-const searchInput = "_searchInput_ofwjv_427";
-const headerRow = "_headerRow_ofwjv_447";
-const h2 = "_h2_ofwjv_461";
-const table = "_table_ofwjv_475";
-const rowBtn = "_rowBtn_ofwjv_521";
-const ltr = "_ltr_ofwjv_553";
-const truncate = "_truncate_ofwjv_563";
-const muted = "_muted_ofwjv_583";
-const mismatchBadge = "_mismatchBadge_ofwjv_593";
-const errorText = "_errorText_ofwjv_617";
-const warningBox = "_warningBox_ofwjv_631";
-const sectionBlock = "_sectionBlock_ofwjv_647";
-const sectionTitle = "_sectionTitle_ofwjv_659";
-const kv = "_kv_ofwjv_671";
-const kvDl = "_kvDl_ofwjv_683";
-const kvDt = "_kvDt_ofwjv_697";
-const kvDd = "_kvDd_ofwjv_711";
-const selectedHeaderStrip = "_selectedHeaderStrip_ofwjv_723";
-const selectedPrimary = "_selectedPrimary_ofwjv_743";
-const selectedLabel = "_selectedLabel_ofwjv_759";
-const selectedValue = "_selectedValue_ofwjv_769";
-const selectedMeta = "_selectedMeta_ofwjv_777";
-const metaPill = "_metaPill_ofwjv_791";
-const metaKey = "_metaKey_ofwjv_813";
-const actionGroup = "_actionGroup_ofwjv_823";
-const formRow = "_formRow_ofwjv_839";
-const toggleRow = "_toggleRow_ofwjv_871";
-const provenancePanel = "_provenancePanel_ofwjv_899";
-const provenanceHeader = "_provenanceHeader_ofwjv_915";
-const provenanceHeaderLeft = "_provenanceHeaderLeft_ofwjv_931";
-const provenancePill = "_provenancePill_ofwjv_947";
-const auditList = "_auditList_ofwjv_971";
-const auditRow = "_auditRow_ofwjv_983";
-const auditMeta = "_auditMeta_ofwjv_1003";
-const auditKey = "_auditKey_ofwjv_1019";
-const auditReason = "_auditReason_ofwjv_1029";
-const selectField = "_selectField_ofwjv_1039";
-const selectLabel = "_selectLabel_ofwjv_1055";
-const select = "_select_ofwjv_723";
-const tabs = "_tabs_ofwjv_1103";
-const selectedCard = "_selectedCard_ofwjv_1247";
-const queuePanel = "_queuePanel_ofwjv_1289";
-const legend = "_legend_ofwjv_1389";
-const tab = "_tab_ofwjv_475";
-const tabActive = "_tabActive_ofwjv_1453";
-const legendDetails = "_legendDetails_ofwjv_1467";
-const legendSummary = "_legendSummary_ofwjv_1481";
-const legendIntro = "_legendIntro_ofwjv_1533";
-const legendGroup = "_legendGroup_ofwjv_1551";
-const legendHeading = "_legendHeading_ofwjv_1579";
-const legendDl = "_legendDl_ofwjv_1595";
-const legendNote = "_legendNote_ofwjv_1641";
-const queueBody = "_queueBody_ofwjv_1671";
-const queueSummary = "_queueSummary_ofwjv_1679";
-const queueCount = "_queueCount_ofwjv_1745";
-const pager = "_pager_ofwjv_1767";
-const pagerMeta = "_pagerMeta_ofwjv_1785";
-const pagerControls = "_pagerControls_ofwjv_1795";
-const pagerPage = "_pagerPage_ofwjv_1807";
-const centerCard = "_centerCard_ofwjv_1819";
+const adminRoot = "_adminRoot_17y8v_1";
+const scrollArea = "_scrollArea_17y8v_21";
+const body = "_body_17y8v_59";
+const cardBody = "_cardBody_17y8v_69";
+const topbar = "_topbar_17y8v_97";
+const topbarTitleWrap = "_topbarTitleWrap_17y8v_125";
+const topbarActions = "_topbarActions_17y8v_139";
+const commandBar = "_commandBar_17y8v_153";
+const commandBarButtons = "_commandBarButtons_17y8v_169";
+const commandBtn = "_commandBtn_17y8v_183";
+const commandBarHint = "_commandBarHint_17y8v_201";
+const title = "_title_17y8v_215";
+const subtitle = "_subtitle_17y8v_229";
+const leftRail = "_leftRail_17y8v_265";
+const queueCards = "_queueCards_17y8v_273";
+const queueUsers = "_queueUsers_17y8v_281";
+const queueOrgs = "_queueOrgs_17y8v_289";
+const rightPanel = "_rightPanel_17y8v_297";
+const statsCard = "_statsCard_17y8v_305";
+const cardShell = "_cardShell_17y8v_359";
+const mobileOnly = "_mobileOnly_17y8v_377";
+const cardHeader = "_cardHeader_17y8v_385";
+const directoryTools = "_directoryTools_17y8v_401";
+const searchRow = "_searchRow_17y8v_413";
+const searchInput = "_searchInput_17y8v_427";
+const headerRow = "_headerRow_17y8v_447";
+const h2 = "_h2_17y8v_461";
+const table = "_table_17y8v_475";
+const rowBtn = "_rowBtn_17y8v_521";
+const ltr = "_ltr_17y8v_553";
+const truncate = "_truncate_17y8v_563";
+const muted = "_muted_17y8v_583";
+const mismatchBadge = "_mismatchBadge_17y8v_593";
+const errorText = "_errorText_17y8v_617";
+const warningBox = "_warningBox_17y8v_631";
+const sectionBlock = "_sectionBlock_17y8v_647";
+const sectionTitle = "_sectionTitle_17y8v_659";
+const kv = "_kv_17y8v_671";
+const kvDl = "_kvDl_17y8v_683";
+const kvDt = "_kvDt_17y8v_697";
+const kvDd = "_kvDd_17y8v_711";
+const selectedHeaderStrip = "_selectedHeaderStrip_17y8v_723";
+const selectedPrimary = "_selectedPrimary_17y8v_743";
+const selectedLabel = "_selectedLabel_17y8v_759";
+const selectedValue = "_selectedValue_17y8v_769";
+const selectedMeta = "_selectedMeta_17y8v_777";
+const metaPill = "_metaPill_17y8v_791";
+const metaKey = "_metaKey_17y8v_813";
+const actionGroup = "_actionGroup_17y8v_823";
+const formRow = "_formRow_17y8v_839";
+const toggleRow = "_toggleRow_17y8v_871";
+const provenancePanel = "_provenancePanel_17y8v_899";
+const provenanceHeader = "_provenanceHeader_17y8v_915";
+const provenanceHeaderLeft = "_provenanceHeaderLeft_17y8v_931";
+const provenancePill = "_provenancePill_17y8v_947";
+const auditList = "_auditList_17y8v_971";
+const auditRow = "_auditRow_17y8v_983";
+const auditMeta = "_auditMeta_17y8v_1003";
+const auditKey = "_auditKey_17y8v_1019";
+const auditReason = "_auditReason_17y8v_1029";
+const selectField = "_selectField_17y8v_1039";
+const selectLabel = "_selectLabel_17y8v_1055";
+const select = "_select_17y8v_723";
+const tabs = "_tabs_17y8v_1103";
+const selectedCard = "_selectedCard_17y8v_1247";
+const queuePanel = "_queuePanel_17y8v_1289";
+const legend = "_legend_17y8v_1389";
+const tab = "_tab_17y8v_475";
+const tabActive = "_tabActive_17y8v_1453";
+const legendDetails = "_legendDetails_17y8v_1467";
+const legendSummary = "_legendSummary_17y8v_1481";
+const legendIntro = "_legendIntro_17y8v_1533";
+const legendGroup = "_legendGroup_17y8v_1551";
+const legendHeading = "_legendHeading_17y8v_1579";
+const legendDl = "_legendDl_17y8v_1595";
+const legendNote = "_legendNote_17y8v_1641";
+const queueBody = "_queueBody_17y8v_1671";
+const queueSummary = "_queueSummary_17y8v_1679";
+const queueCount = "_queueCount_17y8v_1745";
+const pager = "_pager_17y8v_1767";
+const pagerMeta = "_pagerMeta_17y8v_1785";
+const pagerControls = "_pagerControls_17y8v_1795";
+const pagerPage = "_pagerPage_17y8v_1807";
+const centerCard = "_centerCard_17y8v_1819";
+const cardPublicLink = "_cardPublicLink_17y8v_1843";
 const styles = {
   adminRoot,
   scrollArea,
@@ -4392,8 +4393,10 @@ const styles = {
   pagerMeta,
   pagerControls,
   pagerPage,
-  centerCard
+  centerCard,
+  cardPublicLink
 };
+const ORIGIN = "https://cardigo.co.il";
 const STR = {
   he: {
     title_admin: "לוח ניהול",
@@ -4415,7 +4418,8 @@ const STR = {
     label_reason: "סיבה",
     placeholder_reason: "נדרש לצורך תיעוד פעולה",
     label_id: "מזהה כרטיס (ID פנימי)",
-    label_slug: "סלאג (כתובת קצרה לאחר /card/)",
+    label_slug: "סלאג",
+    label_card_public_url: "כתובת ציבורית",
     label_status: "סטטוס",
     label_active: "פעיל",
     label_owner: "בעלות",
@@ -4837,6 +4841,11 @@ function Admin() {
   const selectedTierUntil = useMemo(() => {
     if (!selectedCard2) return "";
     return selectedCard2?.tierUntil || "";
+  }, [selectedCard2]);
+  const selectedCardPublicUrl = useMemo(() => {
+    const p = selectedCard2?.publicPath;
+    if (typeof p !== "string" || !p.startsWith("/")) return null;
+    return `${ORIGIN}${p}`;
   }, [selectedCard2]);
   const filteredCards = useMemo(() => {
     const list = Array.isArray(cards) ? cards : [];
@@ -6368,6 +6377,37 @@ function Admin() {
                               ]
                             }
                           ),
+                          selectedCardPublicUrl && /* @__PURE__ */ jsxs(
+                            "div",
+                            {
+                              className: styles.selectedPrimary,
+                              children: [
+                                /* @__PURE__ */ jsxs(
+                                  "span",
+                                  {
+                                    className: styles.selectedLabel,
+                                    children: [
+                                      t("label_card_public_url"),
+                                      ":"
+                                    ]
+                                  }
+                                ),
+                                " ",
+                                /* @__PURE__ */ jsx(
+                                  "a",
+                                  {
+                                    href: selectedCardPublicUrl,
+                                    className: styles.cardPublicLink,
+                                    target: "_blank",
+                                    rel: "noopener noreferrer",
+                                    dir: "ltr",
+                                    "aria-label": "פתח כרטיס ציבורי בלשונית חדשה",
+                                    children: selectedCardPublicUrl
+                                  }
+                                )
+                              ]
+                            }
+                          ),
                           /* @__PURE__ */ jsxs(
                             "div",
                             {
@@ -6680,6 +6720,33 @@ function Admin() {
                                       )
                                     }
                                   ),
+                                  selectedCardPublicUrl && /* @__PURE__ */ jsxs(Fragment, { children: [
+                                    /* @__PURE__ */ jsx(
+                                      "dt",
+                                      {
+                                        className: styles.kvDt,
+                                        children: t("label_card_public_url")
+                                      }
+                                    ),
+                                    /* @__PURE__ */ jsx(
+                                      "dd",
+                                      {
+                                        className: styles.kvDd,
+                                        children: /* @__PURE__ */ jsx(
+                                          "a",
+                                          {
+                                            href: selectedCardPublicUrl,
+                                            className: styles.cardPublicLink,
+                                            target: "_blank",
+                                            rel: "noopener noreferrer",
+                                            dir: "ltr",
+                                            "aria-label": "פתח כרטיס ציבורי בלשונית חדשה",
+                                            children: selectedCardPublicUrl
+                                          }
+                                        )
+                                      }
+                                    )
+                                  ] }),
                                   /* @__PURE__ */ jsx(
                                     "dt",
                                     {
@@ -8220,6 +8287,37 @@ function Admin() {
                               ]
                             }
                           ),
+                          selectedCardPublicUrl && /* @__PURE__ */ jsxs(
+                            "div",
+                            {
+                              className: styles.selectedPrimary,
+                              children: [
+                                /* @__PURE__ */ jsxs(
+                                  "span",
+                                  {
+                                    className: styles.selectedLabel,
+                                    children: [
+                                      t("label_card_public_url"),
+                                      ":"
+                                    ]
+                                  }
+                                ),
+                                " ",
+                                /* @__PURE__ */ jsx(
+                                  "a",
+                                  {
+                                    href: selectedCardPublicUrl,
+                                    className: styles.cardPublicLink,
+                                    target: "_blank",
+                                    rel: "noopener noreferrer",
+                                    dir: "ltr",
+                                    "aria-label": "פתח כרטיס ציבורי בלשונית חדשה",
+                                    children: selectedCardPublicUrl
+                                  }
+                                )
+                              ]
+                            }
+                          ),
                           /* @__PURE__ */ jsxs(
                             "div",
                             {
@@ -8532,6 +8630,33 @@ function Admin() {
                                       )
                                     }
                                   ),
+                                  selectedCardPublicUrl && /* @__PURE__ */ jsxs(Fragment, { children: [
+                                    /* @__PURE__ */ jsx(
+                                      "dt",
+                                      {
+                                        className: styles.kvDt,
+                                        children: t("label_card_public_url")
+                                      }
+                                    ),
+                                    /* @__PURE__ */ jsx(
+                                      "dd",
+                                      {
+                                        className: styles.kvDd,
+                                        children: /* @__PURE__ */ jsx(
+                                          "a",
+                                          {
+                                            href: selectedCardPublicUrl,
+                                            className: styles.cardPublicLink,
+                                            target: "_blank",
+                                            rel: "noopener noreferrer",
+                                            dir: "ltr",
+                                            "aria-label": "פתח כרטיס ציבורי בלשונית חדשה",
+                                            children: selectedCardPublicUrl
+                                          }
+                                        )
+                                      }
+                                    )
+                                  ] }),
                                   /* @__PURE__ */ jsx(
                                     "dt",
                                     {

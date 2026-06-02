@@ -918,3 +918,22 @@
     flex-direction: column;
     gap: 8px;
 }
+
+.cardPublicLink {
+    display: inline-block;
+    direction: ltr;
+    text-align: left;
+    color: var(--gold);
+    text-decoration: underline;
+    word-break: break-all;
+    font-size: var(--fs-ui);
+}
+
+.cardPublicLink:hover {
+    opacity: 0.8;
+}
+
+.cardPublicLink:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--gold-fade);
+}
