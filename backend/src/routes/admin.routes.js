@@ -73,7 +73,10 @@ import {
     removeGuideSectionImage,
 } from "../controllers/adminGuide.controller.js";
 import { listMarketingRecipients } from "../controllers/adminMarketing.controller.js";
-import { previewMarketingCampaign } from "../controllers/adminMarketingCampaign.controller.js";
+import {
+    previewMarketingCampaign,
+    testSendMarketingCampaign,
+} from "../controllers/adminMarketingCampaign.controller.js";
 import { upload } from "../middlewares/upload.middleware.js";
 
 const router = Router();
@@ -100,6 +103,8 @@ router.get("/site-analytics/visits", getAdminSiteAnalyticsVisits);
 router.get("/marketing/recipients", listMarketingRecipients);
 // Marketing emails — non-mutating preview render (no send, no DB write, no Mailjet, no token).
 router.post("/marketing/campaigns/preview", previewMarketingCampaign);
+// Marketing emails — feature-flagged single test-send to admin_self only.
+router.post("/marketing/campaigns/test-send", testSendMarketingCampaign);
 
 // safe write actions (no generic patch)
 router.post("/orgs", adminCreateOrganization);

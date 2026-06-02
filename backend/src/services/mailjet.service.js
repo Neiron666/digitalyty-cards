@@ -996,3 +996,102 @@ export async function sendRenewalFailedEmailMailjetBestEffort({
         return { ok: false };
     }
 }
+
+// ---------------------------------------------------------------------------
+// Marketing test-send (admin-only, one email to admin_self).
+// Additive: does not alter any existing sender above.
+// ---------------------------------------------------------------------------
+
+/**
+ * Lightweight enabled probe so callers can short-circuit BEFORE minting an
+ * unsubscribe token. Mirrors getMailjetConfig().enabled without exposing
+ * secrets.
+ * @returns {boolean}
+ */
+export function isMailjetEnabled() {
+    return getMailjetConfig().enabled;
+}
+
+/**
+ * Best-effort marketing test-send. Sends exactly one email with the same
+ * Messages[] shape used by the transactional senders. No List-Unsubscribe
+ * header and no SandboxMode in this slice.
+ *
+ * @param {{ toEmail: string, subject: string, htmlPart: string, textPart: string }} args
+ * @returns {Promise<{ ok: boolean, skipped?: boolean, reason?: string }>}
+ */
+export async function sendMarketingTestEmailBestEffort({
+    toEmail,
+    subject,
+    htmlPart,
+    textPart,
+}) {
+    const cfg = getMailjetConfig();
+    const toEmailNormalized = normalizeEmail(toEmail);
+
+    if (!cfg.enabled) {
+        return { ok: true, skipped: true, reason: "MAILJET_NOT_CONFIGURED" };
+    }
+
+    if (
+        !toEmailNormalized ||
+        typeof subject !== "string" ||
+        !subject ||
+        typeof htmlPart !== "string" ||
+        !htmlPart ||
+        typeof textPart !== "string" ||
+        !textPart
+    ) {
+        return { ok: false, skipped: true, reason: "INVALID_INPUT" };
+    }
+
+    const auth = Buffer.from(`${cfg.apiKey}:${cfg.apiSecret}`).toString(
+        "base64",
+    );
+
+    const payload = {
+        Messages: [
+            {
+                From: {
+                    Email: cfg.fromEmail,
+                    Name: cfg.fromName,
+                },
+                To: [{ Email: toEmailNormalized }],
+                Subject: subject,
+                TextPart: textPart,
+                HTMLPart: htmlPart,
+            },
+        ],
+    };
+
+    const body = JSON.stringify(payload);
+
+    try {
+        const res = await httpsRequestJson({
+            hostname: "api.mailjet.com",
+            path: "/v3.1/send",
+            method: "POST",
+            timeoutMs: 10_000,
+            headers: {
+                Authorization: `Basic ${auth}`,
+                "Content-Type": "application/json",
+                "Content-Length": Buffer.byteLength(body),
+            },
+            body,
+        });
+
+        const ok = res.statusCode >= 200 && res.statusCode < 300;
+        if (!ok) {
+            console.error("[mailjet] marketing test-send failed", {
+                statusCode: res.statusCode,
+            });
+        }
+
+        return { ok };
+    } catch (err) {
+        console.error("[mailjet] marketing test-send error", {
+            error: err?.message || err,
+        });
+        return { ok: false };
+    }
+}
