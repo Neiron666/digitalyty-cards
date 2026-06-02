@@ -161,6 +161,16 @@ export function listAdminMarketingRecipients(params = {}) {
     return api.get("/admin/marketing/recipients", { params });
 }
 
+// Marketing emails — stateless server-side preview (no send, no DB, no token).
+export function previewMarketingCampaign(payload) {
+    return api.post("/admin/marketing/campaigns/preview", payload);
+}
+
+// Marketing emails — feature-flagged single test-send to admin_self only.
+export function testSendMarketingCampaign(payload) {
+    return api.post("/admin/marketing/campaigns/test-send", payload);
+}
+
 // Organizations (admin)
 export function listAdminOrganizations(params = {}) {
     return api.get("/admin/orgs", { params });

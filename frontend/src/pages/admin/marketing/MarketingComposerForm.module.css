@@ -1,0 +1,244 @@
+.root {
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    background: var(--bg-card);
+    padding: 12px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.header {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+}
+
+.title {
+    margin: 0;
+    font-size: var(--fs-body);
+    font-weight: 900;
+    color: var(--text-main);
+}
+
+.boundary {
+    margin: 0;
+    opacity: 0.78;
+    font-size: var(--fs-caption);
+    line-height: 1.5;
+    color: var(--text-main);
+}
+
+.fields {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 0;
+}
+
+.label {
+    font-size: var(--fs-body-sm);
+    font-weight: 700;
+    color: var(--text-main);
+}
+
+.req {
+    color: var(--danger, #c0392b);
+    font-weight: 900;
+}
+
+.input {
+    appearance: none;
+    border: 1px solid var(--border);
+    background: #fff;
+    color: #111827;
+    caret-color: #111827;
+    border-radius: var(--radius-md);
+    padding: 8px 12px;
+    font: inherit;
+    min-width: 0;
+    width: 100%;
+    overflow-wrap: anywhere;
+}
+
+.input::placeholder {
+    color: var(--text-muted, #6b7280);
+    opacity: 1;
+}
+
+.input:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--gold-fade);
+}
+
+.ltr {
+    direction: ltr;
+    text-align: left;
+}
+
+.textarea {
+    appearance: none;
+    border: 1px solid var(--border);
+    background: #fff;
+    color: #111827;
+    caret-color: #111827;
+    border-radius: var(--radius-md);
+    padding: 8px 12px;
+    font: inherit;
+    min-width: 0;
+    width: 100%;
+    resize: vertical;
+    line-height: 1.6;
+    overflow-wrap: anywhere;
+}
+
+.textarea::placeholder {
+    color: var(--text-muted, #6b7280);
+    opacity: 1;
+}
+
+.textarea:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--gold-fade);
+}
+
+.bodyHelp {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.fieldMeta {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.help {
+    font-size: var(--fs-caption);
+    opacity: 0.72;
+    color: var(--text-main);
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+.counter {
+    font-size: var(--fs-caption);
+    opacity: 0.6;
+    color: var(--text-main);
+    white-space: nowrap;
+}
+
+.err {
+    margin: 0;
+    font-size: var(--fs-caption);
+    color: var(--danger, #c0392b);
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+.actions {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    border-top: 1px solid var(--border);
+    padding-top: 12px;
+}
+
+.actionButtons {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+}
+
+.primaryBtn {
+    appearance: none;
+    border: 1px solid var(--gold);
+    background: transparent;
+    color: var(--text-main);
+    border-radius: 999px;
+    padding: 8px 14px;
+    font: inherit;
+    cursor: pointer;
+}
+
+.secondaryBtn {
+    appearance: none;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text-main);
+    border-radius: 999px;
+    padding: 8px 14px;
+    font: inherit;
+    cursor: pointer;
+}
+
+.resetBtn {
+    appearance: none;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text-main);
+    border-radius: 999px;
+    padding: 8px 14px;
+    font: inherit;
+    cursor: pointer;
+}
+
+.primaryBtn:disabled,
+.secondaryBtn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.primaryBtn:focus-visible,
+.secondaryBtn:focus-visible,
+.resetBtn:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--gold-fade);
+}
+
+.status {
+    margin: 0;
+    font-size: var(--fs-body-sm);
+    color: var(--text-main);
+    opacity: 0.85;
+}
+
+.lockBanner {
+    margin: 0;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 8px 12px;
+    font-size: var(--fs-body-sm);
+    color: var(--text-main);
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+.sendStatus {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 0;
+}
+
+.warningList {
+    margin: 0;
+    padding-inline-start: 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+}

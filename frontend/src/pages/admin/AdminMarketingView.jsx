@@ -1,5 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
-import { listAdminMarketingRecipients } from "../../services/admin.service";
+import {
+    listAdminMarketingRecipients,
+    previewMarketingCampaign,
+    testSendMarketingCampaign,
+} from "../../services/admin.service";
+import MarketingComposerForm from "./marketing/MarketingComposerForm";
+import MarketingPreviewPanel from "./marketing/MarketingPreviewPanel";
+import MarketingTestSendConfirm from "./marketing/MarketingTestSendConfirm";
 import styles from "./AdminMarketingView.module.css";
 
 const FILTERS = [
@@ -61,6 +68,164 @@ export default function AdminMarketingView() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
     const [data, setData] = useState(null);
+
+    const [previewLoading, setPreviewLoading] = useState(false);
+    const [previewResult, setPreviewResult] = useState(null);
+    const [previewError, setPreviewError] = useState("");
+    const [previewStale, setPreviewStale] = useState(false);
+    const [previewSubmittedAt, setPreviewSubmittedAt] = useState(null);
+
+    // Test-send state (admin_self only; production flag may be disabled).
+    const [sendLoading, setSendLoading] = useState(false);
+    const [sendError, setSendError] = useState("");
+    const [sendResult, setSendResult] = useState(null);
+    const [sendDisabledByFlag, setSendDisabledByFlag] = useState(false);
+    const [confirmOpen, setConfirmOpen] = useState(false);
+    const [lastSentAt, setLastSentAt] = useState(null);
+    const [pendingForm, setPendingForm] = useState(null);
+
+    async function handlePreview(form) {
+        setPreviewError("");
+        setPreviewLoading(true);
+        try {
+            const res = await previewMarketingCampaign(form);
+            const payload = res?.data || {};
+            setPreviewResult({
+                text: typeof payload.text === "string" ? payload.text : "",
+                warnings: Array.isArray(payload.warnings)
+                    ? payload.warnings
+                    : [],
+                formSnapshot: { ...form },
+            });
+            setPreviewSubmittedAt(Date.now());
+            setPreviewStale(false);
+        } catch (e) {
+            const status = e?.response?.status;
+            let msg;
+            if (status === 400) {
+                msg =
+                    typeof e?.response?.data?.message === "string"
+                        ? e.response.data.message
+                        : "\u05D1\u05E7\u05E9\u05EA \u05EA\u05E6\u05D5\u05D2\u05D4 \u05DE\u05E7\u05D3\u05D9\u05DE\u05D4 \u05E9\u05D2\u05D5\u05D9\u05D4";
+            } else if (status === 403 || status === 404) {
+                msg =
+                    "\u05D0\u05D9\u05DF \u05D4\u05E8\u05E9\u05D0\u05D4 \u05DC\u05D1\u05D9\u05E6\u05D5\u05E2 \u05D4\u05E4\u05E2\u05D5\u05DC\u05D4";
+            } else {
+                msg =
+                    "\u05D0\u05D9\u05E8\u05E2\u05D4 \u05E9\u05D2\u05D9\u05D0\u05D4 \u05D1\u05EA\u05E6\u05D5\u05D2\u05D4 \u05D4\u05DE\u05E7\u05D3\u05D9\u05DE\u05D4";
+            }
+            setPreviewError(msg);
+        } finally {
+            setPreviewLoading(false);
+        }
+    }
+
+    // Open the confirmation dialog. Capture the form snapshot at open time so
+    // the dialog confirms and sends exactly what the admin saw. No endpoint.
+    function handleOpenTestSendConfirm(form) {
+        setPendingForm({ ...form });
+        setConfirmOpen(true);
+    }
+
+    function handleCancelTestSend() {
+        if (sendLoading) return;
+        setConfirmOpen(false);
+        setPendingForm(null);
+    }
+
+    async function handleConfirmTestSend() {
+        if (sendLoading) return;
+        if (!pendingForm) {
+            setConfirmOpen(false);
+            setSendError("שליחת המבחן נכשלה. נסו שוב מאוחר יותר.");
+            return;
+        }
+        setSendError("");
+        setSendLoading(true);
+        try {
+            const res = await testSendMarketingCampaign(pendingForm);
+            const data = res?.data || {};
+            const providerStatus = data.providerStatus;
+            const deliveredToMasked =
+                typeof data.deliveredToMasked === "string"
+                    ? data.deliveredToMasked
+                    : "";
+            const warnings = Array.isArray(data.warnings) ? data.warnings : [];
+            if (providerStatus === "accepted" && data.sent === true) {
+                setSendResult({
+                    kind: "success",
+                    message: "הבקשה התקבלה אצל ספק המייל. בדקו את תיבת הדואר.",
+                    deliveredToMasked,
+                    warnings,
+                    providerStatus,
+                });
+                setLastSentAt(Date.now());
+            } else if (providerStatus === "skipped") {
+                setSendResult({
+                    kind: "warning",
+                    message: "שליחת מיילים אינה מוגדרת בסביבה זו.",
+                    deliveredToMasked,
+                    warnings,
+                    providerStatus,
+                });
+            } else {
+                setSendResult({
+                    kind: "error",
+                    message: "שליחת המבחן נכשלה. נסו שוב מאוחר יותר.",
+                    deliveredToMasked: "",
+                    warnings,
+                    providerStatus,
+                });
+            }
+        } catch (e) {
+            const status = e?.response?.status;
+            if (status === 409) {
+                setSendDisabledByFlag(true);
+                setSendError("שליחת מבחן אינה פעילה כרגע.");
+            } else if (status === 400) {
+                setSendError(
+                    typeof e?.response?.data?.message === "string"
+                        ? e.response.data.message
+                        : "בקשת שליחת מבחן שגויה",
+                );
+            } else if (status === 403 || status === 404) {
+                setSendError("אין הרשאה לביצוע הפעולה");
+            } else if (status === 429) {
+                setSendError(
+                    "בוצעו יותר מדי שליחות מבחן. נסו שוב בעוד מספר דקות.",
+                );
+            } else {
+                setSendError("שליחת המבחן נכשלה. נסו שוב מאוחר יותר.");
+            }
+        } finally {
+            setSendLoading(false);
+            setConfirmOpen(false);
+            setPendingForm(null);
+        }
+    }
+
+    function handleComposerChange() {
+        setPreviewResult((prev) => {
+            if (prev) setPreviewStale(true);
+            return prev;
+        });
+        // Clear stale send status/error on edit; keep the flag lock sticky.
+        setSendResult(null);
+        setSendError("");
+    }
+
+    function handleComposerReset() {
+        setPreviewResult(null);
+        setPreviewError("");
+        setPreviewStale(false);
+        setPreviewSubmittedAt(null);
+        // Clear send state on reset; keep sendDisabledByFlag sticky.
+        setSendResult(null);
+        setSendError("");
+        setConfirmOpen(false);
+        setLastSentAt(null);
+        setPendingForm(null);
+    }
 
     const activeCohort = useMemo(() => {
         const found = FILTERS.find((f) => f.key === filterKey);
@@ -124,7 +289,9 @@ export default function AdminMarketingView() {
                     <h2 className={styles.title}>שליחת אימיילים</h2>
                     <p className={styles.subtitle}>
                         מסך זה מציג רק משתמשים שאישרו קבלת דיוור שיווקי ואימתו
-                        את כתובת האימייל שלהם. שליחת קמפיינים אינה פעילה עדיין.
+                        את כתובת האימייל שלהם. הכנת תוכן למיילים זמינה כעת;
+                        תצוגה מקדימה, שליחת מבחן ושליחה לרשימה יופעלו בשלבים
+                        הבאים.
                     </p>
                 </div>
             </header>
@@ -134,6 +301,35 @@ export default function AdminMarketingView() {
                 מחושב לפני סינון הסרות דיוור. הרשימה המוצגת היא לאחר סינון הסרות
                 ברמת העמוד, ולכן ייתכן שמספר השורות קטן מהמספר הכולל.
             </p>
+
+            <MarketingComposerForm
+                onPreview={handlePreview}
+                isPreviewing={previewLoading}
+                isPreviewStale={previewStale}
+                onComposerChange={handleComposerChange}
+                onComposerReset={handleComposerReset}
+                onTestSend={handleOpenTestSendConfirm}
+                isSending={sendLoading}
+                sendDisabled={false}
+                sendResult={sendResult}
+                sendError={sendError}
+                sendDisabledByFlag={sendDisabledByFlag}
+            />
+
+            <MarketingPreviewPanel
+                result={previewResult}
+                error={previewError}
+                isLoading={previewLoading}
+                isStale={previewStale}
+                submittedAt={previewSubmittedAt}
+            />
+
+            <MarketingTestSendConfirm
+                open={confirmOpen}
+                isSending={sendLoading}
+                onConfirm={handleConfirmTestSend}
+                onCancel={handleCancelTestSend}
+            />
 
             <div className={styles.controls}>
                 <div
