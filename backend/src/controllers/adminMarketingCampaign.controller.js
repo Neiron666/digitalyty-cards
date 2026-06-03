@@ -21,6 +21,11 @@ import {
     MAX_MARKETING_DRY_RUN_USER_IDS,
     revalidateMarketingRecipientUserIds,
 } from "../utils/marketingRecipientEligibility.util.js";
+import MarketingCampaign from "../models/MarketingCampaign.model.js";
+import {
+    validateMarketingImageUrl,
+    validateMarketingLinkUrl,
+} from "../utils/marketingUrlPolicy.util.js";
 
 /**
  * POST /api/admin/marketing/campaigns/preview
@@ -386,5 +391,281 @@ export async function dryRunMarketingCampaign(req, res) {
             err?.message || err,
         );
         return res.status(500).json({ ok: false, message: "Dry run failed" });
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Create draft (admin-only, feature-flagged). Persists exactly ONE
+// MarketingCampaign document in status "draft" after backend eligibility
+// revalidation. NO send, NO Mailjet, NO unsubscribe token, NO rendered
+// html/text, NO raw/masked email. selectionSnapshot.selectedUserIds stores
+// only backend-revalidated eligibleUserIds (userId-only).
+// ---------------------------------------------------------------------------
+
+/**
+ * Coerce a possibly-Map skippedByReason into a plain object for safe JSON.
+ * Used on the idempotent-replay path where the value is read from Mongo.
+ */
+function skippedByReasonToPlainObject(value) {
+    if (!value) return {};
+    if (value instanceof Map) return Object.fromEntries(value);
+    if (typeof value === "object") return { ...value };
+    return {};
+}
+
+/**
+ * POST /api/admin/marketing/campaigns/drafts
+ * Body: { userIds: string[], content: {...}, requestId?: string,
+ *   dryRunClientSummary?: any }
+ * Returns: { ok:true, campaignId, status, selectedCount, uniqueCount,
+ *   duplicateCount, eligibleCount, skippedCount, skippedByReason, warnings }
+ * Feature-flagged (MARKETING_CAMPAIGN_DRAFT_ENABLED). requireAdmin + CSRF
+ * inherited from the /api/admin mount + global csrfGuard.
+ *
+ * Order: feature flag -> userIds -> content normalize -> conditional URL policy
+ * -> requestId -> dryRunClientSummary warning -> backend revalidation ->
+ * 422 if zero eligible -> single create -> best-effort audit -> response.
+ */
+export async function createMarketingCampaignDraft(req, res) {
+    // A. Feature flag first — no validation, no DB read/write, no audit.
+    if (process.env.MARKETING_CAMPAIGN_DRAFT_ENABLED !== "true") {
+        return res.status(409).json({
+            ok: false,
+            message: "Marketing campaign drafts are disabled",
+        });
+    }
+
+    // B. userIds structural validation (recipients-only contract).
+    const userIds = req.body?.userIds;
+    if (typeof userIds === "undefined" || userIds === null) {
+        return res
+            .status(400)
+            .json({ ok: false, message: "userIds is required" });
+    }
+    if (!Array.isArray(userIds)) {
+        return res
+            .status(400)
+            .json({ ok: false, message: "userIds must be an array" });
+    }
+    if (userIds.length === 0) {
+        return res
+            .status(400)
+            .json({ ok: false, message: "userIds must not be empty" });
+    }
+    if (userIds.length > MAX_MARKETING_DRY_RUN_USER_IDS) {
+        return res.status(400).json({ ok: false, message: "too many userIds" });
+    }
+
+    // C. content presence + normalization.
+    const content = req.body?.content;
+    if (!content || typeof content !== "object" || Array.isArray(content)) {
+        return res
+            .status(400)
+            .json({ ok: false, message: "content is required" });
+    }
+
+    let normalized;
+    try {
+        normalized = normalizeMarketingEmailInput(content);
+    } catch (err) {
+        if (err instanceof MarketingInputError) {
+            return res.status(400).json({ ok: false, message: err.message });
+        }
+        console.error(
+            "[adminMarketingCampaign] draft content normalize failed",
+            err?.message || err,
+        );
+        return res.status(400).json({ ok: false, message: "Invalid content" });
+    }
+
+    // D. URL policy hard-fail — ONLY when the optional field is non-empty.
+    // Validators reject EMPTY_URL, so empty optional fields must be skipped.
+    if (normalized.topImageUrl) {
+        const imgResult = validateMarketingImageUrl(normalized.topImageUrl);
+        if (!imgResult.ok) {
+            return res
+                .status(400)
+                .json({ ok: false, message: "Invalid topImageUrl" });
+        }
+    }
+    if (normalized.ctaUrl) {
+        const ctaResult = validateMarketingLinkUrl(normalized.ctaUrl);
+        if (!ctaResult.ok) {
+            return res
+                .status(400)
+                .json({ ok: false, message: "Invalid ctaUrl" });
+        }
+    }
+
+    // E. requestId — optional, string-only, trimmed, bounded. No default.
+    let requestId;
+    if (typeof req.body?.requestId !== "undefined") {
+        if (typeof req.body.requestId !== "string") {
+            return res
+                .status(400)
+                .json({ ok: false, message: "requestId must be a string" });
+        }
+        const trimmed = req.body.requestId.trim();
+        if (trimmed === "") {
+            return res
+                .status(400)
+                .json({ ok: false, message: "requestId must not be empty" });
+        }
+        if (trimmed.length > 200) {
+            return res
+                .status(400)
+                .json({ ok: false, message: "requestId is too long" });
+        }
+        requestId = trimmed;
+    }
+
+    // F. dryRunClientSummary — never read/destructure/validate/log/echo.
+    const warnings = [];
+    if (typeof req.body?.dryRunClientSummary !== "undefined") {
+        warnings.push("DRY_RUN_CLIENT_SUMMARY_IGNORED");
+    }
+
+    try {
+        // G. Backend eligibility revalidation — never trust client dry-run.
+        const result = await revalidateMarketingRecipientUserIds(userIds);
+        // Normalize the null-prototype skippedByReason into a normal plain
+        // object so it is safe to (a) persist into the Mongoose Map field and
+        // (b) serialize in responses. Mongoose's Map cast rejects
+        // Object.create(null), so this must happen before any create/response.
+        const skippedByReason = skippedByReasonToPlainObject(
+            result.skippedByReason,
+        );
+
+        if (result.eligibleCount === 0) {
+            return res.status(422).json({
+                ok: false,
+                message: "No eligible recipients",
+                selectedCount: result.selectedCount,
+                uniqueCount: result.uniqueCount,
+                duplicateCount: result.duplicateCount,
+                eligibleCount: result.eligibleCount,
+                skippedCount: result.skippedCount,
+                skippedByReason,
+                warnings,
+            });
+        }
+
+        // H. Single create. selectedUserIds = backend eligibleUserIds only.
+        try {
+            const campaign = await MarketingCampaign.create({
+                createdByAdminId: req.userId,
+                status: "draft",
+                source: "admin_marketing",
+                contentSnapshot: {
+                    subject: normalized.subject,
+                    previewText: normalized.previewText,
+                    topImageUrl: normalized.topImageUrl,
+                    heading: normalized.heading,
+                    bodyText: normalized.bodyText,
+                    ctaLabel: normalized.ctaLabel,
+                    ctaUrl: normalized.ctaUrl,
+                },
+                selectionSnapshot: {
+                    selectedUserIds: result.eligibleUserIds,
+                    selectedCount: result.selectedCount,
+                    duplicateCount: result.duplicateCount,
+                    uniqueCount: result.uniqueCount,
+                    eligibleCount: result.eligibleCount,
+                    skippedCount: result.skippedCount,
+                    skippedByReason,
+                },
+                dryRunAt: new Date(),
+                ...(requestId ? { requestId } : {}),
+            });
+
+            const campaignId = String(campaign._id);
+
+            // J. Best-effort AdminAudit (non-fatal) — new create only.
+            try {
+                await logAdminAction({
+                    adminUserId: req.userId,
+                    action: "marketing_campaign_draft_created",
+                    targetType: "user",
+                    targetId: req.userId,
+                    reason: "admin marketing campaign draft",
+                    meta: {
+                        campaignId,
+                        selectedCount: result.selectedCount,
+                        eligibleCount: result.eligibleCount,
+                        skippedCount: result.skippedCount,
+                    },
+                });
+            } catch (auditErr) {
+                console.error(
+                    "[adminMarketingCampaign] draft create audit failed",
+                    auditErr?.message || auditErr,
+                );
+            }
+
+            // K. Safe success response — no email/html/text/token/provider/ids.
+            return res.status(200).json({
+                ok: true,
+                campaignId,
+                status: "draft",
+                selectedCount: result.selectedCount,
+                uniqueCount: result.uniqueCount,
+                duplicateCount: result.duplicateCount,
+                eligibleCount: result.eligibleCount,
+                skippedCount: result.skippedCount,
+                skippedByReason,
+                warnings,
+            });
+        } catch (createErr) {
+            // I. Duplicate requestId (unique+sparse index) — idempotent replay.
+            const isDuplicate =
+                createErr?.code === 11000 &&
+                (!createErr?.keyPattern ||
+                    Object.prototype.hasOwnProperty.call(
+                        createErr.keyPattern,
+                        "requestId",
+                    ));
+            if (isDuplicate && requestId) {
+                const existing = await MarketingCampaign.findOne({
+                    requestId,
+                    createdByAdminId: req.userId,
+                }).lean();
+
+                if (existing) {
+                    const snap = existing.selectionSnapshot || {};
+                    return res.status(200).json({
+                        ok: true,
+                        campaignId: String(existing._id),
+                        status: existing.status,
+                        selectedCount: snap.selectedCount,
+                        uniqueCount: snap.uniqueCount,
+                        duplicateCount: snap.duplicateCount,
+                        eligibleCount: snap.eligibleCount,
+                        skippedCount: snap.skippedCount,
+                        skippedByReason: skippedByReasonToPlainObject(
+                            snap.skippedByReason,
+                        ),
+                        warnings: [...warnings, "IDEMPOTENT_REPLAY"],
+                    });
+                }
+
+                // requestId belongs to another admin.
+                return res
+                    .status(409)
+                    .json({ ok: false, message: "requestId conflict" });
+            }
+            throw createErr;
+        }
+    } catch (err) {
+        if (err instanceof MarketingInputError) {
+            return res.status(400).json({ ok: false, message: err.message });
+        }
+        // Safe label only — never log req.body/userIds/content/raw mongo docs.
+        console.error(
+            "[adminMarketingCampaign] draft create failed",
+            err?.message || err,
+        );
+        return res
+            .status(500)
+            .json({ ok: false, message: "Failed to create campaign draft" });
     }
 }

@@ -95,6 +95,7 @@ jobs:
                   npm run sanity:site-analytics-visit-index-drift
                   npm run sanity:analytics-daily-index-drift
                   npm run sanity:aiusagemonthly-index-drift
+                  npm run sanity:marketing-campaign-index-drift
 
             # main/release policy: fail the workflow on drift
             - name: Sanity (main/release gate) - additional index drift
@@ -114,3 +115,4 @@ jobs:
                   npm run sanity:site-analytics-visit-index-drift
                   npm run sanity:analytics-daily-index-drift
                   npm run sanity:aiusagemonthly-index-drift
+                  npm run sanity:marketing-campaign-index-drift
