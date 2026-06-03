@@ -135,7 +135,10 @@ export async function revalidateMarketingRecipientUserIds(userIds) {
             addSkip(id, R.NOT_VERIFIED);
             continue;
         }
-        suppressionCandidates.push({ userId: id, normEmail: normalizeEmail(email) });
+        suppressionCandidates.push({
+            userId: id,
+            normEmail: normalizeEmail(email),
+        });
     }
 
     // Single suppression lookup (HMAC server-side only; never exposes emailKey).

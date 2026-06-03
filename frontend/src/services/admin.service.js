@@ -171,6 +171,12 @@ export function testSendMarketingCampaign(payload) {
     return api.post("/admin/marketing/campaigns/test-send", payload);
 }
 
+// Marketing emails — read-only dry-run eligibility revalidation of selected
+// userIds (no send, no Mailjet, no token, no DB write, no campaign).
+export function dryRunMarketingCampaign(userIds) {
+    return api.post("/admin/marketing/campaigns/dry-run", { userIds });
+}
+
 // Organizations (admin)
 export function listAdminOrganizations(params = {}) {
     return api.get("/admin/orgs", { params });

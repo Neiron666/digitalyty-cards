@@ -3,6 +3,7 @@ import {
     listAdminMarketingRecipients,
     previewMarketingCampaign,
     testSendMarketingCampaign,
+    dryRunMarketingCampaign,
 } from "../../services/admin.service";
 import MarketingComposerForm from "./marketing/MarketingComposerForm";
 import MarketingPreviewPanel from "./marketing/MarketingPreviewPanel";
@@ -91,7 +92,19 @@ export default function AdminMarketingView() {
         () => new Set(),
     );
 
+    // Dry-run eligibility check (read-only). Revalidates visible-selected
+    // userIds backend-side. NOT send / NOT campaign / NOT token.
+    const [dryRunLoading, setDryRunLoading] = useState(false);
+    const [dryRunError, setDryRunError] = useState("");
+    const [dryRunResult, setDryRunResult] = useState(null);
+    const [dryRunStale, setDryRunStale] = useState(false);
+
     function handleToggleRecipient(userId) {
+        // A prior dry-run result no longer matches the new selection. Read the
+        // current result from closure; never inspect it via a setter updater.
+        if (dryRunResult) {
+            setDryRunStale(true);
+        }
         setSelectedRecipientIds((prev) => {
             const next = new Set(prev);
             if (next.has(userId)) next.delete(userId);
@@ -102,6 +115,9 @@ export default function AdminMarketingView() {
 
     function handleClearSelection() {
         setSelectedRecipientIds(new Set());
+        setDryRunResult(null);
+        setDryRunError("");
+        setDryRunStale(false);
     }
 
     async function handlePreview(form) {
@@ -295,6 +311,11 @@ export default function AdminMarketingView() {
     // hidden selection carrying across filters/search (no select-all-across).
     useEffect(() => {
         setSelectedRecipientIds(new Set());
+        // A programmatic selection reset invalidates any dry-run result; this is
+        // NOT a user toggle, so stale must be false (not a "rerun" hint).
+        setDryRunResult(null);
+        setDryRunError("");
+        setDryRunStale(false);
     }, [activeCohort, appliedQuery]);
 
     const items = Array.isArray(data?.items) ? data.items : [];
@@ -313,6 +334,63 @@ export default function AdminMarketingView() {
         (acc, u) => acc + (selectedRecipientIds.has(u.userId) ? 1 : 0),
         0,
     );
+
+    // Dry-run sends ONLY visible-selected userIds. Re-derived from current
+    // items at call time so hidden cross-filter ids can never be submitted and
+    // no raw email array is ever built.
+    async function handleDryRun() {
+        if (dryRunLoading) return;
+        const ids = items
+            .filter((u) => selectedRecipientIds.has(u.userId))
+            .map((u) => u.userId);
+        if (ids.length === 0) {
+            setDryRunError(
+                "\u05D1\u05D7\u05E8\u05D5 \u05DC\u05E4\u05D7\u05D5\u05EA \u05E0\u05DE\u05E2\u05DF \u05D0\u05D7\u05D3 \u05DC\u05D1\u05D3\u05D9\u05E7\u05D4",
+            );
+            return;
+        }
+        setDryRunError("");
+        setDryRunLoading(true);
+        try {
+            const res = await dryRunMarketingCampaign(ids);
+            const data = res?.data || {};
+            const num = (v) => (typeof v === "number" ? v : null);
+            const reasons =
+                data.skippedByReason &&
+                typeof data.skippedByReason === "object" &&
+                !Array.isArray(data.skippedByReason)
+                    ? data.skippedByReason
+                    : {};
+            setDryRunResult({
+                selectedCount: num(data.selectedCount),
+                uniqueCount: num(data.uniqueCount),
+                duplicateCount: num(data.duplicateCount),
+                eligibleCount: num(data.eligibleCount),
+                skippedCount: num(data.skippedCount),
+                skippedByReason: reasons,
+                warnings: Array.isArray(data.warnings) ? data.warnings : [],
+            });
+            setDryRunStale(false);
+        } catch (e) {
+            const status = e?.response?.status;
+            let msg;
+            if (status === 400) {
+                msg =
+                    typeof e?.response?.data?.message === "string"
+                        ? e.response.data.message
+                        : "\u05D1\u05E7\u05E9\u05EA \u05D1\u05D3\u05D9\u05E7\u05EA \u05D6\u05DB\u05D0\u05D5\u05EA \u05E9\u05D2\u05D5\u05D9\u05D4";
+            } else if (status === 403 || status === 404) {
+                msg =
+                    "\u05D0\u05D9\u05DF \u05D4\u05E8\u05E9\u05D0\u05D4 \u05DC\u05D1\u05D9\u05E6\u05D5\u05E2 \u05D4\u05E4\u05E2\u05D5\u05DC\u05D4";
+            } else {
+                msg =
+                    "\u05D0\u05D9\u05E8\u05E2\u05D4 \u05E9\u05D2\u05D9\u05D0\u05D4 \u05D1\u05D1\u05D3\u05D9\u05E7\u05EA \u05D4\u05D6\u05DB\u05D0\u05D5\u05EA";
+            }
+            setDryRunError(msg);
+        } finally {
+            setDryRunLoading(false);
+        }
+    }
 
     function onSubmitSearch(e) {
         e.preventDefault();
@@ -448,6 +526,99 @@ export default function AdminMarketingView() {
                             בחירת נמענים היא להכנה בלבד. שליחה לרשימה תתווסף
                             בשלב נפרד לאחר בדיקת זכאות.
                         </span>
+                    </div>
+                    <div className={styles.dryRunActions}>
+                        <button
+                            type="button"
+                            className={styles.dryRunButton}
+                            onClick={handleDryRun}
+                            disabled={
+                                selectedVisibleCount === 0 || dryRunLoading
+                            }
+                        >
+                            {dryRunLoading
+                                ? "\u05D1\u05D5\u05D3\u05E7 \u05D6\u05DB\u05D0\u05D5\u05EA\u2026"
+                                : "\u05D1\u05D3\u05D9\u05E7\u05EA \u05D6\u05DB\u05D0\u05D5\u05EA \u05DC\u05E0\u05DE\u05E2\u05E0\u05D9\u05DD"}
+                        </button>
+                        <span className={styles.dryRunBoundaryNote}>
+                            הבדיקה אינה שולחת מיילים ואינה יוצרת קמפיין.
+                        </span>
+                    </div>
+                    <div className={styles.dryRunRegion} aria-live="polite">
+                        {dryRunError ? (
+                            <p className={styles.error} role="alert">
+                                {dryRunError}
+                            </p>
+                        ) : null}
+                        {dryRunStale ? (
+                            <p className={styles.dryRunStaleHint}>
+                                התוצאה אינה מעודכנת לאחר שינוי בחירה. הריצו
+                                בדיקה מחדש.
+                            </p>
+                        ) : null}
+                        {dryRunResult ? (
+                            <div className={styles.dryRunPanel}>
+                                <div className={styles.dryRunStats}>
+                                    <span className={styles.dryRunStat}>
+                                        נבחרו:{" "}
+                                        {dryRunResult.selectedCount ?? "\u2014"}
+                                    </span>
+                                    <span className={styles.dryRunStat}>
+                                        ייחודיים:{" "}
+                                        {dryRunResult.uniqueCount ?? "\u2014"}
+                                    </span>
+                                    <span className={styles.dryRunStat}>
+                                        כפולים:{" "}
+                                        {dryRunResult.duplicateCount ??
+                                            "\u2014"}
+                                    </span>
+                                    <span className={styles.dryRunStat}>
+                                        זכאים:{" "}
+                                        {dryRunResult.eligibleCount ?? "\u2014"}
+                                    </span>
+                                    <span className={styles.dryRunStat}>
+                                        נפסלו:{" "}
+                                        {dryRunResult.skippedCount ?? "\u2014"}
+                                    </span>
+                                </div>
+                                {Object.keys(dryRunResult.skippedByReason)
+                                    .length > 0 ? (
+                                    <ul className={styles.dryRunReasons}>
+                                        {Object.entries(
+                                            dryRunResult.skippedByReason,
+                                        ).map(([reason, count]) => (
+                                            <li
+                                                key={reason}
+                                                className={
+                                                    styles.dryRunReasonRow
+                                                }
+                                            >
+                                                <span>
+                                                    {skipReasonLabel(reason)}
+                                                </span>
+                                                <span>
+                                                    {typeof count === "number"
+                                                        ? count
+                                                        : "\u2014"}
+                                                </span>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                ) : null}
+                                {dryRunResult.warnings.length > 0 ? (
+                                    <ul className={styles.dryRunWarnings}>
+                                        {dryRunResult.warnings.map((w, i) => (
+                                            <li
+                                                key={`${i}-${String(w)}`}
+                                                className={styles.dryRunWarning}
+                                            >
+                                                {String(w)}
+                                            </li>
+                                        ))}
+                                    </ul>
+                                ) : null}
+                            </div>
+                        ) : null}
                     </div>
                     <ul className={styles.list}>
                         <li className={`${styles.row} ${styles.rowHead}`}>

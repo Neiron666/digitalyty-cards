@@ -211,6 +211,124 @@
     color: var(--text-main);
 }
 
+.dryRunActions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 12px;
+    min-width: 0;
+}
+
+.dryRunButton {
+    appearance: none;
+    border: 1px solid var(--border);
+    background: var(--gold, transparent);
+    color: var(--text-main);
+    border-radius: 999px;
+    padding: 8px 16px;
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.dryRunButton:disabled {
+    opacity: 0.5;
+    cursor: default;
+}
+
+.dryRunButton:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--gold-fade);
+}
+
+.dryRunBoundaryNote {
+    flex: 1 1 220px;
+    min-width: 0;
+    overflow-wrap: anywhere;
+    font-size: var(--fs-caption);
+    opacity: 0.85;
+    color: var(--text-main);
+}
+
+.dryRunRegion {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-width: 0;
+}
+
+.dryRunStaleHint {
+    margin: 0;
+    overflow-wrap: anywhere;
+    font-size: var(--fs-body-sm);
+    color: var(--danger, #c0392b);
+}
+
+.dryRunPanel {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 10px 12px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    background: var(--bg-soft, transparent);
+    min-width: 0;
+}
+
+.dryRunStats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 16px;
+    min-width: 0;
+}
+
+.dryRunStat {
+    min-width: 0;
+    overflow-wrap: anywhere;
+    font-size: var(--fs-body-sm);
+    font-weight: 700;
+    color: var(--text-main);
+}
+
+.dryRunReasons {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    min-width: 0;
+}
+
+.dryRunReasonRow {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 4px 12px;
+    min-width: 0;
+    overflow-wrap: anywhere;
+    font-size: var(--fs-body-sm);
+    color: var(--text-main);
+}
+
+.dryRunWarnings {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    min-width: 0;
+}
+
+.dryRunWarning {
+    min-width: 0;
+    overflow-wrap: anywhere;
+    font-size: var(--fs-caption);
+    opacity: 0.85;
+    color: var(--text-main);
+}
+
 .checkboxCell {
     flex: 0 0 auto;
     min-width: 0;

@@ -356,9 +356,7 @@ export async function dryRunMarketingCampaign(req, res) {
             .json({ ok: false, message: "userIds must not be empty" });
     }
     if (userIds.length > MAX_MARKETING_DRY_RUN_USER_IDS) {
-        return res
-            .status(400)
-            .json({ ok: false, message: "too many userIds" });
+        return res.status(400).json({ ok: false, message: "too many userIds" });
     }
 
     // Content payload is NOT part of dry-run. Detect presence only; never
@@ -387,8 +385,6 @@ export async function dryRunMarketingCampaign(req, res) {
             "[adminMarketingCampaign] dry-run failed",
             err?.message || err,
         );
-        return res
-            .status(500)
-            .json({ ok: false, message: "Dry run failed" });
+        return res.status(500).json({ ok: false, message: "Dry run failed" });
     }
 }

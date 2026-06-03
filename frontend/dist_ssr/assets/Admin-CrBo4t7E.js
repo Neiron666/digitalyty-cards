@@ -133,6 +133,9 @@ function previewMarketingCampaign(payload) {
 function testSendMarketingCampaign(payload) {
   return api.post("/admin/marketing/campaigns/test-send", payload);
 }
+function dryRunMarketingCampaign(userIds) {
+  return api.post("/admin/marketing/campaigns/dry-run", { userIds });
+}
 function listAdminOrganizations(params = {}) {
   return api.get("/admin/orgs", { params });
 }
@@ -3302,36 +3305,48 @@ function MarketingTestSendConfirm({
     }
   );
 }
-const root = "_root_x14tt_1";
-const header = "_header_x14tt_21";
-const titleWrap = "_titleWrap_x14tt_37";
-const title$1 = "_title_x14tt_37";
-const subtitle$1 = "_subtitle_x14tt_65";
-const note = "_note_x14tt_77";
-const noteStrong = "_noteStrong_x14tt_99";
-const controls = "_controls_x14tt_107";
-const filters = "_filters_x14tt_123";
-const chip = "_chip_x14tt_137";
-const chipActive = "_chipActive_x14tt_169";
-const searchForm = "_searchForm_x14tt_179";
-const searchLabel = "_searchLabel_x14tt_193";
-const searchInput$1 = "_searchInput_x14tt_205";
-const searchBtn = "_searchBtn_x14tt_239";
-const summary = "_summary_x14tt_271";
-const summaryItem = "_summaryItem_x14tt_289";
-const error = "_error_x14tt_307";
-const muted$1 = "_muted_x14tt_319";
-const selectionBar = "_selectionBar_x14tt_331";
-const selectionCount = "_selectionCount_x14tt_355";
-const clearBtn = "_clearBtn_x14tt_367";
-const selectionNote = "_selectionNote_x14tt_409";
-const checkboxCell = "_checkboxCell_x14tt_427";
-const checkbox = "_checkbox_x14tt_427";
-const list = "_list_x14tt_461";
-const row$1 = "_row_x14tt_479";
-const rowHead = "_rowHead_x14tt_505";
-const cell$1 = "_cell_x14tt_517";
-const cellEmail = "_cellEmail_x14tt_529";
+const root = "_root_am3ls_1";
+const header = "_header_am3ls_21";
+const titleWrap = "_titleWrap_am3ls_37";
+const title$1 = "_title_am3ls_37";
+const subtitle$1 = "_subtitle_am3ls_65";
+const note = "_note_am3ls_77";
+const noteStrong = "_noteStrong_am3ls_99";
+const controls = "_controls_am3ls_107";
+const filters = "_filters_am3ls_123";
+const chip = "_chip_am3ls_137";
+const chipActive = "_chipActive_am3ls_169";
+const searchForm = "_searchForm_am3ls_179";
+const searchLabel = "_searchLabel_am3ls_193";
+const searchInput$1 = "_searchInput_am3ls_205";
+const searchBtn = "_searchBtn_am3ls_239";
+const summary = "_summary_am3ls_271";
+const summaryItem = "_summaryItem_am3ls_289";
+const error = "_error_am3ls_307";
+const muted$1 = "_muted_am3ls_319";
+const selectionBar = "_selectionBar_am3ls_331";
+const selectionCount = "_selectionCount_am3ls_355";
+const clearBtn = "_clearBtn_am3ls_367";
+const selectionNote = "_selectionNote_am3ls_409";
+const dryRunActions = "_dryRunActions_am3ls_427";
+const dryRunButton = "_dryRunButton_am3ls_443";
+const dryRunBoundaryNote = "_dryRunBoundaryNote_am3ls_487";
+const dryRunRegion = "_dryRunRegion_am3ls_505";
+const dryRunStaleHint = "_dryRunStaleHint_am3ls_519";
+const dryRunPanel = "_dryRunPanel_am3ls_533";
+const dryRunStats = "_dryRunStats_am3ls_555";
+const dryRunStat = "_dryRunStat_am3ls_555";
+const dryRunReasons = "_dryRunReasons_am3ls_585";
+const dryRunReasonRow = "_dryRunReasonRow_am3ls_605";
+const dryRunWarnings = "_dryRunWarnings_am3ls_627";
+const dryRunWarning = "_dryRunWarning_am3ls_627";
+const checkboxCell = "_checkboxCell_am3ls_663";
+const checkbox = "_checkbox_am3ls_663";
+const list = "_list_am3ls_697";
+const row$1 = "_row_am3ls_715";
+const rowHead = "_rowHead_am3ls_741";
+const cell$1 = "_cell_am3ls_753";
+const cellEmail = "_cellEmail_am3ls_765";
 const styles$2 = {
   root,
   header,
@@ -3356,6 +3371,18 @@ const styles$2 = {
   selectionCount,
   clearBtn,
   selectionNote,
+  dryRunActions,
+  dryRunButton,
+  dryRunBoundaryNote,
+  dryRunRegion,
+  dryRunStaleHint,
+  dryRunPanel,
+  dryRunStats,
+  dryRunStat,
+  dryRunReasons,
+  dryRunReasonRow,
+  dryRunWarnings,
+  dryRunWarning,
   checkboxCell,
   checkbox,
   list,
@@ -3426,7 +3453,14 @@ function AdminMarketingView() {
   const [selectedRecipientIds, setSelectedRecipientIds] = useState(
     () => /* @__PURE__ */ new Set()
   );
+  const [dryRunLoading, setDryRunLoading] = useState(false);
+  const [dryRunError, setDryRunError] = useState("");
+  const [dryRunResult, setDryRunResult] = useState(null);
+  const [dryRunStale, setDryRunStale] = useState(false);
   function handleToggleRecipient(userId) {
+    if (dryRunResult) {
+      setDryRunStale(true);
+    }
     setSelectedRecipientIds((prev) => {
       const next = new Set(prev);
       if (next.has(userId)) next.delete(userId);
@@ -3436,6 +3470,9 @@ function AdminMarketingView() {
   }
   function handleClearSelection() {
     setSelectedRecipientIds(/* @__PURE__ */ new Set());
+    setDryRunResult(null);
+    setDryRunError("");
+    setDryRunStale(false);
   }
   async function handlePreview(form2) {
     setPreviewError("");
@@ -3591,6 +3628,9 @@ function AdminMarketingView() {
   }, [activeCohort, appliedQuery]);
   useEffect(() => {
     setSelectedRecipientIds(/* @__PURE__ */ new Set());
+    setDryRunResult(null);
+    setDryRunError("");
+    setDryRunStale(false);
   }, [activeCohort, appliedQuery]);
   const items = Array.isArray(data?.items) ? data.items : [];
   const totalCandidates = typeof data?.totalCandidates === "number" ? data.totalCandidates : null;
@@ -3600,6 +3640,45 @@ function AdminMarketingView() {
     (acc, u) => acc + (selectedRecipientIds.has(u.userId) ? 1 : 0),
     0
   );
+  async function handleDryRun() {
+    if (dryRunLoading) return;
+    const ids = items.filter((u) => selectedRecipientIds.has(u.userId)).map((u) => u.userId);
+    if (ids.length === 0) {
+      setDryRunError("בחרו לפחות נמען אחד לבדיקה");
+      return;
+    }
+    setDryRunError("");
+    setDryRunLoading(true);
+    try {
+      const res = await dryRunMarketingCampaign(ids);
+      const data2 = res?.data || {};
+      const num = (v) => typeof v === "number" ? v : null;
+      const reasons = data2.skippedByReason && typeof data2.skippedByReason === "object" && !Array.isArray(data2.skippedByReason) ? data2.skippedByReason : {};
+      setDryRunResult({
+        selectedCount: num(data2.selectedCount),
+        uniqueCount: num(data2.uniqueCount),
+        duplicateCount: num(data2.duplicateCount),
+        eligibleCount: num(data2.eligibleCount),
+        skippedCount: num(data2.skippedCount),
+        skippedByReason: reasons,
+        warnings: Array.isArray(data2.warnings) ? data2.warnings : []
+      });
+      setDryRunStale(false);
+    } catch (e) {
+      const status2 = e?.response?.status;
+      let msg;
+      if (status2 === 400) {
+        msg = typeof e?.response?.data?.message === "string" ? e.response.data.message : "בקשת בדיקת זכאות שגויה";
+      } else if (status2 === 403 || status2 === 404) {
+        msg = "אין הרשאה לביצוע הפעולה";
+      } else {
+        msg = "אירעה שגיאה בבדיקת הזכאות";
+      }
+      setDryRunError(msg);
+    } finally {
+      setDryRunLoading(false);
+    }
+  }
   function onSubmitSearch(e) {
     e.preventDefault();
     setAppliedQuery(searchInput2.trim());
@@ -3719,6 +3798,68 @@ function AdminMarketingView() {
           }
         ),
         /* @__PURE__ */ jsx("span", { className: styles$2.selectionNote, children: "בחירת נמענים היא להכנה בלבד. שליחה לרשימה תתווסף בשלב נפרד לאחר בדיקת זכאות." })
+      ] }),
+      /* @__PURE__ */ jsxs("div", { className: styles$2.dryRunActions, children: [
+        /* @__PURE__ */ jsx(
+          "button",
+          {
+            type: "button",
+            className: styles$2.dryRunButton,
+            onClick: handleDryRun,
+            disabled: selectedVisibleCount === 0 || dryRunLoading,
+            children: dryRunLoading ? "בודק זכאות…" : "בדיקת זכאות לנמענים"
+          }
+        ),
+        /* @__PURE__ */ jsx("span", { className: styles$2.dryRunBoundaryNote, children: "הבדיקה אינה שולחת מיילים ואינה יוצרת קמפיין." })
+      ] }),
+      /* @__PURE__ */ jsxs("div", { className: styles$2.dryRunRegion, "aria-live": "polite", children: [
+        dryRunError ? /* @__PURE__ */ jsx("p", { className: styles$2.error, role: "alert", children: dryRunError }) : null,
+        dryRunStale ? /* @__PURE__ */ jsx("p", { className: styles$2.dryRunStaleHint, children: "התוצאה אינה מעודכנת לאחר שינוי בחירה. הריצו בדיקה מחדש." }) : null,
+        dryRunResult ? /* @__PURE__ */ jsxs("div", { className: styles$2.dryRunPanel, children: [
+          /* @__PURE__ */ jsxs("div", { className: styles$2.dryRunStats, children: [
+            /* @__PURE__ */ jsxs("span", { className: styles$2.dryRunStat, children: [
+              "נבחרו: ",
+              dryRunResult.selectedCount ?? "—"
+            ] }),
+            /* @__PURE__ */ jsxs("span", { className: styles$2.dryRunStat, children: [
+              "ייחודיים: ",
+              dryRunResult.uniqueCount ?? "—"
+            ] }),
+            /* @__PURE__ */ jsxs("span", { className: styles$2.dryRunStat, children: [
+              "כפולים: ",
+              dryRunResult.duplicateCount ?? "—"
+            ] }),
+            /* @__PURE__ */ jsxs("span", { className: styles$2.dryRunStat, children: [
+              "זכאים: ",
+              dryRunResult.eligibleCount ?? "—"
+            ] }),
+            /* @__PURE__ */ jsxs("span", { className: styles$2.dryRunStat, children: [
+              "נפסלו: ",
+              dryRunResult.skippedCount ?? "—"
+            ] })
+          ] }),
+          Object.keys(dryRunResult.skippedByReason).length > 0 ? /* @__PURE__ */ jsx("ul", { className: styles$2.dryRunReasons, children: Object.entries(
+            dryRunResult.skippedByReason
+          ).map(([reason, count]) => /* @__PURE__ */ jsxs(
+            "li",
+            {
+              className: styles$2.dryRunReasonRow,
+              children: [
+                /* @__PURE__ */ jsx("span", { children: skipReasonLabel(reason) }),
+                /* @__PURE__ */ jsx("span", { children: typeof count === "number" ? count : "—" })
+              ]
+            },
+            reason
+          )) }) : null,
+          dryRunResult.warnings.length > 0 ? /* @__PURE__ */ jsx("ul", { className: styles$2.dryRunWarnings, children: dryRunResult.warnings.map((w, i) => /* @__PURE__ */ jsx(
+            "li",
+            {
+              className: styles$2.dryRunWarning,
+              children: String(w)
+            },
+            `${i}-${String(w)}`
+          )) }) : null
+        ] }) : null
       ] }),
       /* @__PURE__ */ jsxs("ul", { className: styles$2.list, children: [
         /* @__PURE__ */ jsxs("li", { className: `${styles$2.row} ${styles$2.rowHead}`, children: [
