@@ -94,6 +94,15 @@ const EXPECTED_INDEXES = [
         sparse: true,
         description: "Idempotency: unique sparse guard on client requestId",
     },
+    {
+        label: "D",
+        name: "marketing_campaign_start_request_id_v1",
+        key: { startRequestId: 1 },
+        unique: true,
+        sparse: true,
+        description:
+            "Send-start idempotency: unique sparse guard on client startRequestId",
+    },
 ];
 
 // ---------------------------------------------------------------------------

@@ -55,6 +55,15 @@ const REQUIRED_INDEXES = [
             sparse: true,
         },
     },
+    {
+        name: "marketing_campaign_start_request_id_v1",
+        key: { startRequestId: 1 },
+        options: {
+            name: "marketing_campaign_start_request_id_v1",
+            unique: true,
+            sparse: true,
+        },
+    },
 ];
 
 // ── Main ─────────────────────────────────────────────────────────

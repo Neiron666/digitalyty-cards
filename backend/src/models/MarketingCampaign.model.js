@@ -105,6 +105,22 @@ const MarketingCampaignSchema = new mongoose.Schema(
 
         // Operator-safe error label only — never a raw provider response body.
         errorSafeMessage: { type: String },
+
+        // Separate from draft requestId; used ONLY by future send-start
+        // idempotency. No default — must remain absent (not empty string) when
+        // unused so the unique+sparse index does not collide across campaigns.
+        startRequestId: { type: String, trim: true },
+
+        // Future start/enqueue acceptance timestamp (set by the future
+        // start-send endpoint when a draft is accepted for enqueue). No default.
+        queuedAt: { type: Date },
+
+        // Future admin actor who accepted/started the campaign send (set by the
+        // future start-send endpoint). No default.
+        sendStartedByAdminId: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "User",
+        },
     },
     // Explicit collection pin so the runtime collection name is part of the
     // model contract (not left to Mongoose pluralization). Matches the literal
@@ -126,6 +142,14 @@ MarketingCampaignSchema.index(
 MarketingCampaignSchema.index(
     { requestId: 1 },
     { name: "marketing_campaign_request_id_v1", unique: true, sparse: true },
+);
+MarketingCampaignSchema.index(
+    { startRequestId: 1 },
+    {
+        name: "marketing_campaign_start_request_id_v1",
+        unique: true,
+        sparse: true,
+    },
 );
 
 export default mongoose.model("MarketingCampaign", MarketingCampaignSchema);
