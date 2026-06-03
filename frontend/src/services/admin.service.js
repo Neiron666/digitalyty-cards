@@ -177,6 +177,14 @@ export function dryRunMarketingCampaign(userIds) {
     return api.post("/admin/marketing/campaigns/dry-run", { userIds });
 }
 
+// Marketing emails — feature-flagged draft persistence (no send, no Mailjet,
+// no token, no provider). Backend revalidates userIds as SSoT. Caller passes a
+// single payload object { userIds, content, requestId } only — never
+// dryRunClientSummary. Auth/CSRF inherited from the api instance.
+export function createMarketingCampaignDraft(payload) {
+    return api.post("/admin/marketing/campaigns/drafts", payload);
+}
+
 // Organizations (admin)
 export function listAdminOrganizations(params = {}) {
     return api.get("/admin/orgs", { params });

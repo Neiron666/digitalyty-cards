@@ -4,6 +4,7 @@ import {
     previewMarketingCampaign,
     testSendMarketingCampaign,
     dryRunMarketingCampaign,
+    createMarketingCampaignDraft,
 } from "../../services/admin.service";
 import MarketingComposerForm from "./marketing/MarketingComposerForm";
 import MarketingPreviewPanel from "./marketing/MarketingPreviewPanel";
@@ -61,6 +62,19 @@ function formatDate(value) {
     return d.toLocaleDateString("he-IL");
 }
 
+// Idempotency key for a save-draft attempt. Random/time only — never PII.
+// Guarded crypto.randomUUID with a timestamp+random fallback for older or
+// embedded webviews. Not the api.js helper (intentionally kept private).
+function createDraftRequestId() {
+    if (
+        typeof crypto !== "undefined" &&
+        typeof crypto.randomUUID === "function"
+    ) {
+        return `draft-${crypto.randomUUID()}`;
+    }
+    return `draft-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
+
 export default function AdminMarketingView() {
     const [filterKey, setFilterKey] = useState("all");
     const [searchInput, setSearchInput] = useState("");
@@ -99,12 +113,33 @@ export default function AdminMarketingView() {
     const [dryRunResult, setDryRunResult] = useState(null);
     const [dryRunStale, setDryRunStale] = useState(false);
 
+    // Save-draft state. Parent owns the draft API call because it owns the
+    // selected visible userIds and the dry-run gate. Composer only emits a form
+    // snapshot via onSaveDraft(form). No send / no token / no provider.
+    const [draftLoading, setDraftLoading] = useState(false);
+    const [draftError, setDraftError] = useState("");
+    const [draftResult, setDraftResult] = useState(null);
+    const [draftDisabledByFlag, setDraftDisabledByFlag] = useState(false);
+    // Idempotency key reused across retries; regenerated only when the draft's
+    // selection/content/eligibility snapshot changes (see clear rules below).
+    const [pendingDraftRequestId, setPendingDraftRequestId] = useState(null);
+
+    function clearDraftAttempt() {
+        setDraftResult(null);
+        setDraftError("");
+        setPendingDraftRequestId(null);
+    }
+
     function handleToggleRecipient(userId) {
         // A prior dry-run result no longer matches the new selection. Read the
         // current result from closure; never inspect it via a setter updater.
         if (dryRunResult) {
             setDryRunStale(true);
         }
+        // Selection changed: the draft's eligibility snapshot is no longer
+        // valid. Clear the draft attempt + requestId, but keep dryRunStale so a
+        // fresh dry-run is still required before saving.
+        clearDraftAttempt();
         setSelectedRecipientIds((prev) => {
             const next = new Set(prev);
             if (next.has(userId)) next.delete(userId);
@@ -118,6 +153,7 @@ export default function AdminMarketingView() {
         setDryRunResult(null);
         setDryRunError("");
         setDryRunStale(false);
+        clearDraftAttempt();
     }
 
     async function handlePreview(form) {
@@ -251,6 +287,10 @@ export default function AdminMarketingView() {
         // Clear stale send status/error on edit; keep the flag lock sticky.
         setSendResult(null);
         setSendError("");
+        // Content changed: the draft snapshot is stale. Clear result/error and
+        // requestId so the next save creates a fresh idempotency key. Keep
+        // draftDisabledByFlag sticky (mirrors sendDisabledByFlag).
+        clearDraftAttempt();
     }
 
     function handleComposerReset() {
@@ -264,6 +304,8 @@ export default function AdminMarketingView() {
         setConfirmOpen(false);
         setLastSentAt(null);
         setPendingForm(null);
+        // Clear draft attempt on reset; keep draftDisabledByFlag sticky.
+        clearDraftAttempt();
     }
 
     const activeCohort = useMemo(() => {
@@ -316,6 +358,9 @@ export default function AdminMarketingView() {
         setDryRunResult(null);
         setDryRunError("");
         setDryRunStale(false);
+        // The visible recipient set changed: any pending draft snapshot/key is
+        // no longer valid.
+        clearDraftAttempt();
     }, [activeCohort, appliedQuery]);
 
     const items = Array.isArray(data?.items) ? data.items : [];
@@ -351,6 +396,8 @@ export default function AdminMarketingView() {
         }
         setDryRunError("");
         setDryRunLoading(true);
+        // A new eligibility snapshot supersedes any pending draft attempt.
+        clearDraftAttempt();
         try {
             const res = await dryRunMarketingCampaign(ids);
             const data = res?.data || {};
@@ -392,6 +439,116 @@ export default function AdminMarketingView() {
         }
     }
 
+    // Save a campaign draft. Backend is SSoT and revalidates userIds; the flag
+    // may be disabled in production (handled gracefully via 409). Sends ONLY
+    // { userIds, content, requestId } — never emails, raw Set, dry-run result,
+    // counts, or dryRunClientSummary.
+    async function handleSaveDraft(form) {
+        if (draftLoading) return;
+        if (selectedVisibleCount === 0) {
+            setDraftResult(null);
+            setDraftError(
+                "\u05D1\u05D7\u05E8\u05D5 \u05DC\u05E4\u05D7\u05D5\u05EA \u05E0\u05DE\u05E2\u05DF \u05D0\u05D7\u05D3 \u05DC\u05E9\u05DE\u05D9\u05E8\u05EA \u05D4\u05D8\u05D9\u05D5\u05D8\u05D4.",
+            );
+            return;
+        }
+        if (!dryRunResult || dryRunStale) {
+            setDraftResult(null);
+            setDraftError(
+                "\u05D4\u05E8\u05D9\u05E6\u05D5 \u05D1\u05D3\u05D9\u05E7\u05EA \u05D6\u05DB\u05D0\u05D5\u05EA \u05E2\u05D3\u05DB\u05E0\u05D9\u05EA \u05DC\u05E4\u05E0\u05D9 \u05E9\u05DE\u05D9\u05E8\u05EA \u05D4\u05D8\u05D9\u05D5\u05D8\u05D4.",
+            );
+            return;
+        }
+
+        // Re-derive ids from CURRENT visible items at call time so hidden
+        // cross-filter ids can never be submitted and no raw email array is
+        // ever built. Never send [...selectedRecipientIds].
+        const ids = items
+            .filter((u) => selectedRecipientIds.has(u.userId))
+            .map((u) => u.userId);
+        if (ids.length === 0) {
+            setDraftResult(null);
+            setDraftError(
+                "\u05D1\u05D7\u05E8\u05D5 \u05DC\u05E4\u05D7\u05D5\u05EA \u05E0\u05DE\u05E2\u05DF \u05D0\u05D7\u05D3 \u05DC\u05E9\u05DE\u05D9\u05E8\u05EA \u05D4\u05D8\u05D9\u05D5\u05D8\u05D4.",
+            );
+            return;
+        }
+
+        // Reuse the pending idempotency key across retries; generate one only
+        // when there is none (cleared on snapshot changes).
+        const requestId = pendingDraftRequestId || createDraftRequestId();
+        if (!pendingDraftRequestId) {
+            setPendingDraftRequestId(requestId);
+        }
+
+        setDraftError("");
+        setDraftLoading(true);
+        try {
+            const res = await createMarketingCampaignDraft({
+                userIds: ids,
+                content: form,
+                requestId,
+            });
+            const data = res?.data || {};
+            const warnings = Array.isArray(data.warnings) ? data.warnings : [];
+            const num = (v) => (typeof v === "number" ? v : null);
+            const replay = warnings.includes("IDEMPOTENT_REPLAY");
+            setDraftResult({
+                message: replay
+                    ? "\u05D4\u05D8\u05D9\u05D5\u05D8\u05D4 \u05DB\u05D1\u05E8 \u05E0\u05E9\u05DE\u05E8\u05D4 (\u05DC\u05D0 \u05E0\u05D5\u05E6\u05E8\u05D4 \u05DB\u05E4\u05D9\u05DC\u05D5\u05EA)."
+                    : "\u05D4\u05D8\u05D9\u05D5\u05D8\u05D4 \u05E0\u05E9\u05DE\u05E8\u05D4 \u05D1\u05D4\u05E6\u05DC\u05D7\u05D4.",
+                selectedCount: num(data.selectedCount),
+                eligibleCount: num(data.eligibleCount),
+                skippedCount: num(data.skippedCount),
+            });
+            // Keep pendingDraftRequestId after success so a repeat click replays
+            // idempotently instead of creating a duplicate draft.
+        } catch (e) {
+            const status = e?.response?.status;
+            const serverMsg =
+                typeof e?.response?.data?.message === "string"
+                    ? e.response.data.message
+                    : "";
+            if (status === 409) {
+                if (serverMsg === "Marketing campaign drafts are disabled") {
+                    // Sticky lock banner is the single source of truth; clear
+                    // draftError so the disabled copy is not shown twice. No
+                    // draft was created, so drop the idempotency key.
+                    setDraftDisabledByFlag(true);
+                    setDraftError("");
+                    setDraftResult(null);
+                    setPendingDraftRequestId(null);
+                } else {
+                    // requestId conflict (key consumed by another draft/admin).
+                    setDraftResult(null);
+                    setPendingDraftRequestId(null);
+                    setDraftError(
+                        "\u05D8\u05D9\u05D5\u05D8\u05D4 \u05D6\u05D5 \u05DB\u05D1\u05E8 \u05E0\u05E9\u05DE\u05E8\u05D4.",
+                    );
+                }
+            } else if (status === 400) {
+                setDraftResult(null);
+                setDraftError(
+                    serverMsg ||
+                        "\u05D1\u05E7\u05E9\u05EA \u05E9\u05DE\u05D9\u05E8\u05EA \u05D8\u05D9\u05D5\u05D8\u05D4 \u05E9\u05D2\u05D5\u05D9\u05D4.",
+                );
+            } else if (status === 422) {
+                setDraftResult(null);
+                setDraftError(
+                    "\u05DC\u05D0 \u05E0\u05DE\u05E6\u05D0\u05D5 \u05E0\u05DE\u05E2\u05E0\u05D9\u05DD \u05DB\u05E9\u05D9\u05E8\u05D9\u05DD \u05DC\u05E9\u05DE\u05D9\u05E8\u05EA \u05D4\u05D8\u05D9\u05D5\u05D8\u05D4.",
+                );
+            } else {
+                // Keep pendingDraftRequestId so a retry is idempotent.
+                setDraftResult(null);
+                setDraftError(
+                    "\u05E9\u05DE\u05D9\u05E8\u05EA \u05D4\u05D8\u05D9\u05D5\u05D8\u05D4 \u05E0\u05DB\u05E9\u05DC\u05D4. \u05E0\u05E1\u05D5 \u05E9\u05D5\u05D1 \u05DE\u05D0\u05D5\u05D7\u05E8 \u05D9\u05D5\u05EA\u05E8.",
+                );
+            }
+        } finally {
+            setDraftLoading(false);
+        }
+    }
+
     function onSubmitSearch(e) {
         e.preventDefault();
         setAppliedQuery(searchInput.trim());
@@ -429,6 +586,21 @@ export default function AdminMarketingView() {
                 sendResult={sendResult}
                 sendError={sendError}
                 sendDisabledByFlag={sendDisabledByFlag}
+                onSaveDraft={handleSaveDraft}
+                isSavingDraft={draftLoading}
+                draftResult={draftResult}
+                draftError={draftError}
+                draftDisabledByFlag={draftDisabledByFlag}
+                canSaveDraft={
+                    selectedVisibleCount > 0 && !!dryRunResult && !dryRunStale
+                }
+                draftDisabledReason={
+                    selectedVisibleCount === 0
+                        ? "\u05D1\u05D7\u05E8\u05D5 \u05DC\u05E4\u05D7\u05D5\u05EA \u05E0\u05DE\u05E2\u05DF \u05D0\u05D7\u05D3 \u05DC\u05E9\u05DE\u05D9\u05E8\u05EA \u05D4\u05D8\u05D9\u05D5\u05D8\u05D4."
+                        : !dryRunResult || dryRunStale
+                          ? "\u05D4\u05E8\u05D9\u05E6\u05D5 \u05D1\u05D3\u05D9\u05E7\u05EA \u05D6\u05DB\u05D0\u05D5\u05EA \u05E2\u05D3\u05DB\u05E0\u05D9\u05EA \u05DC\u05E4\u05E0\u05D9 \u05E9\u05DE\u05D9\u05E8\u05EA \u05D4\u05D8\u05D9\u05D5\u05D8\u05D4."
+                          : ""
+                }
             />
 
             <MarketingPreviewPanel

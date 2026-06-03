@@ -196,15 +196,31 @@
     cursor: pointer;
 }
 
+/* Neutral, low-emphasis action. Visually distinct from primaryBtn (gold
+   border / test-send) and must never read as a mass-send: dashed muted border,
+   no gold accent. Flex-friendly, token typography only. */
+.draftBtn {
+    appearance: none;
+    border: 1px dashed var(--border);
+    background: var(--bg-subtle, transparent);
+    color: var(--text-main);
+    border-radius: 999px;
+    padding: 8px 14px;
+    font: inherit;
+    cursor: pointer;
+}
+
 .primaryBtn:disabled,
-.secondaryBtn:disabled {
+.secondaryBtn:disabled,
+.draftBtn:disabled {
     opacity: 0.5;
     cursor: not-allowed;
 }
 
 .primaryBtn:focus-visible,
 .secondaryBtn:focus-visible,
-.resetBtn:focus-visible {
+.resetBtn:focus-visible,
+.draftBtn:focus-visible {
     outline: none;
     box-shadow: 0 0 0 2px var(--gold-fade);
 }

@@ -136,6 +136,9 @@ function testSendMarketingCampaign(payload) {
 function dryRunMarketingCampaign(userIds) {
   return api.post("/admin/marketing/campaigns/dry-run", { userIds });
 }
+function createMarketingCampaignDraft(payload) {
+  return api.post("/admin/marketing/campaigns/drafts", payload);
+}
 function listAdminOrganizations(params = {}) {
   return api.get("/admin/orgs", { params });
 }
@@ -2697,31 +2700,32 @@ function AdminGuidesView() {
     ] })
   ] });
 }
-const root$2 = "_root_1hhcg_1";
-const header$3 = "_header_1hhcg_21";
-const title$4 = "_title_1hhcg_35";
-const boundary$1 = "_boundary_1hhcg_49";
-const fields = "_fields_1hhcg_65";
-const field = "_field_1hhcg_65";
-const label$1 = "_label_1hhcg_91";
-const req = "_req_1hhcg_103";
-const input = "_input_1hhcg_113";
-const ltr$2 = "_ltr_1hhcg_161";
-const textarea = "_textarea_1hhcg_171";
-const bodyHelp = "_bodyHelp_1hhcg_223";
-const fieldMeta = "_fieldMeta_1hhcg_235";
-const help = "_help_1hhcg_253";
-const counter = "_counter_1hhcg_269";
-const err = "_err_1hhcg_283";
-const actions$1 = "_actions_1hhcg_299";
-const actionButtons = "_actionButtons_1hhcg_315";
-const primaryBtn = "_primaryBtn_1hhcg_331";
-const secondaryBtn = "_secondaryBtn_1hhcg_353";
-const resetBtn = "_resetBtn_1hhcg_375";
-const status = "_status_1hhcg_423";
-const lockBanner = "_lockBanner_1hhcg_437";
-const sendStatus = "_sendStatus_1hhcg_459";
-const warningList$1 = "_warningList_1hhcg_473";
+const root$2 = "_root_19she_1";
+const header$3 = "_header_19she_21";
+const title$4 = "_title_19she_35";
+const boundary$1 = "_boundary_19she_49";
+const fields = "_fields_19she_65";
+const field = "_field_19she_65";
+const label$1 = "_label_19she_91";
+const req = "_req_19she_103";
+const input = "_input_19she_113";
+const ltr$2 = "_ltr_19she_161";
+const textarea = "_textarea_19she_171";
+const bodyHelp = "_bodyHelp_19she_223";
+const fieldMeta = "_fieldMeta_19she_235";
+const help = "_help_19she_253";
+const counter = "_counter_19she_269";
+const err = "_err_19she_283";
+const actions$1 = "_actions_19she_299";
+const actionButtons = "_actionButtons_19she_315";
+const primaryBtn = "_primaryBtn_19she_331";
+const secondaryBtn = "_secondaryBtn_19she_353";
+const resetBtn = "_resetBtn_19she_375";
+const draftBtn = "_draftBtn_19she_403";
+const status = "_status_19she_455";
+const lockBanner = "_lockBanner_19she_469";
+const sendStatus = "_sendStatus_19she_491";
+const warningList$1 = "_warningList_19she_505";
 const styles$5 = {
   root: root$2,
   header: header$3,
@@ -2744,6 +2748,7 @@ const styles$5 = {
   primaryBtn,
   secondaryBtn,
   resetBtn,
+  draftBtn,
   status,
   lockBanner,
   sendStatus,
@@ -2780,7 +2785,14 @@ function MarketingComposerForm({
   sendDisabled = false,
   sendDisabledByFlag = false,
   sendResult,
-  sendError
+  sendError,
+  onSaveDraft,
+  isSavingDraft = false,
+  canSaveDraft = false,
+  draftDisabledReason = "",
+  draftResult = null,
+  draftError = "",
+  draftDisabledByFlag = false
 } = {}) {
   const [form2, setForm] = useState(EMPTY_FORM);
   const [touched, setTouched] = useState(EMPTY_TOUCHED);
@@ -2812,6 +2824,12 @@ function MarketingComposerForm({
   function handleTestSendClick() {
     if (!canTestSend) return;
     onTestSend?.(form2);
+  }
+  function handleSaveDraftClick() {
+    if (!onSaveDraft) return;
+    if (!canSaveDraft) return;
+    if (isSavingDraft) return;
+    onSaveDraft(form2);
   }
   return /* @__PURE__ */ jsxs("section", { className: styles$5.root, "aria-label": "עריכת מייל שיווקי", children: [
     /* @__PURE__ */ jsxs("header", { className: styles$5.header, children: [
@@ -3079,6 +3097,16 @@ function MarketingComposerForm({
           "button",
           {
             type: "button",
+            className: styles$5.draftBtn,
+            onClick: handleSaveDraftClick,
+            disabled: isSavingDraft || !canSaveDraft || draftDisabledByFlag,
+            children: isSavingDraft ? "שומר טיוטה…" : "שמור טיוטת קמפיין"
+          }
+        ),
+        /* @__PURE__ */ jsx(
+          "button",
+          {
+            type: "button",
             className: styles$5.resetBtn,
             onClick: onReset,
             children: "נקה טופס"
@@ -3086,6 +3114,11 @@ function MarketingComposerForm({
         )
       ] }),
       /* @__PURE__ */ jsx("p", { className: styles$5.help, children: "השליחה תתבצע רק לכתובת האימייל של מנהל המערכת המחובר." }),
+      /* @__PURE__ */ jsx("p", { className: styles$5.help, children: "שמירת טיוטה אינה שולחת מיילים." }),
+      !canSaveDraft && draftDisabledReason ? /* @__PURE__ */ jsx("p", { className: styles$5.help, children: draftDisabledReason }) : null,
+      draftDisabledByFlag ? /* @__PURE__ */ jsx("p", { className: styles$5.lockBanner, role: "status", children: "שמירת טיוטות אינה פעילה כרגע." }) : null,
+      draftError ? /* @__PURE__ */ jsx("p", { className: styles$5.err, role: "alert", children: draftError }) : null,
+      draftResult ? /* @__PURE__ */ jsx("p", { className: styles$5.status, role: "status", "aria-live": "polite", children: draftResult.message }) : null,
       sendDisabledByFlag ? /* @__PURE__ */ jsx("p", { className: styles$5.lockBanner, role: "status", children: "שליחת מבחן אינה פעילה כרגע." }) : null,
       sendError ? /* @__PURE__ */ jsx("p", { className: styles$5.err, role: "alert", children: sendError }) : null,
       sendResult ? /* @__PURE__ */ jsxs("div", { className: styles$5.sendStatus, "aria-live": "polite", children: [
@@ -3431,6 +3464,12 @@ function formatDate$1(value) {
   if (Number.isNaN(d.getTime())) return "—";
   return d.toLocaleDateString("he-IL");
 }
+function createDraftRequestId() {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return `draft-${crypto.randomUUID()}`;
+  }
+  return `draft-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
 function AdminMarketingView() {
   const [filterKey, setFilterKey] = useState("all");
   const [searchInput2, setSearchInput] = useState("");
@@ -3457,10 +3496,21 @@ function AdminMarketingView() {
   const [dryRunError, setDryRunError] = useState("");
   const [dryRunResult, setDryRunResult] = useState(null);
   const [dryRunStale, setDryRunStale] = useState(false);
+  const [draftLoading, setDraftLoading] = useState(false);
+  const [draftError, setDraftError] = useState("");
+  const [draftResult, setDraftResult] = useState(null);
+  const [draftDisabledByFlag, setDraftDisabledByFlag] = useState(false);
+  const [pendingDraftRequestId, setPendingDraftRequestId] = useState(null);
+  function clearDraftAttempt() {
+    setDraftResult(null);
+    setDraftError("");
+    setPendingDraftRequestId(null);
+  }
   function handleToggleRecipient(userId) {
     if (dryRunResult) {
       setDryRunStale(true);
     }
+    clearDraftAttempt();
     setSelectedRecipientIds((prev) => {
       const next = new Set(prev);
       if (next.has(userId)) next.delete(userId);
@@ -3473,6 +3523,7 @@ function AdminMarketingView() {
     setDryRunResult(null);
     setDryRunError("");
     setDryRunStale(false);
+    clearDraftAttempt();
   }
   async function handlePreview(form2) {
     setPreviewError("");
@@ -3583,6 +3634,7 @@ function AdminMarketingView() {
     });
     setSendResult(null);
     setSendError("");
+    clearDraftAttempt();
   }
   function handleComposerReset() {
     setPreviewResult(null);
@@ -3594,6 +3646,7 @@ function AdminMarketingView() {
     setConfirmOpen(false);
     setLastSentAt(null);
     setPendingForm(null);
+    clearDraftAttempt();
   }
   const activeCohort = useMemo(() => {
     const found = FILTERS.find((f) => f.key === filterKey);
@@ -3631,6 +3684,7 @@ function AdminMarketingView() {
     setDryRunResult(null);
     setDryRunError("");
     setDryRunStale(false);
+    clearDraftAttempt();
   }, [activeCohort, appliedQuery]);
   const items = Array.isArray(data?.items) ? data.items : [];
   const totalCandidates = typeof data?.totalCandidates === "number" ? data.totalCandidates : null;
@@ -3644,11 +3698,14 @@ function AdminMarketingView() {
     if (dryRunLoading) return;
     const ids = items.filter((u) => selectedRecipientIds.has(u.userId)).map((u) => u.userId);
     if (ids.length === 0) {
-      setDryRunError("בחרו לפחות נמען אחד לבדיקה");
+      setDryRunError(
+        "בחרו לפחות נמען אחד לבדיקה"
+      );
       return;
     }
     setDryRunError("");
     setDryRunLoading(true);
+    clearDraftAttempt();
     try {
       const res = await dryRunMarketingCampaign(ids);
       const data2 = res?.data || {};
@@ -3679,6 +3736,88 @@ function AdminMarketingView() {
       setDryRunLoading(false);
     }
   }
+  async function handleSaveDraft(form2) {
+    if (draftLoading) return;
+    if (selectedVisibleCount === 0) {
+      setDraftResult(null);
+      setDraftError(
+        "בחרו לפחות נמען אחד לשמירת הטיוטה."
+      );
+      return;
+    }
+    if (!dryRunResult || dryRunStale) {
+      setDraftResult(null);
+      setDraftError(
+        "הריצו בדיקת זכאות עדכנית לפני שמירת הטיוטה."
+      );
+      return;
+    }
+    const ids = items.filter((u) => selectedRecipientIds.has(u.userId)).map((u) => u.userId);
+    if (ids.length === 0) {
+      setDraftResult(null);
+      setDraftError(
+        "בחרו לפחות נמען אחד לשמירת הטיוטה."
+      );
+      return;
+    }
+    const requestId = pendingDraftRequestId || createDraftRequestId();
+    if (!pendingDraftRequestId) {
+      setPendingDraftRequestId(requestId);
+    }
+    setDraftError("");
+    setDraftLoading(true);
+    try {
+      const res = await createMarketingCampaignDraft({
+        userIds: ids,
+        content: form2,
+        requestId
+      });
+      const data2 = res?.data || {};
+      const warnings2 = Array.isArray(data2.warnings) ? data2.warnings : [];
+      const num = (v) => typeof v === "number" ? v : null;
+      const replay = warnings2.includes("IDEMPOTENT_REPLAY");
+      setDraftResult({
+        message: replay ? "הטיוטה כבר נשמרה (לא נוצרה כפילות)." : "הטיוטה נשמרה בהצלחה.",
+        selectedCount: num(data2.selectedCount),
+        eligibleCount: num(data2.eligibleCount),
+        skippedCount: num(data2.skippedCount)
+      });
+    } catch (e) {
+      const status2 = e?.response?.status;
+      const serverMsg = typeof e?.response?.data?.message === "string" ? e.response.data.message : "";
+      if (status2 === 409) {
+        if (serverMsg === "Marketing campaign drafts are disabled") {
+          setDraftDisabledByFlag(true);
+          setDraftError("");
+          setDraftResult(null);
+          setPendingDraftRequestId(null);
+        } else {
+          setDraftResult(null);
+          setPendingDraftRequestId(null);
+          setDraftError(
+            "טיוטה זו כבר נשמרה."
+          );
+        }
+      } else if (status2 === 400) {
+        setDraftResult(null);
+        setDraftError(
+          serverMsg || "בקשת שמירת טיוטה שגויה."
+        );
+      } else if (status2 === 422) {
+        setDraftResult(null);
+        setDraftError(
+          "לא נמצאו נמענים כשירים לשמירת הטיוטה."
+        );
+      } else {
+        setDraftResult(null);
+        setDraftError(
+          "שמירת הטיוטה נכשלה. נסו שוב מאוחר יותר."
+        );
+      }
+    } finally {
+      setDraftLoading(false);
+    }
+  }
   function onSubmitSearch(e) {
     e.preventDefault();
     setAppliedQuery(searchInput2.trim());
@@ -3706,7 +3845,14 @@ function AdminMarketingView() {
         sendDisabled: false,
         sendResult,
         sendError,
-        sendDisabledByFlag
+        sendDisabledByFlag,
+        onSaveDraft: handleSaveDraft,
+        isSavingDraft: draftLoading,
+        draftResult,
+        draftError,
+        draftDisabledByFlag,
+        canSaveDraft: selectedVisibleCount > 0 && !!dryRunResult && !dryRunStale,
+        draftDisabledReason: selectedVisibleCount === 0 ? "בחרו לפחות נמען אחד לשמירת הטיוטה." : !dryRunResult || dryRunStale ? "הריצו בדיקת זכאות עדכנית לפני שמירת הטיוטה." : ""
       }
     ),
     /* @__PURE__ */ jsx(
@@ -3818,23 +3964,28 @@ function AdminMarketingView() {
         dryRunResult ? /* @__PURE__ */ jsxs("div", { className: styles$2.dryRunPanel, children: [
           /* @__PURE__ */ jsxs("div", { className: styles$2.dryRunStats, children: [
             /* @__PURE__ */ jsxs("span", { className: styles$2.dryRunStat, children: [
-              "נבחרו: ",
+              "נבחרו:",
+              " ",
               dryRunResult.selectedCount ?? "—"
             ] }),
             /* @__PURE__ */ jsxs("span", { className: styles$2.dryRunStat, children: [
-              "ייחודיים: ",
+              "ייחודיים:",
+              " ",
               dryRunResult.uniqueCount ?? "—"
             ] }),
             /* @__PURE__ */ jsxs("span", { className: styles$2.dryRunStat, children: [
-              "כפולים: ",
+              "כפולים:",
+              " ",
               dryRunResult.duplicateCount ?? "—"
             ] }),
             /* @__PURE__ */ jsxs("span", { className: styles$2.dryRunStat, children: [
-              "זכאים: ",
+              "זכאים:",
+              " ",
               dryRunResult.eligibleCount ?? "—"
             ] }),
             /* @__PURE__ */ jsxs("span", { className: styles$2.dryRunStat, children: [
-              "נפסלו: ",
+              "נפסלו:",
+              " ",
               dryRunResult.skippedCount ?? "—"
             ] })
           ] }),

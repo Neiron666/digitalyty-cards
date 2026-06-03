@@ -39,6 +39,13 @@ export default function MarketingComposerForm({
     sendDisabledByFlag = false,
     sendResult,
     sendError,
+    onSaveDraft,
+    isSavingDraft = false,
+    canSaveDraft = false,
+    draftDisabledReason = "",
+    draftResult = null,
+    draftError = "",
+    draftDisabledByFlag = false,
 } = {}) {
     const [form, setForm] = useState(EMPTY_FORM);
     const [touched, setTouched] = useState(EMPTY_TOUCHED);
@@ -90,6 +97,13 @@ export default function MarketingComposerForm({
     function handleTestSendClick() {
         if (!canTestSend) return;
         onTestSend?.(form);
+    }
+
+    function handleSaveDraftClick() {
+        if (!onSaveDraft) return;
+        if (!canSaveDraft) return;
+        if (isSavingDraft) return;
+        onSaveDraft(form);
     }
 
     return (
@@ -349,6 +363,18 @@ export default function MarketingComposerForm({
                     </button>
                     <button
                         type="button"
+                        className={styles.draftBtn}
+                        onClick={handleSaveDraftClick}
+                        disabled={
+                            isSavingDraft ||
+                            !canSaveDraft ||
+                            draftDisabledByFlag
+                        }
+                    >
+                        {isSavingDraft ? "שומר טיוטה…" : "שמור טיוטת קמפיין"}
+                    </button>
+                    <button
+                        type="button"
                         className={styles.resetBtn}
                         onClick={onReset}
                     >
@@ -358,6 +384,29 @@ export default function MarketingComposerForm({
                 <p className={styles.help}>
                     השליחה תתבצע רק לכתובת האימייל של מנהל המערכת המחובר.
                 </p>
+                <p className={styles.help}>שמירת טיוטה אינה שולחת מיילים.</p>
+                {!canSaveDraft && draftDisabledReason ? (
+                    <p className={styles.help}>{draftDisabledReason}</p>
+                ) : null}
+                {draftDisabledByFlag ? (
+                    <p className={styles.lockBanner} role="status">
+                        שמירת טיוטות אינה פעילה כרגע.
+                    </p>
+                ) : null}
+                {draftError ? (
+                    <p className={styles.err} role="alert">
+                        {draftError}
+                    </p>
+                ) : null}
+                {draftResult ? (
+                    <p
+                        className={styles.status}
+                        role="status"
+                        aria-live="polite"
+                    >
+                        {draftResult.message}
+                    </p>
+                ) : null}
                 {sendDisabledByFlag ? (
                     <p className={styles.lockBanner} role="status">
                         שליחת מבחן אינה פעילה כרגע.
