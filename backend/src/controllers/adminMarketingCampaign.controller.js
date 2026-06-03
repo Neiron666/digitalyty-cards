@@ -4,6 +4,7 @@
 // Renders a safe HTML + text preview from structured admin input and returns it.
 // requireAdmin + CSRF are inherited from the /api/admin mount + global csrfGuard.
 
+import mongoose from "mongoose";
 import {
     renderMarketingEmailPreview,
     renderMarketingEmailCore,
@@ -667,5 +668,302 @@ export async function createMarketingCampaignDraft(req, res) {
         return res
             .status(500)
             .json({ ok: false, message: "Failed to create campaign draft" });
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Draft management v1 (admin-only, read + cancel). NOT gated by
+// MARKETING_CAMPAIGN_DRAFT_ENABLED — that flag gates CREATE only; reading and
+// canceling already-persisted drafts is harmless and stays available.
+// All responses are built with explicit DTO whitelists: never res.json(doc),
+// never spread a lean doc, never return selectionSnapshot.selectedUserIds,
+// requestId, emails, tokens, or any rendered html/text/provider body.
+// requireAdmin + CSRF inherited from the /api/admin mount + global csrfGuard.
+// ---------------------------------------------------------------------------
+
+// Local ObjectId validity guard (mirrors adminGuide/adminBlog/admin controllers).
+// Used to convert a malformed :campaignId into an anti-enumeration 404 BEFORE
+// any Mongoose query, so a CastError can never surface as a 500.
+function isValidObjectId(value) {
+    return mongoose.Types.ObjectId.isValid(value);
+}
+
+// Allowlisted list-filter statuses. No "all", no arbitrary status injection.
+const DRAFT_LIST_STATUSES = new Set(["draft", "canceled"]);
+const DRAFT_LIST_DEFAULT_LIMIT = 20;
+const DRAFT_LIST_MAX_LIMIT = 50;
+
+/**
+ * GET /api/admin/marketing/campaigns/drafts
+ * Query: status? (draft|canceled, default draft), page? (>=1), limit? (1..50).
+ * Returns: { ok, page, limit, total, items:[{ campaignId, status, createdAt,
+ *   updatedAt, subject, heading, selectedCount, eligibleCount, skippedCount }] }
+ * Metadata/counts only — no bodyText, no selectedUserIds, no requestId.
+ */
+export async function listMarketingCampaignDrafts(req, res) {
+    // A. status allowlist (default "draft").
+    const statusRaw =
+        typeof req.query?.status === "undefined" ? "draft" : req.query.status;
+    if (typeof statusRaw !== "string" || !DRAFT_LIST_STATUSES.has(statusRaw)) {
+        return res.status(400).json({ ok: false, message: "Invalid status" });
+    }
+    const status = statusRaw;
+
+    // B. page — integer >= 1 (default 1).
+    let page = 1;
+    if (typeof req.query?.page !== "undefined") {
+        const parsed = Number(req.query.page);
+        if (!Number.isInteger(parsed) || parsed < 1) {
+            return res.status(400).json({ ok: false, message: "Invalid page" });
+        }
+        page = parsed;
+    }
+
+    // C. limit — integer 1..50 (default 20).
+    let limit = DRAFT_LIST_DEFAULT_LIMIT;
+    if (typeof req.query?.limit !== "undefined") {
+        const parsed = Number(req.query.limit);
+        if (!Number.isInteger(parsed) || parsed < 1) {
+            return res
+                .status(400)
+                .json({ ok: false, message: "Invalid limit" });
+        }
+        if (parsed > DRAFT_LIST_MAX_LIMIT) {
+            return res
+                .status(400)
+                .json({ ok: false, message: "limit is too large" });
+        }
+        limit = parsed;
+    }
+
+    // D. Own-admin scope only.
+    const filter = { createdByAdminId: req.userId, status };
+
+    try {
+        // E. Inclusion projection — only the fields the DTO needs. Uses the
+        // createdByAdminId+createdAt index; status is a small residual filter.
+        const [docs, total] = await Promise.all([
+            MarketingCampaign.find(filter)
+                .select({
+                    status: 1,
+                    createdAt: 1,
+                    updatedAt: 1,
+                    "contentSnapshot.subject": 1,
+                    "contentSnapshot.heading": 1,
+                    "selectionSnapshot.selectedCount": 1,
+                    "selectionSnapshot.eligibleCount": 1,
+                    "selectionSnapshot.skippedCount": 1,
+                })
+                .sort({ createdAt: -1 })
+                .skip((page - 1) * limit)
+                .limit(limit)
+                .lean(),
+            MarketingCampaign.countDocuments(filter),
+        ]);
+
+        // F. Explicit per-item DTO builder — never spread the lean doc.
+        const items = docs.map((doc) => {
+            const content = doc.contentSnapshot || {};
+            const selection = doc.selectionSnapshot || {};
+            return {
+                campaignId: String(doc._id),
+                status: doc.status,
+                createdAt: doc.createdAt,
+                updatedAt: doc.updatedAt,
+                subject: content.subject,
+                heading: content.heading,
+                selectedCount: selection.selectedCount,
+                eligibleCount: selection.eligibleCount,
+                skippedCount: selection.skippedCount,
+            };
+        });
+
+        return res.json({ ok: true, page, limit, total, items });
+    } catch (err) {
+        // Safe label only — never log req.query or raw mongo docs.
+        console.error(
+            "[adminMarketingCampaign] list drafts failed",
+            err?.message || err,
+        );
+        return res
+            .status(500)
+            .json({ ok: false, message: "Failed to list campaign drafts" });
+    }
+}
+
+/**
+ * GET /api/admin/marketing/campaigns/drafts/:campaignId
+ * Anti-enumeration: invalid id / not found / not owned all return 404.
+ * Returns: { ok, draft:{ campaignId, status, createdAt, updatedAt, canceledAt,
+ *   contentSnapshot{...}, selectionSummary{ counts + skippedByReason } } }
+ * Never returns selectedUserIds, requestId, emails, tokens, or html/text.
+ */
+export async function getMarketingCampaignDraft(req, res) {
+    const { campaignId } = req.params;
+
+    // A. ObjectId guard BEFORE any query (CastError -> 404, not 500).
+    if (!isValidObjectId(campaignId)) {
+        return res.status(404).json({ ok: false, message: "Draft not found" });
+    }
+
+    try {
+        // B. Own-admin scope + inclusion projection.
+        const doc = await MarketingCampaign.findOne({
+            _id: campaignId,
+            createdByAdminId: req.userId,
+        })
+            .select({
+                status: 1,
+                createdAt: 1,
+                updatedAt: 1,
+                canceledAt: 1,
+                "contentSnapshot.subject": 1,
+                "contentSnapshot.previewText": 1,
+                "contentSnapshot.topImageUrl": 1,
+                "contentSnapshot.heading": 1,
+                "contentSnapshot.bodyText": 1,
+                "contentSnapshot.ctaLabel": 1,
+                "contentSnapshot.ctaUrl": 1,
+                "selectionSnapshot.selectedCount": 1,
+                "selectionSnapshot.duplicateCount": 1,
+                "selectionSnapshot.uniqueCount": 1,
+                "selectionSnapshot.eligibleCount": 1,
+                "selectionSnapshot.skippedCount": 1,
+                "selectionSnapshot.skippedByReason": 1,
+            })
+            .lean();
+
+        // C. Not found / not owned -> 404 (no existence leak).
+        if (!doc) {
+            return res
+                .status(404)
+                .json({ ok: false, message: "Draft not found" });
+        }
+
+        // D. Explicit DTO builder — never spread the lean doc.
+        const content = doc.contentSnapshot || {};
+        const selection = doc.selectionSnapshot || {};
+        const draft = {
+            campaignId: String(doc._id),
+            status: doc.status,
+            createdAt: doc.createdAt,
+            updatedAt: doc.updatedAt,
+            canceledAt: doc.canceledAt ?? null,
+            contentSnapshot: {
+                subject: content.subject,
+                previewText: content.previewText,
+                topImageUrl: content.topImageUrl,
+                heading: content.heading,
+                bodyText: content.bodyText,
+                ctaLabel: content.ctaLabel,
+                ctaUrl: content.ctaUrl,
+            },
+            selectionSummary: {
+                selectedCount: selection.selectedCount,
+                duplicateCount: selection.duplicateCount,
+                uniqueCount: selection.uniqueCount,
+                eligibleCount: selection.eligibleCount,
+                skippedCount: selection.skippedCount,
+                skippedByReason: skippedByReasonToPlainObject(
+                    selection.skippedByReason,
+                ),
+            },
+        };
+
+        return res.json({ ok: true, draft });
+    } catch (err) {
+        console.error(
+            "[adminMarketingCampaign] get draft failed",
+            err?.message || err,
+        );
+        return res
+            .status(500)
+            .json({ ok: false, message: "Failed to load campaign draft" });
+    }
+}
+
+/**
+ * PATCH /api/admin/marketing/campaigns/drafts/:campaignId/cancel
+ * Atomic draft -> canceled transition. Anti-enumeration 404 for invalid id /
+ * not found / not owned; 409 if the draft is not in "draft" status. Body is
+ * ignored. No send, no Mailjet, no token. Best-effort audit after success.
+ * Returns: { ok, campaignId, status:"canceled", canceledAt }.
+ */
+export async function cancelMarketingCampaignDraft(req, res) {
+    const { campaignId } = req.params;
+
+    // A. ObjectId guard BEFORE any query.
+    if (!isValidObjectId(campaignId)) {
+        return res.status(404).json({ ok: false, message: "Draft not found" });
+    }
+
+    try {
+        // B. Atomic transition — only flips when currently "draft" and owned.
+        const updated = await MarketingCampaign.findOneAndUpdate(
+            {
+                _id: campaignId,
+                createdByAdminId: req.userId,
+                status: "draft",
+            },
+            { $set: { status: "canceled", canceledAt: new Date() } },
+            { new: true },
+        ).lean();
+
+        // C. Disambiguate the null case: 404 (absent/not owned) vs 409 (exists
+        // but not in draft status). Does not mutate content/selection snapshots.
+        if (!updated) {
+            const existing = await MarketingCampaign.findOne({
+                _id: campaignId,
+                createdByAdminId: req.userId,
+            })
+                .select("status")
+                .lean();
+
+            if (!existing) {
+                return res
+                    .status(404)
+                    .json({ ok: false, message: "Draft not found" });
+            }
+            return res
+                .status(409)
+                .json({ ok: false, message: "Draft is not cancelable" });
+        }
+
+        // D. Best-effort AdminAudit (non-fatal) — after a successful flip only.
+        try {
+            await logAdminAction({
+                adminUserId: req.userId,
+                action: "marketing_campaign_draft_canceled",
+                targetType: "user",
+                targetId: req.userId,
+                reason: "admin marketing campaign draft canceled",
+                meta: {
+                    campaignId: String(updated._id),
+                    previousStatus: "draft",
+                    nextStatus: "canceled",
+                },
+            });
+        } catch (auditErr) {
+            console.error(
+                "[adminMarketingCampaign] draft cancel audit failed",
+                auditErr?.message || auditErr,
+            );
+        }
+
+        // E. Safe DTO — campaignId + status + canceledAt only.
+        return res.json({
+            ok: true,
+            campaignId: String(updated._id),
+            status: "canceled",
+            canceledAt: updated.canceledAt,
+        });
+    } catch (err) {
+        console.error(
+            "[adminMarketingCampaign] cancel draft failed",
+            err?.message || err,
+        );
+        return res
+            .status(500)
+            .json({ ok: false, message: "Failed to cancel campaign draft" });
     }
 }

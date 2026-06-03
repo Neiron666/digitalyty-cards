@@ -78,6 +78,9 @@ import {
     testSendMarketingCampaign,
     dryRunMarketingCampaign,
     createMarketingCampaignDraft,
+    listMarketingCampaignDrafts,
+    getMarketingCampaignDraft,
+    cancelMarketingCampaignDraft,
 } from "../controllers/adminMarketingCampaign.controller.js";
 import { upload } from "../middlewares/upload.middleware.js";
 
@@ -111,6 +114,16 @@ router.post("/marketing/campaigns/test-send", testSendMarketingCampaign);
 router.post("/marketing/campaigns/dry-run", dryRunMarketingCampaign);
 // Marketing emails — feature-flagged create-draft (one MarketingCampaign doc; no send, no Mailjet, no token).
 router.post("/marketing/campaigns/drafts", createMarketingCampaignDraft);
+// Marketing emails — draft management v1 (own-admin scope; read + cancel only; NOT gated by the create flag; no send, no Mailjet, no token).
+router.get("/marketing/campaigns/drafts", listMarketingCampaignDrafts);
+router.get(
+    "/marketing/campaigns/drafts/:campaignId",
+    getMarketingCampaignDraft,
+);
+router.patch(
+    "/marketing/campaigns/drafts/:campaignId/cancel",
+    cancelMarketingCampaignDraft,
+);
 
 // safe write actions (no generic patch)
 router.post("/orgs", adminCreateOrganization);
