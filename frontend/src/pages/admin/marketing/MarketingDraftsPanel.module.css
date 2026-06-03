@@ -1,0 +1,442 @@
+.panel {
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    background: var(--bg-card);
+    padding: 12px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    min-width: 0;
+}
+
+.header {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+
+.title {
+    margin: 0;
+    font-size: var(--fs-body);
+    font-weight: 900;
+    color: var(--text-main);
+}
+
+.helper {
+    margin: 0;
+    opacity: 0.75;
+    font-size: var(--fs-body-sm);
+    overflow-wrap: anywhere;
+}
+
+.toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px 12px;
+    min-width: 0;
+}
+
+.filterGroup {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+}
+
+.filterButton {
+    appearance: none;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text-main);
+    border-radius: 999px;
+    padding: 8px 12px;
+    font: inherit;
+    cursor: pointer;
+}
+
+.filterButton:disabled {
+    opacity: 0.5;
+    cursor: default;
+}
+
+.filterButton:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--gold-fade);
+}
+
+.filterButtonActive {
+    border-color: var(--gold);
+    box-shadow: 0 0 0 2px var(--gold-fade);
+}
+
+.reloadButton {
+    appearance: none;
+    border: 1px solid var(--gold);
+    background: transparent;
+    color: var(--text-main);
+    border-radius: 999px;
+    padding: 8px 14px;
+    font: inherit;
+    cursor: pointer;
+}
+
+.reloadButton:disabled {
+    opacity: 0.5;
+    cursor: default;
+}
+
+.reloadButton:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--gold-fade);
+}
+
+.statusLine {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 12px;
+    min-height: 1.25em;
+    min-width: 0;
+}
+
+.muted {
+    margin: 0;
+    opacity: 0.7;
+    font-size: var(--fs-body-sm);
+    color: var(--text-main);
+}
+
+.success {
+    font-size: var(--fs-body-sm);
+    font-weight: 800;
+    color: var(--text-main);
+}
+
+.error {
+    margin: 0;
+    color: var(--danger, #c0392b);
+    font-size: var(--fs-body-sm);
+    overflow-wrap: anywhere;
+}
+
+.empty {
+    margin: 0;
+    opacity: 0.7;
+    font-size: var(--fs-body-sm);
+    color: var(--text-main);
+}
+
+.list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-width: 0;
+}
+
+.row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px 12px;
+    padding: 10px 12px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    background: var(--bg-soft, transparent);
+    min-width: 0;
+}
+
+.rowMain {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+    flex: 1 1 220px;
+}
+
+.rowSubject {
+    font-size: var(--fs-body-sm);
+    font-weight: 800;
+    color: var(--text-main);
+    overflow-wrap: anywhere;
+}
+
+.rowHeading {
+    font-size: var(--fs-caption);
+    opacity: 0.8;
+    color: var(--text-main);
+    overflow-wrap: anywhere;
+}
+
+.rowMeta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px 10px;
+    min-width: 0;
+}
+
+.metaItem {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 4px 10px;
+    font-size: var(--fs-caption);
+    color: var(--text-main);
+}
+
+.rowActions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 0 0 auto;
+}
+
+.viewButton {
+    appearance: none;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text-main);
+    border-radius: 999px;
+    padding: 6px 14px;
+    font: inherit;
+    cursor: pointer;
+}
+
+.viewButton:disabled {
+    opacity: 0.5;
+    cursor: default;
+}
+
+.viewButton:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--gold-fade);
+}
+
+.pager {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 12px;
+    min-width: 0;
+}
+
+.pagerButton {
+    appearance: none;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text-main);
+    border-radius: 999px;
+    padding: 6px 14px;
+    font: inherit;
+    cursor: pointer;
+}
+
+.pagerButton:disabled {
+    opacity: 0.5;
+    cursor: default;
+}
+
+.pagerButton:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--gold-fade);
+}
+
+.pagerInfo {
+    font-size: var(--fs-body-sm);
+    color: var(--text-main);
+    opacity: 0.85;
+}
+
+.detail {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 12px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    background: var(--bg-soft, transparent);
+    min-width: 0;
+}
+
+.detailBlock {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 0;
+}
+
+.detailTitle {
+    margin: 0;
+    font-size: var(--fs-body-sm);
+    font-weight: 800;
+    color: var(--text-main);
+}
+
+.detailList {
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 0;
+}
+
+.detailRow {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 4px 10px;
+    min-width: 0;
+}
+
+.detailKey {
+    margin: 0;
+    flex: 0 0 auto;
+    font-size: var(--fs-caption);
+    font-weight: 800;
+    opacity: 0.75;
+    color: var(--text-main);
+}
+
+.detailText {
+    margin: 0;
+    flex: 1 1 200px;
+    min-width: 0;
+    font-size: var(--fs-body-sm);
+    color: var(--text-main);
+    overflow-wrap: anywhere;
+}
+
+.countList {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 10px;
+    min-width: 0;
+}
+
+.countItem {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 4px 10px;
+    font-size: var(--fs-caption);
+    color: var(--text-main);
+}
+
+.reasonList {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+}
+
+.reasonRow {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px 12px;
+    font-size: var(--fs-caption);
+    color: var(--text-main);
+    min-width: 0;
+}
+
+.confirmBox {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 12px;
+    padding: 10px 12px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    background: var(--bg-card);
+    min-width: 0;
+}
+
+.confirmText {
+    font-size: var(--fs-body-sm);
+    font-weight: 800;
+    color: var(--text-main);
+}
+
+.confirmActions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+}
+
+.confirmYesButton {
+    appearance: none;
+    border: 1px solid var(--danger, #c0392b);
+    background: transparent;
+    color: var(--text-main);
+    border-radius: 999px;
+    padding: 6px 14px;
+    font: inherit;
+    cursor: pointer;
+}
+
+.confirmYesButton:disabled {
+    opacity: 0.5;
+    cursor: default;
+}
+
+.confirmYesButton:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--gold-fade);
+}
+
+.confirmNoButton {
+    appearance: none;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text-main);
+    border-radius: 999px;
+    padding: 6px 14px;
+    font: inherit;
+    cursor: pointer;
+}
+
+.confirmNoButton:disabled {
+    opacity: 0.5;
+    cursor: default;
+}
+
+.confirmNoButton:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--gold-fade);
+}
+
+.cancelButton {
+    appearance: none;
+    border: 1px solid var(--danger, #c0392b);
+    background: transparent;
+    color: var(--text-main);
+    border-radius: 999px;
+    padding: 8px 14px;
+    font: inherit;
+    cursor: pointer;
+    align-self: flex-start;
+}
+
+.cancelButton:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--gold-fade);
+}

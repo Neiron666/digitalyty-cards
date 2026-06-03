@@ -1,5 +1,5 @@
 import { jsxs, jsx, Fragment } from "react/jsx-runtime";
-import { useState, useMemo, useEffect, useRef, useId } from "react";
+import { useState, useMemo, useEffect, useRef, useId, useCallback } from "react";
 import { a as api, F as FlashBanner, B as Button, q as useFocusTrap, u as useAuth } from "../entry-server.js";
 import { I as Input } from "./Input-CGCIIpQL.js";
 import "react-dom/server";
@@ -139,6 +139,19 @@ function dryRunMarketingCampaign(userIds) {
 function createMarketingCampaignDraft(payload) {
   return api.post("/admin/marketing/campaigns/drafts", payload);
 }
+function listMarketingCampaignDrafts(params = {}) {
+  const query = {};
+  if (params.status !== void 0) query.status = params.status;
+  if (params.page !== void 0) query.page = params.page;
+  if (params.limit !== void 0) query.limit = params.limit;
+  return api.get("/admin/marketing/campaigns/drafts", { params: query });
+}
+function getMarketingCampaignDraft(campaignId) {
+  return api.get(`/admin/marketing/campaigns/drafts/${campaignId}`);
+}
+function cancelMarketingCampaignDraft(campaignId) {
+  return api.patch(`/admin/marketing/campaigns/drafts/${campaignId}/cancel`);
+}
 function listAdminOrganizations(params = {}) {
   return api.get("/admin/orgs", { params });
 }
@@ -275,10 +288,10 @@ function removeAdminGuideSectionImage(id, sectionIdx2) {
   );
 }
 const root$3 = "_root_1a0bs_1";
-const header$4 = "_header_1a0bs_21";
+const header$5 = "_header_1a0bs_21";
 const controls$1 = "_controls_1a0bs_35";
 const titleWrap$1 = "_titleWrap_1a0bs_51";
-const title$5 = "_title_1a0bs_51";
+const title$6 = "_title_1a0bs_51";
 const subtitle$2 = "_subtitle_1a0bs_79";
 const rangeTabs = "_rangeTabs_1a0bs_91";
 const optOutBtn = "_optOutBtn_1a0bs_105";
@@ -297,13 +310,13 @@ const sourcesGrid = "_sourcesGrid_1a0bs_301";
 const sourceCard = "_sourceCard_1a0bs_313";
 const sourceTitle = "_sourceTitle_1a0bs_335";
 const rows = "_rows_1a0bs_345";
-const row$2 = "_row_1a0bs_345";
+const row$3 = "_row_1a0bs_345";
 const rowKey = "_rowKey_1a0bs_371";
 const rowVal = "_rowVal_1a0bs_417";
 const campaignsGrid = "_campaignsGrid_1a0bs_429";
 const campaignCard = "_campaignCard_1a0bs_441";
 const campaignTitle = "_campaignTitle_1a0bs_463";
-const muted$5 = "_muted_1a0bs_473";
+const muted$6 = "_muted_1a0bs_473";
 const errorText$1 = "_errorText_1a0bs_483";
 const visitApproxNote = "_visitApproxNote_1a0bs_537";
 const visitSubTitle = "_visitSubTitle_1a0bs_551";
@@ -311,12 +324,12 @@ const visitTableHead = "_visitTableHead_1a0bs_567";
 const visitTableRow = "_visitTableRow_1a0bs_589";
 const visitCellSource = "_visitCellSource_1a0bs_613";
 const visitCellNum = "_visitCellNum_1a0bs_629";
-const styles$8 = {
+const styles$9 = {
   root: root$3,
-  header: header$4,
+  header: header$5,
   controls: controls$1,
   titleWrap: titleWrap$1,
-  title: title$5,
+  title: title$6,
   subtitle: subtitle$2,
   rangeTabs,
   optOutBtn,
@@ -335,13 +348,13 @@ const styles$8 = {
   sourceCard,
   sourceTitle,
   rows,
-  row: row$2,
+  row: row$3,
   rowKey,
   rowVal,
   campaignsGrid,
   campaignCard,
   campaignTitle,
-  muted: muted$5,
+  muted: muted$6,
   errorText: errorText$1,
   visitApproxNote,
   visitSubTitle,
@@ -518,27 +531,27 @@ function AdminAnalyticsView({ refreshKey = 0 } = {}) {
   return /* @__PURE__ */ jsxs(
     "section",
     {
-      className: styles$8.root,
+      className: styles$9.root,
       dir: "rtl",
       "aria-label": "אנליטיקת אתר (שיווק)",
       children: [
-        /* @__PURE__ */ jsxs("header", { className: styles$8.header, children: [
-          /* @__PURE__ */ jsxs("div", { className: styles$8.titleWrap, children: [
-            /* @__PURE__ */ jsx("h2", { className: styles$8.title, children: "אנליטיקת אתר (שיווק)" }),
-            /* @__PURE__ */ jsx("p", { className: styles$8.subtitle, children: "מציג נתונים מכל הדפים הציבוריים השיווקיים · לא כולל דפי כרטיסים, ניהול, הרשמה ואימות" })
+        /* @__PURE__ */ jsxs("header", { className: styles$9.header, children: [
+          /* @__PURE__ */ jsxs("div", { className: styles$9.titleWrap, children: [
+            /* @__PURE__ */ jsx("h2", { className: styles$9.title, children: "אנליטיקת אתר (שיווק)" }),
+            /* @__PURE__ */ jsx("p", { className: styles$9.subtitle, children: "מציג נתונים מכל הדפים הציבוריים השיווקיים · לא כולל דפי כרטיסים, ניהול, הרשמה ואימות" })
           ] }),
-          /* @__PURE__ */ jsxs("div", { className: styles$8.controls, children: [
+          /* @__PURE__ */ jsxs("div", { className: styles$9.controls, children: [
             /* @__PURE__ */ jsx(
               "div",
               {
-                className: styles$8.rangeTabs,
+                className: styles$9.rangeTabs,
                 role: "tablist",
                 "aria-label": "Range",
                 children: RANGE_OPTIONS.map((d) => /* @__PURE__ */ jsx(
                   "button",
                   {
                     type: "button",
-                    className: `${styles$8.tab} ${rangeDays === d ? styles$8.tabActive : ""}`,
+                    className: `${styles$9.tab} ${rangeDays === d ? styles$9.tabActive : ""}`,
                     role: "tab",
                     "aria-selected": rangeDays === d,
                     onClick: () => setRangeDays(d),
@@ -552,7 +565,7 @@ function AdminAnalyticsView({ refreshKey = 0 } = {}) {
               "button",
               {
                 type: "button",
-                className: `${styles$8.optOutBtn} ${optOut ? styles$8.optOutBtnActive : ""}`,
+                className: `${styles$9.optOutBtn} ${optOut ? styles$9.optOutBtnActive : ""}`,
                 "aria-pressed": optOut,
                 onClick: onToggleOptOut,
                 children: "אל תעקוב אחרי הביקורים שלי"
@@ -560,30 +573,30 @@ function AdminAnalyticsView({ refreshKey = 0 } = {}) {
             )
           ] })
         ] }),
-        /* @__PURE__ */ jsx("p", { className: styles$8.optOutHint, children: optOut ? "איסוף נתונים מושבת: הביקורים שלך מהמכשיר הזה לא נספרים." : "איסוף נתונים פעיל: הביקורים שלך בדפים הציבוריים נספרים." }),
-        loading ? /* @__PURE__ */ jsx("p", { className: styles$8.muted, children: "טוען…" }) : error2 ? /* @__PURE__ */ jsx("p", { className: styles$8.errorText, children: error2 }) : !summary2 || !sources ? /* @__PURE__ */ jsxs("p", { className: styles$8.muted, children: [
+        /* @__PURE__ */ jsx("p", { className: styles$9.optOutHint, children: optOut ? "איסוף נתונים מושבת: הביקורים שלך מהמכשיר הזה לא נספרים." : "איסוף נתונים פעיל: הביקורים שלך בדפים הציבוריים נספרים." }),
+        loading ? /* @__PURE__ */ jsx("p", { className: styles$9.muted, children: "טוען…" }) : error2 ? /* @__PURE__ */ jsx("p", { className: styles$9.errorText, children: error2 }) : !summary2 || !sources ? /* @__PURE__ */ jsxs("p", { className: styles$9.muted, children: [
           "מצב ",
           rangeLabel,
           ": אין נתונים."
         ] }) : null,
-        /* @__PURE__ */ jsxs("div", { className: styles$8.blocks, children: [
-          /* @__PURE__ */ jsxs("div", { className: styles$8.block, children: [
-            /* @__PURE__ */ jsx("div", { className: styles$8.blockTitle, children: "מדדי מפתח" }),
-            /* @__PURE__ */ jsxs("div", { className: styles$8.kpis, children: [
-              /* @__PURE__ */ jsxs("div", { className: styles$8.kpiCard, children: [
-                /* @__PURE__ */ jsx("div", { className: styles$8.kpiLabel, children: "צפיות" }),
-                /* @__PURE__ */ jsx("div", { className: styles$8.kpiValue, children: typeof kpi?.views === "number" ? kpi.views : "-" })
+        /* @__PURE__ */ jsxs("div", { className: styles$9.blocks, children: [
+          /* @__PURE__ */ jsxs("div", { className: styles$9.block, children: [
+            /* @__PURE__ */ jsx("div", { className: styles$9.blockTitle, children: "מדדי מפתח" }),
+            /* @__PURE__ */ jsxs("div", { className: styles$9.kpis, children: [
+              /* @__PURE__ */ jsxs("div", { className: styles$9.kpiCard, children: [
+                /* @__PURE__ */ jsx("div", { className: styles$9.kpiLabel, children: "צפיות" }),
+                /* @__PURE__ */ jsx("div", { className: styles$9.kpiValue, children: typeof kpi?.views === "number" ? kpi.views : "-" })
               ] }),
-              /* @__PURE__ */ jsxs("div", { className: styles$8.kpiCard, children: [
-                /* @__PURE__ */ jsx("div", { className: styles$8.kpiLabel, children: "קליקים" }),
-                /* @__PURE__ */ jsx("div", { className: styles$8.kpiValue, children: typeof kpi?.clicksTotal === "number" ? kpi.clicksTotal : "-" })
+              /* @__PURE__ */ jsxs("div", { className: styles$9.kpiCard, children: [
+                /* @__PURE__ */ jsx("div", { className: styles$9.kpiLabel, children: "קליקים" }),
+                /* @__PURE__ */ jsx("div", { className: styles$9.kpiValue, children: typeof kpi?.clicksTotal === "number" ? kpi.clicksTotal : "-" })
               ] }),
-              /* @__PURE__ */ jsxs("div", { className: styles$8.kpiCard, children: [
-                /* @__PURE__ */ jsx("div", { className: styles$8.kpiLabel, children: "יחס המרה" }),
-                /* @__PURE__ */ jsx("div", { className: styles$8.kpiValue, children: typeof kpi?.conversion === "number" ? formatPct(kpi.conversion) : "-" })
+              /* @__PURE__ */ jsxs("div", { className: styles$9.kpiCard, children: [
+                /* @__PURE__ */ jsx("div", { className: styles$9.kpiLabel, children: "יחס המרה" }),
+                /* @__PURE__ */ jsx("div", { className: styles$9.kpiValue, children: typeof kpi?.conversion === "number" ? formatPct(kpi.conversion) : "-" })
               ] })
             ] }),
-            today && rangeDays !== 1 ? /* @__PURE__ */ jsxs("p", { className: styles$8.muted, children: [
+            today && rangeDays !== 1 ? /* @__PURE__ */ jsxs("p", { className: styles$9.muted, children: [
               "היום: צפיות ",
               Number(today.views) || 0,
               " · קליקים",
@@ -591,172 +604,172 @@ function AdminAnalyticsView({ refreshKey = 0 } = {}) {
               Number(today.clicksTotal) || 0
             ] }) : null
           ] }),
-          /* @__PURE__ */ jsxs("div", { className: styles$8.block, children: [
-            /* @__PURE__ */ jsx("div", { className: styles$8.blockTitle, children: "מקורות" }),
-            /* @__PURE__ */ jsxs("div", { className: styles$8.sourcesGrid, children: [
-              /* @__PURE__ */ jsxs("div", { className: styles$8.sourceCard, children: [
-                /* @__PURE__ */ jsx("div", { className: styles$8.sourceTitle, children: "ערוצי תנועה" }),
-                channelsRows.length ? /* @__PURE__ */ jsx("div", { className: styles$8.rows, children: channelsRows.map((r) => /* @__PURE__ */ jsxs("div", { className: styles$8.row, children: [
-                  /* @__PURE__ */ jsx("span", { className: styles$8.rowKey, children: CHANNEL_LABELS[r.key] || r.key }),
-                  /* @__PURE__ */ jsx("span", { className: styles$8.rowVal, children: r.count })
-                ] }, r.key)) }) : /* @__PURE__ */ jsx("p", { className: styles$8.muted, children: "-" })
+          /* @__PURE__ */ jsxs("div", { className: styles$9.block, children: [
+            /* @__PURE__ */ jsx("div", { className: styles$9.blockTitle, children: "מקורות" }),
+            /* @__PURE__ */ jsxs("div", { className: styles$9.sourcesGrid, children: [
+              /* @__PURE__ */ jsxs("div", { className: styles$9.sourceCard, children: [
+                /* @__PURE__ */ jsx("div", { className: styles$9.sourceTitle, children: "ערוצי תנועה" }),
+                channelsRows.length ? /* @__PURE__ */ jsx("div", { className: styles$9.rows, children: channelsRows.map((r) => /* @__PURE__ */ jsxs("div", { className: styles$9.row, children: [
+                  /* @__PURE__ */ jsx("span", { className: styles$9.rowKey, children: CHANNEL_LABELS[r.key] || r.key }),
+                  /* @__PURE__ */ jsx("span", { className: styles$9.rowVal, children: r.count })
+                ] }, r.key)) }) : /* @__PURE__ */ jsx("p", { className: styles$9.muted, children: "-" })
               ] }),
-              /* @__PURE__ */ jsxs("div", { className: styles$8.sourceCard, children: [
-                /* @__PURE__ */ jsx("div", { className: styles$8.sourceTitle, children: "מקורות מנורמלים" }),
-                sourceTopRows.length ? /* @__PURE__ */ jsx("div", { className: styles$8.rows, children: sourceTopRows.map((r) => /* @__PURE__ */ jsxs(
+              /* @__PURE__ */ jsxs("div", { className: styles$9.sourceCard, children: [
+                /* @__PURE__ */ jsx("div", { className: styles$9.sourceTitle, children: "מקורות מנורמלים" }),
+                sourceTopRows.length ? /* @__PURE__ */ jsx("div", { className: styles$9.rows, children: sourceTopRows.map((r) => /* @__PURE__ */ jsxs(
                   "div",
                   {
-                    className: styles$8.row,
+                    className: styles$9.row,
                     children: [
-                      /* @__PURE__ */ jsx("span", { className: styles$8.rowKey, children: sourceLabel(r.source) }),
-                      /* @__PURE__ */ jsx("span", { className: styles$8.rowVal, children: Number(r.count) || 0 })
+                      /* @__PURE__ */ jsx("span", { className: styles$9.rowKey, children: sourceLabel(r.source) }),
+                      /* @__PURE__ */ jsx("span", { className: styles$9.rowVal, children: Number(r.count) || 0 })
                     ]
                   },
                   r.source
-                )) }) : /* @__PURE__ */ jsx("p", { className: styles$8.muted, children: "-" })
+                )) }) : /* @__PURE__ */ jsx("p", { className: styles$9.muted, children: "-" })
               ] }),
-              /* @__PURE__ */ jsxs("div", { className: styles$8.sourceCard, children: [
-                /* @__PURE__ */ jsx("div", { className: styles$8.sourceTitle, children: "מקורות הפניה" }),
-                referrersTop.length ? /* @__PURE__ */ jsx("div", { className: styles$8.rows, children: referrersTop.map((r) => /* @__PURE__ */ jsxs(
+              /* @__PURE__ */ jsxs("div", { className: styles$9.sourceCard, children: [
+                /* @__PURE__ */ jsx("div", { className: styles$9.sourceTitle, children: "מקורות הפניה" }),
+                referrersTop.length ? /* @__PURE__ */ jsx("div", { className: styles$9.rows, children: referrersTop.map((r) => /* @__PURE__ */ jsxs(
                   "div",
                   {
-                    className: styles$8.row,
+                    className: styles$9.row,
                     children: [
-                      /* @__PURE__ */ jsx("span", { className: styles$8.rowKey, children: r.referrer }),
-                      /* @__PURE__ */ jsx("span", { className: styles$8.rowVal, children: Number(r.count) || 0 })
+                      /* @__PURE__ */ jsx("span", { className: styles$9.rowKey, children: r.referrer }),
+                      /* @__PURE__ */ jsx("span", { className: styles$9.rowVal, children: Number(r.count) || 0 })
                     ]
                   },
                   r.referrer
-                )) }) : /* @__PURE__ */ jsx("p", { className: styles$8.muted, children: "-" })
+                )) }) : /* @__PURE__ */ jsx("p", { className: styles$9.muted, children: "-" })
               ] }),
-              /* @__PURE__ */ jsxs("div", { className: styles$8.sourceCard, children: [
-                /* @__PURE__ */ jsx("div", { className: styles$8.sourceTitle, children: "UTM" }),
-                utmTop.length ? /* @__PURE__ */ jsx("div", { className: styles$8.rows, children: utmTop.map((r) => /* @__PURE__ */ jsxs(
+              /* @__PURE__ */ jsxs("div", { className: styles$9.sourceCard, children: [
+                /* @__PURE__ */ jsx("div", { className: styles$9.sourceTitle, children: "UTM" }),
+                utmTop.length ? /* @__PURE__ */ jsx("div", { className: styles$9.rows, children: utmTop.map((r) => /* @__PURE__ */ jsxs(
                   "div",
                   {
-                    className: styles$8.row,
+                    className: styles$9.row,
                     children: [
-                      /* @__PURE__ */ jsx("span", { className: styles$8.rowKey, children: r.source }),
-                      /* @__PURE__ */ jsx("span", { className: styles$8.rowVal, children: Number(r.count) || 0 })
+                      /* @__PURE__ */ jsx("span", { className: styles$9.rowKey, children: r.source }),
+                      /* @__PURE__ */ jsx("span", { className: styles$9.rowVal, children: Number(r.count) || 0 })
                     ]
                   },
                   r.source
-                )) }) : /* @__PURE__ */ jsx("p", { className: styles$8.muted, children: "-" })
+                )) }) : /* @__PURE__ */ jsx("p", { className: styles$9.muted, children: "-" })
               ] }),
-              /* @__PURE__ */ jsxs("div", { className: styles$8.sourceCard, children: [
-                /* @__PURE__ */ jsx("div", { className: styles$8.sourceTitle, children: "מקורות בינה מלאכותית" }),
-                aiSourcesTop.length ? /* @__PURE__ */ jsx("div", { className: styles$8.rows, children: aiSourcesTop.map((r) => /* @__PURE__ */ jsxs(
+              /* @__PURE__ */ jsxs("div", { className: styles$9.sourceCard, children: [
+                /* @__PURE__ */ jsx("div", { className: styles$9.sourceTitle, children: "מקורות בינה מלאכותית" }),
+                aiSourcesTop.length ? /* @__PURE__ */ jsx("div", { className: styles$9.rows, children: aiSourcesTop.map((r) => /* @__PURE__ */ jsxs(
                   "div",
                   {
-                    className: styles$8.row,
+                    className: styles$9.row,
                     children: [
-                      /* @__PURE__ */ jsx("span", { className: styles$8.rowKey, children: r.source }),
-                      /* @__PURE__ */ jsx("span", { className: styles$8.rowVal, children: Number(r.count) || 0 })
+                      /* @__PURE__ */ jsx("span", { className: styles$9.rowKey, children: r.source }),
+                      /* @__PURE__ */ jsx("span", { className: styles$9.rowVal, children: Number(r.count) || 0 })
                     ]
                   },
                   r.source
-                )) }) : /* @__PURE__ */ jsx("p", { className: styles$8.muted, children: "-" })
+                )) }) : /* @__PURE__ */ jsx("p", { className: styles$9.muted, children: "-" })
               ] })
             ] })
           ] }),
-          /* @__PURE__ */ jsxs("div", { className: styles$8.block, children: [
-            /* @__PURE__ */ jsx("div", { className: styles$8.blockTitle, children: "פופולרי" }),
-            /* @__PURE__ */ jsxs("div", { className: styles$8.campaignsGrid, children: [
-              /* @__PURE__ */ jsxs("div", { className: styles$8.campaignCard, children: [
-                /* @__PURE__ */ jsx("div", { className: styles$8.campaignTitle, children: "עמודים מובילים" }),
-                topPages.length ? /* @__PURE__ */ jsx("div", { className: styles$8.rows, children: topPages.slice(0, 10).map((p) => /* @__PURE__ */ jsxs(
+          /* @__PURE__ */ jsxs("div", { className: styles$9.block, children: [
+            /* @__PURE__ */ jsx("div", { className: styles$9.blockTitle, children: "פופולרי" }),
+            /* @__PURE__ */ jsxs("div", { className: styles$9.campaignsGrid, children: [
+              /* @__PURE__ */ jsxs("div", { className: styles$9.campaignCard, children: [
+                /* @__PURE__ */ jsx("div", { className: styles$9.campaignTitle, children: "עמודים מובילים" }),
+                topPages.length ? /* @__PURE__ */ jsx("div", { className: styles$9.rows, children: topPages.slice(0, 10).map((p) => /* @__PURE__ */ jsxs(
                   "div",
                   {
-                    className: styles$8.row,
+                    className: styles$9.row,
                     children: [
-                      /* @__PURE__ */ jsx("span", { className: styles$8.rowKey, children: p.pagePath }),
-                      /* @__PURE__ */ jsx("span", { className: styles$8.rowVal, children: Number(p.count) || 0 })
+                      /* @__PURE__ */ jsx("span", { className: styles$9.rowKey, children: p.pagePath }),
+                      /* @__PURE__ */ jsx("span", { className: styles$9.rowVal, children: Number(p.count) || 0 })
                     ]
                   },
                   p.pagePath
-                )) }) : /* @__PURE__ */ jsx("p", { className: styles$8.muted, children: "-" })
+                )) }) : /* @__PURE__ */ jsx("p", { className: styles$9.muted, children: "-" })
               ] }),
-              /* @__PURE__ */ jsxs("div", { className: styles$8.campaignCard, children: [
-                /* @__PURE__ */ jsx("div", { className: styles$8.campaignTitle, children: "פעולות מובילות" }),
-                topActions.length ? /* @__PURE__ */ jsx("div", { className: styles$8.rows, children: topActions.map((a) => /* @__PURE__ */ jsxs(
+              /* @__PURE__ */ jsxs("div", { className: styles$9.campaignCard, children: [
+                /* @__PURE__ */ jsx("div", { className: styles$9.campaignTitle, children: "פעולות מובילות" }),
+                topActions.length ? /* @__PURE__ */ jsx("div", { className: styles$9.rows, children: topActions.map((a) => /* @__PURE__ */ jsxs(
                   "div",
                   {
-                    className: styles$8.row,
+                    className: styles$9.row,
                     children: [
-                      /* @__PURE__ */ jsx("span", { className: styles$8.rowKey, children: ACTION_LABELS[a.action] || a.action }),
-                      /* @__PURE__ */ jsx("span", { className: styles$8.rowVal, children: Number(a.count) || 0 })
+                      /* @__PURE__ */ jsx("span", { className: styles$9.rowKey, children: ACTION_LABELS[a.action] || a.action }),
+                      /* @__PURE__ */ jsx("span", { className: styles$9.rowVal, children: Number(a.count) || 0 })
                     ]
                   },
                   a.action
-                )) }) : /* @__PURE__ */ jsx("p", { className: styles$8.muted, children: "-" })
+                )) }) : /* @__PURE__ */ jsx("p", { className: styles$9.muted, children: "-" })
               ] }),
-              /* @__PURE__ */ jsxs("div", { className: styles$8.campaignCard, children: [
-                /* @__PURE__ */ jsx("div", { className: styles$8.campaignTitle, children: "קמפיינים (UTM)" }),
-                campaignsTop.length ? /* @__PURE__ */ jsx("div", { className: styles$8.rows, children: campaignsTop.slice(0, 10).map((c) => /* @__PURE__ */ jsxs(
+              /* @__PURE__ */ jsxs("div", { className: styles$9.campaignCard, children: [
+                /* @__PURE__ */ jsx("div", { className: styles$9.campaignTitle, children: "קמפיינים (UTM)" }),
+                campaignsTop.length ? /* @__PURE__ */ jsx("div", { className: styles$9.rows, children: campaignsTop.slice(0, 10).map((c) => /* @__PURE__ */ jsxs(
                   "div",
                   {
-                    className: styles$8.row,
+                    className: styles$9.row,
                     children: [
-                      /* @__PURE__ */ jsx("span", { className: styles$8.rowKey, children: c.campaign }),
-                      /* @__PURE__ */ jsx("span", { className: styles$8.rowVal, children: Number(c.count) || 0 })
+                      /* @__PURE__ */ jsx("span", { className: styles$9.rowKey, children: c.campaign }),
+                      /* @__PURE__ */ jsx("span", { className: styles$9.rowVal, children: Number(c.count) || 0 })
                     ]
                   },
                   c.campaign
-                )) }) : /* @__PURE__ */ jsx("p", { className: styles$8.muted, children: "-" })
+                )) }) : /* @__PURE__ */ jsx("p", { className: styles$9.muted, children: "-" })
               ] })
             ] })
           ] }),
-          /* @__PURE__ */ jsxs("div", { className: styles$8.block, children: [
-            /* @__PURE__ */ jsx("div", { className: styles$8.blockTitle, children: "ביקורים לפי מקור" }),
-            /* @__PURE__ */ jsx("div", { className: styles$8.kpis, children: /* @__PURE__ */ jsxs("div", { className: styles$8.kpiCard, children: [
-              /* @__PURE__ */ jsx("div", { className: styles$8.kpiLabel, children: "מבקרים (בקירוב)" }),
-              /* @__PURE__ */ jsx("div", { className: styles$8.kpiValue, children: totalUniqueVisitors !== null ? totalUniqueVisitors : "-" }),
-              /* @__PURE__ */ jsx("p", { className: styles$8.visitApproxNote, children: "כפיל דפדפן בלבד · לא מייצג אנשים · ביקורים ממקורות שונים עשויים לחפוף" })
+          /* @__PURE__ */ jsxs("div", { className: styles$9.block, children: [
+            /* @__PURE__ */ jsx("div", { className: styles$9.blockTitle, children: "ביקורים לפי מקור" }),
+            /* @__PURE__ */ jsx("div", { className: styles$9.kpis, children: /* @__PURE__ */ jsxs("div", { className: styles$9.kpiCard, children: [
+              /* @__PURE__ */ jsx("div", { className: styles$9.kpiLabel, children: "מבקרים (בקירוב)" }),
+              /* @__PURE__ */ jsx("div", { className: styles$9.kpiValue, children: totalUniqueVisitors !== null ? totalUniqueVisitors : "-" }),
+              /* @__PURE__ */ jsx("p", { className: styles$9.visitApproxNote, children: "כפיל דפדפן בלבד · לא מייצג אנשים · ביקורים ממקורות שונים עשויים לחפוף" })
             ] }) }),
             visitSourceRows.length > 0 ? /* @__PURE__ */ jsxs("div", { children: [
-              /* @__PURE__ */ jsxs("div", { className: styles$8.visitTableHead, children: [
-                /* @__PURE__ */ jsx("span", { className: styles$8.visitCellSource, children: "מקור" }),
-                /* @__PURE__ */ jsx("span", { className: styles$8.visitCellNum, children: "ביקורים" }),
-                /* @__PURE__ */ jsx("span", { className: styles$8.visitCellNum, children: "מבקרים ייחודיים (בקירוב)" })
+              /* @__PURE__ */ jsxs("div", { className: styles$9.visitTableHead, children: [
+                /* @__PURE__ */ jsx("span", { className: styles$9.visitCellSource, children: "מקור" }),
+                /* @__PURE__ */ jsx("span", { className: styles$9.visitCellNum, children: "ביקורים" }),
+                /* @__PURE__ */ jsx("span", { className: styles$9.visitCellNum, children: "מבקרים ייחודיים (בקירוב)" })
               ] }),
               visitSourceRows.map((r) => /* @__PURE__ */ jsxs(
                 "div",
                 {
-                  className: styles$8.visitTableRow,
+                  className: styles$9.visitTableRow,
                   children: [
-                    /* @__PURE__ */ jsx("span", { className: styles$8.visitCellSource, children: sourceLabel(r.source) }),
-                    /* @__PURE__ */ jsx("span", { className: styles$8.visitCellNum, children: r.visits }),
-                    /* @__PURE__ */ jsx("span", { className: styles$8.visitCellNum, children: r.uniqueVisitors !== null ? r.uniqueVisitors : "-" })
+                    /* @__PURE__ */ jsx("span", { className: styles$9.visitCellSource, children: sourceLabel(r.source) }),
+                    /* @__PURE__ */ jsx("span", { className: styles$9.visitCellNum, children: r.visits }),
+                    /* @__PURE__ */ jsx("span", { className: styles$9.visitCellNum, children: r.uniqueVisitors !== null ? r.uniqueVisitors : "-" })
                   ]
                 },
                 r.source
               ))
-            ] }) : !loading && !error2 ? /* @__PURE__ */ jsx("p", { className: styles$8.muted, children: "אין נתוני ביקורים לתקופה זו." }) : null,
+            ] }) : !loading && !error2 ? /* @__PURE__ */ jsx("p", { className: styles$9.muted, children: "אין נתוני ביקורים לתקופה זו." }) : null,
             Object.keys(topLandingsBySource).length > 0 && /* @__PURE__ */ jsxs("div", { children: [
-              /* @__PURE__ */ jsx("p", { className: styles$8.visitSubTitle, children: "עמודי כניסה לפי מקור" }),
-              /* @__PURE__ */ jsx("div", { className: styles$8.sourcesGrid, children: Object.entries(topLandingsBySource).map(
+              /* @__PURE__ */ jsx("p", { className: styles$9.visitSubTitle, children: "עמודי כניסה לפי מקור" }),
+              /* @__PURE__ */ jsx("div", { className: styles$9.sourcesGrid, children: Object.entries(topLandingsBySource).map(
                 ([src, pages]) => /* @__PURE__ */ jsxs(
                   "div",
                   {
-                    className: styles$8.sourceCard,
+                    className: styles$9.sourceCard,
                     children: [
-                      /* @__PURE__ */ jsx("div", { className: styles$8.sourceTitle, children: sourceLabel(src) }),
-                      /* @__PURE__ */ jsx("div", { className: styles$8.rows, children: pages.map((p) => /* @__PURE__ */ jsxs(
+                      /* @__PURE__ */ jsx("div", { className: styles$9.sourceTitle, children: sourceLabel(src) }),
+                      /* @__PURE__ */ jsx("div", { className: styles$9.rows, children: pages.map((p) => /* @__PURE__ */ jsxs(
                         "div",
                         {
-                          className: styles$8.row,
+                          className: styles$9.row,
                           children: [
                             /* @__PURE__ */ jsx(
                               "span",
                               {
-                                className: styles$8.rowKey,
+                                className: styles$9.rowKey,
                                 children: p.landingPage
                               }
                             ),
                             /* @__PURE__ */ jsx(
                               "span",
                               {
-                                className: styles$8.rowVal,
+                                className: styles$9.rowVal,
                                 children: Number(p.count) || 0
                               }
                             )
@@ -771,30 +784,30 @@ function AdminAnalyticsView({ refreshKey = 0 } = {}) {
               ) })
             ] }),
             Object.keys(topActionsBySource).length > 0 && /* @__PURE__ */ jsxs("div", { children: [
-              /* @__PURE__ */ jsx("p", { className: styles$8.visitSubTitle, children: "פעולות לפי מקור" }),
-              /* @__PURE__ */ jsx("div", { className: styles$8.sourcesGrid, children: Object.entries(topActionsBySource).map(
+              /* @__PURE__ */ jsx("p", { className: styles$9.visitSubTitle, children: "פעולות לפי מקור" }),
+              /* @__PURE__ */ jsx("div", { className: styles$9.sourcesGrid, children: Object.entries(topActionsBySource).map(
                 ([src, actions2]) => /* @__PURE__ */ jsxs(
                   "div",
                   {
-                    className: styles$8.sourceCard,
+                    className: styles$9.sourceCard,
                     children: [
-                      /* @__PURE__ */ jsx("div", { className: styles$8.sourceTitle, children: sourceLabel(src) }),
-                      /* @__PURE__ */ jsx("div", { className: styles$8.rows, children: actions2.map((a) => /* @__PURE__ */ jsxs(
+                      /* @__PURE__ */ jsx("div", { className: styles$9.sourceTitle, children: sourceLabel(src) }),
+                      /* @__PURE__ */ jsx("div", { className: styles$9.rows, children: actions2.map((a) => /* @__PURE__ */ jsxs(
                         "div",
                         {
-                          className: styles$8.row,
+                          className: styles$9.row,
                           children: [
                             /* @__PURE__ */ jsx(
                               "span",
                               {
-                                className: styles$8.rowKey,
+                                className: styles$9.rowKey,
                                 children: ACTION_LABELS[a.action] || a.action
                               }
                             ),
                             /* @__PURE__ */ jsx(
                               "span",
                               {
-                                className: styles$8.rowVal,
+                                className: styles$9.rowVal,
                                 children: Number(a.count) || 0
                               }
                             )
@@ -820,9 +833,9 @@ const h2$3 = "_h2_nqnhm_31";
 const h3$2 = "_h3_nqnhm_43";
 const h4$1 = "_h4_nqnhm_55";
 const grid$2 = "_grid_nqnhm_71";
-const panel$2 = "_panel_nqnhm_97";
+const panel$3 = "_panel_nqnhm_97";
 const searchRow$3 = "_searchRow_nqnhm_133";
-const muted$4 = "_muted_nqnhm_147";
+const muted$5 = "_muted_nqnhm_147";
 const postList$1 = "_postList_nqnhm_161";
 const postItem$1 = "_postItem_nqnhm_179";
 const postItemActive$1 = "_postItemActive_nqnhm_205";
@@ -835,7 +848,7 @@ const postDate$1 = "_postDate_nqnhm_325";
 const badge$1 = "_badge_nqnhm_339";
 const badgePublished$1 = "_badgePublished_nqnhm_355";
 const badgeDraft$1 = "_badgeDraft_nqnhm_365";
-const pager$3 = "_pager_nqnhm_379";
+const pager$4 = "_pager_nqnhm_379";
 const pagerMeta$3 = "_pagerMeta_nqnhm_397";
 const form$2 = "_form_nqnhm_411";
 const fieldLabel$1 = "_fieldLabel_nqnhm_423";
@@ -866,16 +879,16 @@ const linkHintExamples$1 = "_linkHintExamples_nqnhm_935";
 const linkHintCode$1 = "_linkHintCode_nqnhm_945";
 const uploadHint$1 = "_uploadHint_nqnhm_977";
 const actionRow$1 = "_actionRow_nqnhm_995";
-const styles$7 = {
+const styles$8 = {
   wrap: wrap$2,
   topRow: topRow$1,
   h2: h2$3,
   h3: h3$2,
   h4: h4$1,
   grid: grid$2,
-  panel: panel$2,
+  panel: panel$3,
   searchRow: searchRow$3,
-  muted: muted$4,
+  muted: muted$5,
   postList: postList$1,
   postItem: postItem$1,
   postItemActive: postItemActive$1,
@@ -888,7 +901,7 @@ const styles$7 = {
   badge: badge$1,
   badgePublished: badgePublished$1,
   badgeDraft: badgeDraft$1,
-  pager: pager$3,
+  pager: pager$4,
   pagerMeta: pagerMeta$3,
   form: form$2,
   fieldLabel: fieldLabel$1,
@@ -948,7 +961,7 @@ function mapBlogApiError(err2) {
   if (status2 === 422) return apiMessage || "שגיאת ולידציה.";
   return "אירעה שגיאה. נסה שוב.";
 }
-function formatDate$3(iso) {
+function formatDate$4(iso) {
   if (!iso) return "-";
   try {
     return new Date(iso).toLocaleString("he-IL", {
@@ -1296,7 +1309,7 @@ function AdminBlogView() {
   }
   const totalPages = Math.max(1, Math.ceil(postsTotal / limit));
   const isEditing = Boolean(selectedId);
-  return /* @__PURE__ */ jsxs("div", { className: styles$7.wrap, children: [
+  return /* @__PURE__ */ jsxs("div", { className: styles$8.wrap, children: [
     flash && /* @__PURE__ */ jsx(
       FlashBanner,
       {
@@ -1306,8 +1319,8 @@ function AdminBlogView() {
         onDismiss: () => setFlash(null)
       }
     ),
-    /* @__PURE__ */ jsxs("div", { className: styles$7.topRow, children: [
-      /* @__PURE__ */ jsx("h2", { className: styles$7.h2, children: "ניהול בלוג" }),
+    /* @__PURE__ */ jsxs("div", { className: styles$8.topRow, children: [
+      /* @__PURE__ */ jsx("h2", { className: styles$8.h2, children: "ניהול בלוג" }),
       /* @__PURE__ */ jsx(
         Button,
         {
@@ -1319,10 +1332,10 @@ function AdminBlogView() {
         }
       )
     ] }),
-    /* @__PURE__ */ jsxs("div", { className: styles$7.grid, children: [
-      /* @__PURE__ */ jsxs("div", { className: styles$7.panel, children: [
-        /* @__PURE__ */ jsx("h3", { className: styles$7.h3, children: "פוסטים" }),
-        /* @__PURE__ */ jsxs("form", { className: styles$7.searchRow, onSubmit: handleSearch, children: [
+    /* @__PURE__ */ jsxs("div", { className: styles$8.grid, children: [
+      /* @__PURE__ */ jsxs("div", { className: styles$8.panel, children: [
+        /* @__PURE__ */ jsx("h3", { className: styles$8.h3, children: "פוסטים" }),
+        /* @__PURE__ */ jsxs("form", { className: styles$8.searchRow, onSubmit: handleSearch, children: [
           /* @__PURE__ */ jsx(
             Input,
             {
@@ -1333,43 +1346,43 @@ function AdminBlogView() {
           ),
           /* @__PURE__ */ jsx(Button, { type: "submit", disabled: listLoading, children: "חפש" })
         ] }),
-        listLoading && /* @__PURE__ */ jsx("p", { className: styles$7.muted, children: "טוען…" }),
-        !listLoading && posts.length === 0 && /* @__PURE__ */ jsx("p", { className: styles$7.muted, children: "אין פוסטים." }),
-        /* @__PURE__ */ jsx("ul", { className: styles$7.postList, children: posts.map((p) => /* @__PURE__ */ jsx(
+        listLoading && /* @__PURE__ */ jsx("p", { className: styles$8.muted, children: "טוען…" }),
+        !listLoading && posts.length === 0 && /* @__PURE__ */ jsx("p", { className: styles$8.muted, children: "אין פוסטים." }),
+        /* @__PURE__ */ jsx("ul", { className: styles$8.postList, children: posts.map((p) => /* @__PURE__ */ jsx(
           "li",
           {
-            className: `${styles$7.postItem} ${selectedId === p.id ? styles$7.postItemActive : ""}`,
+            className: `${styles$8.postItem} ${selectedId === p.id ? styles$8.postItemActive : ""}`,
             children: /* @__PURE__ */ jsxs(
               "button",
               {
                 type: "button",
-                className: styles$7.postBtn,
+                className: styles$8.postBtn,
                 onClick: () => handleSelectPost(p),
                 disabled: selectedBusy,
                 children: [
                   p.heroImageUrl && /* @__PURE__ */ jsx(
                     "img",
                     {
-                      className: styles$7.postThumb,
+                      className: styles$8.postThumb,
                       src: p.heroImageUrl,
                       alt: ""
                     }
                   ),
-                  /* @__PURE__ */ jsxs("span", { className: styles$7.postInfo, children: [
-                    /* @__PURE__ */ jsx("span", { className: styles$7.postTitle, children: p.title }),
+                  /* @__PURE__ */ jsxs("span", { className: styles$8.postInfo, children: [
+                    /* @__PURE__ */ jsx("span", { className: styles$8.postTitle, children: p.title }),
                     p.excerpt && /* @__PURE__ */ jsx(
                       "span",
                       {
-                        className: styles$7.postExcerpt,
+                        className: styles$8.postExcerpt,
                         children: p.excerpt
                       }
                     ),
-                    p.publishedAt && /* @__PURE__ */ jsx("span", { className: styles$7.postDate, children: formatDate$3(p.publishedAt) })
+                    p.publishedAt && /* @__PURE__ */ jsx("span", { className: styles$8.postDate, children: formatDate$4(p.publishedAt) })
                   ] }),
                   /* @__PURE__ */ jsx(
                     "span",
                     {
-                      className: `${styles$7.badge} ${p.status === "published" ? styles$7.badgePublished : styles$7.badgeDraft}`,
+                      className: `${styles$8.badge} ${p.status === "published" ? styles$8.badgePublished : styles$8.badgeDraft}`,
                       children: p.status === "published" ? "פורסם" : "טיוטה"
                     }
                   )
@@ -1379,7 +1392,7 @@ function AdminBlogView() {
           },
           p.id
         )) }),
-        postsTotal > limit && /* @__PURE__ */ jsxs("div", { className: styles$7.pager, children: [
+        postsTotal > limit && /* @__PURE__ */ jsxs("div", { className: styles$8.pager, children: [
           /* @__PURE__ */ jsx(
             Button,
             {
@@ -1389,7 +1402,7 @@ function AdminBlogView() {
               children: "הקודם"
             }
           ),
-          /* @__PURE__ */ jsxs("span", { className: styles$7.pagerMeta, children: [
+          /* @__PURE__ */ jsxs("span", { className: styles$8.pagerMeta, children: [
             page,
             " / ",
             totalPages
@@ -1405,10 +1418,10 @@ function AdminBlogView() {
           )
         ] })
       ] }),
-      /* @__PURE__ */ jsxs("div", { className: styles$7.panel, children: [
-        /* @__PURE__ */ jsx("h3", { className: styles$7.h3, children: isEditing ? "עריכת פוסט" : "פוסט חדש" }),
-        selectedBusy && selectedId && /* @__PURE__ */ jsx("p", { className: styles$7.muted, children: "טוען פוסט…" }),
-        /* @__PURE__ */ jsxs("div", { className: styles$7.form, children: [
+      /* @__PURE__ */ jsxs("div", { className: styles$8.panel, children: [
+        /* @__PURE__ */ jsx("h3", { className: styles$8.h3, children: isEditing ? "עריכת פוסט" : "פוסט חדש" }),
+        selectedBusy && selectedId && /* @__PURE__ */ jsx("p", { className: styles$8.muted, children: "טוען פוסט…" }),
+        /* @__PURE__ */ jsxs("div", { className: styles$8.form, children: [
           /* @__PURE__ */ jsx(
             Input,
             {
@@ -1434,13 +1447,13 @@ function AdminBlogView() {
               disabled: selectedBusy
             }
           ),
-          /[\u0590-\u05FF]/.test(fTitle) && !normalizeSlug$1(fTitle) && /* @__PURE__ */ jsx("p", { className: styles$7.slugHint, children: "שימו לב: כשכותרת בעברית - הסלאג לא נוצר אוטומטית. אפשר להשאיר ריק (ייווצר אוטומטית כמו post-xxxxxxxx), או להזין סלאג באנגלית (a-z, 0-9, מקפים) לטובת SEO." }),
-          /* @__PURE__ */ jsxs("label", { className: styles$7.fieldLabel, children: [
+          /[\u0590-\u05FF]/.test(fTitle) && !normalizeSlug$1(fTitle) && /* @__PURE__ */ jsx("p", { className: styles$8.slugHint, children: "שימו לב: כשכותרת בעברית - הסלאג לא נוצר אוטומטית. אפשר להשאיר ריק (ייווצר אוטומטית כמו post-xxxxxxxx), או להזין סלאג באנגלית (a-z, 0-9, מקפים) לטובת SEO." }),
+          /* @__PURE__ */ jsxs("label", { className: styles$8.fieldLabel, children: [
             "תקציר *",
             /* @__PURE__ */ jsx(
               "textarea",
               {
-                className: styles$7.textarea,
+                className: styles$8.textarea,
                 rows: 3,
                 value: fExcerpt,
                 onChange: (e) => setFExcerpt(e.target.value),
@@ -1451,24 +1464,24 @@ function AdminBlogView() {
             )
           ] })
         ] }),
-        /* @__PURE__ */ jsxs("div", { className: styles$7.sectionBlock, children: [
-          /* @__PURE__ */ jsx("h4", { className: styles$7.h4, children: "תמונה ראשית" }),
-          fHeroUrl && /* @__PURE__ */ jsx("div", { className: styles$7.heroPreview, children: /* @__PURE__ */ jsx(
+        /* @__PURE__ */ jsxs("div", { className: styles$8.sectionBlock, children: [
+          /* @__PURE__ */ jsx("h4", { className: styles$8.h4, children: "תמונה ראשית" }),
+          fHeroUrl && /* @__PURE__ */ jsx("div", { className: styles$8.heroPreview, children: /* @__PURE__ */ jsx(
             "img",
             {
-              className: styles$7.heroImg,
+              className: styles$8.heroImg,
               src: fHeroUrl,
               alt: fHeroAlt || "hero"
             }
           ) }),
-          /* @__PURE__ */ jsxs("div", { className: styles$7.heroFields, children: [
+          /* @__PURE__ */ jsxs("div", { className: styles$8.heroFields, children: [
             /* @__PURE__ */ jsx(
               "input",
               {
                 type: "file",
                 accept: "image/jpeg,image/png,image/webp",
                 ref: heroFileRef,
-                className: styles$7.fileInput,
+                className: styles$8.fileInput,
                 disabled: selectedBusy
               }
             ),
@@ -1492,29 +1505,29 @@ function AdminBlogView() {
                 children: "העלה תמונה"
               }
             ),
-            !selectedId && /* @__PURE__ */ jsx("p", { className: styles$7.uploadHint, children: "כדי להעלות תמונה צריך קודם לשמור את הפוסט." })
+            !selectedId && /* @__PURE__ */ jsx("p", { className: styles$8.uploadHint, children: "כדי להעלות תמונה צריך קודם לשמור את הפוסט." })
           ] })
         ] }),
-        /* @__PURE__ */ jsxs("div", { className: styles$7.sectionBlock, children: [
-          /* @__PURE__ */ jsxs("h4", { className: styles$7.h4, children: [
+        /* @__PURE__ */ jsxs("div", { className: styles$8.sectionBlock, children: [
+          /* @__PURE__ */ jsxs("h4", { className: styles$8.h4, children: [
             "קטעי תוכן (",
             fSections.length,
             "/",
             MAX_SECTIONS$1,
             ")"
           ] }),
-          fSections.map((sec, idx) => /* @__PURE__ */ jsxs("div", { className: styles$7.sectionCard, children: [
-            /* @__PURE__ */ jsxs("div", { className: styles$7.sectionCardHeader, children: [
-              /* @__PURE__ */ jsxs("span", { className: styles$7.sectionIdx, children: [
+          fSections.map((sec, idx) => /* @__PURE__ */ jsxs("div", { className: styles$8.sectionCard, children: [
+            /* @__PURE__ */ jsxs("div", { className: styles$8.sectionCardHeader, children: [
+              /* @__PURE__ */ jsxs("span", { className: styles$8.sectionIdx, children: [
                 "#",
                 idx + 1
               ] }),
-              /* @__PURE__ */ jsxs("div", { className: styles$7.sectionActions, children: [
+              /* @__PURE__ */ jsxs("div", { className: styles$8.sectionActions, children: [
                 /* @__PURE__ */ jsx(
                   "button",
                   {
                     type: "button",
-                    className: styles$7.iconBtn,
+                    className: styles$8.iconBtn,
                     onClick: () => moveSection(idx, -1),
                     disabled: idx === 0 || selectedBusy,
                     "aria-label": "הזז למעלה",
@@ -1525,7 +1538,7 @@ function AdminBlogView() {
                   "button",
                   {
                     type: "button",
-                    className: styles$7.iconBtn,
+                    className: styles$8.iconBtn,
                     onClick: () => moveSection(idx, 1),
                     disabled: idx === fSections.length - 1 || selectedBusy,
                     "aria-label": "הזז למטה",
@@ -1536,7 +1549,7 @@ function AdminBlogView() {
                   "button",
                   {
                     type: "button",
-                    className: `${styles$7.iconBtn} ${styles$7.iconBtnDanger}`,
+                    className: `${styles$8.iconBtn} ${styles$8.iconBtnDanger}`,
                     onClick: () => removeSection(idx),
                     disabled: selectedBusy,
                     "aria-label": "מחק קטע",
@@ -1558,12 +1571,12 @@ function AdminBlogView() {
                 disabled: selectedBusy
               }
             ),
-            /* @__PURE__ */ jsxs("label", { className: styles$7.fieldLabel, children: [
+            /* @__PURE__ */ jsxs("label", { className: styles$8.fieldLabel, children: [
               "תוכן",
               /* @__PURE__ */ jsx(
                 "textarea",
                 {
-                  className: styles$7.textarea,
+                  className: styles$8.textarea,
                   rows: 5,
                   value: sec.body,
                   onChange: (e) => handleSectionField(
@@ -1575,11 +1588,11 @@ function AdminBlogView() {
                 }
               )
             ] }),
-            /* @__PURE__ */ jsxs("div", { className: styles$7.secImgBlock, children: [
-              sec.imageUrl && /* @__PURE__ */ jsx("div", { className: styles$7.secImgPreview, children: /* @__PURE__ */ jsx(
+            /* @__PURE__ */ jsxs("div", { className: styles$8.secImgBlock, children: [
+              sec.imageUrl && /* @__PURE__ */ jsx("div", { className: styles$8.secImgPreview, children: /* @__PURE__ */ jsx(
                 "img",
                 {
-                  className: styles$7.secImgThumb,
+                  className: styles$8.secImgThumb,
                   src: sec.imageUrl,
                   alt: sec.imageAlt || "section"
                 }
@@ -1590,7 +1603,7 @@ function AdminBlogView() {
                   type: "file",
                   accept: "image/jpeg,image/png,image/webp",
                   id: `sec-img-input-${idx}`,
-                  className: styles$7.fileInput,
+                  className: styles$8.fileInput,
                   disabled: selectedBusy
                 }
               ),
@@ -1607,7 +1620,7 @@ function AdminBlogView() {
                   disabled: selectedBusy
                 }
               ),
-              /* @__PURE__ */ jsxs("div", { className: styles$7.secImgActions, children: [
+              /* @__PURE__ */ jsxs("div", { className: styles$8.secImgActions, children: [
                 /* @__PURE__ */ jsx(
                   Button,
                   {
@@ -1617,7 +1630,7 @@ function AdminBlogView() {
                     children: "העלה תמונת קטע"
                   }
                 ),
-                !selectedId && /* @__PURE__ */ jsx("p", { className: styles$7.uploadHint, children: "כדי להעלות תמונה צריך קודם לשמור את הפוסט." }),
+                !selectedId && /* @__PURE__ */ jsx("p", { className: styles$8.uploadHint, children: "כדי להעלות תמונה צריך קודם לשמור את הפוסט." }),
                 sec.imageUrl && /* @__PURE__ */ jsx(
                   Button,
                   {
@@ -1631,17 +1644,17 @@ function AdminBlogView() {
                 )
               ] })
             ] }),
-            /* @__PURE__ */ jsxs("details", { className: styles$7.linkHint, children: [
-              /* @__PURE__ */ jsx("summary", { className: styles$7.linkHintSummary, children: "איך מוסיפים קישורים בתוך הטקסט?" }),
-              /* @__PURE__ */ jsxs("div", { className: styles$7.linkHintBody, children: [
+            /* @__PURE__ */ jsxs("details", { className: styles$8.linkHint, children: [
+              /* @__PURE__ */ jsx("summary", { className: styles$8.linkHintSummary, children: "איך מוסיפים קישורים בתוך הטקסט?" }),
+              /* @__PURE__ */ jsxs("div", { className: styles$8.linkHintBody, children: [
                 /* @__PURE__ */ jsx("p", { children: "טקסט לחיץ עם קישור:" }),
-                /* @__PURE__ */ jsx("code", { className: styles$7.linkHintCode, children: "[טקסט להצגה](כתובת)" }),
+                /* @__PURE__ */ jsx("code", { className: styles$8.linkHintCode, children: "[טקסט להצגה](כתובת)" }),
                 /* @__PURE__ */ jsx("p", { children: "אפשר גם להדביק כתובת URL מלאה - היא תזוהה אוטומטית." }),
                 /* @__PURE__ */ jsx("p", { children: "לקישור פנימי בבלוג, עדיף להשתמש בנתיב יחסי:" }),
-                /* @__PURE__ */ jsx("p", { className: styles$7.linkHintExamples, children: "דוגמאות:" }),
-                /* @__PURE__ */ jsx("code", { className: styles$7.linkHintCode, children: "[קראו עוד](/blog/seo-tips)" }),
-                /* @__PURE__ */ jsx("code", { className: styles$7.linkHintCode, children: "[לאתר הרשמי](https://example.com)" }),
-                /* @__PURE__ */ jsx("code", { className: styles$7.linkHintCode, children: "https://cardigo.co.il/blog/digital-card-guide" })
+                /* @__PURE__ */ jsx("p", { className: styles$8.linkHintExamples, children: "דוגמאות:" }),
+                /* @__PURE__ */ jsx("code", { className: styles$8.linkHintCode, children: "[קראו עוד](/blog/seo-tips)" }),
+                /* @__PURE__ */ jsx("code", { className: styles$8.linkHintCode, children: "[לאתר הרשמי](https://example.com)" }),
+                /* @__PURE__ */ jsx("code", { className: styles$8.linkHintCode, children: "https://cardigo.co.il/blog/digital-card-guide" })
               ] })
             ] })
           ] }, idx)),
@@ -1655,9 +1668,9 @@ function AdminBlogView() {
             }
           )
         ] }),
-        /* @__PURE__ */ jsxs("div", { className: styles$7.sectionBlock, children: [
-          /* @__PURE__ */ jsx("h4", { className: styles$7.h4, children: "SEO" }),
-          /* @__PURE__ */ jsxs("div", { className: styles$7.form, children: [
+        /* @__PURE__ */ jsxs("div", { className: styles$8.sectionBlock, children: [
+          /* @__PURE__ */ jsx("h4", { className: styles$8.h4, children: "SEO" }),
+          /* @__PURE__ */ jsxs("div", { className: styles$8.form, children: [
             /* @__PURE__ */ jsx(
               Input,
               {
@@ -1680,9 +1693,9 @@ function AdminBlogView() {
             )
           ] })
         ] }),
-        /* @__PURE__ */ jsxs("div", { className: styles$7.sectionBlock, children: [
-          /* @__PURE__ */ jsx("h4", { className: styles$7.h4, children: "מחבר" }),
-          /* @__PURE__ */ jsxs("label", { className: styles$7.toggleRow, children: [
+        /* @__PURE__ */ jsxs("div", { className: styles$8.sectionBlock, children: [
+          /* @__PURE__ */ jsx("h4", { className: styles$8.h4, children: "מחבר" }),
+          /* @__PURE__ */ jsxs("label", { className: styles$8.toggleRow, children: [
             /* @__PURE__ */ jsx(
               "input",
               {
@@ -1695,21 +1708,21 @@ function AdminBlogView() {
             'הצג מחבר של הכרטיס בפוסט (יציג "ולנטין" בתחתית הפוסט)'
           ] })
         ] }),
-        isEditing && /* @__PURE__ */ jsxs("div", { className: styles$7.timestampsRow, children: [
-          /* @__PURE__ */ jsxs("span", { className: styles$7.tsItem, children: [
+        isEditing && /* @__PURE__ */ jsxs("div", { className: styles$8.timestampsRow, children: [
+          /* @__PURE__ */ jsxs("span", { className: styles$8.tsItem, children: [
             "נוצר: ",
-            formatDate$3(fCreatedAt)
+            formatDate$4(fCreatedAt)
           ] }),
-          /* @__PURE__ */ jsxs("span", { className: styles$7.tsItem, children: [
+          /* @__PURE__ */ jsxs("span", { className: styles$8.tsItem, children: [
             "עודכן: ",
-            formatDate$3(fUpdatedAt)
+            formatDate$4(fUpdatedAt)
           ] }),
-          fPublishedAt && /* @__PURE__ */ jsxs("span", { className: styles$7.tsItem, children: [
+          fPublishedAt && /* @__PURE__ */ jsxs("span", { className: styles$8.tsItem, children: [
             "פורסם: ",
-            formatDate$3(fPublishedAt)
+            formatDate$4(fPublishedAt)
           ] })
         ] }),
-        /* @__PURE__ */ jsx("div", { className: styles$7.actionRow, children: isEditing ? /* @__PURE__ */ jsxs(Fragment, { children: [
+        /* @__PURE__ */ jsx("div", { className: styles$8.actionRow, children: isEditing ? /* @__PURE__ */ jsxs(Fragment, { children: [
           /* @__PURE__ */ jsx(
             Button,
             {
@@ -1762,9 +1775,9 @@ const h2$2 = "_h2_nqnhm_31";
 const h3$1 = "_h3_nqnhm_43";
 const h4 = "_h4_nqnhm_55";
 const grid$1 = "_grid_nqnhm_71";
-const panel$1 = "_panel_nqnhm_97";
+const panel$2 = "_panel_nqnhm_97";
 const searchRow$2 = "_searchRow_nqnhm_133";
-const muted$3 = "_muted_nqnhm_147";
+const muted$4 = "_muted_nqnhm_147";
 const postList = "_postList_nqnhm_161";
 const postItem = "_postItem_nqnhm_179";
 const postItemActive = "_postItemActive_nqnhm_205";
@@ -1777,7 +1790,7 @@ const postDate = "_postDate_nqnhm_325";
 const badge = "_badge_nqnhm_339";
 const badgePublished = "_badgePublished_nqnhm_355";
 const badgeDraft = "_badgeDraft_nqnhm_365";
-const pager$2 = "_pager_nqnhm_379";
+const pager$3 = "_pager_nqnhm_379";
 const pagerMeta$2 = "_pagerMeta_nqnhm_397";
 const form$1 = "_form_nqnhm_411";
 const fieldLabel = "_fieldLabel_nqnhm_423";
@@ -1808,16 +1821,16 @@ const linkHintExamples = "_linkHintExamples_nqnhm_935";
 const linkHintCode = "_linkHintCode_nqnhm_945";
 const uploadHint = "_uploadHint_nqnhm_977";
 const actionRow = "_actionRow_nqnhm_995";
-const styles$6 = {
+const styles$7 = {
   wrap: wrap$1,
   topRow,
   h2: h2$2,
   h3: h3$1,
   h4,
   grid: grid$1,
-  panel: panel$1,
+  panel: panel$2,
   searchRow: searchRow$2,
-  muted: muted$3,
+  muted: muted$4,
   postList,
   postItem,
   postItemActive,
@@ -1830,7 +1843,7 @@ const styles$6 = {
   badge,
   badgePublished,
   badgeDraft,
-  pager: pager$2,
+  pager: pager$3,
   pagerMeta: pagerMeta$2,
   form: form$1,
   fieldLabel,
@@ -1890,7 +1903,7 @@ function mapGuideApiError(err2) {
   if (status2 === 422) return apiMessage || "שגיאת ולידציה.";
   return "אירעה שגיאה. נסה שוב.";
 }
-function formatDate$2(iso) {
+function formatDate$3(iso) {
   if (!iso) return "-";
   try {
     return new Date(iso).toLocaleString("he-IL", {
@@ -2240,7 +2253,7 @@ function AdminGuidesView() {
   }
   const totalPages = Math.max(1, Math.ceil(postsTotal / limit));
   const isEditing = Boolean(selectedId);
-  return /* @__PURE__ */ jsxs("div", { className: styles$6.wrap, children: [
+  return /* @__PURE__ */ jsxs("div", { className: styles$7.wrap, children: [
     flash && /* @__PURE__ */ jsx(
       FlashBanner,
       {
@@ -2250,8 +2263,8 @@ function AdminGuidesView() {
         onDismiss: () => setFlash(null)
       }
     ),
-    /* @__PURE__ */ jsxs("div", { className: styles$6.topRow, children: [
-      /* @__PURE__ */ jsx("h2", { className: styles$6.h2, children: "ניהול מדריכים" }),
+    /* @__PURE__ */ jsxs("div", { className: styles$7.topRow, children: [
+      /* @__PURE__ */ jsx("h2", { className: styles$7.h2, children: "ניהול מדריכים" }),
       /* @__PURE__ */ jsx(
         Button,
         {
@@ -2263,10 +2276,10 @@ function AdminGuidesView() {
         }
       )
     ] }),
-    /* @__PURE__ */ jsxs("div", { className: styles$6.grid, children: [
-      /* @__PURE__ */ jsxs("div", { className: styles$6.panel, children: [
-        /* @__PURE__ */ jsx("h3", { className: styles$6.h3, children: "מדריכים" }),
-        /* @__PURE__ */ jsxs("form", { className: styles$6.searchRow, onSubmit: handleSearch, children: [
+    /* @__PURE__ */ jsxs("div", { className: styles$7.grid, children: [
+      /* @__PURE__ */ jsxs("div", { className: styles$7.panel, children: [
+        /* @__PURE__ */ jsx("h3", { className: styles$7.h3, children: "מדריכים" }),
+        /* @__PURE__ */ jsxs("form", { className: styles$7.searchRow, onSubmit: handleSearch, children: [
           /* @__PURE__ */ jsx(
             Input,
             {
@@ -2277,43 +2290,43 @@ function AdminGuidesView() {
           ),
           /* @__PURE__ */ jsx(Button, { type: "submit", disabled: listLoading, children: "חפש" })
         ] }),
-        listLoading && /* @__PURE__ */ jsx("p", { className: styles$6.muted, children: "טוען…" }),
-        !listLoading && posts.length === 0 && /* @__PURE__ */ jsx("p", { className: styles$6.muted, children: "אין מדריכים." }),
-        /* @__PURE__ */ jsx("ul", { className: styles$6.postList, children: posts.map((p) => /* @__PURE__ */ jsx(
+        listLoading && /* @__PURE__ */ jsx("p", { className: styles$7.muted, children: "טוען…" }),
+        !listLoading && posts.length === 0 && /* @__PURE__ */ jsx("p", { className: styles$7.muted, children: "אין מדריכים." }),
+        /* @__PURE__ */ jsx("ul", { className: styles$7.postList, children: posts.map((p) => /* @__PURE__ */ jsx(
           "li",
           {
-            className: `${styles$6.postItem} ${selectedId === p.id ? styles$6.postItemActive : ""}`,
+            className: `${styles$7.postItem} ${selectedId === p.id ? styles$7.postItemActive : ""}`,
             children: /* @__PURE__ */ jsxs(
               "button",
               {
                 type: "button",
-                className: styles$6.postBtn,
+                className: styles$7.postBtn,
                 onClick: () => handleSelectPost(p),
                 disabled: selectedBusy,
                 children: [
                   p.heroImageUrl && /* @__PURE__ */ jsx(
                     "img",
                     {
-                      className: styles$6.postThumb,
+                      className: styles$7.postThumb,
                       src: p.heroImageUrl,
                       alt: ""
                     }
                   ),
-                  /* @__PURE__ */ jsxs("span", { className: styles$6.postInfo, children: [
-                    /* @__PURE__ */ jsx("span", { className: styles$6.postTitle, children: p.title }),
+                  /* @__PURE__ */ jsxs("span", { className: styles$7.postInfo, children: [
+                    /* @__PURE__ */ jsx("span", { className: styles$7.postTitle, children: p.title }),
                     p.excerpt && /* @__PURE__ */ jsx(
                       "span",
                       {
-                        className: styles$6.postExcerpt,
+                        className: styles$7.postExcerpt,
                         children: p.excerpt
                       }
                     ),
-                    p.publishedAt && /* @__PURE__ */ jsx("span", { className: styles$6.postDate, children: formatDate$2(p.publishedAt) })
+                    p.publishedAt && /* @__PURE__ */ jsx("span", { className: styles$7.postDate, children: formatDate$3(p.publishedAt) })
                   ] }),
                   /* @__PURE__ */ jsx(
                     "span",
                     {
-                      className: `${styles$6.badge} ${p.status === "published" ? styles$6.badgePublished : styles$6.badgeDraft}`,
+                      className: `${styles$7.badge} ${p.status === "published" ? styles$7.badgePublished : styles$7.badgeDraft}`,
                       children: p.status === "published" ? "פורסם" : "טיוטה"
                     }
                   )
@@ -2323,7 +2336,7 @@ function AdminGuidesView() {
           },
           p.id
         )) }),
-        postsTotal > limit && /* @__PURE__ */ jsxs("div", { className: styles$6.pager, children: [
+        postsTotal > limit && /* @__PURE__ */ jsxs("div", { className: styles$7.pager, children: [
           /* @__PURE__ */ jsx(
             Button,
             {
@@ -2333,7 +2346,7 @@ function AdminGuidesView() {
               children: "הקודם"
             }
           ),
-          /* @__PURE__ */ jsxs("span", { className: styles$6.pagerMeta, children: [
+          /* @__PURE__ */ jsxs("span", { className: styles$7.pagerMeta, children: [
             page,
             " / ",
             totalPages
@@ -2349,10 +2362,10 @@ function AdminGuidesView() {
           )
         ] })
       ] }),
-      /* @__PURE__ */ jsxs("div", { className: styles$6.panel, children: [
-        /* @__PURE__ */ jsx("h3", { className: styles$6.h3, children: isEditing ? "עריכת מדריך" : "מדריך חדש" }),
-        selectedBusy && selectedId && /* @__PURE__ */ jsx("p", { className: styles$6.muted, children: "טוען מדריך…" }),
-        /* @__PURE__ */ jsxs("div", { className: styles$6.form, children: [
+      /* @__PURE__ */ jsxs("div", { className: styles$7.panel, children: [
+        /* @__PURE__ */ jsx("h3", { className: styles$7.h3, children: isEditing ? "עריכת מדריך" : "מדריך חדש" }),
+        selectedBusy && selectedId && /* @__PURE__ */ jsx("p", { className: styles$7.muted, children: "טוען מדריך…" }),
+        /* @__PURE__ */ jsxs("div", { className: styles$7.form, children: [
           /* @__PURE__ */ jsx(
             Input,
             {
@@ -2378,13 +2391,13 @@ function AdminGuidesView() {
               disabled: selectedBusy
             }
           ),
-          /[\u0590-\u05FF]/.test(fTitle) && !normalizeSlug(fTitle) && /* @__PURE__ */ jsx("p", { className: styles$6.slugHint, children: "שימו לב: כשכותרת בעברית - הסלאג לא נוצר אוטומטית. אפשר להשאיר ריק (ייווצר אוטומטית כמו guide-xxxxxxxx), או להזין סלאג באנגלית (a-z, 0-9, מקפים) לטובת SEO." }),
-          /* @__PURE__ */ jsxs("label", { className: styles$6.fieldLabel, children: [
+          /[\u0590-\u05FF]/.test(fTitle) && !normalizeSlug(fTitle) && /* @__PURE__ */ jsx("p", { className: styles$7.slugHint, children: "שימו לב: כשכותרת בעברית - הסלאג לא נוצר אוטומטית. אפשר להשאיר ריק (ייווצר אוטומטית כמו guide-xxxxxxxx), או להזין סלאג באנגלית (a-z, 0-9, מקפים) לטובת SEO." }),
+          /* @__PURE__ */ jsxs("label", { className: styles$7.fieldLabel, children: [
             "תקציר *",
             /* @__PURE__ */ jsx(
               "textarea",
               {
-                className: styles$6.textarea,
+                className: styles$7.textarea,
                 rows: 3,
                 value: fExcerpt,
                 onChange: (e) => setFExcerpt(e.target.value),
@@ -2395,24 +2408,24 @@ function AdminGuidesView() {
             )
           ] })
         ] }),
-        /* @__PURE__ */ jsxs("div", { className: styles$6.sectionBlock, children: [
-          /* @__PURE__ */ jsx("h4", { className: styles$6.h4, children: "תמונה ראשית" }),
-          fHeroUrl && /* @__PURE__ */ jsx("div", { className: styles$6.heroPreview, children: /* @__PURE__ */ jsx(
+        /* @__PURE__ */ jsxs("div", { className: styles$7.sectionBlock, children: [
+          /* @__PURE__ */ jsx("h4", { className: styles$7.h4, children: "תמונה ראשית" }),
+          fHeroUrl && /* @__PURE__ */ jsx("div", { className: styles$7.heroPreview, children: /* @__PURE__ */ jsx(
             "img",
             {
-              className: styles$6.heroImg,
+              className: styles$7.heroImg,
               src: fHeroUrl,
               alt: fHeroAlt || "hero"
             }
           ) }),
-          /* @__PURE__ */ jsxs("div", { className: styles$6.heroFields, children: [
+          /* @__PURE__ */ jsxs("div", { className: styles$7.heroFields, children: [
             /* @__PURE__ */ jsx(
               "input",
               {
                 type: "file",
                 accept: "image/jpeg,image/png,image/webp",
                 ref: heroFileRef,
-                className: styles$6.fileInput,
+                className: styles$7.fileInput,
                 disabled: selectedBusy
               }
             ),
@@ -2436,29 +2449,29 @@ function AdminGuidesView() {
                 children: "העלה תמונה"
               }
             ),
-            !selectedId && /* @__PURE__ */ jsx("p", { className: styles$6.uploadHint, children: "כדי להעלות תמונה צריך קודם לשמור את המדריך." })
+            !selectedId && /* @__PURE__ */ jsx("p", { className: styles$7.uploadHint, children: "כדי להעלות תמונה צריך קודם לשמור את המדריך." })
           ] })
         ] }),
-        /* @__PURE__ */ jsxs("div", { className: styles$6.sectionBlock, children: [
-          /* @__PURE__ */ jsxs("h4", { className: styles$6.h4, children: [
+        /* @__PURE__ */ jsxs("div", { className: styles$7.sectionBlock, children: [
+          /* @__PURE__ */ jsxs("h4", { className: styles$7.h4, children: [
             "קטעי תוכן (",
             fSections.length,
             "/",
             MAX_SECTIONS,
             ")"
           ] }),
-          fSections.map((sec, idx) => /* @__PURE__ */ jsxs("div", { className: styles$6.sectionCard, children: [
-            /* @__PURE__ */ jsxs("div", { className: styles$6.sectionCardHeader, children: [
-              /* @__PURE__ */ jsxs("span", { className: styles$6.sectionIdx, children: [
+          fSections.map((sec, idx) => /* @__PURE__ */ jsxs("div", { className: styles$7.sectionCard, children: [
+            /* @__PURE__ */ jsxs("div", { className: styles$7.sectionCardHeader, children: [
+              /* @__PURE__ */ jsxs("span", { className: styles$7.sectionIdx, children: [
                 "#",
                 idx + 1
               ] }),
-              /* @__PURE__ */ jsxs("div", { className: styles$6.sectionActions, children: [
+              /* @__PURE__ */ jsxs("div", { className: styles$7.sectionActions, children: [
                 /* @__PURE__ */ jsx(
                   "button",
                   {
                     type: "button",
-                    className: styles$6.iconBtn,
+                    className: styles$7.iconBtn,
                     onClick: () => moveSection(idx, -1),
                     disabled: idx === 0 || selectedBusy,
                     "aria-label": "הזז למעלה",
@@ -2469,7 +2482,7 @@ function AdminGuidesView() {
                   "button",
                   {
                     type: "button",
-                    className: styles$6.iconBtn,
+                    className: styles$7.iconBtn,
                     onClick: () => moveSection(idx, 1),
                     disabled: idx === fSections.length - 1 || selectedBusy,
                     "aria-label": "הזז למטה",
@@ -2480,7 +2493,7 @@ function AdminGuidesView() {
                   "button",
                   {
                     type: "button",
-                    className: `${styles$6.iconBtn} ${styles$6.iconBtnDanger}`,
+                    className: `${styles$7.iconBtn} ${styles$7.iconBtnDanger}`,
                     onClick: () => removeSection(idx),
                     disabled: selectedBusy,
                     "aria-label": "מחק קטע",
@@ -2502,12 +2515,12 @@ function AdminGuidesView() {
                 disabled: selectedBusy
               }
             ),
-            /* @__PURE__ */ jsxs("label", { className: styles$6.fieldLabel, children: [
+            /* @__PURE__ */ jsxs("label", { className: styles$7.fieldLabel, children: [
               "תוכן",
               /* @__PURE__ */ jsx(
                 "textarea",
                 {
-                  className: styles$6.textarea,
+                  className: styles$7.textarea,
                   rows: 5,
                   value: sec.body,
                   onChange: (e) => handleSectionField(
@@ -2519,11 +2532,11 @@ function AdminGuidesView() {
                 }
               )
             ] }),
-            /* @__PURE__ */ jsxs("div", { className: styles$6.secImgBlock, children: [
-              sec.imageUrl && /* @__PURE__ */ jsx("div", { className: styles$6.secImgPreview, children: /* @__PURE__ */ jsx(
+            /* @__PURE__ */ jsxs("div", { className: styles$7.secImgBlock, children: [
+              sec.imageUrl && /* @__PURE__ */ jsx("div", { className: styles$7.secImgPreview, children: /* @__PURE__ */ jsx(
                 "img",
                 {
-                  className: styles$6.secImgThumb,
+                  className: styles$7.secImgThumb,
                   src: sec.imageUrl,
                   alt: sec.imageAlt || "section"
                 }
@@ -2534,7 +2547,7 @@ function AdminGuidesView() {
                   type: "file",
                   accept: "image/jpeg,image/png,image/webp",
                   id: `guide-sec-img-input-${idx}`,
-                  className: styles$6.fileInput,
+                  className: styles$7.fileInput,
                   disabled: selectedBusy
                 }
               ),
@@ -2551,7 +2564,7 @@ function AdminGuidesView() {
                   disabled: selectedBusy
                 }
               ),
-              /* @__PURE__ */ jsxs("div", { className: styles$6.secImgActions, children: [
+              /* @__PURE__ */ jsxs("div", { className: styles$7.secImgActions, children: [
                 /* @__PURE__ */ jsx(
                   Button,
                   {
@@ -2561,7 +2574,7 @@ function AdminGuidesView() {
                     children: "העלה תמונת קטע"
                   }
                 ),
-                !selectedId && /* @__PURE__ */ jsx("p", { className: styles$6.uploadHint, children: "כדי להעלות תמונה צריך קודם לשמור את המדריך." }),
+                !selectedId && /* @__PURE__ */ jsx("p", { className: styles$7.uploadHint, children: "כדי להעלות תמונה צריך קודם לשמור את המדריך." }),
                 sec.imageUrl && /* @__PURE__ */ jsx(
                   Button,
                   {
@@ -2575,17 +2588,17 @@ function AdminGuidesView() {
                 )
               ] })
             ] }),
-            /* @__PURE__ */ jsxs("details", { className: styles$6.linkHint, children: [
-              /* @__PURE__ */ jsx("summary", { className: styles$6.linkHintSummary, children: "איך מוסיפים קישורים בתוך הטקסט?" }),
-              /* @__PURE__ */ jsxs("div", { className: styles$6.linkHintBody, children: [
+            /* @__PURE__ */ jsxs("details", { className: styles$7.linkHint, children: [
+              /* @__PURE__ */ jsx("summary", { className: styles$7.linkHintSummary, children: "איך מוסיפים קישורים בתוך הטקסט?" }),
+              /* @__PURE__ */ jsxs("div", { className: styles$7.linkHintBody, children: [
                 /* @__PURE__ */ jsx("p", { children: "טקסט לחיץ עם קישור:" }),
-                /* @__PURE__ */ jsx("code", { className: styles$6.linkHintCode, children: "[טקסט להצגה](כתובת)" }),
+                /* @__PURE__ */ jsx("code", { className: styles$7.linkHintCode, children: "[טקסט להצגה](כתובת)" }),
                 /* @__PURE__ */ jsx("p", { children: "אפשר גם להדביק כתובת URL מלאה - היא תזוהה אוטומטית." }),
                 /* @__PURE__ */ jsx("p", { children: "לקישור פנימי במדריכים, עדיף להשתמש בנתיב יחסי:" }),
-                /* @__PURE__ */ jsx("p", { className: styles$6.linkHintExamples, children: "דוגמאות:" }),
-                /* @__PURE__ */ jsx("code", { className: styles$6.linkHintCode, children: "[קראו עוד](/guides/getting-started)" }),
-                /* @__PURE__ */ jsx("code", { className: styles$6.linkHintCode, children: "[לאתר הרשמי](https://example.com)" }),
-                /* @__PURE__ */ jsx("code", { className: styles$6.linkHintCode, children: "https://cardigo.co.il/guides/digital-card-guide" })
+                /* @__PURE__ */ jsx("p", { className: styles$7.linkHintExamples, children: "דוגמאות:" }),
+                /* @__PURE__ */ jsx("code", { className: styles$7.linkHintCode, children: "[קראו עוד](/guides/getting-started)" }),
+                /* @__PURE__ */ jsx("code", { className: styles$7.linkHintCode, children: "[לאתר הרשמי](https://example.com)" }),
+                /* @__PURE__ */ jsx("code", { className: styles$7.linkHintCode, children: "https://cardigo.co.il/guides/digital-card-guide" })
               ] })
             ] })
           ] }, idx)),
@@ -2599,9 +2612,9 @@ function AdminGuidesView() {
             }
           )
         ] }),
-        /* @__PURE__ */ jsxs("div", { className: styles$6.sectionBlock, children: [
-          /* @__PURE__ */ jsx("h4", { className: styles$6.h4, children: "SEO" }),
-          /* @__PURE__ */ jsxs("div", { className: styles$6.form, children: [
+        /* @__PURE__ */ jsxs("div", { className: styles$7.sectionBlock, children: [
+          /* @__PURE__ */ jsx("h4", { className: styles$7.h4, children: "SEO" }),
+          /* @__PURE__ */ jsxs("div", { className: styles$7.form, children: [
             /* @__PURE__ */ jsx(
               Input,
               {
@@ -2624,9 +2637,9 @@ function AdminGuidesView() {
             )
           ] })
         ] }),
-        /* @__PURE__ */ jsxs("div", { className: styles$6.sectionBlock, children: [
-          /* @__PURE__ */ jsx("h4", { className: styles$6.h4, children: "מחבר" }),
-          /* @__PURE__ */ jsxs("label", { className: styles$6.toggleRow, children: [
+        /* @__PURE__ */ jsxs("div", { className: styles$7.sectionBlock, children: [
+          /* @__PURE__ */ jsx("h4", { className: styles$7.h4, children: "מחבר" }),
+          /* @__PURE__ */ jsxs("label", { className: styles$7.toggleRow, children: [
             /* @__PURE__ */ jsx(
               "input",
               {
@@ -2639,21 +2652,21 @@ function AdminGuidesView() {
             'הצג מחבר של הכרטיס במדריך (יציג "ולנטין" בתחתית המדריך)'
           ] })
         ] }),
-        isEditing && /* @__PURE__ */ jsxs("div", { className: styles$6.timestampsRow, children: [
-          /* @__PURE__ */ jsxs("span", { className: styles$6.tsItem, children: [
+        isEditing && /* @__PURE__ */ jsxs("div", { className: styles$7.timestampsRow, children: [
+          /* @__PURE__ */ jsxs("span", { className: styles$7.tsItem, children: [
             "נוצר: ",
-            formatDate$2(fCreatedAt)
+            formatDate$3(fCreatedAt)
           ] }),
-          /* @__PURE__ */ jsxs("span", { className: styles$6.tsItem, children: [
+          /* @__PURE__ */ jsxs("span", { className: styles$7.tsItem, children: [
             "עודכן: ",
-            formatDate$2(fUpdatedAt)
+            formatDate$3(fUpdatedAt)
           ] }),
-          fPublishedAt && /* @__PURE__ */ jsxs("span", { className: styles$6.tsItem, children: [
+          fPublishedAt && /* @__PURE__ */ jsxs("span", { className: styles$7.tsItem, children: [
             "פורסם: ",
-            formatDate$2(fPublishedAt)
+            formatDate$3(fPublishedAt)
           ] })
         ] }),
-        /* @__PURE__ */ jsx("div", { className: styles$6.actionRow, children: isEditing ? /* @__PURE__ */ jsxs(Fragment, { children: [
+        /* @__PURE__ */ jsx("div", { className: styles$7.actionRow, children: isEditing ? /* @__PURE__ */ jsxs(Fragment, { children: [
           /* @__PURE__ */ jsx(
             Button,
             {
@@ -2701,8 +2714,8 @@ function AdminGuidesView() {
   ] });
 }
 const root$2 = "_root_19she_1";
-const header$3 = "_header_19she_21";
-const title$4 = "_title_19she_35";
+const header$4 = "_header_19she_21";
+const title$5 = "_title_19she_35";
 const boundary$1 = "_boundary_19she_49";
 const fields = "_fields_19she_65";
 const field = "_field_19she_65";
@@ -2726,10 +2739,10 @@ const status = "_status_19she_455";
 const lockBanner = "_lockBanner_19she_469";
 const sendStatus = "_sendStatus_19she_491";
 const warningList$1 = "_warningList_19she_505";
-const styles$5 = {
+const styles$6 = {
   root: root$2,
-  header: header$3,
-  title: title$4,
+  header: header$4,
+  title: title$5,
   boundary: boundary$1,
   fields,
   field,
@@ -2831,17 +2844,17 @@ function MarketingComposerForm({
     if (isSavingDraft) return;
     onSaveDraft(form2);
   }
-  return /* @__PURE__ */ jsxs("section", { className: styles$5.root, "aria-label": "עריכת מייל שיווקי", children: [
-    /* @__PURE__ */ jsxs("header", { className: styles$5.header, children: [
-      /* @__PURE__ */ jsx("h3", { className: styles$5.title, children: "עריכת מייל שיווקי" }),
-      /* @__PURE__ */ jsx("p", { className: styles$5.boundary, children: "זהו שלב הכנת התוכן בלבד. תצוגה מקדימה ושליחת מבחן יופעלו בשלב הבא." }),
-      /* @__PURE__ */ jsx("p", { className: styles$5.boundary, children: "שליחה המונית לרשימת נמענים עדיין אינה פעילה." })
+  return /* @__PURE__ */ jsxs("section", { className: styles$6.root, "aria-label": "עריכת מייל שיווקי", children: [
+    /* @__PURE__ */ jsxs("header", { className: styles$6.header, children: [
+      /* @__PURE__ */ jsx("h3", { className: styles$6.title, children: "עריכת מייל שיווקי" }),
+      /* @__PURE__ */ jsx("p", { className: styles$6.boundary, children: "זהו שלב הכנת התוכן בלבד. תצוגה מקדימה ושליחת מבחן יופעלו בשלב הבא." }),
+      /* @__PURE__ */ jsx("p", { className: styles$6.boundary, children: "שליחה המונית לרשימת נמענים עדיין אינה פעילה." })
     ] }),
-    /* @__PURE__ */ jsxs("div", { className: styles$5.fields, children: [
-      /* @__PURE__ */ jsxs("div", { className: styles$5.field, children: [
-        /* @__PURE__ */ jsxs("label", { className: styles$5.label, htmlFor: "mkt-subject", children: [
+    /* @__PURE__ */ jsxs("div", { className: styles$6.fields, children: [
+      /* @__PURE__ */ jsxs("div", { className: styles$6.field, children: [
+        /* @__PURE__ */ jsxs("label", { className: styles$6.label, htmlFor: "mkt-subject", children: [
           "נושא",
-          /* @__PURE__ */ jsxs("span", { className: styles$5.req, "aria-hidden": "true", children: [
+          /* @__PURE__ */ jsxs("span", { className: styles$6.req, "aria-hidden": "true", children: [
             " ",
             "*"
           ] })
@@ -2851,7 +2864,7 @@ function MarketingComposerForm({
           {
             id: "mkt-subject",
             type: "text",
-            className: styles$5.input,
+            className: styles$6.input,
             value: form2.subject,
             maxLength: LIMITS.subject,
             required: true,
@@ -2862,12 +2875,12 @@ function MarketingComposerForm({
             onBlur: () => markTouched("subject")
           }
         ),
-        /* @__PURE__ */ jsxs("div", { className: styles$5.fieldMeta, children: [
+        /* @__PURE__ */ jsxs("div", { className: styles$6.fieldMeta, children: [
           /* @__PURE__ */ jsx(
             "span",
             {
               id: "mkt-subject-err",
-              className: styles$5.err,
+              className: styles$6.err,
               role: subjectMissing ? "alert" : void 0,
               children: subjectMissing ? "נושא הוא שדה חובה" : ""
             }
@@ -2876,7 +2889,7 @@ function MarketingComposerForm({
             "span",
             {
               id: "mkt-subject-counter",
-              className: styles$5.counter,
+              className: styles$6.counter,
               children: [
                 form2.subject.length,
                 "/",
@@ -2886,26 +2899,26 @@ function MarketingComposerForm({
           )
         ] })
       ] }),
-      /* @__PURE__ */ jsxs("div", { className: styles$5.field, children: [
-        /* @__PURE__ */ jsx("label", { className: styles$5.label, htmlFor: "mkt-preview-text", children: "טקסט תצוגה מקדימה" }),
+      /* @__PURE__ */ jsxs("div", { className: styles$6.field, children: [
+        /* @__PURE__ */ jsx("label", { className: styles$6.label, htmlFor: "mkt-preview-text", children: "טקסט תצוגה מקדימה" }),
         /* @__PURE__ */ jsx(
           "input",
           {
             id: "mkt-preview-text",
             type: "text",
-            className: styles$5.input,
+            className: styles$6.input,
             value: form2.previewText,
             maxLength: LIMITS.previewText,
             "aria-describedby": "mkt-preview-text-help mkt-preview-text-counter",
             onChange: (e) => setField("previewText", e.target.value)
           }
         ),
-        /* @__PURE__ */ jsxs("div", { className: styles$5.fieldMeta, children: [
+        /* @__PURE__ */ jsxs("div", { className: styles$6.fieldMeta, children: [
           /* @__PURE__ */ jsx(
             "span",
             {
               id: "mkt-preview-text-help",
-              className: styles$5.help,
+              className: styles$6.help,
               children: "מופיע בתיבת הדואר לפני פתיחת המייל"
             }
           ),
@@ -2913,7 +2926,7 @@ function MarketingComposerForm({
             "span",
             {
               id: "mkt-preview-text-counter",
-              className: styles$5.counter,
+              className: styles$6.counter,
               children: [
                 form2.previewText.length,
                 "/",
@@ -2923,43 +2936,43 @@ function MarketingComposerForm({
           )
         ] })
       ] }),
-      /* @__PURE__ */ jsxs("div", { className: styles$5.field, children: [
-        /* @__PURE__ */ jsx("label", { className: styles$5.label, htmlFor: "mkt-top-image", children: "תמונה עליונה (URL)" }),
+      /* @__PURE__ */ jsxs("div", { className: styles$6.field, children: [
+        /* @__PURE__ */ jsx("label", { className: styles$6.label, htmlFor: "mkt-top-image", children: "תמונה עליונה (URL)" }),
         /* @__PURE__ */ jsx(
           "input",
           {
             id: "mkt-top-image",
             type: "url",
             dir: "ltr",
-            className: `${styles$5.input} ${styles$5.ltr}`,
+            className: `${styles$6.input} ${styles$6.ltr}`,
             value: form2.topImageUrl,
             "aria-describedby": "mkt-top-image-help",
             onChange: (e) => setField("topImageUrl", e.target.value)
           }
         ),
-        /* @__PURE__ */ jsx("div", { className: styles$5.fieldMeta, children: /* @__PURE__ */ jsx("span", { id: "mkt-top-image-help", className: styles$5.help, children: "כתובת https מ-cardigo.co.il או מאחסון Supabase המאושר" }) })
+        /* @__PURE__ */ jsx("div", { className: styles$6.fieldMeta, children: /* @__PURE__ */ jsx("span", { id: "mkt-top-image-help", className: styles$6.help, children: "כתובת https מ-cardigo.co.il או מאחסון Supabase המאושר" }) })
       ] }),
-      /* @__PURE__ */ jsxs("div", { className: styles$5.field, children: [
-        /* @__PURE__ */ jsx("label", { className: styles$5.label, htmlFor: "mkt-heading", children: "כותרת" }),
+      /* @__PURE__ */ jsxs("div", { className: styles$6.field, children: [
+        /* @__PURE__ */ jsx("label", { className: styles$6.label, htmlFor: "mkt-heading", children: "כותרת" }),
         /* @__PURE__ */ jsx(
           "input",
           {
             id: "mkt-heading",
             type: "text",
-            className: styles$5.input,
+            className: styles$6.input,
             value: form2.heading,
             maxLength: LIMITS.heading,
             "aria-describedby": "mkt-heading-counter",
             onChange: (e) => setField("heading", e.target.value)
           }
         ),
-        /* @__PURE__ */ jsxs("div", { className: styles$5.fieldMeta, children: [
-          /* @__PURE__ */ jsx("span", { className: styles$5.help }),
+        /* @__PURE__ */ jsxs("div", { className: styles$6.fieldMeta, children: [
+          /* @__PURE__ */ jsx("span", { className: styles$6.help }),
           /* @__PURE__ */ jsxs(
             "span",
             {
               id: "mkt-heading-counter",
-              className: styles$5.counter,
+              className: styles$6.counter,
               children: [
                 form2.heading.length,
                 "/",
@@ -2969,10 +2982,10 @@ function MarketingComposerForm({
           )
         ] })
       ] }),
-      /* @__PURE__ */ jsxs("div", { className: styles$5.field, children: [
-        /* @__PURE__ */ jsxs("label", { className: styles$5.label, htmlFor: "mkt-body", children: [
+      /* @__PURE__ */ jsxs("div", { className: styles$6.field, children: [
+        /* @__PURE__ */ jsxs("label", { className: styles$6.label, htmlFor: "mkt-body", children: [
           "תוכן המייל",
-          /* @__PURE__ */ jsxs("span", { className: styles$5.req, "aria-hidden": "true", children: [
+          /* @__PURE__ */ jsxs("span", { className: styles$6.req, "aria-hidden": "true", children: [
             " ",
             "*"
           ] })
@@ -2981,7 +2994,7 @@ function MarketingComposerForm({
           "textarea",
           {
             id: "mkt-body",
-            className: styles$5.textarea,
+            className: styles$6.textarea,
             value: form2.bodyText,
             maxLength: LIMITS.bodyText,
             rows: 8,
@@ -2993,49 +3006,49 @@ function MarketingComposerForm({
             onBlur: () => markTouched("bodyText")
           }
         ),
-        /* @__PURE__ */ jsxs("div", { className: styles$5.bodyHelp, id: "mkt-body-help", children: [
-          /* @__PURE__ */ jsx("span", { className: styles$5.help, children: "מודגש: **טקסט מודגש**" }),
-          /* @__PURE__ */ jsx("span", { className: styles$5.help, children: "קישור: [טקסט](/pricing)" }),
-          /* @__PURE__ */ jsx("span", { className: styles$5.help, children: "HTML גולמי אינו נתמך" })
+        /* @__PURE__ */ jsxs("div", { className: styles$6.bodyHelp, id: "mkt-body-help", children: [
+          /* @__PURE__ */ jsx("span", { className: styles$6.help, children: "מודגש: **טקסט מודגש**" }),
+          /* @__PURE__ */ jsx("span", { className: styles$6.help, children: "קישור: [טקסט](/pricing)" }),
+          /* @__PURE__ */ jsx("span", { className: styles$6.help, children: "HTML גולמי אינו נתמך" })
         ] }),
-        /* @__PURE__ */ jsxs("div", { className: styles$5.fieldMeta, children: [
+        /* @__PURE__ */ jsxs("div", { className: styles$6.fieldMeta, children: [
           /* @__PURE__ */ jsx(
             "span",
             {
               id: "mkt-body-err",
-              className: styles$5.err,
+              className: styles$6.err,
               role: bodyMissing ? "alert" : void 0,
               children: bodyMissing ? "תוכן המייל הוא שדה חובה" : ""
             }
           ),
-          /* @__PURE__ */ jsxs("span", { id: "mkt-body-counter", className: styles$5.counter, children: [
+          /* @__PURE__ */ jsxs("span", { id: "mkt-body-counter", className: styles$6.counter, children: [
             form2.bodyText.length,
             "/",
             LIMITS.bodyText
           ] })
         ] })
       ] }),
-      /* @__PURE__ */ jsxs("div", { className: styles$5.field, children: [
-        /* @__PURE__ */ jsx("label", { className: styles$5.label, htmlFor: "mkt-cta-label", children: "טקסט כפתור" }),
+      /* @__PURE__ */ jsxs("div", { className: styles$6.field, children: [
+        /* @__PURE__ */ jsx("label", { className: styles$6.label, htmlFor: "mkt-cta-label", children: "טקסט כפתור" }),
         /* @__PURE__ */ jsx(
           "input",
           {
             id: "mkt-cta-label",
             type: "text",
-            className: styles$5.input,
+            className: styles$6.input,
             value: form2.ctaLabel,
             maxLength: LIMITS.ctaLabel,
             "aria-describedby": "mkt-cta-label-counter mkt-cta-pairing",
             onChange: (e) => setField("ctaLabel", e.target.value)
           }
         ),
-        /* @__PURE__ */ jsxs("div", { className: styles$5.fieldMeta, children: [
-          /* @__PURE__ */ jsx("span", { className: styles$5.help }),
+        /* @__PURE__ */ jsxs("div", { className: styles$6.fieldMeta, children: [
+          /* @__PURE__ */ jsx("span", { className: styles$6.help }),
           /* @__PURE__ */ jsxs(
             "span",
             {
               id: "mkt-cta-label-counter",
-              className: styles$5.counter,
+              className: styles$6.counter,
               children: [
                 form2.ctaLabel.length,
                 "/",
@@ -3045,39 +3058,39 @@ function MarketingComposerForm({
           )
         ] })
       ] }),
-      /* @__PURE__ */ jsxs("div", { className: styles$5.field, children: [
-        /* @__PURE__ */ jsx("label", { className: styles$5.label, htmlFor: "mkt-cta-url", children: "קישור כפתור" }),
+      /* @__PURE__ */ jsxs("div", { className: styles$6.field, children: [
+        /* @__PURE__ */ jsx("label", { className: styles$6.label, htmlFor: "mkt-cta-url", children: "קישור כפתור" }),
         /* @__PURE__ */ jsx(
           "input",
           {
             id: "mkt-cta-url",
             type: "url",
             dir: "ltr",
-            className: `${styles$5.input} ${styles$5.ltr}`,
+            className: `${styles$6.input} ${styles$6.ltr}`,
             value: form2.ctaUrl,
             "aria-describedby": "mkt-cta-url-help mkt-cta-pairing",
             onChange: (e) => setField("ctaUrl", e.target.value)
           }
         ),
-        /* @__PURE__ */ jsx("div", { className: styles$5.fieldMeta, children: /* @__PURE__ */ jsx("span", { id: "mkt-cta-url-help", className: styles$5.help, children: "לדוגמה: /pricing או https://cardigo.co.il/pricing" }) })
+        /* @__PURE__ */ jsx("div", { className: styles$6.fieldMeta, children: /* @__PURE__ */ jsx("span", { id: "mkt-cta-url-help", className: styles$6.help, children: "לדוגמה: /pricing או https://cardigo.co.il/pricing" }) })
       ] }),
       /* @__PURE__ */ jsx(
         "p",
         {
           id: "mkt-cta-pairing",
-          className: styles$5.err,
+          className: styles$6.err,
           role: ctaLabelWithoutUrl || ctaUrlWithoutLabel ? "alert" : void 0,
           children: ctaLabelWithoutUrl ? "יש להזין גם קישור כפתור או להשאיר את שני השדות ריקים" : ctaUrlWithoutLabel ? "יש להזין גם טקסט כפתור או להשאיר את שני השדות ריקים" : ""
         }
       )
     ] }),
-    /* @__PURE__ */ jsxs("div", { className: styles$5.actions, children: [
-      /* @__PURE__ */ jsxs("div", { className: styles$5.actionButtons, children: [
+    /* @__PURE__ */ jsxs("div", { className: styles$6.actions, children: [
+      /* @__PURE__ */ jsxs("div", { className: styles$6.actionButtons, children: [
         /* @__PURE__ */ jsx(
           "button",
           {
             type: "button",
-            className: styles$5.secondaryBtn,
+            className: styles$6.secondaryBtn,
             onClick: handlePreviewClick,
             disabled: !canPreview,
             children: isPreviewing ? "טוען תצוגה מקדימה…" : "תצוגה מקדימה"
@@ -3087,7 +3100,7 @@ function MarketingComposerForm({
           "button",
           {
             type: "button",
-            className: styles$5.primaryBtn,
+            className: styles$6.primaryBtn,
             onClick: handleTestSendClick,
             disabled: !canTestSend,
             children: isSending ? "שולח מבחן…" : "שליחת מבחן לכתובת שלי"
@@ -3097,7 +3110,7 @@ function MarketingComposerForm({
           "button",
           {
             type: "button",
-            className: styles$5.draftBtn,
+            className: styles$6.draftBtn,
             onClick: handleSaveDraftClick,
             disabled: isSavingDraft || !canSaveDraft || draftDisabledByFlag,
             children: isSavingDraft ? "שומר טיוטה…" : "שמור טיוטת קמפיין"
@@ -3107,45 +3120,53 @@ function MarketingComposerForm({
           "button",
           {
             type: "button",
-            className: styles$5.resetBtn,
+            className: styles$6.resetBtn,
             onClick: onReset,
             children: "נקה טופס"
           }
         )
       ] }),
-      /* @__PURE__ */ jsx("p", { className: styles$5.help, children: "השליחה תתבצע רק לכתובת האימייל של מנהל המערכת המחובר." }),
-      /* @__PURE__ */ jsx("p", { className: styles$5.help, children: "שמירת טיוטה אינה שולחת מיילים." }),
-      !canSaveDraft && draftDisabledReason ? /* @__PURE__ */ jsx("p", { className: styles$5.help, children: draftDisabledReason }) : null,
-      draftDisabledByFlag ? /* @__PURE__ */ jsx("p", { className: styles$5.lockBanner, role: "status", children: "שמירת טיוטות אינה פעילה כרגע." }) : null,
-      draftError ? /* @__PURE__ */ jsx("p", { className: styles$5.err, role: "alert", children: draftError }) : null,
-      draftResult ? /* @__PURE__ */ jsx("p", { className: styles$5.status, role: "status", "aria-live": "polite", children: draftResult.message }) : null,
-      sendDisabledByFlag ? /* @__PURE__ */ jsx("p", { className: styles$5.lockBanner, role: "status", children: "שליחת מבחן אינה פעילה כרגע." }) : null,
-      sendError ? /* @__PURE__ */ jsx("p", { className: styles$5.err, role: "alert", children: sendError }) : null,
-      sendResult ? /* @__PURE__ */ jsxs("div", { className: styles$5.sendStatus, "aria-live": "polite", children: [
+      /* @__PURE__ */ jsx("p", { className: styles$6.help, children: "השליחה תתבצע רק לכתובת האימייל של מנהל המערכת המחובר." }),
+      /* @__PURE__ */ jsx("p", { className: styles$6.help, children: "שמירת טיוטה אינה שולחת מיילים." }),
+      !canSaveDraft && draftDisabledReason ? /* @__PURE__ */ jsx("p", { className: styles$6.help, children: draftDisabledReason }) : null,
+      draftDisabledByFlag ? /* @__PURE__ */ jsx("p", { className: styles$6.lockBanner, role: "status", children: "שמירת טיוטות אינה פעילה כרגע." }) : null,
+      draftError ? /* @__PURE__ */ jsx("p", { className: styles$6.err, role: "alert", children: draftError }) : null,
+      draftResult ? /* @__PURE__ */ jsx(
+        "p",
+        {
+          className: styles$6.status,
+          role: "status",
+          "aria-live": "polite",
+          children: draftResult.message
+        }
+      ) : null,
+      sendDisabledByFlag ? /* @__PURE__ */ jsx("p", { className: styles$6.lockBanner, role: "status", children: "שליחת מבחן אינה פעילה כרגע." }) : null,
+      sendError ? /* @__PURE__ */ jsx("p", { className: styles$6.err, role: "alert", children: sendError }) : null,
+      sendResult ? /* @__PURE__ */ jsxs("div", { className: styles$6.sendStatus, "aria-live": "polite", children: [
         /* @__PURE__ */ jsx(
           "p",
           {
-            className: sendResult.kind === "error" ? styles$5.err : styles$5.status,
+            className: sendResult.kind === "error" ? styles$6.err : styles$6.status,
             role: sendResult.kind === "error" ? "alert" : void 0,
             children: sendResult.message
           }
         ),
-        sendResult.deliveredToMasked ? /* @__PURE__ */ jsx("p", { className: styles$5.help, children: `יעד: ${sendResult.deliveredToMasked}` }) : null,
-        Array.isArray(sendResult.warnings) && sendResult.warnings.length > 0 ? /* @__PURE__ */ jsx("ul", { className: styles$5.warningList, children: sendResult.warnings.map((w, i) => /* @__PURE__ */ jsx("li", { className: styles$5.err, children: w }, i)) }) : null
+        sendResult.deliveredToMasked ? /* @__PURE__ */ jsx("p", { className: styles$6.help, children: `יעד: ${sendResult.deliveredToMasked}` }) : null,
+        Array.isArray(sendResult.warnings) && sendResult.warnings.length > 0 ? /* @__PURE__ */ jsx("ul", { className: styles$6.warningList, children: sendResult.warnings.map((w, i) => /* @__PURE__ */ jsx("li", { className: styles$6.err, children: w }, i)) }) : null
       ] }) : null,
-      /* @__PURE__ */ jsx("p", { className: styles$5.status, "aria-live": "polite", children: "בשלב זה ניתן להפיק תצוגה מקדימה בלבד; שליחת מבחן ושליחה לרשימה יופעלו בשלב הבא." }),
-      isPreviewStale ? /* @__PURE__ */ jsx("p", { className: styles$5.status, "aria-live": "polite", children: "התצוגה המקדימה אינה מעודכנת לשינויים האחרונים." }) : null,
-      /* @__PURE__ */ jsx("p", { className: styles$5.boundary, children: "שליחה המונית לרשימת נמענים עדיין אינה פעילה." })
+      /* @__PURE__ */ jsx("p", { className: styles$6.status, "aria-live": "polite", children: "בשלב זה ניתן להפיק תצוגה מקדימה בלבד; שליחת מבחן ושליחה לרשימה יופעלו בשלב הבא." }),
+      isPreviewStale ? /* @__PURE__ */ jsx("p", { className: styles$6.status, "aria-live": "polite", children: "התצוגה המקדימה אינה מעודכנת לשינויים האחרונים." }) : null,
+      /* @__PURE__ */ jsx("p", { className: styles$6.boundary, children: "שליחה המונית לרשימת נמענים עדיין אינה פעילה." })
     ] })
   ] });
 }
 const root$1 = "_root_a7hp9_1";
-const header$2 = "_header_a7hp9_23";
-const title$3 = "_title_a7hp9_37";
+const header$3 = "_header_a7hp9_23";
+const title$4 = "_title_a7hp9_37";
 const boundary = "_boundary_a7hp9_49";
 const body$2 = "_body_a7hp9_61";
-const muted$2 = "_muted_a7hp9_75";
-const error$1 = "_error_a7hp9_87";
+const muted$3 = "_muted_a7hp9_75";
+const error$2 = "_error_a7hp9_87";
 const stale = "_stale_a7hp9_101";
 const summary$1 = "_summary_a7hp9_113";
 const sectionTitle$1 = "_sectionTitle_a7hp9_127";
@@ -3159,14 +3180,14 @@ const textPreview = "_textPreview_a7hp9_241";
 const warnings = "_warnings_a7hp9_277";
 const warningList = "_warningList_a7hp9_291";
 const warningItem = "_warningItem_a7hp9_309";
-const styles$4 = {
+const styles$5 = {
   root: root$1,
-  header: header$2,
-  title: title$3,
+  header: header$3,
+  title: title$4,
   boundary,
   body: body$2,
-  muted: muted$2,
-  error: error$1,
+  muted: muted$3,
+  error: error$2,
   stale,
   summary: summary$1,
   sectionTitle: sectionTitle$1,
@@ -3199,25 +3220,25 @@ function MarketingPreviewPanel({
   const snapshot = result && result.formSnapshot ? result.formSnapshot : null;
   const warnings2 = result && Array.isArray(result.warnings) ? result.warnings : [];
   const previewText = result && typeof result.text === "string" ? result.text : "";
-  return /* @__PURE__ */ jsxs("section", { className: styles$4.root, "aria-label": "תצוגה מקדימה של המייל", children: [
-    /* @__PURE__ */ jsxs("header", { className: styles$4.header, children: [
-      /* @__PURE__ */ jsx("h3", { className: styles$4.title, children: "תצוגת טקסט בטוחה" }),
-      /* @__PURE__ */ jsx("p", { className: styles$4.boundary, children: "תצוגת HTML חזותית תיבחן בשלב נפרד." })
+  return /* @__PURE__ */ jsxs("section", { className: styles$5.root, "aria-label": "תצוגה מקדימה של המייל", children: [
+    /* @__PURE__ */ jsxs("header", { className: styles$5.header, children: [
+      /* @__PURE__ */ jsx("h3", { className: styles$5.title, children: "תצוגת טקסט בטוחה" }),
+      /* @__PURE__ */ jsx("p", { className: styles$5.boundary, children: "תצוגת HTML חזותית תיבחן בשלב נפרד." })
     ] }),
-    /* @__PURE__ */ jsx("div", { className: styles$4.body, "aria-live": "polite", children: isLoading ? /* @__PURE__ */ jsx("p", { className: styles$4.muted, children: "טוען תצוגה מקדימה…" }) : error2 ? /* @__PURE__ */ jsx("p", { className: styles$4.error, role: "alert", children: error2 }) : !result ? /* @__PURE__ */ jsx("p", { className: styles$4.muted, children: "לא נוצרה תצוגה מקדימה עדיין." }) : /* @__PURE__ */ jsxs(Fragment, { children: [
-      isStale ? /* @__PURE__ */ jsx("p", { className: styles$4.stale, role: "status", children: "התצוגה המקדימה אינה מעודכנת לשינויים האחרונים." }) : null,
-      snapshot ? /* @__PURE__ */ jsxs("div", { className: styles$4.summary, children: [
-        /* @__PURE__ */ jsx("h4", { className: styles$4.sectionTitle, children: "סיכום" }),
-        /* @__PURE__ */ jsx("dl", { className: styles$4.summaryList, children: SUMMARY_FIELDS.map((f) => /* @__PURE__ */ jsxs(
+    /* @__PURE__ */ jsx("div", { className: styles$5.body, "aria-live": "polite", children: isLoading ? /* @__PURE__ */ jsx("p", { className: styles$5.muted, children: "טוען תצוגה מקדימה…" }) : error2 ? /* @__PURE__ */ jsx("p", { className: styles$5.error, role: "alert", children: error2 }) : !result ? /* @__PURE__ */ jsx("p", { className: styles$5.muted, children: "לא נוצרה תצוגה מקדימה עדיין." }) : /* @__PURE__ */ jsxs(Fragment, { children: [
+      isStale ? /* @__PURE__ */ jsx("p", { className: styles$5.stale, role: "status", children: "התצוגה המקדימה אינה מעודכנת לשינויים האחרונים." }) : null,
+      snapshot ? /* @__PURE__ */ jsxs("div", { className: styles$5.summary, children: [
+        /* @__PURE__ */ jsx("h4", { className: styles$5.sectionTitle, children: "סיכום" }),
+        /* @__PURE__ */ jsx("dl", { className: styles$5.summaryList, children: SUMMARY_FIELDS.map((f) => /* @__PURE__ */ jsxs(
           "div",
           {
-            className: styles$4.summaryRow,
+            className: styles$5.summaryRow,
             children: [
-              /* @__PURE__ */ jsx("dt", { className: styles$4.summaryKey, children: f.label }),
+              /* @__PURE__ */ jsx("dt", { className: styles$5.summaryKey, children: f.label }),
               /* @__PURE__ */ jsx(
                 "dd",
                 {
-                  className: `${styles$4.summaryVal} ${f.ltr ? styles$4.ltr : ""}`,
+                  className: `${styles$5.summaryVal} ${f.ltr ? styles$5.ltr : ""}`,
                   children: snapshot[f.key]?.trim() ? snapshot[f.key] : "—"
                 }
               )
@@ -3226,16 +3247,16 @@ function MarketingPreviewPanel({
           f.key
         )) })
       ] }) : null,
-      /* @__PURE__ */ jsxs("div", { className: styles$4.textBlock, children: [
-        /* @__PURE__ */ jsx("h4", { className: styles$4.sectionTitle, children: "תצוגת טקסט" }),
-        /* @__PURE__ */ jsx("pre", { className: styles$4.textPreview, children: previewText })
+      /* @__PURE__ */ jsxs("div", { className: styles$5.textBlock, children: [
+        /* @__PURE__ */ jsx("h4", { className: styles$5.sectionTitle, children: "תצוגת טקסט" }),
+        /* @__PURE__ */ jsx("pre", { className: styles$5.textPreview, children: previewText })
       ] }),
-      warnings2.length > 0 ? /* @__PURE__ */ jsxs("div", { className: styles$4.warnings, children: [
-        /* @__PURE__ */ jsx("h4", { className: styles$4.sectionTitle, children: "אזהרות מהשרת" }),
-        /* @__PURE__ */ jsx("ul", { className: styles$4.warningList, children: warnings2.map((w, i) => /* @__PURE__ */ jsx(
+      warnings2.length > 0 ? /* @__PURE__ */ jsxs("div", { className: styles$5.warnings, children: [
+        /* @__PURE__ */ jsx("h4", { className: styles$5.sectionTitle, children: "אזהרות מהשרת" }),
+        /* @__PURE__ */ jsx("ul", { className: styles$5.warningList, children: warnings2.map((w, i) => /* @__PURE__ */ jsx(
           "li",
           {
-            className: styles$4.warningItem,
+            className: styles$5.warningItem,
             children: w
           },
           i
@@ -3246,19 +3267,19 @@ function MarketingPreviewPanel({
 }
 const backdrop = "_backdrop_5nr98_1";
 const modal = "_modal_5nr98_25";
-const header$1 = "_header_5nr98_53";
-const title$2 = "_title_5nr98_67";
+const header$2 = "_header_5nr98_53";
+const title$3 = "_title_5nr98_67";
 const body$1 = "_body_5nr98_83";
 const text = "_text_5nr98_97";
 const actions = "_actions_5nr98_113";
 const button = "_button_5nr98_131";
 const primary = "_primary_5nr98_177";
 const secondary = "_secondary_5nr98_189";
-const styles$3 = {
+const styles$4 = {
   backdrop,
   modal,
-  header: header$1,
-  title: title$2,
+  header: header$2,
+  title: title$3,
   body: body$1,
   text,
   actions,
@@ -3300,7 +3321,7 @@ function MarketingTestSendConfirm({
     "div",
     {
       ref: dialogRef,
-      className: styles$3.backdrop,
+      className: styles$4.backdrop,
       role: "dialog",
       "aria-modal": "true",
       "aria-labelledby": titleId,
@@ -3308,16 +3329,16 @@ function MarketingTestSendConfirm({
       onMouseDown: (e) => {
         if (e.target === e.currentTarget && !isSending) onCancel?.();
       },
-      children: /* @__PURE__ */ jsxs("div", { className: styles$3.modal, dir: "rtl", children: [
-        /* @__PURE__ */ jsx("div", { className: styles$3.header, children: /* @__PURE__ */ jsx("h2", { id: titleId, className: styles$3.title, children: "לאשר שליחת מבחן?" }) }),
-        /* @__PURE__ */ jsx("div", { className: styles$3.body, children: /* @__PURE__ */ jsx("p", { id: bodyId, className: styles$3.text, children: "המייל יישלח פעם אחת בלבד לכתובת האימייל של מנהל המערכת המחובר. הוא לא יישלח לרשימת הנמענים." }) }),
-        /* @__PURE__ */ jsxs("div", { className: styles$3.actions, children: [
+      children: /* @__PURE__ */ jsxs("div", { className: styles$4.modal, dir: "rtl", children: [
+        /* @__PURE__ */ jsx("div", { className: styles$4.header, children: /* @__PURE__ */ jsx("h2", { id: titleId, className: styles$4.title, children: "לאשר שליחת מבחן?" }) }),
+        /* @__PURE__ */ jsx("div", { className: styles$4.body, children: /* @__PURE__ */ jsx("p", { id: bodyId, className: styles$4.text, children: "המייל יישלח פעם אחת בלבד לכתובת האימייל של מנהל המערכת המחובר. הוא לא יישלח לרשימת הנמענים." }) }),
+        /* @__PURE__ */ jsxs("div", { className: styles$4.actions, children: [
           /* @__PURE__ */ jsx(
             "button",
             {
               ref: confirmButtonRef,
               type: "button",
-              className: `${styles$3.button} ${styles$3.primary}`,
+              className: `${styles$4.button} ${styles$4.primary}`,
               onClick: () => onConfirm?.(),
               disabled: isSending,
               children: isSending ? "שולח מבחן…" : "שלחו מבחן"
@@ -3327,7 +3348,7 @@ function MarketingTestSendConfirm({
             "button",
             {
               type: "button",
-              className: `${styles$3.button} ${styles$3.secondary}`,
+              className: `${styles$4.button} ${styles$4.secondary}`,
               onClick: () => onCancel?.(),
               disabled: isSending,
               children: "ביטול"
@@ -3337,6 +3358,500 @@ function MarketingTestSendConfirm({
       ] })
     }
   );
+}
+const panel$1 = "_panel_xu8wz_1";
+const header$1 = "_header_xu8wz_23";
+const title$2 = "_title_xu8wz_37";
+const helper = "_helper_xu8wz_51";
+const toolbar = "_toolbar_xu8wz_65";
+const filterGroup = "_filterGroup_xu8wz_83";
+const filterButton = "_filterButton_xu8wz_97";
+const filterButtonActive = "_filterButtonActive_xu8wz_139";
+const reloadButton = "_reloadButton_xu8wz_149";
+const statusLine = "_statusLine_xu8wz_191";
+const muted$2 = "_muted_xu8wz_209";
+const success = "_success_xu8wz_223";
+const error$1 = "_error_xu8wz_235";
+const empty$1 = "_empty_xu8wz_249";
+const list$1 = "_list_xu8wz_263";
+const row$2 = "_row_xu8wz_283";
+const rowMain = "_rowMain_xu8wz_309";
+const rowSubject = "_rowSubject_xu8wz_325";
+const rowHeading = "_rowHeading_xu8wz_339";
+const rowMeta = "_rowMeta_xu8wz_353";
+const metaItem = "_metaItem_xu8wz_369";
+const rowActions = "_rowActions_xu8wz_391";
+const viewButton = "_viewButton_xu8wz_405";
+const pager$2 = "_pager_xu8wz_447";
+const pagerButton = "_pagerButton_xu8wz_463";
+const pagerInfo = "_pagerInfo_xu8wz_505";
+const detail = "_detail_xu8wz_517";
+const detailBlock = "_detailBlock_xu8wz_539";
+const detailTitle = "_detailTitle_xu8wz_553";
+const detailList = "_detailList_xu8wz_567";
+const detailRow = "_detailRow_xu8wz_583";
+const detailKey = "_detailKey_xu8wz_599";
+const detailText = "_detailText_xu8wz_617";
+const countList = "_countList_xu8wz_635";
+const countItem = "_countItem_xu8wz_655";
+const reasonList = "_reasonList_xu8wz_677";
+const reasonRow = "_reasonRow_xu8wz_697";
+const confirmBox = "_confirmBox_xu8wz_719";
+const confirmText = "_confirmText_xu8wz_743";
+const confirmActions = "_confirmActions_xu8wz_755";
+const confirmYesButton = "_confirmYesButton_xu8wz_769";
+const confirmNoButton = "_confirmNoButton_xu8wz_811";
+const cancelButton = "_cancelButton_xu8wz_853";
+const styles$3 = {
+  panel: panel$1,
+  header: header$1,
+  title: title$2,
+  helper,
+  toolbar,
+  filterGroup,
+  filterButton,
+  filterButtonActive,
+  reloadButton,
+  statusLine,
+  muted: muted$2,
+  success,
+  error: error$1,
+  empty: empty$1,
+  list: list$1,
+  row: row$2,
+  rowMain,
+  rowSubject,
+  rowHeading,
+  rowMeta,
+  metaItem,
+  rowActions,
+  viewButton,
+  pager: pager$2,
+  pagerButton,
+  pagerInfo,
+  detail,
+  detailBlock,
+  detailTitle,
+  detailList,
+  detailRow,
+  detailKey,
+  detailText,
+  countList,
+  countItem,
+  reasonList,
+  reasonRow,
+  confirmBox,
+  confirmText,
+  confirmActions,
+  confirmYesButton,
+  confirmNoButton,
+  cancelButton
+};
+const DRAFT_STATUS_OPTIONS = ["draft", "canceled"];
+const PAGE_LIMIT = 20;
+const SKIP_REASON_LABELS = {
+  DUPLICATE: "כפול",
+  INVALID_ID: "מזהה לא תקין",
+  USER_NOT_FOUND: "משתמש לא נמצא",
+  NOT_VERIFIED: "לא מאומת",
+  EMAIL_MARKETING_CONSENT_MISSING: "חסרה הסכמת דיוור",
+  MARKETING_OPT_OUT: "הסרת דיוור",
+  EMAIL_MISSING: "חסר אימייל",
+  UNKNOWN: "לא ידוע"
+};
+const STATUS_LABELS = {
+  draft: "טיוטה",
+  canceled: "בוטלה"
+};
+function skipReasonLabel$1(reason) {
+  return SKIP_REASON_LABELS[String(reason)] || String(reason);
+}
+function statusLabel(status2) {
+  return STATUS_LABELS[String(status2 || "")] || (status2 ? String(status2) : "—");
+}
+function formatDate$2(value) {
+  if (!value) return "—";
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return "—";
+  return d.toLocaleString("he-IL");
+}
+function countOrDash(value) {
+  return typeof value === "number" ? value : "—";
+}
+function MarketingDraftsPanel() {
+  const [draftsLoading, setDraftsLoading] = useState(false);
+  const [draftsError, setDraftsError] = useState("");
+  const [draftsStatus, setDraftsStatus] = useState("draft");
+  const [draftsPage, setDraftsPage] = useState(1);
+  const [draftsResult, setDraftsResult] = useState(null);
+  const [selectedDraftId, setSelectedDraftId] = useState(null);
+  const [selectedDraftLoading, setSelectedDraftLoading] = useState(false);
+  const [selectedDraftError, setSelectedDraftError] = useState("");
+  const [selectedDraft, setSelectedDraft] = useState(null);
+  const [cancelLoadingId, setCancelLoadingId] = useState(null);
+  const [cancelError, setCancelError] = useState("");
+  const [cancelResult, setCancelResult] = useState("");
+  const [confirmingCancelId, setConfirmingCancelId] = useState(null);
+  const loadDrafts = useCallback(async () => {
+    setDraftsLoading(true);
+    setDraftsError("");
+    try {
+      const res = await listMarketingCampaignDrafts({
+        status: draftsStatus,
+        page: draftsPage,
+        limit: PAGE_LIMIT
+      });
+      const data = res?.data || {};
+      setDraftsResult({
+        page: typeof data.page === "number" ? data.page : draftsPage,
+        limit: typeof data.limit === "number" ? data.limit : PAGE_LIMIT,
+        total: typeof data.total === "number" ? data.total : 0,
+        items: Array.isArray(data.items) ? data.items : []
+      });
+    } catch {
+      setDraftsResult(null);
+      setDraftsError("טעינת הטיוטות נכשלה.");
+    } finally {
+      setDraftsLoading(false);
+    }
+  }, [draftsStatus, draftsPage]);
+  useEffect(() => {
+    loadDrafts();
+  }, [loadDrafts]);
+  function handleSelectStatus(nextStatus) {
+    if (nextStatus === draftsStatus) return;
+    setSelectedDraftId(null);
+    setSelectedDraft(null);
+    setSelectedDraftError("");
+    setCancelError("");
+    setCancelResult("");
+    setConfirmingCancelId(null);
+    setDraftsPage(1);
+    setDraftsStatus(nextStatus);
+  }
+  async function loadDetail(campaignId) {
+    setSelectedDraftId(campaignId);
+    setSelectedDraft(null);
+    setSelectedDraftError("");
+    setCancelError("");
+    setCancelResult("");
+    setConfirmingCancelId(null);
+    setSelectedDraftLoading(true);
+    try {
+      const res = await getMarketingCampaignDraft(campaignId);
+      const data = res?.data || {};
+      setSelectedDraft(data.draft || null);
+      if (!data.draft) {
+        setSelectedDraftError("טעינת פרטי הטיוטה נכשלה.");
+      }
+    } catch {
+      setSelectedDraft(null);
+      setSelectedDraftError("טעינת פרטי הטיוטה נכשלה.");
+    } finally {
+      setSelectedDraftLoading(false);
+    }
+  }
+  async function handleConfirmCancel(campaignId) {
+    if (cancelLoadingId) return;
+    setCancelError("");
+    setCancelResult("");
+    setCancelLoadingId(campaignId);
+    try {
+      await cancelMarketingCampaignDraft(campaignId);
+      setConfirmingCancelId(null);
+      setCancelResult("הטיוטה בוטלה.");
+      await loadDrafts();
+      if (selectedDraftId === campaignId) {
+        await loadDetail(campaignId);
+      }
+    } catch (e) {
+      const status2 = e?.response?.status;
+      setConfirmingCancelId(null);
+      if (status2 === 409) {
+        setCancelError("הטיוטה אינה ניתנת לביטול.");
+      } else {
+        setCancelError("ביטול הטיוטה נכשל.");
+      }
+      await loadDrafts();
+      if (selectedDraftId === campaignId) {
+        await loadDetail(campaignId);
+      }
+    } finally {
+      setCancelLoadingId(null);
+    }
+  }
+  const result = draftsResult;
+  const items = Array.isArray(result?.items) ? result.items : [];
+  const total = typeof result?.total === "number" ? result.total : 0;
+  const prevDisabled = draftsPage <= 1 || draftsLoading;
+  const nextDisabled = draftsLoading || draftsPage * PAGE_LIMIT >= total || items.length < PAGE_LIMIT;
+  return /* @__PURE__ */ jsxs("section", { className: styles$3.panel, "aria-label": "טיוטות קמפיינים", children: [
+    /* @__PURE__ */ jsxs("header", { className: styles$3.header, children: [
+      /* @__PURE__ */ jsx("h3", { className: styles$3.title, children: "טיוטות קמפיינים" }),
+      /* @__PURE__ */ jsx("p", { className: styles$3.helper, children: "כאן ניתן לצפות בטיוטות שנשמרו ולבטל טיוטות לפני שימוש עתידי." })
+    ] }),
+    /* @__PURE__ */ jsxs("div", { className: styles$3.toolbar, children: [
+      /* @__PURE__ */ jsx(
+        "div",
+        {
+          className: styles$3.filterGroup,
+          role: "group",
+          "aria-label": "סינון טיוטות",
+          children: DRAFT_STATUS_OPTIONS.map((opt) => /* @__PURE__ */ jsx(
+            "button",
+            {
+              type: "button",
+              className: `${styles$3.filterButton} ${draftsStatus === opt ? styles$3.filterButtonActive : ""}`,
+              "aria-pressed": draftsStatus === opt,
+              onClick: () => handleSelectStatus(opt),
+              children: opt === "draft" ? "טיוטות פעילות" : "טיוטות שבוטלו"
+            },
+            opt
+          ))
+        }
+      ),
+      /* @__PURE__ */ jsx(
+        "button",
+        {
+          type: "button",
+          className: styles$3.reloadButton,
+          onClick: loadDrafts,
+          disabled: draftsLoading,
+          children: "רענון טיוטות"
+        }
+      )
+    ] }),
+    /* @__PURE__ */ jsxs("div", { className: styles$3.statusLine, "aria-live": "polite", children: [
+      draftsLoading ? /* @__PURE__ */ jsx("span", { className: styles$3.muted, children: "טוען…" }) : null,
+      cancelResult ? /* @__PURE__ */ jsx("span", { className: styles$3.success, children: cancelResult }) : null
+    ] }),
+    draftsError ? /* @__PURE__ */ jsx("p", { className: styles$3.error, role: "alert", children: draftsError }) : null,
+    !draftsLoading && !draftsError && items.length === 0 ? /* @__PURE__ */ jsx("p", { className: styles$3.empty, children: "אין טיוטות להצגה." }) : null,
+    items.length > 0 ? /* @__PURE__ */ jsx("ul", { className: styles$3.list, children: items.map((draft) => /* @__PURE__ */ jsxs("li", { className: styles$3.row, children: [
+      /* @__PURE__ */ jsxs("div", { className: styles$3.rowMain, children: [
+        /* @__PURE__ */ jsx("span", { className: styles$3.rowSubject, children: draft.subject || "—" }),
+        /* @__PURE__ */ jsx("span", { className: styles$3.rowHeading, children: draft.heading || "—" })
+      ] }),
+      /* @__PURE__ */ jsxs("div", { className: styles$3.rowMeta, children: [
+        /* @__PURE__ */ jsx("span", { className: styles$3.metaItem, children: statusLabel(draft.status) }),
+        /* @__PURE__ */ jsx("span", { className: styles$3.metaItem, children: formatDate$2(draft.createdAt) }),
+        /* @__PURE__ */ jsxs("span", { className: styles$3.metaItem, children: [
+          "נבחרו: ",
+          countOrDash(draft.selectedCount)
+        ] }),
+        /* @__PURE__ */ jsxs("span", { className: styles$3.metaItem, children: [
+          "זכאים: ",
+          countOrDash(draft.eligibleCount)
+        ] }),
+        /* @__PURE__ */ jsxs("span", { className: styles$3.metaItem, children: [
+          "נפסלו: ",
+          countOrDash(draft.skippedCount)
+        ] })
+      ] }),
+      /* @__PURE__ */ jsx("div", { className: styles$3.rowActions, children: /* @__PURE__ */ jsx(
+        "button",
+        {
+          type: "button",
+          className: styles$3.viewButton,
+          onClick: () => loadDetail(draft.campaignId),
+          disabled: selectedDraftLoading && selectedDraftId === draft.campaignId,
+          children: "צפייה"
+        }
+      ) })
+    ] }, draft.campaignId)) }) : null,
+    items.length > 0 ? /* @__PURE__ */ jsxs("div", { className: styles$3.pager, children: [
+      /* @__PURE__ */ jsx(
+        "button",
+        {
+          type: "button",
+          className: styles$3.pagerButton,
+          onClick: () => setDraftsPage((p) => Math.max(1, p - 1)),
+          disabled: prevDisabled,
+          children: "הקודם"
+        }
+      ),
+      /* @__PURE__ */ jsxs("span", { className: styles$3.pagerInfo, children: [
+        "עמוד ",
+        draftsPage
+      ] }),
+      /* @__PURE__ */ jsx(
+        "button",
+        {
+          type: "button",
+          className: styles$3.pagerButton,
+          onClick: () => setDraftsPage((p) => p + 1),
+          disabled: nextDisabled,
+          children: "הבא"
+        }
+      )
+    ] }) : null,
+    selectedDraftId ? /* @__PURE__ */ jsxs("div", { className: styles$3.detail, "aria-live": "polite", children: [
+      selectedDraftLoading ? /* @__PURE__ */ jsx("p", { className: styles$3.muted, children: "טוען…" }) : null,
+      selectedDraftError ? /* @__PURE__ */ jsx("p", { className: styles$3.error, role: "alert", children: selectedDraftError }) : null,
+      selectedDraft ? /* @__PURE__ */ jsxs(Fragment, { children: [
+        /* @__PURE__ */ jsxs("div", { className: styles$3.detailBlock, children: [
+          /* @__PURE__ */ jsx("h4", { className: styles$3.detailTitle, children: "תוכן הטיוטה" }),
+          /* @__PURE__ */ jsxs("dl", { className: styles$3.detailList, children: [
+            /* @__PURE__ */ jsxs("div", { className: styles$3.detailRow, children: [
+              /* @__PURE__ */ jsx("dt", { className: styles$3.detailKey, children: "נושא" }),
+              /* @__PURE__ */ jsx("dd", { className: styles$3.detailText, children: selectedDraft.contentSnapshot?.subject || "—" })
+            ] }),
+            /* @__PURE__ */ jsxs("div", { className: styles$3.detailRow, children: [
+              /* @__PURE__ */ jsx("dt", { className: styles$3.detailKey, children: "טקסט תצוגה" }),
+              /* @__PURE__ */ jsx("dd", { className: styles$3.detailText, children: selectedDraft.contentSnapshot?.previewText || "—" })
+            ] }),
+            /* @__PURE__ */ jsxs("div", { className: styles$3.detailRow, children: [
+              /* @__PURE__ */ jsx("dt", { className: styles$3.detailKey, children: "כותרת" }),
+              /* @__PURE__ */ jsx("dd", { className: styles$3.detailText, children: selectedDraft.contentSnapshot?.heading || "—" })
+            ] }),
+            /* @__PURE__ */ jsxs("div", { className: styles$3.detailRow, children: [
+              /* @__PURE__ */ jsx("dt", { className: styles$3.detailKey, children: "גוף הודעה" }),
+              /* @__PURE__ */ jsx("dd", { className: styles$3.detailText, children: selectedDraft.contentSnapshot?.bodyText || "—" })
+            ] }),
+            /* @__PURE__ */ jsxs("div", { className: styles$3.detailRow, children: [
+              /* @__PURE__ */ jsx("dt", { className: styles$3.detailKey, children: "תמונה עליונה (כתובת)" }),
+              /* @__PURE__ */ jsx("dd", { className: styles$3.detailText, children: selectedDraft.contentSnapshot?.topImageUrl || "—" })
+            ] }),
+            /* @__PURE__ */ jsxs("div", { className: styles$3.detailRow, children: [
+              /* @__PURE__ */ jsx("dt", { className: styles$3.detailKey, children: "כיתוב כפתור" }),
+              /* @__PURE__ */ jsx("dd", { className: styles$3.detailText, children: selectedDraft.contentSnapshot?.ctaLabel || "—" })
+            ] }),
+            /* @__PURE__ */ jsxs("div", { className: styles$3.detailRow, children: [
+              /* @__PURE__ */ jsx("dt", { className: styles$3.detailKey, children: "כתובת כפתור" }),
+              /* @__PURE__ */ jsx("dd", { className: styles$3.detailText, children: selectedDraft.contentSnapshot?.ctaUrl || "—" })
+            ] })
+          ] })
+        ] }),
+        /* @__PURE__ */ jsxs("div", { className: styles$3.detailBlock, children: [
+          /* @__PURE__ */ jsx("h4", { className: styles$3.detailTitle, children: "סיכום זכאות" }),
+          /* @__PURE__ */ jsxs("ul", { className: styles$3.countList, children: [
+            /* @__PURE__ */ jsxs("li", { className: styles$3.countItem, children: [
+              "נבחרו:",
+              " ",
+              countOrDash(
+                selectedDraft.selectionSummary?.selectedCount
+              )
+            ] }),
+            /* @__PURE__ */ jsxs("li", { className: styles$3.countItem, children: [
+              "כפולים:",
+              " ",
+              countOrDash(
+                selectedDraft.selectionSummary?.duplicateCount
+              )
+            ] }),
+            /* @__PURE__ */ jsxs("li", { className: styles$3.countItem, children: [
+              "ייחודיים:",
+              " ",
+              countOrDash(
+                selectedDraft.selectionSummary?.uniqueCount
+              )
+            ] }),
+            /* @__PURE__ */ jsxs("li", { className: styles$3.countItem, children: [
+              "זכאים:",
+              " ",
+              countOrDash(
+                selectedDraft.selectionSummary?.eligibleCount
+              )
+            ] }),
+            /* @__PURE__ */ jsxs("li", { className: styles$3.countItem, children: [
+              "נפסלו:",
+              " ",
+              countOrDash(
+                selectedDraft.selectionSummary?.skippedCount
+              )
+            ] })
+          ] }),
+          selectedDraft.selectionSummary?.skippedByReason && typeof selectedDraft.selectionSummary.skippedByReason === "object" && Object.keys(
+            selectedDraft.selectionSummary.skippedByReason
+          ).length > 0 ? /* @__PURE__ */ jsx("ul", { className: styles$3.reasonList, children: Object.entries(
+            selectedDraft.selectionSummary.skippedByReason
+          ).map(([reason, count]) => /* @__PURE__ */ jsxs(
+            "li",
+            {
+              className: styles$3.reasonRow,
+              children: [
+                /* @__PURE__ */ jsx("span", { children: skipReasonLabel$1(reason) }),
+                /* @__PURE__ */ jsx("span", { children: countOrDash(count) })
+              ]
+            },
+            reason
+          )) }) : null
+        ] }),
+        /* @__PURE__ */ jsxs("div", { className: styles$3.detailBlock, children: [
+          /* @__PURE__ */ jsx("h4", { className: styles$3.detailTitle, children: "סטטוס" }),
+          /* @__PURE__ */ jsxs("ul", { className: styles$3.countList, children: [
+            /* @__PURE__ */ jsxs("li", { className: styles$3.countItem, children: [
+              "מצב: ",
+              statusLabel(selectedDraft.status)
+            ] }),
+            /* @__PURE__ */ jsxs("li", { className: styles$3.countItem, children: [
+              "נוצרה:",
+              " ",
+              formatDate$2(selectedDraft.createdAt)
+            ] }),
+            /* @__PURE__ */ jsxs("li", { className: styles$3.countItem, children: [
+              "עודכנה:",
+              " ",
+              formatDate$2(selectedDraft.updatedAt)
+            ] }),
+            selectedDraft.canceledAt ? /* @__PURE__ */ jsxs("li", { className: styles$3.countItem, children: [
+              "בוטלה:",
+              " ",
+              formatDate$2(
+                selectedDraft.canceledAt
+              )
+            ] }) : null
+          ] })
+        ] }),
+        cancelError ? /* @__PURE__ */ jsx("p", { className: styles$3.error, role: "alert", children: cancelError }) : null,
+        selectedDraft.status === "draft" ? confirmingCancelId === selectedDraft.campaignId ? /* @__PURE__ */ jsxs(
+          "div",
+          {
+            className: styles$3.confirmBox,
+            role: "group",
+            "aria-label": "אישור ביטול",
+            children: [
+              /* @__PURE__ */ jsx("span", { className: styles$3.confirmText, children: "לבטל את הטיוטה?" }),
+              /* @__PURE__ */ jsxs("div", { className: styles$3.confirmActions, children: [
+                /* @__PURE__ */ jsx(
+                  "button",
+                  {
+                    type: "button",
+                    className: styles$3.confirmYesButton,
+                    onClick: () => handleConfirmCancel(
+                      selectedDraft.campaignId
+                    ),
+                    disabled: cancelLoadingId === selectedDraft.campaignId,
+                    children: "כן, בטל טיוטה"
+                  }
+                ),
+                /* @__PURE__ */ jsx(
+                  "button",
+                  {
+                    type: "button",
+                    className: styles$3.confirmNoButton,
+                    onClick: () => setConfirmingCancelId(null),
+                    disabled: cancelLoadingId === selectedDraft.campaignId,
+                    children: "לא, השאר"
+                  }
+                )
+              ] })
+            ]
+          }
+        ) : /* @__PURE__ */ jsx(
+          "button",
+          {
+            type: "button",
+            className: styles$3.cancelButton,
+            onClick: () => setConfirmingCancelId(
+              selectedDraft.campaignId
+            ),
+            children: "בטל טיוטה"
+          }
+        ) : null
+      ] }) : null
+    ] }) : null
+  ] });
 }
 const root = "_root_am3ls_1";
 const header = "_header_am3ls_21";
@@ -3874,6 +4389,7 @@ function AdminMarketingView() {
         onCancel: handleCancelTestSend
       }
     ),
+    /* @__PURE__ */ jsx(MarketingDraftsPanel, {}),
     /* @__PURE__ */ jsxs("div", { className: styles$2.controls, children: [
       /* @__PURE__ */ jsx(
         "div",

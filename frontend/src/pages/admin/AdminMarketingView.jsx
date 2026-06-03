@@ -9,6 +9,7 @@ import {
 import MarketingComposerForm from "./marketing/MarketingComposerForm";
 import MarketingPreviewPanel from "./marketing/MarketingPreviewPanel";
 import MarketingTestSendConfirm from "./marketing/MarketingTestSendConfirm";
+import MarketingDraftsPanel from "./marketing/MarketingDraftsPanel";
 import styles from "./AdminMarketingView.module.css";
 
 const FILTERS = [
@@ -617,6 +618,8 @@ export default function AdminMarketingView() {
                 onConfirm={handleConfirmTestSend}
                 onCancel={handleCancelTestSend}
             />
+
+            <MarketingDraftsPanel />
 
             <div className={styles.controls}>
                 <div

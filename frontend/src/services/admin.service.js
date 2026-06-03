@@ -185,6 +185,25 @@ export function createMarketingCampaignDraft(payload) {
     return api.post("/admin/marketing/campaigns/drafts", payload);
 }
 
+// Marketing emails — draft management v1 (own-admin scope; read + cancel only;
+// NOT gated by the create flag; no send, no Mailjet, no token). Auth/CSRF
+// inherited from the api instance.
+export function listMarketingCampaignDrafts(params = {}) {
+    const query = {};
+    if (params.status !== undefined) query.status = params.status;
+    if (params.page !== undefined) query.page = params.page;
+    if (params.limit !== undefined) query.limit = params.limit;
+    return api.get("/admin/marketing/campaigns/drafts", { params: query });
+}
+
+export function getMarketingCampaignDraft(campaignId) {
+    return api.get(`/admin/marketing/campaigns/drafts/${campaignId}`);
+}
+
+export function cancelMarketingCampaignDraft(campaignId) {
+    return api.patch(`/admin/marketing/campaigns/drafts/${campaignId}/cancel`);
+}
+
 // Organizations (admin)
 export function listAdminOrganizations(params = {}) {
     return api.get("/admin/orgs", { params });
