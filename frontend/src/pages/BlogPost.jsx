@@ -209,7 +209,7 @@ export default function BlogPost() {
                 />
                 <p className={styles.status}>המאמר לא נמצא.</p>
                 <div className={styles.backRow}>
-                    <Link to="/blog" className={styles.backLink}>
+                    <Link to="/blog/" className={styles.backLink}>
                         חזרה לבלוג
                     </Link>
                 </div>
@@ -228,7 +228,7 @@ export default function BlogPost() {
                 />
                 <p className={styles.statusError}>{error || "שגיאה בטעינה"}</p>
                 <div className={styles.backRow}>
-                    <Link to="/blog" className={styles.backLink}>
+                    <Link to="/blog/" className={styles.backLink}>
                         חזרה לבלוג
                     </Link>
                 </div>
@@ -381,7 +381,7 @@ export default function BlogPost() {
                     )}
 
                     <div className={styles.backRow}>
-                        <Link to="/blog" className={styles.backLink}>
+                        <Link to="/blog/" className={styles.backLink}>
                             חזרה לבלוג
                         </Link>
                     </div>

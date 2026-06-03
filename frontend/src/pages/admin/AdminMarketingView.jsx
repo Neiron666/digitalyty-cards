@@ -84,6 +84,26 @@ export default function AdminMarketingView() {
     const [lastSentAt, setLastSentAt] = useState(null);
     const [pendingForm, setPendingForm] = useState(null);
 
+    // Local recipient selection (v1: current visible page only).
+    // Keyed by userId only - never stores raw emails as a send payload.
+    // Selection is NOT send / NOT dry-run / NOT campaign; causes no requests.
+    const [selectedRecipientIds, setSelectedRecipientIds] = useState(
+        () => new Set(),
+    );
+
+    function handleToggleRecipient(userId) {
+        setSelectedRecipientIds((prev) => {
+            const next = new Set(prev);
+            if (next.has(userId)) next.delete(userId);
+            else next.add(userId);
+            return next;
+        });
+    }
+
+    function handleClearSelection() {
+        setSelectedRecipientIds(new Set());
+    }
+
     async function handlePreview(form) {
         setPreviewError("");
         setPreviewLoading(true);
@@ -270,6 +290,13 @@ export default function AdminMarketingView() {
         };
     }, [activeCohort, appliedQuery]);
 
+    // Clear selection whenever the filter cohort or applied search changes.
+    // v1 selection is scoped to the currently visible page; this prevents any
+    // hidden selection carrying across filters/search (no select-all-across).
+    useEffect(() => {
+        setSelectedRecipientIds(new Set());
+    }, [activeCohort, appliedQuery]);
+
     const items = Array.isArray(data?.items) ? data.items : [];
     const totalCandidates =
         typeof data?.totalCandidates === "number" ? data.totalCandidates : null;
@@ -279,6 +306,13 @@ export default function AdminMarketingView() {
         typeof data?.suppressedOnPage === "number"
             ? data.suppressedOnPage
             : null;
+
+    // Count only currently visible items that are selected. Never render the
+    // raw Set size, so the number can never exceed the visible recipients.
+    const selectedVisibleCount = items.reduce(
+        (acc, u) => acc + (selectedRecipientIds.has(u.userId) ? 1 : 0),
+        0,
+    );
 
     function onSubmitSearch(e) {
         e.preventDefault();
@@ -397,47 +431,82 @@ export default function AdminMarketingView() {
             ) : items.length === 0 ? (
                 <p className={styles.muted}>אין נמענים זמינים לסינון הנוכחי.</p>
             ) : (
-                <ul className={styles.list}>
-                    <li className={`${styles.row} ${styles.rowHead}`}>
-                        <span className={styles.cellEmail}>אימייל</span>
-                        <span className={styles.cell}>שם</span>
-                        <span className={styles.cell}>מסלול</span>
-                        <span className={styles.cell}>מנוי</span>
-                        <span className={styles.cell}>ניסיון</span>
-                        <span className={styles.cell}>אימות</span>
-                        <span className={styles.cell}>הסכמה</span>
-                    </li>
-                    {items.map((u) => (
-                        <li className={styles.row} key={u.userId}>
-                            <span className={styles.cellEmail}>{u.email}</span>
-                            <span className={styles.cell}>
-                                {u.firstName || "—"}
-                            </span>
-                            <span className={styles.cell}>
-                                {planLabel(u.plan)}
-                            </span>
-                            <span className={styles.cell}>
-                                {subStatusLabel(u.subscriptionStatus)}
-                            </span>
-                            <span className={styles.cell}>
-                                {u.isTrialActive ? "פעיל" : "—"}
-                            </span>
-                            <span className={styles.cell}>
-                                {u.isVerified ? "מאומת" : "לא מאומת"}
-                            </span>
-                            <span className={styles.cell}>
-                                {consentSourceLabel(
-                                    u.emailMarketingConsentSource,
-                                )}
-                                {u.emailMarketingConsentAt
-                                    ? ` · ${formatDate(
-                                          u.emailMarketingConsentAt,
-                                      )}`
-                                    : ""}
-                            </span>
+                <>
+                    <div className={styles.selectionBar}>
+                        <span className={styles.selectionCount}>
+                            נבחרו {selectedVisibleCount} נמענים
+                        </span>
+                        <button
+                            type="button"
+                            className={styles.clearBtn}
+                            onClick={handleClearSelection}
+                            disabled={selectedVisibleCount === 0}
+                        >
+                            נקה בחירה
+                        </button>
+                        <span className={styles.selectionNote}>
+                            בחירת נמענים היא להכנה בלבד. שליחה לרשימה תתווסף
+                            בשלב נפרד לאחר בדיקת זכאות.
+                        </span>
+                    </div>
+                    <ul className={styles.list}>
+                        <li className={`${styles.row} ${styles.rowHead}`}>
+                            <span className={styles.checkboxCell}>בחירה</span>
+                            <span className={styles.cellEmail}>אימייל</span>
+                            <span className={styles.cell}>שם</span>
+                            <span className={styles.cell}>מסלול</span>
+                            <span className={styles.cell}>מנוי</span>
+                            <span className={styles.cell}>ניסיון</span>
+                            <span className={styles.cell}>אימות</span>
+                            <span className={styles.cell}>הסכמה</span>
                         </li>
-                    ))}
-                </ul>
+                        {items.map((u) => (
+                            <li className={styles.row} key={u.userId}>
+                                <span className={styles.checkboxCell}>
+                                    <input
+                                        type="checkbox"
+                                        className={styles.checkbox}
+                                        checked={selectedRecipientIds.has(
+                                            u.userId,
+                                        )}
+                                        onChange={() =>
+                                            handleToggleRecipient(u.userId)
+                                        }
+                                        aria-label={`בחר נמען ${u.email}`}
+                                    />
+                                </span>
+                                <span className={styles.cellEmail}>
+                                    {u.email}
+                                </span>
+                                <span className={styles.cell}>
+                                    {u.firstName || "—"}
+                                </span>
+                                <span className={styles.cell}>
+                                    {planLabel(u.plan)}
+                                </span>
+                                <span className={styles.cell}>
+                                    {subStatusLabel(u.subscriptionStatus)}
+                                </span>
+                                <span className={styles.cell}>
+                                    {u.isTrialActive ? "פעיל" : "—"}
+                                </span>
+                                <span className={styles.cell}>
+                                    {u.isVerified ? "מאומת" : "לא מאומת"}
+                                </span>
+                                <span className={styles.cell}>
+                                    {consentSourceLabel(
+                                        u.emailMarketingConsentSource,
+                                    )}
+                                    {u.emailMarketingConsentAt
+                                        ? ` · ${formatDate(
+                                              u.emailMarketingConsentAt,
+                                          )}`
+                                        : ""}
+                                </span>
+                            </li>
+                        ))}
+                    </ul>
+                </>
             )}
         </section>
     );

@@ -595,7 +595,7 @@ export default function Pricing() {
                         <div className={styles.b2bFooter}>
                             <Button
                                 as={Link}
-                                to="/contact"
+                                to="/contact/"
                                 variant="secondary"
                                 className={styles.b2bCta}
                                 onClick={() =>

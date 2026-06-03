@@ -514,7 +514,7 @@ export default function Cards() {
                                 </Button>
                                 <Button
                                     as={Link}
-                                    to="/pricing"
+                                    to="/pricing/"
                                     variant="secondary"
                                 >
                                     מסלולים ומחירים

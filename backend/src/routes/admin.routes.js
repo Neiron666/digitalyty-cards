@@ -76,6 +76,7 @@ import { listMarketingRecipients } from "../controllers/adminMarketing.controlle
 import {
     previewMarketingCampaign,
     testSendMarketingCampaign,
+    dryRunMarketingCampaign,
 } from "../controllers/adminMarketingCampaign.controller.js";
 import { upload } from "../middlewares/upload.middleware.js";
 
@@ -105,6 +106,8 @@ router.get("/marketing/recipients", listMarketingRecipients);
 router.post("/marketing/campaigns/preview", previewMarketingCampaign);
 // Marketing emails — feature-flagged single test-send to admin_self only.
 router.post("/marketing/campaigns/test-send", testSendMarketingCampaign);
+// Marketing emails — read-only dry-run revalidation of selected userIds (no send, no DB write, no Mailjet, no token).
+router.post("/marketing/campaigns/dry-run", dryRunMarketingCampaign);
 
 // safe write actions (no generic patch)
 router.post("/orgs", adminCreateOrganization);

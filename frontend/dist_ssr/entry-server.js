@@ -952,11 +952,11 @@ function Header() {
   const navItems = useMemo(() => {
     const items = [
       { to: "/", end: true, label: "כרטיס ביקור דיגיטלי" },
-      { to: "/cards", label: "דוגמאות" },
-      { to: "/pricing", label: "מחירים" },
-      { to: "/guides", label: "מדריכים" },
-      { to: "/blog", label: "בלוג" },
-      { to: "/contact", label: "צור קשר" }
+      { to: "/cards/", label: "דוגמאות" },
+      { to: "/pricing/", label: "מחירים" },
+      { to: "/guides/", label: "מדריכים" },
+      { to: "/blog/", label: "בלוג" },
+      { to: "/contact/", label: "צור קשר" }
     ];
     if (isAuth) {
       items.unshift({ to: "/edit", label: "הכרטיס שלי" });
@@ -1538,12 +1538,12 @@ function Footer({ onOpenPrivacyPrefs }) {
       /* @__PURE__ */ jsxs("div", { className: styles$k.col, children: [
         /* @__PURE__ */ jsx("div", { className: styles$k.title, children: "קישורים" }),
         /* @__PURE__ */ jsx(Link, { to: "/#features", className: styles$k.link, children: "תכונות" }),
-        /* @__PURE__ */ jsx(Link, { to: "/cards", className: styles$k.link, children: "דוגמאות" }),
+        /* @__PURE__ */ jsx(Link, { to: "/cards/", className: styles$k.link, children: "דוגמאות" }),
         /* @__PURE__ */ jsx(Link, { to: "/#how", className: styles$k.link, children: "איך זה עובד" }),
         /* @__PURE__ */ jsx(Link, { to: "/#faq", className: styles$k.link, children: "שאלות נפוצות" }),
-        /* @__PURE__ */ jsx(Link, { to: "/pricing", className: styles$k.link, children: "מחירים" }),
-        /* @__PURE__ */ jsx(Link, { to: "/guides", className: styles$k.link, children: "מדריכים" }),
-        /* @__PURE__ */ jsx(Link, { to: "/blog", className: styles$k.link, children: "בלוג" })
+        /* @__PURE__ */ jsx(Link, { to: "/pricing/", className: styles$k.link, children: "מחירים" }),
+        /* @__PURE__ */ jsx(Link, { to: "/guides/", className: styles$k.link, children: "מדריכים" }),
+        /* @__PURE__ */ jsx(Link, { to: "/blog/", className: styles$k.link, children: "בלוג" })
       ] }),
       /* @__PURE__ */ jsxs("div", { className: styles$k.col, children: [
         /* @__PURE__ */ jsx("div", { className: styles$k.title, children: "חשבון" }),
@@ -3559,7 +3559,7 @@ function Home() {
           ] }),
           /* @__PURE__ */ jsxs("p", { className: styles$d.analyticsCaveat, children: [
             "* ניתוח נתונים מלא זמין ב",
-            /* @__PURE__ */ jsx(Link, { to: "/pricing", className: styles$d.caveatLink, children: "מסלול פרימיום" }),
+            /* @__PURE__ */ jsx(Link, { to: "/pricing/", className: styles$d.caveatLink, children: "מסלול פרימיום" }),
             ". במסלול חינמי ניתן לצפות בתצוגה לדוגמה."
           ] })
         ] })
@@ -3723,7 +3723,7 @@ function Home() {
       /* @__PURE__ */ jsx("div", { className: styles$d.center, children: /* @__PURE__ */ jsx(
         Link,
         {
-          to: "/cards",
+          to: "/cards/",
           className: styles$d.templatesSeeAll,
           onClick: () => trackSiteClick({
             action: SITE_ACTIONS.home_templates_see_all,
@@ -4128,7 +4128,7 @@ function Contact() {
             Button,
             {
               as: Link,
-              to: "/pricing",
+              to: "/pricing/",
               variant: "secondary",
               className: styles$c.heroSecondary,
               children: "לראות מסלולים ומחירים"
@@ -4542,7 +4542,7 @@ function Contact() {
             children: "שלחו לנו מייל"
           }
         ),
-        /* @__PURE__ */ jsx(Button, { as: Link, to: "/pricing", variant: "secondary", children: "מסלולים ומחירים" })
+        /* @__PURE__ */ jsx(Button, { as: Link, to: "/pricing/", variant: "secondary", children: "מסלולים ומחירים" })
       ] })
     ] }) })
   ] });
@@ -4981,7 +4981,7 @@ function Blog() {
         }
       )
     ] }) }),
-    /* @__PURE__ */ jsx("p", { className: styles$b.seeExamples, children: /* @__PURE__ */ jsx(Link, { to: "/cards", children: "ראו דוגמאות לכרטיסי ביקור דיגיטליים" }) }),
+    /* @__PURE__ */ jsx("p", { className: styles$b.seeExamples, children: /* @__PURE__ */ jsx(Link, { to: "/cards/", children: "ראו דוגמאות לכרטיסי ביקור דיגיטליים" }) }),
     /* @__PURE__ */ jsx("section", { className: pub.sectionDark, id: "faq", children: /* @__PURE__ */ jsxs("div", { className: pub.sectionWrap, children: [
       /* @__PURE__ */ jsx("h2", { className: pub.h2Gold, children: "שאלות נפוצות על הבלוג של Cardigo" }),
       /* @__PURE__ */ jsx("div", { className: pub.faq, children: BLOG_FAQ.map((item, i) => /* @__PURE__ */ jsxs("details", { className: pub.qa, children: [
@@ -5658,7 +5658,7 @@ function Pricing() {
             Button,
             {
               as: Link,
-              to: "/contact",
+              to: "/contact/",
               variant: "secondary",
               className: styles$9.b2bCta,
               onClick: () => trackSiteClick({
@@ -6047,7 +6047,7 @@ function Guides() {
         }
       )
     ] }) }),
-    /* @__PURE__ */ jsx("p", { className: styles$8.seeExamples, children: /* @__PURE__ */ jsx(Link, { to: "/cards", children: "ראו דוגמאות לכרטיסי ביקור דיגיטליים" }) }),
+    /* @__PURE__ */ jsx("p", { className: styles$8.seeExamples, children: /* @__PURE__ */ jsx(Link, { to: "/cards/", children: "ראו דוגמאות לכרטיסי ביקור דיגיטליים" }) }),
     /* @__PURE__ */ jsx("section", { className: pub.sectionDark, id: "faq", children: /* @__PURE__ */ jsxs("div", { className: pub.sectionWrap, children: [
       /* @__PURE__ */ jsx("h2", { className: pub.h2Gold, children: "שאלות נפוצות על המדריכים של Cardigo" }),
       /* @__PURE__ */ jsx("div", { className: pub.faq, children: GUIDES_FAQ.map((item, i) => /* @__PURE__ */ jsxs("details", { className: pub.qa, children: [
@@ -6608,7 +6608,7 @@ function Cards() {
             Button,
             {
               as: Link,
-              to: "/pricing",
+              to: "/pricing/",
               variant: "secondary",
               children: "מסלולים ומחירים"
             }
@@ -6865,7 +6865,7 @@ function BlogPost() {
         }
       ),
       /* @__PURE__ */ jsx("p", { className: styles$6.status, children: "המאמר לא נמצא." }),
-      /* @__PURE__ */ jsx("div", { className: styles$6.backRow, children: /* @__PURE__ */ jsx(Link, { to: "/blog", className: styles$6.backLink, children: "חזרה לבלוג" }) })
+      /* @__PURE__ */ jsx("div", { className: styles$6.backRow, children: /* @__PURE__ */ jsx(Link, { to: "/blog/", className: styles$6.backLink, children: "חזרה לבלוג" }) })
     ] });
   }
   if (error2 || !post) {
@@ -6879,7 +6879,7 @@ function BlogPost() {
         }
       ),
       /* @__PURE__ */ jsx("p", { className: styles$6.statusError, children: error2 || "שגיאה בטעינה" }),
-      /* @__PURE__ */ jsx("div", { className: styles$6.backRow, children: /* @__PURE__ */ jsx(Link, { to: "/blog", className: styles$6.backLink, children: "חזרה לבלוג" }) })
+      /* @__PURE__ */ jsx("div", { className: styles$6.backRow, children: /* @__PURE__ */ jsx(Link, { to: "/blog/", className: styles$6.backLink, children: "חזרה לבלוג" }) })
     ] });
   }
   const seoTitle = post.seo?.title || post.title || "בלוג | Cardigo";
@@ -7000,7 +7000,7 @@ function BlogPost() {
           ]
         }
       ),
-      /* @__PURE__ */ jsx("div", { className: styles$6.backRow, children: /* @__PURE__ */ jsx(Link, { to: "/blog", className: styles$6.backLink, children: "חזרה לבלוג" }) })
+      /* @__PURE__ */ jsx("div", { className: styles$6.backRow, children: /* @__PURE__ */ jsx(Link, { to: "/blog/", className: styles$6.backLink, children: "חזרה לבלוג" }) })
     ] }) })
   ] });
 }
@@ -7217,7 +7217,7 @@ function GuidePost() {
         }
       ),
       /* @__PURE__ */ jsx("p", { className: styles$5.status, children: "המדריך לא נמצא." }),
-      /* @__PURE__ */ jsx("div", { className: styles$5.backRow, children: /* @__PURE__ */ jsx(Link, { to: "/guides", className: styles$5.backLink, children: "חזרה למדריכים" }) })
+      /* @__PURE__ */ jsx("div", { className: styles$5.backRow, children: /* @__PURE__ */ jsx(Link, { to: "/guides/", className: styles$5.backLink, children: "חזרה למדריכים" }) })
     ] });
   }
   if (error2 || !post) {
@@ -7231,7 +7231,7 @@ function GuidePost() {
         }
       ),
       /* @__PURE__ */ jsx("p", { className: styles$5.statusError, children: error2 || "שגיאה בטעינה" }),
-      /* @__PURE__ */ jsx("div", { className: styles$5.backRow, children: /* @__PURE__ */ jsx(Link, { to: "/guides", className: styles$5.backLink, children: "חזרה למדריכים" }) })
+      /* @__PURE__ */ jsx("div", { className: styles$5.backRow, children: /* @__PURE__ */ jsx(Link, { to: "/guides/", className: styles$5.backLink, children: "חזרה למדריכים" }) })
     ] });
   }
   const seoTitle = post.seo?.title || post.title || "מדריכים | Cardigo";
@@ -7349,7 +7349,7 @@ function GuidePost() {
           ]
         }
       ),
-      /* @__PURE__ */ jsx("div", { className: styles$5.backRow, children: /* @__PURE__ */ jsx(Link, { to: "/guides", className: styles$5.backLink, children: "חזרה למדריכים" }) })
+      /* @__PURE__ */ jsx("div", { className: styles$5.backRow, children: /* @__PURE__ */ jsx(Link, { to: "/guides/", className: styles$5.backLink, children: "חזרה למדריכים" }) })
     ] }) })
   ] });
 }
@@ -8272,7 +8272,7 @@ function PaymentPolicy() {
         /* @__PURE__ */ jsxs("div", { className: styles$1.relatedLinks, children: [
           /* @__PURE__ */ jsx(Link, { to: "/terms", className: styles$1.relatedLink, children: "תנאי שימוש" }),
           /* @__PURE__ */ jsx(Link, { to: "/privacy", className: styles$1.relatedLink, children: "מדיניות פרטיות" }),
-          /* @__PURE__ */ jsx(Link, { to: "/pricing", className: styles$1.relatedLink, children: "דף התמחור" })
+          /* @__PURE__ */ jsx(Link, { to: "/pricing/", className: styles$1.relatedLink, children: "דף התמחור" })
         ] }),
         /* @__PURE__ */ jsx("p", { children: "תאריך עדכון אחרון: 25.04.2026" })
       ] })
@@ -8310,7 +8310,7 @@ const VerifyEmail = lazy(() => import("./assets/VerifyEmail-BdTNw4a4.js"));
 const Unsubscribe = lazy(() => import("./assets/Unsubscribe-cH0SJ-jv.js"));
 const Dashboard = lazy(() => import("./assets/Dashboard-CA_zW0ja.js"));
 const EditCard = lazy(() => import("./assets/EditCard-Cr3Oa54w.js"));
-const Admin = lazy(() => import("./assets/Admin-ilJ6UJvA.js"));
+const Admin = lazy(() => import("./assets/Admin-BapwtMmn.js"));
 const OrgInvites = lazy(() => import("./assets/OrgInvites-F6NGH4uL.js"));
 const Inbox = lazy(() => import("./assets/Inbox-DkfIAa4C.js"));
 const PublicCard = lazy(() => import("./assets/PublicCard-DW6d0H_I.js"));

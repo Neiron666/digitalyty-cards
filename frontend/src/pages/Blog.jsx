@@ -341,7 +341,7 @@ export default function Blog() {
 
             {/* ── Bridge → /cards ─────────────────────────── */}
             <p className={styles.seeExamples}>
-                <Link to="/cards">ראו דוגמאות לכרטיסי ביקור דיגיטליים</Link>
+                <Link to="/cards/">ראו דוגמאות לכרטיסי ביקור דיגיטליים</Link>
             </p>
 
             {/* ── FAQ ──────────────────────────────────────── */}

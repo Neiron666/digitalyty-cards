@@ -37,7 +37,7 @@ export default function Footer({ onOpenPrivacyPrefs }) {
                     <Link to="/#features" className={styles.link}>
                         תכונות
                     </Link>
-                    <Link to="/cards" className={styles.link}>
+                    <Link to="/cards/" className={styles.link}>
                         דוגמאות
                     </Link>
                     <Link to="/#how" className={styles.link}>
@@ -46,13 +46,13 @@ export default function Footer({ onOpenPrivacyPrefs }) {
                     <Link to="/#faq" className={styles.link}>
                         שאלות נפוצות
                     </Link>
-                    <Link to="/pricing" className={styles.link}>
+                    <Link to="/pricing/" className={styles.link}>
                         מחירים
                     </Link>
-                    <Link to="/guides" className={styles.link}>
+                    <Link to="/guides/" className={styles.link}>
                         מדריכים
                     </Link>
-                    <Link to="/blog" className={styles.link}>
+                    <Link to="/blog/" className={styles.link}>
                         בלוג
                     </Link>
                 </div>

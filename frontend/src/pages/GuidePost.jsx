@@ -210,7 +210,7 @@ export default function GuidePost() {
                 />
                 <p className={styles.status}>המדריך לא נמצא.</p>
                 <div className={styles.backRow}>
-                    <Link to="/guides" className={styles.backLink}>
+                    <Link to="/guides/" className={styles.backLink}>
                         חזרה למדריכים
                     </Link>
                 </div>
@@ -229,7 +229,7 @@ export default function GuidePost() {
                 />
                 <p className={styles.statusError}>{error || "שגיאה בטעינה"}</p>
                 <div className={styles.backRow}>
-                    <Link to="/guides" className={styles.backLink}>
+                    <Link to="/guides/" className={styles.backLink}>
                         חזרה למדריכים
                     </Link>
                 </div>
@@ -379,7 +379,7 @@ export default function GuidePost() {
                     )}
 
                     <div className={styles.backRow}>
-                        <Link to="/guides" className={styles.backLink}>
+                        <Link to="/guides/" className={styles.backLink}>
                             חזרה למדריכים
                         </Link>
                     </div>

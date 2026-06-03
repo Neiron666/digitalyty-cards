@@ -248,7 +248,7 @@ export default function PaymentPolicy() {
                             <Link to="/privacy" className={styles.relatedLink}>
                                 מדיניות פרטיות
                             </Link>
-                            <Link to="/pricing" className={styles.relatedLink}>
+                            <Link to="/pricing/" className={styles.relatedLink}>
                                 דף התמחור
                             </Link>
                         </div>

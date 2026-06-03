@@ -739,7 +739,7 @@ export default function Home() {
                     </p>
                     <p className={styles.analyticsCaveat}>
                         * ניתוח נתונים מלא זמין ב
-                        <Link to="/pricing" className={styles.caveatLink}>
+                        <Link to="/pricing/" className={styles.caveatLink}>
                             מסלול פרימיום
                         </Link>
                         . במסלול חינמי ניתן לצפות בתצוגה לדוגמה.
@@ -976,7 +976,7 @@ export default function Home() {
                     </div>
                     <div className={styles.center}>
                         <Link
-                            to="/cards"
+                            to="/cards/"
                             className={styles.templatesSeeAll}
                             onClick={() =>
                                 trackSiteClick({

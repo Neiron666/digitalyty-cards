@@ -163,6 +163,71 @@
     font-size: var(--fs-body-sm);
 }
 
+.selectionBar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 12px;
+    padding: 8px 10px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    background: var(--bg-soft, transparent);
+    min-width: 0;
+}
+
+.selectionCount {
+    font-size: var(--fs-body-sm);
+    font-weight: 800;
+    color: var(--text-main);
+}
+
+.clearBtn {
+    appearance: none;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text-main);
+    border-radius: 999px;
+    padding: 6px 12px;
+    font: inherit;
+    cursor: pointer;
+}
+
+.clearBtn:disabled {
+    opacity: 0.5;
+    cursor: default;
+}
+
+.clearBtn:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--gold-fade);
+}
+
+.selectionNote {
+    flex: 1 1 220px;
+    min-width: 0;
+    overflow-wrap: anywhere;
+    font-size: var(--fs-caption);
+    opacity: 0.85;
+    color: var(--text-main);
+}
+
+.checkboxCell {
+    flex: 0 0 auto;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.checkbox {
+    cursor: pointer;
+}
+
+.checkbox:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--gold-fade);
+}
+
 .list {
     list-style: none;
     margin: 0;

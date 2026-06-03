@@ -17,6 +17,10 @@ import {
 } from "../services/mailjet.service.js";
 import { issueEmailUnsubscribeToken } from "../utils/issueEmailUnsubscribeToken.util.js";
 import { logAdminAction } from "../services/adminAudit.service.js";
+import {
+    MAX_MARKETING_DRY_RUN_USER_IDS,
+    revalidateMarketingRecipientUserIds,
+} from "../utils/marketingRecipientEligibility.util.js";
 
 /**
  * POST /api/admin/marketing/campaigns/preview
@@ -316,5 +320,75 @@ export async function testSendMarketingCampaign(req, res) {
         return res
             .status(500)
             .json({ ok: false, sent: false, message: "Test send failed" });
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Dry-run (admin-only, read-only). Revalidates selected userIds against current
+// backend eligibility and returns safe counts + skip reasons. NO send, NO
+// Mailjet, NO token, NO campaign row, NO DB write, NO raw/masked email.
+// ---------------------------------------------------------------------------
+
+/**
+ * POST /api/admin/marketing/campaigns/dry-run
+ * Body: { userIds: string[], payload?: any }
+ * Returns: { ok:true, selectedCount, duplicateCount, uniqueCount,
+ *   eligibleCount, skippedCount, skippedByReason, skipped, warnings }
+ * requireAdmin + CSRF inherited from the /api/admin mount + global csrfGuard.
+ */
+export async function dryRunMarketingCampaign(req, res) {
+    const userIds = req.body?.userIds;
+
+    // Structural validation only (recipients-only contract).
+    if (typeof userIds === "undefined" || userIds === null) {
+        return res
+            .status(400)
+            .json({ ok: false, message: "userIds is required" });
+    }
+    if (!Array.isArray(userIds)) {
+        return res
+            .status(400)
+            .json({ ok: false, message: "userIds must be an array" });
+    }
+    if (userIds.length === 0) {
+        return res
+            .status(400)
+            .json({ ok: false, message: "userIds must not be empty" });
+    }
+    if (userIds.length > MAX_MARKETING_DRY_RUN_USER_IDS) {
+        return res
+            .status(400)
+            .json({ ok: false, message: "too many userIds" });
+    }
+
+    // Content payload is NOT part of dry-run. Detect presence only; never
+    // destructure/read/validate/log/echo it.
+    const warnings = [];
+    if (typeof req.body?.payload !== "undefined") {
+        warnings.push("PAYLOAD_IGNORED");
+    }
+
+    try {
+        const result = await revalidateMarketingRecipientUserIds(userIds);
+        return res.json({
+            ok: true,
+            selectedCount: result.selectedCount,
+            duplicateCount: result.duplicateCount,
+            uniqueCount: result.uniqueCount,
+            eligibleCount: result.eligibleCount,
+            skippedCount: result.skippedCount,
+            skippedByReason: result.skippedByReason,
+            skipped: result.skipped,
+            warnings,
+        });
+    } catch (err) {
+        // Safe label only — never log req.body or the raw userIds array.
+        console.error(
+            "[adminMarketingCampaign] dry-run failed",
+            err?.message || err,
+        );
+        return res
+            .status(500)
+            .json({ ok: false, message: "Dry run failed" });
     }
 }

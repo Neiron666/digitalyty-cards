@@ -47,11 +47,11 @@ export default function Header() {
     const navItems = useMemo(() => {
         const items = [
             { to: "/", end: true, label: "כרטיס ביקור דיגיטלי" },
-            { to: "/cards", label: "דוגמאות" },
-            { to: "/pricing", label: "מחירים" },
-            { to: "/guides", label: "מדריכים" },
-            { to: "/blog", label: "בלוג" },
-            { to: "/contact", label: "צור קשר" },
+            { to: "/cards/", label: "דוגמאות" },
+            { to: "/pricing/", label: "מחירים" },
+            { to: "/guides/", label: "מדריכים" },
+            { to: "/blog/", label: "בלוג" },
+            { to: "/contact/", label: "צור קשר" },
         ];
 
         if (isAuth) {

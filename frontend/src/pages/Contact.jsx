@@ -186,7 +186,7 @@ export default function Contact() {
 
                             <Button
                                 as={Link}
-                                to="/pricing"
+                                to="/pricing/"
                                 variant="secondary"
                                 className={styles.heroSecondary}
                             >
@@ -610,7 +610,7 @@ export default function Contact() {
                         >
                             שלחו לנו מייל
                         </Button>
-                        <Button as={Link} to="/pricing" variant="secondary">
+                        <Button as={Link} to="/pricing/" variant="secondary">
                             מסלולים ומחירים
                         </Button>
                     </div>

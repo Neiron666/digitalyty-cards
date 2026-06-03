@@ -3302,30 +3302,36 @@ function MarketingTestSendConfirm({
     }
   );
 }
-const root = "_root_159ax_1";
-const header = "_header_159ax_21";
-const titleWrap = "_titleWrap_159ax_37";
-const title$1 = "_title_159ax_37";
-const subtitle$1 = "_subtitle_159ax_65";
-const note = "_note_159ax_77";
-const noteStrong = "_noteStrong_159ax_99";
-const controls = "_controls_159ax_107";
-const filters = "_filters_159ax_123";
-const chip = "_chip_159ax_137";
-const chipActive = "_chipActive_159ax_169";
-const searchForm = "_searchForm_159ax_179";
-const searchLabel = "_searchLabel_159ax_193";
-const searchInput$1 = "_searchInput_159ax_205";
-const searchBtn = "_searchBtn_159ax_239";
-const summary = "_summary_159ax_271";
-const summaryItem = "_summaryItem_159ax_289";
-const error = "_error_159ax_307";
-const muted$1 = "_muted_159ax_319";
-const list = "_list_159ax_331";
-const row$1 = "_row_159ax_349";
-const rowHead = "_rowHead_159ax_375";
-const cell$1 = "_cell_159ax_387";
-const cellEmail = "_cellEmail_159ax_399";
+const root = "_root_x14tt_1";
+const header = "_header_x14tt_21";
+const titleWrap = "_titleWrap_x14tt_37";
+const title$1 = "_title_x14tt_37";
+const subtitle$1 = "_subtitle_x14tt_65";
+const note = "_note_x14tt_77";
+const noteStrong = "_noteStrong_x14tt_99";
+const controls = "_controls_x14tt_107";
+const filters = "_filters_x14tt_123";
+const chip = "_chip_x14tt_137";
+const chipActive = "_chipActive_x14tt_169";
+const searchForm = "_searchForm_x14tt_179";
+const searchLabel = "_searchLabel_x14tt_193";
+const searchInput$1 = "_searchInput_x14tt_205";
+const searchBtn = "_searchBtn_x14tt_239";
+const summary = "_summary_x14tt_271";
+const summaryItem = "_summaryItem_x14tt_289";
+const error = "_error_x14tt_307";
+const muted$1 = "_muted_x14tt_319";
+const selectionBar = "_selectionBar_x14tt_331";
+const selectionCount = "_selectionCount_x14tt_355";
+const clearBtn = "_clearBtn_x14tt_367";
+const selectionNote = "_selectionNote_x14tt_409";
+const checkboxCell = "_checkboxCell_x14tt_427";
+const checkbox = "_checkbox_x14tt_427";
+const list = "_list_x14tt_461";
+const row$1 = "_row_x14tt_479";
+const rowHead = "_rowHead_x14tt_505";
+const cell$1 = "_cell_x14tt_517";
+const cellEmail = "_cellEmail_x14tt_529";
 const styles$2 = {
   root,
   header,
@@ -3346,6 +3352,12 @@ const styles$2 = {
   summaryItem,
   error,
   muted: muted$1,
+  selectionBar,
+  selectionCount,
+  clearBtn,
+  selectionNote,
+  checkboxCell,
+  checkbox,
   list,
   row: row$1,
   rowHead,
@@ -3411,6 +3423,20 @@ function AdminMarketingView() {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [lastSentAt, setLastSentAt] = useState(null);
   const [pendingForm, setPendingForm] = useState(null);
+  const [selectedRecipientIds, setSelectedRecipientIds] = useState(
+    () => /* @__PURE__ */ new Set()
+  );
+  function handleToggleRecipient(userId) {
+    setSelectedRecipientIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(userId)) next.delete(userId);
+      else next.add(userId);
+      return next;
+    });
+  }
+  function handleClearSelection() {
+    setSelectedRecipientIds(/* @__PURE__ */ new Set());
+  }
   async function handlePreview(form2) {
     setPreviewError("");
     setPreviewLoading(true);
@@ -3563,10 +3589,17 @@ function AdminMarketingView() {
       alive = false;
     };
   }, [activeCohort, appliedQuery]);
+  useEffect(() => {
+    setSelectedRecipientIds(/* @__PURE__ */ new Set());
+  }, [activeCohort, appliedQuery]);
   const items = Array.isArray(data?.items) ? data.items : [];
   const totalCandidates = typeof data?.totalCandidates === "number" ? data.totalCandidates : null;
   const returnedCount = typeof data?.returnedCount === "number" ? data.returnedCount : null;
   const suppressedOnPage = typeof data?.suppressedOnPage === "number" ? data.suppressedOnPage : null;
+  const selectedVisibleCount = items.reduce(
+    (acc, u) => acc + (selectedRecipientIds.has(u.userId) ? 1 : 0),
+    0
+  );
   function onSubmitSearch(e) {
     e.preventDefault();
     setAppliedQuery(searchInput2.trim());
@@ -3668,32 +3701,65 @@ function AdminMarketingView() {
       ] })
     ] }),
     error2 ? /* @__PURE__ */ jsx("p", { className: styles$2.error, role: "alert", children: error2 }) : null,
-    loading ? /* @__PURE__ */ jsx("p", { className: styles$2.muted, children: "טוען…" }) : items.length === 0 ? /* @__PURE__ */ jsx("p", { className: styles$2.muted, children: "אין נמענים זמינים לסינון הנוכחי." }) : /* @__PURE__ */ jsxs("ul", { className: styles$2.list, children: [
-      /* @__PURE__ */ jsxs("li", { className: `${styles$2.row} ${styles$2.rowHead}`, children: [
-        /* @__PURE__ */ jsx("span", { className: styles$2.cellEmail, children: "אימייל" }),
-        /* @__PURE__ */ jsx("span", { className: styles$2.cell, children: "שם" }),
-        /* @__PURE__ */ jsx("span", { className: styles$2.cell, children: "מסלול" }),
-        /* @__PURE__ */ jsx("span", { className: styles$2.cell, children: "מנוי" }),
-        /* @__PURE__ */ jsx("span", { className: styles$2.cell, children: "ניסיון" }),
-        /* @__PURE__ */ jsx("span", { className: styles$2.cell, children: "אימות" }),
-        /* @__PURE__ */ jsx("span", { className: styles$2.cell, children: "הסכמה" })
+    loading ? /* @__PURE__ */ jsx("p", { className: styles$2.muted, children: "טוען…" }) : items.length === 0 ? /* @__PURE__ */ jsx("p", { className: styles$2.muted, children: "אין נמענים זמינים לסינון הנוכחי." }) : /* @__PURE__ */ jsxs(Fragment, { children: [
+      /* @__PURE__ */ jsxs("div", { className: styles$2.selectionBar, children: [
+        /* @__PURE__ */ jsxs("span", { className: styles$2.selectionCount, children: [
+          "נבחרו ",
+          selectedVisibleCount,
+          " נמענים"
+        ] }),
+        /* @__PURE__ */ jsx(
+          "button",
+          {
+            type: "button",
+            className: styles$2.clearBtn,
+            onClick: handleClearSelection,
+            disabled: selectedVisibleCount === 0,
+            children: "נקה בחירה"
+          }
+        ),
+        /* @__PURE__ */ jsx("span", { className: styles$2.selectionNote, children: "בחירת נמענים היא להכנה בלבד. שליחה לרשימה תתווסף בשלב נפרד לאחר בדיקת זכאות." })
       ] }),
-      items.map((u) => /* @__PURE__ */ jsxs("li", { className: styles$2.row, children: [
-        /* @__PURE__ */ jsx("span", { className: styles$2.cellEmail, children: u.email }),
-        /* @__PURE__ */ jsx("span", { className: styles$2.cell, children: u.firstName || "—" }),
-        /* @__PURE__ */ jsx("span", { className: styles$2.cell, children: planLabel(u.plan) }),
-        /* @__PURE__ */ jsx("span", { className: styles$2.cell, children: subStatusLabel(u.subscriptionStatus) }),
-        /* @__PURE__ */ jsx("span", { className: styles$2.cell, children: u.isTrialActive ? "פעיל" : "—" }),
-        /* @__PURE__ */ jsx("span", { className: styles$2.cell, children: u.isVerified ? "מאומת" : "לא מאומת" }),
-        /* @__PURE__ */ jsxs("span", { className: styles$2.cell, children: [
-          consentSourceLabel(
-            u.emailMarketingConsentSource
-          ),
-          u.emailMarketingConsentAt ? ` · ${formatDate$1(
-            u.emailMarketingConsentAt
-          )}` : ""
-        ] })
-      ] }, u.userId))
+      /* @__PURE__ */ jsxs("ul", { className: styles$2.list, children: [
+        /* @__PURE__ */ jsxs("li", { className: `${styles$2.row} ${styles$2.rowHead}`, children: [
+          /* @__PURE__ */ jsx("span", { className: styles$2.checkboxCell, children: "בחירה" }),
+          /* @__PURE__ */ jsx("span", { className: styles$2.cellEmail, children: "אימייל" }),
+          /* @__PURE__ */ jsx("span", { className: styles$2.cell, children: "שם" }),
+          /* @__PURE__ */ jsx("span", { className: styles$2.cell, children: "מסלול" }),
+          /* @__PURE__ */ jsx("span", { className: styles$2.cell, children: "מנוי" }),
+          /* @__PURE__ */ jsx("span", { className: styles$2.cell, children: "ניסיון" }),
+          /* @__PURE__ */ jsx("span", { className: styles$2.cell, children: "אימות" }),
+          /* @__PURE__ */ jsx("span", { className: styles$2.cell, children: "הסכמה" })
+        ] }),
+        items.map((u) => /* @__PURE__ */ jsxs("li", { className: styles$2.row, children: [
+          /* @__PURE__ */ jsx("span", { className: styles$2.checkboxCell, children: /* @__PURE__ */ jsx(
+            "input",
+            {
+              type: "checkbox",
+              className: styles$2.checkbox,
+              checked: selectedRecipientIds.has(
+                u.userId
+              ),
+              onChange: () => handleToggleRecipient(u.userId),
+              "aria-label": `בחר נמען ${u.email}`
+            }
+          ) }),
+          /* @__PURE__ */ jsx("span", { className: styles$2.cellEmail, children: u.email }),
+          /* @__PURE__ */ jsx("span", { className: styles$2.cell, children: u.firstName || "—" }),
+          /* @__PURE__ */ jsx("span", { className: styles$2.cell, children: planLabel(u.plan) }),
+          /* @__PURE__ */ jsx("span", { className: styles$2.cell, children: subStatusLabel(u.subscriptionStatus) }),
+          /* @__PURE__ */ jsx("span", { className: styles$2.cell, children: u.isTrialActive ? "פעיל" : "—" }),
+          /* @__PURE__ */ jsx("span", { className: styles$2.cell, children: u.isVerified ? "מאומת" : "לא מאומת" }),
+          /* @__PURE__ */ jsxs("span", { className: styles$2.cell, children: [
+            consentSourceLabel(
+              u.emailMarketingConsentSource
+            ),
+            u.emailMarketingConsentAt ? ` · ${formatDate$1(
+              u.emailMarketingConsentAt
+            )}` : ""
+          ] })
+        ] }, u.userId))
+      ] })
     ] })
   ] });
 }
