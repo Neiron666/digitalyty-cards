@@ -441,6 +441,36 @@
     box-shadow: 0 0 0 2px var(--gold-fade);
 }
 
+.deleteBlock {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+    min-width: 0;
+}
+
+.deleteButton {
+    appearance: none;
+    border: 1px solid var(--danger, #c0392b);
+    background: var(--danger, #c0392b);
+    color: var(--bg-card, #fff);
+    border-radius: 999px;
+    padding: 8px 14px;
+    font: inherit;
+    cursor: pointer;
+    align-self: flex-start;
+}
+
+.deleteButton:disabled {
+    opacity: 0.5;
+    cursor: default;
+}
+
+.deleteButton:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--gold-fade);
+}
+
 .readinessBlock {
     display: flex;
     flex-direction: column;

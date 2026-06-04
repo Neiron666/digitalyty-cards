@@ -5,6 +5,7 @@ import {
     cancelMarketingCampaignDraft,
     checkMarketingCampaignSendReadiness,
     getMarketingCampaignSendStatus,
+    deleteMarketingCampaign,
 } from "../../../services/admin.service";
 import styles from "./MarketingDraftsPanel.module.css";
 
@@ -127,6 +128,23 @@ export default function MarketingDraftsPanel() {
         setSendStatusCheckedDraftId(null);
     }
 
+    // Draft hard-delete state (draft detail only). Two-step confirm; the
+    // backend is SSoT for deletability (404/409). Stores nothing from the
+    // response except a fixed success/error string.
+    const [deleteLoadingId, setDeleteLoadingId] = useState(null);
+    const [deleteError, setDeleteError] = useState("");
+    const [deleteResult, setDeleteResult] = useState("");
+    const [confirmingDeleteId, setConfirmingDeleteId] = useState(null);
+
+    // Drop any delete flow state (confirm/loading/error). The success result
+    // is reset separately so it can persist on the panel status line after the
+    // detail unmounts.
+    function clearDeleteState() {
+        setDeleteLoadingId(null);
+        setDeleteError("");
+        setConfirmingDeleteId(null);
+    }
+
     // Load the list for the current status + page. Read-only GET. Never renders
     // a backend message verbatim — a single fixed Hebrew error string is used.
     const loadDrafts = useCallback(async () => {
@@ -169,6 +187,8 @@ export default function MarketingDraftsPanel() {
         setConfirmingCancelId(null);
         clearReadinessState();
         clearSendStatusState();
+        clearDeleteState();
+        setDeleteResult("");
         setDraftsPage(1);
         setDraftsStatus(nextStatus);
     }
@@ -182,6 +202,8 @@ export default function MarketingDraftsPanel() {
         setConfirmingCancelId(null);
         clearReadinessState();
         clearSendStatusState();
+        clearDeleteState();
+        setDeleteResult("");
         setSelectedDraftLoading(true);
         try {
             const res = await getMarketingCampaignDraft(campaignId);
@@ -231,9 +253,49 @@ export default function MarketingDraftsPanel() {
         }
     }
 
-    // Read-only readiness probe. Stores whitelisted counts only; maps every
-    // backend status to a fixed Hebrew string (never renders a message
-    // verbatim). This does NOT send email and does NOT start a campaign.
+    // Draft hard-delete. Two-step confirm gated by the caller. The backend is
+    // SSoT for deletability — a 404/409 means the open detail is stale, so the
+    // list (and, where relevant, the detail) is refreshed. The backend message
+    // is never rendered; only fixed Hebrew strings are shown.
+    async function handleConfirmDelete(campaignId) {
+        if (deleteLoadingId) return;
+        setDeleteError("");
+        setDeleteResult("");
+        setDeleteLoadingId(campaignId);
+        try {
+            await deleteMarketingCampaign(campaignId);
+            // Success: the campaign is gone. Clear the (now-stale) detail and
+            // any probe state, surface a fixed success string on the panel
+            // status line, and refresh the list.
+            setConfirmingDeleteId(null);
+            setSelectedDraftId(null);
+            setSelectedDraft(null);
+            setSelectedDraftError("");
+            clearReadinessState();
+            clearSendStatusState();
+            setDeleteResult("הטיוטה נמחקה בהצלחה.");
+            await loadDrafts();
+        } catch (e) {
+            const status = e?.response?.status;
+            setConfirmingDeleteId(null);
+            // A 404/409 means the open detail is stale: refresh the list, and
+            // refresh the open detail if it is the one we tried to delete.
+            // loadDetail resets delete state, so the fixed error is set AFTER
+            // the refresh so it remains visible. The backend message is never
+            // rendered — only fixed Hebrew strings.
+            await loadDrafts();
+            if (selectedDraftId === campaignId) {
+                await loadDetail(campaignId);
+            }
+            if (status === 409 || status === 404) {
+                setDeleteError("לא ניתן למחוק את הטיוטה במצב הנוכחי.");
+            } else {
+                setDeleteError("מחיקת הטיוטה נכשלה. נסו שוב.");
+            }
+        } finally {
+            setDeleteLoadingId(null);
+        }
+    }
     async function handleCheckReadiness(campaignId) {
         if (readinessLoading) return;
         setReadinessError("");
@@ -395,6 +457,9 @@ export default function MarketingDraftsPanel() {
                 ) : null}
                 {cancelResult ? (
                     <span className={styles.success}>{cancelResult}</span>
+                ) : null}
+                {deleteResult ? (
+                    <span className={styles.success}>{deleteResult}</span>
                 ) : null}
             </div>
 
@@ -1065,6 +1130,88 @@ export default function MarketingDraftsPanel() {
                                         בטל טיוטה
                                     </button>
                                 )
+                            ) : null}
+
+                            {selectedDraft.status === "draft" ? (
+                                <div className={styles.deleteBlock}>
+                                    {deleteError ? (
+                                        <p
+                                            className={styles.error}
+                                            role="alert"
+                                        >
+                                            {deleteError}
+                                        </p>
+                                    ) : null}
+
+                                    {confirmingDeleteId ===
+                                    selectedDraft.campaignId ? (
+                                        <div
+                                            className={styles.confirmBox}
+                                            role="group"
+                                            aria-label="אישור מחיקה"
+                                        >
+                                            <span
+                                                className={styles.confirmText}
+                                            >
+                                                הפעולה תמחק את הטיוטה רק אם
+                                                עדיין לא נוצרו לה רשומות שליחה.
+                                                לא ניתן לשחזר.
+                                            </span>
+                                            <div
+                                                className={
+                                                    styles.confirmActions
+                                                }
+                                            >
+                                                <button
+                                                    type="button"
+                                                    className={
+                                                        styles.confirmYesButton
+                                                    }
+                                                    onClick={() =>
+                                                        handleConfirmDelete(
+                                                            selectedDraft.campaignId,
+                                                        )
+                                                    }
+                                                    disabled={
+                                                        deleteLoadingId ===
+                                                        selectedDraft.campaignId
+                                                    }
+                                                >
+                                                    כן, מחק טיוטה
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    className={
+                                                        styles.confirmNoButton
+                                                    }
+                                                    onClick={() =>
+                                                        setConfirmingDeleteId(
+                                                            null,
+                                                        )
+                                                    }
+                                                    disabled={
+                                                        deleteLoadingId ===
+                                                        selectedDraft.campaignId
+                                                    }
+                                                >
+                                                    לא, השאר
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <button
+                                            type="button"
+                                            className={styles.deleteButton}
+                                            onClick={() =>
+                                                setConfirmingDeleteId(
+                                                    selectedDraft.campaignId,
+                                                )
+                                            }
+                                        >
+                                            מחיקת טיוטה
+                                        </button>
+                                    )}
+                                </div>
                             ) : null}
                         </>
                     ) : null}

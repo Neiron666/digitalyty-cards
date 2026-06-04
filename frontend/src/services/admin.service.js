@@ -223,6 +223,14 @@ export function getMarketingCampaignSendStatus(campaignId) {
     return api.get(`/admin/marketing/campaigns/${campaignId}/send-status`);
 }
 
+// Marketing emails — own-admin hard-delete of a draft campaign with ZERO
+// recipient rows (backend is SSoT: it refuses non-draft or rows-present
+// campaigns with 409). DELETE only, no body, no custom headers. Auth/CSRF
+// inherited from the shared api instance. Counts-only response.
+export function deleteMarketingCampaign(campaignId) {
+    return api.delete(`/admin/marketing/campaigns/${campaignId}`);
+}
+
 // Organizations (admin)
 export function listAdminOrganizations(params = {}) {
     return api.get("/admin/orgs", { params });

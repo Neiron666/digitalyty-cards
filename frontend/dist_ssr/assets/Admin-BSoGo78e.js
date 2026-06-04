@@ -161,6 +161,9 @@ function checkMarketingCampaignSendReadiness(campaignId) {
 function getMarketingCampaignSendStatus(campaignId) {
   return api.get(`/admin/marketing/campaigns/${campaignId}/send-status`);
 }
+function deleteMarketingCampaign(campaignId) {
+  return api.delete(`/admin/marketing/campaigns/${campaignId}`);
+}
 function listAdminOrganizations(params = {}) {
   return api.get("/admin/orgs", { params });
 }
@@ -3368,59 +3371,61 @@ function MarketingTestSendConfirm({
     }
   );
 }
-const panel$1 = "_panel_5th1k_1";
-const header$1 = "_header_5th1k_23";
-const title$2 = "_title_5th1k_37";
-const helper = "_helper_5th1k_51";
-const toolbar = "_toolbar_5th1k_65";
-const filterGroup = "_filterGroup_5th1k_83";
-const filterButton = "_filterButton_5th1k_97";
-const filterButtonActive = "_filterButtonActive_5th1k_139";
-const reloadButton = "_reloadButton_5th1k_149";
-const statusLine = "_statusLine_5th1k_191";
-const muted$2 = "_muted_5th1k_209";
-const success = "_success_5th1k_223";
-const error$1 = "_error_5th1k_235";
-const empty$1 = "_empty_5th1k_249";
-const list$1 = "_list_5th1k_263";
-const row$2 = "_row_5th1k_283";
-const rowMain = "_rowMain_5th1k_309";
-const rowSubject = "_rowSubject_5th1k_325";
-const rowHeading = "_rowHeading_5th1k_339";
-const rowMeta = "_rowMeta_5th1k_353";
-const metaItem = "_metaItem_5th1k_369";
-const rowActions = "_rowActions_5th1k_391";
-const viewButton = "_viewButton_5th1k_405";
-const pager$2 = "_pager_5th1k_447";
-const pagerButton = "_pagerButton_5th1k_463";
-const pagerInfo = "_pagerInfo_5th1k_505";
-const detail = "_detail_5th1k_517";
-const detailBlock = "_detailBlock_5th1k_539";
-const detailTitle = "_detailTitle_5th1k_553";
-const detailList = "_detailList_5th1k_567";
-const detailRow = "_detailRow_5th1k_583";
-const detailKey = "_detailKey_5th1k_599";
-const detailText = "_detailText_5th1k_617";
-const countList = "_countList_5th1k_635";
-const countItem = "_countItem_5th1k_655";
-const reasonList = "_reasonList_5th1k_677";
-const reasonRow = "_reasonRow_5th1k_697";
-const confirmBox = "_confirmBox_5th1k_719";
-const confirmText = "_confirmText_5th1k_743";
-const confirmActions = "_confirmActions_5th1k_755";
-const confirmYesButton = "_confirmYesButton_5th1k_769";
-const confirmNoButton = "_confirmNoButton_5th1k_811";
-const cancelButton = "_cancelButton_5th1k_853";
-const readinessBlock = "_readinessBlock_5th1k_887";
-const readinessButton = "_readinessButton_5th1k_901";
-const readinessHelper = "_readinessHelper_5th1k_945";
-const readinessStatus = "_readinessStatus_5th1k_961";
-const readinessResult = "_readinessResult_5th1k_975";
-const sendStatusBlock = "_sendStatusBlock_5th1k_989";
-const sendStatusButton = "_sendStatusButton_5th1k_1003";
-const sendStatusHelper = "_sendStatusHelper_5th1k_1047";
-const sendStatusStatus = "_sendStatusStatus_5th1k_1063";
-const sendStatusResult = "_sendStatusResult_5th1k_1077";
+const panel$1 = "_panel_v18py_1";
+const header$1 = "_header_v18py_23";
+const title$2 = "_title_v18py_37";
+const helper = "_helper_v18py_51";
+const toolbar = "_toolbar_v18py_65";
+const filterGroup = "_filterGroup_v18py_83";
+const filterButton = "_filterButton_v18py_97";
+const filterButtonActive = "_filterButtonActive_v18py_139";
+const reloadButton = "_reloadButton_v18py_149";
+const statusLine = "_statusLine_v18py_191";
+const muted$2 = "_muted_v18py_209";
+const success = "_success_v18py_223";
+const error$1 = "_error_v18py_235";
+const empty$1 = "_empty_v18py_249";
+const list$1 = "_list_v18py_263";
+const row$2 = "_row_v18py_283";
+const rowMain = "_rowMain_v18py_309";
+const rowSubject = "_rowSubject_v18py_325";
+const rowHeading = "_rowHeading_v18py_339";
+const rowMeta = "_rowMeta_v18py_353";
+const metaItem = "_metaItem_v18py_369";
+const rowActions = "_rowActions_v18py_391";
+const viewButton = "_viewButton_v18py_405";
+const pager$2 = "_pager_v18py_447";
+const pagerButton = "_pagerButton_v18py_463";
+const pagerInfo = "_pagerInfo_v18py_505";
+const detail = "_detail_v18py_517";
+const detailBlock = "_detailBlock_v18py_539";
+const detailTitle = "_detailTitle_v18py_553";
+const detailList = "_detailList_v18py_567";
+const detailRow = "_detailRow_v18py_583";
+const detailKey = "_detailKey_v18py_599";
+const detailText = "_detailText_v18py_617";
+const countList = "_countList_v18py_635";
+const countItem = "_countItem_v18py_655";
+const reasonList = "_reasonList_v18py_677";
+const reasonRow = "_reasonRow_v18py_697";
+const confirmBox = "_confirmBox_v18py_719";
+const confirmText = "_confirmText_v18py_743";
+const confirmActions = "_confirmActions_v18py_755";
+const confirmYesButton = "_confirmYesButton_v18py_769";
+const confirmNoButton = "_confirmNoButton_v18py_811";
+const cancelButton = "_cancelButton_v18py_853";
+const deleteBlock = "_deleteBlock_v18py_887";
+const deleteButton = "_deleteButton_v18py_903";
+const readinessBlock = "_readinessBlock_v18py_947";
+const readinessButton = "_readinessButton_v18py_961";
+const readinessHelper = "_readinessHelper_v18py_1005";
+const readinessStatus = "_readinessStatus_v18py_1021";
+const readinessResult = "_readinessResult_v18py_1035";
+const sendStatusBlock = "_sendStatusBlock_v18py_1049";
+const sendStatusButton = "_sendStatusButton_v18py_1063";
+const sendStatusHelper = "_sendStatusHelper_v18py_1107";
+const sendStatusStatus = "_sendStatusStatus_v18py_1123";
+const sendStatusResult = "_sendStatusResult_v18py_1137";
 const styles$3 = {
   panel: panel$1,
   header: header$1,
@@ -3465,6 +3470,8 @@ const styles$3 = {
   confirmYesButton,
   confirmNoButton,
   cancelButton,
+  deleteBlock,
+  deleteButton,
   readinessBlock,
   readinessButton,
   readinessHelper,
@@ -3557,6 +3564,15 @@ function MarketingDraftsPanel() {
     setSendStatusResult(null);
     setSendStatusCheckedDraftId(null);
   }
+  const [deleteLoadingId, setDeleteLoadingId] = useState(null);
+  const [deleteError, setDeleteError] = useState("");
+  const [deleteResult, setDeleteResult] = useState("");
+  const [confirmingDeleteId, setConfirmingDeleteId] = useState(null);
+  function clearDeleteState() {
+    setDeleteLoadingId(null);
+    setDeleteError("");
+    setConfirmingDeleteId(null);
+  }
   const loadDrafts = useCallback(async () => {
     setDraftsLoading(true);
     setDraftsError("");
@@ -3593,6 +3609,8 @@ function MarketingDraftsPanel() {
     setConfirmingCancelId(null);
     clearReadinessState();
     clearSendStatusState();
+    clearDeleteState();
+    setDeleteResult("");
     setDraftsPage(1);
     setDraftsStatus(nextStatus);
   }
@@ -3605,6 +3623,8 @@ function MarketingDraftsPanel() {
     setConfirmingCancelId(null);
     clearReadinessState();
     clearSendStatusState();
+    clearDeleteState();
+    setDeleteResult("");
     setSelectedDraftLoading(true);
     try {
       const res = await getMarketingCampaignDraft(campaignId);
@@ -3647,6 +3667,37 @@ function MarketingDraftsPanel() {
       }
     } finally {
       setCancelLoadingId(null);
+    }
+  }
+  async function handleConfirmDelete(campaignId) {
+    if (deleteLoadingId) return;
+    setDeleteError("");
+    setDeleteResult("");
+    setDeleteLoadingId(campaignId);
+    try {
+      await deleteMarketingCampaign(campaignId);
+      setConfirmingDeleteId(null);
+      setSelectedDraftId(null);
+      setSelectedDraft(null);
+      setSelectedDraftError("");
+      clearReadinessState();
+      clearSendStatusState();
+      setDeleteResult("הטיוטה נמחקה בהצלחה.");
+      await loadDrafts();
+    } catch (e) {
+      const status2 = e?.response?.status;
+      setConfirmingDeleteId(null);
+      await loadDrafts();
+      if (selectedDraftId === campaignId) {
+        await loadDetail(campaignId);
+      }
+      if (status2 === 409 || status2 === 404) {
+        setDeleteError("לא ניתן למחוק את הטיוטה במצב הנוכחי.");
+      } else {
+        setDeleteError("מחיקת הטיוטה נכשלה. נסו שוב.");
+      }
+    } finally {
+      setDeleteLoadingId(null);
     }
   }
   async function handleCheckReadiness(campaignId) {
@@ -3781,7 +3832,8 @@ function MarketingDraftsPanel() {
     ] }),
     /* @__PURE__ */ jsxs("div", { className: styles$3.statusLine, "aria-live": "polite", children: [
       draftsLoading ? /* @__PURE__ */ jsx("span", { className: styles$3.muted, children: "טוען…" }) : null,
-      cancelResult ? /* @__PURE__ */ jsx("span", { className: styles$3.success, children: cancelResult }) : null
+      cancelResult ? /* @__PURE__ */ jsx("span", { className: styles$3.success, children: cancelResult }) : null,
+      deleteResult ? /* @__PURE__ */ jsx("span", { className: styles$3.success, children: deleteResult }) : null
     ] }),
     draftsError ? /* @__PURE__ */ jsx("p", { className: styles$3.error, role: "alert", children: draftsError }) : null,
     !draftsLoading && !draftsError && items.length === 0 ? /* @__PURE__ */ jsx("p", { className: styles$3.empty, children: "אין טיוטות להצגה." }) : null,
@@ -4367,7 +4419,76 @@ function MarketingDraftsPanel() {
             ),
             children: "בטל טיוטה"
           }
-        ) : null
+        ) : null,
+        selectedDraft.status === "draft" ? /* @__PURE__ */ jsxs("div", { className: styles$3.deleteBlock, children: [
+          deleteError ? /* @__PURE__ */ jsx(
+            "p",
+            {
+              className: styles$3.error,
+              role: "alert",
+              children: deleteError
+            }
+          ) : null,
+          confirmingDeleteId === selectedDraft.campaignId ? /* @__PURE__ */ jsxs(
+            "div",
+            {
+              className: styles$3.confirmBox,
+              role: "group",
+              "aria-label": "אישור מחיקה",
+              children: [
+                /* @__PURE__ */ jsx(
+                  "span",
+                  {
+                    className: styles$3.confirmText,
+                    children: "הפעולה תמחק את הטיוטה רק אם עדיין לא נוצרו לה רשומות שליחה. לא ניתן לשחזר."
+                  }
+                ),
+                /* @__PURE__ */ jsxs(
+                  "div",
+                  {
+                    className: styles$3.confirmActions,
+                    children: [
+                      /* @__PURE__ */ jsx(
+                        "button",
+                        {
+                          type: "button",
+                          className: styles$3.confirmYesButton,
+                          onClick: () => handleConfirmDelete(
+                            selectedDraft.campaignId
+                          ),
+                          disabled: deleteLoadingId === selectedDraft.campaignId,
+                          children: "כן, מחק טיוטה"
+                        }
+                      ),
+                      /* @__PURE__ */ jsx(
+                        "button",
+                        {
+                          type: "button",
+                          className: styles$3.confirmNoButton,
+                          onClick: () => setConfirmingDeleteId(
+                            null
+                          ),
+                          disabled: deleteLoadingId === selectedDraft.campaignId,
+                          children: "לא, השאר"
+                        }
+                      )
+                    ]
+                  }
+                )
+              ]
+            }
+          ) : /* @__PURE__ */ jsx(
+            "button",
+            {
+              type: "button",
+              className: styles$3.deleteButton,
+              onClick: () => setConfirmingDeleteId(
+                selectedDraft.campaignId
+              ),
+              children: "מחיקת טיוטה"
+            }
+          )
+        ] }) : null
       ] }) : null
     ] }) : null
   ] });
