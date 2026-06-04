@@ -10,6 +10,7 @@ import { startBillingReconcileJob } from "./jobs/billingReconcile.js";
 import { startReceiptRetryJob } from "./jobs/receiptRetry.js";
 import { startSlugRedirectReleaseJob } from "./jobs/slugRedirectRelease.js";
 import { startMarketingSendDryRunWorker } from "./jobs/marketingSendDryRunWorker.js";
+import { startMarketingRealSendWorker } from "./jobs/marketingRealSendWorker.js";
 
 // --- Sentry early init (before Express app loads) ---
 // Must run before app.js is imported so Sentry can instrument Express/http.
@@ -155,6 +156,15 @@ async function start() {
         intervalMs:
             Number(process.env.MARKETING_SEND_WORKER_INTERVAL_MS) ||
             5 * 60 * 1000,
+    });
+
+    // Marketing real-send server worker: processes queued pending recipient rows.
+    // Disabled by default — self-gates on MARKETING_REAL_SEND_WORKER_ENABLED.
+    // Refuses if dry-run worker (MARKETING_SEND_WORKER_ENABLED) is also enabled.
+    startMarketingRealSendWorker({
+        intervalMs:
+            Number(process.env.MARKETING_REAL_SEND_INTERVAL_MS) ||
+            10 * 60 * 1000,
     });
 
     app.listen(PORT, () => {

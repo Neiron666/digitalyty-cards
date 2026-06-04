@@ -1,9 +1,10 @@
-// Marketing campaign REAL-SEND runOnce worker — one recipient per run.
+// Marketing campaign REAL-SEND worker — per-recipient real Mailjet send.
 //
 // SCOPE / SAFETY:
-//   - DISABLED BY DEFAULT: exits immediately unless
-//     MARKETING_REAL_SEND_RUN_ONCE_ENABLED=true.
-//   - Sends exactly one real marketing email per runOnce() call.
+//   - DISABLED BY DEFAULT: recurring scheduler requires
+//     MARKETING_REAL_SEND_WORKER_ENABLED=true to register timers.
+//     Manual runOnce gate: MARKETING_REAL_SEND_RUN_ONCE_ENABLED=true (separate).
+//   - Sends exactly one real marketing email per processOneMarketingRealSend() call.
 //   - Revalidates eligibility at send time (never trusts start-time snapshot).
 //   - Mints a per-recipient unsubscribe token before any provider call.
 //   - Fails closed: no email sent without a valid, persisted unsubscribeTokenId.
@@ -11,9 +12,14 @@
 //   - Ambiguous policy: if a stale "sending" row has evidence fields
 //     (providerMessageId or unsubscribeTokenId), it is marked "failed" with
 //     providerErrorSafe:"AMBIGUOUS_PRIOR_SEND" — never auto-retried.
+//   - Refuses to schedule if dry-run worker (MARKETING_SEND_WORKER_ENABLED) is
+//     also enabled — prevents claim-pool collision.
 //   - No AdminAudit (recipient row IS the audit trail).
-//   - No scheduler — exports runMarketingRealSendOnce() only.
-//   - NOT imported by server.js (no scheduler wiring yet).
+//
+// EXPORTS:
+//   runMarketingRealSendOnce      — manual operator gate (RUN_ONCE flag required)
+//   runMarketingRealSendSweepOnce — cardigo_ci operator smoke (WORKER_ENABLED flag)
+//   startMarketingRealSendWorker  — recurring scheduler, disabled by default
 //
 // FORBIDDEN IMPORTS: adminAudit.service.js, server.js, app.js, routes,
 //   controllers, dry-run worker, MailJob, resetMailWorker, any frontend module.
@@ -29,6 +35,10 @@ import { sendMarketingCampaignEmailBestEffort } from "../services/mailjet.servic
 // Opaque non-secret worker identity (no host / credential material).
 // Randomised per process start so parallel restarts are distinguishable.
 const workerId = "mkrealsend-" + Math.random().toString(36).slice(2, 10);
+
+// Module-level reentrancy guard: prevents concurrent sweep ticks from
+// overlapping if a sweep takes longer than one interval period.
+let running = false;
 
 // ── Config helpers ────────────────────────────────────────────────────────────
 
@@ -59,11 +69,27 @@ function readConfig() {
             min: 60_000,
             fallback: 300_000,
         }),
-        // Max stale rows reclaimed per runOnce invocation.
+        // Max stale rows reclaimed per processOneMarketingRealSend invocation.
         reclaimBatchSize: clampInt(
             process.env.MARKETING_REAL_SEND_RECLAIM_BATCH_SIZE,
             { min: 1, max: 50, fallback: 10 },
         ),
+        // Scheduler: max recipient rows claimed per sweep tick. Default 1 (safest).
+        batchSize: clampInt(process.env.MARKETING_REAL_SEND_BATCH_SIZE, {
+            min: 1,
+            max: 10,
+            fallback: 1,
+        }),
+        // Scheduler: interval between sweep ticks in ms. Default 10 min.
+        intervalMs: clampInt(process.env.MARKETING_REAL_SEND_INTERVAL_MS, {
+            min: 60_000,
+            fallback: 600_000,
+        }),
+        // Scheduler: delay before first sweep after server start. Default 2m15s.
+        bootDelayMs: clampInt(process.env.MARKETING_REAL_SEND_BOOT_DELAY_MS, {
+            min: 0,
+            fallback: 135_000,
+        }),
     };
 }
 
@@ -155,17 +181,17 @@ async function reclaimStaleRows(now, cfg) {
     return { reclaimed, ambiguous, failedFromReclaim };
 }
 
+// ── Core: process exactly one real-send claim cycle ──────────────────────────
+//
+// Internal, non-exported. No env gate — callers are responsible for gating.
+// Contains the full reclaim → claim → eligibility → token → render → send
+// pipeline with zero behavior drift from the original runMarketingRealSendOnce
+// body.
+
 /**
- * Run exactly one real-send attempt.
- *
- * Reclaims any stale "sending" rows first, then claims and processes one
- * pending recipient row. Disabled by default; returns immediately unless
- * MARKETING_REAL_SEND_RUN_ONCE_ENABLED=true.
- *
  * @param {{ now?: Date }} [options]
  * @returns {Promise<{
  *   ok: boolean,
- *   reason?: string,
  *   claimed: number,
  *   sent: number,
  *   failed: number,
@@ -176,12 +202,7 @@ async function reclaimStaleRows(now, cfg) {
  *   ambiguous: number,
  * }>}
  */
-export async function runMarketingRealSendOnce({ now: nowArg } = {}) {
-    // A. Feature gate — disabled by default; must be explicitly enabled.
-    if (process.env.MARKETING_REAL_SEND_RUN_ONCE_ENABLED !== "true") {
-        return { ok: false, reason: "REAL_SEND_RUN_ONCE_DISABLED" };
-    }
-
+async function processOneMarketingRealSend({ now: nowArg } = {}) {
     const cfg = readConfig();
     const now =
         nowArg instanceof Date && !isNaN(nowArg.getTime())
@@ -199,13 +220,13 @@ export async function runMarketingRealSendOnce({ now: nowArg } = {}) {
         ambiguous: 0,
     };
 
-    // B. Reclaim stale "sending" rows before claiming a new one.
+    // A. Reclaim stale "sending" rows before claiming a new one.
     const reclaim = await reclaimStaleRows(now, cfg);
     counts.reclaimed = reclaim.reclaimed;
     counts.ambiguous = reclaim.ambiguous;
     counts.failed += reclaim.failedFromReclaim;
 
-    // C. Claim exactly one pending row that is not a dry-run row.
+    // B. Claim exactly one pending row that is not a dry-run row.
     //    dryRunOnly:{$ne:true} guards against processing rows the dry-run
     //    worker may have stamped — real-send must never process dry-run rows.
     const row = await MarketingCampaignRecipient.findOneAndUpdate(
@@ -265,7 +286,7 @@ export async function runMarketingRealSendOnce({ now: nowArg } = {}) {
         else counts.skipped += 1;
     }
 
-    // D. Campaign status check — cancel row if campaign is no longer active.
+    // C. Campaign status check — cancel row if campaign is no longer active.
     const campaign = await MarketingCampaign.findById(row.campaignId)
         .select({ status: 1, contentSnapshot: 1 })
         .lean();
@@ -285,7 +306,7 @@ export async function runMarketingRealSendOnce({ now: nowArg } = {}) {
         return { ok: true, ...counts };
     }
 
-    // E. Send-time eligibility revalidation — never trust start-time snapshot.
+    // D. Send-time eligibility revalidation — never trust start-time snapshot.
     let eligibility;
     try {
         eligibility = await revalidateMarketingRecipientUserIds([
@@ -313,7 +334,7 @@ export async function runMarketingRealSendOnce({ now: nowArg } = {}) {
         return { ok: true, ...counts };
     }
 
-    // F. Fetch user email at send time — never stored on the recipient row.
+    // E. Fetch user email at send time — never stored on the recipient row.
     //    email is resolved from User model; never logged.
     const user = await User.findById(row.userId).select({ email: 1 }).lean();
     const emailRaw = user?.email;
@@ -325,7 +346,7 @@ export async function runMarketingRealSendOnce({ now: nowArg } = {}) {
     const emailNormalized = emailRaw.trim().toLowerCase();
     // emailNormalized held in memory only; never logged, never stored.
 
-    // G. Mint per-recipient unsubscribe token — fail closed if this fails.
+    // F. Mint per-recipient unsubscribe token — fail closed if this fails.
     //    No email sent unless we have a valid, soon-to-be-persisted tokenId.
     let unsubscribeUrl;
     let tokenId;
@@ -345,7 +366,7 @@ export async function runMarketingRealSendOnce({ now: nowArg } = {}) {
         return { ok: true, ...counts };
     }
 
-    // H. Render email in send mode with the real unsubscribe link.
+    // G. Render email in send mode with the real unsubscribe link.
     //    Fail closed if renderer warns that the unsubscribe URL was rejected.
     let html, text;
     try {
@@ -378,7 +399,7 @@ export async function runMarketingRealSendOnce({ now: nowArg } = {}) {
         return { ok: true, ...counts };
     }
 
-    // I. Persist unsubscribeTokenId BEFORE any provider call.
+    // H. Persist unsubscribeTokenId BEFORE any provider call.
     //    This is the cleanup evidence check: if this row has a non-null
     //    unsubscribeTokenId, it is considered potentially sent and any
     //    stale reclaim will mark it AMBIGUOUS_PRIOR_SEND.
@@ -396,7 +417,7 @@ export async function runMarketingRealSendOnce({ now: nowArg } = {}) {
         return { ok: true, ...counts };
     }
 
-    // J. Provider call — one recipient only, with defensive try-catch even
+    // I. Provider call — one recipient only, with defensive try-catch even
     //    though the adapter catches internally.
     const subject = String(campaign.contentSnapshot?.subject || "").trim();
     const customId = String(row._id);
@@ -420,7 +441,7 @@ export async function runMarketingRealSendOnce({ now: nowArg } = {}) {
         return { ok: true, ...counts };
     }
 
-    // K. Handle provider result.
+    // J. Handle provider result.
     //    ok:true  → mark sent (confirmed delivery acceptance by provider).
     //    ok:false → mark failed; do not retry automatically (operator must
     //               inspect providerErrorSafe before manual re-queue).
@@ -468,4 +489,170 @@ export async function runMarketingRealSendOnce({ now: nowArg } = {}) {
     }
 
     return { ok: true, ...counts };
+}
+
+// ── Manual operator gate (one-shot, explicit flag required) ───────────────────
+
+/**
+ * Run exactly one real-send attempt.
+ *
+ * Manual gate: MARKETING_REAL_SEND_RUN_ONCE_ENABLED must be "true".
+ * Delegates to processOneMarketingRealSend after the gate passes.
+ *
+ * @param {{ now?: Date }} [options]
+ * @returns {Promise<{
+ *   ok: boolean,
+ *   reason?: string,
+ *   claimed: number,
+ *   sent: number,
+ *   failed: number,
+ *   skipped: number,
+ *   suppressed: number,
+ *   canceled: number,
+ *   reclaimed: number,
+ *   ambiguous: number,
+ * }>}
+ */
+export async function runMarketingRealSendOnce({ now: nowArg } = {}) {
+    // Feature gate — disabled by default; must be explicitly enabled.
+    // Behavior and return shape unchanged from before the R3 refactor.
+    if (process.env.MARKETING_REAL_SEND_RUN_ONCE_ENABLED !== "true") {
+        return { ok: false, reason: "REAL_SEND_RUN_ONCE_DISABLED" };
+    }
+    return processOneMarketingRealSend({ now: nowArg });
+}
+
+// ── Recurring scheduler internals ─────────────────────────────────────────────
+
+// Execute one sweep batch. Called by both sweepOnce (scheduler tick) and
+// runMarketingRealSendSweepOnce (operator gate — same logic, no boot delay).
+// Returns aggregate counts for up to batchSize processed rows. Stops early
+// when no pending row was claimed on an iteration (result.claimed === 0).
+async function performSweep() {
+    const cfg = readConfig();
+    const aggregateCounts = {
+        claimed: 0,
+        sent: 0,
+        failed: 0,
+        skipped: 0,
+        suppressed: 0,
+        canceled: 0,
+        reclaimed: 0,
+        ambiguous: 0,
+    };
+    for (let i = 0; i < cfg.batchSize; i += 1) {
+        const result = await processOneMarketingRealSend();
+        aggregateCounts.claimed += result.claimed || 0;
+        aggregateCounts.sent += result.sent || 0;
+        aggregateCounts.failed += result.failed || 0;
+        aggregateCounts.skipped += result.skipped || 0;
+        aggregateCounts.suppressed += result.suppressed || 0;
+        aggregateCounts.canceled += result.canceled || 0;
+        aggregateCounts.reclaimed += result.reclaimed || 0;
+        aggregateCounts.ambiguous += result.ambiguous || 0;
+        // Stop early: no pending rows available for remainder of this batch.
+        if (result.claimed === 0) break;
+    }
+    return aggregateCounts;
+}
+
+// Scheduler tick with reentrancy guard. Called only by timers registered in
+// startMarketingRealSendWorker — never called in the disabled/refused paths.
+async function sweepOnce() {
+    if (running) return;
+    running = true;
+    try {
+        const counts = await performSweep();
+        // Aggregate counts only — no email, token, provider body, user docs.
+        console.log("[marketing-real-send] sweep done", counts);
+    } catch (err) {
+        console.error("[marketing-real-send] sweep failed", {
+            error: err?.message || err,
+        });
+    } finally {
+        running = false;
+    }
+}
+
+// ── Operator-gated sweep export (cardigo_ci verification) ─────────────────────
+
+/**
+ * Run one sweep batch — same logic as the scheduler tick, without the boot
+ * delay. Gated by the same flags as startMarketingRealSendWorker.
+ * Does NOT require MARKETING_REAL_SEND_RUN_ONCE_ENABLED.
+ *
+ * @returns {Promise<{
+ *   ok: boolean,
+ *   reason?: string,
+ *   claimed: number,
+ *   sent: number,
+ *   failed: number,
+ *   skipped: number,
+ *   suppressed: number,
+ *   canceled: number,
+ *   reclaimed: number,
+ *   ambiguous: number,
+ * }>}
+ */
+export async function runMarketingRealSendSweepOnce(_opts = {}) {
+    if (process.env.MARKETING_REAL_SEND_WORKER_ENABLED !== "true") {
+        return { ok: false, reason: "REAL_SEND_WORKER_DISABLED" };
+    }
+    if (process.env.MARKETING_SEND_WORKER_ENABLED === "true") {
+        return { ok: false, reason: "DRY_RUN_WORKER_ENABLED" };
+    }
+    const counts = await performSweep();
+    return { ok: true, ...counts };
+}
+
+// ── Recurring scheduler entry point ───────────────────────────────────────────
+
+/**
+ * Schedule the real-send server worker. Disabled by default: returns WITHOUT
+ * registering any timer unless MARKETING_REAL_SEND_WORKER_ENABLED=true AND
+ * the dry-run worker (MARKETING_SEND_WORKER_ENABLED) is not also enabled.
+ *
+ * @param {{ intervalMs?: number }} [options]
+ */
+export function startMarketingRealSendWorker({ intervalMs } = {}) {
+    // Guard 1: worker disabled by default — zero timers when flag is absent.
+    if (process.env.MARKETING_REAL_SEND_WORKER_ENABLED !== "true") {
+        console.log("[marketing-real-send] disabled");
+        return;
+    }
+
+    // Guard 2: refuse if dry-run worker is also enabled. Both workers compete
+    // for the same claim pool; enabling both risks dry-run stamping
+    // dryRunOnly:true on rows before real-send claims them.
+    if (process.env.MARKETING_SEND_WORKER_ENABLED === "true") {
+        console.log(
+            "[marketing-real-send] refused: dry-run worker enabled — " +
+                "disable MARKETING_SEND_WORKER_ENABLED before enabling real-send worker",
+        );
+        return;
+    }
+
+    const cfg = readConfig();
+    const effectiveIntervalMs =
+        Number.isFinite(intervalMs) && intervalMs >= 60_000
+            ? Math.floor(intervalMs)
+            : cfg.intervalMs;
+
+    // Boot delay: no Mailjet calls in the first cfg.bootDelayMs after startup.
+    // Gives the server time to warm up and avoids an immediate send burst on
+    // process restart.
+    setTimeout(() => {
+        sweepOnce();
+    }, cfg.bootDelayMs);
+
+    setInterval(() => {
+        sweepOnce();
+    }, effectiveIntervalMs);
+
+    // Log only non-sensitive config values.
+    console.log("[marketing-real-send] worker scheduled", {
+        bootDelayMs: cfg.bootDelayMs,
+        intervalMs: effectiveIntervalMs,
+        batchSize: cfg.batchSize,
+    });
 }
