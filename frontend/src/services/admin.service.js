@@ -223,10 +223,15 @@ export function getMarketingCampaignSendStatus(campaignId) {
     return api.get(`/admin/marketing/campaigns/${campaignId}/send-status`);
 }
 
-// Marketing emails — own-admin hard-delete of a draft campaign with ZERO
-// recipient rows (backend is SSoT: it refuses non-draft or rows-present
-// campaigns with 409). DELETE only, no body, no custom headers. Auth/CSRF
-// inherited from the shared api instance. Counts-only response.
+// Marketing emails — own-admin hard-delete. Backend is SSoT for deletability.
+// Supports two branches:
+//   draft  — zero recipient rows required; backend refuses rows-present with 409.
+//   canceled — backend verifies all recipient rows are safe canceled technical
+//              rows with no send-evidence fields; unsafe rows → 409.
+// Frontend must not inspect rows or evidence fields. Backend refuses any
+// non-deletable state (queued/sending/completed/failed/unsafe) with 409.
+// DELETE only, no body, no custom headers. Auth/CSRF inherited from the shared
+// api instance. Counts-only response.
 export function deleteMarketingCampaign(campaignId) {
     return api.delete(`/admin/marketing/campaigns/${campaignId}`);
 }

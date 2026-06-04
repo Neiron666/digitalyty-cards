@@ -253,15 +253,30 @@ export default function MarketingDraftsPanel() {
         }
     }
 
-    // Draft hard-delete. Two-step confirm gated by the caller. The backend is
-    // SSoT for deletability — a 404/409 means the open detail is stale, so the
-    // list (and, where relevant, the detail) is refreshed. The backend message
-    // is never rendered; only fixed Hebrew strings are shown.
-    async function handleConfirmDelete(campaignId) {
+    // Hard-delete — draft or canceled branch. statusAtConfirm is captured at
+    // confirm-click time so the correct fixed Hebrew copy is used even after
+    // the selectedDraft ref may have changed due to async reloads. The backend
+    // is SSoT for deletability — a 404/409 means the open detail is stale, so
+    // the list (and, where relevant, the detail) is refreshed. The backend
+    // message is never rendered; only fixed Hebrew strings are shown.
+    async function handleConfirmDelete(campaignId, statusAtConfirm) {
         if (deleteLoadingId) return;
         setDeleteError("");
         setDeleteResult("");
         setDeleteLoadingId(campaignId);
+        // Fixed copy maps — never rendered from backend response.
+        const successCopy =
+            statusAtConfirm === "canceled"
+                ? "הקמפיין נמחק בהצלחה."
+                : "הטיוטה נמחקה בהצלחה.";
+        const error409Copy =
+            statusAtConfirm === "canceled"
+                ? "לא ניתן למחוק את הקמפיין במצב הנוכחי."
+                : "לא ניתן למחוק את הטיוטה במצב הנוכחי.";
+        const errorGenericCopy =
+            statusAtConfirm === "canceled"
+                ? "מחיקת הקמפיין נכשלה. נסו שוב."
+                : "מחיקת הטיוטה נכשלה. נסו שוב.";
         try {
             await deleteMarketingCampaign(campaignId);
             // Success: the campaign is gone. Clear the (now-stale) detail and
@@ -273,7 +288,7 @@ export default function MarketingDraftsPanel() {
             setSelectedDraftError("");
             clearReadinessState();
             clearSendStatusState();
-            setDeleteResult("הטיוטה נמחקה בהצלחה.");
+            setDeleteResult(successCopy);
             await loadDrafts();
         } catch (e) {
             const status = e?.response?.status;
@@ -288,9 +303,9 @@ export default function MarketingDraftsPanel() {
                 await loadDetail(campaignId);
             }
             if (status === 409 || status === 404) {
-                setDeleteError("לא ניתן למחוק את הטיוטה במצב הנוכחי.");
+                setDeleteError(error409Copy);
             } else {
-                setDeleteError("מחיקת הטיוטה נכשלה. נסו שוב.");
+                setDeleteError(errorGenericCopy);
             }
         } finally {
             setDeleteLoadingId(null);
@@ -1154,7 +1169,8 @@ export default function MarketingDraftsPanel() {
                                 </div>
                             ) : null}
 
-                            {selectedDraft.status === "draft" ? (
+                            {selectedDraft.status === "draft" ||
+                            selectedDraft.status === "canceled" ? (
                                 <div className={styles.deleteBlock}>
                                     {deleteError ? (
                                         <p
@@ -1170,14 +1186,20 @@ export default function MarketingDraftsPanel() {
                                         <div
                                             className={styles.confirmBox}
                                             role="group"
-                                            aria-label="אישור מחיקה"
+                                            aria-label={
+                                                selectedDraft.status ===
+                                                "canceled"
+                                                    ? "אישור מחיקת קמפיין שבוטל"
+                                                    : "אישור מחיקה"
+                                            }
                                         >
                                             <span
                                                 className={styles.confirmText}
                                             >
-                                                הפעולה תמחק את הטיוטה רק אם
-                                                עדיין לא נוצרו לה רשומות שליחה.
-                                                לא ניתן לשחזר.
+                                                {selectedDraft.status ===
+                                                "canceled"
+                                                    ? "הפעולה תמחק את הקמפיין שבוטל ואת רשומות השליחה הטכניות שמותר למחוק. לא ניתן לשחזר."
+                                                    : "הפעולה תמחק את הטיוטה רק אם עדיין לא נוצרו לה רשומות שליחה. לא ניתן לשחזר."}
                                             </span>
                                             <div
                                                 className={
@@ -1192,6 +1214,7 @@ export default function MarketingDraftsPanel() {
                                                     onClick={() =>
                                                         handleConfirmDelete(
                                                             selectedDraft.campaignId,
+                                                            selectedDraft.status,
                                                         )
                                                     }
                                                     disabled={
@@ -1199,7 +1222,10 @@ export default function MarketingDraftsPanel() {
                                                         selectedDraft.campaignId
                                                     }
                                                 >
-                                                    כן, מחק טיוטה
+                                                    {selectedDraft.status ===
+                                                    "canceled"
+                                                        ? "כן, מחק קמפיין שבוטל"
+                                                        : "כן, מחק טיוטה"}
                                                 </button>
                                                 <button
                                                     type="button"
@@ -1230,7 +1256,9 @@ export default function MarketingDraftsPanel() {
                                                 )
                                             }
                                         >
-                                            מחיקת טיוטה
+                                            {selectedDraft.status === "canceled"
+                                                ? "מחיקת קמפיין שבוטל"
+                                                : "מחיקת טיוטה"}
                                         </button>
                                     )}
                                 </div>

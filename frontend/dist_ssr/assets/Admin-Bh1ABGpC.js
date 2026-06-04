@@ -3677,11 +3677,14 @@ function MarketingDraftsPanel() {
       setCancelLoadingId(null);
     }
   }
-  async function handleConfirmDelete(campaignId) {
+  async function handleConfirmDelete(campaignId, statusAtConfirm) {
     if (deleteLoadingId) return;
     setDeleteError("");
     setDeleteResult("");
     setDeleteLoadingId(campaignId);
+    const successCopy = statusAtConfirm === "canceled" ? "הקמפיין נמחק בהצלחה." : "הטיוטה נמחקה בהצלחה.";
+    const error409Copy = statusAtConfirm === "canceled" ? "לא ניתן למחוק את הקמפיין במצב הנוכחי." : "לא ניתן למחוק את הטיוטה במצב הנוכחי.";
+    const errorGenericCopy = statusAtConfirm === "canceled" ? "מחיקת הקמפיין נכשלה. נסו שוב." : "מחיקת הטיוטה נכשלה. נסו שוב.";
     try {
       await deleteMarketingCampaign(campaignId);
       setConfirmingDeleteId(null);
@@ -3690,7 +3693,7 @@ function MarketingDraftsPanel() {
       setSelectedDraftError("");
       clearReadinessState();
       clearSendStatusState();
-      setDeleteResult("הטיוטה נמחקה בהצלחה.");
+      setDeleteResult(successCopy);
       await loadDrafts();
     } catch (e) {
       const status2 = e?.response?.status;
@@ -3700,9 +3703,9 @@ function MarketingDraftsPanel() {
         await loadDetail(campaignId);
       }
       if (status2 === 409 || status2 === 404) {
-        setDeleteError("לא ניתן למחוק את הטיוטה במצב הנוכחי.");
+        setDeleteError(error409Copy);
       } else {
-        setDeleteError("מחיקת הטיוטה נכשלה. נסו שוב.");
+        setDeleteError(errorGenericCopy);
       }
     } finally {
       setDeleteLoadingId(null);
@@ -4442,7 +4445,7 @@ function MarketingDraftsPanel() {
             }
           )
         ] }) : null,
-        selectedDraft.status === "draft" ? /* @__PURE__ */ jsxs("div", { className: styles$3.deleteBlock, children: [
+        selectedDraft.status === "draft" || selectedDraft.status === "canceled" ? /* @__PURE__ */ jsxs("div", { className: styles$3.deleteBlock, children: [
           deleteError ? /* @__PURE__ */ jsx(
             "p",
             {
@@ -4456,13 +4459,13 @@ function MarketingDraftsPanel() {
             {
               className: styles$3.confirmBox,
               role: "group",
-              "aria-label": "אישור מחיקה",
+              "aria-label": selectedDraft.status === "canceled" ? "אישור מחיקת קמפיין שבוטל" : "אישור מחיקה",
               children: [
                 /* @__PURE__ */ jsx(
                   "span",
                   {
                     className: styles$3.confirmText,
-                    children: "הפעולה תמחק את הטיוטה רק אם עדיין לא נוצרו לה רשומות שליחה. לא ניתן לשחזר."
+                    children: selectedDraft.status === "canceled" ? "הפעולה תמחק את הקמפיין שבוטל ואת רשומות השליחה הטכניות שמותר למחוק. לא ניתן לשחזר." : "הפעולה תמחק את הטיוטה רק אם עדיין לא נוצרו לה רשומות שליחה. לא ניתן לשחזר."
                   }
                 ),
                 /* @__PURE__ */ jsxs(
@@ -4476,10 +4479,11 @@ function MarketingDraftsPanel() {
                           type: "button",
                           className: styles$3.confirmYesButton,
                           onClick: () => handleConfirmDelete(
-                            selectedDraft.campaignId
+                            selectedDraft.campaignId,
+                            selectedDraft.status
                           ),
                           disabled: deleteLoadingId === selectedDraft.campaignId,
-                          children: "כן, מחק טיוטה"
+                          children: selectedDraft.status === "canceled" ? "כן, מחק קמפיין שבוטל" : "כן, מחק טיוטה"
                         }
                       ),
                       /* @__PURE__ */ jsx(
@@ -4507,7 +4511,7 @@ function MarketingDraftsPanel() {
               onClick: () => setConfirmingDeleteId(
                 selectedDraft.campaignId
               ),
-              children: "מחיקת טיוטה"
+              children: selectedDraft.status === "canceled" ? "מחיקת קמפיין שבוטל" : "מחיקת טיוטה"
             }
           )
         ] }) : null
