@@ -9,6 +9,7 @@ import { startTrialReminderJob } from "./jobs/trialReminderJob.js";
 import { startBillingReconcileJob } from "./jobs/billingReconcile.js";
 import { startReceiptRetryJob } from "./jobs/receiptRetry.js";
 import { startSlugRedirectReleaseJob } from "./jobs/slugRedirectRelease.js";
+import { startMarketingSendDryRunWorker } from "./jobs/marketingSendDryRunWorker.js";
 
 // --- Sentry early init (before Express app loads) ---
 // Must run before app.js is imported so Sentry can instrument Express/http.
@@ -145,6 +146,15 @@ async function start() {
         intervalMs:
             Number(process.env.SLUG_REDIRECT_RELEASE_INTERVAL_MS) ||
             24 * 60 * 60 * 1000,
+    });
+
+    // Marketing send DRY-RUN server worker: rehearses claim/eligibility/release
+    // mechanics only. Disabled by default — self-gates on
+    // MARKETING_SEND_WORKER_ENABLED + dry-run-only + send-to-list flags.
+    startMarketingSendDryRunWorker({
+        intervalMs:
+            Number(process.env.MARKETING_SEND_WORKER_INTERVAL_MS) ||
+            5 * 60 * 1000,
     });
 
     app.listen(PORT, () => {
