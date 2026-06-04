@@ -1095,3 +1095,175 @@ export async function sendMarketingTestEmailBestEffort({
         return { ok: false };
     }
 }
+
+// ---------------------------------------------------------------------------
+// Marketing campaign per-recipient send (v1 — one recipient per call).
+//
+// SAFETY:
+//   - Exactly one recipient in Messages[]. No batch.
+//   - CustomID (Mailjet deduplication within provider window) = recipientRowId.
+//   - List-Unsubscribe / List-Unsubscribe-Post headers for RFC 2369 compliance.
+//   - Never logs toEmail, subject, html, text, unsubscribeUrl, or raw
+//     provider response body.
+//   - Returns a safe shape only: providerMessageId (safe label), providerStatus
+//     (coarse label), providerErrorSafe (bounded string, never raw body).
+//   - If Mailjet not configured: { ok:false, reason:"MAILJET_NOT_CONFIGURED",
+//     providerStatus:"skipped" } — no throw.
+// ---------------------------------------------------------------------------
+
+/**
+ * Send exactly one marketing campaign email to one recipient.
+ *
+ * @param {{
+ *   toEmail: string,
+ *   subject: string,
+ *   htmlPart: string,
+ *   textPart: string,
+ *   customId: string,
+ *   unsubscribeUrl: string,
+ * }} args
+ * @returns {Promise<
+ *   | { ok: true, providerMessageId: string|null, providerStatus: "accepted" }
+ *   | { ok: false, reason: string, providerStatus: string, providerErrorSafe: string }
+ * >}
+ */
+export async function sendMarketingCampaignEmailBestEffort({
+    toEmail,
+    subject,
+    htmlPart,
+    textPart,
+    customId,
+    unsubscribeUrl,
+}) {
+    const cfg = getMailjetConfig();
+    const toEmailNormalized = normalizeEmail(toEmail);
+
+    if (!cfg.enabled) {
+        return {
+            ok: false,
+            reason: "MAILJET_NOT_CONFIGURED",
+            providerStatus: "skipped",
+            providerErrorSafe: "MAILJET_NOT_CONFIGURED",
+        };
+    }
+
+    if (
+        !toEmailNormalized ||
+        typeof subject !== "string" ||
+        !subject.trim() ||
+        typeof htmlPart !== "string" ||
+        !htmlPart ||
+        typeof textPart !== "string" ||
+        !textPart
+    ) {
+        return {
+            ok: false,
+            reason: "INVALID_INPUT",
+            providerStatus: "skipped",
+            providerErrorSafe: "INVALID_INPUT",
+        };
+    }
+
+    const auth = Buffer.from(`${cfg.apiKey}:${cfg.apiSecret}`).toString(
+        "base64",
+    );
+
+    // List-Unsubscribe headers for RFC 2369 / RFC 8058 compliance.
+    // Required for bulk/marketing emails to avoid spam classification.
+    const headers = {};
+    if (typeof unsubscribeUrl === "string" && unsubscribeUrl) {
+        headers["List-Unsubscribe"] = `<${unsubscribeUrl}>`;
+        headers["List-Unsubscribe-Post"] = "List-Unsubscribe=One-Click";
+    }
+
+    // One recipient only — no batch. CustomID for Mailjet deduplication.
+    const message = {
+        From: { Email: cfg.fromEmail, Name: cfg.fromName },
+        To: [{ Email: toEmailNormalized }],
+        Subject: subject,
+        TextPart: textPart,
+        HTMLPart: htmlPart,
+    };
+    if (typeof customId === "string" && customId) {
+        message.CustomID = customId;
+    }
+    if (Object.keys(headers).length > 0) {
+        message.Headers = headers;
+    }
+
+    const payload = { Messages: [message] };
+    const body = JSON.stringify(payload);
+
+    try {
+        const res = await httpsRequestJson({
+            hostname: "api.mailjet.com",
+            path: "/v3.1/send",
+            method: "POST",
+            timeoutMs: 15_000,
+            headers: {
+                Authorization: `Basic ${auth}`,
+                "Content-Type": "application/json",
+                "Content-Length": Buffer.byteLength(body),
+            },
+            body,
+        });
+
+        const ok = res.statusCode >= 200 && res.statusCode < 300;
+
+        // Safe parse: extract providerMessageId only.
+        // Do NOT log or persist the raw response body.
+        let providerMessageId = null;
+        try {
+            const parsed = JSON.parse(res.bodyText);
+            const msgId = parsed?.Messages?.[0]?.To?.[0]?.MessageID;
+            if (msgId !== undefined && msgId !== null) {
+                providerMessageId = String(msgId).slice(0, 200);
+            }
+        } catch {
+            // Unparseable response — leave providerMessageId null.
+        }
+
+        if (ok) {
+            return { ok: true, providerMessageId, providerStatus: "accepted" };
+        }
+
+        // Failure path: extract a safe bounded error label from the response.
+        // Never expose or persist the raw provider body.
+        let providerErrorSafe = "REJECTED";
+        try {
+            const parsed = JSON.parse(res.bodyText);
+            const errMsg =
+                parsed?.ErrorMessage ||
+                parsed?.Messages?.[0]?.Errors?.[0]?.ErrorMessage;
+            if (typeof errMsg === "string" && errMsg.trim()) {
+                providerErrorSafe = errMsg.trim().slice(0, 200);
+            }
+        } catch {
+            // Unparseable — use default label.
+        }
+
+        // Log only safe identifiers — never email, body, or token.
+        console.error("[mailjet] campaign send failed", {
+            statusCode: res.statusCode,
+            customId: String(customId || ""),
+        });
+        return {
+            ok: false,
+            reason: "PROVIDER_REJECTED",
+            providerStatus: "rejected",
+            providerErrorSafe,
+        };
+    } catch (err) {
+        // Log only safe identifiers.
+        console.error("[mailjet] campaign send error", {
+            customId: String(customId || ""),
+            error: err?.message || err,
+        });
+        return {
+            ok: false,
+            reason: "PROVIDER_ERROR",
+            providerStatus: "error",
+            providerErrorSafe: "PROVIDER_CALL_FAILED",
+        };
+    }
+}

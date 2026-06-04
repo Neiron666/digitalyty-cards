@@ -17,7 +17,7 @@ import { UNSUBSCRIBE_TOKEN_TTL_MS } from "./unsubscribeTokenTtl.util.js";
  * Issue a one-time unsubscribe token for the given normalized email.
  *
  * @param {{ emailNormalized: string }} args
- * @returns {Promise<{ unsubscribeUrl: string, expiresAt: Date }>}
+ * @returns {Promise<{ unsubscribeUrl: string, expiresAt: Date, tokenId: string }>}
  * @throws {Error} if input is invalid or persistence fails (caller fails closed)
  */
 export async function issueEmailUnsubscribeToken({ emailNormalized } = {}) {
@@ -36,7 +36,9 @@ export async function issueEmailUnsubscribeToken({ emailNormalized } = {}) {
         .digest("hex");
     const expiresAt = new Date(Date.now() + UNSUBSCRIBE_TOKEN_TTL_MS);
 
-    await EmailUnsubscribeToken.create({
+    // Capture the created doc so callers can persist its _id as unsubscribeTokenId
+    // in recipient rows before any provider call. Raw token is never stored.
+    const created = await EmailUnsubscribeToken.create({
         emailNormalized: normalized,
         tokenHash,
         expiresAt,
@@ -45,5 +47,7 @@ export async function issueEmailUnsubscribeToken({ emailNormalized } = {}) {
 
     const unsubscribeUrl = `${getSiteUrl()}/unsubscribe?token=${rawToken}`;
 
-    return { unsubscribeUrl, expiresAt };
+    // tokenId is additive — existing callers that destructure only
+    // { unsubscribeUrl } or { unsubscribeUrl, expiresAt } are unaffected.
+    return { unsubscribeUrl, expiresAt, tokenId: String(created._id) };
 }
