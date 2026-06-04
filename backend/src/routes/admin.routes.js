@@ -82,6 +82,8 @@ import {
     getMarketingCampaignDraft,
     cancelMarketingCampaignDraft,
     getMarketingCampaignSendReadiness,
+    startMarketingCampaignSend,
+    cancelMarketingCampaignSend,
 } from "../controllers/adminMarketingCampaign.controller.js";
 import { upload } from "../middlewares/upload.middleware.js";
 
@@ -131,6 +133,22 @@ router.patch(
 router.post(
     "/marketing/campaigns/:campaignId/send-readiness",
     getMarketingCampaignSendReadiness,
+);
+// Marketing emails — feature-flagged (MARKETING_SEND_TO_LIST_ENABLED) MUTATING
+// start/enqueue: draft -> queued + one pending recipient row per eligible user,
+// in a single transaction. Idempotent on startRequestId. No send, no Mailjet,
+// no token, no worker.
+router.post(
+    "/marketing/campaigns/:campaignId/start",
+    startMarketingCampaignSend,
+);
+// Marketing emails — MUTATING cancel-send (NOT gated by the start flag, so
+// rollback works even when start is disabled): queued -> canceled + pending
+// recipient rows -> canceled, in a single transaction. No send, no Mailjet,
+// no token, no worker.
+router.patch(
+    "/marketing/campaigns/:campaignId/cancel-send",
+    cancelMarketingCampaignSend,
 );
 
 // safe write actions (no generic patch)

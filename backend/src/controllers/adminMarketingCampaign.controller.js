@@ -23,6 +23,7 @@ import {
     revalidateMarketingRecipientUserIds,
 } from "../utils/marketingRecipientEligibility.util.js";
 import MarketingCampaign from "../models/MarketingCampaign.model.js";
+import MarketingCampaignRecipient from "../models/MarketingCampaignRecipient.model.js";
 import {
     validateMarketingImageUrl,
     validateMarketingLinkUrl,
@@ -1102,4 +1103,497 @@ export async function getMarketingCampaignSendReadiness(req, res) {
             message: "Failed to evaluate campaign send readiness",
         });
     }
+}
+
+// ---------------------------------------------------------------------------
+// Start send (admin-only, feature-flagged, MUTATING). Atomically promotes an
+// owned "draft" campaign to "queued" and materializes one MarketingCampaignRecipient
+// "pending" ledger row per backend-revalidated eligible user, inside a single
+// transaction. Idempotent on startRequestId. This is the enqueue boundary ONLY:
+// it NEVER sends, NEVER touches Mailjet, NEVER mints unsubscribe tokens, NEVER
+// renders html/text, NEVER starts a worker, and NEVER echoes selectedUserIds,
+// emails, tokens, or provider data. Eligibility is always re-derived live (the
+// stored draft snapshot is NOT trusted). requireAdmin + CSRF inherited from the
+// /api/admin mount + global csrfGuard.
+// ---------------------------------------------------------------------------
+
+/**
+ * POST /api/admin/marketing/campaigns/:campaignId/start
+ * Body: { requestId: string } (required idempotency key).
+ * Returns counts-only: { ok, campaignId, status:"queued", selectedCount,
+ *   duplicateCount, uniqueCount, eligibleCount, skippedCount, skippedByReason,
+ *   recipientRowsCreated, warnings } (+ replayed:true on idempotent replay).
+ * Feature-flagged (MARKETING_SEND_TO_LIST_ENABLED).
+ *
+ * Order: feature flag -> requestId validation -> ObjectId guard -> own-admin
+ * scope (404) -> same-campaign idempotent replay -> draft-only (409) ->
+ * non-empty selection (422) -> content validation (422) -> live eligibility
+ * revalidation (422 if zero) -> transaction (draft->queued CAS + recipient
+ * inserts) -> best-effort audit -> counts-only response.
+ */
+export async function startMarketingCampaignSend(req, res) {
+    // A. Feature flag first — no validation, no DB read/write, no audit.
+    if (process.env.MARKETING_SEND_TO_LIST_ENABLED !== "true") {
+        return res.status(409).json({
+            ok: false,
+            message: "Marketing send-to-list is disabled",
+        });
+    }
+
+    // B. requestId — REQUIRED, string-only, trimmed, bounded. Stored as
+    // startRequestId (NEVER the draft requestId).
+    const rawRequestId = req.body?.requestId;
+    if (typeof rawRequestId === "undefined" || rawRequestId === null) {
+        return res
+            .status(400)
+            .json({ ok: false, message: "requestId is required" });
+    }
+    if (typeof rawRequestId !== "string") {
+        return res
+            .status(400)
+            .json({ ok: false, message: "requestId must be a string" });
+    }
+    const requestId = rawRequestId.trim();
+    if (requestId === "") {
+        return res
+            .status(400)
+            .json({ ok: false, message: "requestId must not be empty" });
+    }
+    if (requestId.length > 200) {
+        return res
+            .status(400)
+            .json({ ok: false, message: "requestId is too long" });
+    }
+
+    const { campaignId } = req.params;
+
+    // C. ObjectId guard BEFORE any query (CastError -> 404, not 500).
+    if (!isValidObjectId(campaignId)) {
+        return res
+            .status(404)
+            .json({ ok: false, message: "Campaign not found" });
+    }
+
+    // Builds the counts-only idempotent-replay DTO from a campaign's stored
+    // selection snapshot + the actual recipient-row count. Best-effort replay
+    // audit. No transaction, no recipient writes. Counts-only — never echoes
+    // selectedUserIds/emails/tokens/provider/html/text.
+    const respondReplay = async (campaign) => {
+        const snap = campaign.selectionSnapshot || {};
+        const recipientRowsCreated =
+            await MarketingCampaignRecipient.countDocuments({
+                campaignId: campaign._id,
+            });
+        try {
+            await logAdminAction({
+                adminUserId: req.userId,
+                action: "marketing_campaign_send_start_replayed",
+                targetType: "campaign",
+                targetId: String(campaign._id),
+                reason: "admin marketing campaign send start",
+                meta: {
+                    status: campaign.status,
+                    selectedCount: snap.selectedCount,
+                    eligibleCount: snap.eligibleCount,
+                    skippedCount: snap.skippedCount,
+                    recipientRowsCreated,
+                    requestIdPresent: true,
+                },
+            });
+        } catch (auditErr) {
+            console.error(
+                "[adminMarketingCampaign] start replay audit failed",
+                auditErr?.message || auditErr,
+            );
+        }
+        return res.status(200).json({
+            ok: true,
+            campaignId: String(campaign._id),
+            status: campaign.status,
+            selectedCount: snap.selectedCount,
+            duplicateCount: snap.duplicateCount,
+            uniqueCount: snap.uniqueCount,
+            eligibleCount: snap.eligibleCount,
+            skippedCount: snap.skippedCount,
+            skippedByReason: skippedByReasonToPlainObject(snap.skippedByReason),
+            recipientRowsCreated,
+            replayed: true,
+            warnings: ["IDEMPOTENT_REPLAY"],
+        });
+    };
+
+    try {
+        // C2. Own-admin scope load. contentSnapshot is for validation only and
+        // is NEVER returned; selectionSnapshot is counts/ids for internal use.
+        const doc = await MarketingCampaign.findOne({
+            _id: campaignId,
+            createdByAdminId: req.userId,
+        })
+            .select({
+                status: 1,
+                startRequestId: 1,
+                contentSnapshot: 1,
+                selectionSnapshot: 1,
+            })
+            .lean();
+
+        // C3. Not found / not owned -> 404 (no existence leak).
+        if (!doc) {
+            return res
+                .status(404)
+                .json({ ok: false, message: "Campaign not found" });
+        }
+
+        // D. Same-campaign idempotent replay BEFORE status rejection. Only the
+        // SAME owned campaign carrying the SAME startRequestId replays; a
+        // cross-campaign startRequestId reuse is caught by the unique index at
+        // CAS time (-> 409 "requestId conflict").
+        if (doc.startRequestId === requestId && doc.status !== "draft") {
+            return await respondReplay(doc);
+        }
+
+        // E. Draft-only precondition (v1). "ready" is unused in v1.
+        if (doc.status !== "draft") {
+            return res.status(409).json({
+                ok: false,
+                message: "Campaign is not in a startable state",
+                status: doc.status,
+            });
+        }
+
+        // F. Non-empty selection precondition. Nothing to enqueue otherwise.
+        const selectedUserIds = Array.isArray(
+            doc.selectionSnapshot?.selectedUserIds,
+        )
+            ? doc.selectionSnapshot.selectedUserIds
+            : [];
+        if (selectedUserIds.length === 0) {
+            return res
+                .status(422)
+                .json({ ok: false, message: "No selected recipients" });
+        }
+
+        // G. Content validation only — fail-closed if the stored content
+        // snapshot is not send-ready. Result discarded (no render, no storage,
+        // no echo). Never expose the underlying normalize error text.
+        try {
+            normalizeMarketingEmailInput(doc.contentSnapshot || {});
+        } catch (contentErr) {
+            return res.status(422).json({
+                ok: false,
+                message: "Campaign content is not send-ready",
+            });
+        }
+
+        // H. Live backend eligibility revalidation — SSoT. Never trust the
+        // stored draft snapshot counts or any readiness probe result.
+        const result =
+            await revalidateMarketingRecipientUserIds(selectedUserIds);
+        const skippedByReason = skippedByReasonToPlainObject(
+            result.skippedByReason,
+        );
+        if (result.eligibleCount === 0) {
+            return res
+                .status(422)
+                .json({ ok: false, message: "No eligible recipients" });
+        }
+
+        // I. Transaction: atomic draft->queued CAS + recipient row inserts.
+        const now = new Date();
+        const session = await mongoose.startSession();
+        try {
+            await session.withTransaction(async () => {
+                // I.1 CAS — flips ONLY when still owned + status "draft". The
+                // {status:"draft"} predicate is the race guard; the loser of a
+                // concurrent double-start matches no doc here.
+                const cas = await MarketingCampaign.findOneAndUpdate(
+                    {
+                        _id: campaignId,
+                        createdByAdminId: req.userId,
+                        status: "draft",
+                    },
+                    {
+                        $set: {
+                            status: "queued",
+                            queuedAt: now,
+                            sendStartedByAdminId: req.userId,
+                            startRequestId: requestId,
+                        },
+                    },
+                    { new: true, session },
+                );
+                // I.2 No match -> controlled conflict, resolved post-abort.
+                if (!cas) {
+                    const conflict = new Error("START_CAS_NO_MATCH");
+                    conflict.casNoMatch = true;
+                    throw conflict;
+                }
+                // I.3 Materialize one pending recipient row per ELIGIBLE user
+                // only. nextAttemptAt = now per the recipient model R2 contract
+                // (a worker claim query would never select null-scheduled rows).
+                // No skipped/suppressed rows. No email/token/provider/html/text.
+                const rows = result.eligibleUserIds.map((userId) => ({
+                    campaignId: cas._id,
+                    userId,
+                    status: "pending",
+                    nextAttemptAt: now,
+                    dryRunOnly: false,
+                }));
+                await MarketingCampaignRecipient.insertMany(rows, {
+                    session,
+                    ordered: false,
+                });
+            });
+        } catch (txErr) {
+            await session.endSession();
+
+            // J.a CAS matched no doc — a concurrent winner already moved the
+            // campaign out of "draft". Re-read to decide replay vs conflict.
+            if (txErr?.casNoMatch) {
+                const after = await MarketingCampaign.findOne({
+                    _id: campaignId,
+                    createdByAdminId: req.userId,
+                })
+                    .select({
+                        status: 1,
+                        startRequestId: 1,
+                        selectionSnapshot: 1,
+                    })
+                    .lean();
+                if (!after) {
+                    return res
+                        .status(404)
+                        .json({ ok: false, message: "Campaign not found" });
+                }
+                if (after.startRequestId === requestId) {
+                    return await respondReplay(after);
+                }
+                return res.status(409).json({
+                    ok: false,
+                    message: "Campaign is not in a startable state",
+                    status: after.status,
+                });
+            }
+
+            // J.b Duplicate startRequestId (unique+sparse index) or a recipient
+            // (campaignId,userId) duplicate from a racing winner. Resolve to a
+            // same-campaign replay or a cross-campaign requestId conflict.
+            if (txErr?.code === 11000) {
+                const byId = await MarketingCampaign.findOne({
+                    _id: campaignId,
+                    createdByAdminId: req.userId,
+                })
+                    .select({
+                        status: 1,
+                        startRequestId: 1,
+                        selectionSnapshot: 1,
+                    })
+                    .lean();
+                if (
+                    byId &&
+                    byId.startRequestId === requestId &&
+                    byId.status !== "draft"
+                ) {
+                    return await respondReplay(byId);
+                }
+                const byReq = await MarketingCampaign.findOne({
+                    startRequestId: requestId,
+                    createdByAdminId: req.userId,
+                })
+                    .select({
+                        _id: 1,
+                        status: 1,
+                        startRequestId: 1,
+                        selectionSnapshot: 1,
+                    })
+                    .lean();
+                if (byReq && String(byReq._id) === String(campaignId)) {
+                    return await respondReplay(byReq);
+                }
+                return res
+                    .status(409)
+                    .json({ ok: false, message: "requestId conflict" });
+            }
+
+            console.error(
+                "[adminMarketingCampaign] start send transaction failed",
+                txErr?.message || txErr,
+            );
+            return res
+                .status(500)
+                .json({ ok: false, message: "Failed to start campaign send" });
+        }
+        await session.endSession();
+
+        const recipientRowsCreated = result.eligibleUserIds.length;
+
+        // K. Best-effort AdminAudit (non-fatal) — counts only. A failed audit
+        // must NEVER roll back the committed enqueue.
+        try {
+            await logAdminAction({
+                adminUserId: req.userId,
+                action: "marketing_campaign_send_start_accepted",
+                targetType: "campaign",
+                targetId: campaignId,
+                reason: "admin marketing campaign send start",
+                meta: {
+                    selectedCount: result.selectedCount,
+                    eligibleCount: result.eligibleCount,
+                    skippedCount: result.skippedCount,
+                    recipientRowsCreated,
+                    requestIdPresent: true,
+                },
+            });
+        } catch (auditErr) {
+            console.error(
+                "[adminMarketingCampaign] start accepted audit failed",
+                auditErr?.message || auditErr,
+            );
+        }
+
+        // L. Counts-only success response. No selectedUserIds/eligibleUserIds/
+        // skipped list/userIds/emails/tokens/provider/html/text/raw docs.
+        return res.status(200).json({
+            ok: true,
+            campaignId,
+            status: "queued",
+            selectedCount: result.selectedCount,
+            duplicateCount: result.duplicateCount,
+            uniqueCount: result.uniqueCount,
+            eligibleCount: result.eligibleCount,
+            skippedCount: result.skippedCount,
+            skippedByReason,
+            recipientRowsCreated,
+            warnings: [],
+        });
+    } catch (err) {
+        console.error(
+            "[adminMarketingCampaign] start send failed",
+            err?.message || err,
+        );
+        return res
+            .status(500)
+            .json({ ok: false, message: "Failed to start campaign send" });
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Cancel send (admin-only, MUTATING, NOT feature-flagged). Atomically rolls a
+// "queued" campaign back to "canceled" and flips its still-"pending" recipient
+// rows to "canceled" inside a single transaction. Intentionally NOT gated by
+// MARKETING_SEND_TO_LIST_ENABLED: rollback/cancel must remain available even if
+// the start flag is turned off. Never touches sent/sending/failed rows. NEVER
+// sends, NEVER touches Mailjet/tokens/renderer/worker, NEVER echoes PII.
+// requireAdmin + CSRF inherited from the /api/admin mount + global csrfGuard.
+// ---------------------------------------------------------------------------
+
+/**
+ * PATCH /api/admin/marketing/campaigns/:campaignId/cancel-send
+ * Body: ignored. Returns: { ok, campaignId, status:"canceled",
+ *   recipientsCanceled, canceledAt }. Anti-enumeration 404; 409 if not queued.
+ */
+export async function cancelMarketingCampaignSend(req, res) {
+    const { campaignId } = req.params;
+
+    // A. ObjectId guard BEFORE any query (CastError -> 404, not 500).
+    if (!isValidObjectId(campaignId)) {
+        return res
+            .status(404)
+            .json({ ok: false, message: "Campaign not found" });
+    }
+
+    const now = new Date();
+    const session = await mongoose.startSession();
+    let canceledCampaign = null;
+    let recipientsCanceled = 0;
+    try {
+        await session.withTransaction(async () => {
+            // C.1 CAS — flips ONLY when still owned + status "queued".
+            const cas = await MarketingCampaign.findOneAndUpdate(
+                {
+                    _id: campaignId,
+                    createdByAdminId: req.userId,
+                    status: "queued",
+                },
+                { $set: { status: "canceled", canceledAt: now } },
+                { new: true, session },
+            );
+            if (!cas) {
+                const conflict = new Error("CANCEL_CAS_NO_MATCH");
+                conflict.casNoMatch = true;
+                throw conflict;
+            }
+            // C.2 Flip ONLY still-pending recipient rows. sent/sending/failed
+            // rows are never touched (in no-worker v1 only pending can exist).
+            const upd = await MarketingCampaignRecipient.updateMany(
+                { campaignId: cas._id, status: "pending" },
+                { $set: { status: "canceled", canceledAt: now } },
+                { session },
+            );
+            recipientsCanceled = upd?.modifiedCount || 0;
+            canceledCampaign = cas;
+        });
+    } catch (txErr) {
+        await session.endSession();
+
+        // B. CAS matched no doc — disambiguate 404 (absent/not owned) vs 409
+        // (exists but not in "queued" status).
+        if (txErr?.casNoMatch) {
+            const existing = await MarketingCampaign.findOne({
+                _id: campaignId,
+                createdByAdminId: req.userId,
+            })
+                .select("status")
+                .lean();
+            if (!existing) {
+                return res
+                    .status(404)
+                    .json({ ok: false, message: "Campaign not found" });
+            }
+            return res.status(409).json({
+                ok: false,
+                message: "Campaign send is not cancelable",
+                status: existing.status,
+            });
+        }
+
+        console.error(
+            "[adminMarketingCampaign] cancel send transaction failed",
+            txErr?.message || txErr,
+        );
+        return res
+            .status(500)
+            .json({ ok: false, message: "Failed to cancel campaign send" });
+    }
+    await session.endSession();
+
+    // D. Best-effort AdminAudit (non-fatal) — counts only.
+    try {
+        await logAdminAction({
+            adminUserId: req.userId,
+            action: "marketing_campaign_send_canceled",
+            targetType: "campaign",
+            targetId: campaignId,
+            reason: "admin marketing campaign send canceled",
+            meta: {
+                recipientsCanceled,
+                previousStatus: "queued",
+                nextStatus: "canceled",
+            },
+        });
+    } catch (auditErr) {
+        console.error(
+            "[adminMarketingCampaign] cancel send audit failed",
+            auditErr?.message || auditErr,
+        );
+    }
+
+    // E. Counts-only DTO. No selectedUserIds/emails/tokens/provider/raw docs.
+    return res.json({
+        ok: true,
+        campaignId,
+        status: "canceled",
+        recipientsCanceled,
+        canceledAt: canceledCampaign.canceledAt,
+    });
 }
