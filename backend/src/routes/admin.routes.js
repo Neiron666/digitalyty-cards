@@ -81,6 +81,7 @@ import {
     listMarketingCampaignDrafts,
     getMarketingCampaignDraft,
     cancelMarketingCampaignDraft,
+    getMarketingCampaignSendReadiness,
 } from "../controllers/adminMarketingCampaign.controller.js";
 import { upload } from "../middlewares/upload.middleware.js";
 
@@ -123,6 +124,13 @@ router.get(
 router.patch(
     "/marketing/campaigns/drafts/:campaignId/cancel",
     cancelMarketingCampaignDraft,
+);
+// Marketing emails — feature-flagged READ-ONLY send-readiness probe (live
+// eligibility revalidation of a draft's stored selection; no send, no enqueue,
+// no DB write, no Mailjet, no token).
+router.post(
+    "/marketing/campaigns/:campaignId/send-readiness",
+    getMarketingCampaignSendReadiness,
 );
 
 // safe write actions (no generic patch)

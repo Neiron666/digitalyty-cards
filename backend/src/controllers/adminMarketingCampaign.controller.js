@@ -967,3 +967,139 @@ export async function cancelMarketingCampaignDraft(req, res) {
             .json({ ok: false, message: "Failed to cancel campaign draft" });
     }
 }
+
+// ---------------------------------------------------------------------------
+// Send-readiness (admin-only, feature-flagged, READ-ONLY). Re-runs the backend
+// eligibility SSoT against the stored selectionSnapshot.selectedUserIds of an
+// owned "draft" campaign and returns fresh safe counts. This is the read-only
+// precondition probe for a future start/enqueue endpoint: it NEVER writes,
+// NEVER enqueues, NEVER sends, NEVER touches Mailjet, NEVER mints unsubscribe
+// tokens, NEVER renders html/text, and NEVER echoes selectedUserIds, emails,
+// tokens, or provider data. The stored draft dry-run is intentionally NOT
+// trusted — eligibility is always re-derived live.
+// ---------------------------------------------------------------------------
+
+/**
+ * POST /api/admin/marketing/campaigns/:campaignId/send-readiness
+ * Body: ignored (no userIds/content/provider fields are read).
+ * Returns: { ok:true, campaignId, status, selectedCount, duplicateCount,
+ *   uniqueCount, eligibleCount, skippedCount, skippedByReason, ready, warnings }
+ * Feature-flagged (MARKETING_SEND_READINESS_ENABLED). requireAdmin + CSRF
+ * inherited from the /api/admin mount + global csrfGuard.
+ *
+ * Order: feature flag -> ObjectId guard -> own-admin scope (404) -> draft-only
+ * precondition (409) -> non-empty selection (422) -> content validation (422)
+ * -> live revalidation -> counts-only response. No DB write at any step.
+ */
+export async function getMarketingCampaignSendReadiness(req, res) {
+    // A. Feature flag first — no validation, no DB read, no audit. This is a
+    // dedicated READ-ONLY readiness flag, independent from the future
+    // start/enqueue flag.
+    if (process.env.MARKETING_SEND_READINESS_ENABLED !== "true") {
+        return res.status(409).json({
+            ok: false,
+            message: "Marketing send readiness is disabled",
+        });
+    }
+
+    const { campaignId } = req.params;
+
+    // B. ObjectId guard BEFORE any query (CastError -> 404, not 500).
+    if (!isValidObjectId(campaignId)) {
+        return res
+            .status(404)
+            .json({ ok: false, message: "Campaign not found" });
+    }
+
+    try {
+        // C. Own-admin scope + minimal projection (status + selectedUserIds +
+        // contentSnapshot for validation only; contentSnapshot is NEVER returned).
+        const doc = await MarketingCampaign.findOne({
+            _id: campaignId,
+            createdByAdminId: req.userId,
+        })
+            .select({
+                status: 1,
+                "selectionSnapshot.selectedUserIds": 1,
+                contentSnapshot: 1,
+            })
+            .lean();
+
+        // D. Not found / not owned -> 404 (no existence leak).
+        if (!doc) {
+            return res
+                .status(404)
+                .json({ ok: false, message: "Campaign not found" });
+        }
+
+        // E. Draft-only precondition (v1). Any other status is not startable.
+        if (doc.status !== "draft") {
+            return res.status(409).json({
+                ok: false,
+                message: "Campaign is not in a startable state",
+                status: doc.status,
+            });
+        }
+
+        // F. Non-empty selection precondition. Nothing to enqueue otherwise.
+        const selectedUserIds = Array.isArray(
+            doc.selectionSnapshot?.selectedUserIds,
+        )
+            ? doc.selectionSnapshot.selectedUserIds
+            : [];
+        if (selectedUserIds.length === 0) {
+            return res.status(422).json({
+                ok: false,
+                message: "Campaign has no selected recipients",
+                status: doc.status,
+            });
+        }
+
+        // G. Content validation only — fail-closed if the stored content
+        // snapshot is not send-ready. The normalized result is intentionally
+        // discarded: no render, no storage, no echo of any content field.
+        try {
+            normalizeMarketingEmailInput(doc.contentSnapshot || {});
+        } catch (contentErr) {
+            // Both MarketingInputError and any unexpected validation error map
+            // to the same opaque 422 — never expose contentErr.message here.
+            return res.status(422).json({
+                ok: false,
+                message: "Campaign content is not send-ready",
+                status: doc.status,
+            });
+        }
+
+        // H. Live backend eligibility revalidation — never trust stored dry-run.
+        const result =
+            await revalidateMarketingRecipientUserIds(selectedUserIds);
+        const skippedByReason = skippedByReasonToPlainObject(
+            result.skippedByReason,
+        );
+
+        // I. Counts-only response. ready = at least one eligible recipient.
+        // No selectedUserIds / emails / tokens / provider / html / text echoed.
+        return res.json({
+            ok: true,
+            campaignId: String(doc._id),
+            status: doc.status,
+            selectedCount: result.selectedCount,
+            duplicateCount: result.duplicateCount,
+            uniqueCount: result.uniqueCount,
+            eligibleCount: result.eligibleCount,
+            skippedCount: result.skippedCount,
+            skippedByReason,
+            ready: result.eligibleCount > 0,
+            warnings: [],
+        });
+    } catch (err) {
+        console.error(
+            "[adminMarketingCampaign] send-readiness failed",
+            err?.message || err,
+        );
+        return res.status(500).json({
+            ok: false,
+            message: "Failed to evaluate campaign send readiness",
+        });
+    }
+}
