@@ -164,6 +164,12 @@ function getMarketingCampaignSendStatus(campaignId) {
 function deleteMarketingCampaign(campaignId) {
   return api.delete(`/admin/marketing/campaigns/${campaignId}`);
 }
+function startMarketingCampaignSend(campaignId, requestId) {
+  return api.post(
+    `/admin/marketing/campaigns/${campaignId}/start`,
+    { requestId }
+  );
+}
 function cancelMarketingCampaignSend(campaignId) {
   return api.patch(
     `/admin/marketing/campaigns/${campaignId}/cancel-send`,
@@ -3377,67 +3383,67 @@ function MarketingTestSendConfirm({
     }
   );
 }
-const panel$1 = "_panel_11lt4_1";
-const header$1 = "_header_11lt4_23";
-const title$2 = "_title_11lt4_37";
-const helper = "_helper_11lt4_51";
-const toolbar = "_toolbar_11lt4_65";
-const filterGroup = "_filterGroup_11lt4_83";
-const filterButton = "_filterButton_11lt4_97";
-const filterButtonActive = "_filterButtonActive_11lt4_139";
-const reloadButton = "_reloadButton_11lt4_149";
-const statusLine = "_statusLine_11lt4_191";
-const muted$2 = "_muted_11lt4_209";
-const success = "_success_11lt4_223";
-const error$1 = "_error_11lt4_235";
-const empty$1 = "_empty_11lt4_249";
-const list$1 = "_list_11lt4_263";
-const row$2 = "_row_11lt4_283";
-const rowMain = "_rowMain_11lt4_309";
-const rowSubject = "_rowSubject_11lt4_325";
-const rowHeading = "_rowHeading_11lt4_339";
-const rowMeta = "_rowMeta_11lt4_353";
-const metaItem = "_metaItem_11lt4_369";
-const rowActions = "_rowActions_11lt4_391";
-const viewButton = "_viewButton_11lt4_405";
-const pager$2 = "_pager_11lt4_447";
-const pagerButton = "_pagerButton_11lt4_463";
-const pagerInfo = "_pagerInfo_11lt4_505";
-const detail = "_detail_11lt4_517";
-const detailBlock = "_detailBlock_11lt4_539";
-const detailTitle = "_detailTitle_11lt4_553";
-const detailList = "_detailList_11lt4_567";
-const detailRow = "_detailRow_11lt4_583";
-const detailKey = "_detailKey_11lt4_599";
-const detailText = "_detailText_11lt4_617";
-const countList = "_countList_11lt4_635";
-const countItem = "_countItem_11lt4_655";
-const reasonList = "_reasonList_11lt4_677";
-const reasonRow = "_reasonRow_11lt4_697";
-const confirmBox = "_confirmBox_11lt4_719";
-const confirmText = "_confirmText_11lt4_743";
-const confirmActions = "_confirmActions_11lt4_755";
-const confirmYesButton = "_confirmYesButton_11lt4_769";
-const confirmNoButton = "_confirmNoButton_11lt4_811";
-const cancelButton = "_cancelButton_11lt4_853";
-const startPrepBlock = "_startPrepBlock_11lt4_887";
-const startPrepHelper = "_startPrepHelper_11lt4_911";
-const startPrepNote = "_startPrepNote_11lt4_925";
-const startPrepButton = "_startPrepButton_11lt4_939";
-const deleteBlock = "_deleteBlock_11lt4_975";
-const deleteButton = "_deleteButton_11lt4_991";
-const readinessBlock = "_readinessBlock_11lt4_1035";
-const readinessButton = "_readinessButton_11lt4_1049";
-const readinessHelper = "_readinessHelper_11lt4_1093";
-const readinessStatus = "_readinessStatus_11lt4_1109";
-const readinessResult = "_readinessResult_11lt4_1123";
-const sendStatusBlock = "_sendStatusBlock_11lt4_1137";
-const sendStatusButton = "_sendStatusButton_11lt4_1151";
-const sendStatusHelper = "_sendStatusHelper_11lt4_1195";
-const sendStatusStatus = "_sendStatusStatus_11lt4_1211";
-const sendStatusResult = "_sendStatusResult_11lt4_1225";
-const cancelSendBlock = "_cancelSendBlock_11lt4_1239";
-const cancelSendButton = "_cancelSendButton_11lt4_1255";
+const panel$1 = "_panel_1xoof_1";
+const header$1 = "_header_1xoof_23";
+const title$2 = "_title_1xoof_37";
+const helper = "_helper_1xoof_51";
+const toolbar = "_toolbar_1xoof_65";
+const filterGroup = "_filterGroup_1xoof_83";
+const filterButton = "_filterButton_1xoof_97";
+const filterButtonActive = "_filterButtonActive_1xoof_139";
+const reloadButton = "_reloadButton_1xoof_149";
+const statusLine = "_statusLine_1xoof_191";
+const muted$2 = "_muted_1xoof_209";
+const success = "_success_1xoof_223";
+const error$1 = "_error_1xoof_235";
+const empty$1 = "_empty_1xoof_249";
+const list$1 = "_list_1xoof_263";
+const row$2 = "_row_1xoof_283";
+const rowMain = "_rowMain_1xoof_309";
+const rowSubject = "_rowSubject_1xoof_325";
+const rowHeading = "_rowHeading_1xoof_339";
+const rowMeta = "_rowMeta_1xoof_353";
+const metaItem = "_metaItem_1xoof_369";
+const rowActions = "_rowActions_1xoof_391";
+const viewButton = "_viewButton_1xoof_405";
+const pager$2 = "_pager_1xoof_447";
+const pagerButton = "_pagerButton_1xoof_463";
+const pagerInfo = "_pagerInfo_1xoof_505";
+const detail = "_detail_1xoof_517";
+const detailBlock = "_detailBlock_1xoof_539";
+const detailTitle = "_detailTitle_1xoof_553";
+const detailList = "_detailList_1xoof_567";
+const detailRow = "_detailRow_1xoof_583";
+const detailKey = "_detailKey_1xoof_599";
+const detailText = "_detailText_1xoof_617";
+const countList = "_countList_1xoof_635";
+const countItem = "_countItem_1xoof_655";
+const reasonList = "_reasonList_1xoof_677";
+const reasonRow = "_reasonRow_1xoof_697";
+const confirmBox = "_confirmBox_1xoof_719";
+const confirmText = "_confirmText_1xoof_743";
+const confirmActions = "_confirmActions_1xoof_755";
+const confirmYesButton = "_confirmYesButton_1xoof_769";
+const confirmNoButton = "_confirmNoButton_1xoof_811";
+const cancelButton = "_cancelButton_1xoof_853";
+const startPrepBlock = "_startPrepBlock_1xoof_887";
+const startPrepHelper = "_startPrepHelper_1xoof_911";
+const startPrepNote = "_startPrepNote_1xoof_925";
+const startPrepButton = "_startPrepButton_1xoof_939";
+const deleteBlock = "_deleteBlock_1xoof_983";
+const deleteButton = "_deleteButton_1xoof_999";
+const readinessBlock = "_readinessBlock_1xoof_1043";
+const readinessButton = "_readinessButton_1xoof_1057";
+const readinessHelper = "_readinessHelper_1xoof_1101";
+const readinessStatus = "_readinessStatus_1xoof_1117";
+const readinessResult = "_readinessResult_1xoof_1131";
+const sendStatusBlock = "_sendStatusBlock_1xoof_1145";
+const sendStatusButton = "_sendStatusButton_1xoof_1159";
+const sendStatusHelper = "_sendStatusHelper_1xoof_1203";
+const sendStatusStatus = "_sendStatusStatus_1xoof_1219";
+const sendStatusResult = "_sendStatusResult_1xoof_1233";
+const cancelSendBlock = "_cancelSendBlock_1xoof_1247";
+const cancelSendButton = "_cancelSendButton_1xoof_1263";
 const styles$3 = {
   panel: panel$1,
   header: header$1,
@@ -3600,6 +3606,15 @@ function MarketingDraftsPanel() {
     setCancelSendError("");
     setConfirmingCancelSendId(null);
   }
+  const [startSendLoadingId, setStartSendLoadingId] = useState(null);
+  const [startSendError, setStartSendError] = useState("");
+  const [startSendResult, setStartSendResult] = useState("");
+  const [confirmingStartSendId, setConfirmingStartSendId] = useState(null);
+  function clearStartSendState() {
+    setStartSendLoadingId(null);
+    setStartSendError("");
+    setConfirmingStartSendId(null);
+  }
   const loadDrafts = useCallback(async () => {
     setDraftsLoading(true);
     setDraftsError("");
@@ -3640,6 +3655,8 @@ function MarketingDraftsPanel() {
     setDeleteResult("");
     clearCancelSendState();
     setCancelSendResult("");
+    clearStartSendState();
+    setStartSendResult("");
     setDraftsPage(1);
     setDraftsStatus(nextStatus);
   }
@@ -3656,6 +3673,8 @@ function MarketingDraftsPanel() {
     setDeleteResult("");
     clearCancelSendState();
     setCancelSendResult("");
+    clearStartSendState();
+    setStartSendResult("");
     setSelectedDraftLoading(true);
     try {
       const res = await getMarketingCampaignDraft(campaignId);
@@ -3734,6 +3753,41 @@ function MarketingDraftsPanel() {
       setDeleteLoadingId(null);
     }
   }
+  async function handleConfirmStartSend(campaignId) {
+    if (startSendLoadingId) return;
+    setStartSendError("");
+    setStartSendResult("");
+    setStartSendLoadingId(campaignId);
+    const requestId = crypto.randomUUID();
+    try {
+      await startMarketingCampaignSend(campaignId, requestId);
+      setConfirmingStartSendId(null);
+      setDraftsStatus("queued");
+      setDraftsPage(1);
+      await loadDetail(campaignId);
+      await handleLoadSendStatus(campaignId);
+      setStartSendResult("הקמפיין עבר למצב ממתין לשליחה.");
+    } catch (e) {
+      const httpStatus = e?.response?.status;
+      const msg = String(e?.response?.data?.message || "").toLowerCase();
+      setConfirmingStartSendId(null);
+      if (httpStatus === 409 && msg.includes("disabled")) {
+        setStartSendError("הכנת שליחה אינה פעילה כרגע.");
+      } else if (httpStatus === 409) {
+        await loadDrafts();
+        if (selectedDraftId === campaignId) {
+          await loadDetail(campaignId);
+        }
+        setStartSendError("הכנת השליחה אינה אפשרית במצב הנוכחי.");
+      } else if (httpStatus === 422) {
+        setStartSendError("הטיוטה אינה מוכנה לשליחה.");
+      } else {
+        setStartSendError("הכנת השליחה נכשלה. נסו שוב.");
+      }
+    } finally {
+      setStartSendLoadingId(null);
+    }
+  }
   async function handleConfirmCancelSend(campaignId) {
     if (cancelSendLoadingId) return;
     setCancelSendError("");
@@ -3756,9 +3810,7 @@ function MarketingDraftsPanel() {
         await loadDetail(campaignId);
       }
       if (httpStatus === 404 || httpStatus === 409) {
-        setCancelSendError(
-          "לא ניתן לבטל את הכנת השליחה במצב הנוכחי."
-        );
+        setCancelSendError("לא ניתן לבטל את הכנת השליחה במצב הנוכחי.");
       } else {
         setCancelSendError("ביטול הכנת השליחה נכשל. נסו שוב.");
       }
@@ -3900,7 +3952,8 @@ function MarketingDraftsPanel() {
       draftsLoading ? /* @__PURE__ */ jsx("span", { className: styles$3.muted, children: "טוען…" }) : null,
       cancelResult ? /* @__PURE__ */ jsx("span", { className: styles$3.success, children: cancelResult }) : null,
       deleteResult ? /* @__PURE__ */ jsx("span", { className: styles$3.success, children: deleteResult }) : null,
-      cancelSendResult ? /* @__PURE__ */ jsx("span", { className: styles$3.success, children: cancelSendResult }) : null
+      cancelSendResult ? /* @__PURE__ */ jsx("span", { className: styles$3.success, children: cancelSendResult }) : null,
+      startSendResult ? /* @__PURE__ */ jsx("span", { className: styles$3.success, children: startSendResult }) : null
     ] }),
     draftsError ? /* @__PURE__ */ jsx("p", { className: styles$3.error, role: "alert", children: draftsError }) : null,
     !draftsLoading && !draftsError && items.length === 0 ? /* @__PURE__ */ jsx("p", { className: styles$3.empty, children: "אין טיוטות להצגה." }) : null,
@@ -4489,14 +4542,73 @@ function MarketingDraftsPanel() {
         ) : null,
         selectedDraft.status === "draft" ? /* @__PURE__ */ jsxs("div", { className: styles$3.startPrepBlock, children: [
           /* @__PURE__ */ jsx("h4", { className: styles$3.detailTitle, children: "הכנת קמפיין לשליחה" }),
-          /* @__PURE__ */ jsx("p", { className: styles$3.startPrepHelper, children: "הפעולה תיצור רשומות שליחה טכניות בעתיד, אך אינה שולחת אימיילים בשלב זה." }),
-          /* @__PURE__ */ jsx("p", { className: styles$3.startPrepNote, children: "שליחה אמיתית תופעל רק בשלב נפרד." }),
-          /* @__PURE__ */ jsx(
+          /* @__PURE__ */ jsx("p", { className: styles$3.startPrepHelper, children: "הפעולה תכין את הקמפיין לשליחה ותיצור רשומות טכניות לנמענים. בשלב זה לא נשלחים אימיילים." }),
+          readinessCheckedDraftId === selectedDraft.campaignId && readinessResult2 && !readinessResult2.ready ? /* @__PURE__ */ jsx("p", { className: styles$3.startPrepNote, children: "הטיוטה אינה מוכנה לשליחה — הבדיקה היא אינדיקציה בלבד, והשרת יבדוק שוב בעת ההפעלה." }) : null,
+          startSendError ? /* @__PURE__ */ jsx(
+            "p",
+            {
+              className: styles$3.error,
+              role: "alert",
+              children: startSendError
+            }
+          ) : null,
+          confirmingStartSendId === selectedDraft.campaignId ? /* @__PURE__ */ jsxs(
+            "div",
+            {
+              className: styles$3.confirmBox,
+              role: "group",
+              "aria-label": "אישור יצירת רשומות שליחה",
+              children: [
+                /* @__PURE__ */ jsx(
+                  "span",
+                  {
+                    className: styles$3.confirmText,
+                    children: "הפעולה תעביר את הקמפיין למצב ממתין לשליחה. ניתן יהיה לבטל את ההכנה לפני הפעלה אמיתית."
+                  }
+                ),
+                /* @__PURE__ */ jsxs(
+                  "div",
+                  {
+                    className: styles$3.confirmActions,
+                    children: [
+                      /* @__PURE__ */ jsx(
+                        "button",
+                        {
+                          type: "button",
+                          className: styles$3.confirmYesButton,
+                          onClick: () => handleConfirmStartSend(
+                            selectedDraft.campaignId
+                          ),
+                          disabled: startSendLoadingId === selectedDraft.campaignId,
+                          children: "כן, צור רשומות שליחה"
+                        }
+                      ),
+                      /* @__PURE__ */ jsx(
+                        "button",
+                        {
+                          type: "button",
+                          className: styles$3.confirmNoButton,
+                          onClick: () => setConfirmingStartSendId(
+                            null
+                          ),
+                          disabled: startSendLoadingId === selectedDraft.campaignId,
+                          children: "לא, השאר כטיוטה"
+                        }
+                      )
+                    ]
+                  }
+                )
+              ]
+            }
+          ) : /* @__PURE__ */ jsx(
             "button",
             {
               type: "button",
               className: styles$3.startPrepButton,
-              disabled: true,
+              onClick: () => setConfirmingStartSendId(
+                selectedDraft.campaignId
+              ),
+              disabled: startSendLoadingId === selectedDraft.campaignId,
               children: "יצירת רשומות שליחה"
             }
           )

@@ -4,6 +4,7 @@ import {
     getMarketingCampaignDraft,
     cancelMarketingCampaignDraft,
     cancelMarketingCampaignSend,
+    startMarketingCampaignSend,
     checkMarketingCampaignSendReadiness,
     getMarketingCampaignSendStatus,
     deleteMarketingCampaign,
@@ -162,6 +163,23 @@ export default function MarketingDraftsPanel() {
         setConfirmingCancelSendId(null);
     }
 
+    // Start-send flow state (draft detail only). Two-step confirm; backend is
+    // SSoT (flag gate + draft-only CAS + content/recipient revalidation).
+    // Stores nothing from the response except a fixed success/error string.
+    // Never renders a backend message verbatim.
+    const [startSendLoadingId, setStartSendLoadingId] = useState(null);
+    const [startSendError, setStartSendError] = useState("");
+    const [startSendResult, setStartSendResult] = useState("");
+    const [confirmingStartSendId, setConfirmingStartSendId] = useState(null);
+
+    // Drop start-send flow state (confirm/loading/error). startSendResult is
+    // reset separately so it can persist on the panel status line after reloads.
+    function clearStartSendState() {
+        setStartSendLoadingId(null);
+        setStartSendError("");
+        setConfirmingStartSendId(null);
+    }
+
     // Load the list for the current status + page. Read-only GET. Never renders
     // a backend message verbatim — a single fixed Hebrew error string is used.
     const loadDrafts = useCallback(async () => {
@@ -208,6 +226,8 @@ export default function MarketingDraftsPanel() {
         setDeleteResult("");
         clearCancelSendState();
         setCancelSendResult("");
+        clearStartSendState();
+        setStartSendResult("");
         setDraftsPage(1);
         setDraftsStatus(nextStatus);
     }
@@ -225,6 +245,8 @@ export default function MarketingDraftsPanel() {
         setDeleteResult("");
         clearCancelSendState();
         setCancelSendResult("");
+        clearStartSendState();
+        setStartSendResult("");
         setSelectedDraftLoading(true);
         try {
             const res = await getMarketingCampaignDraft(campaignId);
@@ -330,6 +352,64 @@ export default function MarketingDraftsPanel() {
             }
         } finally {
             setDeleteLoadingId(null);
+        }
+    }
+
+    // Start-send — draft-only enqueue. POST /campaigns/:id/start.
+    // Backend is SSoT (flag gate + draft-only CAS + server content/recipient
+    // revalidation). requestId generated per confirmed attempt; never stored in
+    // state. Backend message is never rendered — only fixed Hebrew strings.
+    // On success: switches list to queued tab (setDraftsStatus triggers useEffect
+    // reload of the list — loadDrafts is NOT called directly after setDraftsStatus
+    // to avoid stale-closure capture of the old status). Detail + send-status
+    // are refreshed explicitly.
+    async function handleConfirmStartSend(campaignId) {
+        if (startSendLoadingId) return;
+        setStartSendError("");
+        setStartSendResult("");
+        setStartSendLoadingId(campaignId);
+        // requestId is generated per confirmed attempt. Never stored in state.
+        // Never rendered. crypto.randomUUID() is available in all modern browsers
+        // and in Node 22 (used by Vite dev server). No fallback needed.
+        const requestId = crypto.randomUUID();
+        try {
+            await startMarketingCampaignSend(campaignId, requestId);
+            setConfirmingStartSendId(null);
+            // Switch the list tab to "queued" so the operator sees the newly
+            // queued campaign immediately. setDraftsStatus + setDraftsPage
+            // trigger the loadDrafts useEffect — do NOT call loadDrafts() here
+            // directly, as the closure would still capture the old draftsStatus.
+            setDraftsStatus("queued");
+            setDraftsPage(1);
+            // Reload detail so the detail panel reflects status:"queued" and
+            // the cancel-send block becomes available.
+            await loadDetail(campaignId);
+            // One-shot send-status refresh so pending counts are visible.
+            await handleLoadSendStatus(campaignId);
+            // Set AFTER all reloads — loadDetail calls clearStartSendState
+            // which would clear this; re-set here so the status line shows it.
+            setStartSendResult("הקמפיין עבר למצב ממתין לשליחה.");
+        } catch (e) {
+            const httpStatus = e?.response?.status;
+            const msg = String(e?.response?.data?.message || "").toLowerCase();
+            setConfirmingStartSendId(null);
+            if (httpStatus === 409 && msg.includes("disabled")) {
+                // Flag is off — fixed copy only; no reload needed.
+                setStartSendError("הכנת שליחה אינה פעילה כרגע.");
+            } else if (httpStatus === 409) {
+                // Stale state — reload list + detail.
+                await loadDrafts();
+                if (selectedDraftId === campaignId) {
+                    await loadDetail(campaignId);
+                }
+                setStartSendError("הכנת השליחה אינה אפשרית במצב הנוכחי.");
+            } else if (httpStatus === 422) {
+                setStartSendError("הטיוטה אינה מוכנה לשליחה.");
+            } else {
+                setStartSendError("הכנת השליחה נכשלה. נסו שוב.");
+            }
+        } finally {
+            setStartSendLoadingId(null);
         }
     }
 
@@ -541,6 +621,9 @@ export default function MarketingDraftsPanel() {
                 ) : null}
                 {cancelSendResult ? (
                     <span className={styles.success}>{cancelSendResult}</span>
+                ) : null}
+                {startSendResult ? (
+                    <span className={styles.success}>{startSendResult}</span>
                 ) : null}
             </div>
 
@@ -1219,19 +1302,100 @@ export default function MarketingDraftsPanel() {
                                         הכנת קמפיין לשליחה
                                     </h4>
                                     <p className={styles.startPrepHelper}>
-                                        הפעולה תיצור רשומות שליחה טכניות בעתיד,
-                                        אך אינה שולחת אימיילים בשלב זה.
+                                        הפעולה תכין את הקמפיין לשליחה ותיצור
+                                        רשומות טכניות לנמענים. בשלב זה לא נשלחים
+                                        אימיילים.
                                     </p>
-                                    <p className={styles.startPrepNote}>
-                                        שליחה אמיתית תופעל רק בשלב נפרד.
-                                    </p>
-                                    <button
-                                        type="button"
-                                        className={styles.startPrepButton}
-                                        disabled
-                                    >
-                                        יצירת רשומות שליחה
-                                    </button>
+                                    {readinessCheckedDraftId ===
+                                        selectedDraft.campaignId &&
+                                    readinessResult &&
+                                    !readinessResult.ready ? (
+                                        <p className={styles.startPrepNote}>
+                                            הטיוטה אינה מוכנה לשליחה — הבדיקה
+                                            היא אינדיקציה בלבד, והשרת יבדוק שוב
+                                            בעת ההפעלה.
+                                        </p>
+                                    ) : null}
+                                    {startSendError ? (
+                                        <p
+                                            className={styles.error}
+                                            role="alert"
+                                        >
+                                            {startSendError}
+                                        </p>
+                                    ) : null}
+                                    {confirmingStartSendId ===
+                                    selectedDraft.campaignId ? (
+                                        <div
+                                            className={styles.confirmBox}
+                                            role="group"
+                                            aria-label="אישור יצירת רשומות שליחה"
+                                        >
+                                            <span
+                                                className={styles.confirmText}
+                                            >
+                                                הפעולה תעביר את הקמפיין למצב
+                                                ממתין לשליחה. ניתן יהיה לבטל את
+                                                ההכנה לפני הפעלה אמיתית.
+                                            </span>
+                                            <div
+                                                className={
+                                                    styles.confirmActions
+                                                }
+                                            >
+                                                <button
+                                                    type="button"
+                                                    className={
+                                                        styles.confirmYesButton
+                                                    }
+                                                    onClick={() =>
+                                                        handleConfirmStartSend(
+                                                            selectedDraft.campaignId,
+                                                        )
+                                                    }
+                                                    disabled={
+                                                        startSendLoadingId ===
+                                                        selectedDraft.campaignId
+                                                    }
+                                                >
+                                                    כן, צור רשומות שליחה
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    className={
+                                                        styles.confirmNoButton
+                                                    }
+                                                    onClick={() =>
+                                                        setConfirmingStartSendId(
+                                                            null,
+                                                        )
+                                                    }
+                                                    disabled={
+                                                        startSendLoadingId ===
+                                                        selectedDraft.campaignId
+                                                    }
+                                                >
+                                                    לא, השאר כטיוטה
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <button
+                                            type="button"
+                                            className={styles.startPrepButton}
+                                            onClick={() =>
+                                                setConfirmingStartSendId(
+                                                    selectedDraft.campaignId,
+                                                )
+                                            }
+                                            disabled={
+                                                startSendLoadingId ===
+                                                selectedDraft.campaignId
+                                            }
+                                        >
+                                            יצירת רשומות שליחה
+                                        </button>
+                                    )}
                                 </div>
                             ) : null}
 

@@ -236,6 +236,18 @@ export function deleteMarketingCampaign(campaignId) {
     return api.delete(`/admin/marketing/campaigns/${campaignId}`);
 }
 
+// Marketing emails — own-admin start-send (POST, draft->queued + pending
+// recipient rows). Feature-flagged on MARKETING_SEND_TO_LIST_ENABLED server-side;
+// a 409 flag-disabled response is handled by the caller with fixed Hebrew copy.
+// Body contains requestId only — no selectedUserIds/userIds/content/emails.
+// requestId must be generated per confirmed attempt (crypto.randomUUID()).
+// Auth/CSRF inherited from the shared api instance. Counts-only response.
+export function startMarketingCampaignSend(campaignId, requestId) {
+    return api.post(`/admin/marketing/campaigns/${campaignId}/start`, {
+        requestId,
+    });
+}
+
 // Marketing emails — own-admin cancel-send (PATCH, queued->canceled). Not
 // gated by MARKETING_SEND_TO_LIST_ENABLED (intentional: rollback must work
 // even when start is disabled). Empty body only; backend uses only route
