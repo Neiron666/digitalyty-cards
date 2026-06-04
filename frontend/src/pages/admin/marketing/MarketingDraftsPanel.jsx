@@ -566,6 +566,11 @@ export default function MarketingDraftsPanel() {
         draftsPage * PAGE_LIMIT >= total ||
         items.length < PAGE_LIMIT;
 
+    const isSelectedDraftSendTerminal =
+        selectedDraft?.status === "queued" &&
+        sendStatusResult?.campaignId === selectedDraft?.campaignId &&
+        sendStatusResult?.isTerminal === true;
+
     return (
         <section className={styles.panel} aria-label="טיוטות קמפיינים">
             <header className={styles.header}>
@@ -1412,7 +1417,8 @@ export default function MarketingDraftsPanel() {
                                 </div>
                             ) : null}
 
-                            {selectedDraft.status === "queued" ? (
+                            {selectedDraft.status === "queued" &&
+                            !isSelectedDraftSendTerminal ? (
                                 <div className={styles.cancelSendBlock}>
                                     {cancelSendError ? (
                                         <p
@@ -1496,6 +1502,14 @@ export default function MarketingDraftsPanel() {
                                         </button>
                                     )}
                                 </div>
+                            ) : null}
+
+                            {selectedDraft.status === "queued" &&
+                            isSelectedDraftSendTerminal ? (
+                                <p className={styles.muted}>
+                                    השליחה הסתיימה. לא נותרו נמענים ממתינים
+                                    לביטול.
+                                </p>
                             ) : null}
 
                             {selectedDraft.status === "draft" ||

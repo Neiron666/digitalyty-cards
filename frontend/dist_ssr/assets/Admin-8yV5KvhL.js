@@ -3765,7 +3765,9 @@ function MarketingDraftsPanel() {
       setDraftsPage(1);
       await loadDetail(campaignId);
       await handleLoadSendStatus(campaignId);
-      setStartSendResult("הקמפיין עבר למצב ממתין לשליחה. אם מנגנון השליחה פעיל, השליחה תתבצע לפי תצורת המערכת.");
+      setStartSendResult(
+        "הקמפיין עבר למצב ממתין לשליחה. אם מנגנון השליחה פעיל, השליחה תתבצע לפי תצורת המערכת."
+      );
     } catch (e) {
       const httpStatus = e?.response?.status;
       const msg = String(e?.response?.data?.message || "").toLowerCase();
@@ -3911,6 +3913,7 @@ function MarketingDraftsPanel() {
   const total = typeof result?.total === "number" ? result.total : 0;
   const prevDisabled = draftsPage <= 1 || draftsLoading;
   const nextDisabled = draftsLoading || draftsPage * PAGE_LIMIT >= total || items.length < PAGE_LIMIT;
+  const isSelectedDraftSendTerminal = selectedDraft?.status === "queued" && sendStatusResult2?.campaignId === selectedDraft?.campaignId && sendStatusResult2?.isTerminal === true;
   return /* @__PURE__ */ jsxs("section", { className: styles$3.panel, "aria-label": "טיוטות קמפיינים", children: [
     /* @__PURE__ */ jsxs("header", { className: styles$3.header, children: [
       /* @__PURE__ */ jsx("h3", { className: styles$3.title, children: "טיוטות קמפיינים" }),
@@ -4613,7 +4616,7 @@ function MarketingDraftsPanel() {
             }
           )
         ] }) : null,
-        selectedDraft.status === "queued" ? /* @__PURE__ */ jsxs("div", { className: styles$3.cancelSendBlock, children: [
+        selectedDraft.status === "queued" && !isSelectedDraftSendTerminal ? /* @__PURE__ */ jsxs("div", { className: styles$3.cancelSendBlock, children: [
           cancelSendError ? /* @__PURE__ */ jsx(
             "p",
             {
@@ -4683,6 +4686,7 @@ function MarketingDraftsPanel() {
             }
           )
         ] }) : null,
+        selectedDraft.status === "queued" && isSelectedDraftSendTerminal ? /* @__PURE__ */ jsx("p", { className: styles$3.muted, children: "השליחה הסתיימה. לא נותרו נמענים ממתינים לביטול." }) : null,
         selectedDraft.status === "draft" || selectedDraft.status === "canceled" ? /* @__PURE__ */ jsxs("div", { className: styles$3.deleteBlock, children: [
           deleteError ? /* @__PURE__ */ jsx(
             "p",
