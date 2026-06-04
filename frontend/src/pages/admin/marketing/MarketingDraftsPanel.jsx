@@ -4,6 +4,7 @@ import {
     getMarketingCampaignDraft,
     cancelMarketingCampaignDraft,
     checkMarketingCampaignSendReadiness,
+    getMarketingCampaignSendStatus,
 } from "../../../services/admin.service";
 import styles from "./MarketingDraftsPanel.module.css";
 
@@ -30,6 +31,26 @@ const STATUS_LABELS = {
     draft: "טיוטה",
     canceled: "בוטלה",
 };
+
+// Local fixed campaign-status label map for the read-only send-status block.
+// Unknown statuses fall back to String(status) so a new backend status can
+// never break rendering and is never treated as HTML.
+const SEND_STATUS_CAMPAIGN_LABELS = {
+    draft: "טיוטה",
+    ready: "מוכן",
+    queued: "בתור",
+    sending: "בשליחה",
+    completed: "הושלם",
+    failed: "נכשל",
+    canceled: "בוטל",
+};
+
+function sendStatusCampaignLabel(status) {
+    return (
+        SEND_STATUS_CAMPAIGN_LABELS[String(status || "")] ||
+        (status ? String(status) : "—")
+    );
+}
 
 function skipReasonLabel(reason) {
     return SKIP_REASON_LABELS[String(reason)] || String(reason);
@@ -89,6 +110,23 @@ export default function MarketingDraftsPanel() {
         setReadinessCheckedDraftId(null);
     }
 
+    // Read-only send-status rollup state (draft detail only). Never stores
+    // selectedUserIds/emails/tokens/provider — counts + coarse flags only.
+    const [sendStatusLoading, setSendStatusLoading] = useState(false);
+    const [sendStatusError, setSendStatusError] = useState("");
+    const [sendStatusResult, setSendStatusResult] = useState(null);
+    const [sendStatusCheckedDraftId, setSendStatusCheckedDraftId] =
+        useState(null);
+
+    // Drop any send-status state so a stale rollup is never shown for a
+    // different draft (detail switch / filter change / reload / cancel).
+    function clearSendStatusState() {
+        setSendStatusLoading(false);
+        setSendStatusError("");
+        setSendStatusResult(null);
+        setSendStatusCheckedDraftId(null);
+    }
+
     // Load the list for the current status + page. Read-only GET. Never renders
     // a backend message verbatim — a single fixed Hebrew error string is used.
     const loadDrafts = useCallback(async () => {
@@ -130,6 +168,7 @@ export default function MarketingDraftsPanel() {
         setCancelResult("");
         setConfirmingCancelId(null);
         clearReadinessState();
+        clearSendStatusState();
         setDraftsPage(1);
         setDraftsStatus(nextStatus);
     }
@@ -142,6 +181,7 @@ export default function MarketingDraftsPanel() {
         setCancelResult("");
         setConfirmingCancelId(null);
         clearReadinessState();
+        clearSendStatusState();
         setSelectedDraftLoading(true);
         try {
             const res = await getMarketingCampaignDraft(campaignId);
@@ -243,6 +283,57 @@ export default function MarketingDraftsPanel() {
             setReadinessCheckedDraftId(campaignId);
         } finally {
             setReadinessLoading(false);
+        }
+    }
+
+    // Read-only send-status rollup. Manual refresh only (no polling). Stores
+    // ONLY whitelisted counts/flags; never stores the raw response object and
+    // never renders a backend message verbatim. This does NOT send email and
+    // does NOT start a campaign.
+    async function handleLoadSendStatus(campaignId) {
+        if (!campaignId) return;
+        if (sendStatusLoading) return;
+        setSendStatusError("");
+        setSendStatusLoading(true);
+        try {
+            const res = await getMarketingCampaignSendStatus(campaignId);
+            const data = res?.data || {};
+            const counts =
+                data.counts && typeof data.counts === "object"
+                    ? data.counts
+                    : {};
+            setSendStatusResult({
+                ok: data.ok === true,
+                campaignId: data.campaignId,
+                campaignStatus: data.campaignStatus,
+                queuedAt: data.queuedAt ?? null,
+                canceledAt: data.canceledAt ?? null,
+                updatedAt: data.updatedAt ?? null,
+                counts: {
+                    pending: counts.pending,
+                    sending: counts.sending,
+                    sent: counts.sent,
+                    failed: counts.failed,
+                    skipped: counts.skipped,
+                    suppressed: counts.suppressed,
+                    canceled: counts.canceled,
+                    total: counts.total,
+                },
+                hasActiveRows: data.hasActiveRows === true,
+                isTerminal: data.isTerminal === true,
+            });
+            setSendStatusCheckedDraftId(campaignId);
+        } catch (e) {
+            const status = e?.response?.status;
+            if (status === 404) {
+                setSendStatusError("סטטוס השליחה אינו זמין כרגע.");
+            } else {
+                setSendStatusError("טעינת סטטוס השליחה נכשלה.");
+            }
+            setSendStatusResult(null);
+            setSendStatusCheckedDraftId(campaignId);
+        } finally {
+            setSendStatusLoading(false);
         }
     }
 
@@ -564,6 +655,173 @@ export default function MarketingDraftsPanel() {
                                         </li>
                                     ) : null}
                                 </ul>
+                            </div>
+
+                            <div className={styles.sendStatusBlock}>
+                                <h4 className={styles.detailTitle}>
+                                    סטטוס שליחת קמפיין
+                                </h4>
+                                <p className={styles.sendStatusHelper}>
+                                    המידע כאן מציג סטטוס טכני של נמעני הקמפיין.
+                                    הוא לא שולח אימיילים.
+                                </p>
+                                <button
+                                    type="button"
+                                    className={styles.sendStatusButton}
+                                    onClick={() =>
+                                        handleLoadSendStatus(
+                                            selectedDraft.campaignId,
+                                        )
+                                    }
+                                    disabled={sendStatusLoading}
+                                >
+                                    {sendStatusLoading
+                                        ? "טוען סטטוס..."
+                                        : "רענון סטטוס"}
+                                </button>
+                                <div
+                                    className={styles.sendStatusStatus}
+                                    role="status"
+                                    aria-live="polite"
+                                >
+                                    {sendStatusCheckedDraftId ===
+                                        selectedDraft.campaignId &&
+                                    sendStatusError ? (
+                                        <p
+                                            className={styles.error}
+                                            role="alert"
+                                        >
+                                            {sendStatusError}
+                                        </p>
+                                    ) : null}
+
+                                    {sendStatusCheckedDraftId ===
+                                        selectedDraft.campaignId &&
+                                    sendStatusResult ? (
+                                        <div
+                                            className={styles.sendStatusResult}
+                                        >
+                                            <ul className={styles.countList}>
+                                                <li
+                                                    className={styles.countItem}
+                                                >
+                                                    מצב קמפיין:{" "}
+                                                    {sendStatusCampaignLabel(
+                                                        sendStatusResult.campaignStatus,
+                                                    )}
+                                                </li>
+                                                <li
+                                                    className={styles.countItem}
+                                                >
+                                                    סה״כ:{" "}
+                                                    {countOrDash(
+                                                        sendStatusResult.counts
+                                                            .total,
+                                                    )}
+                                                </li>
+                                                <li
+                                                    className={styles.countItem}
+                                                >
+                                                    ממתינים:{" "}
+                                                    {countOrDash(
+                                                        sendStatusResult.counts
+                                                            .pending,
+                                                    )}
+                                                </li>
+                                                <li
+                                                    className={styles.countItem}
+                                                >
+                                                    בעיבוד:{" "}
+                                                    {countOrDash(
+                                                        sendStatusResult.counts
+                                                            .sending,
+                                                    )}
+                                                </li>
+                                                <li
+                                                    className={styles.countItem}
+                                                >
+                                                    סומנו כנשלחו (טכני):{" "}
+                                                    {countOrDash(
+                                                        sendStatusResult.counts
+                                                            .sent,
+                                                    )}
+                                                </li>
+                                                <li
+                                                    className={styles.countItem}
+                                                >
+                                                    נכשלו:{" "}
+                                                    {countOrDash(
+                                                        sendStatusResult.counts
+                                                            .failed,
+                                                    )}
+                                                </li>
+                                                <li
+                                                    className={styles.countItem}
+                                                >
+                                                    דולגו:{" "}
+                                                    {countOrDash(
+                                                        sendStatusResult.counts
+                                                            .skipped,
+                                                    )}
+                                                </li>
+                                                <li
+                                                    className={styles.countItem}
+                                                >
+                                                    נחסמו:{" "}
+                                                    {countOrDash(
+                                                        sendStatusResult.counts
+                                                            .suppressed,
+                                                    )}
+                                                </li>
+                                                <li
+                                                    className={styles.countItem}
+                                                >
+                                                    בוטלו:{" "}
+                                                    {countOrDash(
+                                                        sendStatusResult.counts
+                                                            .canceled,
+                                                    )}
+                                                </li>
+                                            </ul>
+                                            <ul className={styles.countList}>
+                                                <li
+                                                    className={styles.countItem}
+                                                >
+                                                    בתור מאז:{" "}
+                                                    {formatDate(
+                                                        sendStatusResult.queuedAt,
+                                                    )}
+                                                </li>
+                                                <li
+                                                    className={styles.countItem}
+                                                >
+                                                    בוטל:{" "}
+                                                    {formatDate(
+                                                        sendStatusResult.canceledAt,
+                                                    )}
+                                                </li>
+                                                <li
+                                                    className={styles.countItem}
+                                                >
+                                                    עודכן:{" "}
+                                                    {formatDate(
+                                                        sendStatusResult.updatedAt,
+                                                    )}
+                                                </li>
+                                            </ul>
+                                            <p className={styles.muted}>
+                                                {sendStatusResult.counts
+                                                    .total === 0
+                                                    ? "עדיין לא נוצרו רשומות שליחה לקמפיין הזה."
+                                                    : sendStatusResult.hasActiveRows
+                                                      ? "יש רשומות פעילות בתהליך."
+                                                      : sendStatusResult.isTerminal
+                                                        ? "אין רשומות פעילות כרגע."
+                                                        : ""}
+                                            </p>
+                                        </div>
+                                    ) : null}
+                                </div>
                             </div>
 
                             {selectedDraft.status === "draft" ? (

@@ -158,6 +158,9 @@ function checkMarketingCampaignSendReadiness(campaignId) {
     {}
   );
 }
+function getMarketingCampaignSendStatus(campaignId) {
+  return api.get(`/admin/marketing/campaigns/${campaignId}/send-status`);
+}
 function listAdminOrganizations(params = {}) {
   return api.get("/admin/orgs", { params });
 }
@@ -3365,54 +3368,59 @@ function MarketingTestSendConfirm({
     }
   );
 }
-const panel$1 = "_panel_4a60b_1";
-const header$1 = "_header_4a60b_23";
-const title$2 = "_title_4a60b_37";
-const helper = "_helper_4a60b_51";
-const toolbar = "_toolbar_4a60b_65";
-const filterGroup = "_filterGroup_4a60b_83";
-const filterButton = "_filterButton_4a60b_97";
-const filterButtonActive = "_filterButtonActive_4a60b_139";
-const reloadButton = "_reloadButton_4a60b_149";
-const statusLine = "_statusLine_4a60b_191";
-const muted$2 = "_muted_4a60b_209";
-const success = "_success_4a60b_223";
-const error$1 = "_error_4a60b_235";
-const empty$1 = "_empty_4a60b_249";
-const list$1 = "_list_4a60b_263";
-const row$2 = "_row_4a60b_283";
-const rowMain = "_rowMain_4a60b_309";
-const rowSubject = "_rowSubject_4a60b_325";
-const rowHeading = "_rowHeading_4a60b_339";
-const rowMeta = "_rowMeta_4a60b_353";
-const metaItem = "_metaItem_4a60b_369";
-const rowActions = "_rowActions_4a60b_391";
-const viewButton = "_viewButton_4a60b_405";
-const pager$2 = "_pager_4a60b_447";
-const pagerButton = "_pagerButton_4a60b_463";
-const pagerInfo = "_pagerInfo_4a60b_505";
-const detail = "_detail_4a60b_517";
-const detailBlock = "_detailBlock_4a60b_539";
-const detailTitle = "_detailTitle_4a60b_553";
-const detailList = "_detailList_4a60b_567";
-const detailRow = "_detailRow_4a60b_583";
-const detailKey = "_detailKey_4a60b_599";
-const detailText = "_detailText_4a60b_617";
-const countList = "_countList_4a60b_635";
-const countItem = "_countItem_4a60b_655";
-const reasonList = "_reasonList_4a60b_677";
-const reasonRow = "_reasonRow_4a60b_697";
-const confirmBox = "_confirmBox_4a60b_719";
-const confirmText = "_confirmText_4a60b_743";
-const confirmActions = "_confirmActions_4a60b_755";
-const confirmYesButton = "_confirmYesButton_4a60b_769";
-const confirmNoButton = "_confirmNoButton_4a60b_811";
-const cancelButton = "_cancelButton_4a60b_853";
-const readinessBlock = "_readinessBlock_4a60b_887";
-const readinessButton = "_readinessButton_4a60b_901";
-const readinessHelper = "_readinessHelper_4a60b_945";
-const readinessStatus = "_readinessStatus_4a60b_961";
-const readinessResult = "_readinessResult_4a60b_975";
+const panel$1 = "_panel_5th1k_1";
+const header$1 = "_header_5th1k_23";
+const title$2 = "_title_5th1k_37";
+const helper = "_helper_5th1k_51";
+const toolbar = "_toolbar_5th1k_65";
+const filterGroup = "_filterGroup_5th1k_83";
+const filterButton = "_filterButton_5th1k_97";
+const filterButtonActive = "_filterButtonActive_5th1k_139";
+const reloadButton = "_reloadButton_5th1k_149";
+const statusLine = "_statusLine_5th1k_191";
+const muted$2 = "_muted_5th1k_209";
+const success = "_success_5th1k_223";
+const error$1 = "_error_5th1k_235";
+const empty$1 = "_empty_5th1k_249";
+const list$1 = "_list_5th1k_263";
+const row$2 = "_row_5th1k_283";
+const rowMain = "_rowMain_5th1k_309";
+const rowSubject = "_rowSubject_5th1k_325";
+const rowHeading = "_rowHeading_5th1k_339";
+const rowMeta = "_rowMeta_5th1k_353";
+const metaItem = "_metaItem_5th1k_369";
+const rowActions = "_rowActions_5th1k_391";
+const viewButton = "_viewButton_5th1k_405";
+const pager$2 = "_pager_5th1k_447";
+const pagerButton = "_pagerButton_5th1k_463";
+const pagerInfo = "_pagerInfo_5th1k_505";
+const detail = "_detail_5th1k_517";
+const detailBlock = "_detailBlock_5th1k_539";
+const detailTitle = "_detailTitle_5th1k_553";
+const detailList = "_detailList_5th1k_567";
+const detailRow = "_detailRow_5th1k_583";
+const detailKey = "_detailKey_5th1k_599";
+const detailText = "_detailText_5th1k_617";
+const countList = "_countList_5th1k_635";
+const countItem = "_countItem_5th1k_655";
+const reasonList = "_reasonList_5th1k_677";
+const reasonRow = "_reasonRow_5th1k_697";
+const confirmBox = "_confirmBox_5th1k_719";
+const confirmText = "_confirmText_5th1k_743";
+const confirmActions = "_confirmActions_5th1k_755";
+const confirmYesButton = "_confirmYesButton_5th1k_769";
+const confirmNoButton = "_confirmNoButton_5th1k_811";
+const cancelButton = "_cancelButton_5th1k_853";
+const readinessBlock = "_readinessBlock_5th1k_887";
+const readinessButton = "_readinessButton_5th1k_901";
+const readinessHelper = "_readinessHelper_5th1k_945";
+const readinessStatus = "_readinessStatus_5th1k_961";
+const readinessResult = "_readinessResult_5th1k_975";
+const sendStatusBlock = "_sendStatusBlock_5th1k_989";
+const sendStatusButton = "_sendStatusButton_5th1k_1003";
+const sendStatusHelper = "_sendStatusHelper_5th1k_1047";
+const sendStatusStatus = "_sendStatusStatus_5th1k_1063";
+const sendStatusResult = "_sendStatusResult_5th1k_1077";
 const styles$3 = {
   panel: panel$1,
   header: header$1,
@@ -3461,7 +3469,12 @@ const styles$3 = {
   readinessButton,
   readinessHelper,
   readinessStatus,
-  readinessResult
+  readinessResult,
+  sendStatusBlock,
+  sendStatusButton,
+  sendStatusHelper,
+  sendStatusStatus,
+  sendStatusResult
 };
 const DRAFT_STATUS_OPTIONS = ["draft", "canceled"];
 const PAGE_LIMIT = 20;
@@ -3481,6 +3494,18 @@ const STATUS_LABELS = {
   draft: "טיוטה",
   canceled: "בוטלה"
 };
+const SEND_STATUS_CAMPAIGN_LABELS = {
+  draft: "טיוטה",
+  ready: "מוכן",
+  queued: "בתור",
+  sending: "בשליחה",
+  completed: "הושלם",
+  failed: "נכשל",
+  canceled: "בוטל"
+};
+function sendStatusCampaignLabel(status2) {
+  return SEND_STATUS_CAMPAIGN_LABELS[String(status2 || "")] || (status2 ? String(status2) : "—");
+}
 function skipReasonLabel$1(reason) {
   return SKIP_REASON_LABELS[String(reason)] || String(reason);
 }
@@ -3522,6 +3547,16 @@ function MarketingDraftsPanel() {
     setReadinessDisabledByFlag(false);
     setReadinessCheckedDraftId(null);
   }
+  const [sendStatusLoading, setSendStatusLoading] = useState(false);
+  const [sendStatusError, setSendStatusError] = useState("");
+  const [sendStatusResult2, setSendStatusResult] = useState(null);
+  const [sendStatusCheckedDraftId, setSendStatusCheckedDraftId] = useState(null);
+  function clearSendStatusState() {
+    setSendStatusLoading(false);
+    setSendStatusError("");
+    setSendStatusResult(null);
+    setSendStatusCheckedDraftId(null);
+  }
   const loadDrafts = useCallback(async () => {
     setDraftsLoading(true);
     setDraftsError("");
@@ -3557,6 +3592,7 @@ function MarketingDraftsPanel() {
     setCancelResult("");
     setConfirmingCancelId(null);
     clearReadinessState();
+    clearSendStatusState();
     setDraftsPage(1);
     setDraftsStatus(nextStatus);
   }
@@ -3568,6 +3604,7 @@ function MarketingDraftsPanel() {
     setCancelResult("");
     setConfirmingCancelId(null);
     clearReadinessState();
+    clearSendStatusState();
     setSelectedDraftLoading(true);
     try {
       const res = await getMarketingCampaignDraft(campaignId);
@@ -3640,9 +3677,7 @@ function MarketingDraftsPanel() {
       if (status2 === 409) {
         if (message.includes("disabled")) {
           setReadinessDisabledByFlag(true);
-          setReadinessError(
-            "בדיקת מוכנות לשליחה אינה פעילה כרגע."
-          );
+          setReadinessError("בדיקת מוכנות לשליחה אינה פעילה כרגע.");
         } else {
           setReadinessError("ניתן לבדוק מוכנות רק לטיוטה פעילה.");
         }
@@ -3658,6 +3693,49 @@ function MarketingDraftsPanel() {
       setReadinessCheckedDraftId(campaignId);
     } finally {
       setReadinessLoading(false);
+    }
+  }
+  async function handleLoadSendStatus(campaignId) {
+    if (!campaignId) return;
+    if (sendStatusLoading) return;
+    setSendStatusError("");
+    setSendStatusLoading(true);
+    try {
+      const res = await getMarketingCampaignSendStatus(campaignId);
+      const data = res?.data || {};
+      const counts = data.counts && typeof data.counts === "object" ? data.counts : {};
+      setSendStatusResult({
+        ok: data.ok === true,
+        campaignId: data.campaignId,
+        campaignStatus: data.campaignStatus,
+        queuedAt: data.queuedAt ?? null,
+        canceledAt: data.canceledAt ?? null,
+        updatedAt: data.updatedAt ?? null,
+        counts: {
+          pending: counts.pending,
+          sending: counts.sending,
+          sent: counts.sent,
+          failed: counts.failed,
+          skipped: counts.skipped,
+          suppressed: counts.suppressed,
+          canceled: counts.canceled,
+          total: counts.total
+        },
+        hasActiveRows: data.hasActiveRows === true,
+        isTerminal: data.isTerminal === true
+      });
+      setSendStatusCheckedDraftId(campaignId);
+    } catch (e) {
+      const status2 = e?.response?.status;
+      if (status2 === 404) {
+        setSendStatusError("סטטוס השליחה אינו זמין כרגע.");
+      } else {
+        setSendStatusError("טעינת סטטוס השליחה נכשלה.");
+      }
+      setSendStatusResult(null);
+      setSendStatusCheckedDraftId(campaignId);
+    } finally {
+      setSendStatusLoading(false);
     }
   }
   const result = draftsResult;
@@ -3883,6 +3961,209 @@ function MarketingDraftsPanel() {
             ] }) : null
           ] })
         ] }),
+        /* @__PURE__ */ jsxs("div", { className: styles$3.sendStatusBlock, children: [
+          /* @__PURE__ */ jsx("h4", { className: styles$3.detailTitle, children: "סטטוס שליחת קמפיין" }),
+          /* @__PURE__ */ jsx("p", { className: styles$3.sendStatusHelper, children: "המידע כאן מציג סטטוס טכני של נמעני הקמפיין. הוא לא שולח אימיילים." }),
+          /* @__PURE__ */ jsx(
+            "button",
+            {
+              type: "button",
+              className: styles$3.sendStatusButton,
+              onClick: () => handleLoadSendStatus(
+                selectedDraft.campaignId
+              ),
+              disabled: sendStatusLoading,
+              children: sendStatusLoading ? "טוען סטטוס..." : "רענון סטטוס"
+            }
+          ),
+          /* @__PURE__ */ jsxs(
+            "div",
+            {
+              className: styles$3.sendStatusStatus,
+              role: "status",
+              "aria-live": "polite",
+              children: [
+                sendStatusCheckedDraftId === selectedDraft.campaignId && sendStatusError ? /* @__PURE__ */ jsx(
+                  "p",
+                  {
+                    className: styles$3.error,
+                    role: "alert",
+                    children: sendStatusError
+                  }
+                ) : null,
+                sendStatusCheckedDraftId === selectedDraft.campaignId && sendStatusResult2 ? /* @__PURE__ */ jsxs(
+                  "div",
+                  {
+                    className: styles$3.sendStatusResult,
+                    children: [
+                      /* @__PURE__ */ jsxs("ul", { className: styles$3.countList, children: [
+                        /* @__PURE__ */ jsxs(
+                          "li",
+                          {
+                            className: styles$3.countItem,
+                            children: [
+                              "מצב קמפיין:",
+                              " ",
+                              sendStatusCampaignLabel(
+                                sendStatusResult2.campaignStatus
+                              )
+                            ]
+                          }
+                        ),
+                        /* @__PURE__ */ jsxs(
+                          "li",
+                          {
+                            className: styles$3.countItem,
+                            children: [
+                              "סה״כ:",
+                              " ",
+                              countOrDash(
+                                sendStatusResult2.counts.total
+                              )
+                            ]
+                          }
+                        ),
+                        /* @__PURE__ */ jsxs(
+                          "li",
+                          {
+                            className: styles$3.countItem,
+                            children: [
+                              "ממתינים:",
+                              " ",
+                              countOrDash(
+                                sendStatusResult2.counts.pending
+                              )
+                            ]
+                          }
+                        ),
+                        /* @__PURE__ */ jsxs(
+                          "li",
+                          {
+                            className: styles$3.countItem,
+                            children: [
+                              "בעיבוד:",
+                              " ",
+                              countOrDash(
+                                sendStatusResult2.counts.sending
+                              )
+                            ]
+                          }
+                        ),
+                        /* @__PURE__ */ jsxs(
+                          "li",
+                          {
+                            className: styles$3.countItem,
+                            children: [
+                              "סומנו כנשלחו (טכני):",
+                              " ",
+                              countOrDash(
+                                sendStatusResult2.counts.sent
+                              )
+                            ]
+                          }
+                        ),
+                        /* @__PURE__ */ jsxs(
+                          "li",
+                          {
+                            className: styles$3.countItem,
+                            children: [
+                              "נכשלו:",
+                              " ",
+                              countOrDash(
+                                sendStatusResult2.counts.failed
+                              )
+                            ]
+                          }
+                        ),
+                        /* @__PURE__ */ jsxs(
+                          "li",
+                          {
+                            className: styles$3.countItem,
+                            children: [
+                              "דולגו:",
+                              " ",
+                              countOrDash(
+                                sendStatusResult2.counts.skipped
+                              )
+                            ]
+                          }
+                        ),
+                        /* @__PURE__ */ jsxs(
+                          "li",
+                          {
+                            className: styles$3.countItem,
+                            children: [
+                              "נחסמו:",
+                              " ",
+                              countOrDash(
+                                sendStatusResult2.counts.suppressed
+                              )
+                            ]
+                          }
+                        ),
+                        /* @__PURE__ */ jsxs(
+                          "li",
+                          {
+                            className: styles$3.countItem,
+                            children: [
+                              "בוטלו:",
+                              " ",
+                              countOrDash(
+                                sendStatusResult2.counts.canceled
+                              )
+                            ]
+                          }
+                        )
+                      ] }),
+                      /* @__PURE__ */ jsxs("ul", { className: styles$3.countList, children: [
+                        /* @__PURE__ */ jsxs(
+                          "li",
+                          {
+                            className: styles$3.countItem,
+                            children: [
+                              "בתור מאז:",
+                              " ",
+                              formatDate$2(
+                                sendStatusResult2.queuedAt
+                              )
+                            ]
+                          }
+                        ),
+                        /* @__PURE__ */ jsxs(
+                          "li",
+                          {
+                            className: styles$3.countItem,
+                            children: [
+                              "בוטל:",
+                              " ",
+                              formatDate$2(
+                                sendStatusResult2.canceledAt
+                              )
+                            ]
+                          }
+                        ),
+                        /* @__PURE__ */ jsxs(
+                          "li",
+                          {
+                            className: styles$3.countItem,
+                            children: [
+                              "עודכן:",
+                              " ",
+                              formatDate$2(
+                                sendStatusResult2.updatedAt
+                              )
+                            ]
+                          }
+                        )
+                      ] }),
+                      /* @__PURE__ */ jsx("p", { className: styles$3.muted, children: sendStatusResult2.counts.total === 0 ? "עדיין לא נוצרו רשומות שליחה לקמפיין הזה." : sendStatusResult2.hasActiveRows ? "יש רשומות פעילות בתהליך." : sendStatusResult2.isTerminal ? "אין רשומות פעילות כרגע." : "" })
+                    ]
+                  }
+                ) : null
+              ]
+            }
+          )
+        ] }),
         selectedDraft.status === "draft" ? /* @__PURE__ */ jsxs("div", { className: styles$3.readinessBlock, children: [
           /* @__PURE__ */ jsx("h4", { className: styles$3.detailTitle, children: "מוכנות לשליחה" }),
           /* @__PURE__ */ jsx(
@@ -3924,60 +4205,66 @@ function MarketingDraftsPanel() {
                           children: readinessResult2.ready ? "הטיוטה מוכנה לשלב הבא." : "אין נמענים כשירים כרגע."
                         }
                       ),
-                      /* @__PURE__ */ jsxs("ul", { className: styles$3.countList, children: [
-                        /* @__PURE__ */ jsxs(
-                          "li",
-                          {
-                            className: styles$3.countItem,
-                            children: [
-                              "נבחרו:",
-                              " ",
-                              countOrDash(
-                                readinessResult2.selectedCount
-                              )
-                            ]
-                          }
-                        ),
-                        /* @__PURE__ */ jsxs(
-                          "li",
-                          {
-                            className: styles$3.countItem,
-                            children: [
-                              "זכאים:",
-                              " ",
-                              countOrDash(
-                                readinessResult2.eligibleCount
-                              )
-                            ]
-                          }
-                        ),
-                        /* @__PURE__ */ jsxs(
-                          "li",
-                          {
-                            className: styles$3.countItem,
-                            children: [
-                              "נפסלו:",
-                              " ",
-                              countOrDash(
-                                readinessResult2.skippedCount
-                              )
-                            ]
-                          }
-                        ),
-                        /* @__PURE__ */ jsxs(
-                          "li",
-                          {
-                            className: styles$3.countItem,
-                            children: [
-                              "כפולים:",
-                              " ",
-                              countOrDash(
-                                readinessResult2.duplicateCount
-                              )
-                            ]
-                          }
-                        )
-                      ] }),
+                      /* @__PURE__ */ jsxs(
+                        "ul",
+                        {
+                          className: styles$3.countList,
+                          children: [
+                            /* @__PURE__ */ jsxs(
+                              "li",
+                              {
+                                className: styles$3.countItem,
+                                children: [
+                                  "נבחרו:",
+                                  " ",
+                                  countOrDash(
+                                    readinessResult2.selectedCount
+                                  )
+                                ]
+                              }
+                            ),
+                            /* @__PURE__ */ jsxs(
+                              "li",
+                              {
+                                className: styles$3.countItem,
+                                children: [
+                                  "זכאים:",
+                                  " ",
+                                  countOrDash(
+                                    readinessResult2.eligibleCount
+                                  )
+                                ]
+                              }
+                            ),
+                            /* @__PURE__ */ jsxs(
+                              "li",
+                              {
+                                className: styles$3.countItem,
+                                children: [
+                                  "נפסלו:",
+                                  " ",
+                                  countOrDash(
+                                    readinessResult2.skippedCount
+                                  )
+                                ]
+                              }
+                            ),
+                            /* @__PURE__ */ jsxs(
+                              "li",
+                              {
+                                className: styles$3.countItem,
+                                children: [
+                                  "כפולים:",
+                                  " ",
+                                  countOrDash(
+                                    readinessResult2.duplicateCount
+                                  )
+                                ]
+                              }
+                            )
+                          ]
+                        }
+                      ),
                       readinessResult2.skippedByReason && Object.keys(
                         readinessResult2.skippedByReason
                       ).length > 0 ? /* @__PURE__ */ jsx(
@@ -3987,7 +4274,10 @@ function MarketingDraftsPanel() {
                           children: Object.entries(
                             readinessResult2.skippedByReason
                           ).map(
-                            ([reason, count]) => /* @__PURE__ */ jsxs(
+                            ([
+                              reason,
+                              count
+                            ]) => /* @__PURE__ */ jsxs(
                               "li",
                               {
                                 className: styles$3.reasonRow,

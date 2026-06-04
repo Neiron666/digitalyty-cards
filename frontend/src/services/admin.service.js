@@ -215,6 +215,14 @@ export function checkMarketingCampaignSendReadiness(campaignId) {
     );
 }
 
+// Marketing emails — READ-ONLY counts-only send-status rollup for one owned
+// campaign (recipient ledger is SSoT; no send, no Mailjet, no token, no DB
+// write, no campaign start). GET only, no body. Auth/CSRF inherited from the
+// shared api instance. Returns counts + coarse flags only.
+export function getMarketingCampaignSendStatus(campaignId) {
+    return api.get(`/admin/marketing/campaigns/${campaignId}/send-status`);
+}
+
 // Organizations (admin)
 export function listAdminOrganizations(params = {}) {
     return api.get("/admin/orgs", { params });

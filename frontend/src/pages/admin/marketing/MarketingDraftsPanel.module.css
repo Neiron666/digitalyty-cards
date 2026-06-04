@@ -491,3 +491,54 @@
     gap: 6px;
     min-width: 0;
 }
+
+.sendStatusBlock {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 0;
+}
+
+.sendStatusButton {
+    appearance: none;
+    border: 1px solid var(--gold);
+    background: transparent;
+    color: var(--text-main);
+    border-radius: 999px;
+    padding: 8px 14px;
+    font: inherit;
+    cursor: pointer;
+    align-self: flex-start;
+}
+
+.sendStatusButton:disabled {
+    opacity: 0.5;
+    cursor: default;
+}
+
+.sendStatusButton:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--gold-fade);
+}
+
+.sendStatusHelper {
+    margin: 0;
+    opacity: 0.75;
+    font-size: var(--fs-body-sm);
+    color: var(--text-main);
+    overflow-wrap: anywhere;
+}
+
+.sendStatusStatus {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-width: 0;
+}
+
+.sendStatusResult {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 0;
+}
