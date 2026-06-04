@@ -1597,3 +1597,116 @@ export async function cancelMarketingCampaignSend(req, res) {
         canceledAt: canceledCampaign.canceledAt,
     });
 }
+
+// ---------------------------------------------------------------------------
+// Send-status (admin-only, READ-ONLY). Returns a counts-only rollup of the
+// recipient ledger for one owned campaign. Recipient rows are the source of
+// truth — no campaign counters are read or written. No DB writes, no User
+// lookup, no Mailjet, no token mint, no render, no audit. Anti-enumeration 404
+// for an invalid id or a campaign not owned by the requesting admin.
+// requireAdmin + CSRF inherited from the /api/admin mount + global csrfGuard.
+// ---------------------------------------------------------------------------
+
+// Frozen recipient-status vocabulary mirrored from
+// MarketingCampaignRecipient.model.js RECIPIENT_STATUSES. Used to seed every
+// status key to 0 so the response shape is stable regardless of which states
+// currently have rows.
+const SEND_STATUS_RECIPIENT_KEYS = Object.freeze([
+    "pending",
+    "sending",
+    "sent",
+    "failed",
+    "skipped",
+    "suppressed",
+    "canceled",
+]);
+
+/**
+ * GET /api/admin/marketing/campaigns/:campaignId/send-status
+ * Returns: { ok, campaignId, campaignStatus, queuedAt, canceledAt, updatedAt,
+ *   counts:{ pending, sending, sent, failed, skipped, suppressed, canceled,
+ *   total }, hasActiveRows, isTerminal }. Counts-only; anti-enumeration 404.
+ */
+export async function getMarketingCampaignSendStatus(req, res) {
+    const { campaignId } = req.params;
+
+    // A. ObjectId guard BEFORE any query (CastError -> 404, not 500).
+    if (!isValidObjectId(campaignId)) {
+        return res
+            .status(404)
+            .json({ ok: false, message: "Campaign not found" });
+    }
+
+    try {
+        // Own-admin scope load. Only the safe campaign-level fields are
+        // selected — contentSnapshot/selectionSnapshot are NEVER read here.
+        const campaign = await MarketingCampaign.findOne({
+            _id: campaignId,
+            createdByAdminId: req.userId,
+        })
+            .select({ status: 1, queuedAt: 1, canceledAt: 1, updatedAt: 1 })
+            .lean();
+
+        // Not found / not owned -> 404 (no existence leak).
+        if (!campaign) {
+            return res
+                .status(404)
+                .json({ ok: false, message: "Campaign not found" });
+        }
+
+        // B. Read-only recipient rollup grouped by status (uses the governed
+        // { campaignId:1, status:1 } index). No recipient docs returned, no
+        // User lookup, no emails/tokens/provider data.
+        const grouped = await MarketingCampaignRecipient.aggregate([
+            { $match: { campaignId: campaign._id } },
+            { $group: { _id: "$status", count: { $sum: 1 } } },
+        ]);
+
+        // C. Seed every known status to 0, then overlay actual counts. Unknown
+        // statuses (should not occur given the model enum) are ignored to keep
+        // the response shape frozen.
+        const counts = {};
+        for (const key of SEND_STATUS_RECIPIENT_KEYS) {
+            counts[key] = 0;
+        }
+        let total = 0;
+        for (const row of grouped) {
+            const status = row?._id;
+            const count = Number(row?.count) || 0;
+            if (
+                typeof status === "string" &&
+                Object.prototype.hasOwnProperty.call(counts, status)
+            ) {
+                counts[status] = count;
+            }
+            total += count;
+        }
+        counts.total = total;
+
+        // D. Counts-only response. No selectionSnapshot/selectedUserIds/emails/
+        // tokens/provider/html/text/raw docs.
+        const activeRows = counts.pending + counts.sending;
+        return res.status(200).json({
+            ok: true,
+            campaignId,
+            campaignStatus: campaign.status,
+            queuedAt: campaign.queuedAt ?? null,
+            canceledAt: campaign.canceledAt ?? null,
+            updatedAt: campaign.updatedAt ?? null,
+            counts,
+            hasActiveRows: activeRows > 0,
+            isTerminal: activeRows === 0 && total > 0,
+        });
+    } catch (err) {
+        console.error(
+            "[adminMarketingCampaign] send-status failed",
+            err?.message || err,
+        );
+        return res
+            .status(500)
+            .json({
+                ok: false,
+                message: "Failed to load campaign send status",
+            });
+    }
+}

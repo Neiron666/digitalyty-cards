@@ -84,6 +84,7 @@ import {
     getMarketingCampaignSendReadiness,
     startMarketingCampaignSend,
     cancelMarketingCampaignSend,
+    getMarketingCampaignSendStatus,
 } from "../controllers/adminMarketingCampaign.controller.js";
 import { upload } from "../middlewares/upload.middleware.js";
 
@@ -149,6 +150,14 @@ router.post(
 router.patch(
     "/marketing/campaigns/:campaignId/cancel-send",
     cancelMarketingCampaignSend,
+);
+// Marketing emails — READ-ONLY counts-only send-status rollup of the recipient
+// ledger for one owned campaign (recipient rows are the source of truth; no
+// campaign counters, no DB write, no User lookup, no Mailjet, no token, no
+// worker).
+router.get(
+    "/marketing/campaigns/:campaignId/send-status",
+    getMarketingCampaignSendStatus,
 );
 
 // safe write actions (no generic patch)
