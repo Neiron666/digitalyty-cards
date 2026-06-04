@@ -165,10 +165,9 @@ function deleteMarketingCampaign(campaignId) {
   return api.delete(`/admin/marketing/campaigns/${campaignId}`);
 }
 function startMarketingCampaignSend(campaignId, requestId) {
-  return api.post(
-    `/admin/marketing/campaigns/${campaignId}/start`,
-    { requestId }
-  );
+  return api.post(`/admin/marketing/campaigns/${campaignId}/start`, {
+    requestId
+  });
 }
 function cancelMarketingCampaignSend(campaignId) {
   return api.patch(
@@ -3725,7 +3724,7 @@ function MarketingDraftsPanel() {
     setDeleteResult("");
     setDeleteLoadingId(campaignId);
     const successCopy = statusAtConfirm === "canceled" ? "הקמפיין נמחק בהצלחה." : "הטיוטה נמחקה בהצלחה.";
-    const error409Copy = statusAtConfirm === "canceled" ? "לא ניתן למחוק את הקמפיין במצב הנוכחי." : "לא ניתן למחוק את הטיוטה במצב הנוכחי.";
+    const error409Copy = statusAtConfirm === "canceled" ? "לא ניתן למחוק את הקמפיין כי קיימות רשומות שליחה עם ראיות שליחה או ניסיון שליחה. ניתן למחוק רק קמפיין שבוטל וכל הרשומות שלו בוטלו ללא ראיות." : "לא ניתן למחוק את הטיוטה במצב הנוכחי.";
     const errorGenericCopy = statusAtConfirm === "canceled" ? "מחיקת הקמפיין נכשלה. נסו שוב." : "מחיקת הטיוטה נכשלה. נסו שוב.";
     try {
       await deleteMarketingCampaign(campaignId);
@@ -3766,7 +3765,7 @@ function MarketingDraftsPanel() {
       setDraftsPage(1);
       await loadDetail(campaignId);
       await handleLoadSendStatus(campaignId);
-      setStartSendResult("הקמפיין עבר למצב ממתין לשליחה.");
+      setStartSendResult("הקמפיין עבר למצב ממתין לשליחה. אם מנגנון השליחה פעיל, השליחה תתבצע לפי תצורת המערכת.");
     } catch (e) {
       const httpStatus = e?.response?.status;
       const msg = String(e?.response?.data?.message || "").toLowerCase();
@@ -4226,7 +4225,7 @@ function MarketingDraftsPanel() {
                           {
                             className: styles$3.countItem,
                             children: [
-                              "סומנו כנשלחו (טכני):",
+                              "נשלחו:",
                               " ",
                               countOrDash(
                                 sendStatusResult2.counts.sent
@@ -4328,7 +4327,8 @@ function MarketingDraftsPanel() {
                           }
                         )
                       ] }),
-                      /* @__PURE__ */ jsx("p", { className: styles$3.muted, children: sendStatusResult2.counts.total === 0 ? "עדיין לא נוצרו רשומות שליחה לקמפיין הזה." : sendStatusResult2.hasActiveRows ? "יש רשומות פעילות בתהליך." : sendStatusResult2.isTerminal ? "אין רשומות פעילות כרגע." : "" })
+                      /* @__PURE__ */ jsx("p", { className: styles$3.muted, children: sendStatusResult2.counts.total === 0 ? "עדיין לא נוצרו רשומות שליחה לקמפיין הזה." : sendStatusResult2.hasActiveRows ? "יש רשומות פעילות בתהליך." : sendStatusResult2.isTerminal ? "אין רשומות פעילות כרגע." : "" }),
+                      /* @__PURE__ */ jsx("p", { className: styles$3.muted, children: "השליחה מתבצעת באופן אסינכרוני. כדי לראות סטטוס עדכני יש ללחוץ על רענון סטטוס. “נשלחו” מציין שהמערכת קיבלה אישור מהספק." })
                     ]
                   }
                 ) : null
@@ -4542,7 +4542,7 @@ function MarketingDraftsPanel() {
         ) : null,
         selectedDraft.status === "draft" ? /* @__PURE__ */ jsxs("div", { className: styles$3.startPrepBlock, children: [
           /* @__PURE__ */ jsx("h4", { className: styles$3.detailTitle, children: "הכנת קמפיין לשליחה" }),
-          /* @__PURE__ */ jsx("p", { className: styles$3.startPrepHelper, children: "הפעולה תכין את הקמפיין לשליחה ותיצור רשומות טכניות לנמענים. בשלב זה לא נשלחים אימיילים." }),
+          /* @__PURE__ */ jsx("p", { className: styles$3.startPrepHelper, children: "הפעולה תיצור רשומות שליחה לנמענים ותעביר את הקמפיין למצב ממתין לשליחה. כאשר מנגנון השליחה פעיל, אימיילים עשויים להישלח אוטומטית לפי תצורת המערכת." }),
           readinessCheckedDraftId === selectedDraft.campaignId && readinessResult2 && !readinessResult2.ready ? /* @__PURE__ */ jsx("p", { className: styles$3.startPrepNote, children: "הטיוטה אינה מוכנה לשליחה — הבדיקה היא אינדיקציה בלבד, והשרת יבדוק שוב בעת ההפעלה." }) : null,
           startSendError ? /* @__PURE__ */ jsx(
             "p",
@@ -4563,7 +4563,7 @@ function MarketingDraftsPanel() {
                   "span",
                   {
                     className: styles$3.confirmText,
-                    children: "הפעולה תעביר את הקמפיין למצב ממתין לשליחה. ניתן יהיה לבטל את ההכנה לפני הפעלה אמיתית."
+                    children: "הפעולה תעביר את הקמפיין למצב ממתין לשליחה. אם מנגנון השליחה פעיל, אימיילים עשויים להישלח בהקדם. ניתן לבטל את הקמפיין כדי לעצור שליחה של נמענים שעדיין ממתינים."
                   }
                 ),
                 /* @__PURE__ */ jsxs(
@@ -4580,7 +4580,7 @@ function MarketingDraftsPanel() {
                             selectedDraft.campaignId
                           ),
                           disabled: startSendLoadingId === selectedDraft.campaignId,
-                          children: "כן, צור רשומות שליחה"
+                          children: "כן, העבר לממתין לשליחה"
                         }
                       ),
                       /* @__PURE__ */ jsx(

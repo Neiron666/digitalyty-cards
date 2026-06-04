@@ -314,7 +314,7 @@ export default function MarketingDraftsPanel() {
                 : "הטיוטה נמחקה בהצלחה.";
         const error409Copy =
             statusAtConfirm === "canceled"
-                ? "לא ניתן למחוק את הקמפיין במצב הנוכחי."
+                ? "לא ניתן למחוק את הקמפיין כי קיימות רשומות שליחה עם ראיות שליחה או ניסיון שליחה. ניתן למחוק רק קמפיין שבוטל וכל הרשומות שלו בוטלו ללא ראיות."
                 : "לא ניתן למחוק את הטיוטה במצב הנוכחי.";
         const errorGenericCopy =
             statusAtConfirm === "canceled"
@@ -388,7 +388,9 @@ export default function MarketingDraftsPanel() {
             await handleLoadSendStatus(campaignId);
             // Set AFTER all reloads — loadDetail calls clearStartSendState
             // which would clear this; re-set here so the status line shows it.
-            setStartSendResult("הקמפיין עבר למצב ממתין לשליחה.");
+            setStartSendResult(
+                "הקמפיין עבר למצב ממתין לשליחה. אם מנגנון השליחה פעיל, השליחה תתבצע לפי תצורת המערכת.",
+            );
         } catch (e) {
             const httpStatus = e?.response?.status;
             const msg = String(e?.response?.data?.message || "").toLowerCase();
@@ -969,7 +971,7 @@ export default function MarketingDraftsPanel() {
                                                 <li
                                                     className={styles.countItem}
                                                 >
-                                                    סומנו כנשלחו (טכני):{" "}
+                                                    נשלחו:{" "}
                                                     {countOrDash(
                                                         sendStatusResult.counts
                                                             .sent,
@@ -1047,6 +1049,13 @@ export default function MarketingDraftsPanel() {
                                                       : sendStatusResult.isTerminal
                                                         ? "אין רשומות פעילות כרגע."
                                                         : ""}
+                                            </p>
+                                            <p className={styles.muted}>
+                                                השליחה מתבצעת באופן אסינכרוני.
+                                                כדי לראות סטטוס עדכני יש ללחוץ
+                                                על רענון סטטוס.
+                                                &#8220;נשלחו&#8221; מציין
+                                                שהמערכת קיבלה אישור מהספק.
                                             </p>
                                         </div>
                                     ) : null}
@@ -1302,9 +1311,10 @@ export default function MarketingDraftsPanel() {
                                         הכנת קמפיין לשליחה
                                     </h4>
                                     <p className={styles.startPrepHelper}>
-                                        הפעולה תכין את הקמפיין לשליחה ותיצור
-                                        רשומות טכניות לנמענים. בשלב זה לא נשלחים
-                                        אימיילים.
+                                        הפעולה תיצור רשומות שליחה לנמענים ותעביר
+                                        את הקמפיין למצב ממתין לשליחה. כאשר
+                                        מנגנון השליחה פעיל, אימיילים עשויים
+                                        להישלח אוטומטית לפי תצורת המערכת.
                                     </p>
                                     {readinessCheckedDraftId ===
                                         selectedDraft.campaignId &&
@@ -1335,8 +1345,11 @@ export default function MarketingDraftsPanel() {
                                                 className={styles.confirmText}
                                             >
                                                 הפעולה תעביר את הקמפיין למצב
-                                                ממתין לשליחה. ניתן יהיה לבטל את
-                                                ההכנה לפני הפעלה אמיתית.
+                                                ממתין לשליחה. אם מנגנון השליחה
+                                                פעיל, אימיילים עשויים להישלח
+                                                בהקדם. ניתן לבטל את הקמפיין כדי
+                                                לעצור שליחה של נמענים שעדיין
+                                                ממתינים.
                                             </span>
                                             <div
                                                 className={
@@ -1358,7 +1371,7 @@ export default function MarketingDraftsPanel() {
                                                         selectedDraft.campaignId
                                                     }
                                                 >
-                                                    כן, צור רשומות שליחה
+                                                    כן, העבר לממתין לשליחה
                                                 </button>
                                                 <button
                                                     type="button"
