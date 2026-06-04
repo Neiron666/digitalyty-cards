@@ -85,6 +85,7 @@ import {
     startMarketingCampaignSend,
     cancelMarketingCampaignSend,
     getMarketingCampaignSendStatus,
+    deleteMarketingCampaign,
 } from "../controllers/adminMarketingCampaign.controller.js";
 import { upload } from "../middlewares/upload.middleware.js";
 
@@ -159,6 +160,12 @@ router.get(
     "/marketing/campaigns/:campaignId/send-status",
     getMarketingCampaignSendStatus,
 );
+// Marketing emails — v1 hard-delete (own-admin scope) restricted to a
+// status:"draft" campaign with ZERO recipient rows; never deletes queued/
+// sending/completed/failed/canceled campaigns, never cascades recipient rows.
+// Fail-closed AdminAudit before the delete. No send, no Mailjet, no token,
+// no worker.
+router.delete("/marketing/campaigns/:campaignId", deleteMarketingCampaign);
 
 // safe write actions (no generic patch)
 router.post("/orgs", adminCreateOrganization);

@@ -1702,11 +1702,151 @@ export async function getMarketingCampaignSendStatus(req, res) {
             "[adminMarketingCampaign] send-status failed",
             err?.message || err,
         );
+        return res.status(500).json({
+            ok: false,
+            message: "Failed to load campaign send status",
+        });
+    }
+}
+
+/**
+ * DELETE /api/admin/marketing/campaigns/:campaignId
+ * v1 hard-delete restricted to an owned, status:"draft" campaign with ZERO
+ * recipient rows. Never deletes queued/sending/completed/failed/canceled
+ * campaigns, never cascades recipient rows, never touches send evidence.
+ * Fail-closed AdminAudit is written BEFORE the destructive delete. Returns a
+ * counts-only DTO; anti-enumeration 404. No Mailjet, no token, no render, no
+ * email, no worker.
+ */
+export async function deleteMarketingCampaign(req, res) {
+    const { campaignId } = req.params;
+
+    // A. ObjectId guard BEFORE any query (CastError -> 404, not 500). Matches
+    // start/cancel-send/send-status anti-enumeration style.
+    if (!isValidObjectId(campaignId)) {
+        return res
+            .status(404)
+            .json({ ok: false, message: "Campaign not found" });
+    }
+
+    try {
+        // B. Cheap pre-transaction owner-scope read (better 404/409 errors).
+        // Only the safe fields needed for the guards are selected —
+        // contentSnapshot/selectionSnapshot are NEVER read here. The
+        // authoritative checks are re-done inside the transaction below.
+        const campaign = await MarketingCampaign.findOne({
+            _id: campaignId,
+            createdByAdminId: req.userId,
+        })
+            .select({ status: 1, createdByAdminId: 1 })
+            .lean();
+
+        // Not found / not owned -> 404 (no existence leak).
+        if (!campaign) {
+            return res
+                .status(404)
+                .json({ ok: false, message: "Campaign not found" });
+        }
+
+        // C. Status guard — v1 deletes ONLY drafts. Any other status (queued/
+        // sending/completed/failed/canceled) is non-deletable in this slice.
+        if (campaign.status !== "draft") {
+            return res.status(409).json({
+                ok: false,
+                message: "Campaign is not deletable",
+                status: campaign.status,
+            });
+        }
+
+        // D. Atomic audit + delete. The fail-closed AdminAudit row and the
+        // delete CAS run inside ONE transaction so they commit or roll back
+        // together: if the audit write fails the delete never happens, and if
+        // the delete CAS fails (e.g. a concurrent draft -> queued race) the
+        // audit row is rolled back — no false "marketing_campaign_deleted".
+        const session = await mongoose.startSession();
+        try {
+            await session.withTransaction(async () => {
+                // D.1 Authoritative recipient-row guard inside the session. A
+                // draft must have zero ledger rows; if any exist, refuse rather
+                // than cascade (no cascade delete in v1).
+                const recipientCount =
+                    await MarketingCampaignRecipient.countDocuments(
+                        { campaignId: campaign._id },
+                        { session },
+                    );
+                if (recipientCount > 0) {
+                    const conflict = new Error("DELETE_RECIPIENT_ROWS");
+                    conflict.deleteConflict = true;
+                    conflict.recipientRows = recipientCount;
+                    throw conflict;
+                }
+
+                // D.2 Fail-closed AdminAudit BEFORE the delete, in-session. Meta
+                // is counts/status only — no selectedUserIds/userIds/emails/
+                // tokens/contentSnapshot/subject/bodyText/html/text/provider.
+                await logAdminAction({
+                    adminUserId: req.userId,
+                    action: "marketing_campaign_deleted",
+                    targetType: "campaign",
+                    targetId: campaignId,
+                    reason: "admin marketing campaign deleted",
+                    meta: {
+                        status: "draft",
+                        recipientRowsBefore: 0,
+                        deletedRecipients: 0,
+                    },
+                    session,
+                });
+
+                // D.3 Race-safe delete CAS in the same session. The
+                // {status:"draft"} predicate means a concurrent start that
+                // flipped draft -> queued loses the race; deletedCount is then
+                // 0 and the whole transaction (including the audit) aborts.
+                const del = await MarketingCampaign.deleteOne(
+                    {
+                        _id: campaignId,
+                        createdByAdminId: req.userId,
+                        status: "draft",
+                    },
+                    { session },
+                );
+                if (del?.deletedCount !== 1) {
+                    const conflict = new Error("DELETE_CAS_NO_MATCH");
+                    conflict.deleteConflict = true;
+                    throw conflict;
+                }
+            });
+        } catch (txErr) {
+            if (txErr?.deleteConflict) {
+                const body = {
+                    ok: false,
+                    message: "Campaign is not deletable",
+                };
+                if (typeof txErr.recipientRows === "number") {
+                    body.recipientRows = txErr.recipientRows;
+                }
+                return res.status(409).json(body);
+            }
+            throw txErr;
+        } finally {
+            await session.endSession();
+        }
+
+        // E. Counts-only response. No raw docs/selectionSnapshot/contentSnapshot/
+        // userIds/emails/tokens/provider/html/text.
+        return res.status(200).json({
+            ok: true,
+            campaignId,
+            deletedCampaign: true,
+            deletedRecipients: 0,
+        });
+    } catch (err) {
+        console.error(
+            "[adminMarketingCampaign] delete failed",
+            err?.message || err,
+        );
         return res
             .status(500)
-            .json({
-                ok: false,
-                message: "Failed to load campaign send status",
-            });
+            .json({ ok: false, message: "Failed to delete campaign" });
     }
 }
