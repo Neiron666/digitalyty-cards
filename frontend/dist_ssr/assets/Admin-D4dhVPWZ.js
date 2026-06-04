@@ -3371,61 +3371,65 @@ function MarketingTestSendConfirm({
     }
   );
 }
-const panel$1 = "_panel_v18py_1";
-const header$1 = "_header_v18py_23";
-const title$2 = "_title_v18py_37";
-const helper = "_helper_v18py_51";
-const toolbar = "_toolbar_v18py_65";
-const filterGroup = "_filterGroup_v18py_83";
-const filterButton = "_filterButton_v18py_97";
-const filterButtonActive = "_filterButtonActive_v18py_139";
-const reloadButton = "_reloadButton_v18py_149";
-const statusLine = "_statusLine_v18py_191";
-const muted$2 = "_muted_v18py_209";
-const success = "_success_v18py_223";
-const error$1 = "_error_v18py_235";
-const empty$1 = "_empty_v18py_249";
-const list$1 = "_list_v18py_263";
-const row$2 = "_row_v18py_283";
-const rowMain = "_rowMain_v18py_309";
-const rowSubject = "_rowSubject_v18py_325";
-const rowHeading = "_rowHeading_v18py_339";
-const rowMeta = "_rowMeta_v18py_353";
-const metaItem = "_metaItem_v18py_369";
-const rowActions = "_rowActions_v18py_391";
-const viewButton = "_viewButton_v18py_405";
-const pager$2 = "_pager_v18py_447";
-const pagerButton = "_pagerButton_v18py_463";
-const pagerInfo = "_pagerInfo_v18py_505";
-const detail = "_detail_v18py_517";
-const detailBlock = "_detailBlock_v18py_539";
-const detailTitle = "_detailTitle_v18py_553";
-const detailList = "_detailList_v18py_567";
-const detailRow = "_detailRow_v18py_583";
-const detailKey = "_detailKey_v18py_599";
-const detailText = "_detailText_v18py_617";
-const countList = "_countList_v18py_635";
-const countItem = "_countItem_v18py_655";
-const reasonList = "_reasonList_v18py_677";
-const reasonRow = "_reasonRow_v18py_697";
-const confirmBox = "_confirmBox_v18py_719";
-const confirmText = "_confirmText_v18py_743";
-const confirmActions = "_confirmActions_v18py_755";
-const confirmYesButton = "_confirmYesButton_v18py_769";
-const confirmNoButton = "_confirmNoButton_v18py_811";
-const cancelButton = "_cancelButton_v18py_853";
-const deleteBlock = "_deleteBlock_v18py_887";
-const deleteButton = "_deleteButton_v18py_903";
-const readinessBlock = "_readinessBlock_v18py_947";
-const readinessButton = "_readinessButton_v18py_961";
-const readinessHelper = "_readinessHelper_v18py_1005";
-const readinessStatus = "_readinessStatus_v18py_1021";
-const readinessResult = "_readinessResult_v18py_1035";
-const sendStatusBlock = "_sendStatusBlock_v18py_1049";
-const sendStatusButton = "_sendStatusButton_v18py_1063";
-const sendStatusHelper = "_sendStatusHelper_v18py_1107";
-const sendStatusStatus = "_sendStatusStatus_v18py_1123";
-const sendStatusResult = "_sendStatusResult_v18py_1137";
+const panel$1 = "_panel_1u079_1";
+const header$1 = "_header_1u079_23";
+const title$2 = "_title_1u079_37";
+const helper = "_helper_1u079_51";
+const toolbar = "_toolbar_1u079_65";
+const filterGroup = "_filterGroup_1u079_83";
+const filterButton = "_filterButton_1u079_97";
+const filterButtonActive = "_filterButtonActive_1u079_139";
+const reloadButton = "_reloadButton_1u079_149";
+const statusLine = "_statusLine_1u079_191";
+const muted$2 = "_muted_1u079_209";
+const success = "_success_1u079_223";
+const error$1 = "_error_1u079_235";
+const empty$1 = "_empty_1u079_249";
+const list$1 = "_list_1u079_263";
+const row$2 = "_row_1u079_283";
+const rowMain = "_rowMain_1u079_309";
+const rowSubject = "_rowSubject_1u079_325";
+const rowHeading = "_rowHeading_1u079_339";
+const rowMeta = "_rowMeta_1u079_353";
+const metaItem = "_metaItem_1u079_369";
+const rowActions = "_rowActions_1u079_391";
+const viewButton = "_viewButton_1u079_405";
+const pager$2 = "_pager_1u079_447";
+const pagerButton = "_pagerButton_1u079_463";
+const pagerInfo = "_pagerInfo_1u079_505";
+const detail = "_detail_1u079_517";
+const detailBlock = "_detailBlock_1u079_539";
+const detailTitle = "_detailTitle_1u079_553";
+const detailList = "_detailList_1u079_567";
+const detailRow = "_detailRow_1u079_583";
+const detailKey = "_detailKey_1u079_599";
+const detailText = "_detailText_1u079_617";
+const countList = "_countList_1u079_635";
+const countItem = "_countItem_1u079_655";
+const reasonList = "_reasonList_1u079_677";
+const reasonRow = "_reasonRow_1u079_697";
+const confirmBox = "_confirmBox_1u079_719";
+const confirmText = "_confirmText_1u079_743";
+const confirmActions = "_confirmActions_1u079_755";
+const confirmYesButton = "_confirmYesButton_1u079_769";
+const confirmNoButton = "_confirmNoButton_1u079_811";
+const cancelButton = "_cancelButton_1u079_853";
+const startPrepBlock = "_startPrepBlock_1u079_887";
+const startPrepHelper = "_startPrepHelper_1u079_911";
+const startPrepNote = "_startPrepNote_1u079_925";
+const startPrepButton = "_startPrepButton_1u079_939";
+const deleteBlock = "_deleteBlock_1u079_975";
+const deleteButton = "_deleteButton_1u079_991";
+const readinessBlock = "_readinessBlock_1u079_1035";
+const readinessButton = "_readinessButton_1u079_1049";
+const readinessHelper = "_readinessHelper_1u079_1093";
+const readinessStatus = "_readinessStatus_1u079_1109";
+const readinessResult = "_readinessResult_1u079_1123";
+const sendStatusBlock = "_sendStatusBlock_1u079_1137";
+const sendStatusButton = "_sendStatusButton_1u079_1151";
+const sendStatusHelper = "_sendStatusHelper_1u079_1195";
+const sendStatusStatus = "_sendStatusStatus_1u079_1211";
+const sendStatusResult = "_sendStatusResult_1u079_1225";
 const styles$3 = {
   panel: panel$1,
   header: header$1,
@@ -3470,6 +3474,10 @@ const styles$3 = {
   confirmYesButton,
   confirmNoButton,
   cancelButton,
+  startPrepBlock,
+  startPrepHelper,
+  startPrepNote,
+  startPrepButton,
   deleteBlock,
   deleteButton,
   readinessBlock,
@@ -4420,6 +4428,20 @@ function MarketingDraftsPanel() {
             children: "בטל טיוטה"
           }
         ) : null,
+        selectedDraft.status === "draft" ? /* @__PURE__ */ jsxs("div", { className: styles$3.startPrepBlock, children: [
+          /* @__PURE__ */ jsx("h4", { className: styles$3.detailTitle, children: "הכנת קמפיין לשליחה" }),
+          /* @__PURE__ */ jsx("p", { className: styles$3.startPrepHelper, children: "הפעולה תיצור רשומות שליחה טכניות בעתיד, אך אינה שולחת אימיילים בשלב זה." }),
+          /* @__PURE__ */ jsx("p", { className: styles$3.startPrepNote, children: "שליחה אמיתית תופעל רק בשלב נפרד." }),
+          /* @__PURE__ */ jsx(
+            "button",
+            {
+              type: "button",
+              className: styles$3.startPrepButton,
+              disabled: true,
+              children: "יצירת רשומות שליחה"
+            }
+          )
+        ] }) : null,
         selectedDraft.status === "draft" ? /* @__PURE__ */ jsxs("div", { className: styles$3.deleteBlock, children: [
           deleteError ? /* @__PURE__ */ jsx(
             "p",

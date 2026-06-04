@@ -1133,6 +1133,28 @@ export default function MarketingDraftsPanel() {
                             ) : null}
 
                             {selectedDraft.status === "draft" ? (
+                                <div className={styles.startPrepBlock}>
+                                    <h4 className={styles.detailTitle}>
+                                        הכנת קמפיין לשליחה
+                                    </h4>
+                                    <p className={styles.startPrepHelper}>
+                                        הפעולה תיצור רשומות שליחה טכניות בעתיד,
+                                        אך אינה שולחת אימיילים בשלב זה.
+                                    </p>
+                                    <p className={styles.startPrepNote}>
+                                        שליחה אמיתית תופעל רק בשלב נפרד.
+                                    </p>
+                                    <button
+                                        type="button"
+                                        className={styles.startPrepButton}
+                                        disabled
+                                    >
+                                        יצירת רשומות שליחה
+                                    </button>
+                                </div>
+                            ) : null}
+
+                            {selectedDraft.status === "draft" ? (
                                 <div className={styles.deleteBlock}>
                                     {deleteError ? (
                                         <p

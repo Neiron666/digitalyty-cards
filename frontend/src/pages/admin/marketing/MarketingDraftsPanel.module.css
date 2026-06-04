@@ -441,6 +441,50 @@
     box-shadow: 0 0 0 2px var(--gold-fade);
 }
 
+.startPrepBlock {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+    min-width: 0;
+    padding: 12px 14px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    background: var(--bg-card);
+}
+
+.startPrepHelper {
+    margin: 0;
+    font-size: var(--fs-body-sm);
+    color: var(--text-main);
+    opacity: 0.85;
+}
+
+.startPrepNote {
+    margin: 0;
+    font-size: var(--fs-caption);
+    color: var(--text-main);
+    opacity: 0.6;
+}
+
+.startPrepButton {
+    appearance: none;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text-main);
+    border-radius: 999px;
+    padding: 8px 14px;
+    font: inherit;
+    cursor: default;
+    opacity: 0.4;
+    align-self: flex-start;
+}
+
+.startPrepButton:disabled {
+    opacity: 0.4;
+    cursor: default;
+}
+
 .deleteBlock {
     display: flex;
     flex-direction: column;
