@@ -152,6 +152,12 @@ function getMarketingCampaignDraft(campaignId) {
 function cancelMarketingCampaignDraft(campaignId) {
   return api.patch(`/admin/marketing/campaigns/drafts/${campaignId}/cancel`);
 }
+function checkMarketingCampaignSendReadiness(campaignId) {
+  return api.post(
+    `/admin/marketing/campaigns/${campaignId}/send-readiness`,
+    {}
+  );
+}
 function listAdminOrganizations(params = {}) {
   return api.get("/admin/orgs", { params });
 }
@@ -3359,49 +3365,54 @@ function MarketingTestSendConfirm({
     }
   );
 }
-const panel$1 = "_panel_xu8wz_1";
-const header$1 = "_header_xu8wz_23";
-const title$2 = "_title_xu8wz_37";
-const helper = "_helper_xu8wz_51";
-const toolbar = "_toolbar_xu8wz_65";
-const filterGroup = "_filterGroup_xu8wz_83";
-const filterButton = "_filterButton_xu8wz_97";
-const filterButtonActive = "_filterButtonActive_xu8wz_139";
-const reloadButton = "_reloadButton_xu8wz_149";
-const statusLine = "_statusLine_xu8wz_191";
-const muted$2 = "_muted_xu8wz_209";
-const success = "_success_xu8wz_223";
-const error$1 = "_error_xu8wz_235";
-const empty$1 = "_empty_xu8wz_249";
-const list$1 = "_list_xu8wz_263";
-const row$2 = "_row_xu8wz_283";
-const rowMain = "_rowMain_xu8wz_309";
-const rowSubject = "_rowSubject_xu8wz_325";
-const rowHeading = "_rowHeading_xu8wz_339";
-const rowMeta = "_rowMeta_xu8wz_353";
-const metaItem = "_metaItem_xu8wz_369";
-const rowActions = "_rowActions_xu8wz_391";
-const viewButton = "_viewButton_xu8wz_405";
-const pager$2 = "_pager_xu8wz_447";
-const pagerButton = "_pagerButton_xu8wz_463";
-const pagerInfo = "_pagerInfo_xu8wz_505";
-const detail = "_detail_xu8wz_517";
-const detailBlock = "_detailBlock_xu8wz_539";
-const detailTitle = "_detailTitle_xu8wz_553";
-const detailList = "_detailList_xu8wz_567";
-const detailRow = "_detailRow_xu8wz_583";
-const detailKey = "_detailKey_xu8wz_599";
-const detailText = "_detailText_xu8wz_617";
-const countList = "_countList_xu8wz_635";
-const countItem = "_countItem_xu8wz_655";
-const reasonList = "_reasonList_xu8wz_677";
-const reasonRow = "_reasonRow_xu8wz_697";
-const confirmBox = "_confirmBox_xu8wz_719";
-const confirmText = "_confirmText_xu8wz_743";
-const confirmActions = "_confirmActions_xu8wz_755";
-const confirmYesButton = "_confirmYesButton_xu8wz_769";
-const confirmNoButton = "_confirmNoButton_xu8wz_811";
-const cancelButton = "_cancelButton_xu8wz_853";
+const panel$1 = "_panel_4a60b_1";
+const header$1 = "_header_4a60b_23";
+const title$2 = "_title_4a60b_37";
+const helper = "_helper_4a60b_51";
+const toolbar = "_toolbar_4a60b_65";
+const filterGroup = "_filterGroup_4a60b_83";
+const filterButton = "_filterButton_4a60b_97";
+const filterButtonActive = "_filterButtonActive_4a60b_139";
+const reloadButton = "_reloadButton_4a60b_149";
+const statusLine = "_statusLine_4a60b_191";
+const muted$2 = "_muted_4a60b_209";
+const success = "_success_4a60b_223";
+const error$1 = "_error_4a60b_235";
+const empty$1 = "_empty_4a60b_249";
+const list$1 = "_list_4a60b_263";
+const row$2 = "_row_4a60b_283";
+const rowMain = "_rowMain_4a60b_309";
+const rowSubject = "_rowSubject_4a60b_325";
+const rowHeading = "_rowHeading_4a60b_339";
+const rowMeta = "_rowMeta_4a60b_353";
+const metaItem = "_metaItem_4a60b_369";
+const rowActions = "_rowActions_4a60b_391";
+const viewButton = "_viewButton_4a60b_405";
+const pager$2 = "_pager_4a60b_447";
+const pagerButton = "_pagerButton_4a60b_463";
+const pagerInfo = "_pagerInfo_4a60b_505";
+const detail = "_detail_4a60b_517";
+const detailBlock = "_detailBlock_4a60b_539";
+const detailTitle = "_detailTitle_4a60b_553";
+const detailList = "_detailList_4a60b_567";
+const detailRow = "_detailRow_4a60b_583";
+const detailKey = "_detailKey_4a60b_599";
+const detailText = "_detailText_4a60b_617";
+const countList = "_countList_4a60b_635";
+const countItem = "_countItem_4a60b_655";
+const reasonList = "_reasonList_4a60b_677";
+const reasonRow = "_reasonRow_4a60b_697";
+const confirmBox = "_confirmBox_4a60b_719";
+const confirmText = "_confirmText_4a60b_743";
+const confirmActions = "_confirmActions_4a60b_755";
+const confirmYesButton = "_confirmYesButton_4a60b_769";
+const confirmNoButton = "_confirmNoButton_4a60b_811";
+const cancelButton = "_cancelButton_4a60b_853";
+const readinessBlock = "_readinessBlock_4a60b_887";
+const readinessButton = "_readinessButton_4a60b_901";
+const readinessHelper = "_readinessHelper_4a60b_945";
+const readinessStatus = "_readinessStatus_4a60b_961";
+const readinessResult = "_readinessResult_4a60b_975";
 const styles$3 = {
   panel: panel$1,
   header: header$1,
@@ -3445,7 +3456,12 @@ const styles$3 = {
   confirmActions,
   confirmYesButton,
   confirmNoButton,
-  cancelButton
+  cancelButton,
+  readinessBlock,
+  readinessButton,
+  readinessHelper,
+  readinessStatus,
+  readinessResult
 };
 const DRAFT_STATUS_OPTIONS = ["draft", "canceled"];
 const PAGE_LIMIT = 20;
@@ -3454,6 +3470,8 @@ const SKIP_REASON_LABELS = {
   INVALID_ID: "מזהה לא תקין",
   USER_NOT_FOUND: "משתמש לא נמצא",
   NOT_VERIFIED: "לא מאומת",
+  NOT_CONSENTED: "חסרה הסכמת דיוור",
+  OPTED_OUT: "הסרת דיוור",
   EMAIL_MARKETING_CONSENT_MISSING: "חסרה הסכמת דיוור",
   MARKETING_OPT_OUT: "הסרת דיוור",
   EMAIL_MISSING: "חסר אימייל",
@@ -3492,6 +3510,18 @@ function MarketingDraftsPanel() {
   const [cancelError, setCancelError] = useState("");
   const [cancelResult, setCancelResult] = useState("");
   const [confirmingCancelId, setConfirmingCancelId] = useState(null);
+  const [readinessLoading, setReadinessLoading] = useState(false);
+  const [readinessError, setReadinessError] = useState("");
+  const [readinessResult2, setReadinessResult] = useState(null);
+  const [readinessDisabledByFlag, setReadinessDisabledByFlag] = useState(false);
+  const [readinessCheckedDraftId, setReadinessCheckedDraftId] = useState(null);
+  function clearReadinessState() {
+    setReadinessLoading(false);
+    setReadinessError("");
+    setReadinessResult(null);
+    setReadinessDisabledByFlag(false);
+    setReadinessCheckedDraftId(null);
+  }
   const loadDrafts = useCallback(async () => {
     setDraftsLoading(true);
     setDraftsError("");
@@ -3526,6 +3556,7 @@ function MarketingDraftsPanel() {
     setCancelError("");
     setCancelResult("");
     setConfirmingCancelId(null);
+    clearReadinessState();
     setDraftsPage(1);
     setDraftsStatus(nextStatus);
   }
@@ -3536,6 +3567,7 @@ function MarketingDraftsPanel() {
     setCancelError("");
     setCancelResult("");
     setConfirmingCancelId(null);
+    clearReadinessState();
     setSelectedDraftLoading(true);
     try {
       const res = await getMarketingCampaignDraft(campaignId);
@@ -3578,6 +3610,54 @@ function MarketingDraftsPanel() {
       }
     } finally {
       setCancelLoadingId(null);
+    }
+  }
+  async function handleCheckReadiness(campaignId) {
+    if (readinessLoading) return;
+    setReadinessError("");
+    setReadinessResult(null);
+    setReadinessDisabledByFlag(false);
+    setReadinessCheckedDraftId(null);
+    setReadinessLoading(true);
+    try {
+      const res = await checkMarketingCampaignSendReadiness(campaignId);
+      const data = res?.data || {};
+      setReadinessResult({
+        selectedCount: data.selectedCount,
+        duplicateCount: data.duplicateCount,
+        eligibleCount: data.eligibleCount,
+        skippedCount: data.skippedCount,
+        skippedByReason: data.skippedByReason && typeof data.skippedByReason === "object" ? data.skippedByReason : null,
+        warnings: Array.isArray(data.warnings) ? data.warnings : [],
+        ready: data.ready === true
+      });
+      setReadinessCheckedDraftId(campaignId);
+    } catch (e) {
+      const status2 = e?.response?.status;
+      const message = String(
+        e?.response?.data?.message || ""
+      ).toLowerCase();
+      if (status2 === 409) {
+        if (message.includes("disabled")) {
+          setReadinessDisabledByFlag(true);
+          setReadinessError(
+            "בדיקת מוכנות לשליחה אינה פעילה כרגע."
+          );
+        } else {
+          setReadinessError("ניתן לבדוק מוכנות רק לטיוטה פעילה.");
+        }
+      } else if (status2 === 422) {
+        if (message.includes("recipient")) {
+          setReadinessError("אין נמענים שנבחרו בטיוטה.");
+        } else {
+          setReadinessError("תוכן הטיוטה אינו מוכן לשליחה.");
+        }
+      } else {
+        setReadinessError("בדיקת המוכנות נכשלה.");
+      }
+      setReadinessCheckedDraftId(campaignId);
+    } finally {
+      setReadinessLoading(false);
     }
   }
   const result = draftsResult;
@@ -3803,6 +3883,155 @@ function MarketingDraftsPanel() {
             ] }) : null
           ] })
         ] }),
+        selectedDraft.status === "draft" ? /* @__PURE__ */ jsxs("div", { className: styles$3.readinessBlock, children: [
+          /* @__PURE__ */ jsx("h4", { className: styles$3.detailTitle, children: "מוכנות לשליחה" }),
+          /* @__PURE__ */ jsx(
+            "button",
+            {
+              type: "button",
+              className: styles$3.readinessButton,
+              onClick: () => handleCheckReadiness(
+                selectedDraft.campaignId
+              ),
+              disabled: readinessLoading || readinessDisabledByFlag && readinessCheckedDraftId === selectedDraft.campaignId,
+              children: readinessLoading ? "בודק מוכנות..." : "בדיקת מוכנות לשליחה"
+            }
+          ),
+          /* @__PURE__ */ jsx("p", { className: styles$3.readinessHelper, children: "הבדיקה לא שולחת אימיילים ולא מפעילה קמפיין." }),
+          /* @__PURE__ */ jsxs(
+            "div",
+            {
+              className: styles$3.readinessStatus,
+              "aria-live": "polite",
+              children: [
+                readinessCheckedDraftId === selectedDraft.campaignId && readinessError ? /* @__PURE__ */ jsx(
+                  "p",
+                  {
+                    className: styles$3.error,
+                    role: "alert",
+                    children: readinessError
+                  }
+                ) : null,
+                readinessCheckedDraftId === selectedDraft.campaignId && readinessResult2 ? /* @__PURE__ */ jsxs(
+                  "div",
+                  {
+                    className: styles$3.readinessResult,
+                    children: [
+                      /* @__PURE__ */ jsx(
+                        "p",
+                        {
+                          className: readinessResult2.ready ? styles$3.success : styles$3.muted,
+                          children: readinessResult2.ready ? "הטיוטה מוכנה לשלב הבא." : "אין נמענים כשירים כרגע."
+                        }
+                      ),
+                      /* @__PURE__ */ jsxs("ul", { className: styles$3.countList, children: [
+                        /* @__PURE__ */ jsxs(
+                          "li",
+                          {
+                            className: styles$3.countItem,
+                            children: [
+                              "נבחרו:",
+                              " ",
+                              countOrDash(
+                                readinessResult2.selectedCount
+                              )
+                            ]
+                          }
+                        ),
+                        /* @__PURE__ */ jsxs(
+                          "li",
+                          {
+                            className: styles$3.countItem,
+                            children: [
+                              "זכאים:",
+                              " ",
+                              countOrDash(
+                                readinessResult2.eligibleCount
+                              )
+                            ]
+                          }
+                        ),
+                        /* @__PURE__ */ jsxs(
+                          "li",
+                          {
+                            className: styles$3.countItem,
+                            children: [
+                              "נפסלו:",
+                              " ",
+                              countOrDash(
+                                readinessResult2.skippedCount
+                              )
+                            ]
+                          }
+                        ),
+                        /* @__PURE__ */ jsxs(
+                          "li",
+                          {
+                            className: styles$3.countItem,
+                            children: [
+                              "כפולים:",
+                              " ",
+                              countOrDash(
+                                readinessResult2.duplicateCount
+                              )
+                            ]
+                          }
+                        )
+                      ] }),
+                      readinessResult2.skippedByReason && Object.keys(
+                        readinessResult2.skippedByReason
+                      ).length > 0 ? /* @__PURE__ */ jsx(
+                        "ul",
+                        {
+                          className: styles$3.reasonList,
+                          children: Object.entries(
+                            readinessResult2.skippedByReason
+                          ).map(
+                            ([reason, count]) => /* @__PURE__ */ jsxs(
+                              "li",
+                              {
+                                className: styles$3.reasonRow,
+                                children: [
+                                  /* @__PURE__ */ jsx("span", { children: skipReasonLabel$1(
+                                    reason
+                                  ) }),
+                                  /* @__PURE__ */ jsx("span", { children: countOrDash(
+                                    count
+                                  ) })
+                                ]
+                              },
+                              reason
+                            )
+                          )
+                        }
+                      ) : null,
+                      readinessResult2.warnings.length > 0 ? /* @__PURE__ */ jsx(
+                        "ul",
+                        {
+                          className: styles$3.reasonList,
+                          children: readinessResult2.warnings.map(
+                            (warning, idx) => /* @__PURE__ */ jsx(
+                              "li",
+                              {
+                                className: styles$3.reasonRow,
+                                children: /* @__PURE__ */ jsx("span", { children: String(
+                                  warning
+                                ) })
+                              },
+                              `${String(
+                                warning
+                              )}-${idx}`
+                            )
+                          )
+                        }
+                      ) : null
+                    ]
+                  }
+                ) : null
+              ]
+            }
+          )
+        ] }) : null,
         cancelError ? /* @__PURE__ */ jsx("p", { className: styles$3.error, role: "alert", children: cancelError }) : null,
         selectedDraft.status === "draft" ? confirmingCancelId === selectedDraft.campaignId ? /* @__PURE__ */ jsxs(
           "div",

@@ -3,6 +3,7 @@ import {
     listMarketingCampaignDrafts,
     getMarketingCampaignDraft,
     cancelMarketingCampaignDraft,
+    checkMarketingCampaignSendReadiness,
 } from "../../../services/admin.service";
 import styles from "./MarketingDraftsPanel.module.css";
 
@@ -17,6 +18,8 @@ const SKIP_REASON_LABELS = {
     INVALID_ID: "מזהה לא תקין",
     USER_NOT_FOUND: "משתמש לא נמצא",
     NOT_VERIFIED: "לא מאומת",
+    NOT_CONSENTED: "חסרה הסכמת דיוור",
+    OPTED_OUT: "הסרת דיוור",
     EMAIL_MARKETING_CONSENT_MISSING: "חסרה הסכמת דיוור",
     MARKETING_OPT_OUT: "הסרת דיוור",
     EMAIL_MISSING: "חסר אימייל",
@@ -66,6 +69,26 @@ export default function MarketingDraftsPanel() {
     const [cancelResult, setCancelResult] = useState("");
     const [confirmingCancelId, setConfirmingCancelId] = useState(null);
 
+    // Read-only send-readiness probe state (draft detail only). Never stores
+    // selectedUserIds/emails/tokens/provider — counts + coarse reasons only.
+    const [readinessLoading, setReadinessLoading] = useState(false);
+    const [readinessError, setReadinessError] = useState("");
+    const [readinessResult, setReadinessResult] = useState(null);
+    const [readinessDisabledByFlag, setReadinessDisabledByFlag] =
+        useState(false);
+    const [readinessCheckedDraftId, setReadinessCheckedDraftId] =
+        useState(null);
+
+    // Drop any readiness probe state so a stale result is never shown for a
+    // different draft (detail switch / filter change / reload / cancel).
+    function clearReadinessState() {
+        setReadinessLoading(false);
+        setReadinessError("");
+        setReadinessResult(null);
+        setReadinessDisabledByFlag(false);
+        setReadinessCheckedDraftId(null);
+    }
+
     // Load the list for the current status + page. Read-only GET. Never renders
     // a backend message verbatim — a single fixed Hebrew error string is used.
     const loadDrafts = useCallback(async () => {
@@ -106,6 +129,7 @@ export default function MarketingDraftsPanel() {
         setCancelError("");
         setCancelResult("");
         setConfirmingCancelId(null);
+        clearReadinessState();
         setDraftsPage(1);
         setDraftsStatus(nextStatus);
     }
@@ -117,6 +141,7 @@ export default function MarketingDraftsPanel() {
         setCancelError("");
         setCancelResult("");
         setConfirmingCancelId(null);
+        clearReadinessState();
         setSelectedDraftLoading(true);
         try {
             const res = await getMarketingCampaignDraft(campaignId);
@@ -163,6 +188,61 @@ export default function MarketingDraftsPanel() {
             }
         } finally {
             setCancelLoadingId(null);
+        }
+    }
+
+    // Read-only readiness probe. Stores whitelisted counts only; maps every
+    // backend status to a fixed Hebrew string (never renders a message
+    // verbatim). This does NOT send email and does NOT start a campaign.
+    async function handleCheckReadiness(campaignId) {
+        if (readinessLoading) return;
+        setReadinessError("");
+        setReadinessResult(null);
+        setReadinessDisabledByFlag(false);
+        setReadinessCheckedDraftId(null);
+        setReadinessLoading(true);
+        try {
+            const res = await checkMarketingCampaignSendReadiness(campaignId);
+            const data = res?.data || {};
+            setReadinessResult({
+                selectedCount: data.selectedCount,
+                duplicateCount: data.duplicateCount,
+                eligibleCount: data.eligibleCount,
+                skippedCount: data.skippedCount,
+                skippedByReason:
+                    data.skippedByReason &&
+                    typeof data.skippedByReason === "object"
+                        ? data.skippedByReason
+                        : null,
+                warnings: Array.isArray(data.warnings) ? data.warnings : [],
+                ready: data.ready === true,
+            });
+            setReadinessCheckedDraftId(campaignId);
+        } catch (e) {
+            const status = e?.response?.status;
+            // Classification only — the backend message is never displayed.
+            const message = String(
+                e?.response?.data?.message || "",
+            ).toLowerCase();
+            if (status === 409) {
+                if (message.includes("disabled")) {
+                    setReadinessDisabledByFlag(true);
+                    setReadinessError("בדיקת מוכנות לשליחה אינה פעילה כרגע.");
+                } else {
+                    setReadinessError("ניתן לבדוק מוכנות רק לטיוטה פעילה.");
+                }
+            } else if (status === 422) {
+                if (message.includes("recipient")) {
+                    setReadinessError("אין נמענים שנבחרו בטיוטה.");
+                } else {
+                    setReadinessError("תוכן הטיוטה אינו מוכן לשליחה.");
+                }
+            } else {
+                setReadinessError("בדיקת המוכנות נכשלה.");
+            }
+            setReadinessCheckedDraftId(campaignId);
+        } finally {
+            setReadinessLoading(false);
         }
     }
 
@@ -485,6 +565,182 @@ export default function MarketingDraftsPanel() {
                                     ) : null}
                                 </ul>
                             </div>
+
+                            {selectedDraft.status === "draft" ? (
+                                <div className={styles.readinessBlock}>
+                                    <h4 className={styles.detailTitle}>
+                                        מוכנות לשליחה
+                                    </h4>
+                                    <button
+                                        type="button"
+                                        className={styles.readinessButton}
+                                        onClick={() =>
+                                            handleCheckReadiness(
+                                                selectedDraft.campaignId,
+                                            )
+                                        }
+                                        disabled={
+                                            readinessLoading ||
+                                            (readinessDisabledByFlag &&
+                                                readinessCheckedDraftId ===
+                                                    selectedDraft.campaignId)
+                                        }
+                                    >
+                                        {readinessLoading
+                                            ? "בודק מוכנות..."
+                                            : "בדיקת מוכנות לשליחה"}
+                                    </button>
+                                    <p className={styles.readinessHelper}>
+                                        הבדיקה לא שולחת אימיילים ולא מפעילה
+                                        קמפיין.
+                                    </p>
+                                    <div
+                                        className={styles.readinessStatus}
+                                        aria-live="polite"
+                                    >
+                                        {readinessCheckedDraftId ===
+                                            selectedDraft.campaignId &&
+                                        readinessError ? (
+                                            <p
+                                                className={styles.error}
+                                                role="alert"
+                                            >
+                                                {readinessError}
+                                            </p>
+                                        ) : null}
+
+                                        {readinessCheckedDraftId ===
+                                            selectedDraft.campaignId &&
+                                        readinessResult ? (
+                                            <div
+                                                className={
+                                                    styles.readinessResult
+                                                }
+                                            >
+                                                <p
+                                                    className={
+                                                        readinessResult.ready
+                                                            ? styles.success
+                                                            : styles.muted
+                                                    }
+                                                >
+                                                    {readinessResult.ready
+                                                        ? "הטיוטה מוכנה לשלב הבא."
+                                                        : "אין נמענים כשירים כרגע."}
+                                                </p>
+                                                <ul
+                                                    className={styles.countList}
+                                                >
+                                                    <li
+                                                        className={
+                                                            styles.countItem
+                                                        }
+                                                    >
+                                                        נבחרו:{" "}
+                                                        {countOrDash(
+                                                            readinessResult.selectedCount,
+                                                        )}
+                                                    </li>
+                                                    <li
+                                                        className={
+                                                            styles.countItem
+                                                        }
+                                                    >
+                                                        זכאים:{" "}
+                                                        {countOrDash(
+                                                            readinessResult.eligibleCount,
+                                                        )}
+                                                    </li>
+                                                    <li
+                                                        className={
+                                                            styles.countItem
+                                                        }
+                                                    >
+                                                        נפסלו:{" "}
+                                                        {countOrDash(
+                                                            readinessResult.skippedCount,
+                                                        )}
+                                                    </li>
+                                                    <li
+                                                        className={
+                                                            styles.countItem
+                                                        }
+                                                    >
+                                                        כפולים:{" "}
+                                                        {countOrDash(
+                                                            readinessResult.duplicateCount,
+                                                        )}
+                                                    </li>
+                                                </ul>
+                                                {readinessResult.skippedByReason &&
+                                                Object.keys(
+                                                    readinessResult.skippedByReason,
+                                                ).length > 0 ? (
+                                                    <ul
+                                                        className={
+                                                            styles.reasonList
+                                                        }
+                                                    >
+                                                        {Object.entries(
+                                                            readinessResult.skippedByReason,
+                                                        ).map(
+                                                            ([
+                                                                reason,
+                                                                count,
+                                                            ]) => (
+                                                                <li
+                                                                    key={reason}
+                                                                    className={
+                                                                        styles.reasonRow
+                                                                    }
+                                                                >
+                                                                    <span>
+                                                                        {skipReasonLabel(
+                                                                            reason,
+                                                                        )}
+                                                                    </span>
+                                                                    <span>
+                                                                        {countOrDash(
+                                                                            count,
+                                                                        )}
+                                                                    </span>
+                                                                </li>
+                                                            ),
+                                                        )}
+                                                    </ul>
+                                                ) : null}
+                                                {readinessResult.warnings
+                                                    .length > 0 ? (
+                                                    <ul
+                                                        className={
+                                                            styles.reasonList
+                                                        }
+                                                    >
+                                                        {readinessResult.warnings.map(
+                                                            (warning, idx) => (
+                                                                <li
+                                                                    key={`${String(
+                                                                        warning,
+                                                                    )}-${idx}`}
+                                                                    className={
+                                                                        styles.reasonRow
+                                                                    }
+                                                                >
+                                                                    <span>
+                                                                        {String(
+                                                                            warning,
+                                                                        )}
+                                                                    </span>
+                                                                </li>
+                                                            ),
+                                                        )}
+                                                    </ul>
+                                                ) : null}
+                                            </div>
+                                        ) : null}
+                                    </div>
+                                </div>
+                            ) : null}
 
                             {cancelError ? (
                                 <p className={styles.error} role="alert">

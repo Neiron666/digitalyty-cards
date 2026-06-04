@@ -204,6 +204,17 @@ export function cancelMarketingCampaignDraft(campaignId) {
     return api.patch(`/admin/marketing/campaigns/drafts/${campaignId}/cancel`);
 }
 
+// Marketing emails — read-only send-readiness probe for a draft (no send, no
+// Mailjet, no token, no DB write, no campaign start). Empty body only; the
+// backend revalidates the stored selection as SSoT. Auth/CSRF inherited from
+// the api instance. Returns counts + coarse reason codes only.
+export function checkMarketingCampaignSendReadiness(campaignId) {
+    return api.post(
+        `/admin/marketing/campaigns/${campaignId}/send-readiness`,
+        {},
+    );
+}
+
 // Organizations (admin)
 export function listAdminOrganizations(params = {}) {
     return api.get("/admin/orgs", { params });
