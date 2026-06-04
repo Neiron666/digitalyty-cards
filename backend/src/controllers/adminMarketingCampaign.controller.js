@@ -1711,12 +1711,15 @@ export async function getMarketingCampaignSendStatus(req, res) {
 
 /**
  * DELETE /api/admin/marketing/campaigns/:campaignId
- * v1 hard-delete restricted to an owned, status:"draft" campaign with ZERO
- * recipient rows. Never deletes queued/sending/completed/failed/canceled
- * campaigns, never cascades recipient rows, never touches send evidence.
- * Fail-closed AdminAudit is written BEFORE the destructive delete. Returns a
- * counts-only DTO; anti-enumeration 404. No Mailjet, no token, no render, no
- * email, no worker.
+ * Two-branch hard-delete. Branch A (draft): owned status:"draft" campaign with
+ * ZERO recipient rows — no cascade. Branch B (canceled cleanup): owned
+ * status:"canceled" campaign whose ALL recipient rows are safe technical
+ * canceled rows with no send-evidence fields; cascade-deletes all rows then
+ * the campaign in one transaction. Non-deletable: queued/sending/completed/
+ * failed, draft with rows, canceled with any unsafe or evidence row.
+ * Fail-closed AdminAudit written BEFORE each destructive branch, in-session.
+ * Returns counts-only DTO; anti-enumeration 404. No Mailjet, no token, no
+ * render, no email, no worker.
  */
 export async function deleteMarketingCampaign(req, res) {
     const { campaignId } = req.params;
@@ -1748,9 +1751,11 @@ export async function deleteMarketingCampaign(req, res) {
                 .json({ ok: false, message: "Campaign not found" });
         }
 
-        // C. Status guard — v1 deletes ONLY drafts. Any other status (queued/
-        // sending/completed/failed/canceled) is non-deletable in this slice.
-        if (campaign.status !== "draft") {
+        // C. Status guard — deletable statuses: "draft" (zero-row hard-delete,
+        // no cascade) and "canceled" (cascade cleanup of owned canceled
+        // campaigns with only safe technical rows and no send evidence). All
+        // other statuses (queued/sending/completed/failed) are non-deletable.
+        if (campaign.status !== "draft" && campaign.status !== "canceled") {
             return res.status(409).json({
                 ok: false,
                 message: "Campaign is not deletable",
@@ -1758,17 +1763,176 @@ export async function deleteMarketingCampaign(req, res) {
             });
         }
 
-        // D. Atomic audit + delete. The fail-closed AdminAudit row and the
-        // delete CAS run inside ONE transaction so they commit or roll back
-        // together: if the audit write fails the delete never happens, and if
-        // the delete CAS fails (e.g. a concurrent draft -> queued race) the
-        // audit row is rolled back — no false "marketing_campaign_deleted".
+        // E. Canceled cleanup branch — early-return path. Cascade-deletes all
+        // recipient rows that are safe technical canceled rows (no send
+        // evidence), then deletes the campaign, all inside ONE transaction.
+        // Fail-closed AdminAudit is written BEFORE the destructive operations,
+        // in-session. The unsafe-count predicate (E.3) and the deleteMany
+        // predicate (E.5) are kept identical so a concurrent evidence write
+        // between those steps (impossible in v1 no-worker build, guarded here
+        // for defense-in-depth) would fail the deletedCount assertion and abort
+        // the whole transaction. No Mailjet, no token, no render, no email.
+        if (campaign.status === "canceled") {
+            let deletedRecipients = 0;
+            const cancelSession = await mongoose.startSession();
+            try {
+                await cancelSession.withTransaction(async () => {
+                    // E.1 Re-read campaign inside session for race guard. If a
+                    // concurrent mutation changed the status away from
+                    // "canceled" between the pre-transaction read (step B) and
+                    // now, this catches it before any destructive operation.
+                    const liveDoc = await MarketingCampaign.findOne({
+                        _id: campaignId,
+                        createdByAdminId: req.userId,
+                    })
+                        .select({ status: 1 })
+                        .session(cancelSession)
+                        .lean();
+                    if (!liveDoc || liveDoc.status !== "canceled") {
+                        const conflict = new Error("CANCELED_CAS_NO_MATCH");
+                        conflict.deleteConflict = true;
+                        throw conflict;
+                    }
+
+                    // E.2 Count all recipient rows (used for audit meta and the
+                    // deleteMany assertion in E.6).
+                    const totalCount =
+                        await MarketingCampaignRecipient.countDocuments(
+                            { campaignId: campaign._id },
+                            { session: cancelSession },
+                        );
+
+                    // E.3 Count unsafe rows. A row is unsafe if it has a
+                    // non-canceled status OR any send-evidence field non-null.
+                    // This predicate must stay in sync with the deleteMany safe
+                    // predicate in E.5.
+                    const unsafeCount =
+                        await MarketingCampaignRecipient.countDocuments(
+                            {
+                                campaignId: campaign._id,
+                                $or: [
+                                    { status: { $ne: "canceled" } },
+                                    { providerMessageId: { $ne: null } },
+                                    { providerStatus: { $ne: null } },
+                                    { providerErrorSafe: { $ne: null } },
+                                    { unsubscribeTokenId: { $ne: null } },
+                                    { sentAt: { $ne: null } },
+                                    { failedAt: { $ne: null } },
+                                    { lockedAt: { $ne: null } },
+                                    { claimedBy: { $ne: null } },
+                                ],
+                            },
+                            { session: cancelSession },
+                        );
+                    if (unsafeCount > 0) {
+                        const conflict = new Error("DELETE_UNSAFE_ROWS");
+                        conflict.deleteConflict = true;
+                        throw conflict;
+                    }
+
+                    // E.4 Fail-closed AdminAudit BEFORE the destructive
+                    // operations, in-session. Meta is counts/status only — no
+                    // selectedUserIds/userIds/emails/tokens/contentSnapshot/
+                    // subject/bodyText/html/text/provider.
+                    await logAdminAction({
+                        adminUserId: req.userId,
+                        action: "marketing_campaign_canceled_cleanup",
+                        targetType: "campaign",
+                        targetId: campaignId,
+                        reason: "admin marketing canceled campaign cleanup",
+                        meta: {
+                            status: "canceled",
+                            recipientRowsBefore: totalCount,
+                            deletedRecipients: totalCount,
+                        },
+                        session: cancelSession,
+                    });
+
+                    // E.5 Cascade delete recipient rows using the same safe
+                    // predicate as E.3. Explicit null-equality checks mean any
+                    // row with a non-null evidence field does NOT match and is
+                    // NOT deleted — it would surface as a count mismatch below.
+                    const recipientDel =
+                        await MarketingCampaignRecipient.deleteMany(
+                            {
+                                campaignId: campaign._id,
+                                status: "canceled",
+                                providerMessageId: null,
+                                providerStatus: null,
+                                providerErrorSafe: null,
+                                unsubscribeTokenId: null,
+                                sentAt: null,
+                                failedAt: null,
+                                lockedAt: null,
+                                claimedBy: null,
+                            },
+                            { session: cancelSession },
+                        );
+                    if (recipientDel?.deletedCount !== totalCount) {
+                        const conflict = new Error(
+                            "DELETE_RECIPIENT_COUNT_MISMATCH",
+                        );
+                        conflict.deleteConflict = true;
+                        throw conflict;
+                    }
+
+                    // E.6 Campaign delete CAS — {status:"canceled"} guards
+                    // against a concurrent mutation that raced past E.1. If
+                    // deletedCount !== 1 the whole transaction (audit + all
+                    // recipient deletes + campaign delete) rolls back — no
+                    // orphaned rows, no false audit entry.
+                    const campaignDel = await MarketingCampaign.deleteOne(
+                        {
+                            _id: campaignId,
+                            createdByAdminId: req.userId,
+                            status: "canceled",
+                        },
+                        { session: cancelSession },
+                    );
+                    if (campaignDel?.deletedCount !== 1) {
+                        const conflict = new Error(
+                            "CANCELED_CAMPAIGN_CAS_NO_MATCH",
+                        );
+                        conflict.deleteConflict = true;
+                        throw conflict;
+                    }
+
+                    deletedRecipients = totalCount;
+                });
+            } catch (txErr) {
+                if (txErr?.deleteConflict) {
+                    return res.status(409).json({
+                        ok: false,
+                        message: "Campaign is not deletable",
+                    });
+                }
+                throw txErr;
+            } finally {
+                await cancelSession.endSession();
+            }
+
+            // E.7 Counts-only response. No raw docs/selectionSnapshot/
+            // contentSnapshot/userIds/emails/tokens/provider/html/text.
+            return res.status(200).json({
+                ok: true,
+                campaignId,
+                deletedCampaign: true,
+                deletedRecipients,
+            });
+        }
+
+        // D. Draft branch — atomic audit + delete. The fail-closed AdminAudit
+        // row and the delete CAS run inside ONE transaction so they commit or
+        // roll back together: if the audit write fails the delete never
+        // happens, and if the delete CAS fails (e.g. a concurrent draft ->
+        // queued race) the audit row is rolled back — no false
+        // "marketing_campaign_deleted".
         const session = await mongoose.startSession();
         try {
             await session.withTransaction(async () => {
                 // D.1 Authoritative recipient-row guard inside the session. A
                 // draft must have zero ledger rows; if any exist, refuse rather
-                // than cascade (no cascade delete in v1).
+                // than cascade (no cascade delete for drafts).
                 const recipientCount =
                     await MarketingCampaignRecipient.countDocuments(
                         { campaignId: campaign._id },
@@ -1781,9 +1945,10 @@ export async function deleteMarketingCampaign(req, res) {
                     throw conflict;
                 }
 
-                // D.2 Fail-closed AdminAudit BEFORE the delete, in-session. Meta
-                // is counts/status only — no selectedUserIds/userIds/emails/
-                // tokens/contentSnapshot/subject/bodyText/html/text/provider.
+                // D.2 Fail-closed AdminAudit BEFORE the delete, in-session.
+                // Meta is counts/status only — no selectedUserIds/userIds/
+                // emails/tokens/contentSnapshot/subject/bodyText/html/text/
+                // provider.
                 await logAdminAction({
                     adminUserId: req.userId,
                     action: "marketing_campaign_deleted",
@@ -1832,8 +1997,9 @@ export async function deleteMarketingCampaign(req, res) {
             await session.endSession();
         }
 
-        // E. Counts-only response. No raw docs/selectionSnapshot/contentSnapshot/
-        // userIds/emails/tokens/provider/html/text.
+        // F. Counts-only response (draft branch). No raw docs/
+        // selectionSnapshot/contentSnapshot/userIds/emails/tokens/provider/
+        // html/text.
         return res.status(200).json({
             ok: true,
             campaignId,

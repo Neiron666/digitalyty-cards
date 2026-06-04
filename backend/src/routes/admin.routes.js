@@ -160,11 +160,15 @@ router.get(
     "/marketing/campaigns/:campaignId/send-status",
     getMarketingCampaignSendStatus,
 );
-// Marketing emails — v1 hard-delete (own-admin scope) restricted to a
-// status:"draft" campaign with ZERO recipient rows; never deletes queued/
-// sending/completed/failed/canceled campaigns, never cascades recipient rows.
-// Fail-closed AdminAudit before the delete. No send, no Mailjet, no token,
-// no worker.
+// Marketing emails — two-branch hard-delete (own-admin scope):
+//   (1) status:"draft" campaign with ZERO recipient rows — no cascade.
+//   (2) status:"canceled" campaign only when ALL recipient rows are canceled
+//       and carry no send-evidence fields (providerMessageId/providerStatus/
+//       providerErrorSafe/unsubscribeTokenId/sentAt/failedAt/lockedAt/claimedBy).
+// Never deletes queued/sending/completed/failed campaigns. Never deletes
+// sent/sending/provider/token/evidence rows. Fail-closed AdminAudit in
+// transaction before each destructive branch. No send, no Mailjet, no token,
+// no worker. Backend controller is the SSoT.
 router.delete("/marketing/campaigns/:campaignId", deleteMarketingCampaign);
 
 // safe write actions (no generic patch)
