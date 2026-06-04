@@ -164,6 +164,12 @@ function getMarketingCampaignSendStatus(campaignId) {
 function deleteMarketingCampaign(campaignId) {
   return api.delete(`/admin/marketing/campaigns/${campaignId}`);
 }
+function cancelMarketingCampaignSend(campaignId) {
+  return api.patch(
+    `/admin/marketing/campaigns/${campaignId}/cancel-send`,
+    {}
+  );
+}
 function listAdminOrganizations(params = {}) {
   return api.get("/admin/orgs", { params });
 }
@@ -3371,65 +3377,67 @@ function MarketingTestSendConfirm({
     }
   );
 }
-const panel$1 = "_panel_1u079_1";
-const header$1 = "_header_1u079_23";
-const title$2 = "_title_1u079_37";
-const helper = "_helper_1u079_51";
-const toolbar = "_toolbar_1u079_65";
-const filterGroup = "_filterGroup_1u079_83";
-const filterButton = "_filterButton_1u079_97";
-const filterButtonActive = "_filterButtonActive_1u079_139";
-const reloadButton = "_reloadButton_1u079_149";
-const statusLine = "_statusLine_1u079_191";
-const muted$2 = "_muted_1u079_209";
-const success = "_success_1u079_223";
-const error$1 = "_error_1u079_235";
-const empty$1 = "_empty_1u079_249";
-const list$1 = "_list_1u079_263";
-const row$2 = "_row_1u079_283";
-const rowMain = "_rowMain_1u079_309";
-const rowSubject = "_rowSubject_1u079_325";
-const rowHeading = "_rowHeading_1u079_339";
-const rowMeta = "_rowMeta_1u079_353";
-const metaItem = "_metaItem_1u079_369";
-const rowActions = "_rowActions_1u079_391";
-const viewButton = "_viewButton_1u079_405";
-const pager$2 = "_pager_1u079_447";
-const pagerButton = "_pagerButton_1u079_463";
-const pagerInfo = "_pagerInfo_1u079_505";
-const detail = "_detail_1u079_517";
-const detailBlock = "_detailBlock_1u079_539";
-const detailTitle = "_detailTitle_1u079_553";
-const detailList = "_detailList_1u079_567";
-const detailRow = "_detailRow_1u079_583";
-const detailKey = "_detailKey_1u079_599";
-const detailText = "_detailText_1u079_617";
-const countList = "_countList_1u079_635";
-const countItem = "_countItem_1u079_655";
-const reasonList = "_reasonList_1u079_677";
-const reasonRow = "_reasonRow_1u079_697";
-const confirmBox = "_confirmBox_1u079_719";
-const confirmText = "_confirmText_1u079_743";
-const confirmActions = "_confirmActions_1u079_755";
-const confirmYesButton = "_confirmYesButton_1u079_769";
-const confirmNoButton = "_confirmNoButton_1u079_811";
-const cancelButton = "_cancelButton_1u079_853";
-const startPrepBlock = "_startPrepBlock_1u079_887";
-const startPrepHelper = "_startPrepHelper_1u079_911";
-const startPrepNote = "_startPrepNote_1u079_925";
-const startPrepButton = "_startPrepButton_1u079_939";
-const deleteBlock = "_deleteBlock_1u079_975";
-const deleteButton = "_deleteButton_1u079_991";
-const readinessBlock = "_readinessBlock_1u079_1035";
-const readinessButton = "_readinessButton_1u079_1049";
-const readinessHelper = "_readinessHelper_1u079_1093";
-const readinessStatus = "_readinessStatus_1u079_1109";
-const readinessResult = "_readinessResult_1u079_1123";
-const sendStatusBlock = "_sendStatusBlock_1u079_1137";
-const sendStatusButton = "_sendStatusButton_1u079_1151";
-const sendStatusHelper = "_sendStatusHelper_1u079_1195";
-const sendStatusStatus = "_sendStatusStatus_1u079_1211";
-const sendStatusResult = "_sendStatusResult_1u079_1225";
+const panel$1 = "_panel_11lt4_1";
+const header$1 = "_header_11lt4_23";
+const title$2 = "_title_11lt4_37";
+const helper = "_helper_11lt4_51";
+const toolbar = "_toolbar_11lt4_65";
+const filterGroup = "_filterGroup_11lt4_83";
+const filterButton = "_filterButton_11lt4_97";
+const filterButtonActive = "_filterButtonActive_11lt4_139";
+const reloadButton = "_reloadButton_11lt4_149";
+const statusLine = "_statusLine_11lt4_191";
+const muted$2 = "_muted_11lt4_209";
+const success = "_success_11lt4_223";
+const error$1 = "_error_11lt4_235";
+const empty$1 = "_empty_11lt4_249";
+const list$1 = "_list_11lt4_263";
+const row$2 = "_row_11lt4_283";
+const rowMain = "_rowMain_11lt4_309";
+const rowSubject = "_rowSubject_11lt4_325";
+const rowHeading = "_rowHeading_11lt4_339";
+const rowMeta = "_rowMeta_11lt4_353";
+const metaItem = "_metaItem_11lt4_369";
+const rowActions = "_rowActions_11lt4_391";
+const viewButton = "_viewButton_11lt4_405";
+const pager$2 = "_pager_11lt4_447";
+const pagerButton = "_pagerButton_11lt4_463";
+const pagerInfo = "_pagerInfo_11lt4_505";
+const detail = "_detail_11lt4_517";
+const detailBlock = "_detailBlock_11lt4_539";
+const detailTitle = "_detailTitle_11lt4_553";
+const detailList = "_detailList_11lt4_567";
+const detailRow = "_detailRow_11lt4_583";
+const detailKey = "_detailKey_11lt4_599";
+const detailText = "_detailText_11lt4_617";
+const countList = "_countList_11lt4_635";
+const countItem = "_countItem_11lt4_655";
+const reasonList = "_reasonList_11lt4_677";
+const reasonRow = "_reasonRow_11lt4_697";
+const confirmBox = "_confirmBox_11lt4_719";
+const confirmText = "_confirmText_11lt4_743";
+const confirmActions = "_confirmActions_11lt4_755";
+const confirmYesButton = "_confirmYesButton_11lt4_769";
+const confirmNoButton = "_confirmNoButton_11lt4_811";
+const cancelButton = "_cancelButton_11lt4_853";
+const startPrepBlock = "_startPrepBlock_11lt4_887";
+const startPrepHelper = "_startPrepHelper_11lt4_911";
+const startPrepNote = "_startPrepNote_11lt4_925";
+const startPrepButton = "_startPrepButton_11lt4_939";
+const deleteBlock = "_deleteBlock_11lt4_975";
+const deleteButton = "_deleteButton_11lt4_991";
+const readinessBlock = "_readinessBlock_11lt4_1035";
+const readinessButton = "_readinessButton_11lt4_1049";
+const readinessHelper = "_readinessHelper_11lt4_1093";
+const readinessStatus = "_readinessStatus_11lt4_1109";
+const readinessResult = "_readinessResult_11lt4_1123";
+const sendStatusBlock = "_sendStatusBlock_11lt4_1137";
+const sendStatusButton = "_sendStatusButton_11lt4_1151";
+const sendStatusHelper = "_sendStatusHelper_11lt4_1195";
+const sendStatusStatus = "_sendStatusStatus_11lt4_1211";
+const sendStatusResult = "_sendStatusResult_11lt4_1225";
+const cancelSendBlock = "_cancelSendBlock_11lt4_1239";
+const cancelSendButton = "_cancelSendButton_11lt4_1255";
 const styles$3 = {
   panel: panel$1,
   header: header$1,
@@ -3489,9 +3497,11 @@ const styles$3 = {
   sendStatusButton,
   sendStatusHelper,
   sendStatusStatus,
-  sendStatusResult
+  sendStatusResult,
+  cancelSendBlock,
+  cancelSendButton
 };
-const DRAFT_STATUS_OPTIONS = ["draft", "canceled"];
+const DRAFT_STATUS_OPTIONS = ["draft", "queued", "canceled"];
 const PAGE_LIMIT = 20;
 const SKIP_REASON_LABELS = {
   DUPLICATE: "כפול",
@@ -3581,6 +3591,15 @@ function MarketingDraftsPanel() {
     setDeleteError("");
     setConfirmingDeleteId(null);
   }
+  const [cancelSendLoadingId, setCancelSendLoadingId] = useState(null);
+  const [cancelSendError, setCancelSendError] = useState("");
+  const [cancelSendResult, setCancelSendResult] = useState("");
+  const [confirmingCancelSendId, setConfirmingCancelSendId] = useState(null);
+  function clearCancelSendState() {
+    setCancelSendLoadingId(null);
+    setCancelSendError("");
+    setConfirmingCancelSendId(null);
+  }
   const loadDrafts = useCallback(async () => {
     setDraftsLoading(true);
     setDraftsError("");
@@ -3619,6 +3638,8 @@ function MarketingDraftsPanel() {
     clearSendStatusState();
     clearDeleteState();
     setDeleteResult("");
+    clearCancelSendState();
+    setCancelSendResult("");
     setDraftsPage(1);
     setDraftsStatus(nextStatus);
   }
@@ -3633,6 +3654,8 @@ function MarketingDraftsPanel() {
     clearSendStatusState();
     clearDeleteState();
     setDeleteResult("");
+    clearCancelSendState();
+    setCancelSendResult("");
     setSelectedDraftLoading(true);
     try {
       const res = await getMarketingCampaignDraft(campaignId);
@@ -3709,6 +3732,38 @@ function MarketingDraftsPanel() {
       }
     } finally {
       setDeleteLoadingId(null);
+    }
+  }
+  async function handleConfirmCancelSend(campaignId) {
+    if (cancelSendLoadingId) return;
+    setCancelSendError("");
+    setCancelSendResult("");
+    setCancelSendLoadingId(campaignId);
+    try {
+      await cancelMarketingCampaignSend(campaignId);
+      setConfirmingCancelSendId(null);
+      await loadDrafts();
+      if (selectedDraftId === campaignId) {
+        await loadDetail(campaignId);
+        await handleLoadSendStatus(campaignId);
+      }
+      setCancelSendResult("הכנת השליחה בוטלה בהצלחה.");
+    } catch (e) {
+      const httpStatus = e?.response?.status;
+      setConfirmingCancelSendId(null);
+      await loadDrafts();
+      if (selectedDraftId === campaignId) {
+        await loadDetail(campaignId);
+      }
+      if (httpStatus === 404 || httpStatus === 409) {
+        setCancelSendError(
+          "לא ניתן לבטל את הכנת השליחה במצב הנוכחי."
+        );
+      } else {
+        setCancelSendError("ביטול הכנת השליחה נכשל. נסו שוב.");
+      }
+    } finally {
+      setCancelSendLoadingId(null);
     }
   }
   async function handleCheckReadiness(campaignId) {
@@ -3824,7 +3879,7 @@ function MarketingDraftsPanel() {
               className: `${styles$3.filterButton} ${draftsStatus === opt ? styles$3.filterButtonActive : ""}`,
               "aria-pressed": draftsStatus === opt,
               onClick: () => handleSelectStatus(opt),
-              children: opt === "draft" ? "טיוטות פעילות" : "טיוטות שבוטלו"
+              children: opt === "draft" ? "טיוטות פעילות" : opt === "queued" ? "ממתינות לשליחה" : "טיוטות שבוטלו"
             },
             opt
           ))
@@ -3844,7 +3899,8 @@ function MarketingDraftsPanel() {
     /* @__PURE__ */ jsxs("div", { className: styles$3.statusLine, "aria-live": "polite", children: [
       draftsLoading ? /* @__PURE__ */ jsx("span", { className: styles$3.muted, children: "טוען…" }) : null,
       cancelResult ? /* @__PURE__ */ jsx("span", { className: styles$3.success, children: cancelResult }) : null,
-      deleteResult ? /* @__PURE__ */ jsx("span", { className: styles$3.success, children: deleteResult }) : null
+      deleteResult ? /* @__PURE__ */ jsx("span", { className: styles$3.success, children: deleteResult }) : null,
+      cancelSendResult ? /* @__PURE__ */ jsx("span", { className: styles$3.success, children: cancelSendResult }) : null
     ] }),
     draftsError ? /* @__PURE__ */ jsx("p", { className: styles$3.error, role: "alert", children: draftsError }) : null,
     !draftsLoading && !draftsError && items.length === 0 ? /* @__PURE__ */ jsx("p", { className: styles$3.empty, children: "אין טיוטות להצגה." }) : null,
@@ -4442,6 +4498,76 @@ function MarketingDraftsPanel() {
               className: styles$3.startPrepButton,
               disabled: true,
               children: "יצירת רשומות שליחה"
+            }
+          )
+        ] }) : null,
+        selectedDraft.status === "queued" ? /* @__PURE__ */ jsxs("div", { className: styles$3.cancelSendBlock, children: [
+          cancelSendError ? /* @__PURE__ */ jsx(
+            "p",
+            {
+              className: styles$3.error,
+              role: "alert",
+              children: cancelSendError
+            }
+          ) : null,
+          confirmingCancelSendId === selectedDraft.campaignId ? /* @__PURE__ */ jsxs(
+            "div",
+            {
+              className: styles$3.confirmBox,
+              role: "group",
+              "aria-label": "אישור ביטול הכנת שליחה",
+              children: [
+                /* @__PURE__ */ jsx(
+                  "span",
+                  {
+                    className: styles$3.confirmText,
+                    children: "הפעולה תבטל את הכנת השליחה ותסמן רשומות ממתינות כמבוטלות. אימיילים לא יישלחו דרך פעולה זו."
+                  }
+                ),
+                /* @__PURE__ */ jsxs(
+                  "div",
+                  {
+                    className: styles$3.confirmActions,
+                    children: [
+                      /* @__PURE__ */ jsx(
+                        "button",
+                        {
+                          type: "button",
+                          className: styles$3.confirmYesButton,
+                          onClick: () => handleConfirmCancelSend(
+                            selectedDraft.campaignId
+                          ),
+                          disabled: cancelSendLoadingId === selectedDraft.campaignId,
+                          children: "כן, בטל הכנת שליחה"
+                        }
+                      ),
+                      /* @__PURE__ */ jsx(
+                        "button",
+                        {
+                          type: "button",
+                          className: styles$3.confirmNoButton,
+                          onClick: () => setConfirmingCancelSendId(
+                            null
+                          ),
+                          disabled: cancelSendLoadingId === selectedDraft.campaignId,
+                          children: "לא, השאר"
+                        }
+                      )
+                    ]
+                  }
+                )
+              ]
+            }
+          ) : /* @__PURE__ */ jsx(
+            "button",
+            {
+              type: "button",
+              className: styles$3.cancelSendButton,
+              onClick: () => setConfirmingCancelSendId(
+                selectedDraft.campaignId
+              ),
+              disabled: cancelSendLoadingId === selectedDraft.campaignId,
+              children: "ביטול הכנת שליחה"
             }
           )
         ] }) : null,

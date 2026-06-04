@@ -236,6 +236,18 @@ export function deleteMarketingCampaign(campaignId) {
     return api.delete(`/admin/marketing/campaigns/${campaignId}`);
 }
 
+// Marketing emails — own-admin cancel-send (PATCH, queued->canceled). Not
+// gated by MARKETING_SEND_TO_LIST_ENABLED (intentional: rollback must work
+// even when start is disabled). Empty body only; backend uses only route
+// param. No selectedUserIds/userIds/content/emails payload.
+// Auth/CSRF inherited from the shared api instance.
+export function cancelMarketingCampaignSend(campaignId) {
+    return api.patch(
+        `/admin/marketing/campaigns/${campaignId}/cancel-send`,
+        {},
+    );
+}
+
 // Organizations (admin)
 export function listAdminOrganizations(params = {}) {
     return api.get("/admin/orgs", { params });

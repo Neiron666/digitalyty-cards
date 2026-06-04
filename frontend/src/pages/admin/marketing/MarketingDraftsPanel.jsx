@@ -3,6 +3,7 @@ import {
     listMarketingCampaignDrafts,
     getMarketingCampaignDraft,
     cancelMarketingCampaignDraft,
+    cancelMarketingCampaignSend,
     checkMarketingCampaignSendReadiness,
     getMarketingCampaignSendStatus,
     deleteMarketingCampaign,
@@ -10,7 +11,7 @@ import {
 import styles from "./MarketingDraftsPanel.module.css";
 
 // Allowlisted list-filter statuses (mirrors the backend allowlist). No "all".
-const DRAFT_STATUS_OPTIONS = ["draft", "canceled"];
+const DRAFT_STATUS_OPTIONS = ["draft", "queued", "canceled"];
 const PAGE_LIMIT = 20;
 
 // Local skip-reason label map. Unknown keys fall back to String(reason) so a
@@ -145,6 +146,22 @@ export default function MarketingDraftsPanel() {
         setConfirmingDeleteId(null);
     }
 
+    // Cancel-send flow state (queued detail only). Two-step confirm; backend is
+    // SSoT for cancelability. Stores nothing from the response except a fixed
+    // success/error string. Never renders a backend message verbatim.
+    const [cancelSendLoadingId, setCancelSendLoadingId] = useState(null);
+    const [cancelSendError, setCancelSendError] = useState("");
+    const [cancelSendResult, setCancelSendResult] = useState("");
+    const [confirmingCancelSendId, setConfirmingCancelSendId] = useState(null);
+
+    // Drop cancel-send flow state (confirm/loading/error). cancelSendResult is
+    // reset separately so it can persist on the panel status line after reloads.
+    function clearCancelSendState() {
+        setCancelSendLoadingId(null);
+        setCancelSendError("");
+        setConfirmingCancelSendId(null);
+    }
+
     // Load the list for the current status + page. Read-only GET. Never renders
     // a backend message verbatim — a single fixed Hebrew error string is used.
     const loadDrafts = useCallback(async () => {
@@ -189,6 +206,8 @@ export default function MarketingDraftsPanel() {
         clearSendStatusState();
         clearDeleteState();
         setDeleteResult("");
+        clearCancelSendState();
+        setCancelSendResult("");
         setDraftsPage(1);
         setDraftsStatus(nextStatus);
     }
@@ -204,6 +223,8 @@ export default function MarketingDraftsPanel() {
         clearSendStatusState();
         clearDeleteState();
         setDeleteResult("");
+        clearCancelSendState();
+        setCancelSendResult("");
         setSelectedDraftLoading(true);
         try {
             const res = await getMarketingCampaignDraft(campaignId);
@@ -311,6 +332,46 @@ export default function MarketingDraftsPanel() {
             setDeleteLoadingId(null);
         }
     }
+
+    // Cancel-send — queued-only rollback. PATCH /campaigns/:id/cancel-send.
+    // Backend is SSoT (queued-only CAS). A 404/409 means stale state; list and
+    // detail are refreshed. Backend message is never rendered — only fixed
+    // Hebrew strings. After success the detail reloads so status becomes
+    // "canceled" and the delete cleanup UI becomes available immediately.
+    async function handleConfirmCancelSend(campaignId) {
+        if (cancelSendLoadingId) return;
+        setCancelSendError("");
+        setCancelSendResult("");
+        setCancelSendLoadingId(campaignId);
+        try {
+            await cancelMarketingCampaignSend(campaignId);
+            setConfirmingCancelSendId(null);
+            await loadDrafts();
+            if (selectedDraftId === campaignId) {
+                await loadDetail(campaignId);
+                await handleLoadSendStatus(campaignId);
+            }
+            // Set AFTER all reloads — loadDetail calls clearCancelSendState
+            // which clears cancelSendResult; re-set here so status line shows it.
+            setCancelSendResult("הכנת השליחה בוטלה בהצלחה.");
+        } catch (e) {
+            const httpStatus = e?.response?.status;
+            setConfirmingCancelSendId(null);
+            await loadDrafts();
+            if (selectedDraftId === campaignId) {
+                await loadDetail(campaignId);
+            }
+            // Set AFTER all reloads — same reason as success path above.
+            if (httpStatus === 404 || httpStatus === 409) {
+                setCancelSendError("לא ניתן לבטל את הכנת השליחה במצב הנוכחי.");
+            } else {
+                setCancelSendError("ביטול הכנת השליחה נכשל. נסו שוב.");
+            }
+        } finally {
+            setCancelSendLoadingId(null);
+        }
+    }
+
     async function handleCheckReadiness(campaignId) {
         if (readinessLoading) return;
         setReadinessError("");
@@ -452,7 +513,9 @@ export default function MarketingDraftsPanel() {
                         >
                             {opt === "draft"
                                 ? "טיוטות פעילות"
-                                : "טיוטות שבוטלו"}
+                                : opt === "queued"
+                                  ? "ממתינות לשליחה"
+                                  : "טיוטות שבוטלו"}
                         </button>
                     ))}
                 </div>
@@ -475,6 +538,9 @@ export default function MarketingDraftsPanel() {
                 ) : null}
                 {deleteResult ? (
                     <span className={styles.success}>{deleteResult}</span>
+                ) : null}
+                {cancelSendResult ? (
+                    <span className={styles.success}>{cancelSendResult}</span>
                 ) : null}
             </div>
 
@@ -1166,6 +1232,92 @@ export default function MarketingDraftsPanel() {
                                     >
                                         יצירת רשומות שליחה
                                     </button>
+                                </div>
+                            ) : null}
+
+                            {selectedDraft.status === "queued" ? (
+                                <div className={styles.cancelSendBlock}>
+                                    {cancelSendError ? (
+                                        <p
+                                            className={styles.error}
+                                            role="alert"
+                                        >
+                                            {cancelSendError}
+                                        </p>
+                                    ) : null}
+
+                                    {confirmingCancelSendId ===
+                                    selectedDraft.campaignId ? (
+                                        <div
+                                            className={styles.confirmBox}
+                                            role="group"
+                                            aria-label="אישור ביטול הכנת שליחה"
+                                        >
+                                            <span
+                                                className={styles.confirmText}
+                                            >
+                                                הפעולה תבטל את הכנת השליחה ותסמן
+                                                רשומות ממתינות כמבוטלות.
+                                                אימיילים לא יישלחו דרך פעולה זו.
+                                            </span>
+                                            <div
+                                                className={
+                                                    styles.confirmActions
+                                                }
+                                            >
+                                                <button
+                                                    type="button"
+                                                    className={
+                                                        styles.confirmYesButton
+                                                    }
+                                                    onClick={() =>
+                                                        handleConfirmCancelSend(
+                                                            selectedDraft.campaignId,
+                                                        )
+                                                    }
+                                                    disabled={
+                                                        cancelSendLoadingId ===
+                                                        selectedDraft.campaignId
+                                                    }
+                                                >
+                                                    כן, בטל הכנת שליחה
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    className={
+                                                        styles.confirmNoButton
+                                                    }
+                                                    onClick={() =>
+                                                        setConfirmingCancelSendId(
+                                                            null,
+                                                        )
+                                                    }
+                                                    disabled={
+                                                        cancelSendLoadingId ===
+                                                        selectedDraft.campaignId
+                                                    }
+                                                >
+                                                    לא, השאר
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <button
+                                            type="button"
+                                            className={styles.cancelSendButton}
+                                            onClick={() =>
+                                                setConfirmingCancelSendId(
+                                                    selectedDraft.campaignId,
+                                                )
+                                            }
+                                            disabled={
+                                                cancelSendLoadingId ===
+                                                selectedDraft.campaignId
+                                            }
+                                        >
+                                            ביטול הכנת שליחה
+                                        </button>
+                                    )}
                                 </div>
                             ) : null}
 

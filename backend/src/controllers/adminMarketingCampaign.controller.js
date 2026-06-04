@@ -690,13 +690,13 @@ function isValidObjectId(value) {
 }
 
 // Allowlisted list-filter statuses. No "all", no arbitrary status injection.
-const DRAFT_LIST_STATUSES = new Set(["draft", "canceled"]);
+const DRAFT_LIST_STATUSES = new Set(["draft", "canceled", "queued"]);
 const DRAFT_LIST_DEFAULT_LIMIT = 20;
 const DRAFT_LIST_MAX_LIMIT = 50;
 
 /**
  * GET /api/admin/marketing/campaigns/drafts
- * Query: status? (draft|canceled, default draft), page? (>=1), limit? (1..50).
+ * Query: status? (draft|canceled|queued, default draft), page? (>=1), limit? (1..50).
  * Returns: { ok, page, limit, total, items:[{ campaignId, status, createdAt,
  *   updatedAt, subject, heading, selectedCount, eligibleCount, skippedCount }] }
  * Metadata/counts only — no bodyText, no selectedUserIds, no requestId.
