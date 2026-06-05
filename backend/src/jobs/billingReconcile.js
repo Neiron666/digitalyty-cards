@@ -32,6 +32,16 @@ const HEARTBEAT_MS = Math.max(
 );
 
 // ---------------------------------------------------------------------------
+// STO renewal grace window — Tranzila My Billing charges are triggered by a
+// billing-day schedule (charge_dom) and the provider notify may arrive hours
+// after subscription.expiresAt passes (UTC) on the same calendar day.
+// While the STO is active (status="created", stoId present) and the expiry is
+// recent (within this window), skip the downgrade so handleStoNotify can
+// still process the in-flight recurring charge and renew the subscription.
+// ---------------------------------------------------------------------------
+const STO_RENEWAL_GRACE_MS = 48 * 60 * 60 * 1000; // 48 hours
+
+// ---------------------------------------------------------------------------
 // Local helper — normalizes expired subscription state on User.
 // Idempotent: filter ensures only still-stale users are updated.
 //
@@ -89,7 +99,9 @@ async function reconcileOnce() {
             "subscription.status": "active",
             "subscription.expiresAt": { $lt: now },
             cardId: { $ne: null },
-        }).select("_id cardId plan subscription.status subscription.expiresAt");
+        }).select(
+            "_id cardId plan subscription.status subscription.expiresAt subscription.provider tranzilaSto.status tranzilaSto.stoId",
+        );
 
         let downgradedCards = 0;
         let normalizedUsers = 0;
@@ -99,6 +111,7 @@ async function reconcileOnce() {
         let skippedStillPaid = 0;
         let skippedAlreadyDowngraded = 0;
         let skippedAdminOverride = 0;
+        let skippedStoRenewalGrace = 0;
         let errors = 0;
 
         for (const user of candidates) {
@@ -118,6 +131,30 @@ async function reconcileOnce() {
                         now,
                     );
                     if (normalized) normalizedUsersWithoutCard += 1;
+                    continue;
+                }
+
+                // --- C-STO. Tranzila STO renewal grace window ---
+                // Skip downgrade while the Tranzila recurring charge may still be
+                // in-flight. Conditions (all required):
+                //   1. provider is tranzila
+                //   2. tranzilaSto.status === "created" (active schedule)
+                //   3. stoId present (schedule confirmed by provider)
+                //   4. expiresAt is within STO_RENEWAL_GRACE_MS of now
+                // Non-Tranzila, cancelled/pending/failed STO, and expired-grace
+                // candidates all fall through to the existing downgrade path.
+                const stoState = user.tranzilaSto ?? {};
+                const expiresAtMs = user.subscription?.expiresAt
+                    ? new Date(user.subscription.expiresAt).getTime()
+                    : null;
+                if (
+                    user.subscription?.provider === "tranzila" &&
+                    stoState.status === "created" &&
+                    stoState.stoId &&
+                    expiresAtMs !== null &&
+                    now.getTime() - expiresAtMs <= STO_RENEWAL_GRACE_MS
+                ) {
+                    skippedStoRenewalGrace += 1;
                     continue;
                 }
 
@@ -211,6 +248,7 @@ async function reconcileOnce() {
                 skippedStillPaid,
                 skippedAlreadyDowngraded,
                 skippedAdminOverride,
+                skippedStoRenewalGrace,
                 errors,
             });
         } else {

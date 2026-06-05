@@ -53,6 +53,35 @@ All vars are optional (in-code defaults apply). None trigger startup failure if 
 
 See `docs/runbooks/trial-lifecycle-ssot.md` for the full lifecycle runbook.
 
+## Marketing Campaign Send
+
+Gates and scheduler knobs for the admin marketing email real-send feature.
+
+### Control gates
+
+| Variable                               | Default                     | Purpose                                                                                                                                |
+| -------------------------------------- | --------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| `MARKETING_SEND_TO_LIST_ENABLED`       | `false` (absent = disabled) | Set `"true"` to allow admins to queue campaigns via Start. Absent/false returns `409`.                                                 |
+| `MARKETING_REAL_SEND_WORKER_ENABLED`   | `false` (absent = disabled) | Set `"true"` to enable the recurring real-send scheduler. Disable after send window.                                                   |
+| `MARKETING_SEND_WORKER_ENABLED`        | `false` (absent = disabled) | Dry-run worker gate. **Must be `false`/absent when real worker is enabled.** Real-send worker refuses to schedule if this is `"true"`. |
+| `MARKETING_REAL_SEND_RUN_ONCE_ENABLED` | `false` (absent = disabled) | Manual one-shot operator gate for a single `runMarketingRealSendOnce()` call.                                                          |
+
+### Scheduler tuning (all optional)
+
+| Variable                                 | Default  | Notes                                                                   |
+| ---------------------------------------- | -------- | ----------------------------------------------------------------------- |
+| `MARKETING_REAL_SEND_BATCH_SIZE`         | `1`      | Rows per sweep tick. Max 10. Use `1` for controlled production rollout. |
+| `MARKETING_REAL_SEND_BOOT_DELAY_MS`      | `135000` | Delay before first sweep (ms). Faster rollout: `10000`.                 |
+| `MARKETING_REAL_SEND_INTERVAL_MS`        | `600000` | Sweep tick interval (ms). Min 60000. Faster rollout: `60000`.           |
+| `MARKETING_REAL_SEND_LOCK_TTL_MS`        | `300000` | Stale-lock threshold before reclaim (ms). Min 60000.                    |
+| `MARKETING_REAL_SEND_MAX_ATTEMPTS`       | `3`      | Max claim attempts before permanent failure. Min 1, max 20.             |
+| `MARKETING_REAL_SEND_COOLDOWN_MS`        | `300000` | Cooldown between retries for a releasable stuck row (ms). Min 60000.    |
+| `MARKETING_REAL_SEND_RECLAIM_BATCH_SIZE` | `10`     | Max stale rows reclaimed per processOne invocation. Max 50.             |
+
+All vars are optional in-code (defaults apply). `MARKETING_REAL_SEND_WORKER_ENABLED` and `MARKETING_SEND_WORKER_ENABLED` must never both be `"true"` at the same time.
+
+See `docs/runbooks/marketing-real-send-worker-runbook.md` for full operational procedures, safe enable/disable, pending-row pre-enable check, monitoring, and troubleshooting.
+
 ## AI Feature Flags
 
 Three independent feature flags control AI generation surfaces:

@@ -227,3 +227,49 @@ The following legacy card billing/trial operations are **blocked** for org-owned
 | Grant     | `ORG_ENTITLEMENT_GRANT`  |
 | Extend    | `ORG_ENTITLEMENT_EXTEND` |
 | Revoke    | `ORG_ENTITLEMENT_REVOKE` |
+
+---
+
+## Marketing Campaigns
+
+Platform admin can create, preview, test, send, monitor, cancel, and delete marketing email campaigns. All endpoints require admin RBAC (`/api/admin/marketing/*`).
+
+For the full operational runbook (architecture, recipient lifecycle, campaign lifecycle, subject personalization, env flags, safe send procedures, monitoring, troubleshooting):
+→ `docs/runbooks/marketing-real-send-worker-runbook.md`
+
+### Endpoint reference
+
+| Endpoint                                     | Purpose                                                                                                                                                         |
+| -------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `GET /api/admin/marketing/users/eligible`    | List users eligible as marketing recipients (emailMarketingConsent=true, verified, not opted out).                                                              |
+| `GET /api/admin/marketing`                   | List campaign drafts by status (status filter: draft, queued, completed, canceled).                                                                             |
+| `POST /api/admin/marketing`                  | Create a new campaign draft. Body: `{ subject, heading, previewText, body, footer, topImageUrl?, userIds[] }`.                                                  |
+| `GET /api/admin/marketing/:id`               | Fetch a single campaign.                                                                                                                                        |
+| `PATCH /api/admin/marketing/:id`             | Update a draft campaign (content or selection).                                                                                                                 |
+| `GET /api/admin/marketing/:id/preview`       | Render preview HTML + text for the campaign content.                                                                                                            |
+| `GET /api/admin/marketing/:id/readiness`     | Check readiness: validates content + returns eligible recipient count.                                                                                          |
+| `POST /api/admin/marketing/:id/test-send`    | Send a test copy to the logged-in admin's email. Subject is personalized using admin's `firstName`. Requires `{ subject, heading, previewText, body, footer }`. |
+| `POST /api/admin/marketing/:id/send-to-list` | **Start**: transition campaign to `queued` and create recipient rows. Requires `MARKETING_SEND_TO_LIST_ENABLED=true`.                                           |
+| `GET /api/admin/marketing/:id/send-status`   | Return recipient counts by status (pending, sending, sent, failed, skipped, suppressed, canceled) and `isTerminal` flag.                                        |
+| `POST /api/admin/marketing/:id/cancel-send`  | Cancel pending rows for a `queued` campaign. CAS: only works while campaign is `queued`. Does not touch sent/evidence rows.                                     |
+| `DELETE /api/admin/marketing/:id`            | Delete a campaign. Blocked for campaigns with sent evidence rows.                                                                                               |
+
+### Subject `[user]` placeholder
+
+Admin can use `[user]` in the campaign subject. The real-send worker replaces it per recipient with `User.firstName` at send time. Fallback: `"לקוח יקר"`. See runbook §5 for full sanitization rules.
+
+### Campaign status and UI tabs
+
+| Status      | UI tab         |
+| ----------- | -------------- |
+| `draft`     | טיוטות פעילות  |
+| `queued`    | ממתינות לשליחה |
+| `completed` | נשלחו          |
+| `canceled`  | טיוטות שבוטלו  |
+
+### Operational safety
+
+- `MARKETING_SEND_TO_LIST_ENABLED` must be absent/false unless admins should queue campaigns.
+- `MARKETING_REAL_SEND_WORKER_ENABLED` must be absent/false unless a send window is active.
+- `MARKETING_SEND_WORKER_ENABLED` must stay absent/false when real worker is enabled.
+- Run the pending-row pre-enable check before enabling the real-send worker (runbook §8).
