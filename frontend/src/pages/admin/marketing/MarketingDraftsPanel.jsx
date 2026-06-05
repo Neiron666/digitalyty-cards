@@ -12,7 +12,7 @@ import {
 import styles from "./MarketingDraftsPanel.module.css";
 
 // Allowlisted list-filter statuses (mirrors the backend allowlist). No "all".
-const DRAFT_STATUS_OPTIONS = ["draft", "queued", "canceled"];
+const DRAFT_STATUS_OPTIONS = ["draft", "queued", "completed", "canceled"];
 const PAGE_LIMIT = 20;
 
 // Local skip-reason label map. Unknown keys fall back to String(reason) so a
@@ -33,6 +33,10 @@ const SKIP_REASON_LABELS = {
 const STATUS_LABELS = {
     draft: "טיוטה",
     canceled: "בוטלה",
+    queued: "בתור",
+    sending: "בשליחה",
+    completed: "הושלם",
+    failed: "נכשל",
 };
 
 // Local fixed campaign-status label map for the read-only send-status block.
@@ -602,7 +606,9 @@ export default function MarketingDraftsPanel() {
                                 ? "טיוטות פעילות"
                                 : opt === "queued"
                                   ? "ממתינות לשליחה"
-                                  : "טיוטות שבוטלו"}
+                                  : opt === "completed"
+                                    ? "נשלחו"
+                                    : "טיוטות שבוטלו"}
                         </button>
                     ))}
                 </div>

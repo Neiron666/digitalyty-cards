@@ -3506,7 +3506,7 @@ const styles$3 = {
   cancelSendBlock,
   cancelSendButton
 };
-const DRAFT_STATUS_OPTIONS = ["draft", "queued", "canceled"];
+const DRAFT_STATUS_OPTIONS = ["draft", "queued", "completed", "canceled"];
 const PAGE_LIMIT = 20;
 const SKIP_REASON_LABELS = {
   DUPLICATE: "כפול",
@@ -3522,7 +3522,11 @@ const SKIP_REASON_LABELS = {
 };
 const STATUS_LABELS = {
   draft: "טיוטה",
-  canceled: "בוטלה"
+  canceled: "בוטלה",
+  queued: "בתור",
+  sending: "בשליחה",
+  completed: "הושלם",
+  failed: "נכשל"
 };
 const SEND_STATUS_CAMPAIGN_LABELS = {
   draft: "טיוטה",
@@ -3933,7 +3937,7 @@ function MarketingDraftsPanel() {
               className: `${styles$3.filterButton} ${draftsStatus === opt ? styles$3.filterButtonActive : ""}`,
               "aria-pressed": draftsStatus === opt,
               onClick: () => handleSelectStatus(opt),
-              children: opt === "draft" ? "טיוטות פעילות" : opt === "queued" ? "ממתינות לשליחה" : "טיוטות שבוטלו"
+              children: opt === "draft" ? "טיוטות פעילות" : opt === "queued" ? "ממתינות לשליחה" : opt === "completed" ? "נשלחו" : "טיוטות שבוטלו"
             },
             opt
           ))

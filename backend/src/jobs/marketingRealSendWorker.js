@@ -181,6 +181,61 @@ async function reclaimStaleRows(now, cfg) {
     return { reclaimed, ambiguous, failedFromReclaim };
 }
 
+// ── Post-send campaign finalization ──────────────────────────────────────────
+//
+// Best-effort helper. Called after each terminal recipient row update inside
+// processOneMarketingRealSend. If all recipient rows for the campaign are
+// terminal (no pending or sending rows remain), flips campaign.status to
+// "completed" or "failed" using a CAS predicate so it never overrides
+// "canceled", "draft", or an already-finalized status.
+// Swallows all errors — finalization failure must NOT fail the send result.
+// Never touches recipient rows, providerMessageId, unsubscribeTokenId,
+// or any PII field. No Mailjet, no token, no email in logs.
+async function finalizeMarketingCampaignIfTerminal(campaignId) {
+    try {
+        const grouped = await MarketingCampaignRecipient.aggregate([
+            { $match: { campaignId } },
+            { $group: { _id: "$status", count: { $sum: 1 } } },
+        ]);
+
+        const statusCounts = {};
+        let total = 0;
+        for (const entry of grouped) {
+            if (typeof entry._id === "string") {
+                statusCounts[entry._id] = Number(entry.count) || 0;
+                total += statusCounts[entry._id];
+            }
+        }
+
+        // Guard: no rows or still-active rows — nothing to finalize yet.
+        if (total === 0) return;
+        const active =
+            (statusCounts.pending || 0) + (statusCounts.sending || 0);
+        if (active > 0) return;
+
+        // Resolve terminal campaign status.
+        // sent > 0                   → completed (at least one delivery accepted)
+        // sent === 0 && failed > 0   → failed    (no deliveries, hard failure)
+        // sent === 0 && failed === 0 → completed (all rows skipped/suppressed/canceled)
+        const sent = statusCounts.sent || 0;
+        const failed = statusCounts.failed || 0;
+        const resolvedStatus =
+            sent > 0 || failed === 0 ? "completed" : "failed";
+
+        // CAS: only update when still in an active campaign state.
+        // Never overrides "canceled", "draft", "completed", or "failed".
+        await MarketingCampaign.updateOne(
+            { _id: campaignId, status: { $in: ["queued", "sending"] } },
+            { $set: { status: resolvedStatus } },
+        );
+    } catch (err) {
+        // Best-effort: swallow error, log safe aggregate message only.
+        console.error("[marketing-real-send] finalization error", {
+            error: err?.message || err,
+        });
+    }
+}
+
 // ── Core: process exactly one real-send claim cycle ──────────────────────────
 //
 // Internal, non-exported. No env gate — callers are responsible for gating.
@@ -269,6 +324,7 @@ async function processOneMarketingRealSend({ now: nowArg } = {}) {
             },
         );
         counts.failed += 1;
+        await finalizeMarketingCampaignIfTerminal(row.campaignId);
     }
 
     async function skipRow(skipReason, suppress) {
@@ -284,6 +340,7 @@ async function processOneMarketingRealSend({ now: nowArg } = {}) {
         );
         if (suppress) counts.suppressed += 1;
         else counts.skipped += 1;
+        await finalizeMarketingCampaignIfTerminal(row.campaignId);
     }
 
     // C. Campaign status check — cancel row if campaign is no longer active.
@@ -303,6 +360,7 @@ async function processOneMarketingRealSend({ now: nowArg } = {}) {
             },
         );
         counts.canceled += 1;
+        await finalizeMarketingCampaignIfTerminal(row.campaignId);
         return { ok: true, ...counts };
     }
 
@@ -414,6 +472,7 @@ async function processOneMarketingRealSend({ now: nowArg } = {}) {
             rowId: String(row._id),
         });
         counts.failed += 1;
+        await finalizeMarketingCampaignIfTerminal(row.campaignId);
         return { ok: true, ...counts };
     }
 
@@ -488,6 +547,7 @@ async function processOneMarketingRealSend({ now: nowArg } = {}) {
         counts.failed += 1;
     }
 
+    await finalizeMarketingCampaignIfTerminal(row.campaignId);
     return { ok: true, ...counts };
 }
 
