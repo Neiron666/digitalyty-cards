@@ -288,6 +288,18 @@
     word-break: break-word;
 }
 
+/* Composite-H1 spans: the business name keeps the heading size/weight,
+   the folded category renders smaller and at normal weight below it. */
+.nameHeadingText {
+    display: block;
+}
+
+.headingCategory {
+    display: block;
+    margin-block-start: 0.25rem;
+    font-weight: 400;
+}
+
 .slogan {
     font-size: var(--fs-12, 1rem);
     line-height: var(--lh-normal, 1.5);

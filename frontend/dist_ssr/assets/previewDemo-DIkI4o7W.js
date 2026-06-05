@@ -1,4 +1,4 @@
-import { n as normalizeTemplateId, b as getTemplateById } from "./CardRenderer-C5zvSwxq.js";
+import { n as normalizeTemplateId, b as getTemplateById } from "./CardRenderer-C_oRPl94.js";
 const DEMO_COVER_URL = "/templates/previews/demo-cover.webp";
 const DEMO_AVATAR_URL = "/templates/previews/demo-avatar.webp";
 const DEMO_GALLERY_URLS = [

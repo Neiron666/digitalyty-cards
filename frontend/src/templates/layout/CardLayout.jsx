@@ -30,6 +30,60 @@ function getSubtitle(card) {
     return card?.business?.category || "";
 }
 
+// Composite-H1 guardrail (Option B). Pure, no DTO dependency.
+// Decides whether the business category may be folded into the single <h1>
+// next to the business name, or must stay a standalone subtitle paragraph.
+const HEADING_COMBINED_MAX = 90;
+const HEADING_MIN_TOKEN_LENGTH = 3;
+const HEADING_SHARED_TOKEN_LIMIT = 2;
+const HEADING_COMPOUND_SEPARATORS = [" - ", "|", ":", " / "];
+
+function normalizeHeadingPart(value) {
+    return (typeof value === "string" ? value : "")
+        .toLowerCase()
+        .replace(/\s+/g, " ")
+        .trim();
+}
+
+function tokenizeHeadingPart(normalized) {
+    return normalized
+        .split(/[^\p{L}\p{N}]+/u)
+        .filter((token) => token.length >= HEADING_MIN_TOKEN_LENGTH);
+}
+
+function shouldFoldCategoryIntoHeading(name, category) {
+    const rawName = typeof name === "string" ? name.trim() : "";
+    const rawCategory = typeof category === "string" ? category.trim() : "";
+    if (!rawName || !rawCategory) return false;
+
+    const nameNorm = normalizeHeadingPart(rawName);
+    const categoryNorm = normalizeHeadingPart(rawCategory);
+    if (!nameNorm || !categoryNorm) return false;
+    if (nameNorm === categoryNorm) return false;
+    if (nameNorm.includes(categoryNorm) || categoryNorm.includes(nameNorm)) {
+        return false;
+    }
+
+    for (const separator of HEADING_COMPOUND_SEPARATORS) {
+        if (rawName.includes(separator)) return false;
+    }
+
+    const nameTokens = new Set(tokenizeHeadingPart(nameNorm));
+    let sharedTokens = 0;
+    for (const token of tokenizeHeadingPart(categoryNorm)) {
+        if (nameTokens.has(token)) {
+            sharedTokens += 1;
+            if (sharedTokens >= HEADING_SHARED_TOKEN_LIMIT) return false;
+        }
+    }
+
+    if (rawName.length + 1 + rawCategory.length > HEADING_COMBINED_MAX) {
+        return false;
+    }
+
+    return true;
+}
+
 export default function CardLayout({
     card,
     supports,
@@ -52,6 +106,7 @@ export default function CardLayout({
         typeof card?.business?.slogan === "string"
             ? card.business.slogan.trim()
             : "";
+    const foldCategory = shouldFoldCategoryIntoHeading(name, subtitle);
 
     const hasCover = Boolean(coverUrl);
     const avatarRevealRef = useReveal({
@@ -142,9 +197,22 @@ export default function CardLayout({
                     >
                         <div className={cx(styles.identity, skin?.identity)}>
                             <h1 className={cx(styles.name, skin?.name)}>
-                                {name || ""}
+                                <span className={styles.nameHeadingText}>
+                                    {name || ""}
+                                </span>
+                                {foldCategory ? (
+                                    <span
+                                        className={cx(
+                                            styles.subtitle,
+                                            styles.headingCategory,
+                                            skin?.subtitle,
+                                        )}
+                                    >
+                                        {subtitle}
+                                    </span>
+                                ) : null}
                             </h1>
-                            {subtitle ? (
+                            {!foldCategory && subtitle ? (
                                 <p
                                     className={cx(
                                         styles.subtitle,

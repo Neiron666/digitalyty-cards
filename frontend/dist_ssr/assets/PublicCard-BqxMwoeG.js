@@ -2,7 +2,7 @@ import { jsx, jsxs, Fragment } from "react/jsx-runtime";
 import { useState, useRef, useEffect } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
 import { g as getCompanyCardBySlug, a as getCardBySlug } from "./cards.service-CwGKgAdq.js";
-import { t as trackView, C as CardRenderer } from "./CardRenderer-C5zvSwxq.js";
+import { t as trackView, C as CardRenderer } from "./CardRenderer-C_oRPl94.js";
 import { O as hasAcceptedCardConsent, P as saveCardConsent, Q as getCardConsentState, S as SeoHelmet, U as DEFAULT_OG_IMAGE_PATH, V as normalizeGtmId, X as normalizeGaMeasurementId, Y as normalizeMetaPixelId } from "../entry-server.js";
 import "./vendor-epyEJgau.js";
 import "react-fast-compare";

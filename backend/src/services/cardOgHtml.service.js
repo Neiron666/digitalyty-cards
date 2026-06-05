@@ -62,6 +62,59 @@ function nonEmptyString(v) {
     return typeof v === "string" && v.trim().length > 0;
 }
 
+/* Composite-H1 guardrail (Option B). Must stay in lockstep with the
+   frontend duplicate in CardLayout.jsx — intentionally NOT shared. */
+const HEADING_COMBINED_MAX = 90;
+const HEADING_MIN_TOKEN_LENGTH = 3;
+const HEADING_SHARED_TOKEN_LIMIT = 2;
+const HEADING_COMPOUND_SEPARATORS = [" - ", "|", ":", " / "];
+
+function normalizeHeadingPart(value) {
+    return (typeof value === "string" ? value : "")
+        .toLowerCase()
+        .replace(/\s+/g, " ")
+        .trim();
+}
+
+function tokenizeHeadingPart(normalized) {
+    return normalized
+        .split(/[^\p{L}\p{N}]+/u)
+        .filter((token) => token.length >= HEADING_MIN_TOKEN_LENGTH);
+}
+
+function shouldFoldCategoryIntoHeading(name, category) {
+    const rawName = typeof name === "string" ? name.trim() : "";
+    const rawCategory = typeof category === "string" ? category.trim() : "";
+    if (!rawName || !rawCategory) return false;
+
+    const nameNorm = normalizeHeadingPart(rawName);
+    const categoryNorm = normalizeHeadingPart(rawCategory);
+    if (!nameNorm || !categoryNorm) return false;
+    if (nameNorm === categoryNorm) return false;
+    if (nameNorm.includes(categoryNorm) || categoryNorm.includes(nameNorm)) {
+        return false;
+    }
+
+    for (const separator of HEADING_COMPOUND_SEPARATORS) {
+        if (rawName.includes(separator)) return false;
+    }
+
+    const nameTokens = new Set(tokenizeHeadingPart(nameNorm));
+    let sharedTokens = 0;
+    for (const token of tokenizeHeadingPart(categoryNorm)) {
+        if (nameTokens.has(token)) {
+            sharedTokens += 1;
+            if (sharedTokens >= HEADING_SHARED_TOKEN_LIMIT) return false;
+        }
+    }
+
+    if (rawName.length + 1 + rawCategory.length > HEADING_COMBINED_MAX) {
+        return false;
+    }
+
+    return true;
+}
+
 function escapeHtml(value) {
     if (value === null || value === undefined) return "";
     return String(value)
@@ -456,8 +509,28 @@ function renderBody(seo, render, h1) {
     lines.push("<body>");
     lines.push("<main>");
     lines.push("<article>");
-    lines.push("<h1>" + escapeHtml(h1) + "</h1>");
-    if (nonEmptyString(render.subtitle)) {
+    const headingName = nonEmptyString(render.displayName)
+        ? render.displayName.trim()
+        : "";
+    const headingCategory = nonEmptyString(render.subtitle)
+        ? render.subtitle.trim()
+        : "";
+    const foldCategory = shouldFoldCategoryIntoHeading(
+        headingName,
+        headingCategory,
+    );
+    if (foldCategory) {
+        lines.push(
+            "<h1><span>" +
+                escapeHtml(headingName) +
+                "</span> <span>" +
+                escapeHtml(headingCategory) +
+                "</span></h1>",
+        );
+    } else {
+        lines.push("<h1>" + escapeHtml(h1) + "</h1>");
+    }
+    if (!foldCategory && nonEmptyString(render.subtitle)) {
         lines.push("<p>" + escapeHtml(render.subtitle.trim()) + "</p>");
     }
     if (nonEmptyString(render.slogan)) {

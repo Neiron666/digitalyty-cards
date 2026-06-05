@@ -132,7 +132,14 @@ function baseRender(over) {
         /<meta name="twitter:card" content="summary_large_image">/.test(out),
         "F1 twitter:card",
     );
-    assert(/<h1>Demo Biz<\/h1>/.test(out), "F1 H1");
+    assert(
+        /<h1><span>Demo Biz<\/span> <span>Plumbing<\/span><\/h1>/.test(out),
+        "F1 H1 composite (name + folded category)",
+    );
+    assert(
+        !/<p>Plumbing<\/p>/.test(out),
+        "F1 no duplicate standalone subtitle when folded",
+    );
     assert(out.includes("Para one."), "F1 about text");
     assert(out.includes("Service A"), "F1 service text");
     assert(out.includes("Q1") && out.includes("A1"), "F1 FAQ text");
@@ -160,8 +167,10 @@ function baseRender(over) {
     });
     const out = renderCardOgHtml({ seo, render });
     assert(
-        /<h1>&lt;script&gt;alert\(1\)&lt;\/script&gt;<\/h1>/.test(out),
-        "F2 H1 script tag escaped",
+        /<h1><span>&lt;script&gt;alert\(1\)&lt;\/script&gt;<\/span> <span>Plumbing<\/span><\/h1>/.test(
+            out,
+        ),
+        "F2 H1 script tag escaped (composite)",
     );
     assert(out.includes("Quote &quot; here"), "F2 attribute quote escaped");
     assert(out.includes("<\\/script"), "F2 JSON-LD </script escaped");
@@ -361,6 +370,71 @@ function baseRender(over) {
     }
     assert(!threw, "F10 no throw on deep-frozen inputs");
     assert(out.length > 0, "F10 output produced");
+}
+
+/* ───────── F11 composite-H1 guardrail (fold vs suppress) ───────── */
+{
+    // Fold: distinct short name + category, no overlap/separator.
+    const fold = renderCardOgHtml({
+        seo: baseSeo(),
+        render: baseRender({
+            displayName: "Digitalyty",
+            subtitle: "Web Design",
+        }),
+    });
+    assert(
+        /<h1><span>Digitalyty<\/span> <span>Web Design<\/span><\/h1>/.test(
+            fold,
+        ),
+        "F11 fold composite h1",
+    );
+    assert(!/<p>Web Design<\/p>/.test(fold), "F11 fold no duplicate subtitle");
+
+    // Suppress via compound separator in name.
+    const sep = renderCardOgHtml({
+        seo: baseSeo(),
+        render: baseRender({
+            displayName: "Digitalyty - Web Design Studio",
+            subtitle: "Landing pages and digital cards for business",
+        }),
+    });
+    assert(
+        /<h1>Digitalyty - Web Design Studio<\/h1>/.test(sep),
+        "F11 separator suppresses fold (name-only h1)",
+    );
+    assert(
+        /<p>Landing pages and digital cards for business<\/p>/.test(sep),
+        "F11 separator keeps standalone subtitle",
+    );
+
+    // Suppress via containment (name already contains category).
+    const contain = renderCardOgHtml({
+        seo: baseSeo(),
+        render: baseRender({
+            displayName: "Acme Plumbing",
+            subtitle: "Plumbing",
+        }),
+    });
+    assert(
+        /<h1>Acme Plumbing<\/h1>/.test(contain),
+        "F11 containment suppresses fold",
+    );
+
+    // Suppress via combined-length cap (> 90 chars).
+    const longName = "A".repeat(60);
+    const longCategory = "B".repeat(40);
+    const tooLong = renderCardOgHtml({
+        seo: baseSeo(),
+        render: baseRender({ displayName: longName, subtitle: longCategory }),
+    });
+    assert(
+        new RegExp("<h1>" + longName + "</h1>").test(tooLong),
+        "F11 length cap suppresses fold",
+    );
+    assert(
+        new RegExp("<p>" + longCategory + "</p>").test(tooLong),
+        "F11 length cap keeps standalone subtitle",
+    );
 }
 
 /* ───────── Summary ─────────────────────────────────────────────── */

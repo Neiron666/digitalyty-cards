@@ -5305,45 +5305,47 @@ function LeadForm({
     ] }) : null
   ] }) });
 }
-const root = "_root_1aic4_1";
-const card = "_card_1aic4_209";
-const hero = "_hero_1aic4_251";
-const cover = "_cover_1aic4_303";
-const overlay = "_overlay_1aic4_323";
-const overlay0 = "_overlay0_1aic4_345";
-const overlay5 = "_overlay5_1aic4_351";
-const overlay10 = "_overlay10_1aic4_357";
-const overlay15 = "_overlay15_1aic4_363";
-const overlay20 = "_overlay20_1aic4_369";
-const overlay25 = "_overlay25_1aic4_375";
-const overlay30 = "_overlay30_1aic4_381";
-const overlay35 = "_overlay35_1aic4_387";
-const overlay40 = "_overlay40_1aic4_393";
-const overlay45 = "_overlay45_1aic4_399";
-const overlay50 = "_overlay50_1aic4_405";
-const overlay55 = "_overlay55_1aic4_411";
-const overlay60 = "_overlay60_1aic4_417";
-const overlay65 = "_overlay65_1aic4_423";
-const overlay70 = "_overlay70_1aic4_429";
-const heroInner = "_heroInner_1aic4_437";
-const avatarWrap = "_avatarWrap_1aic4_459";
-const body = "_body_1aic4_495";
-const headerCluster = "_headerCluster_1aic4_515";
-const identity = "_identity_1aic4_525";
-const name = "_name_1aic4_541";
-const subtitle = "_subtitle_1aic4_563";
-const slogan = "_slogan_1aic4_581";
-const socialRow = "_socialRow_1aic4_601";
-const ctaRow = "_ctaRow_1aic4_603";
-const sectionWrap = "_sectionWrap_1aic4_605";
-const formWrap = "_formWrap_1aic4_607";
-const socialIconsRow = "_socialIconsRow_1aic4_731";
-const footerWrap = "_footerWrap_1aic4_937";
-const heroDivider = "_heroDivider_1aic4_1025";
-const heroDividerFill = "_heroDividerFill_1aic4_1051";
-const heroDividerStroke = "_heroDividerStroke_1aic4_1061";
-const theme$r = "_theme_1aic4_1501";
-const isRevealed = "_isRevealed_1aic4_1545";
+const root = "_root_tnx3x_1";
+const card = "_card_tnx3x_209";
+const hero = "_hero_tnx3x_251";
+const cover = "_cover_tnx3x_303";
+const overlay = "_overlay_tnx3x_323";
+const overlay0 = "_overlay0_tnx3x_345";
+const overlay5 = "_overlay5_tnx3x_351";
+const overlay10 = "_overlay10_tnx3x_357";
+const overlay15 = "_overlay15_tnx3x_363";
+const overlay20 = "_overlay20_tnx3x_369";
+const overlay25 = "_overlay25_tnx3x_375";
+const overlay30 = "_overlay30_tnx3x_381";
+const overlay35 = "_overlay35_tnx3x_387";
+const overlay40 = "_overlay40_tnx3x_393";
+const overlay45 = "_overlay45_tnx3x_399";
+const overlay50 = "_overlay50_tnx3x_405";
+const overlay55 = "_overlay55_tnx3x_411";
+const overlay60 = "_overlay60_tnx3x_417";
+const overlay65 = "_overlay65_tnx3x_423";
+const overlay70 = "_overlay70_tnx3x_429";
+const heroInner = "_heroInner_tnx3x_437";
+const avatarWrap = "_avatarWrap_tnx3x_459";
+const body = "_body_tnx3x_495";
+const headerCluster = "_headerCluster_tnx3x_515";
+const identity = "_identity_tnx3x_525";
+const name = "_name_tnx3x_541";
+const subtitle = "_subtitle_tnx3x_563";
+const nameHeadingText = "_nameHeadingText_tnx3x_585";
+const headingCategory = "_headingCategory_tnx3x_593";
+const slogan = "_slogan_tnx3x_605";
+const socialRow = "_socialRow_tnx3x_625";
+const ctaRow = "_ctaRow_tnx3x_627";
+const sectionWrap = "_sectionWrap_tnx3x_629";
+const formWrap = "_formWrap_tnx3x_631";
+const socialIconsRow = "_socialIconsRow_tnx3x_755";
+const footerWrap = "_footerWrap_tnx3x_961";
+const heroDivider = "_heroDivider_tnx3x_1049";
+const heroDividerFill = "_heroDividerFill_tnx3x_1075";
+const heroDividerStroke = "_heroDividerStroke_tnx3x_1085";
+const theme$r = "_theme_tnx3x_1525";
+const isRevealed = "_isRevealed_tnx3x_1569";
 const styles = {
   root,
   card,
@@ -5372,6 +5374,8 @@ const styles = {
   identity,
   name,
   subtitle,
+  nameHeadingText,
+  headingCategory,
   slogan,
   socialRow,
   ctaRow,
@@ -5392,6 +5396,43 @@ function getDisplayName(card2) {
 function getSubtitle(card2) {
   return card2?.business?.category || "";
 }
+const HEADING_COMBINED_MAX = 90;
+const HEADING_MIN_TOKEN_LENGTH = 3;
+const HEADING_SHARED_TOKEN_LIMIT = 2;
+const HEADING_COMPOUND_SEPARATORS = [" - ", "|", ":", " / "];
+function normalizeHeadingPart(value) {
+  return (typeof value === "string" ? value : "").toLowerCase().replace(/\s+/g, " ").trim();
+}
+function tokenizeHeadingPart(normalized) {
+  return normalized.split(/[^\p{L}\p{N}]+/u).filter((token) => token.length >= HEADING_MIN_TOKEN_LENGTH);
+}
+function shouldFoldCategoryIntoHeading(name2, category) {
+  const rawName = typeof name2 === "string" ? name2.trim() : "";
+  const rawCategory = typeof category === "string" ? category.trim() : "";
+  if (!rawName || !rawCategory) return false;
+  const nameNorm = normalizeHeadingPart(rawName);
+  const categoryNorm = normalizeHeadingPart(rawCategory);
+  if (!nameNorm || !categoryNorm) return false;
+  if (nameNorm === categoryNorm) return false;
+  if (nameNorm.includes(categoryNorm) || categoryNorm.includes(nameNorm)) {
+    return false;
+  }
+  for (const separator of HEADING_COMPOUND_SEPARATORS) {
+    if (rawName.includes(separator)) return false;
+  }
+  const nameTokens = new Set(tokenizeHeadingPart(nameNorm));
+  let sharedTokens = 0;
+  for (const token of tokenizeHeadingPart(categoryNorm)) {
+    if (nameTokens.has(token)) {
+      sharedTokens += 1;
+      if (sharedTokens >= HEADING_SHARED_TOKEN_LIMIT) return false;
+    }
+  }
+  if (rawName.length + 1 + rawCategory.length > HEADING_COMBINED_MAX) {
+    return false;
+  }
+  return true;
+}
 function CardLayout({
   card: card2,
   supports,
@@ -5410,6 +5451,7 @@ function CardLayout({
   const name2 = getDisplayName(card2);
   const subtitle2 = getSubtitle(card2);
   const slogan2 = typeof card2?.business?.slogan === "string" ? card2.business.slogan.trim() : "";
+  const foldCategory = shouldFoldCategoryIntoHeading(name2, subtitle2);
   const hasCover = Boolean(coverUrl);
   const avatarRevealRef = useReveal({
     revealClass: styles.isRevealed,
@@ -5504,8 +5546,21 @@ function CardLayout({
               ),
               children: [
                 /* @__PURE__ */ jsxs("div", { className: cx(styles.identity, skin?.identity), children: [
-                  /* @__PURE__ */ jsx("h1", { className: cx(styles.name, skin?.name), children: name2 || "" }),
-                  subtitle2 ? /* @__PURE__ */ jsx(
+                  /* @__PURE__ */ jsxs("h1", { className: cx(styles.name, skin?.name), children: [
+                    /* @__PURE__ */ jsx("span", { className: styles.nameHeadingText, children: name2 || "" }),
+                    foldCategory ? /* @__PURE__ */ jsx(
+                      "span",
+                      {
+                        className: cx(
+                          styles.subtitle,
+                          styles.headingCategory,
+                          skin?.subtitle
+                        ),
+                        children: subtitle2
+                      }
+                    ) : null
+                  ] }),
+                  !foldCategory && subtitle2 ? /* @__PURE__ */ jsx(
                     "p",
                     {
                       className: cx(
