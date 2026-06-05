@@ -291,6 +291,40 @@ Skins не таргетят структурные селекторы .card, .he
 
 Token + hook-контракт описан также в frontend/src/templates/skins/\_base/skinTokens.md
 
+## Identity block: composite h1 semantics
+
+Accepted policy as of 2026-06-05 — contour PUBLIC_CARD_COMPOSITE_H1_SEMANTICS (Phase 2A/3 PASS).
+
+### Semantic policy
+
+The identity block always has exactly one `<h1>`. The h1 contains a `<span>` for the business name. It may also contain a second `<span>` for the business category (`business.category` / תחום עיסוק field).
+
+- Category folds into h1 only when the guardrail (`shouldFoldCategoryIntoHeading`) allows it.
+- If category folds into h1, the standalone subtitle paragraph (`styles.subtitle` / `skin?.subtitle`) must **not** be rendered — it would duplicate the category already in h1.
+- If category does not fold, the standalone subtitle paragraph remains visible exactly as before.
+- Slogan is always outside h1, unchanged.
+
+The guardrail suppresses folding when any of these conditions is met: name or category is empty; the two are equal after normalization; one already contains the other; the raw name includes a compound separator (e.g. " - ", "|", ":", " / "); the normalized token sets share ≥ 2 significant tokens; or the combined length (name + 1 + category) exceeds 90 characters.
+
+### Parity rule
+
+The fold/suppress decision is computed identically in:
+
+- `frontend/src/templates/layout/CardLayout.jsx` (browser public card + editor preview)
+- `backend/src/services/cardOgHtml.service.js` (social-bot deterministic OG HTML)
+
+The guardrail is intentionally duplicated (not shared via import). Any future guardrail tuning must update **both** files in lockstep, and the F11 block in `backend/scripts/sanity-card-og-html.mjs` must be updated to cover the new scenario.
+
+### CSS / class contract
+
+- The folded category `<span>` carries both `styles.subtitle` and `styles.headingCategory` to preserve the `skin?.subtitle` token hook for forward compatibility.
+- `.headingCategory` must remain ordered **after** `.subtitle` in `CardLayout.module.css`. Reversing source order would break the weight and spacing overrides.
+- No skin structural styles are allowed for this feature. Skins remain token-only.
+
+### Non-actions (do not change for composite h1 maintenance)
+
+Changing any of the following is out of scope for guardrail-only tuning: the public DTO projection shape (`toCardPublicRenderDTO` / `toCardPublicSeoDTO`), the Edge function `og-preview.js`, `SeoHelmet.jsx`, `buildSeo` / head title / meta logic in `card.controller.js`, `og.routes.js`, `templates.config.js`, and all skin files.
+
 Card Typography - High-Blast-Radius Area (Deferred Exception)
 
 `CardLayout.module.css` is the sole SSoT for card-boundary typography tokens.
