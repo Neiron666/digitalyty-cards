@@ -137,7 +137,7 @@ export default function MarketingComposerForm({
                         required
                         aria-required="true"
                         aria-invalid={subjectMissing ? "true" : undefined}
-                        aria-describedby="mkt-subject-counter mkt-subject-err"
+                        aria-describedby="mkt-subject-help mkt-subject-counter mkt-subject-err"
                         onChange={(e) => setField("subject", e.target.value)}
                         onBlur={() => markTouched("subject")}
                     />
@@ -156,6 +156,9 @@ export default function MarketingComposerForm({
                             {form.subject.length}/{LIMITS.subject}
                         </span>
                     </div>
+                    <span id="mkt-subject-help" className={styles.help}>
+                        ניתן להשתמש ב-[user] כדי להכניס את שם הנמען לנושא.
+                    </span>
                 </div>
 
                 <div className={styles.field}>

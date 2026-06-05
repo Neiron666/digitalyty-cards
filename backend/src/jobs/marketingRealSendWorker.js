@@ -31,6 +31,7 @@ import { revalidateMarketingRecipientUserIds } from "../utils/marketingRecipient
 import { issueEmailUnsubscribeToken } from "../utils/issueEmailUnsubscribeToken.util.js";
 import { renderMarketingEmailCore } from "../services/marketingEmailRenderer.js";
 import { sendMarketingCampaignEmailBestEffort } from "../services/mailjet.service.js";
+import { personalizeMarketingSubject } from "../utils/marketingPersonalization.util.js";
 
 // Opaque non-secret worker identity (no host / credential material).
 // Randomised per process start so parallel restarts are distinguishable.
@@ -394,7 +395,10 @@ async function processOneMarketingRealSend({ now: nowArg } = {}) {
 
     // E. Fetch user email at send time — never stored on the recipient row.
     //    email is resolved from User model; never logged.
-    const user = await User.findById(row.userId).select({ email: 1 }).lean();
+    //    firstName is fetched here for subject personalization ([user] placeholder).
+    const user = await User.findById(row.userId)
+        .select({ email: 1, firstName: 1 })
+        .lean();
     const emailRaw = user?.email;
     if (typeof emailRaw !== "string" || !emailRaw.trim()) {
         await skipRow(user ? "EMAIL_MISSING" : "USER_NOT_FOUND", false);
@@ -478,7 +482,13 @@ async function processOneMarketingRealSend({ now: nowArg } = {}) {
 
     // I. Provider call — one recipient only, with defensive try-catch even
     //    though the adapter catches internally.
-    const subject = String(campaign.contentSnapshot?.subject || "").trim();
+    // Personalize subject: replace [user] with recipient's firstName per-recipient.
+    // personalizeMarketingSubject sanitizes firstName (CRLF strip, cap, fallback).
+    // No subject/name/email logged here or in the helper.
+    const subject = personalizeMarketingSubject(
+        campaign.contentSnapshot?.subject,
+        user,
+    );
     const customId = String(row._id);
 
     let sendResult;

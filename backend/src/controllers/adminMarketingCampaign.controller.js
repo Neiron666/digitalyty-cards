@@ -18,6 +18,7 @@ import {
 } from "../services/mailjet.service.js";
 import { issueEmailUnsubscribeToken } from "../utils/issueEmailUnsubscribeToken.util.js";
 import { logAdminAction } from "../services/adminAudit.service.js";
+import { personalizeMarketingSubject } from "../utils/marketingPersonalization.util.js";
 import {
     MAX_MARKETING_DRY_RUN_USER_IDS,
     revalidateMarketingRecipientUserIds,
@@ -165,8 +166,9 @@ export async function testSendMarketingCampaign(req, res) {
         }
 
         // E. Load/verify admin — destination is ALWAYS the admin's own email.
+        //    firstName is also fetched for subject [user] personalization.
         const admin = await User.findById(req.userId).select(
-            "email isVerified role",
+            "email isVerified role firstName",
         );
         const adminEmail =
             typeof admin?.email === "string" ? admin.email.trim() : "";
@@ -257,9 +259,16 @@ export async function testSendMarketingCampaign(req, res) {
         }
 
         // J. Send via Mailjet (best effort).
+        // Personalize subject for test-send: replace [user] with admin's firstName
+        // so the admin sees what personalization looks like in their own inbox.
+        // personalizeMarketingSubject sanitizes firstName; no subject/name logged.
+        const personalizedSubject = personalizeMarketingSubject(
+            normalizedInput.subject,
+            admin,
+        );
         const sendResult = await sendMarketingTestEmailBestEffort({
             toEmail: emailNormalized,
-            subject: normalizedInput.subject,
+            subject: personalizedSubject,
             htmlPart: html,
             textPart: text,
         });

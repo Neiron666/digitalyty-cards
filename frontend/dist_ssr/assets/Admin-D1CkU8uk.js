@@ -2893,7 +2893,7 @@ function MarketingComposerForm({
             required: true,
             "aria-required": "true",
             "aria-invalid": subjectMissing ? "true" : void 0,
-            "aria-describedby": "mkt-subject-counter mkt-subject-err",
+            "aria-describedby": "mkt-subject-help mkt-subject-counter mkt-subject-err",
             onChange: (e) => setField("subject", e.target.value),
             onBlur: () => markTouched("subject")
           }
@@ -2920,7 +2920,8 @@ function MarketingComposerForm({
               ]
             }
           )
-        ] })
+        ] }),
+        /* @__PURE__ */ jsx("span", { id: "mkt-subject-help", className: styles$6.help, children: "ניתן להשתמש ב-[user] כדי להכניס את שם הנמען לנושא." })
       ] }),
       /* @__PURE__ */ jsxs("div", { className: styles$6.field, children: [
         /* @__PURE__ */ jsx("label", { className: styles$6.label, htmlFor: "mkt-preview-text", children: "טקסט תצוגה מקדימה" }),
