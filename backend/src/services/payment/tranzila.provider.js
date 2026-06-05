@@ -164,6 +164,55 @@ function looksLikeObjectId(v) {
     return typeof v === "string" && /^[a-f0-9]{24}$/i.test(v);
 }
 
+/**
+ * Recovery plan resolver for STO recurring notify.
+ *
+ * Used when user.plan was already downgraded to a non-paid value (e.g. by
+ * billingReconcile) BEFORE a genuinely paid recurring notify arrives, which
+ * would otherwise be rejected as invalid_plan and create charged-but-free.
+ *
+ * Source of truth: the durable paid PaymentTransaction ledger, which is NEVER
+ * downgraded. Prefers the same cardId when the user has a linked card.
+ * Anti-drift: NEVER derives plan from payload.pdesc/description and NEVER
+ * infers plan from amount. Returns "monthly" | "yearly" | null only.
+ *
+ * @param {object} user — Mongoose User document
+ * @returns {Promise<"monthly"|"yearly"|null>}
+ */
+async function resolveRecoveryPlanFromLedger(user) {
+    const baseQuery = {
+        userId: user._id,
+        provider: "tranzila",
+        status: "paid",
+        plan: { $in: ["monthly", "yearly"] },
+    };
+
+    // Prefer same-card paid history when the user has a linked card.
+    if (user.cardId) {
+        const sameCard = await PaymentTransaction.findOne({
+            ...baseQuery,
+            cardId: user.cardId,
+        })
+            .sort({ createdAt: -1 })
+            .select("plan")
+            .lean();
+        if (sameCard?.plan === "monthly" || sameCard?.plan === "yearly") {
+            return sameCard.plan;
+        }
+    }
+
+    // Fallback: latest paid txn for this user regardless of card linkage.
+    const anyPaid = await PaymentTransaction.findOne(baseQuery)
+        .sort({ createdAt: -1 })
+        .select("plan")
+        .lean();
+    if (anyPaid?.plan === "monthly" || anyPaid?.plan === "yearly") {
+        return anyPaid.plan;
+    }
+
+    return null;
+}
+
 // ── [BATCH-3] STO private service ─────────────────────────────────────────────
 // Not wired. Not exported. Called only from the wiring contour (Batch 4).
 
@@ -2147,24 +2196,68 @@ export default {
             return { ok: false, reason: "sto_cancelled", providerTxnId };
         }
 
-        // C. Invalid plan — user.plan is DB SSoT; do NOT parse payload.pdesc (anti-drift).
-        if (user.plan !== "monthly" && user.plan !== "yearly") {
-            const { duplicate } = await recordFailure("invalid_plan", null);
+        // C. Plan resolution + charged-but-free recovery.
+        // Primary source: user.plan (DB SSoT) when monthly/yearly.
+        // Recovery source: latest paid PaymentTransaction (ledger is never
+        //   downgraded, so it survives billingReconcile wiping user.plan/billing).
+        // Anti-drift: NEVER parse payload.pdesc/description; NEVER infer from amount.
+        let validPlan =
+            user.plan === "monthly" || user.plan === "yearly"
+                ? user.plan
+                : null;
+        let recoveredFromDowngrade = false;
+
+        if (!validPlan) {
+            const recoveredPlan = await resolveRecoveryPlanFromLedger(user);
+            if (recoveredPlan) {
+                validPlan = recoveredPlan;
+                recoveredFromDowngrade = true;
+            }
+        }
+
+        // C.1 Plan could not be safely resolved — do NOT guess from amount/payload.
+        if (!validPlan) {
+            const { duplicate } = await recordFailure("plan_unresolved", null);
             if (duplicate) return { ok: true, duplicate: true, providerTxnId };
             incrementMetric("payment.notify.failed", {
                 provider: "tranzila",
                 flow: "sto_recurring",
-                reason: "invalid_plan",
+                reason: "plan_unresolved",
             });
-            return { ok: false, reason: "invalid_plan", providerTxnId };
+            console.warn(
+                "[sto-notify] plan_unresolved — paid notify with no resolvable plan; manual review",
+                {
+                    event: "sto_recurring_plan_unresolved",
+                    providerTxnIdPresent: Boolean(providerTxnId),
+                    stoIdPresent: Boolean(stoId),
+                    userIdPresent: Boolean(user?._id),
+                    cardIdPresent: Boolean(user?.cardId),
+                },
+            );
+            return { ok: false, reason: "plan_unresolved", providerTxnId };
         }
 
-        // D. Amount mismatch — strict equality, no tolerance.
+        // C.2 Recovery telemetry — a paid recurring notify arrived after downgrade.
+        if (recoveredFromDowngrade) {
+            console.warn(
+                "[sto-notify] recovered premium after downgrade (charged-but-free prevented)",
+                {
+                    event: "sto_recurring_recovered_after_downgrade",
+                    plan: validPlan,
+                    providerTxnIdPresent: Boolean(providerTxnId),
+                    stoIdPresent: Boolean(stoId),
+                    userIdPresent: Boolean(user?._id),
+                    cardIdPresent: Boolean(user?.cardId),
+                },
+            );
+        }
+
+        // D. Amount mismatch — strict equality against resolved validPlan, no tolerance.
         // P0 operator note: price change in PRICES_AGOROT breaks existing STOs;
         // requires cancel+recreate migration for all active STO users (see 5.8e runbook).
         if (
             amountAgorot === null ||
-            amountAgorot !== PRICES_AGOROT[user.plan]
+            amountAgorot !== PRICES_AGOROT[validPlan]
         ) {
             const { duplicate } = await recordFailure("amount_mismatch", null);
             if (duplicate) return { ok: true, duplicate: true, providerTxnId };
@@ -2187,7 +2280,7 @@ export default {
                 status: "paid",
                 userId: user._id,
                 cardId: user.cardId ?? null,
-                plan: user.plan,
+                plan: validPlan,
                 amountAgorot,
                 currency: "ILS",
                 payloadAllowlisted,
@@ -2213,7 +2306,7 @@ export default {
                 ? currentExpiry
                 : now;
         const newExpiresAt =
-            user.plan === "monthly"
+            validPlan === "monthly"
                 ? new Date(baseDate.getTime() + 30 * 24 * 60 * 60 * 1000)
                 : new Date(baseDate.getTime() + 365 * 24 * 60 * 60 * 1000);
 
@@ -2224,8 +2317,9 @@ export default {
         // [5.10a.3.1] Clear renewal failure marker on successful recurring renewal.
         user.renewalFailedAt = null;
 
-        // plan: explicit no-op assignment — plan is DB SSoT, not payload.pdesc (anti-drift).
-        user.plan = user.plan;
+        // plan: resolved validPlan (restores Premium on recovery). DB-/ledger-sourced,
+        // never payload.pdesc (anti-drift). Assigned AFTER the paid ledger insert above.
+        user.plan = validPlan;
         user.subscription = {
             status: "active",
             provider: "tranzila",
@@ -2240,6 +2334,7 @@ export default {
             const paidUntil = newExpiresAt;
 
             // 1) Dot-path update for normal cases (billing missing or object).
+            //    downgradedAt:null clears the retentionPurge trigger on recovery.
             await Card.updateOne(
                 {
                     _id: user.cardId,
@@ -2250,9 +2345,10 @@ export default {
                 },
                 {
                     $set: {
-                        plan: user.plan,
+                        plan: validPlan,
+                        downgradedAt: null,
                         "billing.status": "active",
-                        "billing.plan": user.plan,
+                        "billing.plan": validPlan,
                         "billing.paidUntil": paidUntil,
                     },
                 },
@@ -2263,10 +2359,11 @@ export default {
                 { _id: user.cardId, billing: null },
                 {
                     $set: {
-                        plan: user.plan,
+                        plan: validPlan,
+                        downgradedAt: null,
                         billing: {
                             status: "active",
-                            plan: user.plan,
+                            plan: validPlan,
                             paidUntil: paidUntil,
                         },
                     },
