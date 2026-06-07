@@ -2913,6 +2913,7 @@ function normalizeForWaMe(raw) {
   return tel.startsWith("+") ? tel.slice(1) : tel;
 }
 const cx$3 = (...classes) => classes.filter(Boolean).join(" ");
+const WA_PREFILL_TEXT = "היי, הגעתי אליך דרך הכרטיס הדיגיטלי שלך ב-Cardigo 👋";
 function ContactButtons({ card: card2 }) {
   const { contact } = card2;
   const isPremium = card2?.entitlements?.canUseServices !== void 0 ? card2.entitlements.canUseServices : true;
@@ -2954,7 +2955,7 @@ function ContactButtons({ card: card2 }) {
     waHref && /* @__PURE__ */ jsxs(
       "a",
       {
-        href: `https://wa.me/${waHref}`,
+        href: `https://wa.me/${waHref}?text=${encodeURIComponent(WA_PREFILL_TEXT)}`,
         target: "_blank",
         rel: "noreferrer",
         className: styles$e.item,

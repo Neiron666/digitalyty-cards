@@ -8309,12 +8309,12 @@ const SignupConsume = lazy(() => import("./assets/SignupConsume-BzOSwWCH.js"));
 const VerifyEmail = lazy(() => import("./assets/VerifyEmail-BdTNw4a4.js"));
 const Unsubscribe = lazy(() => import("./assets/Unsubscribe-cH0SJ-jv.js"));
 const Dashboard = lazy(() => import("./assets/Dashboard-CA_zW0ja.js"));
-const EditCard = lazy(() => import("./assets/EditCard-DwSRmAK5.js"));
+const EditCard = lazy(() => import("./assets/EditCard-C_TvYhFp.js"));
 const Admin = lazy(() => import("./assets/Admin-COFrpZRW.js"));
 const OrgInvites = lazy(() => import("./assets/OrgInvites-F6NGH4uL.js"));
 const Inbox = lazy(() => import("./assets/Inbox-DkfIAa4C.js"));
-const PublicCard = lazy(() => import("./assets/PublicCard-GzVPNIf1.js"));
-const PreviewCard = lazy(() => import("./assets/PreviewCard-vlK1n40-.js"));
+const PublicCard = lazy(() => import("./assets/PublicCard-Qni0U7c3.js"));
+const PreviewCard = lazy(() => import("./assets/PreviewCard-BtTKB-2g.js"));
 const CheckoutPage = lazy(() => import("./assets/CheckoutPage-CqdX6tfA.js"));
 const IframeReturnPage = lazy(
   () => import("./assets/IframeReturnPage-CYK0Rehj.js")
