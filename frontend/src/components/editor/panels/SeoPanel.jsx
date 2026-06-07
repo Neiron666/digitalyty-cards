@@ -289,7 +289,9 @@ function buildJsonLdTemplate(
         if (email) obj.email = email;
 
         const city = trimStr(business?.city);
+        const addressLine = trimStr(business?.address);
         const address = { "@type": "PostalAddress", addressCountry: "IL" };
+        if (addressLine) address.streetAddress = addressLine;
         if (city) address.addressLocality = city;
         obj.address = address;
     }

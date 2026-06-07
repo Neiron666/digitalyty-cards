@@ -122,6 +122,64 @@ function isSafeSlugMovedRedirectPath(value) {
     );
 }
 
+// Non-premium privacy guard: strip location-specific fields from a saved
+// LocalBusiness JSON-LD string so free/downgraded cards cannot expose
+// address.streetAddress, geo, latitude, or longitude in public HTML.
+// Returns the sanitized JSON string on success, or the original value on any
+// parse failure. Does not mutate inputs. Non-LocalBusiness items pass through.
+function sanitizeLocationFieldsForNonPremiumJsonLd(rawJsonLd) {
+    if (!rawJsonLd) return rawJsonLd;
+    let parsed;
+    try {
+        parsed = JSON.parse(rawJsonLd);
+    } catch {
+        return rawJsonLd;
+    }
+
+    function sanitizeItem(item) {
+        if (!item || typeof item !== "object" || Array.isArray(item)) {
+            return item;
+        }
+        const t = item["@type"];
+        const isLocalBusiness =
+            t === "LocalBusiness" ||
+            (Array.isArray(t) && t.includes("LocalBusiness"));
+        if (!isLocalBusiness) return item;
+
+        // Shallow clone, then remove location-only fields.
+        const {
+            geo: _geo,
+            latitude: _lat,
+            longitude: _lng,
+            address: rawAddress,
+            ...rest
+        } = item;
+        const result = { ...rest };
+
+        if (
+            rawAddress &&
+            typeof rawAddress === "object" &&
+            !Array.isArray(rawAddress)
+        ) {
+            const { streetAddress: _sa, ...addressRest } = rawAddress;
+            if (Object.keys(addressRest).length > 0) {
+                result.address = addressRest;
+            }
+        }
+
+        return result;
+    }
+
+    try {
+        const sanitized = Array.isArray(parsed)
+            ? parsed.map(sanitizeItem)
+            : sanitizeItem(parsed);
+        return JSON.stringify(sanitized);
+    } catch {
+        return rawJsonLd;
+    }
+}
+
 function PublicCard() {
     const { slug, orgSlug } = useParams();
     const [card, setCard] = useState(null);
@@ -313,7 +371,13 @@ function PublicCard() {
                     url={url}
                     image={image}
                     imageAlt={imageAlt}
-                    jsonLd={card.seo?.jsonLd}
+                    jsonLd={
+                        card?.entitlements?.canUseServices === true
+                            ? card.seo?.jsonLd
+                            : sanitizeLocationFieldsForNonPremiumJsonLd(
+                                  card.seo?.jsonLd,
+                              )
+                    }
                     jsonLdItems={faqJsonLd ? [faqJsonLd] : []}
                     gtmId={cardConsentAllowed ? card.seo?.gtmId : undefined}
                     gaMeasurementId={

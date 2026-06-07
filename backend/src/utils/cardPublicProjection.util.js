@@ -447,6 +447,41 @@ function narrowBusinessHoursDay(day) {
     return { open, intervals };
 }
 
+// Non-premium privacy guard: strip location-specific fields from a parsed
+// JSON-LD item object so free/downgraded cards cannot expose
+// address.streetAddress, geo, latitude, or longitude in OG HTML.
+// Does not mutate the input object. Non-LocalBusiness items pass through.
+function sanitizeLocationFieldsForNonPremiumJsonLdItem(item) {
+    if (!isPlainObject(item)) return item;
+    const t = item["@type"];
+    const isLocalBusiness =
+        t === "LocalBusiness" ||
+        (Array.isArray(t) && t.includes("LocalBusiness"));
+    if (!isLocalBusiness) return item;
+
+    const {
+        geo: _geo,
+        latitude: _lat,
+        longitude: _lng,
+        address: rawAddress,
+        ...rest
+    } = item;
+    const result = { ...rest };
+
+    if (
+        rawAddress &&
+        typeof rawAddress === "object" &&
+        !Array.isArray(rawAddress)
+    ) {
+        const { streetAddress: _sa, ...addressRest } = rawAddress;
+        if (Object.keys(addressRest).length > 0) {
+            result.address = addressRest;
+        }
+    }
+
+    return result;
+}
+
 function narrowBusinessHours(dto) {
     // toCardDTO sets businessHours = null when entitlement absent.
     const bh = dto.businessHours;
@@ -482,7 +517,11 @@ export function toCardPublicSeoDTO(dto, ctx) {
     const indexable = !robotsContainsNoindex(robotsResolved);
 
     const seoBlock = isPlainObject(dto.seo) ? dto.seo : {};
-    const userJsonLdItems = normalizeJsonLd(seoBlock.jsonLd);
+    const rawUserJsonLdItems = normalizeJsonLd(seoBlock.jsonLd);
+    const canUseServices = dto?.entitlements?.canUseServices === true;
+    const userJsonLdItems = canUseServices
+        ? rawUserJsonLdItems
+        : rawUserJsonLdItems.map(sanitizeLocationFieldsForNonPremiumJsonLdItem);
 
     // Phase 2A: auto-build FAQPage JSON-LD from already-public FAQ items.
     // Canonical is the backend self-public URL (publicUrl); user-editable
