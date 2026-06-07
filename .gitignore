@@ -83,6 +83,13 @@ cg_cookies.txt
 
 # Extra defense for frontend build output
 /frontend/dist/
+/frontend/dist_ssr/
+
+# Vite local env files (may contain API keys — never commit)
+.env.local
+.env.*.local
+frontend/.env.local
+frontend/.env.*.local
 
 # Closed-contour local scan scripts
 /run_scans_final.ps1

@@ -55,7 +55,7 @@
     flex-direction: column;
     align-items: center;
     justify-content: flex-start;
-    gap: var(--contact-btn-gap, 2rem);
+    gap: 6px;
     width: auto;
     max-width: none;
     min-width: 0;
@@ -139,4 +139,32 @@
     text-align: center;
     white-space: nowrap;
     font-weight: 700;
+}
+
+/* ── Preview specificity guard ───────────────────────────────────────────────
+   CardLayout @container phone has [data-preview="phone"] .sectionWrap a
+   at specificity 0,2,1 (attr+class+tag), which beats .navBubbles .navItem
+   (0,2,0) and forces width:100%, stacking buttons vertically in editor.
+   This three-class rule (0,3,0) restores the correct auto-width in preview.
+   Public card is unaffected: the base rule is 0,1,1 and .navBubbles .navItem
+   already wins it without this guard.
+   ─────────────────────────────────────────────────────────────────────────── */
+:global([data-preview="phone"]) .navBubbles .navItem {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    width: auto;
+    max-width: none;
+    min-width: 0;
+    align-self: flex-start;
+    flex: 0 0 auto;
+    background: transparent;
+    border: 0;
+    border-radius: 0;
+    padding: 0;
+    margin: 0;
+    box-shadow: none;
+    text-decoration: none;
+    color: inherit;
 }
