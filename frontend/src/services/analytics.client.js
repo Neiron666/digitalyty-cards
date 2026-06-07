@@ -148,6 +148,8 @@ function normalizeAction(action) {
         "whatsapp",
         "email",
         "navigate",
+        "maps",
+        "waze",
         "website",
         "instagram",
         "facebook",

@@ -150,21 +150,12 @@ export default function ContactPanel({
                         maxLength={URL_MAX}
                         error={fieldErrors["contact.tiktok"]}
                     />
-
-                    <Input
-                        label="קישור לניווט בווייז"
-                        value={contact.waze || ""}
-                        disabled={editingDisabled}
-                        onChange={(e) => emit({ waze: e.target.value })}
-                        maxLength={URL_MAX}
-                        error={fieldErrors["contact.waze"]}
-                    />
                 </>
             ) : (
                 <div className={styles.lockedBlock}>
                     <div className={styles.lockedTitle}>עוד דרכי קשר</div>
                     <div className={styles.lockedText}>
-                        פייסבוק, X, טיקטוק וווייז זמינים במסלול פרימיום.
+                        פייסבוק, X וטיקטוק זמינים במסלול פרימיום.
                     </div>
                     <a href="/pricing" className={styles.lockedCta}>
                         שדרג לפרימיום

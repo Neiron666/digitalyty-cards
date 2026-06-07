@@ -1,10 +1,12 @@
 import Panel from "./Panel";
 import Input from "../../ui/Input";
+import styles from "./BusinessPanel.module.css";
 
 const BUSINESS_NAME_MAX = 60;
 const BUSINESS_SUBTITLE_MAX = 80;
 const BUSINESS_CITY_MAX = 40;
 const BUSINESS_SLOGAN_MAX = 120;
+const BUSINESS_ADDRESS_MAX = 150;
 
 function remaining(max, value) {
     const s = typeof value === "string" ? value : String(value || "");
@@ -15,11 +17,13 @@ export default function BusinessPanel({
     business = {},
     onFieldChange,
     editingDisabled = false,
+    entitlements,
 }) {
     const emit = (patch) => {
         if (!patch || typeof patch !== "object") return;
         onFieldChange?.("business", patch);
     };
+    const showPremiumFields = entitlements?.canUseServices !== false;
 
     return (
         <Panel title="פרטי העסק">
@@ -55,6 +59,30 @@ export default function BusinessPanel({
                 placeholder="לדוגמה: תל אביב, חיפה, ירושלים"
                 meta={`יעזור להציג את העסק בצורה מדויקת יותר בגוגל ובכרטיס. נשארו ${remaining(BUSINESS_CITY_MAX, business.city || "")} תווים`}
             />
+
+            {showPremiumFields ? (
+                <Input
+                    label="רחוב ומספר בית"
+                    value={business.address || ""}
+                    disabled={editingDisabled}
+                    onChange={(e) => emit({ address: e.target.value })}
+                    onBlur={(e) => emit({ address: e.target.value.trim() })}
+                    maxLength={BUSINESS_ADDRESS_MAX}
+                    placeholder="לדוגמה: הרצל 12"
+                    meta={`הכתובת תשמש לניווט בגוגל מפות ובווייז. נשארו ${remaining(BUSINESS_ADDRESS_MAX, business.address || "")} תווים`}
+                />
+            ) : (
+                <div className={styles.lockedBlock}>
+                    <div className={styles.lockedTitle}>מיקום וניווט</div>
+                    <div className={styles.lockedText}>
+                        הוספת כתובת וכפתורי ניווט בגוגל מפות ובווייז זמינה
+                        במסלול פרימיום.
+                    </div>
+                    <a href="/pricing" className={styles.lockedCta}>
+                        שדרג לפרימיום
+                    </a>
+                </div>
+            )}
 
             <Input
                 label="סלוגן"

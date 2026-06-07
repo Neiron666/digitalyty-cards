@@ -61,6 +61,7 @@ export default function EditorPanel({
                         if (sectionName !== "business") return;
                         onFieldChange?.("business", patch);
                     }}
+                    entitlements={card?.entitlements}
                 />
             );
 

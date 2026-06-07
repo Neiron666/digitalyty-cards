@@ -1,7 +1,6 @@
 import styles from "../layout/ContactButtons.module.css";
 import { trackClick } from "../../../services/analytics.client";
 import ensureHttpUrl from "../../../utils/ensureHttpUrl";
-import { extractWazeUrl } from "../../../utils/ensureHttpUrl";
 import {
     normalizeForTel,
     normalizeForWaMe,
@@ -13,6 +12,8 @@ const WA_PREFILL_TEXT = "היי, הגעתי אליך דרך הכרטיס הדי�
 
 function ContactButtons({ card }) {
     const { contact } = card;
+    const locationAddress = String(card?.business?.address || "").trim();
+    const locationCity = String(card?.business?.city || "").trim();
 
     // Defense-in-depth: premium extras only render when entitlements allow.
     // Free baseline: phone, whatsapp, email, website, instagram.
@@ -33,17 +34,17 @@ function ContactButtons({ card }) {
     const telHref = normalizeForTel(phone);
     const waHref = normalizeForWaMe(whatsapp);
 
-    const wazeHref = isPremium
-        ? ensureHttpUrl(extractWazeUrl(contact?.waze), {
-              extraSchemes: ["waze"],
-          })
-        : "";
-
     const facebookHref = isPremium ? ensureHttpUrl(contact?.facebook) : "";
     const instagramHref = ensureHttpUrl(contact?.instagram);
     const twitterHref = isPremium ? ensureHttpUrl(contact?.twitter) : "";
     const tiktokHref = isPremium ? ensureHttpUrl(contact?.tiktok) : "";
     const websiteHref = ensureHttpUrl(contact?.website);
+
+    const locationQuery = `${locationAddress}, ${locationCity}, ישראל`;
+    const locationWazeHref =
+        isPremium && locationAddress && locationCity
+            ? `https://waze.com/ul?q=${encodeURIComponent(locationQuery)}&navigate=yes`
+            : "";
 
     if (
         !telHref &&
@@ -54,7 +55,7 @@ function ContactButtons({ card }) {
         !tiktokHref &&
         !contact?.email &&
         !websiteHref &&
-        !wazeHref
+        !locationWazeHref
     ) {
         return null;
     }
@@ -94,25 +95,6 @@ function ContactButtons({ card }) {
                         />
                     </span>
                     <span className={styles.label}>וואטסאפ</span>
-                </a>
-            )}
-
-            {wazeHref && (
-                <a
-                    href={wazeHref}
-                    target="_blank"
-                    rel="noreferrer"
-                    className={styles.item}
-                    aria-label="Navigate with Waze"
-                    onClick={() => trackClick(card?.slug, "navigate")}
-                >
-                    <span className={styles.bubble} aria-hidden="true">
-                        <span
-                            className={cx(styles.icon, styles.iconWaze)}
-                            aria-hidden="true"
-                        />
-                    </span>
-                    <span className={styles.label}>ווייז</span>
                 </a>
             )}
 
@@ -225,6 +207,25 @@ function ContactButtons({ card }) {
                         />
                     </span>
                     <span className={styles.label}>אתר</span>
+                </a>
+            )}
+
+            {locationWazeHref && (
+                <a
+                    href={locationWazeHref}
+                    target="_blank"
+                    rel="noreferrer"
+                    className={styles.item}
+                    aria-label={`נווט עם Waze: ${locationAddress}, ${locationCity}`}
+                    onClick={() => trackClick(card?.slug, "waze")}
+                >
+                    <span className={styles.bubble} aria-hidden="true">
+                        <span
+                            className={cx(styles.icon, styles.iconWaze)}
+                            aria-hidden="true"
+                        />
+                    </span>
+                    <span className={styles.label}>ווייז</span>
                 </a>
             )}
         </div>

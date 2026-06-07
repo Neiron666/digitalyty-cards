@@ -2558,6 +2558,24 @@ export async function getPreviewCompanyCardByOrgSlugAndSlug(req, res) {
     return res.json(dto);
 }
 
+// Public DTO privacy: strip navigation-only fields from public responses for non-premium cards.
+// business.name / category / city / slogan are display fields and remain for all tiers.
+// business.address, .lat, .lng are premium-only (canUseServices) and must not be exposed publicly
+// for free/non-premium cards.
+// NEVER call on editor/private owner DTOs — only call on public anonymous slug responses.
+function stripPremiumLocationFieldsForPublicDto(dto) {
+    if (dto?.entitlements?.canUseServices === true) return dto;
+    if (!dto?.business || typeof dto.business !== "object") return dto;
+    const {
+        address: _address,
+        lat: _lat,
+        lng: _lng,
+        ...businessWithoutLocation
+    } = dto.business;
+    dto.business = businessWithoutLocation;
+    return dto;
+}
+
 export async function getCardBySlug(req, res) {
     const personalOrgId = await getPersonalOrgId();
 
@@ -2630,6 +2648,8 @@ export async function getCardBySlug(req, res) {
         dto.publicPath = `/card/${dto.slug}`;
         dto.ogPath = `/og/card/${dto.slug}`;
     }
+
+    stripPremiumLocationFieldsForPublicDto(dto);
 
     if (card.status !== "published") {
         setDraftNoStore(res);
@@ -2742,6 +2762,8 @@ export async function getCompanyCardByOrgSlugAndSlug(req, res) {
         dto.publicPath = `/c/${canonicalOrgSlug}/${dto.slug}`;
         dto.ogPath = `/og/c/${canonicalOrgSlug}/${dto.slug}`;
     }
+
+    stripPremiumLocationFieldsForPublicDto(dto);
 
     if (card.status !== "published") {
         setDraftNoStore(res);

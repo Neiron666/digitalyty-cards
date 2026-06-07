@@ -1,0 +1,142 @@
+.address {
+    font-size: var(--fs-14, 0.875rem);
+    color: var(--text-main);
+    text-align: center;
+    margin-bottom: 0.75rem;
+    line-height: var(--lh-normal, 1.5);
+}
+
+/* ── Map area ───────────────────────────────── */
+
+.mapBox {
+    width: 100%;
+    aspect-ratio: 4 / 3;
+    border-radius: var(--radius-md, 18px);
+    overflow: hidden;
+    border: 1px solid var(--border, rgba(0, 0, 0, 0.12));
+    margin-bottom: 0.75rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.mapIframe {
+    display: block;
+    width: 100%;
+    height: 100%;
+    border: none;
+}
+
+.mapFallback {
+    font-size: var(--fs-12, 0.75rem);
+    color: var(--text-muted, var(--text-main));
+    text-align: center;
+    padding: 1rem;
+    margin: 0;
+}
+
+/* ── Round nav buttons ──────────────────────────────────────────────────────
+   Two-class compound selectors (.navBubbles .navXxx) give specificity 0,2,0
+   which beats CardLayout class+tag rules (0,1,1) without !important.
+   Single-class nav selectors are intentionally absent to prevent conflicts.
+   ─────────────────────────────────────────────────────────────────────── */
+
+.navBubbles {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: var(--contact-btn-gap, 2rem);
+}
+
+.navBubbles .navItem {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    gap: var(--contact-btn-gap, 2rem);
+    width: auto;
+    max-width: none;
+    min-width: 0;
+    align-self: flex-start;
+    flex: 0 0 auto;
+    background: transparent;
+    border: 0;
+    border-radius: 0;
+    padding: 0;
+    margin: 0;
+    box-shadow: none;
+    text-decoration: none;
+    color: inherit;
+    cursor: pointer;
+    transform: none;
+    filter: none;
+}
+
+.navBubbles .navBubble {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: var(--contact-btn-size, 52px);
+    height: var(--contact-btn-size, 52px);
+    min-width: var(--contact-btn-size, 52px);
+    min-height: var(--contact-btn-size, 52px);
+    max-width: var(--contact-btn-size, 52px);
+    max-height: var(--contact-btn-size, 52px);
+    flex: 0 0 auto;
+    border-radius: var(--bd-radius, 999px);
+    background: var(--contact-btn-bg, var(--action-bg, var(--primary)));
+    color: var(--contact-btn-fg, var(--action-text, #fff));
+    transition:
+        transform 120ms ease,
+        filter 120ms ease;
+}
+
+.navBubbles .navItem:hover .navBubble {
+    transform: translateY(-1px);
+    filter: brightness(1.04);
+}
+
+.navBubbles .navItem:active .navBubble {
+    transform: translateY(0);
+}
+
+.navBubbles .navItem:focus-visible {
+    outline: none;
+}
+
+.navBubbles .navItem:focus-visible .navBubble {
+    box-shadow: var(--contact-btn-ring, var(--focus-ring));
+}
+
+.navBubbles .navIcon {
+    width: var(--contact-icon-size, 22px);
+    height: var(--contact-icon-size, 22px);
+    background-color: var(--contact-icon-color, currentColor);
+    -webkit-mask-repeat: no-repeat;
+    -webkit-mask-position: center;
+    -webkit-mask-size: contain;
+    mask-repeat: no-repeat;
+    mask-position: center;
+    mask-size: contain;
+}
+
+.navIconMaps {
+    -webkit-mask-image: url("/icons/google-g.svg");
+    mask-image: url("/icons/google-g.svg");
+}
+
+.navIconWaze {
+    -webkit-mask-image: url("/icons/waze.svg");
+    mask-image: url("/icons/waze.svg");
+}
+
+.navBubbles .navLabel {
+    font-size: var(--contact-label-fs, var(--fs-10, 0.625rem));
+    line-height: 1.1;
+    color: var(--text-main);
+    text-align: center;
+    white-space: nowrap;
+    font-weight: 700;
+}

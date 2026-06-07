@@ -4,10 +4,10 @@ import { useNavigate, useParams, useBlocker, Link } from "react-router-dom";
 import { g as getAccountSummary, u as updateEmailPreferences, a as getReceipts, d as deleteAccount, c as changePassword, b as cancelRenewal, r as resumeAutoRenewal, e as deletePaymentMethod, f as updateReceiptProfile, h as updateAccountName } from "./account.service-uDeHNjVm.js";
 import { C as CopyIcon, g as CrownIcon, H as HelpIcon, A as AnalyticsIcon, h as SettingsIcon, i as SeoIcon, j as FaqIcon, R as ReviewsIcon, G as GalleryIcon, W as WorkHoursIcon, k as ServicesIcon, l as ContentIcon, m as ContactIcon, n as BusinessIcon, o as HeadIcon, p as SelfDesignIcon, T as TemplatesIcon, a as api, B as Button, q as useFocusTrap, u as useAuth, s as SUPPORT_WHATSAPP_URL, w as SUPPORT_EMAIL, x as getAnonymousId, y as clearAnonymousId, S as SeoHelmet } from "../entry-server.js";
 import { I as Input } from "./Input-BcHQKXiD.js";
-import { f as formStyles, g as galleryItemToUrl, u as uploadGalleryImage, a as uploadDesignAsset, b as getTemplateById, n as normalizeTemplateId, T as TEMPLATES, r as resolveEffectiveSelfThemeV1, c as getOwnerSelfExcludeKey, L as LEGACY_OWNER_SELF_EXCLUDE_KEY, C as CardRenderer } from "./CardRenderer-DegCLt5J.js";
+import { f as formStyles, g as galleryItemToUrl, u as uploadGalleryImage, a as uploadDesignAsset, b as getTemplateById, n as normalizeTemplateId, T as TEMPLATES, r as resolveEffectiveSelfThemeV1, c as getOwnerSelfExcludeKey, L as LEGACY_OWNER_SELF_EXCLUDE_KEY, C as CardRenderer } from "./CardRenderer-DV9a747C.js";
 import Cropper from "react-easy-crop";
 import { P as PASSWORD_POLICY_HELPER_TEXT_HE, a as PASSWORD_POLICY, g as getPasswordPolicyChecklist, v as validatePasswordPolicy, b as getPasswordPolicyMessage } from "./passwordPolicy-XzlGEeig.js";
-import { w as withDemoPreviewCard } from "./previewDemo-BAfUzxo7.js";
+import { w as withDemoPreviewCard } from "./previewDemo-C9ba8Tk6.js";
 import { u as updateCardSlug, d as deleteCard } from "./cards.service-CwGKgAdq.js";
 import "react-dom/server";
 import "./vendor-epyEJgau.js";
@@ -50,7 +50,7 @@ const guideBtnPulse = "_guideBtnPulse_bijr6_1035";
 const guideBtnAck = "_guideBtnAck_bijr6_1047";
 const guideDropdown = "_guideDropdown_bijr6_1097";
 const guideDropdownItem = "_guideDropdownItem_bijr6_1127";
-const styles$s = {
+const styles$t = {
   editor,
   scrollLock,
   panel: panel$2,
@@ -122,7 +122,7 @@ const consentNudgeText = "_consentNudgeText_1vnit_773";
 const consentNudgeActions = "_consentNudgeActions_1vnit_791";
 const consentBtnYes = "_consentBtnYes_1vnit_803";
 const consentBtnNo = "_consentBtnNo_1vnit_867";
-const styles$r = {
+const styles$s = {
   sidebar,
   title: title$8,
   nav,
@@ -337,14 +337,14 @@ function EditorSidebar({
     },
     [mktBusy]
   );
-  return /* @__PURE__ */ jsxs("aside", { className: styles$r.sidebar, children: [
-    showContextBar ? /* @__PURE__ */ jsxs("div", { className: styles$r.contextBlock, dir: "rtl", children: [
-      /* @__PURE__ */ jsx("div", { className: styles$r.contextLabel, children: "כרטיס" }),
-      /* @__PURE__ */ jsxs("div", { className: styles$r.selectShell, children: [
+  return /* @__PURE__ */ jsxs("aside", { className: styles$s.sidebar, children: [
+    showContextBar ? /* @__PURE__ */ jsxs("div", { className: styles$s.contextBlock, dir: "rtl", children: [
+      /* @__PURE__ */ jsx("div", { className: styles$s.contextLabel, children: "כרטיס" }),
+      /* @__PURE__ */ jsxs("div", { className: styles$s.selectShell, children: [
         /* @__PURE__ */ jsxs(
           "select",
           {
-            className: styles$r.contextSelect,
+            className: styles$s.contextSelect,
             value: activeOrgSlug || "",
             onFocus: onLoadOrgs,
             onMouseDown: onLoadOrgs,
@@ -366,7 +366,7 @@ function EditorSidebar({
         myOrgs && myOrgs.length > 0 ? /* @__PURE__ */ jsx(
           "span",
           {
-            className: styles$r.contextCaret,
+            className: styles$s.contextCaret,
             "aria-hidden": "true",
             children: "▾"
           }
@@ -376,32 +376,32 @@ function EditorSidebar({
     publicUrl ? /* @__PURE__ */ jsxs(
       "div",
       {
-        className: styles$r.publicLink,
+        className: styles$s.publicLink,
         dir: "rtl",
         "data-tour-id": "editor-mini-guide-public-link-block",
         children: [
-          /* @__PURE__ */ jsx("div", { className: styles$r.publicLinkTitle, children: isPublished ? "קישור ציבורי" : "קישור עתידי" }),
-          /* @__PURE__ */ jsx("div", { className: styles$r.publicLinkRow, children: isPublished ? /* @__PURE__ */ jsx(
+          /* @__PURE__ */ jsx("div", { className: styles$s.publicLinkTitle, children: isPublished ? "קישור ציבורי" : "קישור עתידי" }),
+          /* @__PURE__ */ jsx("div", { className: styles$s.publicLinkRow, children: isPublished ? /* @__PURE__ */ jsx(
             "a",
             {
               href: publicPath,
               target: "_blank",
               rel: "noreferrer",
-              className: styles$r.publicLinkUrl,
+              className: styles$s.publicLinkUrl,
               children: publicUrl
             }
-          ) : /* @__PURE__ */ jsx("span", { className: styles$r.publicLinkUrl, children: publicUrl }) }),
+          ) : /* @__PURE__ */ jsx("span", { className: styles$s.publicLinkUrl, children: publicUrl }) }),
           /* @__PURE__ */ jsxs(
             "button",
             {
               type: "button",
-              className: styles$r.copyBtn,
+              className: styles$s.copyBtn,
               onClick: handleCopy,
               disabled: !canCopy,
               "aria-label": "העתק קישור",
               title: !canCopy ? "אפשר להעתיק קישור רק אחרי פרסום הכרטיס" : void 0,
               children: [
-                /* @__PURE__ */ jsx(CopyIcon, { className: styles$r.copyIcon }),
+                /* @__PURE__ */ jsx(CopyIcon, { className: styles$s.copyIcon }),
                 copied ? "הועתק!" : "העתק קישור"
               ]
             }
@@ -409,15 +409,15 @@ function EditorSidebar({
           !canCopy && /* @__PURE__ */ jsxs(
             "div",
             {
-              className: `${styles$r.copyHint} ${styles$r.copyHintAction}`,
+              className: `${styles$s.copyHint} ${styles$s.copyHintAction}`,
               children: [
-                /* @__PURE__ */ jsx("span", { className: styles$r.copyHintText, children: "אפשר להעתיק קישור רק אחרי פרסום הכרטיס." }),
+                /* @__PURE__ */ jsx("span", { className: styles$s.copyHintText, children: "אפשר להעתיק קישור רק אחרי פרסום הכרטיס." }),
                 " ",
                 /* @__PURE__ */ jsx(
                   "a",
                   {
                     href: "/edit/card/settings",
-                    className: styles$r.copyHintLink,
+                    className: styles$s.copyHintLink,
                     "aria-label": "מעבר להגדרות פרסום הכרטיס",
                     onClick: handleCopyHintSettingsLinkClick,
                     children: "להגדרות"
@@ -428,37 +428,37 @@ function EditorSidebar({
           )
         ]
       }
-    ) : /* @__PURE__ */ jsxs("div", { className: styles$r.publicLink, dir: "rtl", children: [
-      /* @__PURE__ */ jsx("div", { className: styles$r.publicLinkTitle, children: "קישור ציבורי" }),
-      /* @__PURE__ */ jsx("div", { className: styles$r.copyHint, children: "הקישור יופיע אחרי פרסום הכרטיס." })
+    ) : /* @__PURE__ */ jsxs("div", { className: styles$s.publicLink, dir: "rtl", children: [
+      /* @__PURE__ */ jsx("div", { className: styles$s.publicLinkTitle, children: "קישור ציבורי" }),
+      /* @__PURE__ */ jsx("div", { className: styles$s.copyHint, children: "הקישור יופיע אחרי פרסום הכרטיס." })
     ] }),
     /* @__PURE__ */ jsx(
       "div",
       {
-        className: `${styles$r.planBadge} ${isPremium ? styles$r.planBadgePremium : styles$r.planBadgeFree}`,
+        className: `${styles$s.planBadge} ${isPremium ? styles$s.planBadgePremium : styles$s.planBadgeFree}`,
         dir: "rtl",
         children: isPremium ? /* @__PURE__ */ jsxs(Fragment, { children: [
-          /* @__PURE__ */ jsx(CrownIcon, { className: styles$r.planCrown }),
-          /* @__PURE__ */ jsx("span", { className: styles$r.planLabel, children: "מסלול:" }),
-          /* @__PURE__ */ jsx("span", { className: styles$r.planValue, children: isTrial ? "פרמיום ניסיון" : "פרמיום" })
+          /* @__PURE__ */ jsx(CrownIcon, { className: styles$s.planCrown }),
+          /* @__PURE__ */ jsx("span", { className: styles$s.planLabel, children: "מסלול:" }),
+          /* @__PURE__ */ jsx("span", { className: styles$s.planValue, children: isTrial ? "פרמיום ניסיון" : "פרמיום" })
         ] }) : /* @__PURE__ */ jsxs(Fragment, { children: [
-          /* @__PURE__ */ jsx("span", { className: styles$r.planLabel, children: "מסלול:" }),
-          /* @__PURE__ */ jsx("span", { className: styles$r.planValue, children: "חינם" })
+          /* @__PURE__ */ jsx("span", { className: styles$s.planLabel, children: "מסלול:" }),
+          /* @__PURE__ */ jsx("span", { className: styles$s.planValue, children: "חינם" })
         ] })
       }
     ),
-    isTrial && trialDaysLeft != null && /* @__PURE__ */ jsxs("div", { className: styles$r.trialCard, dir: "rtl", children: [
-      /* @__PURE__ */ jsx("div", { className: styles$r.trialCountdown, children: trialDaysLeft > 1 ? `נותרו עוד ${trialDaysLeft} ימים לניסיון פרמיום` : trialDaysLeft === 1 ? "נותר עוד יום לניסיון פרמיום" : "נותר פחות מיום לניסיון פרמיום" }),
-      /* @__PURE__ */ jsx("a", { href: "/pricing", className: styles$r.trialCta, children: "עבור למסלולים" })
+    isTrial && trialDaysLeft != null && /* @__PURE__ */ jsxs("div", { className: styles$s.trialCard, dir: "rtl", children: [
+      /* @__PURE__ */ jsx("div", { className: styles$s.trialCountdown, children: trialDaysLeft > 1 ? `נותרו עוד ${trialDaysLeft} ימים לניסיון פרמיום` : trialDaysLeft === 1 ? "נותר עוד יום לניסיון פרמיום" : "נותר פחות מיום לניסיון פרמיום" }),
+      /* @__PURE__ */ jsx("a", { href: "/pricing", className: styles$s.trialCta, children: "עבור למסלולים" })
     ] }),
-    account !== null && account.emailMarketingConsent === null && isTrial && trialDaysLeft != null && trialDaysLeft > 0 && /* @__PURE__ */ jsxs("div", { className: styles$r.consentNudge, dir: "rtl", children: [
-      /* @__PURE__ */ jsx("p", { className: styles$r.consentNudgeText, children: "רוצה לקבל תזכורות ועדכונים רלוונטיים על הניסיון והפרימיום?" }),
-      /* @__PURE__ */ jsxs("div", { className: styles$r.consentNudgeActions, children: [
+    account !== null && account.emailMarketingConsent === null && isTrial && trialDaysLeft != null && trialDaysLeft > 0 && /* @__PURE__ */ jsxs("div", { className: styles$s.consentNudge, dir: "rtl", children: [
+      /* @__PURE__ */ jsx("p", { className: styles$s.consentNudgeText, children: "רוצה לקבל תזכורות ועדכונים רלוונטיים על הניסיון והפרימיום?" }),
+      /* @__PURE__ */ jsxs("div", { className: styles$s.consentNudgeActions, children: [
         /* @__PURE__ */ jsx(
           "button",
           {
             type: "button",
-            className: styles$r.consentBtnYes,
+            className: styles$s.consentBtnYes,
             disabled: mktBusy,
             onClick: () => handleNudgeConsent(true),
             children: "כן, שלחו לי"
@@ -468,7 +468,7 @@ function EditorSidebar({
           "button",
           {
             type: "button",
-            className: styles$r.consentBtnNo,
+            className: styles$s.consentBtnNo,
             disabled: mktBusy,
             onClick: () => handleNudgeConsent(false),
             children: "לא תודה"
@@ -476,8 +476,8 @@ function EditorSidebar({
         )
       ] })
     ] }),
-    /* @__PURE__ */ jsx("div", { className: styles$r.title, children: "עריכת כרטיס" }),
-    /* @__PURE__ */ jsx("nav", { className: styles$r.nav, children: TABS.filter((tab2) => !isHiddenTab(tab2.id)).map(
+    /* @__PURE__ */ jsx("div", { className: styles$s.title, children: "עריכת כרטיס" }),
+    /* @__PURE__ */ jsx("nav", { className: styles$s.nav, children: TABS.filter((tab2) => !isHiddenTab(tab2.id)).map(
       (tab2) => {
         const premium = isPremiumTab(tab2.id, entitlements);
         const TabIcon = TAB_ICON[tab2.id];
@@ -485,16 +485,16 @@ function EditorSidebar({
           "button",
           {
             type: "button",
-            className: `${styles$r.tab} ${activeTab === tab2.id ? styles$r.active : ""}`,
+            className: `${styles$s.tab} ${activeTab === tab2.id ? styles$s.active : ""}`,
             onClick: () => onChangeTab(tab2.id),
             "data-tour-id": tab2.id === "head" ? "editor-tour-tab-head" : tab2.id === "business" ? "editor-tour-tab-business" : tab2.id === "contact" ? "editor-tour-tab-contact" : tab2.id === "settings" ? "editor-mini-guide-tab-settings" : tab2.id === "seo" ? "editor-mini-guide-tab-seo" : tab2.id === "businessHours" ? "editor-mini-guide-tab-hours" : void 0,
-            children: /* @__PURE__ */ jsxs("span", { className: styles$r.tabLabel, children: [
-              TabIcon && /* @__PURE__ */ jsx(TabIcon, { className: styles$r.tabIcon }),
+            children: /* @__PURE__ */ jsxs("span", { className: styles$s.tabLabel, children: [
+              TabIcon && /* @__PURE__ */ jsx(TabIcon, { className: styles$s.tabIcon }),
               tab2.label,
               premium ? /* @__PURE__ */ jsx(
                 CrownIcon,
                 {
-                  className: styles$r.crown,
+                  className: styles$s.crown,
                   title: "רק לפרימיום"
                 }
               ) : null
@@ -509,21 +509,32 @@ function EditorSidebar({
 const panel$1 = "_panel_plll0_1";
 const header$5 = "_header_plll0_13";
 const body$3 = "_body_plll0_31";
-const styles$q = {
+const styles$r = {
   panel: panel$1,
   header: header$5,
   body: body$3
 };
 function Panel({ title: title2, children }) {
-  return /* @__PURE__ */ jsxs("section", { className: styles$q.panel, children: [
-    /* @__PURE__ */ jsx("div", { className: styles$q.header, children: title2 }),
-    /* @__PURE__ */ jsx("div", { className: styles$q.body, children })
+  return /* @__PURE__ */ jsxs("section", { className: styles$r.panel, children: [
+    /* @__PURE__ */ jsx("div", { className: styles$r.header, children: title2 }),
+    /* @__PURE__ */ jsx("div", { className: styles$r.body, children })
   ] });
 }
+const lockedBlock$7 = "_lockedBlock_13wgk_3";
+const lockedTitle$7 = "_lockedTitle_13wgk_23";
+const lockedText$7 = "_lockedText_13wgk_35";
+const lockedCta$7 = "_lockedCta_13wgk_47";
+const styles$q = {
+  lockedBlock: lockedBlock$7,
+  lockedTitle: lockedTitle$7,
+  lockedText: lockedText$7,
+  lockedCta: lockedCta$7
+};
 const BUSINESS_NAME_MAX = 60;
 const BUSINESS_SUBTITLE_MAX = 80;
 const BUSINESS_CITY_MAX = 40;
 const BUSINESS_SLOGAN_MAX = 120;
+const BUSINESS_ADDRESS_MAX = 150;
 function remaining$3(max, value) {
   const s = typeof value === "string" ? value : String(value || "");
   return Math.max(0, max - s.length);
@@ -531,12 +542,14 @@ function remaining$3(max, value) {
 function BusinessPanel({
   business = {},
   onFieldChange,
-  editingDisabled = false
+  editingDisabled = false,
+  entitlements
 }) {
   const emit = (patch) => {
     if (!patch || typeof patch !== "object") return;
     onFieldChange?.("business", patch);
   };
+  const showPremiumFields = entitlements?.canUseServices !== false;
   return /* @__PURE__ */ jsxs(Panel, { title: "פרטי העסק", children: [
     /* @__PURE__ */ jsx(
       Input,
@@ -577,6 +590,23 @@ function BusinessPanel({
         meta: `יעזור להציג את העסק בצורה מדויקת יותר בגוגל ובכרטיס. נשארו ${remaining$3(BUSINESS_CITY_MAX, business.city || "")} תווים`
       }
     ),
+    showPremiumFields ? /* @__PURE__ */ jsx(
+      Input,
+      {
+        label: "רחוב ומספר בית",
+        value: business.address || "",
+        disabled: editingDisabled,
+        onChange: (e) => emit({ address: e.target.value }),
+        onBlur: (e) => emit({ address: e.target.value.trim() }),
+        maxLength: BUSINESS_ADDRESS_MAX,
+        placeholder: "לדוגמה: הרצל 12",
+        meta: `הכתובת תשמש לניווט בגוגל מפות ובווייז. נשארו ${remaining$3(BUSINESS_ADDRESS_MAX, business.address || "")} תווים`
+      }
+    ) : /* @__PURE__ */ jsxs("div", { className: styles$q.lockedBlock, children: [
+      /* @__PURE__ */ jsx("div", { className: styles$q.lockedTitle, children: "מיקום וניווט" }),
+      /* @__PURE__ */ jsx("div", { className: styles$q.lockedText, children: "הוספת כתובת וכפתורי ניווט בגוגל מפות ובווייז זמינה במסלול פרימיום." }),
+      /* @__PURE__ */ jsx("a", { href: "/pricing", className: styles$q.lockedCta, children: "שדרג לפרימיום" })
+    ] }),
     /* @__PURE__ */ jsx(
       Input,
       {
@@ -758,21 +788,10 @@ function ContactPanel({
           maxLength: URL_MAX,
           error: fieldErrors["contact.tiktok"]
         }
-      ),
-      /* @__PURE__ */ jsx(
-        Input,
-        {
-          label: "קישור לניווט בווייז",
-          value: contact.waze || "",
-          disabled: editingDisabled,
-          onChange: (e) => emit({ waze: e.target.value }),
-          maxLength: URL_MAX,
-          error: fieldErrors["contact.waze"]
-        }
       )
     ] }) : /* @__PURE__ */ jsxs("div", { className: styles$p.lockedBlock, children: [
       /* @__PURE__ */ jsx("div", { className: styles$p.lockedTitle, children: "עוד דרכי קשר" }),
-      /* @__PURE__ */ jsx("div", { className: styles$p.lockedText, children: "פייסבוק, X, טיקטוק וווייז זמינים במסלול פרימיום." }),
+      /* @__PURE__ */ jsx("div", { className: styles$p.lockedText, children: "פייסבוק, X וטיקטוק זמינים במסלול פרימיום." }),
       /* @__PURE__ */ jsx("a", { href: "/pricing", className: styles$p.lockedCta, children: "שדרג לפרימיום" })
     ] })
   ] });
@@ -8206,7 +8225,8 @@ function EditorPanel({
           onFieldChange: (sectionName, patch) => {
             if (sectionName !== "business") return;
             onFieldChange?.("business", patch);
-          }
+          },
+          entitlements: card2?.entitlements
         }
       );
     case "contact":
@@ -8884,7 +8904,7 @@ function Editor({
   }, [guideOpen]);
   useEffect(() => {
     if (typeof document === "undefined") return;
-    const lockClass = styles$s.scrollLock;
+    const lockClass = styles$t.scrollLock;
     const root2 = document.documentElement;
     const body2 = document.body;
     const shouldLock = Boolean(isMobile && drawerOpen2);
@@ -8946,14 +8966,14 @@ function Editor({
       setDrawerOpen(true);
     }
   }, [isMobile, openDrawerForMiniGuideStepId]);
-  return /* @__PURE__ */ jsxs("div", { className: styles$s.editor, "data-shell": "editor", children: [
-    /* @__PURE__ */ jsxs("div", { className: styles$s.topbar, dir: "rtl", children: [
+  return /* @__PURE__ */ jsxs("div", { className: styles$t.editor, "data-shell": "editor", children: [
+    /* @__PURE__ */ jsxs("div", { className: styles$t.topbar, dir: "rtl", children: [
       /* @__PURE__ */ jsxs(
         "button",
         {
           ref: sectionsTriggerRef,
           type: "button",
-          className: styles$s.sectionsTrigger,
+          className: styles$t.sectionsTrigger,
           "aria-label": drawerOpen2 ? "סגירת תפריט עריכה" : "פתיחת תפריט עריכה",
           "aria-expanded": drawerOpen2,
           "aria-controls": "editor-sections-drawer",
@@ -8967,23 +8987,23 @@ function Editor({
           },
           "data-tour-id": "editor-tour-sections-menu",
           children: [
-            /* @__PURE__ */ jsxs("span", { className: styles$s.sectionsIcon, "aria-hidden": "true", children: [
-              /* @__PURE__ */ jsx("span", { className: styles$s.sectionsDot }),
-              /* @__PURE__ */ jsx("span", { className: styles$s.sectionsDot }),
-              /* @__PURE__ */ jsx("span", { className: styles$s.sectionsDot }),
-              /* @__PURE__ */ jsx("span", { className: styles$s.sectionsDot })
+            /* @__PURE__ */ jsxs("span", { className: styles$t.sectionsIcon, "aria-hidden": "true", children: [
+              /* @__PURE__ */ jsx("span", { className: styles$t.sectionsDot }),
+              /* @__PURE__ */ jsx("span", { className: styles$t.sectionsDot }),
+              /* @__PURE__ */ jsx("span", { className: styles$t.sectionsDot }),
+              /* @__PURE__ */ jsx("span", { className: styles$t.sectionsDot })
             ] }),
-            !showContextBar && !showGuideBtn ? /* @__PURE__ */ jsx("span", { className: styles$s.sectionsLabel, children: "תפריט עריכה" }) : null
+            !showContextBar && !showGuideBtn ? /* @__PURE__ */ jsx("span", { className: styles$t.sectionsLabel, children: "תפריט עריכה" }) : null
           ]
         }
       ),
-      isMobile && showContextBar ? /* @__PURE__ */ jsxs("div", { className: styles$s.contextWrap, children: [
-        /* @__PURE__ */ jsx("span", { className: styles$s.contextLabel, children: "כרטיס" }),
-        /* @__PURE__ */ jsxs("div", { className: styles$s.selectShell, children: [
+      isMobile && showContextBar ? /* @__PURE__ */ jsxs("div", { className: styles$t.contextWrap, children: [
+        /* @__PURE__ */ jsx("span", { className: styles$t.contextLabel, children: "כרטיס" }),
+        /* @__PURE__ */ jsxs("div", { className: styles$t.selectShell, children: [
           /* @__PURE__ */ jsxs(
             "select",
             {
-              className: styles$s.contextSelect,
+              className: styles$t.contextSelect,
               value: activeOrgSlug || "",
               onFocus: onLoadOrgs,
               onMouseDown: onLoadOrgs,
@@ -9005,22 +9025,22 @@ function Editor({
           myOrgs && myOrgs.length > 0 ? /* @__PURE__ */ jsx(
             "span",
             {
-              className: styles$s.contextCaret,
+              className: styles$t.contextCaret,
               "aria-hidden": "true",
               children: "▾"
             }
           ) : null
         ] })
       ] }) : null,
-      showGuideBtn ? /* @__PURE__ */ jsxs("div", { className: styles$s.guideBtnWrap, ref: guideDropdownRef, children: [
+      showGuideBtn ? /* @__PURE__ */ jsxs("div", { className: styles$t.guideBtnWrap, ref: guideDropdownRef, children: [
         /* @__PURE__ */ jsx(
           "button",
           {
             type: "button",
             ref: guideBtnRef,
             className: cx(
-              styles$s.guideBtn,
-              isAcknowledged ? styles$s.guideBtnAck : styles$s.guideBtnPulse
+              styles$t.guideBtn,
+              isAcknowledged ? styles$t.guideBtnAck : styles$t.guideBtnPulse
             ),
             "aria-label": "פתח מדריך",
             "aria-expanded": guideOpen,
@@ -9036,14 +9056,14 @@ function Editor({
           "div",
           {
             id: "editor-guide-dropdown",
-            className: styles$s.guideDropdown,
+            className: styles$t.guideDropdown,
             children: [
               onStartShareMiniGuide ? /* @__PURE__ */ jsx(
                 "button",
                 {
                   type: "button",
                   ref: guideFirstItemRef,
-                  className: styles$s.guideDropdownItem,
+                  className: styles$t.guideDropdownItem,
                   onClick: () => {
                     setGuideOpen(false);
                     onStartShareMiniGuide();
@@ -9055,7 +9075,7 @@ function Editor({
                 "button",
                 {
                   type: "button",
-                  className: styles$s.guideDropdownItem,
+                  className: styles$t.guideDropdownItem,
                   onClick: () => {
                     setGuideOpen(false);
                     onStartSeoMiniGuide();
@@ -9067,7 +9087,7 @@ function Editor({
                 "button",
                 {
                   type: "button",
-                  className: styles$s.guideDropdownItem,
+                  className: styles$t.guideDropdownItem,
                   onClick: () => {
                     setGuideOpen(false);
                     onStartBookingHoursMiniGuide();
@@ -9080,7 +9100,7 @@ function Editor({
                 {
                   type: "button",
                   ref: onStartShareMiniGuide ? void 0 : guideFirstItemRef,
-                  className: styles$s.guideDropdownItem,
+                  className: styles$t.guideDropdownItem,
                   onClick: () => {
                     setGuideOpen(false);
                     setGuideModalUrl(GUIDE_URLS.mobile);
@@ -9094,7 +9114,7 @@ function Editor({
                 {
                   type: "button",
                   ref: !onStartShareMiniGuide && !GUIDE_URLS.mobile ? guideFirstItemRef : void 0,
-                  className: styles$s.guideDropdownItem,
+                  className: styles$t.guideDropdownItem,
                   onClick: () => {
                     setGuideOpen(false);
                     setGuideModalUrl(
@@ -9112,7 +9132,7 @@ function Editor({
       /* @__PURE__ */ jsxs(
         "div",
         {
-          className: styles$s.segmented,
+          className: styles$t.segmented,
           role: "tablist",
           "aria-label": "תצוגה",
           children: [
@@ -9121,8 +9141,8 @@ function Editor({
               {
                 type: "button",
                 className: cx(
-                  styles$s.segment,
-                  mobileView === "edit" && styles$s.segmentActive
+                  styles$t.segment,
+                  mobileView === "edit" && styles$t.segmentActive
                 ),
                 role: "tab",
                 "aria-selected": mobileView === "edit",
@@ -9140,8 +9160,8 @@ function Editor({
               {
                 type: "button",
                 className: cx(
-                  styles$s.segment,
-                  mobileView === "preview" && styles$s.segmentActive
+                  styles$t.segment,
+                  mobileView === "preview" && styles$t.segmentActive
                 ),
                 role: "tab",
                 "aria-selected": mobileView === "preview",
@@ -9162,8 +9182,8 @@ function Editor({
       "div",
       {
         className: cx(
-          styles$s.drawerOverlay,
-          drawerOpen2 && styles$s.drawerOverlayOpen
+          styles$t.drawerOverlay,
+          drawerOpen2 && styles$t.drawerOverlayOpen
         ),
         "aria-hidden": !drawerOpen2,
         onClick: () => {
@@ -9177,20 +9197,20 @@ function Editor({
       {
         ref: drawerRef,
         className: cx(
-          styles$s.sidebarSlot,
-          drawerOpen2 && styles$s.drawerOpen
+          styles$t.sidebarSlot,
+          drawerOpen2 && styles$t.drawerOpen
         ),
         id: "editor-sections-drawer",
         "aria-hidden": isMobile && !drawerOpen2,
         inert: isMobile && !drawerOpen2 ? "" : void 0,
         children: [
-          isMobile ? /* @__PURE__ */ jsxs("div", { className: styles$s.drawerHeader, children: [
-            /* @__PURE__ */ jsx("div", { className: styles$s.drawerTitle, children: "תפריט עריכה" }),
+          isMobile ? /* @__PURE__ */ jsxs("div", { className: styles$t.drawerHeader, children: [
+            /* @__PURE__ */ jsx("div", { className: styles$t.drawerTitle, children: "תפריט עריכה" }),
             /* @__PURE__ */ jsx(
               "button",
               {
                 type: "button",
-                className: styles$s.drawerCloseBtn,
+                className: styles$t.drawerCloseBtn,
                 "aria-label": "סגירת תפריט עריכה",
                 onClick: () => {
                   closeDrawer();
@@ -9222,7 +9242,7 @@ function Editor({
         ]
       }
     ),
-    showPanel ? /* @__PURE__ */ jsxs("main", { className: styles$s.panel, children: [
+    showPanel ? /* @__PURE__ */ jsxs("main", { className: styles$t.panel, children: [
       /* @__PURE__ */ jsx(
         EditorPanel,
         {
@@ -9256,7 +9276,7 @@ function Editor({
     showPreview ? /* @__PURE__ */ jsx(
       EditorPreview,
       {
-        className: styles$s.preview,
+        className: styles$t.preview,
         card: card2,
         header: previewHeader,
         footer: previewFooter,
@@ -9266,17 +9286,17 @@ function Editor({
     toastOpen && isMobile && mobileView === "edit" && showPanel ? /* @__PURE__ */ jsxs(
       "div",
       {
-        className: styles$s.toast,
+        className: styles$t.toast,
         role: "status",
         "aria-live": "polite",
         dir: "rtl",
         children: [
-          /* @__PURE__ */ jsx("div", { className: styles$s.toastText, children: "עודכן בתצוגה" }),
+          /* @__PURE__ */ jsx("div", { className: styles$t.toastText, children: "עודכן בתצוגה" }),
           /* @__PURE__ */ jsx(
             "button",
             {
               type: "button",
-              className: styles$s.toastAction,
+              className: styles$t.toastAction,
               onClick: () => {
                 setMobileView("preview");
                 dismissToast();

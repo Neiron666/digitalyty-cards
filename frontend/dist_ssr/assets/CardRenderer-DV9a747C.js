@@ -2479,6 +2479,8 @@ function normalizeAction(action) {
     "whatsapp",
     "email",
     "navigate",
+    "maps",
+    "waze",
     "website",
     "instagram",
     "facebook",
@@ -2544,7 +2546,7 @@ const installRow = "_installRow_1livh_297";
 const installBtn = "_installBtn_1livh_313";
 const installHelp = "_installHelp_1livh_365";
 const installHelpHl = "_installHelpHl_1livh_385";
-const styles$f = {
+const styles$g = {
   footer,
   shareBlock,
   shareTitle,
@@ -2608,13 +2610,13 @@ function CardFooter({ card: card2 }) {
   const facebookShareHref = shareUrl ? `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}` : null;
   const emailShareHref = shareUrl ? `mailto:?body=${encodeURIComponent(shareUrl)}` : null;
   const waShareHref = shareUrl ? `https://wa.me/?text=${encodeURIComponent(shareUrl)}` : null;
-  return /* @__PURE__ */ jsxs("footer", { className: styles$f.footer, children: [
-    shareUrl && /* @__PURE__ */ jsxs("div", { className: styles$f.shareBlock, children: [
-      /* @__PURE__ */ jsx("p", { className: styles$f.shareTitle, children: brandName ? `שתפו את ${brandName}` : "שתפו" }),
+  return /* @__PURE__ */ jsxs("footer", { className: styles$g.footer, children: [
+    shareUrl && /* @__PURE__ */ jsxs("div", { className: styles$g.shareBlock, children: [
+      /* @__PURE__ */ jsx("p", { className: styles$g.shareTitle, children: brandName ? `שתפו את ${brandName}` : "שתפו" }),
       /* @__PURE__ */ jsxs(
         "div",
         {
-          className: styles$f.shareRow,
+          className: styles$g.shareRow,
           role: "group",
           "aria-label": "שיתוף הכרטיס",
           children: [
@@ -2624,7 +2626,7 @@ function CardFooter({ card: card2 }) {
                 href: facebookShareHref,
                 target: "_blank",
                 rel: "noreferrer noopener",
-                className: styles$f.shareIcon,
+                className: styles$g.shareIcon,
                 "aria-label": "שתף בפייסבוק",
                 onClick: () => {
                   tryCopyToClipboard(shareUrl);
@@ -2633,7 +2635,7 @@ function CardFooter({ card: card2 }) {
                 children: /* @__PURE__ */ jsx(
                   "span",
                   {
-                    className: styles$f.iconFacebook,
+                    className: styles$g.iconFacebook,
                     "aria-hidden": "true"
                   }
                 )
@@ -2643,7 +2645,7 @@ function CardFooter({ card: card2 }) {
               "a",
               {
                 href: emailShareHref,
-                className: styles$f.shareIcon,
+                className: styles$g.shareIcon,
                 "aria-label": "שתף במייל",
                 onClick: () => {
                   tryCopyToClipboard(shareUrl);
@@ -2652,7 +2654,7 @@ function CardFooter({ card: card2 }) {
                 children: /* @__PURE__ */ jsx(
                   "span",
                   {
-                    className: styles$f.iconEmail,
+                    className: styles$g.iconEmail,
                     "aria-hidden": "true"
                   }
                 )
@@ -2664,7 +2666,7 @@ function CardFooter({ card: card2 }) {
                 href: waShareHref,
                 target: "_blank",
                 rel: "noreferrer noopener",
-                className: styles$f.shareIcon,
+                className: styles$g.shareIcon,
                 "aria-label": "שתף בוואטסאפ",
                 onClick: () => {
                   tryCopyToClipboard(shareUrl);
@@ -2673,7 +2675,7 @@ function CardFooter({ card: card2 }) {
                 children: /* @__PURE__ */ jsx(
                   "span",
                   {
-                    className: styles$f.iconWhatsapp,
+                    className: styles$g.iconWhatsapp,
                     "aria-hidden": "true"
                   }
                 )
@@ -2689,7 +2691,7 @@ function CardFooter({ card: card2 }) {
         href: "https://cardigo.co.il",
         target: "_blank",
         rel: "noreferrer",
-        className: styles$f.logoWrap,
+        className: styles$g.logoWrap,
         children: /* @__PURE__ */ jsxs("picture", { children: [
           /* @__PURE__ */ jsx(
             "source",
@@ -2703,7 +2705,7 @@ function CardFooter({ card: card2 }) {
             {
               src: "/images/brand-logo/cardigo-logo-512.png",
               alt: "Cardigo",
-              className: styles$f.logoImg,
+              className: styles$g.logoImg,
               width: "80",
               height: "28",
               loading: "lazy",
@@ -2713,7 +2715,7 @@ function CardFooter({ card: card2 }) {
         ] })
       }
     ),
-    /* @__PURE__ */ jsxs("p", { className: styles$f.promo, children: [
+    /* @__PURE__ */ jsxs("p", { className: styles$g.promo, children: [
       "נבנה ב־",
       /* @__PURE__ */ jsx(
         "a",
@@ -2721,7 +2723,7 @@ function CardFooter({ card: card2 }) {
           href: "https://cardigo.co.il",
           target: "_blank",
           rel: "noreferrer",
-          className: styles$f.promoLink,
+          className: styles$g.promoLink,
           children: "Cardigo"
         }
       ),
@@ -2773,13 +2775,13 @@ function InstallRow({
     }
     onToggleHighlight();
   }
-  const helpClass = highlighted && helpText ? `${styles$f.installHelp} ${styles$f.installHelpHl}` : styles$f.installHelp;
-  return /* @__PURE__ */ jsxs("div", { className: styles$f.installRow, children: [
+  const helpClass = highlighted && helpText ? `${styles$g.installHelp} ${styles$g.installHelpHl}` : styles$g.installHelp;
+  return /* @__PURE__ */ jsxs("div", { className: styles$g.installRow, children: [
     /* @__PURE__ */ jsx(
       "button",
       {
         type: "button",
-        className: styles$f.installBtn,
+        className: styles$g.installBtn,
         onClick: handleClick,
         children: "התקינו את Cardigo לאנדרואיד"
       }
@@ -2801,7 +2803,7 @@ const iconFacebook = "_iconFacebook_odcmc_239";
 const iconInstagram = "_iconInstagram_odcmc_249";
 const iconTiktok = "_iconTiktok_odcmc_259";
 const iconTwitter = "_iconTwitter_odcmc_269";
-const styles$e = {
+const styles$f = {
   buttons,
   item: item$2,
   bubble,
@@ -2832,28 +2834,10 @@ function ensureHttpUrl(value, opts) {
   if (lower.startsWith("http://") || lower.startsWith("https://")) {
     return validateHttpUrl(s);
   }
-  if (opts?.extraSchemes) {
-    for (const scheme of opts.extraSchemes) {
-      if (lower.startsWith(`${scheme}://`)) return s;
-    }
-  }
   if (/^[a-z][a-z0-9+.-]*:/i.test(s)) {
     return "";
   }
   return validateHttpUrl(`https://${s}`);
-}
-function extractWazeUrl(value) {
-  if (!value) return "";
-  const s = String(value).trim();
-  if (!s) return "";
-  if (!/\s/.test(s)) return s;
-  const m = s.match(
-    /(?:https?:\/\/(?:www\.)?waze\.com\/\S+|(?:www\.)?waze\.com\/\S+|waze:\/\/\S+)/i
-  );
-  return m ? stripTrailingDelimiters(m[0]) : s;
-}
-function stripTrailingDelimiters(url) {
-  return url.replace(/[\s.,;:!?"')\]\}»״׳]+$/u, "");
 }
 function validateHttpUrl(candidate) {
   try {
@@ -2916,39 +2900,40 @@ const cx$3 = (...classes) => classes.filter(Boolean).join(" ");
 const WA_PREFILL_TEXT = "היי, הגעתי אליך דרך הכרטיס הדיגיטלי שלך ב-Cardigo 👋";
 function ContactButtons({ card: card2 }) {
   const { contact } = card2;
+  const locationAddress = String(card2?.business?.address || "").trim();
+  const locationCity = String(card2?.business?.city || "").trim();
   const isPremium = card2?.entitlements?.canUseServices !== void 0 ? card2.entitlements.canUseServices : true;
   const phone = contact?.phone || contact?.mobilePhone || contact?.mobile || contact?.officePhone || "";
   const whatsapp = contact?.whatsapp || contact?.whatsappPhone || "";
   const telHref = normalizeForTel(phone);
   const waHref = normalizeForWaMe(whatsapp);
-  const wazeHref = isPremium ? ensureHttpUrl(extractWazeUrl(contact?.waze), {
-    extraSchemes: ["waze"]
-  }) : "";
   const facebookHref = isPremium ? ensureHttpUrl(contact?.facebook) : "";
   const instagramHref = ensureHttpUrl(contact?.instagram);
   const twitterHref = isPremium ? ensureHttpUrl(contact?.twitter) : "";
   const tiktokHref = isPremium ? ensureHttpUrl(contact?.tiktok) : "";
   const websiteHref = ensureHttpUrl(contact?.website);
-  if (!telHref && !waHref && !facebookHref && !instagramHref && !twitterHref && !tiktokHref && !contact?.email && !websiteHref && !wazeHref) {
+  const locationQuery = `${locationAddress}, ${locationCity}, ישראל`;
+  const locationWazeHref = isPremium && locationAddress && locationCity ? `https://waze.com/ul?q=${encodeURIComponent(locationQuery)}&navigate=yes` : "";
+  if (!telHref && !waHref && !facebookHref && !instagramHref && !twitterHref && !tiktokHref && !contact?.email && !websiteHref && !locationWazeHref) {
     return null;
   }
-  return /* @__PURE__ */ jsxs("div", { className: styles$e.buttons, children: [
+  return /* @__PURE__ */ jsxs("div", { className: styles$f.buttons, children: [
     telHref && /* @__PURE__ */ jsxs(
       "a",
       {
         href: `tel:${telHref}`,
-        className: styles$e.item,
+        className: styles$f.item,
         "aria-label": `Call ${phone || telHref}`,
         onClick: () => trackClick(card2?.slug, "call"),
         children: [
-          /* @__PURE__ */ jsx("span", { className: styles$e.bubble, "aria-hidden": "true", children: /* @__PURE__ */ jsx(
+          /* @__PURE__ */ jsx("span", { className: styles$f.bubble, "aria-hidden": "true", children: /* @__PURE__ */ jsx(
             "span",
             {
-              className: cx$3(styles$e.icon, styles$e.iconPhone),
+              className: cx$3(styles$f.icon, styles$f.iconPhone),
               "aria-hidden": "true"
             }
           ) }),
-          /* @__PURE__ */ jsx("span", { className: styles$e.label, children: "טלפון" })
+          /* @__PURE__ */ jsx("span", { className: styles$f.label, children: "טלפון" })
         ]
       }
     ),
@@ -2958,39 +2943,18 @@ function ContactButtons({ card: card2 }) {
         href: `https://wa.me/${waHref}?text=${encodeURIComponent(WA_PREFILL_TEXT)}`,
         target: "_blank",
         rel: "noreferrer",
-        className: styles$e.item,
+        className: styles$f.item,
         "aria-label": `Open WhatsApp chat ${whatsapp || waHref}`,
         onClick: () => trackClick(card2?.slug, "whatsapp"),
         children: [
-          /* @__PURE__ */ jsx("span", { className: styles$e.bubble, "aria-hidden": "true", children: /* @__PURE__ */ jsx(
+          /* @__PURE__ */ jsx("span", { className: styles$f.bubble, "aria-hidden": "true", children: /* @__PURE__ */ jsx(
             "span",
             {
-              className: cx$3(styles$e.icon, styles$e.iconWhatsapp),
+              className: cx$3(styles$f.icon, styles$f.iconWhatsapp),
               "aria-hidden": "true"
             }
           ) }),
-          /* @__PURE__ */ jsx("span", { className: styles$e.label, children: "וואטסאפ" })
-        ]
-      }
-    ),
-    wazeHref && /* @__PURE__ */ jsxs(
-      "a",
-      {
-        href: wazeHref,
-        target: "_blank",
-        rel: "noreferrer",
-        className: styles$e.item,
-        "aria-label": "Navigate with Waze",
-        onClick: () => trackClick(card2?.slug, "navigate"),
-        children: [
-          /* @__PURE__ */ jsx("span", { className: styles$e.bubble, "aria-hidden": "true", children: /* @__PURE__ */ jsx(
-            "span",
-            {
-              className: cx$3(styles$e.icon, styles$e.iconWaze),
-              "aria-hidden": "true"
-            }
-          ) }),
-          /* @__PURE__ */ jsx("span", { className: styles$e.label, children: "ווייז" })
+          /* @__PURE__ */ jsx("span", { className: styles$f.label, children: "וואטסאפ" })
         ]
       }
     ),
@@ -3000,18 +2964,18 @@ function ContactButtons({ card: card2 }) {
         href: facebookHref,
         target: "_blank",
         rel: "noreferrer",
-        className: styles$e.item,
+        className: styles$f.item,
         "aria-label": "Open Facebook",
         onClick: () => trackClick(card2?.slug, "facebook"),
         children: [
-          /* @__PURE__ */ jsx("span", { className: styles$e.bubble, "aria-hidden": "true", children: /* @__PURE__ */ jsx(
+          /* @__PURE__ */ jsx("span", { className: styles$f.bubble, "aria-hidden": "true", children: /* @__PURE__ */ jsx(
             "span",
             {
-              className: cx$3(styles$e.icon, styles$e.iconFacebook),
+              className: cx$3(styles$f.icon, styles$f.iconFacebook),
               "aria-hidden": "true"
             }
           ) }),
-          /* @__PURE__ */ jsx("span", { className: styles$e.label, children: "פייסבוק" })
+          /* @__PURE__ */ jsx("span", { className: styles$f.label, children: "פייסבוק" })
         ]
       }
     ),
@@ -3021,18 +2985,18 @@ function ContactButtons({ card: card2 }) {
         href: instagramHref,
         target: "_blank",
         rel: "noreferrer",
-        className: styles$e.item,
+        className: styles$f.item,
         "aria-label": "Open Instagram",
         onClick: () => trackClick(card2?.slug, "instagram"),
         children: [
-          /* @__PURE__ */ jsx("span", { className: styles$e.bubble, "aria-hidden": "true", children: /* @__PURE__ */ jsx(
+          /* @__PURE__ */ jsx("span", { className: styles$f.bubble, "aria-hidden": "true", children: /* @__PURE__ */ jsx(
             "span",
             {
-              className: cx$3(styles$e.icon, styles$e.iconInstagram),
+              className: cx$3(styles$f.icon, styles$f.iconInstagram),
               "aria-hidden": "true"
             }
           ) }),
-          /* @__PURE__ */ jsx("span", { className: styles$e.label, children: "אינסטגרם" })
+          /* @__PURE__ */ jsx("span", { className: styles$f.label, children: "אינסטגרם" })
         ]
       }
     ),
@@ -3042,18 +3006,18 @@ function ContactButtons({ card: card2 }) {
         href: twitterHref,
         target: "_blank",
         rel: "noreferrer",
-        className: styles$e.item,
+        className: styles$f.item,
         "aria-label": "Open X/Twitter",
         onClick: () => trackClick(card2?.slug, "twitter"),
         children: [
-          /* @__PURE__ */ jsx("span", { className: styles$e.bubble, "aria-hidden": "true", children: /* @__PURE__ */ jsx(
+          /* @__PURE__ */ jsx("span", { className: styles$f.bubble, "aria-hidden": "true", children: /* @__PURE__ */ jsx(
             "span",
             {
-              className: cx$3(styles$e.icon, styles$e.iconTwitter),
+              className: cx$3(styles$f.icon, styles$f.iconTwitter),
               "aria-hidden": "true"
             }
           ) }),
-          /* @__PURE__ */ jsx("span", { className: styles$e.label, children: "טוויטר" })
+          /* @__PURE__ */ jsx("span", { className: styles$f.label, children: "טוויטר" })
         ]
       }
     ),
@@ -3063,18 +3027,18 @@ function ContactButtons({ card: card2 }) {
         href: tiktokHref,
         target: "_blank",
         rel: "noreferrer",
-        className: styles$e.item,
+        className: styles$f.item,
         "aria-label": "Open TikTok",
         onClick: () => trackClick(card2?.slug, "tiktok"),
         children: [
-          /* @__PURE__ */ jsx("span", { className: styles$e.bubble, "aria-hidden": "true", children: /* @__PURE__ */ jsx(
+          /* @__PURE__ */ jsx("span", { className: styles$f.bubble, "aria-hidden": "true", children: /* @__PURE__ */ jsx(
             "span",
             {
-              className: cx$3(styles$e.icon, styles$e.iconTiktok),
+              className: cx$3(styles$f.icon, styles$f.iconTiktok),
               "aria-hidden": "true"
             }
           ) }),
-          /* @__PURE__ */ jsx("span", { className: styles$e.label, children: "טיקטוק" })
+          /* @__PURE__ */ jsx("span", { className: styles$f.label, children: "טיקטוק" })
         ]
       }
     ),
@@ -3082,18 +3046,18 @@ function ContactButtons({ card: card2 }) {
       "a",
       {
         href: `mailto:${contact.email}`,
-        className: styles$e.item,
+        className: styles$f.item,
         "aria-label": `Email ${contact.email}`,
         onClick: () => trackClick(card2?.slug, "email"),
         children: [
-          /* @__PURE__ */ jsx("span", { className: styles$e.bubble, "aria-hidden": "true", children: /* @__PURE__ */ jsx(
+          /* @__PURE__ */ jsx("span", { className: styles$f.bubble, "aria-hidden": "true", children: /* @__PURE__ */ jsx(
             "span",
             {
-              className: cx$3(styles$e.icon, styles$e.iconEmail),
+              className: cx$3(styles$f.icon, styles$f.iconEmail),
               "aria-hidden": "true"
             }
           ) }),
-          /* @__PURE__ */ jsx("span", { className: styles$e.label, children: "אימייל" })
+          /* @__PURE__ */ jsx("span", { className: styles$f.label, children: "אימייל" })
         ]
       }
     ),
@@ -3103,18 +3067,39 @@ function ContactButtons({ card: card2 }) {
         href: websiteHref,
         target: "_blank",
         rel: "noreferrer",
-        className: styles$e.item,
+        className: styles$f.item,
         "aria-label": "Open website",
         onClick: () => trackClick(card2?.slug, "website"),
         children: [
-          /* @__PURE__ */ jsx("span", { className: styles$e.bubble, "aria-hidden": "true", children: /* @__PURE__ */ jsx(
+          /* @__PURE__ */ jsx("span", { className: styles$f.bubble, "aria-hidden": "true", children: /* @__PURE__ */ jsx(
             "span",
             {
-              className: cx$3(styles$e.icon, styles$e.iconWebsite),
+              className: cx$3(styles$f.icon, styles$f.iconWebsite),
               "aria-hidden": "true"
             }
           ) }),
-          /* @__PURE__ */ jsx("span", { className: styles$e.label, children: "אתר" })
+          /* @__PURE__ */ jsx("span", { className: styles$f.label, children: "אתר" })
+        ]
+      }
+    ),
+    locationWazeHref && /* @__PURE__ */ jsxs(
+      "a",
+      {
+        href: locationWazeHref,
+        target: "_blank",
+        rel: "noreferrer",
+        className: styles$f.item,
+        "aria-label": `נווט עם Waze: ${locationAddress}, ${locationCity}`,
+        onClick: () => trackClick(card2?.slug, "waze"),
+        children: [
+          /* @__PURE__ */ jsx("span", { className: styles$f.bubble, "aria-hidden": "true", children: /* @__PURE__ */ jsx(
+            "span",
+            {
+              className: cx$3(styles$f.icon, styles$f.iconWaze),
+              "aria-hidden": "true"
+            }
+          ) }),
+          /* @__PURE__ */ jsx("span", { className: styles$f.label, children: "ווייז" })
         ]
       }
     )
@@ -3127,7 +3112,7 @@ const icon$3 = "_icon_21oo5_55";
 const iconShare = "_iconShare_21oo5_91";
 const iconSave = "_iconSave_21oo5_101";
 const shareHint = "_shareHint_21oo5_131";
-const styles$d = {
+const styles$e = {
   actions,
   button,
   actionShare,
@@ -3222,20 +3207,20 @@ function SaveContactButton({ card: card2 }) {
     a.click();
     URL.revokeObjectURL(url);
   }
-  return /* @__PURE__ */ jsxs("div", { className: `${styles$d.actions}`, children: [
+  return /* @__PURE__ */ jsxs("div", { className: `${styles$e.actions}`, children: [
     /* @__PURE__ */ jsxs(
       "button",
       {
         type: "button",
         onClick: handleShare,
         disabled: !canShare,
-        className: `${styles$d.button} ${styles$d.actionShare}`,
+        className: `${styles$e.button} ${styles$e.actionShare}`,
         title: !canShare ? !published ? "אפשר לשתף רק אחרי פרסום הכרטיס" : "קישור לשיתוף לא זמין כרגע" : void 0,
         children: [
           /* @__PURE__ */ jsx(
             "span",
             {
-              className: `${styles$d.icon} ${styles$d.iconShare}`,
+              className: `${styles$e.icon} ${styles$e.iconShare}`,
               "aria-hidden": "true"
             }
           ),
@@ -3243,18 +3228,18 @@ function SaveContactButton({ card: card2 }) {
         ]
       }
     ),
-    !canShare && /* @__PURE__ */ jsx("div", { className: styles$d.shareHint, children: !published ? "אפשר לשתף רק אחרי פרסום הכרטיס." : "קישור לשיתוף לא זמין כרגע." }),
+    !canShare && /* @__PURE__ */ jsx("div", { className: styles$e.shareHint, children: !published ? "אפשר לשתף רק אחרי פרסום הכרטיס." : "קישור לשיתוף לא זמין כרגע." }),
     /* @__PURE__ */ jsxs(
       "button",
       {
         type: "button",
         onClick: downloadVCard,
-        className: styles$d.button,
+        className: styles$e.button,
         children: [
           /* @__PURE__ */ jsx(
             "span",
             {
-              className: `${styles$d.icon} ${styles$d.iconSave}`,
+              className: `${styles$e.icon} ${styles$e.iconSave}`,
               "aria-hidden": "true"
             }
           ),
@@ -3267,7 +3252,7 @@ function SaveContactButton({ card: card2 }) {
 const section$3 = "_section_74lkl_1";
 const title$1 = "_title_74lkl_15";
 const content$5 = "_content_74lkl_45";
-const styles$c = {
+const styles$d = {
   section: section$3,
   title: title$1,
   content: content$5
@@ -3281,15 +3266,15 @@ function Section({
   titleClassName,
   contentClassName
 }) {
-  return /* @__PURE__ */ jsxs("section", { id, className: cx$2(styles$c.section, className), children: [
-    title2 && /* @__PURE__ */ jsx("h2", { className: cx$2(styles$c.title, titleClassName), children: title2 }),
-    /* @__PURE__ */ jsx("div", { className: cx$2(styles$c.content, contentClassName), children })
+  return /* @__PURE__ */ jsxs("section", { id, className: cx$2(styles$d.section, className), children: [
+    title2 && /* @__PURE__ */ jsx("h2", { className: cx$2(styles$d.title, titleClassName), children: title2 }),
+    /* @__PURE__ */ jsx("div", { className: cx$2(styles$d.content, contentClassName), children })
   ] });
 }
 const wrap$2 = "_wrap_69vym_1";
 const code = "_code_69vym_15";
 const download = "_download_69vym_23";
-const styles$b = {
+const styles$c = {
   wrap: wrap$2,
   code,
   download
@@ -3321,13 +3306,13 @@ function QRCodeBlock({ slug, publicPath }) {
     a.click();
   }
   if (!url) return null;
-  return /* @__PURE__ */ jsx(Section, { children: /* @__PURE__ */ jsxs("div", { className: styles$b.wrap, ref: wrapRef, children: [
-    /* @__PURE__ */ jsx("div", { className: styles$b.code, children: /* @__PURE__ */ jsx(QRCodeCanvas, { value: url, size: 160, includeMargin: true }) }),
+  return /* @__PURE__ */ jsx(Section, { children: /* @__PURE__ */ jsxs("div", { className: styles$c.wrap, ref: wrapRef, children: [
+    /* @__PURE__ */ jsx("div", { className: styles$c.code, children: /* @__PURE__ */ jsx(QRCodeCanvas, { value: url, size: 160, includeMargin: true }) }),
     /* @__PURE__ */ jsx(
       "button",
       {
         type: "button",
-        className: styles$b.download,
+        className: styles$c.download,
         onClick: handleDownload,
         children: "הורד QR"
       }
@@ -3336,7 +3321,7 @@ function QRCodeBlock({ slug, publicPath }) {
 }
 const paragraphs = "_paragraphs_mwitv_1";
 const paragraph = "_paragraph_mwitv_1";
-const styles$a = {
+const styles$b = {
   paragraphs,
   paragraph
 };
@@ -3349,7 +3334,7 @@ function AboutSection({ card: card2 }) {
   const maxParagraphs = card2?.entitlements?.maxContentParagraphs ?? 3;
   const paragraphs2 = normalizeAboutParagraphs(content2, maxParagraphs);
   if (!paragraphs2.length) return null;
-  return /* @__PURE__ */ jsx(Section, { title: content2.aboutTitle, children: /* @__PURE__ */ jsx("div", { className: styles$a.paragraphs, children: paragraphs2.map((text2, idx) => /* @__PURE__ */ jsx("p", { className: styles$a.paragraph, children: text2 }, idx)) }) });
+  return /* @__PURE__ */ jsx(Section, { title: content2.aboutTitle, children: /* @__PURE__ */ jsx("div", { className: styles$b.paragraphs, children: paragraphs2.map((text2, idx) => /* @__PURE__ */ jsx("p", { className: styles$b.paragraph, children: text2 }, idx)) }) });
 }
 const section$2 = "_section_12n1w_1";
 const sectionTitle$1 = "_sectionTitle_12n1w_17";
@@ -3361,7 +3346,7 @@ const toggleText$1 = "_toggleText_12n1w_115";
 const icon$2 = "_icon_12n1w_125";
 const list$1 = "_list_12n1w_153";
 const item$1 = "_item_12n1w_171";
-const styles$9 = {
+const styles$a = {
   section: section$2,
   sectionTitle: sectionTitle$1,
   content: content$4,
@@ -3396,25 +3381,25 @@ function ServicesSection({ card: card2, mode }) {
     Section,
     {
       id: "services",
-      className: styles$9.section,
-      contentClassName: styles$9.content,
-      children: /* @__PURE__ */ jsxs("div", { className: styles$9.wrap, children: [
-        /* @__PURE__ */ jsx("h2", { className: styles$9.sectionTitle, children: services.title }),
+      className: styles$a.section,
+      contentClassName: styles$a.content,
+      children: /* @__PURE__ */ jsxs("div", { className: styles$a.wrap, children: [
+        /* @__PURE__ */ jsx("h2", { className: styles$a.sectionTitle, children: services.title }),
         /* @__PURE__ */ jsxs(
           "button",
           {
             type: "button",
-            className: styles$9.toggle,
+            className: styles$a.toggle,
             "aria-expanded": open,
             onClick: () => setOpen((v) => !v),
             children: [
-              /* @__PURE__ */ jsx(ServicesIcon, { className: styles$9.tabIcon }),
-              /* @__PURE__ */ jsx("span", { className: styles$9.toggleText, children: toggleLabel }),
-              /* @__PURE__ */ jsx("span", { className: styles$9.icon, "aria-hidden": "true" })
+              /* @__PURE__ */ jsx(ServicesIcon, { className: styles$a.tabIcon }),
+              /* @__PURE__ */ jsx("span", { className: styles$a.toggleText, children: toggleLabel }),
+              /* @__PURE__ */ jsx("span", { className: styles$a.icon, "aria-hidden": "true" })
             ]
           }
         ),
-        open ? /* @__PURE__ */ jsx("ul", { className: styles$9.list, role: "list", children: services.items.map((item2, idx) => /* @__PURE__ */ jsx("li", { className: styles$9.item, children: item2 }, `${idx}-${item2}`)) }) : null
+        open ? /* @__PURE__ */ jsx("ul", { className: styles$a.list, role: "list", children: services.items.map((item2, idx) => /* @__PURE__ */ jsx("li", { className: styles$a.item, children: item2 }, `${idx}-${item2}`)) }) : null
       ] })
     }
   );
@@ -3433,7 +3418,7 @@ const day = "_day_1jvq4_173";
 const hours = "_hours_1jvq4_185";
 const closed = "_closed_1jvq4_199";
 const ranges = "_ranges_1jvq4_207";
-const styles$8 = {
+const styles$9 = {
   section: section$1,
   sectionTitle,
   content: content$3,
@@ -3513,27 +3498,27 @@ function BusinessHoursSection({ card: card2, mode }) {
     Section,
     {
       id: "business-hours",
-      className: styles$8.section,
-      contentClassName: styles$8.content,
-      children: /* @__PURE__ */ jsxs("div", { className: styles$8.wrap, children: [
-        /* @__PURE__ */ jsx("h2", { className: styles$8.sectionTitle, children: data.title }),
+      className: styles$9.section,
+      contentClassName: styles$9.content,
+      children: /* @__PURE__ */ jsxs("div", { className: styles$9.wrap, children: [
+        /* @__PURE__ */ jsx("h2", { className: styles$9.sectionTitle, children: data.title }),
         /* @__PURE__ */ jsxs(
           "button",
           {
             type: "button",
-            className: styles$8.toggle,
+            className: styles$9.toggle,
             "aria-expanded": open,
             onClick: () => setOpen((v) => !v),
             children: [
-              /* @__PURE__ */ jsx(WorkHoursIcon, { className: styles$8.tabIcon }),
-              /* @__PURE__ */ jsx("span", { className: styles$8.toggleText, children: open ? "הסתר שעות פעילות" : "הצג שעות פעילות" }),
-              /* @__PURE__ */ jsx("span", { className: styles$8.icon, "aria-hidden": "true" })
+              /* @__PURE__ */ jsx(WorkHoursIcon, { className: styles$9.tabIcon }),
+              /* @__PURE__ */ jsx("span", { className: styles$9.toggleText, children: open ? "הסתר שעות פעילות" : "הצג שעות פעילות" }),
+              /* @__PURE__ */ jsx("span", { className: styles$9.icon, "aria-hidden": "true" })
             ]
           }
         ),
-        open ? /* @__PURE__ */ jsx("div", { className: styles$8.table, children: data.days.map((d) => /* @__PURE__ */ jsxs("div", { className: styles$8.row, children: [
-          /* @__PURE__ */ jsx("div", { className: styles$8.day, children: d.label }),
-          /* @__PURE__ */ jsx("div", { className: styles$8.hours, children: d.closed ? /* @__PURE__ */ jsx("span", { className: styles$8.closed, children: "סגור" }) : /* @__PURE__ */ jsx("span", { className: styles$8.ranges, children: d.intervals.map(
+        open ? /* @__PURE__ */ jsx("div", { className: styles$9.table, children: data.days.map((d) => /* @__PURE__ */ jsxs("div", { className: styles$9.row, children: [
+          /* @__PURE__ */ jsx("div", { className: styles$9.day, children: d.label }),
+          /* @__PURE__ */ jsx("div", { className: styles$9.hours, children: d.closed ? /* @__PURE__ */ jsx("span", { className: styles$9.closed, children: "סגור" }) : /* @__PURE__ */ jsx("span", { className: styles$9.ranges, children: d.intervals.map(
             (it) => `${it.start}–${it.end}`
           ).join(", ") }) })
         ] }, d.key)) }) : null
@@ -3598,7 +3583,7 @@ const delay0 = "_delay0_lewxd_611";
 const delay1 = "_delay1_lewxd_617";
 const delay2 = "_delay2_lewxd_623";
 const delay3 = "_delay3_lewxd_629";
-const styles$7 = {
+const styles$8 = {
   gallery,
   imageWrapper,
   image,
@@ -3623,7 +3608,7 @@ const cx$1 = (...classes) => classes.filter(Boolean).join(" ");
 function mod$1(n, m) {
   return (n % m + m) % m;
 }
-const STAGGER = [styles$7.delay0, styles$7.delay1, styles$7.delay2, styles$7.delay3];
+const STAGGER = [styles$8.delay0, styles$8.delay1, styles$8.delay2, styles$8.delay3];
 function GallerySection({ card: card2, mode }) {
   const rawGallery = Array.isArray(card2?.gallery) ? card2.gallery : [];
   const items = useMemo(() => {
@@ -3766,17 +3751,17 @@ function GallerySection({ card: card2, mode }) {
     }
   }, [activeIndex, hasItems, isOpen, items]);
   const revealRef = useReveal({
-    revealClass: styles$7.isRevealed,
+    revealClass: styles$8.isRevealed,
     skip: mode !== "public"
   });
   if (!hasItems) return null;
   return /* @__PURE__ */ jsxs(Section, { title: "גלריה", children: [
-    /* @__PURE__ */ jsx("div", { className: styles$7.gallery, children: items.map((it, index) => /* @__PURE__ */ jsx(
+    /* @__PURE__ */ jsx("div", { className: styles$8.gallery, children: items.map((it, index) => /* @__PURE__ */ jsx(
       "button",
       {
         type: "button",
         ref: revealRef,
-        className: cx$1(styles$7.imageWrapper, STAGGER[index % 4]),
+        className: cx$1(styles$8.imageWrapper, STAGGER[index % 4]),
         onClick: (e) => openLightbox(index, e.currentTarget),
         "aria-label": `פתח תמונה ${index + 1}`,
         children: /* @__PURE__ */ jsx(
@@ -3784,7 +3769,7 @@ function GallerySection({ card: card2, mode }) {
           {
             src: it.thumbUrl,
             alt: it.alt,
-            className: styles$7.image,
+            className: styles$8.image,
             loading: "lazy",
             decoding: "async"
           }
@@ -3796,7 +3781,7 @@ function GallerySection({ card: card2, mode }) {
       "div",
       {
         ref: overlayRef,
-        className: styles$7.overlay,
+        className: styles$8.overlay,
         role: "dialog",
         "aria-modal": "true",
         onMouseDown: (e) => {
@@ -3846,9 +3831,9 @@ function GallerySection({ card: card2, mode }) {
           else if (dx < -SWIPE_THRESHOLD_PX$1) showNext();
           touchRef.current.swiping = false;
         },
-        children: /* @__PURE__ */ jsxs("div", { className: styles$7.dialog, children: [
-          /* @__PURE__ */ jsxs("div", { className: styles$7.topBar, children: [
-            /* @__PURE__ */ jsxs("div", { className: styles$7.counter, children: [
+        children: /* @__PURE__ */ jsxs("div", { className: styles$8.dialog, children: [
+          /* @__PURE__ */ jsxs("div", { className: styles$8.topBar, children: [
+            /* @__PURE__ */ jsxs("div", { className: styles$8.counter, children: [
               activeIndex + 1,
               " / ",
               items.length
@@ -3858,19 +3843,19 @@ function GallerySection({ card: card2, mode }) {
               {
                 ref: closeButtonRef,
                 type: "button",
-                className: styles$7.close,
+                className: styles$8.close,
                 onClick: closeLightbox,
                 "aria-label": "סגור",
                 children: "×"
               }
             )
           ] }),
-          /* @__PURE__ */ jsxs("div", { className: styles$7.media, children: [
+          /* @__PURE__ */ jsxs("div", { className: styles$8.media, children: [
             /* @__PURE__ */ jsx(
               "button",
               {
                 type: "button",
-                className: styles$7.navPrev,
+                className: styles$8.navPrev,
                 onClick: showPrev,
                 "aria-label": "הקודם",
                 children: "‹"
@@ -3881,7 +3866,7 @@ function GallerySection({ card: card2, mode }) {
               {
                 src: items[activeIndex]?.fullUrl,
                 alt: items[activeIndex]?.alt,
-                className: styles$7.lightboxImage,
+                className: styles$8.lightboxImage,
                 decoding: "async"
               }
             ),
@@ -3889,7 +3874,7 @@ function GallerySection({ card: card2, mode }) {
               "button",
               {
                 type: "button",
-                className: styles$7.navNext,
+                className: styles$8.navNext,
                 onClick: showNext,
                 "aria-label": "הבא",
                 children: "›"
@@ -3902,7 +3887,7 @@ function GallerySection({ card: card2, mode }) {
   ] });
 }
 const video = "_video_1txzv_1";
-const styles$6 = {
+const styles$7 = {
   video
 };
 function toYouTubeEmbedUrl(raw) {
@@ -3958,7 +3943,7 @@ function VideoSection({ card: card2 }) {
       allow: "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share",
       referrerPolicy: "strict-origin-when-cross-origin",
       allowFullScreen: true,
-      className: styles$6.video
+      className: styles$7.video
     }
   ) });
 }
@@ -3985,7 +3970,7 @@ const starEmpty = "_starEmpty_14ywo_449";
 const quote = "_quote_14ywo_457";
 const text = "_text_14ywo_475";
 const author = "_author_14ywo_521";
-const styles$5 = {
+const styles$6 = {
   slider,
   frame,
   viewport,
@@ -4325,13 +4310,13 @@ function ReviewsSection({ card: card2 }) {
     return /* @__PURE__ */ jsx(
       "div",
       {
-        className: styles$5.stars,
+        className: styles$6.stars,
         role: "img",
         "aria-label": `דירוג ${r} מתוך 5`,
         children: Array.from({ length: 5 }).map((_, i) => /* @__PURE__ */ jsx(
           "span",
           {
-            className: i < r ? styles$5.starFilled : styles$5.starEmpty,
+            className: i < r ? styles$6.starFilled : styles$6.starEmpty,
             "aria-hidden": "true",
             children: "★"
           },
@@ -4341,14 +4326,14 @@ function ReviewsSection({ card: card2 }) {
     );
   }
   function renderCard(item2) {
-    return /* @__PURE__ */ jsx("figure", { className: styles$5.card, children: /* @__PURE__ */ jsxs("div", { className: styles$5.cardInner, children: [
+    return /* @__PURE__ */ jsx("figure", { className: styles$6.card, children: /* @__PURE__ */ jsxs("div", { className: styles$6.cardInner, children: [
       renderStars(5),
-      /* @__PURE__ */ jsx("blockquote", { className: styles$5.quote, children: /* @__PURE__ */ jsxs("p", { className: styles$5.text, children: [
+      /* @__PURE__ */ jsx("blockquote", { className: styles$6.quote, children: /* @__PURE__ */ jsxs("p", { className: styles$6.text, children: [
         "“",
         item2.text,
         "”"
       ] }) }),
-      item2.name ? /* @__PURE__ */ jsx("div", { className: styles$5.author, children: item2.name }) : null
+      item2.name ? /* @__PURE__ */ jsx("div", { className: styles$6.author, children: item2.name }) : null
     ] }) });
   }
   if (!items.length) return null;
@@ -4359,20 +4344,20 @@ function ReviewsSection({ card: card2 }) {
     "div",
     {
       ref: rootRef,
-      className: styles$5.slider,
+      className: styles$6.slider,
       tabIndex: 0,
       onKeyDown,
       onFocusCapture,
       onBlurCapture,
       "data-dir": isRTL ? "rtl" : "ltr",
       "data-reduce-motion": reduceMotion ? "true" : "false",
-      children: /* @__PURE__ */ jsxs("div", { className: styles$5.frame, children: [
-        /* @__PURE__ */ jsxs("div", { className: styles$5.navLayer, children: [
+      children: /* @__PURE__ */ jsxs("div", { className: styles$6.frame, children: [
+        /* @__PURE__ */ jsxs("div", { className: styles$6.navLayer, children: [
           /* @__PURE__ */ jsx(
             "button",
             {
               type: "button",
-              className: `${styles$5.btn} ${styles$5.btnPrev}`,
+              className: `${styles$6.btn} ${styles$6.btnPrev}`,
               onClick: onPrevClick,
               "aria-label": "המלצה הקודמת",
               disabled: !hasControls,
@@ -4383,7 +4368,7 @@ function ReviewsSection({ card: card2 }) {
             "button",
             {
               type: "button",
-              className: `${styles$5.btn} ${styles$5.btnNext}`,
+              className: `${styles$6.btn} ${styles$6.btnNext}`,
               onClick: onNextClick,
               "aria-label": "המלצה הבאה",
               disabled: !hasControls,
@@ -4395,7 +4380,7 @@ function ReviewsSection({ card: card2 }) {
           "div",
           {
             ref: viewportRef,
-            className: styles$5.viewport,
+            className: styles$6.viewport,
             onPointerDown,
             onPointerMove,
             onPointerUp,
@@ -4405,13 +4390,13 @@ function ReviewsSection({ card: card2 }) {
             children: t ? /* @__PURE__ */ jsxs(
               "div",
               {
-                className: `${styles$5.stack} ${styles$5[`action_${t.action}`]} ${t.phase === "animate" ? styles$5.animating : ""}`,
+                className: `${styles$6.stack} ${styles$6[`action_${t.action}`]} ${t.phase === "animate" ? styles$6.animating : ""}`,
                 onTransitionEnd: onSlideTransitionEnd,
                 children: [
                   /* @__PURE__ */ jsx(
                     "div",
                     {
-                      className: `${styles$5.slide} ${styles$5.outgoing}`,
+                      className: `${styles$6.slide} ${styles$6.outgoing}`,
                       "aria-hidden": "true",
                       tabIndex: -1,
                       children: renderCard(items[t.from])
@@ -4420,7 +4405,7 @@ function ReviewsSection({ card: card2 }) {
                   /* @__PURE__ */ jsx(
                     "div",
                     {
-                      className: `${styles$5.slide} ${styles$5.incoming}`,
+                      className: `${styles$6.slide} ${styles$6.incoming}`,
                       "aria-hidden": "false",
                       tabIndex: -1,
                       children: renderCard(items[t.to])
@@ -4432,7 +4417,7 @@ function ReviewsSection({ card: card2 }) {
             ) : /* @__PURE__ */ jsx(
               "div",
               {
-                className: styles$5.slideSingle,
+                className: styles$6.slideSingle,
                 "aria-hidden": "false",
                 tabIndex: -1,
                 children: renderCard(items[activeIndex])
@@ -4456,7 +4441,7 @@ const questionText = "_questionText_v68qf_227";
 const icon = "_icon_v68qf_241";
 const answerWrap = "_answerWrap_v68qf_315";
 const answer = "_answer_v68qf_315";
-const styles$4 = {
+const styles$5 = {
   section,
   title,
   content: content$2,
@@ -4512,36 +4497,36 @@ function FaqSection({ card: card2, mode }) {
     {
       id: "faq",
       title: faq.title,
-      className: styles$4.section,
-      contentClassName: styles$4.content,
-      titleClassName: styles$4.title,
+      className: styles$5.section,
+      contentClassName: styles$5.content,
+      titleClassName: styles$5.title,
       children: [
-        faq.lead ? /* @__PURE__ */ jsx("p", { className: styles$4.lead, children: faq.lead }) : null,
-        /* @__PURE__ */ jsx("ul", { className: styles$4.list, role: "list", children: faq.items.map((item2, index) => {
+        faq.lead ? /* @__PURE__ */ jsx("p", { className: styles$5.lead, children: faq.lead }) : null,
+        /* @__PURE__ */ jsx("ul", { className: styles$5.list, role: "list", children: faq.items.map((item2, index) => {
           const qId = `${prefix}-q${index}`;
           const aId = `${prefix}-a${index}`;
           const isOpen = openIndex === index;
           return /* @__PURE__ */ jsxs(
             "li",
             {
-              className: styles$4.item,
+              className: styles$5.item,
               "data-open": isOpen ? "true" : "false",
               children: [
                 /* @__PURE__ */ jsxs(
                   "button",
                   {
                     type: "button",
-                    className: styles$4.question,
+                    className: styles$5.question,
                     id: qId,
                     "aria-expanded": isOpen,
                     "aria-controls": aId,
                     onClick: () => toggle2(index),
                     children: [
-                      /* @__PURE__ */ jsx("span", { className: styles$4.questionText, children: item2.q }),
+                      /* @__PURE__ */ jsx("span", { className: styles$5.questionText, children: item2.q }),
                       /* @__PURE__ */ jsx(
                         "span",
                         {
-                          className: styles$4.icon,
+                          className: styles$5.icon,
                           "aria-hidden": "true"
                         }
                       )
@@ -4551,11 +4536,11 @@ function FaqSection({ card: card2, mode }) {
                 /* @__PURE__ */ jsx(
                   "div",
                   {
-                    className: styles$4.answerWrap,
+                    className: styles$5.answerWrap,
                     id: aId,
                     role: "region",
                     "aria-labelledby": qId,
-                    children: /* @__PURE__ */ jsx("div", { className: styles$4.answer, children: item2.a })
+                    children: /* @__PURE__ */ jsx("div", { className: styles$5.answer, children: item2.a })
                   }
                 )
               ]
@@ -4594,7 +4579,7 @@ const consentText$1 = "_consentText_111ro_709";
 const hp$1 = "_hp_111ro_767";
 const selectedSummary = "_selectedSummary_111ro_791";
 const dismissBtn = "_dismissBtn_111ro_817";
-const styles$3 = {
+const styles$4 = {
   content: content$1,
   intro,
   loading,
@@ -4880,36 +4865,36 @@ function BookingSection({ card: card2 }) {
     }
   }
   if (days === null && !loadError) {
-    return /* @__PURE__ */ jsx(Section, { title: " תיאום תור", contentClassName: styles$3.content, children: /* @__PURE__ */ jsx("div", { className: styles$3.loading, children: "טוען זמינות…" }) });
+    return /* @__PURE__ */ jsx(Section, { title: " תיאום תור", contentClassName: styles$4.content, children: /* @__PURE__ */ jsx("div", { className: styles$4.loading, children: "טוען זמינות…" }) });
   }
   if (loadError) {
-    return /* @__PURE__ */ jsx(Section, { title: " תיאום תור", contentClassName: styles$3.content, children: /* @__PURE__ */ jsx(Notice, { variant: "error", children: loadError }) });
+    return /* @__PURE__ */ jsx(Section, { title: " תיאום תור", contentClassName: styles$4.content, children: /* @__PURE__ */ jsx(Notice, { variant: "error", children: loadError }) });
   }
   if (!days || days.length === 0) return null;
   if (submitStatus === "success") {
-    return /* @__PURE__ */ jsx(Section, { title: " תיאום תור", contentClassName: styles$3.content, children: /* @__PURE__ */ jsx(Notice, { variant: "success", children: "בקשת התיאום התקבלה! בעל העסק ייצור איתך קשר לאישור המועד." }) });
+    return /* @__PURE__ */ jsx(Section, { title: " תיאום תור", contentClassName: styles$4.content, children: /* @__PURE__ */ jsx(Notice, { variant: "success", children: "בקשת התיאום התקבלה! בעל העסק ייצור איתך קשר לאישור המועד." }) });
   }
-  return /* @__PURE__ */ jsxs(Section, { title: " תיאום תור", contentClassName: styles$3.content, children: [
-    /* @__PURE__ */ jsx("p", { className: styles$3.intro, children: "בחרו יום ושעה מתאימים, ובעל העסק ייצור איתכם קשר לאישור." }),
-    calendarGrid && /* @__PURE__ */ jsxs("div", { className: styles$3.calBlock, children: [
-      /* @__PURE__ */ jsxs("div", { className: styles$3.calNav, children: [
+  return /* @__PURE__ */ jsxs(Section, { title: " תיאום תור", contentClassName: styles$4.content, children: [
+    /* @__PURE__ */ jsx("p", { className: styles$4.intro, children: "בחרו יום ושעה מתאימים, ובעל העסק ייצור איתכם קשר לאישור." }),
+    calendarGrid && /* @__PURE__ */ jsxs("div", { className: styles$4.calBlock, children: [
+      /* @__PURE__ */ jsxs("div", { className: styles$4.calNav, children: [
         /* @__PURE__ */ jsx(
           "button",
           {
             type: "button",
-            className: styles$3.calNavBtn,
+            className: styles$4.calNavBtn,
             "aria-label": "חודש קודם",
             onClick: handlePrevMonth,
             disabled: activeMonthIndex <= 0,
             children: "‹"
           }
         ),
-        /* @__PURE__ */ jsx("span", { className: styles$3.calNavTitle, children: calendarGrid.title }),
+        /* @__PURE__ */ jsx("span", { className: styles$4.calNavTitle, children: calendarGrid.title }),
         /* @__PURE__ */ jsx(
           "button",
           {
             type: "button",
-            className: styles$3.calNavBtn,
+            className: styles$4.calNavBtn,
             "aria-label": "חודש הבא",
             onClick: handleNextMonth,
             disabled: activeMonthIndex >= monthList.length - 1,
@@ -4917,13 +4902,13 @@ function BookingSection({ card: card2 }) {
           }
         )
       ] }),
-      /* @__PURE__ */ jsx("div", { className: styles$3.calRow, children: WEEKDAY_HEADERS.map((h) => /* @__PURE__ */ jsx("span", { className: styles$3.calHeaderCell, children: h }, h)) }),
-      calendarGrid.rows.map((row2, ri) => /* @__PURE__ */ jsx("div", { className: styles$3.calRow, children: row2.map((cell, ci) => {
+      /* @__PURE__ */ jsx("div", { className: styles$4.calRow, children: WEEKDAY_HEADERS.map((h) => /* @__PURE__ */ jsx("span", { className: styles$4.calHeaderCell, children: h }, h)) }),
+      calendarGrid.rows.map((row2, ri) => /* @__PURE__ */ jsx("div", { className: styles$4.calRow, children: row2.map((cell, ci) => {
         if (cell.type === "empty") {
           return /* @__PURE__ */ jsx(
             "span",
             {
-              className: styles$3.calCell
+              className: styles$4.calCell
             },
             `e${ci}`
           );
@@ -4931,11 +4916,11 @@ function BookingSection({ card: card2 }) {
         const isSelected = selectedDateKey === cell.dateKey;
         const isAvailable = cell.type === "available";
         const cls = [
-          styles$3.calCell,
-          cell.type === "outside" ? styles$3.calCellOutside : "",
-          cell.type === "inWindowUnavailable" ? styles$3.calCellInWindowUnavail : "",
-          isAvailable ? styles$3.calCellAvailable : "",
-          isSelected ? styles$3.calCellSelected : ""
+          styles$4.calCell,
+          cell.type === "outside" ? styles$4.calCellOutside : "",
+          cell.type === "inWindowUnavailable" ? styles$4.calCellInWindowUnavail : "",
+          isAvailable ? styles$4.calCellAvailable : "",
+          isSelected ? styles$4.calCellSelected : ""
         ].filter(Boolean).join(" ");
         if (isAvailable) {
           return /* @__PURE__ */ jsx(
@@ -4962,18 +4947,18 @@ function BookingSection({ card: card2 }) {
         );
       }) }, ri))
     ] }),
-    selectedDay && !selectedSlot && /* @__PURE__ */ jsxs("div", { className: styles$3.slotArea, children: [
+    selectedDay && !selectedSlot && /* @__PURE__ */ jsxs("div", { className: styles$4.slotArea, children: [
       /* @__PURE__ */ jsx(
         "button",
         {
           type: "button",
-          className: styles$3.dismissBtn,
+          className: styles$4.dismissBtn,
           "aria-label": "ביטול בחירת יום",
           onClick: () => setSelectedDateKey(null),
           children: "×"
         }
       ),
-      /* @__PURE__ */ jsxs("div", { className: styles$3.slotHeader, children: [
+      /* @__PURE__ */ jsxs("div", { className: styles$4.slotHeader, children: [
         WEEKDAY_LABELS[selectedDay.weekdayKey] || selectedDay.weekdayKey,
         " ",
         formatDateShort(selectedDay.dateKeyIl),
@@ -4982,14 +4967,14 @@ function BookingSection({ card: card2 }) {
       availableSlots.length > 0 ? /* @__PURE__ */ jsx(
         "div",
         {
-          className: styles$3.slotList,
+          className: styles$4.slotList,
           role: "listbox",
           "aria-label": "בחירת שעה",
           children: availableSlots.map((slot) => {
             const isSelected = selectedSlot === slot.time;
             const cls = [
-              styles$3.slotBtn,
-              isSelected ? styles$3.slotBtnSelected : ""
+              styles$4.slotBtn,
+              isSelected ? styles$4.slotBtnSelected : ""
             ].filter(Boolean).join(" ");
             return /* @__PURE__ */ jsx(
               "button",
@@ -5005,15 +4990,15 @@ function BookingSection({ card: card2 }) {
             );
           })
         }
-      ) : /* @__PURE__ */ jsx("div", { className: styles$3.noSlots, children: "אין מועדים פנויים ביום זה." })
+      ) : /* @__PURE__ */ jsx("div", { className: styles$4.noSlots, children: "אין מועדים פנויים ביום זה." })
     ] }),
     selectedSlot && selectedDay && /* @__PURE__ */ jsxs(Fragment, { children: [
-      /* @__PURE__ */ jsxs("div", { className: styles$3.selectedSummary, children: [
+      /* @__PURE__ */ jsxs("div", { className: styles$4.selectedSummary, children: [
         /* @__PURE__ */ jsx(
           "button",
           {
             type: "button",
-            className: styles$3.dismissBtn,
+            className: styles$4.dismissBtn,
             "aria-label": "חזרה לבחירת שעה",
             onClick: () => setSelectedSlot(null),
             children: "×"
@@ -5026,7 +5011,7 @@ function BookingSection({ card: card2 }) {
         " ",
         selectedSlot
       ] }),
-      /* @__PURE__ */ jsxs("form", { className: styles$3.form, onSubmit: handleSubmit, children: [
+      /* @__PURE__ */ jsxs("form", { className: styles$4.form, onSubmit: handleSubmit, children: [
         /* @__PURE__ */ jsx(
           "input",
           {
@@ -5055,13 +5040,13 @@ function BookingSection({ card: card2 }) {
             name: "_xf92",
             value: form2._xf92,
             onChange: (e) => updateField("_xf92", e.target.value),
-            className: styles$3.hp,
+            className: styles$4.hp,
             tabIndex: -1,
             autoComplete: "off",
             "aria-hidden": "true"
           }
         ),
-        /* @__PURE__ */ jsxs("label", { className: styles$3.consentRow, children: [
+        /* @__PURE__ */ jsxs("label", { className: styles$4.consentRow, children: [
           /* @__PURE__ */ jsx(
             "input",
             {
@@ -5071,7 +5056,7 @@ function BookingSection({ card: card2 }) {
               required: true
             }
           ),
-          /* @__PURE__ */ jsxs("span", { className: styles$3.consentText, children: [
+          /* @__PURE__ */ jsxs("span", { className: styles$4.consentText, children: [
             "אני מסכים/ה ל",
             /* @__PURE__ */ jsx(
               "a",
@@ -5099,13 +5084,110 @@ function BookingSection({ card: card2 }) {
           "button",
           {
             type: "submit",
-            className: styles$3.submitBtn,
+            className: styles$4.submitBtn,
             disabled: submitStatus === "submitting",
             children: submitStatus === "submitting" ? "שולח…" : "שליחת בקשה"
           }
         ),
         submitStatus === "error" && submitError && /* @__PURE__ */ jsx(Notice, { variant: "error", children: submitError })
       ] })
+    ] })
+  ] });
+}
+const address = "_address_1gn9u_1";
+const mapBox = "_mapBox_1gn9u_21";
+const mapIframe = "_mapIframe_1gn9u_45";
+const navBubbles = "_navBubbles_1gn9u_77";
+const navItem = "_navItem_1gn9u_105";
+const navBubble = "_navBubble_1gn9u_77";
+const navIcon = "_navIcon_1gn9u_225";
+const navIconMaps = "_navIconMaps_1gn9u_249";
+const navIconWaze = "_navIconWaze_1gn9u_259";
+const navLabel = "_navLabel_1gn9u_269";
+const styles$3 = {
+  address,
+  mapBox,
+  mapIframe,
+  navBubbles,
+  navItem,
+  navBubble,
+  navIcon,
+  navIconMaps,
+  navIconWaze,
+  navLabel
+};
+function LocationSection({ card: card2 }) {
+  const isPremium = card2?.entitlements?.canUseServices === true;
+  const address2 = String(card2?.business?.address || "").trim();
+  const city = String(card2?.business?.city || "").trim();
+  if (!isPremium || !address2 || !city) return null;
+  const query = `${address2}, ${city}, ישראל`;
+  const googleHref = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
+  const wazeHref = `https://waze.com/ul?q=${encodeURIComponent(query)}&navigate=yes`;
+  const mapsApiKey = String(
+    "AIzaSyDx2AuubtrzimxnXfvQkyN2OPCPqhyY2Kg"
+  ).trim();
+  const embedUrl = mapsApiKey ? `https://www.google.com/maps/embed/v1/place?key=${encodeURIComponent(mapsApiKey)}&q=${encodeURIComponent(query)}` : null;
+  return /* @__PURE__ */ jsxs(Section, { title: "מיקום", children: [
+    /* @__PURE__ */ jsxs("p", { className: styles$3.address, children: [
+      address2,
+      ", ",
+      city
+    ] }),
+    embedUrl && /* @__PURE__ */ jsx("div", { className: styles$3.mapBox, children: /* @__PURE__ */ jsx(
+      "iframe",
+      {
+        className: styles$3.mapIframe,
+        title: `מפה: ${address2}, ${city}`,
+        src: embedUrl,
+        loading: "lazy",
+        allowFullScreen: true,
+        referrerPolicy: "no-referrer-when-downgrade"
+      }
+    ) }),
+    /* @__PURE__ */ jsxs("div", { className: styles$3.navBubbles, children: [
+      /* @__PURE__ */ jsxs(
+        "a",
+        {
+          href: googleHref,
+          target: "_blank",
+          rel: "noreferrer noopener",
+          className: styles$3.navItem,
+          "aria-label": `נווט עם Google Maps: ${address2}, ${city}`,
+          onClick: () => trackClick(card2?.slug, "maps"),
+          children: [
+            /* @__PURE__ */ jsx("span", { className: styles$3.navBubble, "aria-hidden": "true", children: /* @__PURE__ */ jsx(
+              "span",
+              {
+                className: `${styles$3.navIcon} ${styles$3.navIconMaps}`,
+                "aria-hidden": "true"
+              }
+            ) }),
+            /* @__PURE__ */ jsx("span", { className: styles$3.navLabel, children: "גוגל מפות" })
+          ]
+        }
+      ),
+      /* @__PURE__ */ jsxs(
+        "a",
+        {
+          href: wazeHref,
+          target: "_blank",
+          rel: "noreferrer noopener",
+          className: styles$3.navItem,
+          "aria-label": `נווט עם Waze: ${address2}, ${city}`,
+          onClick: () => trackClick(card2?.slug, "waze"),
+          children: [
+            /* @__PURE__ */ jsx("span", { className: styles$3.navBubble, "aria-hidden": "true", children: /* @__PURE__ */ jsx(
+              "span",
+              {
+                className: `${styles$3.navIcon} ${styles$3.navIconWaze}`,
+                "aria-hidden": "true"
+              }
+            ) }),
+            /* @__PURE__ */ jsx("span", { className: styles$3.navLabel, children: "ווייז" })
+          ]
+        }
+      )
     ] })
   ] });
 }
@@ -5633,6 +5715,7 @@ function CardLayout({
                     publicPath: card2?.publicPath
                   }
                 ),
+                /* @__PURE__ */ jsx(LocationSection, { card: card2 }),
                 /* @__PURE__ */ jsx(BookingSection, { card: card2 }),
                 /* @__PURE__ */ jsx("div", { className: cx(styles.formWrap, skin?.formWrap), children: /* @__PURE__ */ jsx(
                   LeadForm,
