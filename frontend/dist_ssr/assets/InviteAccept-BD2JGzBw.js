@@ -2,7 +2,7 @@ import { jsx, jsxs, Fragment } from "react/jsx-runtime";
 import { useMemo, useState } from "react";
 import { useLocation } from "react-router-dom";
 import { A as AuthLayout } from "./AuthLayout-D5oAbuh9.js";
-import { I as Input } from "./Input-CGCIIpQL.js";
+import { I as Input } from "./Input-BcHQKXiD.js";
 import { u as useAuth, B as Button, a as api } from "../entry-server.js";
 import { P as PASSWORD_POLICY_HELPER_TEXT_HE, a as PASSWORD_POLICY, g as getPasswordPolicyChecklist, v as validatePasswordPolicy, b as getPasswordPolicyMessage } from "./passwordPolicy-XzlGEeig.js";
 import "react-dom/server";

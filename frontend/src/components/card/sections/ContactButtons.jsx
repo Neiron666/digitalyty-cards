@@ -9,6 +9,8 @@ import {
 
 const cx = (...classes) => classes.filter(Boolean).join(" ");
 
+const WA_PREFILL_TEXT = "היי, הגעתי אליך דרך הכרטיס הדיגיטלי שלך ב-Cardigo 👋";
+
 function ContactButtons({ card }) {
     const { contact } = card;
 
@@ -78,7 +80,7 @@ function ContactButtons({ card }) {
 
             {waHref && (
                 <a
-                    href={`https://wa.me/${waHref}`}
+                    href={`https://wa.me/${waHref}?text=${encodeURIComponent(WA_PREFILL_TEXT)}`}
                     target="_blank"
                     rel="noreferrer"
                     className={styles.item}

@@ -2,7 +2,7 @@ import { jsx, jsxs, Fragment } from "react/jsx-runtime";
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { A as AuthLayout } from "./AuthLayout-D5oAbuh9.js";
-import { I as Input } from "./Input-CGCIIpQL.js";
+import { I as Input } from "./Input-BcHQKXiD.js";
 import { B as Button, c as requestSignupLink } from "../entry-server.js";
 import "react-dom/server";
 import "./vendor-epyEJgau.js";

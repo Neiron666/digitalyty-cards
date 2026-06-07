@@ -14,6 +14,23 @@ Cardigo operates two categories of tracking:
 | **Internal first-party analytics** (`siteAnalytics.client.js`, `analytics.client.js`) | **No**              | Always-on. Independent of banner consent state. Has zero references to consent utilities or keys. Uses its own `siteAnalyticsOptOut` localStorage key for opt-out where applicable. |
 | **Optional third-party tracking** (GTM, Meta, ad pixels, etc.)                        | **Yes**             | Must only load when `optionalTrackingAllowed === true` in consent state. Not yet integrated.                                                                                        |
 
+> **Owner self-exclusion localStorage key (added 2026-06-07 — contour CARD_ANALYTICS_OWNER_SELF_EXCLUSION_P2A_SCOPED_KEY_REPAIR):**
+> `analytics.client.js` reads a per-path owner self-exclusion key of the form `cardigo_owner_self_exclude_v1:path:<publicPath>` — for example:
+>
+> - `cardigo_owner_self_exclude_v1:path:/card/example-slug`
+> - `cardigo_owner_self_exclude_v1:path:/c/example-org/example-slug`
+>
+> This key is **not a consent gate**. It is written only when the card owner opens the analytics panel (`/edit/card/analytics`) and toggles "אל תכלול את הביקורים שלי באנליטיקה". It is scoped to the specific public card path and to the specific browser.
+>
+> Behaviour:
+>
+> - Key absent → `localStorage.getItem()` returns `null` → tracking proceeds normally.
+> - Key `"1"` → suppresses view and click tracking for that public path in that browser only.
+> - Key `"0"` → tracking proceeds normally.
+> - `localStorage` blocked/throws → fail open, tracking proceeds normally.
+>
+> Non-owner visitor tracking is completely unaffected in all cases. This key has no relationship to `cookieConsent.js`, `cardigo_cookie_consent_v1`, or `cardigo_card_consent_v1`. The "always-on" characterisation of first-party analytics in the table above remains correct for all normal visitors.
+
 **Hard rule:** Internal first-party analytics must never import, reference, or be gated by any consent utility (`cookieConsent.js`, `getConsentState`, `hasAcceptedConsent`, `cardigo_cookie_consent_v1`).
 
 ---

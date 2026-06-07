@@ -113,6 +113,7 @@
     display: flex;
     flex-direction: column;
     gap: 6px;
+    color: var(--gold, #d4a017);
 }
 
 .accountRow {
@@ -292,7 +293,7 @@
     font-weight: 700;
     font-size: var(--fs-h6);
     margin: 0;
-    color: var(--text-main);
+    color: var(--gold, #d4a017);
     letter-spacing: 0.01em;
     padding-block-end: 6px;
     border-block-end: 1px solid rgba(255, 255, 255, 0.06);
@@ -612,7 +613,6 @@
 .receiptProfileSelectLabel {
     font-weight: 700;
     font-size: var(--fs-body-lg);
-    color: var(--text-main);
 }
 
 .receiptProfileSelect {

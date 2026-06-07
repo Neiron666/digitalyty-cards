@@ -137,6 +137,8 @@ async function main() {
         freeSummaryIsDemo: false,
         orgSummaryNotDemo: false,
         orgActions200: false,
+        orgActionsRange1: false,
+        orgActionsBadRangeFallback: false,
         orgSources200: false,
         orgCampaigns200: false,
     };
@@ -279,6 +281,28 @@ async function main() {
             headers: ownerHeaders,
         });
         checks.orgActions200 = r7.status === 200 && r7.body?.isDemo !== true;
+
+        // ── Check 7a: org-premium actions range=1 → 200, rangeDays=1 ──
+        const r7a = await requestJson({
+            baseUrl,
+            path: `/analytics/actions/${String(orgCard._id)}?range=1`,
+            method: "GET",
+            headers: ownerHeaders,
+        });
+        checks.orgActionsRange1 =
+            r7a.status === 200 &&
+            r7a.body?.rangeDays === 1 &&
+            r7a.body?.isDemo !== true;
+
+        // ── Check 7b: org-premium actions bad range → fallback rangeDays=30 ──
+        const r7b = await requestJson({
+            baseUrl,
+            path: `/analytics/actions/${String(orgCard._id)}?range=99`,
+            method: "GET",
+            headers: ownerHeaders,
+        });
+        checks.orgActionsBadRangeFallback =
+            r7b.status === 200 && r7b.body?.rangeDays === 30;
 
         // ── Check 8: org-premium sources → 200, no isDemo ──
         const r8 = await requestJson({

@@ -8299,23 +8299,23 @@ function NotFound() {
     /* @__PURE__ */ jsx(Link, { to: "/", className: styles.backLink, children: "חזרה לדף הבית" })
   ] });
 }
-const Login = lazy(() => import("./assets/Login-BEO_965R.js"));
-const Register = lazy(() => import("./assets/Register-BOrCxqhp.js"));
-const InviteAccept = lazy(() => import("./assets/InviteAccept-sB3ZWcrJ.js"));
-const ForgotPassword = lazy(() => import("./assets/ForgotPassword-BX3mzTjn.js"));
-const ResetPassword = lazy(() => import("./assets/ResetPassword-CcNTD0qC.js"));
-const SignupLinkRequest = lazy(() => import("./assets/SignupLinkRequest-CuV1b6DL.js"));
-const SignupConsume = lazy(() => import("./assets/SignupConsume-Ddi7LjmO.js"));
+const Login = lazy(() => import("./assets/Login-BsLh_3jU.js"));
+const Register = lazy(() => import("./assets/Register-DvPsyu0d.js"));
+const InviteAccept = lazy(() => import("./assets/InviteAccept-BD2JGzBw.js"));
+const ForgotPassword = lazy(() => import("./assets/ForgotPassword-Bt9MZFW7.js"));
+const ResetPassword = lazy(() => import("./assets/ResetPassword-Da_WWohm.js"));
+const SignupLinkRequest = lazy(() => import("./assets/SignupLinkRequest-CAoB1dCt.js"));
+const SignupConsume = lazy(() => import("./assets/SignupConsume-BzOSwWCH.js"));
 const VerifyEmail = lazy(() => import("./assets/VerifyEmail-BdTNw4a4.js"));
 const Unsubscribe = lazy(() => import("./assets/Unsubscribe-cH0SJ-jv.js"));
 const Dashboard = lazy(() => import("./assets/Dashboard-CA_zW0ja.js"));
-const EditCard = lazy(() => import("./assets/EditCard-l4x9-X4U.js"));
-const Admin = lazy(() => import("./assets/Admin-D1CkU8uk.js"));
+const EditCard = lazy(() => import("./assets/EditCard-DwSRmAK5.js"));
+const Admin = lazy(() => import("./assets/Admin-COFrpZRW.js"));
 const OrgInvites = lazy(() => import("./assets/OrgInvites-F6NGH4uL.js"));
 const Inbox = lazy(() => import("./assets/Inbox-DkfIAa4C.js"));
-const PublicCard = lazy(() => import("./assets/PublicCard-BqxMwoeG.js"));
-const PreviewCard = lazy(() => import("./assets/PreviewCard-MCvmwT5M.js"));
-const CheckoutPage = lazy(() => import("./assets/CheckoutPage-v9B4yP1E.js"));
+const PublicCard = lazy(() => import("./assets/PublicCard-GzVPNIf1.js"));
+const PreviewCard = lazy(() => import("./assets/PreviewCard-vlK1n40-.js"));
+const CheckoutPage = lazy(() => import("./assets/CheckoutPage-CqdX6tfA.js"));
 const IframeReturnPage = lazy(
   () => import("./assets/IframeReturnPage-CYK0Rehj.js")
 );

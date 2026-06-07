@@ -779,7 +779,7 @@ export async function getActions(req, res) {
         return res.status(403).json({ message: "Not allowed" });
     }
 
-    const rangeDays = parseRange(req, { fallback: 30, allowed: [7, 30] });
+    const rangeDays = parseRange(req, { fallback: 30, allowed: [1, 7, 30] });
     const { docs } = await loadRangeDocs({
         cardId: card._id,
         rangeDays,

@@ -1,6 +1,51 @@
 import { getUtm } from "./utm.util";
 
 const STORAGE_KEY_DEVICE = "digitalyty_deviceId";
+export const LEGACY_OWNER_SELF_EXCLUDE_KEY = "cardigo_owner_self_exclude_v1";
+export const OWNER_SELF_EXCLUDE_KEY_PREFIX =
+    "cardigo_owner_self_exclude_v1:path:";
+
+// Validates and normalises a public card path for use as a scoped storage key.
+// Returns the normalised path (/card/<slug> or /c/<orgSlug>/<slug>) or null.
+export function normalizeOwnerSelfExcludePath(path) {
+    if (typeof path !== "string" || !path) return null;
+    let p = path.trim();
+    if (!p.startsWith("/")) p = "/" + p;
+    // Remove trailing slash (but keep root "/" intact)
+    if (p.length > 1 && p.endsWith("/")) p = p.slice(0, -1);
+    // Strip query string / hash if present
+    const qIdx = p.indexOf("?");
+    if (qIdx !== -1) p = p.slice(0, qIdx);
+    const hIdx = p.indexOf("#");
+    if (hIdx !== -1) p = p.slice(0, hIdx);
+    // Accept /card/<slug>
+    if (/^\/card\/[^/]+$/.test(p)) return p;
+    // Accept /c/<orgSlug>/<slug>
+    if (/^\/c\/[^/]+\/[^/]+$/.test(p)) return p;
+    return null;
+}
+
+// Returns the scoped localStorage key for a given public path, or null if invalid.
+export function getOwnerSelfExcludeKey(publicPath) {
+    const normalised = normalizeOwnerSelfExcludePath(publicPath);
+    if (!normalised) return null;
+    return OWNER_SELF_EXCLUDE_KEY_PREFIX + normalised;
+}
+
+// Checks whether the owner has enabled self-exclusion for the current public card path.
+// Reads window.location.pathname at call time (correct only on public card pages).
+// Returns false (track normally) when: key missing, key=="0", storage blocked, or not on a public card route.
+function isOwnerSelfExcludedForCurrentPath() {
+    try {
+        if (typeof window === "undefined") return false;
+        const scopedKey = getOwnerSelfExcludeKey(window.location.pathname);
+        if (!scopedKey) return false;
+        return localStorage.getItem(scopedKey) === "1";
+    } catch {
+        // Storage blocked — fail open, track normally.
+        return false;
+    }
+}
 
 function uuidFallback() {
     // RFC4122 v4-ish fallback (good enough for local visitor ID)
@@ -134,6 +179,7 @@ export function trackView(
     orgSlug = "",
 ) {
     if (!slug) return;
+    if (isOwnerSelfExcludedForCurrentPath()) return;
     const resolvedOrgSlug =
         typeof orgSlug === "string" && orgSlug.trim()
             ? orgSlug.trim().toLowerCase()
@@ -156,6 +202,7 @@ export function trackClick(
     orgSlug = "",
 ) {
     if (!slug) return;
+    if (isOwnerSelfExcludedForCurrentPath()) return;
     const resolvedOrgSlug =
         typeof orgSlug === "string" && orgSlug.trim()
             ? orgSlug.trim().toLowerCase()

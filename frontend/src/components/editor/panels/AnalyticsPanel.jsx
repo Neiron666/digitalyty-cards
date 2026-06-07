@@ -1,6 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 
 import api from "../../../services/api";
+import {
+    LEGACY_OWNER_SELF_EXCLUDE_KEY,
+    getOwnerSelfExcludeKey,
+} from "../../../services/analytics.client";
 import Panel from "./Panel";
 import Button from "../../ui/Button";
 
@@ -21,6 +25,11 @@ const SECTION_COPY = {
         title: "איך הם הגיעו",
         subtitle: "כניסה ישירה או דרך הפניה",
         tooltip: "אופן ההגעה לעמוד",
+    },
+    contactActions: {
+        title: "לחיצות על כפתורי קשר",
+        subtitle: "כמה פעמים מבקרים לחצו על טלפון או וואטסאפ לפי תקופה.",
+        tooltip: null,
     },
 };
 
@@ -185,6 +194,11 @@ const DEMO_SOURCES = {
     ],
 };
 
+/* Mirrors backend buildDemoPremiumPayload actions field, split by period */
+const DEMO_ACTIONS_1 = { actions: { call: 2, whatsapp: 5 } };
+const DEMO_ACTIONS_7 = { actions: { call: 11, whatsapp: 28 } };
+const DEMO_ACTIONS_30 = { actions: { call: 46, whatsapp: 120 } };
+
 export default function AnalyticsPanel({ card }) {
     const analyticsLevel = card?.entitlements?.analyticsLevel || "none";
     const canViewAnalytics = Boolean(card?.entitlements?.canViewAnalytics);
@@ -194,9 +208,55 @@ export default function AnalyticsPanel({ card }) {
 
     const [summary, setSummary] = useState(null);
     const [sources, setSources] = useState(null);
+    const [actions1, setActions1] = useState(null);
+    const [actions7, setActions7] = useState(null);
+    const [actions30, setActions30] = useState(null);
 
     const [showNoClickSources, setShowNoClickSources] = useState(false);
     const [expandedPlatforms, setExpandedPlatforms] = useState({});
+
+    // Owner self-exclusion toggle — scoped per public card path.
+    // selfExcludeKey is derived from card.publicPath; null when path unavailable.
+    const selfExcludeKey = useMemo(
+        () => getOwnerSelfExcludeKey(card?.publicPath),
+        [card?.publicPath],
+    );
+
+    const [selfExclude, setSelfExclude] = useState(false);
+
+    useEffect(() => {
+        if (!selfExcludeKey) {
+            // publicPath not yet available — show toggle as unchecked, do not write.
+            setSelfExclude(false);
+            return;
+        }
+        try {
+            // Clean up legacy global key that was over-suppressing all Cardigo cards.
+            localStorage.removeItem(LEGACY_OWNER_SELF_EXCLUDE_KEY);
+            const stored = localStorage.getItem(selfExcludeKey);
+            if (stored === null) {
+                // First visit to this card's analytics panel — default to excluded.
+                localStorage.setItem(selfExcludeKey, "1");
+                setSelfExclude(true);
+            } else {
+                setSelfExclude(stored === "1");
+            }
+        } catch {
+            // Storage blocked — keep false, do not crash.
+            setSelfExclude(false);
+        }
+    }, [selfExcludeKey]);
+
+    function handleSelfExcludeChange(e) {
+        if (!selfExcludeKey) return;
+        const checked = e.target.checked;
+        setSelfExclude(checked);
+        try {
+            localStorage.setItem(selfExcludeKey, checked ? "1" : "0");
+        } catch {
+            // Storage blocked — keep in-memory state only.
+        }
+    }
 
     const rangeDays = useMemo(() => {
         if (analyticsLevel === "premium") return 30;
@@ -210,6 +270,9 @@ export default function AnalyticsPanel({ card }) {
         if (analyticsLevel === "demo") {
             setSummary(DEMO_SUMMARY);
             setSources(DEMO_SOURCES);
+            setActions1(DEMO_ACTIONS_1);
+            setActions7(DEMO_ACTIONS_7);
+            setActions30(DEMO_ACTIONS_30);
             setError(null);
             return;
         }
@@ -218,12 +281,27 @@ export default function AnalyticsPanel({ card }) {
         setError("");
 
         try {
-            const [s, so] = await Promise.all([
+            const act1Promise = api
+                .get(`/analytics/actions/${card._id}?range=1`)
+                .catch(() => null);
+            const act7Promise = api
+                .get(`/analytics/actions/${card._id}?range=7`)
+                .catch(() => null);
+            const act30Promise = api
+                .get(`/analytics/actions/${card._id}?range=30`)
+                .catch(() => null);
+            const [s, so, act1, act7, act30] = await Promise.all([
                 api.get(`/analytics/summary/${card._id}?range=${rangeDays}`),
                 api.get(`/analytics/sources/${card._id}?range=${rangeDays}`),
+                act1Promise,
+                act7Promise,
+                act30Promise,
             ]);
             setSummary(s?.data || null);
             setSources(so?.data || null);
+            setActions1(act1?.data || null);
+            setActions7(act7?.data || null);
+            setActions30(act30?.data || null);
         } catch (err) {
             console.error(
                 "analytics load failed",
@@ -412,6 +490,23 @@ export default function AnalyticsPanel({ card }) {
                     </Button>
                 </div>
 
+                {selfExcludeKey && (
+                    <div className={styles.selfExcludeRow}>
+                        <label className={styles.selfExcludeLabel}>
+                            <input
+                                type="checkbox"
+                                checked={selfExclude}
+                                onChange={handleSelfExcludeChange}
+                            />
+                            <span>אל תכלול את הביקורים שלי באנליטיקה</span>
+                        </label>
+                        <div className={styles.selfExcludeHint}>
+                            כשתפתח את הכרטיס שלך מדפדפן זה, הצפיות והלחיצות שלך
+                            לא ייספרו.
+                        </div>
+                    </div>
+                )}
+
                 {error && <div className={styles.errorText}>{error}</div>}
 
                 {/* Demo + Premium: full layout */}
@@ -522,6 +617,94 @@ export default function AnalyticsPanel({ card }) {
                                 </span>
                             </div>
                         </div>
+
+                        {(actions1 !== null ||
+                            actions7 !== null ||
+                            actions30 !== null) && (
+                            <div className={styles.section}>
+                                <SectionHeader
+                                    {...SECTION_COPY.contactActions}
+                                />
+                                <table className={styles.table}>
+                                    <thead>
+                                        <tr>
+                                            <th>פעולה</th>
+                                            <th>היום</th>
+                                            <th>7 ימים</th>
+                                            <th>30 ימים</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td>טלפון</td>
+                                            <td>
+                                                {actions1 === null
+                                                    ? "-"
+                                                    : formatInt(
+                                                          Number(
+                                                              actions1?.actions
+                                                                  ?.call,
+                                                          ) || 0,
+                                                      )}
+                                            </td>
+                                            <td>
+                                                {actions7 === null
+                                                    ? "-"
+                                                    : formatInt(
+                                                          Number(
+                                                              actions7?.actions
+                                                                  ?.call,
+                                                          ) || 0,
+                                                      )}
+                                            </td>
+                                            <td>
+                                                {actions30 === null
+                                                    ? "-"
+                                                    : formatInt(
+                                                          Number(
+                                                              actions30?.actions
+                                                                  ?.call,
+                                                          ) || 0,
+                                                      )}
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>וואטסאפ</td>
+                                            <td>
+                                                {actions1 === null
+                                                    ? "-"
+                                                    : formatInt(
+                                                          Number(
+                                                              actions1?.actions
+                                                                  ?.whatsapp,
+                                                          ) || 0,
+                                                      )}
+                                            </td>
+                                            <td>
+                                                {actions7 === null
+                                                    ? "-"
+                                                    : formatInt(
+                                                          Number(
+                                                              actions7?.actions
+                                                                  ?.whatsapp,
+                                                          ) || 0,
+                                                      )}
+                                            </td>
+                                            <td>
+                                                {actions30 === null
+                                                    ? "-"
+                                                    : formatInt(
+                                                          Number(
+                                                              actions30?.actions
+                                                                  ?.whatsapp,
+                                                          ) || 0,
+                                                      )}
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        )}
 
                         <div className={styles.section}>
                             <SectionHeader {...SECTION_COPY.platforms} />

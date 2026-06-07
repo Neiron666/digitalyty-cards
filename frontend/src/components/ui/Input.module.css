@@ -12,6 +12,7 @@
     display: inline-flex;
     gap: 4px;
     align-items: center;
+    color: var(--gold, #d4a017);
 }
 
 .required {

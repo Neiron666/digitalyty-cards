@@ -3,11 +3,11 @@ import { useState, useRef, useCallback, useEffect, useId, useMemo } from "react"
 import { useNavigate, useParams, useBlocker, Link } from "react-router-dom";
 import { g as getAccountSummary, u as updateEmailPreferences, a as getReceipts, d as deleteAccount, c as changePassword, b as cancelRenewal, r as resumeAutoRenewal, e as deletePaymentMethod, f as updateReceiptProfile, h as updateAccountName } from "./account.service-uDeHNjVm.js";
 import { C as CopyIcon, g as CrownIcon, H as HelpIcon, A as AnalyticsIcon, h as SettingsIcon, i as SeoIcon, j as FaqIcon, R as ReviewsIcon, G as GalleryIcon, W as WorkHoursIcon, k as ServicesIcon, l as ContentIcon, m as ContactIcon, n as BusinessIcon, o as HeadIcon, p as SelfDesignIcon, T as TemplatesIcon, a as api, B as Button, q as useFocusTrap, u as useAuth, s as SUPPORT_WHATSAPP_URL, w as SUPPORT_EMAIL, x as getAnonymousId, y as clearAnonymousId, S as SeoHelmet } from "../entry-server.js";
-import { I as Input } from "./Input-CGCIIpQL.js";
-import { f as formStyles, g as galleryItemToUrl, u as uploadGalleryImage, a as uploadDesignAsset, b as getTemplateById, n as normalizeTemplateId, T as TEMPLATES, r as resolveEffectiveSelfThemeV1, C as CardRenderer } from "./CardRenderer-C_oRPl94.js";
+import { I as Input } from "./Input-BcHQKXiD.js";
+import { f as formStyles, g as galleryItemToUrl, u as uploadGalleryImage, a as uploadDesignAsset, b as getTemplateById, n as normalizeTemplateId, T as TEMPLATES, r as resolveEffectiveSelfThemeV1, c as getOwnerSelfExcludeKey, L as LEGACY_OWNER_SELF_EXCLUDE_KEY, C as CardRenderer } from "./CardRenderer-CkzDY95P.js";
 import Cropper from "react-easy-crop";
 import { P as PASSWORD_POLICY_HELPER_TEXT_HE, a as PASSWORD_POLICY, g as getPasswordPolicyChecklist, v as validatePasswordPolicy, b as getPasswordPolicyMessage } from "./passwordPolicy-XzlGEeig.js";
-import { w as withDemoPreviewCard } from "./previewDemo-DIkI4o7W.js";
+import { w as withDemoPreviewCard } from "./previewDemo-CE1df--Y.js";
 import { u as updateCardSlug, d as deleteCard } from "./cards.service-CwGKgAdq.js";
 import "react-dom/server";
 import "./vendor-epyEJgau.js";
@@ -1519,40 +1519,40 @@ function ServicesPanel({
     ] })
   ] }) });
 }
-const root$6 = "_root_6jvul_5";
-const section$5 = "_section_6jvul_21";
-const sectionTitle$3 = "_sectionTitle_6jvul_39";
-const headerRow$1 = "_headerRow_6jvul_69";
-const switchLabel = "_switchLabel_6jvul_97";
-const hint$4 = "_hint_6jvul_105";
-const lockedBlock$4 = "_lockedBlock_6jvul_121";
-const lockedTitle$4 = "_lockedTitle_6jvul_141";
-const lockedText$4 = "_lockedText_6jvul_153";
-const dayCard = "_dayCard_6jvul_169";
-const dayRow = "_dayRow_6jvul_189";
-const dayLabel = "_dayLabel_6jvul_205";
-const openToggle = "_openToggle_6jvul_215";
-const openToggleLabel = "_openToggleLabel_6jvul_229";
-const addBtn = "_addBtn_6jvul_237";
-const intervals = "_intervals_6jvul_267";
-const intervalRow = "_intervalRow_6jvul_279";
-const selectWrap$1 = "_selectWrap_6jvul_293";
-const selectLabel = "_selectLabel_6jvul_309";
-const pickerBtn = "_pickerBtn_6jvul_319";
-const pickerValue = "_pickerValue_6jvul_375";
-const pickerChevron = "_pickerChevron_6jvul_387";
-const pickerPopover = "_pickerPopover_6jvul_407";
-const pickerList = "_pickerList_6jvul_431";
-const pickerOption = "_pickerOption_6jvul_447";
-const removeBtn = "_removeBtn_6jvul_503";
-const emptyDayHint = "_emptyDayHint_6jvul_529";
-const lockedCta$4 = "_lockedCta_6jvul_603";
+const root$6 = "_root_cheog_5";
+const section$5 = "_section_cheog_21";
+const sectionTitle$3 = "_sectionTitle_cheog_39";
+const headerRow$1 = "_headerRow_cheog_69";
+const switchLabel = "_switchLabel_cheog_97";
+const hint$4 = "_hint_cheog_105";
+const lockedBlock$4 = "_lockedBlock_cheog_121";
+const lockedTitle$4 = "_lockedTitle_cheog_141";
+const lockedText$4 = "_lockedText_cheog_153";
+const dayCard = "_dayCard_cheog_169";
+const dayRow = "_dayRow_cheog_189";
+const dayLabel = "_dayLabel_cheog_205";
+const openToggle = "_openToggle_cheog_215";
+const openToggleLabel = "_openToggleLabel_cheog_279";
+const addBtn = "_addBtn_cheog_287";
+const intervals = "_intervals_cheog_317";
+const intervalRow = "_intervalRow_cheog_329";
+const selectWrap$1 = "_selectWrap_cheog_343";
+const selectLabel = "_selectLabel_cheog_359";
+const pickerBtn = "_pickerBtn_cheog_369";
+const pickerValue = "_pickerValue_cheog_425";
+const pickerChevron = "_pickerChevron_cheog_437";
+const pickerPopover = "_pickerPopover_cheog_457";
+const pickerList = "_pickerList_cheog_481";
+const pickerOption = "_pickerOption_cheog_497";
+const removeBtn = "_removeBtn_cheog_553";
+const emptyDayHint = "_emptyDayHint_cheog_579";
+const lockedCta$4 = "_lockedCta_cheog_653";
 const styles$l = {
   root: root$6,
   section: section$5,
   sectionTitle: sectionTitle$3,
   headerRow: headerRow$1,
-  "switch": "_switch_6jvul_83",
+  "switch": "_switch_cheog_83",
   switchLabel,
   hint: hint$4,
   lockedBlock: lockedBlock$4,
@@ -4018,80 +4018,80 @@ function DeletePaymentMethodModal({
     }
   );
 }
-const grid$1 = "_grid_175ci_1";
-const strong = "_strong_175ci_13";
-const accessLine = "_accessLine_175ci_21";
-const urlBlock = "_urlBlock_175ci_29";
-const urlTitle = "_urlTitle_175ci_37";
-const urlNote = "_urlNote_175ci_63";
-const slugBlock = "_slugBlock_175ci_73";
-const slugInput = "_slugInput_175ci_83";
-const slugHelp = "_slugHelp_175ci_91";
-const slugRemaining = "_slugRemaining_175ci_103";
-const slugRemainingValue = "_slugRemainingValue_175ci_115";
-const slugPreview = "_slugPreview_175ci_125";
-const slugActions = "_slugActions_175ci_137";
-const slugOk = "_slugOk_175ci_149";
-const deleteInline = "_deleteInline_175ci_161";
-const spinner = "_spinner_175ci_173";
-const accountNote = "_accountNote_175ci_207";
-const accountError = "_accountError_175ci_215";
-const accountFields = "_accountFields_175ci_223";
-const accountRow = "_accountRow_175ci_235";
-const accountLabel = "_accountLabel_175ci_249";
-const accountValue = "_accountValue_175ci_259";
-const accountOrgs = "_accountOrgs_175ci_269";
-const orgList = "_orgList_175ci_283";
-const billingRow = "_billingRow_175ci_307";
-const billingLabel = "_billingLabel_175ci_321";
-const billingValue = "_billingValue_175ci_331";
-const billingNote = "_billingNote_175ci_341";
-const billingError = "_billingError_175ci_351";
-const billingActions = "_billingActions_175ci_359";
-const billingDisclosure = "_billingDisclosure_175ci_373";
-const billingDisclosureLink = "_billingDisclosureLink_175ci_393";
-const billingOptIn = "_billingOptIn_175ci_405";
-const billingOptInLabel = "_billingOptInLabel_175ci_419";
-const pwSuccess = "_pwSuccess_175ci_435";
-const pwActions = "_pwActions_175ci_443";
-const pwChecklist = "_pwChecklist_175ci_459";
-const pwChecklistItem = "_pwChecklistItem_175ci_479";
-const pwChecklistItemMet = "_pwChecklistItemMet_175ci_507";
-const dangerText = "_dangerText_175ci_529";
-const dangerError = "_dangerError_175ci_539";
-const dangerActions = "_dangerActions_175ci_547";
-const section$3 = "_section_175ci_563";
-const sectionTitle$2 = "_sectionTitle_175ci_581";
-const collapsible$1 = "_collapsible_175ci_605";
-const collapsibleTrigger$1 = "_collapsibleTrigger_175ci_615";
-const collapsibleContent$1 = "_collapsibleContent_175ci_701";
-const collapsibleDanger = "_collapsibleDanger_175ci_719";
-const lockedBlock$2 = "_lockedBlock_175ci_739";
-const lockedTitle$2 = "_lockedTitle_175ci_759";
-const lockedText$2 = "_lockedText_175ci_771";
-const lockedCta$2 = "_lockedCta_175ci_783";
-const commPrefRow = "_commPrefRow_175ci_825";
-const commPrefInfo = "_commPrefInfo_175ci_875";
-const commPrefHint = "_commPrefHint_175ci_891";
-const cancelRenewalBlock = "_cancelRenewalBlock_175ci_905";
-const renewalWarning = "_renewalWarning_175ci_925";
-const renewalWarningTitle = "_renewalWarningTitle_175ci_945";
-const renewalWarningText = "_renewalWarningText_175ci_957";
-const renewalWarningActions = "_renewalWarningActions_175ci_969";
-const renewalWarningCta = "_renewalWarningCta_175ci_983";
-const renewalWarningHelp = "_renewalWarningHelp_175ci_1021";
-const receiptsBlock = "_receiptsBlock_175ci_1039";
-const receiptsList = "_receiptsList_175ci_1053";
-const receiptRow = "_receiptRow_175ci_1071";
-const receiptMain = "_receiptMain_175ci_1097";
-const receiptDate = "_receiptDate_175ci_1115";
-const receiptMeta = "_receiptMeta_175ci_1127";
-const receiptDownloadLink = "_receiptDownloadLink_175ci_1139";
-const receiptProfileBlock = "_receiptProfileBlock_175ci_1181";
-const receiptProfileFields = "_receiptProfileFields_175ci_1197";
-const receiptProfileSelectRow = "_receiptProfileSelectRow_175ci_1209";
-const receiptProfileSelectLabel = "_receiptProfileSelectLabel_175ci_1223";
-const receiptProfileSelect = "_receiptProfileSelect_175ci_1209";
+const grid$1 = "_grid_19uve_1";
+const strong = "_strong_19uve_13";
+const accessLine = "_accessLine_19uve_21";
+const urlBlock = "_urlBlock_19uve_29";
+const urlTitle = "_urlTitle_19uve_37";
+const urlNote = "_urlNote_19uve_63";
+const slugBlock = "_slugBlock_19uve_73";
+const slugInput = "_slugInput_19uve_83";
+const slugHelp = "_slugHelp_19uve_91";
+const slugRemaining = "_slugRemaining_19uve_103";
+const slugRemainingValue = "_slugRemainingValue_19uve_115";
+const slugPreview = "_slugPreview_19uve_125";
+const slugActions = "_slugActions_19uve_137";
+const slugOk = "_slugOk_19uve_149";
+const deleteInline = "_deleteInline_19uve_161";
+const spinner = "_spinner_19uve_173";
+const accountNote = "_accountNote_19uve_207";
+const accountError = "_accountError_19uve_215";
+const accountFields = "_accountFields_19uve_223";
+const accountRow = "_accountRow_19uve_237";
+const accountLabel = "_accountLabel_19uve_251";
+const accountValue = "_accountValue_19uve_261";
+const accountOrgs = "_accountOrgs_19uve_271";
+const orgList = "_orgList_19uve_285";
+const billingRow = "_billingRow_19uve_309";
+const billingLabel = "_billingLabel_19uve_323";
+const billingValue = "_billingValue_19uve_333";
+const billingNote = "_billingNote_19uve_343";
+const billingError = "_billingError_19uve_353";
+const billingActions = "_billingActions_19uve_361";
+const billingDisclosure = "_billingDisclosure_19uve_375";
+const billingDisclosureLink = "_billingDisclosureLink_19uve_395";
+const billingOptIn = "_billingOptIn_19uve_407";
+const billingOptInLabel = "_billingOptInLabel_19uve_421";
+const pwSuccess = "_pwSuccess_19uve_437";
+const pwActions = "_pwActions_19uve_445";
+const pwChecklist = "_pwChecklist_19uve_461";
+const pwChecklistItem = "_pwChecklistItem_19uve_481";
+const pwChecklistItemMet = "_pwChecklistItemMet_19uve_509";
+const dangerText = "_dangerText_19uve_531";
+const dangerError = "_dangerError_19uve_541";
+const dangerActions = "_dangerActions_19uve_549";
+const section$3 = "_section_19uve_565";
+const sectionTitle$2 = "_sectionTitle_19uve_583";
+const collapsible$1 = "_collapsible_19uve_607";
+const collapsibleTrigger$1 = "_collapsibleTrigger_19uve_617";
+const collapsibleContent$1 = "_collapsibleContent_19uve_703";
+const collapsibleDanger = "_collapsibleDanger_19uve_721";
+const lockedBlock$2 = "_lockedBlock_19uve_741";
+const lockedTitle$2 = "_lockedTitle_19uve_761";
+const lockedText$2 = "_lockedText_19uve_773";
+const lockedCta$2 = "_lockedCta_19uve_785";
+const commPrefRow = "_commPrefRow_19uve_827";
+const commPrefInfo = "_commPrefInfo_19uve_877";
+const commPrefHint = "_commPrefHint_19uve_893";
+const cancelRenewalBlock = "_cancelRenewalBlock_19uve_907";
+const renewalWarning = "_renewalWarning_19uve_927";
+const renewalWarningTitle = "_renewalWarningTitle_19uve_947";
+const renewalWarningText = "_renewalWarningText_19uve_959";
+const renewalWarningActions = "_renewalWarningActions_19uve_971";
+const renewalWarningCta = "_renewalWarningCta_19uve_985";
+const renewalWarningHelp = "_renewalWarningHelp_19uve_1023";
+const receiptsBlock = "_receiptsBlock_19uve_1041";
+const receiptsList = "_receiptsList_19uve_1055";
+const receiptRow = "_receiptRow_19uve_1073";
+const receiptMain = "_receiptMain_19uve_1099";
+const receiptDate = "_receiptDate_19uve_1117";
+const receiptMeta = "_receiptMeta_19uve_1129";
+const receiptDownloadLink = "_receiptDownloadLink_19uve_1141";
+const receiptProfileBlock = "_receiptProfileBlock_19uve_1183";
+const receiptProfileFields = "_receiptProfileFields_19uve_1199";
+const receiptProfileSelectRow = "_receiptProfileSelectRow_19uve_1211";
+const receiptProfileSelectLabel = "_receiptProfileSelectLabel_19uve_1225";
+const receiptProfileSelect = "_receiptProfileSelect_19uve_1211";
 const styles$b = {
   grid: grid$1,
   strong,
@@ -7245,55 +7245,61 @@ function SeoPanel({
     )
   ] });
 }
-const grid = "_grid_obf8m_1";
-const banner = "_banner_obf8m_13";
-const kpis = "_kpis_obf8m_29";
-const kpiCard = "_kpiCard_obf8m_41";
-const kpiLabel = "_kpiLabel_obf8m_55";
-const kpiValue = "_kpiValue_obf8m_67";
-const small = "_small_obf8m_79";
-const table = "_table_obf8m_89";
-const chart = "_chart_obf8m_129";
-const chartHeader = "_chartHeader_obf8m_143";
-const svg = "_svg_obf8m_153";
-const legend = "_legend_obf8m_165";
-const dot = "_dot_obf8m_181";
-const dotViews = "_dotViews_obf8m_197";
-const dotClicks = "_dotClicks_obf8m_205";
-const loadingText = "_loadingText_obf8m_221";
-const errorText$1 = "_errorText_obf8m_229";
-const headerRow = "_headerRow_obf8m_237";
-const headerTitle = "_headerTitle_obf8m_253";
-const section$1 = "_section_obf8m_261";
-const divider = "_divider_obf8m_275";
-const sectionHeader = "_sectionHeader_obf8m_287";
-const sectionTitleRow = "_sectionTitleRow_obf8m_301";
-const sectionTitle$1 = "_sectionTitle_obf8m_301";
-const sectionTitlePlain = "_sectionTitlePlain_obf8m_321";
-const sectionSubtitle = "_sectionSubtitle_obf8m_331";
-const tooltip = "_tooltip_obf8m_341";
-const inlineTooltip = "_inlineTooltip_obf8m_343";
-const tooltipText = "_tooltipText_obf8m_373";
-const toggleRow = "_toggleRow_obf8m_435";
-const rowMuted = "_rowMuted_obf8m_453";
-const rowKey = "_rowKey_obf8m_461";
-const accordion = "_accordion_obf8m_469";
-const accordionItem = "_accordionItem_obf8m_481";
-const accordionHeader = "_accordionHeader_obf8m_493";
-const accordionTitle = "_accordionTitle_obf8m_521";
-const badges = "_badges_obf8m_529";
-const badge = "_badge_obf8m_529";
-const chevron = "_chevron_obf8m_557";
-const accordionContent = "_accordionContent_obf8m_567";
-const campaignRow = "_campaignRow_obf8m_577";
-const lockedBlock = "_lockedBlock_obf8m_589";
-const lockedTitle = "_lockedTitle_obf8m_609";
-const lockedText = "_lockedText_obf8m_621";
-const lockedCta = "_lockedCta_obf8m_633";
-const bannerCta = "_bannerCta_obf8m_671";
+const grid = "_grid_1vtve_1";
+const banner = "_banner_1vtve_13";
+const selfExcludeRow = "_selfExcludeRow_1vtve_29";
+const selfExcludeLabel = "_selfExcludeLabel_1vtve_49";
+const selfExcludeHint = "_selfExcludeHint_1vtve_67";
+const kpis = "_kpis_1vtve_79";
+const kpiCard = "_kpiCard_1vtve_91";
+const kpiLabel = "_kpiLabel_1vtve_105";
+const kpiValue = "_kpiValue_1vtve_117";
+const small = "_small_1vtve_129";
+const table = "_table_1vtve_139";
+const chart = "_chart_1vtve_179";
+const chartHeader = "_chartHeader_1vtve_193";
+const svg = "_svg_1vtve_205";
+const legend = "_legend_1vtve_217";
+const dot = "_dot_1vtve_233";
+const dotViews = "_dotViews_1vtve_249";
+const dotClicks = "_dotClicks_1vtve_257";
+const loadingText = "_loadingText_1vtve_273";
+const errorText$1 = "_errorText_1vtve_281";
+const headerRow = "_headerRow_1vtve_289";
+const headerTitle = "_headerTitle_1vtve_305";
+const section$1 = "_section_1vtve_315";
+const divider = "_divider_1vtve_329";
+const sectionHeader = "_sectionHeader_1vtve_341";
+const sectionTitleRow = "_sectionTitleRow_1vtve_355";
+const sectionTitle$1 = "_sectionTitle_1vtve_355";
+const sectionTitlePlain = "_sectionTitlePlain_1vtve_379";
+const sectionSubtitle = "_sectionSubtitle_1vtve_391";
+const tooltip = "_tooltip_1vtve_401";
+const inlineTooltip = "_inlineTooltip_1vtve_403";
+const tooltipText = "_tooltipText_1vtve_433";
+const toggleRow = "_toggleRow_1vtve_495";
+const rowMuted = "_rowMuted_1vtve_513";
+const rowKey = "_rowKey_1vtve_521";
+const accordion = "_accordion_1vtve_529";
+const accordionItem = "_accordionItem_1vtve_541";
+const accordionHeader = "_accordionHeader_1vtve_553";
+const accordionTitle = "_accordionTitle_1vtve_581";
+const badges = "_badges_1vtve_589";
+const badge = "_badge_1vtve_589";
+const chevron = "_chevron_1vtve_617";
+const accordionContent = "_accordionContent_1vtve_627";
+const campaignRow = "_campaignRow_1vtve_637";
+const lockedBlock = "_lockedBlock_1vtve_649";
+const lockedTitle = "_lockedTitle_1vtve_669";
+const lockedText = "_lockedText_1vtve_681";
+const lockedCta = "_lockedCta_1vtve_693";
+const bannerCta = "_bannerCta_1vtve_731";
 const styles$9 = {
   grid,
   banner,
+  selfExcludeRow,
+  selfExcludeLabel,
+  selfExcludeHint,
   kpis,
   kpiCard,
   kpiLabel,
@@ -7354,6 +7360,11 @@ const SECTION_COPY = {
     title: "איך הם הגיעו",
     subtitle: "כניסה ישירה או דרך הפניה",
     tooltip: "אופן ההגעה לעמוד"
+  },
+  contactActions: {
+    title: "לחיצות על כפתורי קשר",
+    subtitle: "כמה פעמים מבקרים לחצו על טלפון או וואטסאפ לפי תקופה.",
+    tooltip: null
   }
 };
 const REFERRER_LABEL = {
@@ -7494,6 +7505,9 @@ const DEMO_SOURCES = {
     }
   ]
 };
+const DEMO_ACTIONS_1 = { actions: { call: 2, whatsapp: 5 } };
+const DEMO_ACTIONS_7 = { actions: { call: 11, whatsapp: 28 } };
+const DEMO_ACTIONS_30 = { actions: { call: 46, whatsapp: 120 } };
 function AnalyticsPanel({ card: card2 }) {
   const analyticsLevel = card2?.entitlements?.analyticsLevel || "none";
   const canViewAnalytics = Boolean(card2?.entitlements?.canViewAnalytics);
@@ -7501,8 +7515,43 @@ function AnalyticsPanel({ card: card2 }) {
   const [error, setError] = useState("");
   const [summary, setSummary] = useState(null);
   const [sources, setSources] = useState(null);
+  const [actions1, setActions1] = useState(null);
+  const [actions7, setActions7] = useState(null);
+  const [actions30, setActions30] = useState(null);
   const [showNoClickSources, setShowNoClickSources] = useState(false);
   const [expandedPlatforms, setExpandedPlatforms] = useState({});
+  const selfExcludeKey = useMemo(
+    () => getOwnerSelfExcludeKey(card2?.publicPath),
+    [card2?.publicPath]
+  );
+  const [selfExclude, setSelfExclude] = useState(false);
+  useEffect(() => {
+    if (!selfExcludeKey) {
+      setSelfExclude(false);
+      return;
+    }
+    try {
+      localStorage.removeItem(LEGACY_OWNER_SELF_EXCLUDE_KEY);
+      const stored = localStorage.getItem(selfExcludeKey);
+      if (stored === null) {
+        localStorage.setItem(selfExcludeKey, "1");
+        setSelfExclude(true);
+      } else {
+        setSelfExclude(stored === "1");
+      }
+    } catch {
+      setSelfExclude(false);
+    }
+  }, [selfExcludeKey]);
+  function handleSelfExcludeChange(e) {
+    if (!selfExcludeKey) return;
+    const checked = e.target.checked;
+    setSelfExclude(checked);
+    try {
+      localStorage.setItem(selfExcludeKey, checked ? "1" : "0");
+    } catch {
+    }
+  }
   const rangeDays = useMemo(() => {
     if (analyticsLevel === "premium") return 30;
     if (analyticsLevel === "demo") return 30;
@@ -7513,18 +7562,30 @@ function AnalyticsPanel({ card: card2 }) {
     if (analyticsLevel === "demo") {
       setSummary(DEMO_SUMMARY);
       setSources(DEMO_SOURCES);
+      setActions1(DEMO_ACTIONS_1);
+      setActions7(DEMO_ACTIONS_7);
+      setActions30(DEMO_ACTIONS_30);
       setError(null);
       return;
     }
     setLoading(true);
     setError("");
     try {
-      const [s, so] = await Promise.all([
+      const act1Promise = api.get(`/analytics/actions/${card2._id}?range=1`).catch(() => null);
+      const act7Promise = api.get(`/analytics/actions/${card2._id}?range=7`).catch(() => null);
+      const act30Promise = api.get(`/analytics/actions/${card2._id}?range=30`).catch(() => null);
+      const [s, so, act1, act7, act30] = await Promise.all([
         api.get(`/analytics/summary/${card2._id}?range=${rangeDays}`),
-        api.get(`/analytics/sources/${card2._id}?range=${rangeDays}`)
+        api.get(`/analytics/sources/${card2._id}?range=${rangeDays}`),
+        act1Promise,
+        act7Promise,
+        act30Promise
       ]);
       setSummary(s?.data || null);
       setSources(so?.data || null);
+      setActions1(act1?.data || null);
+      setActions7(act7?.data || null);
+      setActions30(act30?.data || null);
     } catch (err) {
       console.error(
         "analytics load failed",
@@ -7651,6 +7712,20 @@ function AnalyticsPanel({ card: card2 }) {
         }
       )
     ] }),
+    selfExcludeKey && /* @__PURE__ */ jsxs("div", { className: styles$9.selfExcludeRow, children: [
+      /* @__PURE__ */ jsxs("label", { className: styles$9.selfExcludeLabel, children: [
+        /* @__PURE__ */ jsx(
+          "input",
+          {
+            type: "checkbox",
+            checked: selfExclude,
+            onChange: handleSelfExcludeChange
+          }
+        ),
+        /* @__PURE__ */ jsx("span", { children: "אל תכלול את הביקורים שלי באנליטיקה" })
+      ] }),
+      /* @__PURE__ */ jsx("div", { className: styles$9.selfExcludeHint, children: "כשתפתח את הכרטיס שלך מדפדפן זה, הצפיות והלחיצות שלך לא ייספרו." })
+    ] }),
     error && /* @__PURE__ */ jsx("div", { className: styles$9.errorText, children: error }),
     (analyticsLevel === "demo" || analyticsLevel === "premium") && /* @__PURE__ */ jsxs(Fragment, { children: [
       /* @__PURE__ */ jsxs("div", { className: styles$9.kpis, children: [
@@ -7738,6 +7813,60 @@ function AnalyticsPanel({ card: card2 }) {
             ),
             " ",
             "לחיצות"
+          ] })
+        ] })
+      ] }),
+      (actions1 !== null || actions7 !== null || actions30 !== null) && /* @__PURE__ */ jsxs("div", { className: styles$9.section, children: [
+        /* @__PURE__ */ jsx(
+          SectionHeader,
+          {
+            ...SECTION_COPY.contactActions
+          }
+        ),
+        /* @__PURE__ */ jsxs("table", { className: styles$9.table, children: [
+          /* @__PURE__ */ jsx("thead", { children: /* @__PURE__ */ jsxs("tr", { children: [
+            /* @__PURE__ */ jsx("th", { children: "פעולה" }),
+            /* @__PURE__ */ jsx("th", { children: "היום" }),
+            /* @__PURE__ */ jsx("th", { children: "7 ימים" }),
+            /* @__PURE__ */ jsx("th", { children: "30 ימים" })
+          ] }) }),
+          /* @__PURE__ */ jsxs("tbody", { children: [
+            /* @__PURE__ */ jsxs("tr", { children: [
+              /* @__PURE__ */ jsx("td", { children: "טלפון" }),
+              /* @__PURE__ */ jsx("td", { children: actions1 === null ? "-" : formatInt(
+                Number(
+                  actions1?.actions?.call
+                ) || 0
+              ) }),
+              /* @__PURE__ */ jsx("td", { children: actions7 === null ? "-" : formatInt(
+                Number(
+                  actions7?.actions?.call
+                ) || 0
+              ) }),
+              /* @__PURE__ */ jsx("td", { children: actions30 === null ? "-" : formatInt(
+                Number(
+                  actions30?.actions?.call
+                ) || 0
+              ) })
+            ] }),
+            /* @__PURE__ */ jsxs("tr", { children: [
+              /* @__PURE__ */ jsx("td", { children: "וואטסאפ" }),
+              /* @__PURE__ */ jsx("td", { children: actions1 === null ? "-" : formatInt(
+                Number(
+                  actions1?.actions?.whatsapp
+                ) || 0
+              ) }),
+              /* @__PURE__ */ jsx("td", { children: actions7 === null ? "-" : formatInt(
+                Number(
+                  actions7?.actions?.whatsapp
+                ) || 0
+              ) }),
+              /* @__PURE__ */ jsx("td", { children: actions30 === null ? "-" : formatInt(
+                Number(
+                  actions30?.actions?.whatsapp
+                ) || 0
+              ) })
+            ] })
           ] })
         ] })
       ] }),

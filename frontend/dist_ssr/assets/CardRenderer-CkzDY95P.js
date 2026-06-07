@@ -2388,41 +2388,37 @@ function resolveEffectiveSelfThemeV1(card2) {
   }
   return result;
 }
-const footer = "_footer_1livh_1";
-const shareBlock = "_shareBlock_1livh_29";
-const shareTitle = "_shareTitle_1livh_45";
-const shareRow = "_shareRow_1livh_59";
-const shareIcon = "_shareIcon_1livh_77";
-const iconFacebook$1 = "_iconFacebook_1livh_129";
-const iconEmail$1 = "_iconEmail_1livh_131";
-const iconWhatsapp$1 = "_iconWhatsapp_1livh_133";
-const logoWrap = "_logoWrap_1livh_199";
-const logoImg = "_logoImg_1livh_237";
-const promo = "_promo_1livh_257";
-const promoLink = "_promoLink_1livh_271";
-const installRow = "_installRow_1livh_297";
-const installBtn = "_installBtn_1livh_313";
-const installHelp = "_installHelp_1livh_365";
-const installHelpHl = "_installHelpHl_1livh_385";
-const styles$f = {
-  footer,
-  shareBlock,
-  shareTitle,
-  shareRow,
-  shareIcon,
-  iconFacebook: iconFacebook$1,
-  iconEmail: iconEmail$1,
-  iconWhatsapp: iconWhatsapp$1,
-  logoWrap,
-  logoImg,
-  promo,
-  promoLink,
-  installRow,
-  installBtn,
-  installHelp,
-  installHelpHl
-};
 const STORAGE_KEY_DEVICE = "digitalyty_deviceId";
+const LEGACY_OWNER_SELF_EXCLUDE_KEY = "cardigo_owner_self_exclude_v1";
+const OWNER_SELF_EXCLUDE_KEY_PREFIX = "cardigo_owner_self_exclude_v1:path:";
+function normalizeOwnerSelfExcludePath(path) {
+  if (typeof path !== "string" || !path) return null;
+  let p = path.trim();
+  if (!p.startsWith("/")) p = "/" + p;
+  if (p.length > 1 && p.endsWith("/")) p = p.slice(0, -1);
+  const qIdx = p.indexOf("?");
+  if (qIdx !== -1) p = p.slice(0, qIdx);
+  const hIdx = p.indexOf("#");
+  if (hIdx !== -1) p = p.slice(0, hIdx);
+  if (/^\/card\/[^/]+$/.test(p)) return p;
+  if (/^\/c\/[^/]+\/[^/]+$/.test(p)) return p;
+  return null;
+}
+function getOwnerSelfExcludeKey(publicPath) {
+  const normalised = normalizeOwnerSelfExcludePath(publicPath);
+  if (!normalised) return null;
+  return OWNER_SELF_EXCLUDE_KEY_PREFIX + normalised;
+}
+function isOwnerSelfExcludedForCurrentPath() {
+  try {
+    if (typeof window === "undefined") return false;
+    const scopedKey = getOwnerSelfExcludeKey(window.location.pathname);
+    if (!scopedKey) return false;
+    return localStorage.getItem(scopedKey) === "1";
+  } catch {
+    return false;
+  }
+}
 function uuidFallback() {
   const bytes = new Uint8Array(16);
   for (let i = 0; i < bytes.length; i += 1) {
@@ -2507,6 +2503,7 @@ function detectOrgSlugFromPath() {
 }
 function trackView(slug, utm = getUtm(), ref = document.referrer || "", orgSlug = "") {
   if (!slug) return;
+  if (isOwnerSelfExcludedForCurrentPath()) return;
   const resolvedOrgSlug = typeof orgSlug === "string" && orgSlug.trim() ? orgSlug.trim().toLowerCase() : detectOrgSlugFromPath();
   send({
     slug,
@@ -2519,6 +2516,7 @@ function trackView(slug, utm = getUtm(), ref = document.referrer || "", orgSlug 
 }
 function trackClick(slug, action, utm = getUtm(), ref = document.referrer || "", orgSlug = "") {
   if (!slug) return;
+  if (isOwnerSelfExcludedForCurrentPath()) return;
   const resolvedOrgSlug = typeof orgSlug === "string" && orgSlug.trim() ? orgSlug.trim().toLowerCase() : detectOrgSlugFromPath();
   send({
     slug,
@@ -2530,6 +2528,40 @@ function trackClick(slug, action, utm = getUtm(), ref = document.referrer || "",
     deviceId: getOrCreateDeviceId()
   });
 }
+const footer = "_footer_1livh_1";
+const shareBlock = "_shareBlock_1livh_29";
+const shareTitle = "_shareTitle_1livh_45";
+const shareRow = "_shareRow_1livh_59";
+const shareIcon = "_shareIcon_1livh_77";
+const iconFacebook$1 = "_iconFacebook_1livh_129";
+const iconEmail$1 = "_iconEmail_1livh_131";
+const iconWhatsapp$1 = "_iconWhatsapp_1livh_133";
+const logoWrap = "_logoWrap_1livh_199";
+const logoImg = "_logoImg_1livh_237";
+const promo = "_promo_1livh_257";
+const promoLink = "_promoLink_1livh_271";
+const installRow = "_installRow_1livh_297";
+const installBtn = "_installBtn_1livh_313";
+const installHelp = "_installHelp_1livh_365";
+const installHelpHl = "_installHelpHl_1livh_385";
+const styles$f = {
+  footer,
+  shareBlock,
+  shareTitle,
+  shareRow,
+  shareIcon,
+  iconFacebook: iconFacebook$1,
+  iconEmail: iconEmail$1,
+  iconWhatsapp: iconWhatsapp$1,
+  logoWrap,
+  logoImg,
+  promo,
+  promoLink,
+  installRow,
+  installBtn,
+  installHelp,
+  installHelpHl
+};
 function getBrandName(card2) {
   return card2?.business?.name || card2?.business?.businessName || card2?.business?.ownerName || "";
 }
@@ -5901,9 +5933,11 @@ function CardRenderer({ card: card2, onUpgrade, mode }) {
 }
 export {
   CardRenderer as C,
+  LEGACY_OWNER_SELF_EXCLUDE_KEY as L,
   TEMPLATES as T,
   uploadDesignAsset as a,
   getTemplateById as b,
+  getOwnerSelfExcludeKey as c,
   formStyles as f,
   galleryItemToUrl as g,
   normalizeTemplateId as n,

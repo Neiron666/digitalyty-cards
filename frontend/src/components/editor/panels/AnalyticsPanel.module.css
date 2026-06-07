@@ -12,6 +12,31 @@
     font-weight: 700;
 }
 
+.selfExcludeRow {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 10px 12px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    background: var(--bg-card);
+}
+
+.selfExcludeLabel {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: var(--fs-body-sm);
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.selfExcludeHint {
+    font-size: var(--fs-ui);
+    opacity: 0.8;
+    padding-inline-start: 24px;
+}
+
 .kpis {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -72,6 +97,7 @@
 .chartHeader {
     font-weight: 800;
     margin-bottom: 10px;
+    color: var(--primary, inherit);
 }
 
 .svg {
@@ -126,6 +152,7 @@
 
 .headerTitle {
     font-weight: 800;
+    color: var(--primary, inherit);
 }
 
 .section {
@@ -152,15 +179,18 @@
     display: flex;
     align-items: center;
     gap: 8px;
+    color: var(--primary, inherit);
 }
 
 .sectionTitle {
     font-weight: 900;
+    color: var(--primary, inherit);
 }
 
 .sectionTitlePlain {
     font-weight: 800;
     margin-bottom: 8px;
+    color: var(--primary, inherit);
 }
 
 .sectionSubtitle {

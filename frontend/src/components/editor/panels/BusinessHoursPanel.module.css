@@ -106,10 +106,35 @@
 }
 
 .openToggle {
-    display: flex;
+    display: inline-flex;
     align-items: center;
     gap: 8px;
     font-size: var(--fs-body-sm);
+    padding: 6px 10px;
+    border-radius: var(--radius-sm);
+    border: 1px solid rgba(255, 215, 0, 0.18);
+    background: rgba(255, 215, 0, 0.05);
+    cursor: pointer;
+    transition:
+        background 140ms ease,
+        border-color 140ms ease;
+    user-select: none;
+}
+.openToggle[data-open="1"] {
+    background: rgba(255, 215, 0, 0.12);
+    border-color: rgba(255, 215, 0, 0.32);
+}
+.openToggle input[type="checkbox"] {
+    color: rgba(255, 215, 0, 0.32);
+}
+.openToggle:hover {
+    background: rgba(255, 215, 0, 0.1);
+    border-color: rgba(255, 215, 0, 0.32);
+}
+
+.openToggle:focus-within {
+    outline: 2px solid rgba(255, 215, 0, 0.35);
+    outline-offset: 2px;
 }
 
 .openToggleLabel {
