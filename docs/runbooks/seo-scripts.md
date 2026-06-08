@@ -210,3 +210,43 @@ Owner-configured GTM и Meta Pixel теперь consent-gated через `cardig
 **Остаток (deferred, отдельный contour):**
 
 - Card-route GTM signal bootstrap через `main.jsx` (push `cardigo_consent_update` в GTM с card routes) — это **отдельный** future contour, не является частью этого runbook. ОБЯЗАН включать route guard.
+
+---
+
+### LocalBusiness JSON-LD Generator — כפתור "צור מידע מובנה"
+
+Кнопка **"צור מידע מובנה"** в разделе "נתונים מובנים" (вкладка SEO וסקריפטים) вызывает `buildJsonLdTemplate()` → `executeJsonLdInsert()` и записывает результат в черновик поля `seo.jsonLd` (textarea). **Сохранение — только через "שמור שינויים".**
+
+#### Поля, генерируемые для типа LocalBusiness
+
+| Поле                      | Источник                             | Условие                                       |
+| ------------------------- | ------------------------------------ | --------------------------------------------- |
+| `@context`                | `"https://schema.org"` (захардкожен) | Всегда                                        |
+| `@type`                   | `"LocalBusiness"`                    | Всегда                                        |
+| `name`                    | `business.name`                      | Если не пустой                                |
+| `url`                     | `publicPath` карточки                | Если доступен                                 |
+| `image`                   | `design.logo`                        | Если валидный абсолютный http(s) URL          |
+| `telephone`               | `contact.phone`                      | Если не пустой                                |
+| `email`                   | `contact.email`                      | Если не пустой                                |
+| `address.@type`           | `"PostalAddress"` (захардкожен)      | Всегда                                        |
+| `address.streetAddress`   | `business.address` (через `trimStr`) | Если не пустой **(добавлено P2A 2026-06-08)** |
+| `address.addressLocality` | `business.city` (через `trimStr`)    | Если не пустой                                |
+| `address.addressCountry`  | `"IL"` (захардкожен)                 | Всегда                                        |
+| `sameAs`                  | Социальные ссылки из `contact.*`     | Если есть хотя бы одна                        |
+
+#### Намеренно НЕ генерируется
+
+- `geo`, `latitude`, `longitude` — не генерируются. Геокодирование не выполняется. `business.address` — это свободный текст, координаты не извлекаются.
+
+#### Существующий JSON-LD НЕ обновляется автоматически
+
+Нажатие "צור מידע מובנה" перезаписывает только черновик (при явном действии). Ранее сохранённый `seo.jsonLd` не изменяется при изменении `business.address` или при downgrade карточки. Чтобы добавить `streetAddress` к уже сохранённой схеме: открыть SEO → нажать "צור מידע מובנה" → нажать "שמור שינויים".
+
+#### Санитизация при рендере для non-premium карточек
+
+Браузерный путь (`PublicCard.jsx`) и OG/Edge путь (`cardPublicProjection.util.js`) применяют санитизатор к `seo.jsonLd` при рендере, если `card.entitlements.canUseServices !== true`:
+
+- **Удаляются:** `address.streetAddress`, `geo` (верхний уровень), `latitude` (верхний уровень), `longitude` (верхний уровень).
+- **Сохраняются:** `address.@type`, `address.addressLocality`, `address.addressCountry`, все не-LocalBusiness элементы (FAQPage и др.).
+
+Это defense-in-depth: даже если карточка была downgraded после сохранения JSON-LD с `streetAddress`, он не попадёт в публичный HTML. Edge-функция является pass-through OG-бэкенда — санитизация OG автоматически распространяется на Edge.
