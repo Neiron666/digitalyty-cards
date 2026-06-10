@@ -27,8 +27,8 @@ const SECTION_COPY = {
         tooltip: "אופן ההגעה לעמוד",
     },
     contactActions: {
-        title: "לחיצות על כפתורי קשר",
-        subtitle: "כמה פעמים מבקרים לחצו על טלפון או וואטסאפ לפי תקופה.",
+        title: "לחיצות על כפתורי קשר וניווט",
+        subtitle: "כמה פעמים מבקרים לחצו על טלפון, וואטסאפ או ניווט לפי תקופה.",
         tooltip: null,
     },
 };
@@ -195,9 +195,13 @@ const DEMO_SOURCES = {
 };
 
 /* Mirrors backend buildDemoPremiumPayload actions field, split by period */
-const DEMO_ACTIONS_1 = { actions: { call: 2, whatsapp: 5 } };
-const DEMO_ACTIONS_7 = { actions: { call: 11, whatsapp: 28 } };
-const DEMO_ACTIONS_30 = { actions: { call: 46, whatsapp: 120 } };
+const DEMO_ACTIONS_1 = { actions: { call: 2, whatsapp: 5, maps: 1, waze: 1 } };
+const DEMO_ACTIONS_7 = {
+    actions: { call: 11, whatsapp: 28, maps: 6, waze: 4 },
+};
+const DEMO_ACTIONS_30 = {
+    actions: { call: 46, whatsapp: 120, maps: 18, waze: 12 },
+};
 
 export default function AnalyticsPanel({ card }) {
     const analyticsLevel = card?.entitlements?.analyticsLevel || "none";
@@ -697,6 +701,72 @@ export default function AnalyticsPanel({ card }) {
                                                           Number(
                                                               actions30?.actions
                                                                   ?.whatsapp,
+                                                          ) || 0,
+                                                      )}
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>גוגל מפות</td>
+                                            <td>
+                                                {actions1 === null
+                                                    ? "-"
+                                                    : formatInt(
+                                                          Number(
+                                                              actions1?.actions
+                                                                  ?.maps,
+                                                          ) || 0,
+                                                      )}
+                                            </td>
+                                            <td>
+                                                {actions7 === null
+                                                    ? "-"
+                                                    : formatInt(
+                                                          Number(
+                                                              actions7?.actions
+                                                                  ?.maps,
+                                                          ) || 0,
+                                                      )}
+                                            </td>
+                                            <td>
+                                                {actions30 === null
+                                                    ? "-"
+                                                    : formatInt(
+                                                          Number(
+                                                              actions30?.actions
+                                                                  ?.maps,
+                                                          ) || 0,
+                                                      )}
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>ווייז</td>
+                                            <td>
+                                                {actions1 === null
+                                                    ? "-"
+                                                    : formatInt(
+                                                          Number(
+                                                              actions1?.actions
+                                                                  ?.waze,
+                                                          ) || 0,
+                                                      )}
+                                            </td>
+                                            <td>
+                                                {actions7 === null
+                                                    ? "-"
+                                                    : formatInt(
+                                                          Number(
+                                                              actions7?.actions
+                                                                  ?.waze,
+                                                          ) || 0,
+                                                      )}
+                                            </td>
+                                            <td>
+                                                {actions30 === null
+                                                    ? "-"
+                                                    : formatInt(
+                                                          Number(
+                                                              actions30?.actions
+                                                                  ?.waze,
                                                           ) || 0,
                                                       )}
                                             </td>

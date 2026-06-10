@@ -169,6 +169,8 @@ function buildDemoPremiumPayload({ rangeDays }) {
         actions: {
             whatsapp: 120,
             call: 46,
+            maps: 18,
+            waze: 12,
             website: 39,
             navigate: 28,
             email: 15,
