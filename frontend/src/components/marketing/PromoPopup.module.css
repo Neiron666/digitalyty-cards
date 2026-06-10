@@ -1,0 +1,256 @@
+/* ══════════════════════════════════════════════════════════════════════
+   PromoPopup — Public-site marketing promo modal
+   Layout: [ LEFT portrait image (9:16) ] [ RIGHT text + CTA ]
+
+   Visual composition is forced LTR on .modal so the image is always
+   physically left and content is physically right, regardless of the
+   document's dir="rtl". The .contentPanel restores dir="rtl" for Hebrew.
+
+   z-index: 9100 — above CookieConsentBanner (9000), below critical
+   editor/card modals (9999).
+   ══════════════════════════════════════════════════════════════════════ */
+
+/* ── Backdrop ─────────────────────────────────────────────────────────── */
+.backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 9100;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding-block: 1rem;
+    padding-inline: 1rem;
+    background: rgba(0, 0, 0, 0.68);
+    backdrop-filter: blur(4px);
+}
+
+/* ── Modal shell ──────────────────────────────────────────────────────── */
+.modal {
+    /* Force LTR so the flex row puts imagePanel physical-left
+       and contentPanel physical-right — RTL must not reverse this.
+       dir="rtl" on the element handles AT; direction: ltr handles visual. */
+    direction: ltr;
+    display: flex;
+    flex-direction: row;
+    align-items: stretch;
+    width: 100%;
+    max-width: 37rem;
+    border-radius: var(--radius-lg);
+    background: var(--bg-card, #0f172a);
+    border: 1px solid var(--gold-soft);
+    box-shadow:
+        0 0 0 1px var(--gold-fade),
+        0 24px 64px rgba(0, 0, 0, 0.65),
+        0 0 40px rgba(212, 175, 55, 0.14);
+    overflow: hidden; /* clips image corners to border-radius */
+}
+
+/* ── Image panel (physical LEFT — portrait 9:16 block) ────────────────── */
+.imagePanel {
+    flex: 0 0 auto;
+    width: 11rem;
+    /* Height is determined by the contentPanel via flex align-items: stretch.
+       The image fills the panel with object-fit: cover, cropped to portrait. */
+    overflow: hidden;
+}
+.premiumHighlight {
+    color: var(--gold);
+    font-weight: 900;
+}
+
+.image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+/* ── Content panel (physical RIGHT) ──────────────────────────────────── */
+.contentPanel {
+    /* Restore RTL for Hebrew text rendering. */
+    direction: rtl;
+    flex: 1 1 0;
+    min-width: 0;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 0.625rem;
+    /* padding-block-start: 3rem leaves clearance below the absolute close button
+       (top: 0.75rem + height: 2rem = 2.75rem, rounded up). */
+    padding-block-start: 3rem;
+    padding-block-end: 1.5rem;
+    padding-inline: 1.25rem;
+    overflow-y: auto; /* safety for very tall content or small viewports */
+}
+
+/* ── Close button ─────────────────────────────────────────────────────── */
+/* Physical top/right used intentionally — close affordance is always at
+   the visual top-right corner of the modal regardless of text direction. */
+.closeBtn {
+    position: absolute;
+    top: 0.75rem;
+    right: 0.75rem;
+    appearance: none;
+    border: 0;
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--text-muted);
+    border-radius: 50%;
+    width: 2rem;
+    height: 2rem;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: var(--fs-h5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+    transition:
+        background var(--duration-fast) ease,
+        color var(--duration-fast) ease;
+}
+
+.closeBtn:hover {
+    background: rgba(255, 255, 255, 0.16);
+    color: var(--text-main);
+}
+
+.closeBtn:focus-visible {
+    outline: 2px solid var(--gold-soft);
+    outline-offset: 2px;
+}
+
+/* ── Typography ───────────────────────────────────────────────────────── */
+.title {
+    margin: 0;
+    font-size: var(--fs-h5);
+    font-weight: 900;
+    color: var(--gold);
+    line-height: 1.3;
+}
+
+/* Keeps the emoji on the same visual line as the last word — never wraps alone. */
+.titleEmoji {
+    white-space: nowrap;
+}
+
+.premium {
+    margin: 0;
+    font-size: var(--fs-body-sm);
+    font-weight: 700;
+    color: var(--text-main);
+    line-height: 1.4;
+}
+
+.body {
+    margin: 0;
+    font-size: var(--fs-body-sm);
+    color: var(--text-main);
+    line-height: 1.6;
+}
+
+/* ── CTA ──────────────────────────────────────────────────────────────── */
+.cta {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding-block: 0.75rem;
+    padding-inline: 1rem;
+    margin-block-start: 0.375rem;
+    border-radius: var(--radius-md);
+    background: var(--gold);
+    color: #000;
+    font-weight: 900;
+    font-size: var(--fs-body-sm);
+    text-decoration: none;
+    transition: background var(--duration-fast) ease;
+}
+
+/* WhatsApp icon — CSS mask pattern (matches project convention in FloatingWhatsAppCta). */
+.ctaIcon {
+    display: inline-block;
+    flex-shrink: 0;
+    width: 1.25rem;
+    height: 1.25rem;
+    background-color: currentColor;
+    -webkit-mask-image: url("/icons/whatsapp.svg");
+    mask-image: url("/icons/whatsapp.svg");
+    mask-size: contain;
+    mask-repeat: no-repeat;
+    mask-position: center;
+}
+
+.cta:hover {
+    background: #c9a227;
+    color: #000;
+}
+
+.cta:focus-visible {
+    outline: 3px solid var(--gold);
+    outline-offset: 3px;
+}
+
+/* ── Mobile: shrink row proportionally (preserves left-image / right-content) ── */
+/* ≤ 30rem (480px): covers 375px and 480px — reduce image width + padding.        */
+/* Modal stays flex-direction: row on ALL widths. No column layout.                */
+@media (max-width: 30rem) {
+    .modal {
+        max-width: 100%;
+    }
+
+    .imagePanel {
+        width: 8rem;
+    }
+
+    .contentPanel {
+        padding-block-start: 2.75rem;
+        padding-block-end: 1.125rem;
+        padding-inline: 1rem;
+        gap: 0.5rem;
+        text-align: center; /* centers the text under the smaller image for better balance on narrow screens */
+    }
+
+    .title {
+        font-size: var(--fs-h6);
+    }
+
+    .premium {
+        font-size: var(--fs-caption);
+    }
+
+    .body {
+        font-size: var(--fs-caption);
+    }
+
+    .cta {
+        padding-block: 0.625rem;
+        padding-inline: 0.75rem;
+        font-size: var(--fs-caption);
+    }
+}
+
+/* ── Very narrow: ≤ 21rem (336px) — tighter row for 320px viewports ─────────── */
+@media (max-width: 21rem) {
+    .imagePanel {
+        width: 6.5rem;
+    }
+
+    .contentPanel {
+        padding-block-start: 2.5rem;
+        padding-inline: 0.75rem;
+        gap: 0.375rem;
+    }
+
+    .title {
+        font-size: var(--fs-body-lg);
+    }
+
+    .closeBtn {
+        width: 1.75rem;
+        height: 1.75rem;
+        top: 0.5rem;
+        right: 0.5rem;
+        font-size: var(--fs-body);
+        white-space: nowrap; /* keeps the "X" from breaking if the font scales up */
+    }
+}

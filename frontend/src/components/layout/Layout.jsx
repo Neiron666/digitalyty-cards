@@ -9,6 +9,7 @@ import Footer from "./Footer";
 import ScrollToTop from "./ScrollToTop";
 import CookieConsentBanner from "../ui/CookieConsentBanner/CookieConsentBanner";
 import FloatingWhatsAppCta from "../marketing/FloatingWhatsAppCta";
+import PromoPopup from "../marketing/PromoPopup";
 import styles from "./Layout.module.css";
 
 // Routes approved for site-level ad-measurement consent push.
@@ -50,6 +51,25 @@ function shouldShowMarketingWhatsAppCta(pathname) {
     return WHATSAPP_CTA_PAGINATION.some((re) => re.test(normalized));
 }
 
+// Promo popup route guard — explicit allowlist.
+// Eligible: marketing pages + blog/guide posts and pagination.
+// Excluded: all auth, product, editor, admin, legal, card routes.
+const PROMO_POPUP_EXACT = new Set([
+    "/",
+    "/cards",
+    "/pricing",
+    "/contact",
+    "/blog",
+    "/guides",
+]);
+const PROMO_POPUP_PREFIX = ["/blog/", "/guides/"];
+
+function shouldShowPromoPopup(pathname) {
+    const normalized = pathname.replace(/\/+$/, "") || "/";
+    if (PROMO_POPUP_EXACT.has(normalized)) return true;
+    return PROMO_POPUP_PREFIX.some((p) => pathname.startsWith(p));
+}
+
 export default function Layout() {
     const [reopenPrefs, setReopenPrefs] = useState(0);
     const handleOpenPrivacyPrefs = useCallback(
@@ -79,6 +99,7 @@ export default function Layout() {
                 <FloatingWhatsAppCta />
             )}
             <CookieConsentBanner reopenPrefs={reopenPrefs} />
+            {shouldShowPromoPopup(location.pathname) && <PromoPopup />}
         </>
     );
 }
