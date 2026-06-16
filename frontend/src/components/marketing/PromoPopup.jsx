@@ -171,9 +171,8 @@ export default function PromoPopup() {
                     >
                         ×
                     </button>
-
                     <h2 id={titleId} className={styles.title}>
-                        <span>לקוח חדש? נקים לך כרטיס דיגיטלי בחינם</span>
+                        <span>קבלו כרטיס דיגיטלי מקצועי לעסק</span>
                         <span aria-hidden="true" className={styles.titleEmoji}>
                             {" "}
                             🎁
@@ -181,19 +180,18 @@ export default function PromoPopup() {
                     </h2>
 
                     <p className={styles.premium}>
-                        קבלו{" "}
+                        אנחנו מקימים לכם את הכרטיס בחינם ונותנים{" "}
                         <span className={styles.premiumHighlight}>
-                            חודש פרימיום{" "}
-                        </span>{" "}
-                        מתנה ב-Cardigo
+                            חודש פרימיום במתנה
+                        </span>
                     </p>
 
                     <p id={bodyId} className={styles.body}>
-                        רוצים כרטיס ביקור דיגיטלי מקצועי לעסק?
+                        שלחו לנו וואטסאפ, ספרו בכמה מילים על העסק,
                         <br />
-                        כתבו לנו בוואטסאפ ונעזור לכם להתחיל.
+                        ואנחנו נעזור לכם להפוך אותו לנוכחות דיגיטלית מסודרת
+                        ומקצועית.
                     </p>
-
                     <a
                         href={PROMO_HREF}
                         target="_blank"
