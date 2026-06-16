@@ -207,7 +207,7 @@ ${staticUrls}${urls}${blogUrls}${guideUrls}
 </urlset>`;
 
         res.header("Content-Type", "application/xml");
-        res.header("Cache-Control", "public, max-age=3600");
+        res.header("Cache-Control", "public, max-age=300");
         res.send(xml);
     } catch {
         res.status(500)

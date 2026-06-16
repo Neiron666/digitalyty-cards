@@ -284,6 +284,8 @@ async function serveCardEnrichedShell(backendPath, context, { isCrawler }) {
     }
 
     let ogResponse;
+    const _ogAbortController = new AbortController();
+    const _ogTimeoutId = setTimeout(() => _ogAbortController.abort(), 5000);
     try {
         ogResponse = await fetch(backendPath, {
             method: "GET",
@@ -291,9 +293,12 @@ async function serveCardEnrichedShell(backendPath, context, { isCrawler }) {
                 [PROXY_SECRET_HEADER]: proxySecret,
                 accept: "text/html",
             },
+            signal: _ogAbortController.signal,
         });
     } catch (_fetchErr) {
         return context.next();
+    } finally {
+        clearTimeout(_ogTimeoutId);
     }
 
     const ogStatus = ogResponse.status;
@@ -361,11 +366,12 @@ async function serveCardEnrichedShell(backendPath, context, { isCrawler }) {
             status: 200,
             headers: {
                 "content-type": "text/html; charset=utf-8",
-                // Unified cache policy for browser + crawler enriched shell.
+                // P2C: Dynamic SEO metadata (robots/canonical/JSON-LD) depends on
+                // billing/adminTier/org entitlement. no-store prevents a stale
+                // noindex entry from being served after a card becomes indexable.
                 // Vary: User-Agent is REQUIRED because the same URL returns a
                 // different body to social UAs (backend OG body verbatim).
-                "cache-control":
-                    "public, max-age=60, stale-while-revalidate=300",
+                "cache-control": "no-store, max-age=0",
                 vary: "User-Agent",
             },
         });
