@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import SeoHelmet from "../components/seo/SeoHelmet";
+import { buildCardigoPublisherJsonLd } from "../seo/brandConstants.js";
 import { trackSitePageView } from "../services/siteAnalytics.client";
 import { useInitialDetailData } from "../seo/initialDetailData";
 import styles from "./BlogPost.module.css";
@@ -75,15 +76,7 @@ function buildBlogPostingJsonLd(post) {
             "@type": "Person",
             name: post.authorName || DEFAULT_AUTHOR_NAME,
         },
-        publisher: {
-            "@type": "Organization",
-            name: "Cardigo",
-            url: ORIGIN,
-            logo: {
-                "@type": "ImageObject",
-                url: `${ORIGIN}/images/brand-logo/cardigo-logo.png`,
-            },
-        },
+        publisher: buildCardigoPublisherJsonLd(),
     };
     ld.image = post.heroImageUrl || BLOG_OG_FALLBACK;
     return ld;

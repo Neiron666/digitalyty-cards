@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import Button from "../components/ui/Button";
 import SeoHelmet from "../components/seo/SeoHelmet";
 import { DEFAULT_OG_IMAGE_PATH } from "../utils/seoConstants.js";
+import { buildCardigoOrganizationJsonLd } from "../seo/brandConstants.js";
 import {
     trackSiteClick,
     trackSitePageView,
@@ -390,17 +391,6 @@ function buildHomeWebSiteJsonLd() {
     };
 }
 
-function buildHomeOrganizationJsonLd() {
-    return {
-        "@context": "https://schema.org",
-        "@type": "Organization",
-        "@id": `${ORIGIN}/#organization`,
-        name: "Cardigo",
-        url: `${ORIGIN}/`,
-        logo: `${ORIGIN}/images/brand-logo/cardigo-logo.png`,
-    };
-}
-
 const HERO_CARDS = [
     {
         src: "/images/home-page/hero/\u05DB\u05E8\u05D8\u05D9\u05E1 \u05D1\u05D9\u05E7\u05D5\u05E8 \u05D3\u05D9\u05D2\u05D9\u05D8\u05DC\u05D9 \u05DC\u05D0\u05D3\u05E8\u05D9\u05DB\u05DC\u05D9\u05EA \u05D7\u05D5\u05E5 \u05D5\u05E0\u05D5\u05E3  \u05DB\u05E8\u05D3\u05D9\u05D2\u05D5.webp",
@@ -439,7 +429,7 @@ export default function Home() {
     const stepsScroll = useScrollProgress();
 
     const homeWebSiteJsonLd = buildHomeWebSiteJsonLd();
-    const homeOrganizationJsonLd = buildHomeOrganizationJsonLd();
+    const homeOrganizationJsonLd = buildCardigoOrganizationJsonLd();
     const homeFaqJsonLd = buildHomeFaqJsonLd();
 
     return (
