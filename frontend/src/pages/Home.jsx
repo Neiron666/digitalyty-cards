@@ -482,7 +482,7 @@ export default function Home() {
                         </Link>
 
                         <h1 className={styles.h1}>
-                            כרטיס ביקור דיגיטלי
+                            כרטיס ביקור דיגיטלי{" "}
                             <span
                                 className={`${styles.h1Accent} ${pub.goldUnderline}`}
                             >
