@@ -362,6 +362,7 @@ function PublicCard() {
                 <SeoHelmet
                     title={title}
                     description={description}
+                    suppressSiteName={true}
                     robots={card.seo?.robots}
                     googleSiteVerification={card.seo?.googleSiteVerification}
                     facebookDomainVerification={
