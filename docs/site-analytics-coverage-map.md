@@ -167,3 +167,48 @@ Client-side route transitions are covered by the History Change trigger `HC - Go
 ### Non-actions for this contour
 
 No GA4, no enhanced conversions, no Google Consent Mode (now a relevant deferred item), no manual source-code snippet installation.
+
+---
+
+## Bot-Share Detection (Admin-Only)
+
+Added in contour `SITE_ANALYTICS_BOT_SHARE_MINIMAL` (closed 2026-06-20). See canonical detail in `docs/handoffs/current/Cardigo_Enterprise_Handoff_2026-06-20_SiteAnalytics_BotShare_Minimal_Closed.md`.
+
+**Business rule:** General `views` remains mixed (human + bot). Bot traffic is NOT removed from any existing metric. The bot-share fields are additive read-only context for the admin.
+
+### What was added to SiteAnalyticsDaily
+
+| Field           | Type                     | Description                                                                                                                                                                                |
+| --------------- | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `botViews`      | Number                   | Count of view events where UA matched a known bot pattern. Subset of `views`.                                                                                                              |
+| `botKindCounts` | Map&lt;String,Number&gt; | Per-kind bot breakdown. Keys: `googlebot`, `adsbot_google`, `bingbot`, `ahrefsbot`, `semrushbot`, `yandexbot`, `dotbot`, `lighthouse`, `pagespeed`, `headless`, `social_bot`, `other_bot`. |
+
+Legacy documents (before deploy) have these fields absent. Read code treats absent values as 0. No retroactive reclassification.
+
+### UA classification
+
+18 UA patterns matched via `String.prototype.includes` in `classifyUA()` (pure function, `siteAnalytics.controller.js`). Classification is analytics-grade only — NOT a security trust boundary. Raw `userAgent` is never persisted to any collection.
+
+### pagePath validation hardening (added same contour)
+
+`isAllowedPublicPath()` now gate-keeps all accepted site-analytics paths. Valid paths: exact marketing routes (`/`, `/cards`, `/pricing`, `/contact`, `/blog`, `/guides` and their trailing-slash variants), pagination (`/blog/page/:n`, `/guides/page/:n`), blog/guide slugs (ASCII-only via charCode loop).
+
+Paths that fail validation → `incDiagnostics("malformed_pagePath")` → 204 early return. No write occurs.
+
+`/c/*` and `/og/*` are explicitly excluded via `EXCLUDED_PREFIXES`. `/c` and `/og` bare paths are excluded via `EXCLUDED_EXACT`.
+
+### Admin API fields
+
+`GET /api/admin/site-analytics/summary` now returns `kpi.botViews`, `kpi.botShare`, `today.botViews`, `today.botShare`, `series[].botViews`.
+
+`GET /api/admin/site-analytics/sources` now returns `botKindCounts` (aggregated over range).
+
+### Admin UI
+
+The "מדדי מפתח" block in AdminAnalyticsView shows:
+
+- Inside "צפיות" KPI card: sub-row with label "מתוכן סריקות בוטים", bot count, and `{botSharePercent}% מכלל הצפיות`
+- Helper text: "הצפיות הכלליות כוללות גם סריקות טכניות. כאן מוצג כמה מתוכן זוהו כרובוטים."
+- Conditional breakdown card "סריקות לפי רובוט" (rendered only when `botKindCounts` has entries)
+
+All existing analytics sections unchanged.

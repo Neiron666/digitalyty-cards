@@ -19,6 +19,7 @@ const DIAGNOSTIC_REASONS = Object.freeze([
     "invalid_pagePath",
     "excluded_pagePath",
     "card_denied",
+    "malformed_pagePath",
     "missing_action",
     "db_error",
 ]);
@@ -57,6 +58,9 @@ const EXCLUDED_PREFIXES = Object.freeze([
     "/assets/",
     "/.netlify/",
     "/edit",
+    // Org-card routes and OG preview routes must never appear in site analytics.
+    "/c/",
+    "/og/",
 ]);
 
 const EXCLUDED_EXACT = new Set([
@@ -69,6 +73,9 @@ const EXCLUDED_EXACT = new Set([
     "/settings",
     "/robots.txt",
     "/service-worker.js",
+    // Bare /c and /og without trailing slash — defense-in-depth alongside EXCLUDED_PREFIXES.
+    "/c",
+    "/og",
 ]);
 
 function isExcludedPagePath(pagePath) {
@@ -87,6 +94,143 @@ function isExcludedPagePath(pagePath) {
     }
 
     return false;
+}
+
+// ---------------------------------------------------------------------------
+// Strict pagePath allowlist for site analytics.
+// Only known Cardigo public marketing/content routes are accepted.
+// All other paths — Hebrew strings, page titles, unknown routes, private routes —
+// return false and are rejected before any DB write.
+// ---------------------------------------------------------------------------
+const ALLOWED_EXACT_PATHS = new Set([
+    "/",
+    "/cards",
+    "/cards/",
+    "/pricing",
+    "/pricing/",
+    "/contact",
+    "/contact/",
+    "/blog",
+    "/blog/",
+    "/guides",
+    "/guides/",
+]);
+
+/**
+ * Returns true when every character in segment is ASCII alphanumeric or hyphen.
+ * Validates blog/guide slug segments — rejects Hebrew, emoji, dots, slashes.
+ * Uses a char-code loop rather than regex to avoid any ReDoS surface.
+ */
+function isSafeAsciiSlug(segment) {
+    if (!segment || segment.length > 120) return false;
+    for (let i = 0; i < segment.length; i++) {
+        const c = segment.charCodeAt(i);
+        // a-z: 97-122  A-Z: 65-90  0-9: 48-57  hyphen (-): 45
+        if (
+            !(
+                (c >= 97 && c <= 122) ||
+                (c >= 65 && c <= 90) ||
+                (c >= 48 && c <= 57) ||
+                c === 45
+            )
+        ) {
+            return false;
+        }
+    }
+    return true;
+}
+
+/**
+ * Returns true when pagePath is a known public site analytics route.
+ * Accepted patterns:
+ *   /                              home
+ *   /cards, /cards/
+ *   /pricing, /pricing/
+ *   /contact, /contact/
+ *   /blog, /blog/
+ *   /blog/:slug, /blog/:slug/     ASCII slug only
+ *   /blog/page/:n, /blog/page/:n/ digits only (pagination)
+ *   /guides, /guides/
+ *   /guides/:slug, /guides/:slug/ ASCII slug only
+ *   /guides/page/:n, /guides/page/:n/ digits only (pagination)
+ */
+function isAllowedPublicPath(pagePath) {
+    const p = String(pagePath || "");
+    if (!p) return false;
+
+    if (ALLOWED_EXACT_PATHS.has(p)) return true;
+
+    // Pagination: /blog/page/:n and /guides/page/:n (with optional trailing slash)
+    for (const listingPrefix of ["/blog/page/", "/guides/page/"]) {
+        if (p.startsWith(listingPrefix)) {
+            const rest = p.slice(listingPrefix.length).replace(/\/$/, "");
+            if (rest.length > 0 && rest.length <= 6) {
+                let allDigits = true;
+                for (let i = 0; i < rest.length; i++) {
+                    const c = rest.charCodeAt(i);
+                    if (c < 48 || c > 57) {
+                        allDigits = false;
+                        break;
+                    }
+                }
+                if (allDigits) return true;
+            }
+            return false;
+        }
+    }
+
+    // Blog post slug: /blog/:slug and /blog/:slug/
+    if (p.startsWith("/blog/")) {
+        const rest = p.slice(6).replace(/\/$/, "");
+        if (rest && !rest.includes("/") && isSafeAsciiSlug(rest)) return true;
+        return false;
+    }
+
+    // Guide post slug: /guides/:slug and /guides/:slug/
+    if (p.startsWith("/guides/")) {
+        const rest = p.slice(8).replace(/\/$/, "");
+        if (rest && !rest.includes("/") && isSafeAsciiSlug(rest)) return true;
+        return false;
+    }
+
+    return false;
+}
+
+// ---------------------------------------------------------------------------
+// Bot UA classifier — analytics classification only, not a security trust boundary.
+// A spoofed human UA is classified as human; that only affects bot-share metrics.
+// Neither case affects request handling, auth, or access control.
+// Uses String.prototype.includes (linear time) — no regex on UA string.
+// Check in specificity order: AdsBot before Googlebot to avoid mis-match.
+// ---------------------------------------------------------------------------
+const BOT_UA_PATTERNS = Object.freeze([
+    ["AdsBot-Google", "adsbot_google"],
+    ["Googlebot", "googlebot"],
+    ["bingbot", "bingbot"],
+    ["AhrefsBot", "ahrefsbot"],
+    ["SemrushBot", "semrushbot"],
+    ["YandexBot", "yandexbot"],
+    ["DotBot", "dotbot"],
+    ["Lighthouse", "lighthouse"],
+    ["PageSpeed", "pagespeed"],
+    ["HeadlessChrome", "headless"],
+    ["facebookexternalhit", "social_bot"],
+    ["Twitterbot", "social_bot"],
+    ["LinkedInBot", "social_bot"],
+    ["Discordbot", "social_bot"],
+    ["TelegramBot", "social_bot"],
+    ["Slackbot", "social_bot"],
+    ["WhatsApp", "social_bot"],
+    ["Pinterest", "social_bot"],
+]);
+
+function classifyUA(rawUA) {
+    const ua = String(rawUA || "");
+    if (!ua) return { isBot: false, botKind: "" };
+    for (const [pattern, botKind] of BOT_UA_PATTERNS) {
+        if (ua.includes(pattern)) return { isBot: true, botKind };
+    }
+    return { isBot: false, botKind: "" };
 }
 
 function getClientIp(req) {
@@ -435,6 +579,13 @@ export async function trackSiteAnalytics(req, res) {
             return res.sendStatus(204);
         }
 
+        // Strict allowlist: only accept known Cardigo public marketing/content paths.
+        // Rejects Hebrew strings, page titles, unknown routes, and any non-marketing path.
+        if (!isAllowedPublicPath(pagePath)) {
+            incDiagnostics("malformed_pagePath");
+            return res.sendStatus(204);
+        }
+
         const action =
             event === "click" ? normalizeAction(req.body?.action) : "";
         if (event === "click" && !action) {
@@ -466,6 +617,7 @@ export async function trackSiteAnalytics(req, res) {
         });
 
         const userAgent = String(req.headers?.["user-agent"] || "");
+        const { isBot, botKind } = classifyUA(userAgent);
         const normalizedSource = normalizeSource({
             utmSource: utm?.source,
             utmMedium: utm?.medium,
@@ -493,6 +645,18 @@ export async function trackSiteAnalytics(req, res) {
 
             // pageChannelCounts (capped by global key-count)
             await bumpPageChannelCount({ siteKey, day, pagePath, channel });
+
+            // Bot-share counters — incremented when UA is a known bot on view events.
+            // botKindCounts uses direct $inc without a cap check: the enum is finite
+            // (at most BOT_KIND_MAX_KEYS distinct values from BOT_UA_PATTERNS).
+            // Raw userAgent is never stored anywhere.
+            if (isBot) {
+                $inc.botViews = 1;
+                const botKindKey = safeKey(botKind, { maxLen: 20 });
+                if (botKindKey) {
+                    $inc[`botKindCounts.${botKindKey}`] = 1;
+                }
+            }
         }
 
         if (event === "click") {

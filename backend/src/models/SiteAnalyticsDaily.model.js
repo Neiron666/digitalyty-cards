@@ -4,6 +4,8 @@ const { Schema } = mongoose;
 
 const MAX_BUCKET_KEYS = 25;
 const MAX_PAGE_CHANNEL_KEYS = 200;
+// Bot-kind enum is finite (≤ 15 values); no runtime overflow risk.
+const BOT_KIND_MAX_KEYS = 15;
 
 const MIN_RETENTION_DAYS = 120;
 const DEFAULT_RETENTION_DAYS = 365;
@@ -28,6 +30,11 @@ const SiteAnalyticsDailySchema = new Schema(
 
         views: { type: Number, default: 0 },
         clicksTotal: { type: Number, default: 0 },
+
+        // Bot-share counters (additive; absent on legacy documents → read code treats as 0).
+        // botKindCounts keys are always from a bounded enum — no cap check needed at write time.
+        botViews: { type: Number, default: 0 },
+        botKindCounts: { type: Map, of: Number, default: {} },
 
         // Map<string, number>
         channelCounts: { type: Map, of: Number, default: {} },
@@ -69,6 +76,7 @@ SiteAnalyticsDailySchema.index(
 // Constants exported for controller caps.
 SiteAnalyticsDailySchema.statics.MAX_BUCKET_KEYS = MAX_BUCKET_KEYS;
 SiteAnalyticsDailySchema.statics.MAX_PAGE_CHANNEL_KEYS = MAX_PAGE_CHANNEL_KEYS;
+SiteAnalyticsDailySchema.statics.BOT_KIND_MAX_KEYS = BOT_KIND_MAX_KEYS;
 
 // Explicit collection pin — do NOT remove.
 // Mongoose v9 legacy-pluralize maps "SiteAnalyticsDaily" → "siteanalyticsdailies".

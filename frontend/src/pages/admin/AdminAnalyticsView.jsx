@@ -38,6 +38,22 @@ const SOURCE_LABELS = {
     other_source: "מקור אחר",
 };
 
+/** Readable display labels for bot kind keys from botKindCounts. */
+const BOT_KIND_LABELS = {
+    googlebot: "Googlebot",
+    adsbot_google: "AdsBot-Google",
+    bingbot: "Bingbot",
+    ahrefsbot: "AhrefsBot",
+    semrushbot: "SemrushBot",
+    yandexbot: "YandexBot",
+    dotbot: "DotBot",
+    lighthouse: "Lighthouse",
+    pagespeed: "PageSpeed",
+    headless: "Headless browser",
+    social_bot: "Social bot",
+    other_bot: "Other bot",
+};
+
 function sourceLabel(key) {
     const k = String(key || "");
     if (SOURCE_LABELS[k]) return SOURCE_LABELS[k];
@@ -158,6 +174,10 @@ export default function AdminAnalyticsView({ refreshKey = 0 } = {}) {
     const kpi = summary?.kpi || null;
     const today = summary?.today || null;
 
+    const botViews = Number(summary?.kpi?.botViews || 0);
+    const botShare = Number(summary?.kpi?.botShare || 0);
+    const botSharePercent = Math.round(botShare * 1000) / 10;
+
     const channelsObj =
         sources?.channels && typeof sources.channels === "object"
             ? sources.channels
@@ -189,6 +209,17 @@ export default function AdminAnalyticsView({ refreshKey = 0 } = {}) {
     const topActions = Array.isArray(sources?.topActions)
         ? sources.topActions
         : [];
+
+    const botKindRows = useMemo(() => {
+        const obj =
+            sources?.botKindCounts && typeof sources.botKindCounts === "object"
+                ? sources.botKindCounts
+                : {};
+        return Object.entries(obj)
+            .map(([key, value]) => ({ key, count: Number(value) || 0 }))
+            .filter((x) => x.key && x.count > 0)
+            .sort((a, b) => b.count - a.count);
+    }, [sources]);
 
     // Visit intelligence (C4/C5) - derived from /admin/site-analytics/visits
     const totalUniqueVisitors =
@@ -317,6 +348,19 @@ export default function AdminAnalyticsView({ refreshKey = 0 } = {}) {
                                     ? kpi.views
                                     : "-"}
                             </div>
+                            {kpi && (
+                                <div className={styles.botSubSep}>
+                                    <div className={styles.kpiLabel}>
+                                        מתוכן סריקות בוטים
+                                    </div>
+                                    <div className={styles.botSubValue}>
+                                        {botViews}
+                                    </div>
+                                    <p className={styles.muted}>
+                                        {botSharePercent}% מכלל הצפיות
+                                    </p>
+                                </div>
+                            )}
                         </div>
                         <div className={styles.kpiCard}>
                             <div className={styles.kpiLabel}>קליקים</div>
@@ -341,6 +385,31 @@ export default function AdminAnalyticsView({ refreshKey = 0 } = {}) {
                             {Number(today.clicksTotal) || 0}
                         </p>
                     ) : null}
+                    {kpi && (
+                        <p className={styles.botInfoText}>
+                            הצפיות הכלליות כוללות גם סריקות טכניות. כאן מוצג כמה
+                            מתוכן זוהו כרובוטים.
+                        </p>
+                    )}
+                    {botKindRows.length > 0 && (
+                        <div className={styles.botBreakdown}>
+                            <div className={styles.sourceTitle}>
+                                סריקות לפי רובוט
+                            </div>
+                            <div className={styles.rows}>
+                                {botKindRows.map((r) => (
+                                    <div key={r.key} className={styles.row}>
+                                        <span className={styles.rowKey}>
+                                            {BOT_KIND_LABELS[r.key] ?? r.key}
+                                        </span>
+                                        <span className={styles.rowVal}>
+                                            {r.count}
+                                        </span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
                 </div>
 
                 <div className={styles.block}>

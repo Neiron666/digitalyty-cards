@@ -56,11 +56,13 @@ function topN(counts, limit) {
         .slice(0, limit);
 }
 
-function kpiFromTotals({ views, clicksTotal }) {
+function kpiFromTotals({ views, clicksTotal, botViews = 0 }) {
     const v = Number(views) || 0;
     const c = Number(clicksTotal) || 0;
+    const b = Number(botViews) || 0;
     const conversion = v > 0 ? c / v : 0;
-    return { views: v, clicksTotal: c, conversion };
+    const botShare = v > 0 ? b / v : 0;
+    return { views: v, clicksTotal: c, conversion, botViews: b, botShare };
 }
 
 export async function getAdminSiteAnalyticsSummary(req, res) {
@@ -76,36 +78,52 @@ export async function getAdminSiteAnalyticsSummary(req, res) {
         siteKey,
         day: { $gte: startDay, $lte: endDay },
     })
-        .select("day views clicksTotal")
+        .select("day views clicksTotal botViews")
         .sort({ day: 1 })
         .lean();
 
     const byDay = new Map();
     let viewsTotal = 0;
     let clicksTotal = 0;
+    let botViewsTotal = 0;
 
     for (const doc of docs) {
         const day = doc?.day;
         const views = Number(doc?.views) || 0;
         const clicks = Number(doc?.clicksTotal) || 0;
-        if (day) byDay.set(day, { views, clicksTotal: clicks });
+        const bots = Number(doc?.botViews) || 0;
+        if (day) byDay.set(day, { views, clicksTotal: clicks, botViews: bots });
         viewsTotal += views;
         clicksTotal += clicks;
+        botViewsTotal += bots;
     }
 
     const series = [];
     for (let i = 0; i < rangeDays; i += 1) {
         const d = addUtcDays(startDate, i);
         const day = utcDayKey(d);
-        const row = byDay.get(day) || { views: 0, clicksTotal: 0 };
-        series.push({ day, views: row.views, clicksTotal: row.clicksTotal });
+        const row = byDay.get(day) || { views: 0, clicksTotal: 0, botViews: 0 };
+        series.push({
+            day,
+            views: row.views,
+            clicksTotal: row.clicksTotal,
+            botViews: row.botViews,
+        });
     }
 
-    const todayRow = byDay.get(endDay) || { views: 0, clicksTotal: 0 };
+    const todayRow = byDay.get(endDay) || {
+        views: 0,
+        clicksTotal: 0,
+        botViews: 0,
+    };
 
     return res.json({
         rangeDays,
-        kpi: kpiFromTotals({ views: viewsTotal, clicksTotal }),
+        kpi: kpiFromTotals({
+            views: viewsTotal,
+            clicksTotal,
+            botViews: botViewsTotal,
+        }),
         today: kpiFromTotals(todayRow),
         series,
     });
@@ -125,7 +143,7 @@ export async function getAdminSiteAnalyticsSources(req, res) {
         day: { $gte: startDay, $lte: endDay },
     })
         .select(
-            "channelCounts referrerCounts sourceCounts utmSourceCounts utmCampaignCounts utmMediumCounts pagePathCounts actionCounts pageChannelCounts",
+            "channelCounts referrerCounts sourceCounts utmSourceCounts utmCampaignCounts utmMediumCounts pagePathCounts actionCounts pageChannelCounts botKindCounts",
         )
         .lean();
 
@@ -138,6 +156,7 @@ export async function getAdminSiteAnalyticsSources(req, res) {
     const pagePathCounts = {};
     const actionCounts = {};
     const pageChannelCounts = {};
+    const botKindCounts = {};
 
     for (const doc of docs) {
         sumInto(channelCounts, doc?.channelCounts);
@@ -149,6 +168,7 @@ export async function getAdminSiteAnalyticsSources(req, res) {
         sumInto(pagePathCounts, doc?.pagePathCounts);
         sumInto(actionCounts, doc?.actionCounts);
         sumInto(pageChannelCounts, doc?.pageChannelCounts);
+        sumInto(botKindCounts, doc?.botKindCounts);
     }
 
     const channels = Object.fromEntries(SITE_CHANNELS.map((ch) => [ch, 0]));
@@ -257,6 +277,7 @@ export async function getAdminSiteAnalyticsSources(req, res) {
         topPages,
         topActions,
         channelsByTopPages,
+        botKindCounts,
     });
 }
 
