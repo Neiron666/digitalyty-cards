@@ -115,17 +115,17 @@ const SHOWCASE_CARDS = [
 const HERO_PREVIEWS = [
     {
         src: "/images/home-page/main-sections/Section-6/כרטיס ביקור דיגיטלי ליועץ הון פרטי  כרדיגו.webp",
-        alt: "דוגמה לכרטיס ביקור דיגיטלי - ייעוץ פיננסי",
+        alt: "תצוגה מקדימה של כרטיס ביקור דיגיטלי ליועץ הון פרטי",
         niche: "פיננסים",
     },
     {
         src: "/images/home-page/main-sections/Section-6/כרטיס ביקור דיגיטלי לאדריכלית חוץ ונוף  כרדיגו.webp",
-        alt: "דוגמה לכרטיס ביקור דיגיטלי - אדריכלות",
+        alt: "דוגמה לכרטיס ביקור דיגיטלי לאדריכלית חוץ ונוף",
         niche: "אדריכלות",
     },
     {
         src: "/images/home-page/main-sections/Section-6/כרטיס ביקור דיגיטלי לרופאת שיניים אסתטית  כרדיגו.webp",
-        alt: "דוגמה לכרטיס ביקור דיגיטלי - רפואת שיניים",
+        alt: "תצוגה מקדימה של כרטיס ביקור דיגיטלי לרופאת שיניים אסתטית",
         niche: "רפואה",
     },
 ];
@@ -235,7 +235,7 @@ export default function Cards() {
                             </span>
                             .
                         </p>
-                        <div className={styles.heroVisual} aria-hidden="true">
+                        <div className={styles.heroVisual}>
                             {HERO_PREVIEWS.map((p, i) => (
                                 <figure
                                     key={i}
@@ -247,7 +247,7 @@ export default function Cards() {
                                 >
                                     <img
                                         src={encodeURI(p.src)}
-                                        alt=""
+                                        alt={p.alt}
                                         className={styles.previewImg}
                                         width={280}
                                         height={560}
