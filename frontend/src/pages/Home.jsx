@@ -394,23 +394,23 @@ function buildHomeWebSiteJsonLd() {
 const HERO_CARDS = [
     {
         src: "/images/home-page/hero/\u05DB\u05E8\u05D8\u05D9\u05E1 \u05D1\u05D9\u05E7\u05D5\u05E8 \u05D3\u05D9\u05D2\u05D9\u05D8\u05DC\u05D9 \u05DC\u05D0\u05D3\u05E8\u05D9\u05DB\u05DC\u05D9\u05EA \u05D7\u05D5\u05E5 \u05D5\u05E0\u05D5\u05E3  \u05DB\u05E8\u05D3\u05D9\u05D2\u05D5.webp",
-        alt: "\u05DB\u05E8\u05D8\u05D9\u05E1 \u05D1\u05D9\u05E7\u05D5\u05E8 \u05D3\u05D9\u05D2\u05D9\u05D8\u05DC\u05D9 \u05DC\u05D0\u05D3\u05E8\u05D9\u05DB\u05DC\u05D9\u05EA",
+        alt: "דוגמה לכרטיס ביקור דיגיטלי לאדריכלית חוץ ונוף",
     },
     {
         src: "/images/home-page/hero/\u05DB\u05E8\u05D8\u05D9\u05E1 \u05D1\u05D9\u05E7\u05D5\u05E8 \u05D3\u05D9\u05D2\u05D9\u05D8\u05DC\u05D9 \u05DC\u05D9\u05D5\u05E2\u05E6\u05EA \u05D7\u05D3\u05E9\u05E0\u05D5\u05EA \u05D3\u05D9\u05D2\u05D9\u05D8\u05DC\u05D9\u05EA \u05D5-AI  \u05DB\u05E8\u05D3\u05D9\u05D2\u05D5.webp",
-        alt: "\u05DB\u05E8\u05D8\u05D9\u05E1 \u05D1\u05D9\u05E7\u05D5\u05E8 \u05D3\u05D9\u05D2\u05D9\u05D8\u05DC\u05D9 \u05DC\u05D9\u05D5\u05E2\u05E6\u05EA \u05D7\u05D3\u05E9\u05E0\u05D5\u05EA",
+        alt: "דוגמה לכרטיס ביקור דיגיטלי ליועצת חדשנות דיגיטלית ו-AI",
     },
     {
         src: "/images/home-page/hero/\u05DB\u05E8\u05D8\u05D9\u05E1 \u05D1\u05D9\u05E7\u05D5\u05E8 \u05D3\u05D9\u05D2\u05D9\u05D8\u05DC\u05D9 \u05DC\u05DE\u05E4\u05D9\u05E7\u05EA \u05D0\u05D9\u05E8\u05D5\u05E2\u05D9 \u05D1\u05D5\u05D8\u05D9\u05E7  \u05DB\u05E8\u05D3\u05D9\u05D2\u05D5.webp",
-        alt: "\u05DB\u05E8\u05D8\u05D9\u05E1 \u05D1\u05D9\u05E7\u05D5\u05E8 \u05D3\u05D9\u05D2\u05D9\u05D8\u05DC\u05D9 \u05DC\u05DE\u05E4\u05D9\u05E7\u05EA \u05D0\u05D9\u05E8\u05D5\u05E2\u05D9\u05DD",
+        alt: "כרטיס ביקור דיגיטלי לעסק - דוגמה למפיקת אירועי בוטיק",
     },
     {
         src: "/images/home-page/hero/\u05DB\u05E8\u05D8\u05D9\u05E1 \u05D1\u05D9\u05E7\u05D5\u05E8 \u05D3\u05D9\u05D2\u05D9\u05D8\u05DC\u05D9 \u05DC\u05D9\u05D5\u05E2\u05E5 \u05D4\u05D5\u05DF \u05E4\u05E8\u05D8\u05D9  \u05DB\u05E8\u05D3\u05D9\u05D2\u05D5.webp",
-        alt: "\u05DB\u05E8\u05D8\u05D9\u05E1 \u05D1\u05D9\u05E7\u05D5\u05E8 \u05D3\u05D9\u05D2\u05D9\u05D8\u05DC\u05D9 \u05DC\u05D9\u05D5\u05E2\u05E5 \u05D4\u05D5\u05DF",
+        alt: "דוגמה לכרטיס ביקור דיגיטלי ליועץ הון פרטי",
     },
     {
         src: "/images/home-page/hero/\u05DB\u05E8\u05D8\u05D9\u05E1 \u05D1\u05D9\u05E7\u05D5\u05E8 \u05D3\u05D9\u05D2\u05D9\u05D8\u05DC\u05D9 \u05DC\u05E8\u05D5\u05E4\u05D0\u05EA \u05E9\u05D9\u05E0\u05D9\u05D9\u05DD \u05D0\u05E1\u05EA\u05D8\u05D9\u05EA  \u05DB\u05E8\u05D3\u05D9\u05D2\u05D5.webp",
-        alt: "\u05DB\u05E8\u05D8\u05D9\u05E1 \u05D1\u05D9\u05E7\u05D5\u05E8 \u05D3\u05D9\u05D2\u05D9\u05D8\u05DC\u05D9 \u05DC\u05E8\u05D5\u05E4\u05D0\u05EA \u05E9\u05D9\u05E0\u05D9\u05D9\u05DD",
+        alt: "דוגמה לכרטיס ביקור דיגיטלי לרופאת שיניים אסתטית",
     },
 ];
 
@@ -481,12 +481,12 @@ export default function Home() {
                         </h1>
                     </div>
 
-                    <div className={styles.heroCards} aria-hidden="true">
+                    <div className={styles.heroCards}>
                         {HERO_CARDS.map((card, i) => (
                             <img
                                 key={i}
                                 src={encodeURI(card.src)}
-                                alt=""
+                                alt={card.alt}
                                 className={styles.heroCardImg}
                                 width={280}
                                 height={560}
