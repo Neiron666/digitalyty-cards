@@ -245,30 +245,37 @@ const CONTROL_FEATURES = [
 ];
 
 const TEMPLATE_COVERS = "/images/home-page/main-sections/Section-6";
+
 const TEMPLATE_SKINS = [
     {
         name: "Lakmi",
         src: `${TEMPLATE_COVERS}/כרטיס ביקור דיגיטלי לאדריכלית חוץ ונוף  כרדיגו.webp`,
+        alt: "תבנית כרטיס ביקור דיגיטלי לאדריכלית חוץ ונוף",
     },
     {
         name: "Laguna Afarsek",
         src: `${TEMPLATE_COVERS}/כרטיס ביקור דיגיטלי ליועצת חדשנות דיגיטלית ו-AI  כרדיגו.webp`,
+        alt: "עיצוב כרטיס ביקור דיגיטלי ליועצת חדשנות דיגיטלית ו-AI",
     },
     {
         name: "Iris Layla",
         src: `${TEMPLATE_COVERS}/כרטיס ביקור דיגיטלי למפיקת אירועי בוטיק  כרדיגו.webp`,
+        alt: "דוגמה לתבנית כרטיס ביקור דיגיטלי למפיקת אירועי בוטיק",
     },
     {
         name: "Tehom Turkiz",
         src: `${TEMPLATE_COVERS}/כרטיס ביקור דיגיטלי ליועץ הון פרטי  כרדיגו.webp`,
+        alt: "תבנית כרטיס ביקור דיגיטלי ליועץ הון פרטי",
     },
     {
         name: "Bronze Sachlav",
         src: `${TEMPLATE_COVERS}/כרטיס ביקור דיגיטלי לרופאת שיניים אסתטית  כרדיגו.webp`,
+        alt: "עיצוב כרטיס ביקור דיגיטלי לרופאת שיניים אסתטית",
     },
     {
         name: "Zahav Laguna",
         src: `${TEMPLATE_COVERS}/כרטיס ביקור דיגיטלי קליניקה לאסטטיקה  כרדיגו.webp`,
+        alt: "תבנית כרטיס ביקור דיגיטלי לקליניקה לאסתטיקה",
     },
 ];
 
@@ -938,7 +945,7 @@ export default function Home() {
                                 <img
                                     className={styles.templateCardImg}
                                     src={skin.src}
-                                    alt={`תבנית ${skin.name}`}
+                                    alt={skin.alt}
                                     loading="lazy"
                                     width="300"
                                     height="520"
