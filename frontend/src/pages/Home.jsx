@@ -924,15 +924,16 @@ export default function Home() {
             <section className={pub.sectionDark} id="templates">
                 <div className={pub.sectionWrap}>
                     <h2 className={pub.h2White}>
-                        בחרו עיצוב שמתאים{" "}
+                        בחרו תבנית לכרטיס ביקור דיגיטלי <br />
                         <span className={`${pub.h2Gold} ${pub.goldUnderline}`}>
-                            לעסק שלכם
+                            שמתאימה לעסק שלכם
                         </span>
                     </h2>
                     <p className={pub.sectionLeadLight}>
-                        יש לכם מבחר תבניות מוכנות, שנראות טוב מההתחלה ועובדות
-                        מצוין גם בטלפון. פשוט בוחרים סגנון שמרגיש נכון לעסק
-                        שלכם.
+                        מחכים לכם עיצובים מוכנים לכרטיס ביקור דיגיטלי לעסק,
+                        שנראים מקצועיים, ועובדים מצוין גם בטלפון. פשוט בוחרים
+                        תבנית, מוסיפים את פרטי העסק ומשתפים קישור אחד ברור עם
+                        וואטסאפ, טלפון, ניווט וכל מה שלקוח צריך כדי לפנות אליכם.
                     </p>
                     <p
                         className={`${pub.sectionLeadLight} ${pub.goldHilight} ${pub.boldTxt}`}
@@ -992,7 +993,10 @@ export default function Home() {
             {/* ── 7. HOW IT WORKS (3 steps) ──────────────────── */}
             <section className={pub.sectionLight} id="how">
                 <div className={pub.sectionWrap}>
-                    <h2 className={pub.h2Gold}>שלושה צעדים - וזה עובד</h2>
+                    <h2 className={pub.h2Gold}>
+                        {" "}
+                        כרטיס ביקור דיגיטלי ב-3 צעדים{" "}
+                    </h2>
 
                     <div className={styles.steps} ref={stepsScroll.ref}>
                         {STEPS.map((s) => (
@@ -1033,21 +1037,23 @@ export default function Home() {
                     <div className={styles.ctaInner}>
                         <h2 className={styles.ctaTitle}>
                             {" "}
-                            צרו כרטיס דיגיטלי בחינם{" "}
+                            צרו כרטיס ביקור דיגיטלי לעסק בחינם{" "}
                             <span
                                 className={`${pub.goldHilight} ${pub.goldUnderline}`}
                             >
-                                שמביא יותר לקוחות!{" "}
+                                <br />
+                                והתחילו לקבל יותר פניות!{" "}
                             </span>
                         </h2>
                         <p className={styles.ctaText}>
-                            יוצרים, משתפים ומעדכנים בקלות - עם{" "}
+                            עם{" "}
                             <span
                                 className={`${pub.goldHilight} ${pub.goldUnderline} ${pub.boldTxt}`}
                             >
                                 Cardigo
-                            </span>
-                            .
+                            </span>{" "}
+                            בונים דף עסקי מקצועי ונוח לשיתוף - עם וואטסאפ,
+                            טלפון, ניווט ועדכון פרטים בכל זמן.
                         </p>
                         <img
                             className={styles.ctaImg}
