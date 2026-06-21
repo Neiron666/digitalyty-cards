@@ -80,34 +80,33 @@ const SECTION_3_IMG = "/images/home-page/main-sections/Section-3";
 const ANALYTICS_INSIGHTS = [
     {
         Icon: SeoIcon,
-        title: "מקורות הגעה",
-        text: "זהו את הפלטפורמות שמביאות הכי הרבה תנועה לכרטיס.",
+        title: "מקורות תנועה לכרטיס הדיגיטלי",
+        text: "גלו מאיפה מגיעים מבקרים לכרטיס הביקור הדיגיטלי שלכם - גוגל, וואטסאפ, רשתות חברתיות או קמפיינים.",
         src: `${SECTION_3_IMG}/digital_business_card-marketing-distribution-channels.webp`,
-        alt: "מקורות הגעה לכרטיס ביקור דיגיטלי",
+        alt: "מקורות תנועה לכרטיס ביקור דיגיטלי לעסק",
     },
     {
         Icon: AnalyticsIcon,
-        title: "ביצועי קמפיינים",
-        text: "השוו תוצאות בין קמפיינים וגלו איפה כדאי להשקיע.",
+        title: "ביצועי קמפיינים ושיווק",
+        text: "השוו בין קמפיינים, קישורים וערוצי פרסום כדי להבין איפה הכרטיס מביא יותר צפיות ופניות.",
         src: `${SECTION_3_IMG}/digital_business_card-marketing-campaign-performance.webp`,
-        alt: "ביצועי קמפיינים בכרטיס ביקור דיגיטלי",
+        alt: "מדידת ביצועי קמפיינים בכרטיס ביקור דיגיטלי",
     },
     {
         Icon: ClickIcon,
-        title: "פעולות גולשים",
-        text: "דעו אילו פעולות הלקוחות מבצעים ומאיזה מקור.",
+        title: "לחיצות ופעולות של לקוחות",
+        text: "ראו אילו פעולות הלקוחות עושים בכרטיס - לחיצה לוואטסאפ, שיחה, ניווט, קישור או פנייה ישירה.",
         src: `${SECTION_3_IMG}/digital_business_card-customer-click-behavior.webp`,
-        alt: "התנהגות לקוחות בכרטיס ביקור דיגיטלי",
+        alt: "מעקב לחיצות ופעולות לקוחות בכרטיס ביקור דיגיטלי",
     },
     {
         Icon: LinkIcon,
-        title: "ערוצי הפצה",
-        text: "מדדו ביצועים לפי ערוץ וקישור - ותכוונו את השיווק.",
+        title: "ערוצי הפצה שעובדים באמת",
+        text: "מדדו איזה ערוץ מביא תוצאות טובות יותר - QR, קישור ישיר, וואטסאפ, אימייל או פרסום ממומן.",
         src: `${SECTION_3_IMG}/digital_business_card-campaign-performance-robot.webp`,
-        alt: "ערוצי הפצה בכרטיס ביקור דיגיטלי",
+        alt: "ערוצי הפצה ושיתוף של כרטיס ביקור דיגיטלי",
     },
 ];
-
 const SECTION_4_IMG = "/images/home-page/main-sections/Section-4";
 
 const SHARE_CHANNELS = [
@@ -280,27 +279,28 @@ const TEMPLATE_SKINS = [
 ];
 
 const STEPS_IMG = "/images/home-page/main-sections/Section-7";
+
 const STEPS = [
     {
         num: "1",
-        title: "בוחרים עיצוב",
-        text: "נרשמים בחינם ובוחרים תבנית שמתאימה לעסק.",
+        title: "בוחרים תבנית לכרטיס ביקור דיגיטלי",
+        text: "נרשמים בחינם ובוחרים עיצוב מוכן שמתאים לעסק שלכם ולתחום הפעילות.",
         src: `${STEPS_IMG}/cardigo-digital-business-card-template-selection.png.webp`,
-        alt: "בחירת תבנית לכרטיס ביקור דיגיטלי",
+        alt: "בחירת תבנית לכרטיס ביקור דיגיטלי לעסק ב-Cardigo",
     },
     {
         num: "2",
-        title: "מוסיפים תוכן",
-        text: "ממלאים פרטי קשר, תמונות, טקסט וקישורים.",
+        title: "מוסיפים את פרטי העסק",
+        text: "ממלאים טלפון, וואטסאפ, תמונות, טקסטים, שירותים וקישורים במקום אחד.",
         src: `${STEPS_IMG}/cardigo-digital-business-card-content-editing.webp`,
-        alt: "עריכת תוכן בכרטיס ביקור דיגיטלי",
+        alt: "עריכת פרטי עסק ותוכן בכרטיס ביקור דיגיטלי",
     },
     {
         num: "3",
-        title: "משתפים ומודדים",
-        text: "מפיצים בקישור, QR או וואטסאפ \u2013 ועוקבים אחרי התוצאות.",
+        title: "משתפים קישור ועוקבים אחרי התוצאות",
+        text: "משתפים את הכרטיס בקישור, QR או וואטסאפ ועוקבים אחרי צפיות ופניות.",
         src: `${STEPS_IMG}/cardigo-digital-business-card-sharing-and-analytics.png.webp`,
-        alt: "שיתוף כרטיס ביקור דיגיטלי ומעקב אנליטיקס",
+        alt: "שיתוף כרטיס ביקור דיגיטלי בקישור QR ווואטסאפ עם מעקב אנליטיקה",
     },
 ];
 
@@ -542,7 +542,6 @@ export default function Home() {
                     </div>
                 </div>
             </section>
-
             {/* ── 1. MINI-SITE / BUSINESS PRESENCE ────────────── */}
             <section className={pub.sectionLight}>
                 <div className={pub.sectionWrap}>
@@ -614,35 +613,43 @@ export default function Home() {
                     </div>
                 </div>
             </section>
-
-            {/* ── 2. CONVERSION - FROM VIEW TO CONTACT ────────── */}
+            {/* ── 2. CONVERSION - FROM VIEW TO CONTACT ────────── */}{" "}
             <section className={pub.sectionDark} id="features">
+                {" "}
                 <div className={pub.sectionWrap}>
+                    {" "}
                     <h2 className={pub.h2White}>
-                        מכל צפייה לפנייה -{" "}
+                        {" "}
+                        כרטיס ביקור דיגיטלי לעסק שמוביל מצפייה לפנייה <br />
                         <span
                             className={`${pub.goldHilight} ${pub.goldUnderline}`}
                         >
-                            בקליק אחד
-                        </span>
-                    </h2>
+                            {" "}
+                            בקליק אחד{" "}
+                        </span>{" "}
+                    </h2>{" "}
                     <p
                         className={`${pub.sectionLeadLight} ${pub.goldUnderline}`}
                     >
-                        כל כפתור בכרטיס מקרב הזדמנות ליצירת קשר
+                        {" "}
+                        כל כפתור בכרטיס עוזר ללקוח לפעול מיד - לשלוח וואטסאפ,
+                        להתקשר, לנווט, לפתוח קישור או להשאיר פרטים בצורה פשוטה
+                        וברורה.{" "}
                         <span className={`${pub.goldHilight} ${pub.boldTxt}`}>
                             {" "}
-                            אמיתית.
+                            כך הופכים צפייה להזדמנות אמיתית ליצירת קשר.{" "}
                         </span>{" "}
-                    </p>
-
+                    </p>{" "}
                     <div
                         className={styles.conversionRow}
                         ref={conversionScroll.ref}
                     >
+                        {" "}
                         {CONVERSION_ITEMS.map((item, i) => (
                             <div key={i} className={styles.conversionCard}>
+                                {" "}
                                 <div className={styles.conversionMedia}>
+                                    {" "}
                                     <img
                                         className={styles.conversionImg}
                                         src={item.src}
@@ -651,26 +658,27 @@ export default function Home() {
                                         height={400}
                                         loading="lazy"
                                         decoding="async"
-                                    />
-                                </div>
+                                    />{" "}
+                                </div>{" "}
                                 <div className={styles.conversionHeader}>
+                                    {" "}
                                     <item.Icon
                                         className={styles.conversionIcon}
-                                    />
+                                    />{" "}
                                     <h3 className={styles.conversionTitle}>
-                                        {item.title}
-                                    </h3>
-
+                                        {" "}
+                                        {item.title}{" "}
+                                    </h3>{" "}
                                     <p className={styles.conversionText}>
-                                        {item.text}
-                                    </p>
-                                </div>
+                                        {" "}
+                                        {item.text}{" "}
+                                    </p>{" "}
+                                </div>{" "}
                             </div>
-                        ))}
-                    </div>
-                </div>
+                        ))}{" "}
+                    </div>{" "}
+                </div>{" "}
             </section>
-
             {/* ── 3. ANALYTICS / KNOW WHAT WORKS ─────────────── */}
             <section
                 className={`${pub.sectionLight} ${styles.analyticsSection}`}
@@ -684,7 +692,8 @@ export default function Home() {
                         </strong>{" "}
                         זאת{" "}
                         <em className={styles.analyticsLeadPunch}>
-                            פלטפורמה חכמה עם אנליטיקה{" "}
+                            פלטפורמה חכמה ליצירת כרטיסי ביקור דיגיטליים עם
+                            אנליטיקה{" "}
                         </em>
                         ומעקב.
                     </p>
@@ -727,10 +736,10 @@ export default function Home() {
                             </div>
                         ))}
                     </div>
-
                     <p className={pub.highlight}>
-                        כל צפייה, כל לחיצה, כל מקור הגעה - הופך את הנתונים
-                        לתובנות שנותנות לכם{" "}
+                        כל צפייה בכרטיס הביקור הדיגיטלי, כל לחיצה על וואטסאפ או
+                        טלפון וכל מקור הגעה עוזרים לכם להבין מה באמת עובד -
+                        ולהפוך נתונים לתובנות שמחזקות את הפניות לעסק.{" "}
                         <em className={styles.analyticsLeadPunch}>
                             שליטה אמיתית על התוצאות.
                         </em>
@@ -744,50 +753,67 @@ export default function Home() {
                     </p>
                 </div>
             </section>
-
             {/* ── 4. SHARE EVERYWHERE ─────────────────────────── */}
             <section className={pub.sectionDark}>
                 <div className={pub.sectionWrap}>
                     <h2 className={pub.h2White}>
                         {" "}
-                        שתפו בכל מקום{" "}
+                        שתפו בכל מקום <br />
                         <span
                             className={`${pub.h2Gold} ${pub.goldUnderline} ${styles.strongerUnderline}`}
                         >
-                            בקלות
+                            את הכרטיס ביקור הדיגיטלי שלכם
                         </span>
                     </h2>
                     <ul className={styles.shareChecklist}>
+                        {" "}
                         <li className={styles.shareCheckItem}>
+                            {" "}
                             <div className={styles.shareCheckText}>
+                                {" "}
                                 <span className={styles.shareCheckBold}>
-                                    משתלב בכל ערוץ
-                                </span>
+                                    {" "}
+                                    משתפים כרטיס ביקור דיגיטלי בכל ערוץ{" "}
+                                </span>{" "}
                                 <span className={styles.shareCheckDesc}>
-                                    אימייל, וואטסאפ, QR וקישורי קמפיין
-                                </span>
-                            </div>
-                        </li>
+                                    {" "}
+                                    שלחו את הכרטיס בקישור, וואטסאפ, אימייל, QR
+                                    או קמפיין ממומן - בצורה פשוטה ונוחה
+                                    ללקוח{" "}
+                                </span>{" "}
+                            </div>{" "}
+                        </li>{" "}
                         <li className={styles.shareCheckItem}>
+                            {" "}
                             <div className={styles.shareCheckText}>
+                                {" "}
                                 <span className={styles.shareCheckBold}>
-                                    לא נשאר רק בקישור
-                                </span>
+                                    {" "}
+                                    נוכחות דיגיטלית שממשיכה לעבוד{" "}
+                                </span>{" "}
                                 <span className={styles.shareCheckDesc}>
-                                    הכרטיס חי בכל מקום שבו העסק שלכם כבר נמצא
-                                </span>
-                            </div>
-                        </li>
+                                    {" "}
+                                    הכרטיס זמין ללקוחות בכל מקום שבו העסק שלכם
+                                    מופיע - ברשתות, בפרסום, בהודעות ובשיחות
+                                    מכירה{" "}
+                                </span>{" "}
+                            </div>{" "}
+                        </li>{" "}
                         <li className={styles.shareCheckItem}>
+                            {" "}
                             <div className={styles.shareCheckText}>
+                                {" "}
                                 <span className={styles.shareCheckBold}>
-                                    הפצה חכמה יותר
-                                </span>
+                                    {" "}
+                                    כל שיתוף יכול להפוך לפנייה{" "}
+                                </span>{" "}
                                 <span className={styles.shareCheckDesc}>
-                                    כל שיתוף הוא הזדמנות להגיע ללקוחות חדשים
-                                </span>
-                            </div>
-                        </li>
+                                    {" "}
+                                    כל פתיחה של הכרטיס מחברת לקוח לפרטי העסק,
+                                    לוואטסאפ, לטלפון ולפעולה הבאה{" "}
+                                </span>{" "}
+                            </div>{" "}
+                        </li>{" "}
                     </ul>
 
                     <div className={styles.shareRow} ref={shareScroll.ref}>
@@ -818,52 +844,57 @@ export default function Home() {
                     </div>
                 </div>
             </section>
-
             {/* ── 5. EDITABILITY / CONTROL 24/7 ──────────────── */}
             <section className={pub.sectionLight}>
                 <div className={pub.sectionWrap}>
-                    <h2 className={pub.h2Gold}>תעדכנו בעצמכם - 24/7</h2>
+                    <h2 className={pub.h2Gold}>
+                        {" "}
+                        עדכון הכרטיס הדיגיטלי שלכם - בכל זמן
+                    </h2>
 
                     <ul className={styles.editChecklist}>
                         <li className={styles.editCheckItem}>
                             <div className={styles.editCheckText}>
                                 <span className={styles.editCheckBold}>
-                                    עדכון תוכן עצמאי
+                                    עדכון פרטי העסק באופן עצמאי
                                 </span>
                                 <span className={styles.editCheckDesc}>
-                                    שנו מספר טלפון, תמונות, טקסטים וקישורים -
-                                    הכל מתעדכן ברגע
+                                    שנו מספר טלפון, וואטסאפ, תמונות, טקסטים
+                                    וקישורים - והכרטיס הדיגיטלי שלכם מתעדכן מיד
                                 </span>
                             </div>
                         </li>
                         <li className={styles.editCheckItem}>
                             <div className={styles.editCheckText}>
                                 <span className={styles.editCheckBold}>
-                                    החלפת עיצוב בלחיצה
+                                    החלפת עיצוב ותבנית בלחיצה
                                 </span>
                                 <span className={styles.editCheckDesc}>
-                                    בחרו תבנית חדשה בכל רגע - התוכן נשמר
+                                    בחרו עיצוב חדש לכרטיס הביקור הדיגיטלי בכל
+                                    רגע - בלי לאבד את התוכן שכבר הוספתם
                                 </span>
                             </div>
                         </li>
                         <li className={styles.editCheckItem}>
                             <div className={styles.editCheckText}>
                                 <span className={styles.editCheckBold}>
-                                    מכל מכשיר, בלי לחכות
+                                    ניהול מכל מכשיר, בלי מתכנת
                                 </span>
                                 <span className={styles.editCheckDesc}>
-                                    האזור האישי עובד גם מהנייד - בלי צורך במפתח
+                                    האזור האישי עובד גם מהנייד, כך שאפשר לעדכן
+                                    את הכרטיס שלכם לבד, מהר ובלי לחכות לאף אחד
                                 </span>
                             </div>
                         </li>
                         <li className={styles.editCheckItem}>
                             <div className={styles.editCheckText}>
                                 <span className={styles.editCheckBold}>
-                                    תמיכה מלאה
+                                    תמיכה אישית כשצריך
                                 </span>
                                 <span className={styles.editCheckDesc}>
-                                    לא מסתדרים? יש שאלה? צריכים עזרה עם הכרטיס?
-                                    אנחנו כאן בשבילכם, עם תמיכה אישית וזמינה.
+                                    צריכים עזרה עם הכרטיס, העיצוב או עדכון
+                                    הפרטים? אנחנו כאן כדי לעזור לכם להציג את
+                                    העסק בצורה מקצועית.
                                 </span>
                             </div>
                         </li>
@@ -874,13 +905,12 @@ export default function Home() {
                         className={`${styles.editorDashImg} ${scroll.scrollZoomSoft} ${styles.dashboardZoom}`}
                         ref={editorZoom.ref}
                         src="/images/home-page/main-sections/Section-5/cardigo-digital-business-card-editor-dashboard.jpg"
-                        alt="עורך כרטיס ביקור דיגיטלי - Cardigo"
+                        alt="אזור אישי לעריכת כרטיס ביקור דיגיטלי לעסק - Cardigo"
                         width={800}
                         height={600}
                         loading="lazy"
                         decoding="async"
                     />
-
                     {/* image-top control cards */}
                     <div
                         className={styles.controlItems}
@@ -914,12 +944,12 @@ export default function Home() {
                         ))}
                     </div>
                     <p className={pub.highlight}>
-                        שנו מספר טלפון, החליפו עיצוב, עדכנו תמונות - הכל דרך
-                        האזור האישי , מכל מכשיר, בלי לחכות לאף אחד.
+                        עם Cardigo אתם יכולים לעדכן את הכרטיס הדיגיטלי שלכם בכל
+                        זמן - להחליף מספר טלפון, להוסיף תמונות, לעדכן קישורים,
+                        לשנות עיצוב ולשתף קישור מקצועי אחד מכל מכשיר.
                     </p>
                 </div>
             </section>
-
             {/* ── 6. TEMPLATES / DESIGN ──────────────────────── */}
             <section className={pub.sectionDark} id="templates">
                 <div className={pub.sectionWrap}>
@@ -930,10 +960,10 @@ export default function Home() {
                         </span>
                     </h2>
                     <p className={pub.sectionLeadLight}>
-                        מחכים לכם עיצובים מוכנים לכרטיס ביקור דיגיטלי לעסק,
-                        שנראים מקצועיים, ועובדים מצוין גם בטלפון. פשוט בוחרים
-                        תבנית, מוסיפים את פרטי העסק ומשתפים קישור אחד ברור עם
-                        וואטסאפ, טלפון, ניווט וכל מה שלקוח צריך כדי לפנות אליכם.
+                        מחכים לכם עיצובים מוכנים לכרטיס ביקור דיגיטלי, שנראים
+                        מקצועיים, ועובדים מצוין גם בטלפון. פשוט בוחרים תבנית,
+                        מוסיפים את פרטי העסק ומשתפים קישור אחד ברור עם וואטסאפ,
+                        טלפון, ניווט וכל מה שלקוח צריך כדי לפנות אליכם.
                     </p>
                     <p
                         className={`${pub.sectionLeadLight} ${pub.goldHilight} ${pub.boldTxt}`}
@@ -989,7 +1019,6 @@ export default function Home() {
                     </div>
                 </div>
             </section>
-
             {/* ── 7. HOW IT WORKS (3 steps) ──────────────────── */}
             <section className={pub.sectionLight} id="how">
                 <div className={pub.sectionWrap}>
@@ -1030,7 +1059,6 @@ export default function Home() {
                     </div>
                 </div>
             </section>
-
             {/* ── 8. FINAL CTA ───────────────────────────────── */}
             <section className={styles.ctaSection}>
                 <div className={pub.sectionWrap}>
@@ -1081,7 +1109,6 @@ export default function Home() {
                     </div>
                 </div>
             </section>
-
             {/* ── 9. FAQ (expanded) ──────────────────────────── */}
             <section className={pub.sectionDark} id="faq">
                 <div className={pub.sectionWrap}>
