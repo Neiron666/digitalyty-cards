@@ -247,12 +247,40 @@ function deriveOgImage(dto, siteUrl) {
     return { image: siteUrl + DEFAULT_OG_IMAGE_SUFFIX, isFallback: true };
 }
 
+/* Remove Cardigo / כרדיגו platform suffix or prefix from an alt string.
+   Only strips exact boundary patterns; internal occurrences are preserved. */
+function cleanPlatformBrandFromAlt(value) {
+    if (!value) return "";
+    let s = String(value).replace(/\s+/g, " ").trim();
+    // Trailing suffix variants: " – Cardigo", " - Cardigo", " | Cardigo" and כרדיגו equivalents
+    s = s.replace(/\s+[-–]\s*(?:Cardigo|כרדיגו)\s*$/i, "").trim();
+    s = s.replace(/\s*\|\s*(?:Cardigo|כרדיגו)\s*$/i, "").trim();
+    // Leading prefix variants: "Cardigo – ", "Cardigo - " and כרדיגו equivalents
+    s = s.replace(/^(?:Cardigo|כרדיגו)\s*[-–]\s*/i, "").trim();
+    return s;
+}
+
+/* Returns true when the candidate is too generic to use as imageAlt:
+   either a known generic page title or the compound fallback "X – כרטיס ביקור דיגיטלי". */
+function isGenericAltCandidate(value) {
+    if (!value) return true;
+    if (GENERIC_CARD_OG_TITLES.has(value)) return true;
+    // Reject the derived compound fallback produced by deriveTitle when seo.title is absent
+    if (/\s[-–]\s*כרטיס ביקור דיגיטלי$/.test(value)) return true;
+    return false;
+}
+
 function deriveOgImageAlt(dto) {
-    const displayName = deriveDisplayName(dto);
-    const alt = displayName
-        ? displayName + " – Cardigo"
-        : "Cardigo – כרטיס ביקור דיגיטלי לעסקים";
-    return clip(alt, OG_IMAGE_ALT_MAX);
+    // Prefer the resolved card title (same value used for <title>/og:title/twitter:title),
+    // cleaned of any platform brand suffix or prefix. Fall back to display name only,
+    // never appending Cardigo as a platform marker.
+    const title = cleanPlatformBrandFromAlt(deriveTitle(dto));
+    if (title && !isGenericAltCandidate(title)) {
+        return clip(title, OG_IMAGE_ALT_MAX);
+    }
+    const displayName = cleanPlatformBrandFromAlt(deriveDisplayName(dto));
+    if (displayName) return clip(displayName, OG_IMAGE_ALT_MAX);
+    return "כרטיס ביקור דיגיטלי";
 }
 
 function deriveRobots(dto) {

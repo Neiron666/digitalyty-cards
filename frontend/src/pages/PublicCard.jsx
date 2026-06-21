@@ -22,6 +22,19 @@ function toPlainText(value) {
         .trim();
 }
 
+/* Remove Cardigo / כרדיגו platform suffix or prefix from a string intended as imageAlt.
+   Only strips exact boundary patterns; internal occurrences are preserved. */
+function cleanPlatformBrand(s) {
+    if (!s) return "";
+    let v = String(s).replace(/\s+/g, " ").trim();
+    // Trailing suffix variants: " – Cardigo", " - Cardigo", " | Cardigo" and כרדיגו equivalents
+    v = v.replace(/\s+[-–]\s*(?:Cardigo|כרדיגו)\s*$/i, "").trim();
+    v = v.replace(/\s*\|\s*(?:Cardigo|כרדיגו)\s*$/i, "").trim();
+    // Leading prefix variants: "Cardigo – ", "Cardigo - " and כרדיגו equivalents
+    v = v.replace(/^(?:Cardigo|כרדיגו)\s*[-–]\s*/i, "").trim();
+    return v;
+}
+
 function buildFaqJsonLd(card, canonicalUrl) {
     const faq = card?.faq && typeof card.faq === "object" ? card.faq : null;
     const rawItems = Array.isArray(faq?.items) ? faq.items : [];
@@ -302,12 +315,18 @@ function PublicCard() {
         card.design?.logo ||
         getPublicOrigin() + DEFAULT_OG_IMAGE_PATH;
 
-    const imageAltBusinessName = String(card.business?.name || "")
-        .replace(/\s+/g, " ")
-        .trim();
-    const imageAlt = imageAltBusinessName
-        ? `${imageAltBusinessName} – Cardigo`
-        : "Cardigo – כרטיס ביקור דיגיטלי לעסקים";
+    const cleanedTitle = cleanPlatformBrand(title);
+    const isGenericAlt =
+        !cleanedTitle ||
+        cleanedTitle === "כרטיס ביקור דיגיטלי" ||
+        /\s[-–]\s*כרטיס ביקור דיגיטלי$/.test(cleanedTitle);
+    const imageAlt = !isGenericAlt
+        ? cleanedTitle
+        : cleanPlatformBrand(
+              String(card.business?.name || "")
+                  .replace(/\s+/g, " ")
+                  .trim(),
+          ) || "כרטיס ביקור דיגיטלי";
 
     const publicOrigin = getPublicOrigin();
 
