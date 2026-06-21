@@ -28,37 +28,37 @@ const CARD_FEATURES = [
         src: `${FEATURES_IMG}/contact-actions.webp`,
         alt: "לחצני יצירת קשר בכרטיס ביקור דיגיטלי - Cardigo",
         title: "לחצני יצירת קשר",
-        text: "חיוג, וואטסאפ, ניווט ורשתות חברתיות - הלקוח בוחר איך לפנות.",
+        text: "חיוג, וואטסאפ, ניווט ורשתות חברתיות במקום אחד - כדי שללקוח יהיה קל לפנות בדרך שנוחה לו.",
     },
     {
         src: `${FEATURES_IMG}/lead-form-preview.webp`,
-        alt: "טופס לידים בכרטיס ביקור דיגיטלי - Cardigo",
-        title: "טופס לידים",
-        text: "לקוחות משאירים פרטים - ואתם חוזרים בזמן שנוח לכם.",
+        alt: "טופס פניות ולידים בכרטיס ביקור דיגיטלי - Cardigo",
+        title: "טופס פניות",
+        text: "לקוחות משאירים פרטים בצורה מסודרת, ואתם יכולים לחזור אליהם בזמן שמתאים לכם.",
     },
     {
         src: `${FEATURES_IMG}/gallery-preview.webp`,
-        alt: "גלריית תמונות בכרטיס ביקור דיגיטלי - Cardigo",
+        alt: "גלריית תמונות ועבודות בכרטיס ביקור דיגיטלי - Cardigo",
         title: "גלריית תמונות",
-        text: "הציגו עבודות, פרויקטים ותמונות מקצועיות בצורה ויזואלית.",
+        text: "הציגו עבודות, פרויקטים, מוצרים או טיפולים בצורה ויזואלית שמחזקת רושם מקצועי.",
     },
     {
         src: `${FEATURES_IMG}/booking-preview.webp`,
-        alt: "תיאום תורים בכרטיס ביקור דיגיטלי - Cardigo",
+        alt: "אפשרות לתיאום תורים בכרטיס ביקור דיגיטלי - Cardigo",
         title: "תיאום תורים",
-        text: "לקוחות יכולים לקבוע תורים ישירות מהכרטיס - חוסך זמן ומייעל את התהליך.",
+        text: "אפשרו ללקוחות להתקדם לפגישה או לתור ישירות מהכרטיס, בלי שיחות מיותרות ובלי בלבול.",
     },
     {
         src: `${FEATURES_IMG}/reviews-preview.webp`,
         alt: "המלצות לקוחות בכרטיס ביקור דיגיטלי - Cardigo",
         title: "המלצות לקוחות",
-        text: "חוות דעת אמיתיות שמחזקות אמון ומעודדות פנייה.",
+        text: "הציגו חוות דעת והמלצות שמחזקות אמון ועוזרות ללקוחות חדשים לקבל החלטה.",
     },
     {
         src: `${FEATURES_IMG}/analytics-preview.webp`,
-        alt: "אנליטיקה ונתונים בכרטיס ביקור דיגיטלי - Cardigo",
+        alt: "אנליטיקה וצפיות בכרטיס ביקור דיגיטלי - Cardigo",
         title: "אנליטיקה ונתונים",
-        text: "צפיות, לחיצות ומקורות תנועה - כדי שתדעו מה באמת עובד.",
+        text: "עקבו אחרי צפיות, לחיצות ומקורות הגעה כדי להבין אילו ערוצים מביאים יותר עניין ופניות.",
     },
 ];
 
@@ -76,39 +76,39 @@ const FEATURED = {
 const SHOWCASE_CARDS = [
     {
         src: `${SECTION6_IMG}/כרטיס ביקור דיגיטלי ליועץ הון פרטי  כרדיגו.webp`,
-        alt: "דוגמה לכרטיס ביקור דיגיטלי - ייעוץ פיננסי",
-        niche: "פיננסים",
-        desc: "נוכחות עסקית מקצועית עם קישורים, פרטי קשר ויצירת אמון - בקליק אחד.",
+        alt: "דוגמה לכרטיס ביקור דיגיטלי ליועץ הון פרטי",
+        niche: "ייעוץ פיננסי",
+        desc: "נוכחות מקצועית לשירותי ייעוץ, עם פרטי קשר ברורים, קישורים חשובים ובניית אמון מהרגע הראשון.",
     },
     {
         src: `${SECTION6_IMG}/כרטיס ביקור דיגיטלי לאדריכלית חוץ ונוף  כרדיגו.webp`,
-        alt: "דוגמה לכרטיס ביקור דיגיטלי - אדריכלות",
-        niche: "אדריכלות",
-        desc: "הצגת פרויקטים, גלריה ודרכי יצירת קשר בצורה ויזואלית ומרשימה.",
+        alt: "דוגמה לכרטיס ביקור דיגיטלי לאדריכלית חוץ ונוף",
+        niche: "אדריכלות ועיצוב חוץ",
+        desc: "הצגת פרויקטים, גלריה ודרכי יצירת קשר בצורה ויזואלית, נקייה ומרשימה.",
     },
     {
         src: `${SECTION6_IMG}/כרטיס ביקור דיגיטלי לרופאת שיניים אסתטית  כרדיגו.webp`,
-        alt: "דוגמה לכרטיס ביקור דיגיטלי - רפואת שיניים",
-        niche: "רפואה",
-        desc: "כרטיס שמחבר בין מטופלים לקליניקה - ניווט, שעות פעילות ותיאום תור.",
+        alt: "דוגמה לכרטיס ביקור דיגיטלי לרופאת שיניים אסתטית",
+        niche: "רפואת שיניים",
+        desc: "עמוד עסקי שמחבר בין מטופלים לקליניקה, עם ניווט, שעות פעילות, יצירת קשר ותיאום תור.",
     },
     {
         src: `${SECTION6_IMG}/כרטיס ביקור דיגיטלי ליועצת חדשנות דיגיטלית ו-AI  כרדיגו.webp`,
-        alt: "דוגמה לכרטיס ביקור דיגיטלי - חדשנות ו-AI",
-        niche: "טכנולוגיה",
-        desc: "כרטיס שמציג מומחיות, קישור לפודקאסט, אתר ורשתות חברתיות.",
+        alt: "דוגמה לכרטיס ביקור דיגיטלי ליועצת חדשנות דיגיטלית ו-AI",
+        niche: "טכנולוגיה ו-AI",
+        desc: "דרך מסודרת להציג מומחיות, שירותים, אתר, פודקאסט ורשתות חברתיות במקום אחד שקל לשתף.",
     },
     {
         src: `${SECTION6_IMG}/כרטיס ביקור דיגיטלי למפיקת אירועי בוטיק  כרדיגו.webp`,
-        alt: "דוגמה לכרטיס ביקור דיגיטלי - הפקת אירועים",
-        niche: "אירועים",
-        desc: "גלריית אירועים, סרטונים, המלצות ולחצן וואטסאפ ישיר ללקוחות.",
+        alt: "דוגמה לכרטיס ביקור דיגיטלי למפיקת אירועי בוטיק",
+        niche: "הפקת אירועים",
+        desc: "הצגת אירועים, סרטונים, המלצות וגלריה לצד לחצן וואטסאפ ישיר שמקל על לקוחות להתחיל שיחה.",
     },
     {
         src: `${SECTION6_IMG}/כרטיס ביקור דיגיטלי קליניקה לאסטטיקה  כרדיגו.webp`,
-        alt: "דוגמה לכרטיס ביקור דיגיטלי - קליניקה אסתטית",
-        niche: "בריאות ויופי",
-        desc: "כרטיס שמקרין מקצועיות ואמינות - עם טופס לידים, גלריה ופרטי קשר.",
+        alt: "דוגמה לכרטיס ביקור דיגיטלי לקליניקה לאסתטיקה",
+        niche: "אסתטיקה ובריאות",
+        desc: "נוכחות מקצועית לקליניקה, עם גלריית טיפולים, טופס פנייה, פרטי קשר ותוכן שמחזק אמינות מול לקוחות חדשים.",
     },
 ];
 
@@ -305,20 +305,27 @@ export default function Cards() {
 
             {/* ─── Showcase ─── */}
             <section className={pub.sectionLight}>
+                {" "}
                 <div className={pub.sectionWrap}>
+                    {" "}
                     <h2 className={pub.h2Gold}>
-                        כרטיסי ביקור דיגיטליים למגוון תחומים
-                    </h2>
+                        {" "}
+                        דוגמאות לכרטיסי ביקור דיגיטליים למגוון תחומים{" "}
+                    </h2>{" "}
                     <p className={pub.sectionLead}>
-                        כל עסק, כל מקצוע - כרטיס שנראה מקצועי ומותאם בדיוק לתחום
-                        שלכם. הנה כמה דוגמאות ויזואליות שממחישות איך זה נראה
-                        בפועל.
-                    </p>
-
-                    {/* ── Featured dual-device spotlight ── */}
+                        {" "}
+                        ראו איך כרטיס ביקור דיגיטלי לעסק יכול להיראות בפועל - עם
+                        עיצוב מקצועי, מבנה ברור והתאמה לתחומי פעילות שונים כמו
+                        קליניקות, יועצים, נותני שירות, חנויות ועסקים
+                        מקומיים.{" "}
+                    </p>{" "}
+                    {/* ── Featured dual-device spotlight ── */}{" "}
                     <div className={styles.featured}>
+                        {" "}
                         <div className={styles.featuredDevices}>
+                            {" "}
                             <div className={styles.featuredDesktop}>
+                                {" "}
                                 <img
                                     src={FEATURED.desktop.src}
                                     alt={FEATURED.desktop.alt}
@@ -327,9 +334,10 @@ export default function Cards() {
                                     height={450}
                                     loading="lazy"
                                     decoding="async"
-                                />
-                            </div>
+                                />{" "}
+                            </div>{" "}
                             <div className={styles.featuredPhone}>
+                                {" "}
                                 <img
                                     src={FEATURED.phone.src}
                                     alt={FEATURED.phone.alt}
@@ -338,28 +346,36 @@ export default function Cards() {
                                     height={560}
                                     loading="lazy"
                                     decoding="async"
-                                />
-                            </div>
-                        </div>
-
+                                />{" "}
+                            </div>{" "}
+                        </div>{" "}
                         <div className={styles.featuredCopy}>
+                            {" "}
                             <span className={styles.featuredLabel}>
-                                נוכחות דיגיטלית מקצועית
-                            </span>
+                                {" "}
+                                תצוגה מקצועית בכל מכשיר{" "}
+                            </span>{" "}
                             <h3 className={styles.featuredTitle}>
-                                נראה מדהים בכל מסך - פלאפון, מחשב או טאבלט
-                            </h3>
+                                {" "}
+                                כרטיס דיגיטלי שנראה טוב בנייד, במחשב
+                                ובטאבלט{" "}
+                            </h3>{" "}
                             <ul className={styles.featuredBullets}>
-                                <li>הצגת העסק בעיצוב מקצועי עם מידע עדכני</li>
+                                {" "}
                                 <li>
-                                    קישורים, לחצני יצירת קשר ורשתות חברתיות
-                                    במקום אחד
-                                </li>
+                                    הצגת העסק בצורה ברורה, מעוצבת ומעודכנת
+                                </li>{" "}
                                 <li>
-                                    שיתוף בוואטסאפ, QR, SMS או אימייל - בקליק
-                                    אחד
-                                </li>
-                            </ul>
+                                    {" "}
+                                    פרטי קשר, קישורים, רשתות חברתיות וכפתורי
+                                    פעולה במקום אחד{" "}
+                                </li>{" "}
+                                <li>
+                                    {" "}
+                                    שיתוף מהיר בוואטסאפ, QR, SMS או אימייל - בלי
+                                    להסביר שוב מי אתם ומה אתם מציעים{" "}
+                                </li>{" "}
+                            </ul>{" "}
                             <Button
                                 as={Link}
                                 to="/edit/card/templates"
@@ -372,19 +388,22 @@ export default function Cards() {
                                     })
                                 }
                             >
-                                בחרו תבנית והתחילו
-                            </Button>
-                        </div>
-                    </div>
-
-                    {/* ── Curated showcase rail ── */}
+                                {" "}
+                                בחרו תבנית והתחילו ליצור כרטיס{" "}
+                            </Button>{" "}
+                        </div>{" "}
+                    </div>{" "}
+                    {/* ── Curated showcase rail ── */}{" "}
                     <div className={styles.showcaseRail}>
+                        {" "}
                         <div className={styles.showcaseGrid}>
+                            {" "}
                             {SHOWCASE_CARDS.map((card, i) => (
                                 <article
                                     key={i}
                                     className={styles.showcaseCard}
                                 >
+                                    {" "}
                                     <img
                                         src={encodeURI(card.src)}
                                         alt={card.alt}
@@ -393,13 +412,15 @@ export default function Cards() {
                                         height={560}
                                         loading="lazy"
                                         decoding="async"
-                                    />
+                                    />{" "}
                                     <span className={styles.showcaseNiche}>
-                                        {card.niche}
-                                    </span>
+                                        {" "}
+                                        {card.niche}{" "}
+                                    </span>{" "}
                                     <p className={styles.showcaseDesc}>
-                                        {card.desc}
-                                    </p>
+                                        {" "}
+                                        {card.desc}{" "}
+                                    </p>{" "}
                                     <Link
                                         to="/edit/card/templates"
                                         className={styles.showcaseLink}
@@ -410,15 +431,16 @@ export default function Cards() {
                                             })
                                         }
                                     >
-                                        התחילו ליצור כרטיס &larr;
-                                    </Link>
+                                        {" "}
+                                        התחילו ליצור כרטיס &larr;{" "}
+                                    </Link>{" "}
                                 </article>
-                            ))}
-                        </div>
-                    </div>
-
-                    {/* ── Section-bottom CTA ── */}
+                            ))}{" "}
+                        </div>{" "}
+                    </div>{" "}
+                    {/* ── Section-bottom CTA ── */}{" "}
                     <div className={styles.showcaseBottom}>
+                        {" "}
                         <Button
                             as={Link}
                             to="/edit/card/templates"
@@ -430,74 +452,96 @@ export default function Cards() {
                                 })
                             }
                         >
-                            ראו את כל התבניות
-                        </Button>
-                    </div>
-                </div>
+                            {" "}
+                            ראו את כל התבניות{" "}
+                        </Button>{" "}
+                    </div>{" "}
+                </div>{" "}
             </section>
 
             {/* ─── Section 3: What the card includes ─── */}
             <section className={pub.sectionDark}>
+                {" "}
                 <div className={pub.sectionWrap}>
+                    {" "}
                     <h2 className={pub.h2White}>
-                        חלק קטן מהתכונות של הכרטיס הביקור הדיגיטלי{" "}
-                    </h2>
+                        {" "}
+                        מה כולל כרטיס ביקור דיגיטלי מקצועי?{" "}
+                    </h2>{" "}
                     <p className={pub.sectionLeadLight}>
+                        {" "}
                         <span
                             className={`${pub.goldHilight} ${pub.goldUnderline}`}
                         >
-                            מה שנראה לעין הוא רק חלק מהתמונה
+                            {" "}
+                            העיצוב הוא רק ההתחלה{" "}
                         </span>{" "}
-                        - מאחורי כל כרטיס ביקור דיגיטלי של{" "}
+                        - מאחורי כל כרטיס דיגיטלי של{" "}
                         <Link
                             to="/"
                             className={`${pub.goldHilight} ${pub.goldUnderline}`}
                         >
-                            Cardigo
+                            {" "}
+                            Cardigo{" "}
                         </Link>{" "}
-                        פועלת מערכת חכמה שעוזרת לעסק להיראות מקצועי, לאסוף לידים
-                        ולהתחזק גם מאחורי הקלעים בגוגל.
-                    </p>
-
+                        יש כלים שעוזרים לעסק להציג מידע ברור, לקבל פניות, לשתף
+                        קישור מקצועי ולבנות נוכחות דיגיטלית שקל ללקוחות להבין
+                        ולגוגל לקרוא.{" "}
+                    </p>{" "}
                     <div className={styles.featuresRail}>
+                        {" "}
                         <div className={styles.featuresGrid}>
+                            {" "}
                             {CARD_FEATURES.map((f, i) => (
                                 <article key={i} className={styles.featureCard}>
+                                    {" "}
                                     <img
                                         src={f.src}
                                         alt={f.alt}
                                         className={styles.featureImg}
                                         loading="lazy"
                                         decoding="async"
-                                    />
+                                    />{" "}
                                     <h3 className={styles.featureTitle}>
-                                        {f.title}
-                                    </h3>
+                                        {" "}
+                                        {f.title}{" "}
+                                    </h3>{" "}
                                     <p className={styles.featureText}>
-                                        {f.text}
-                                    </p>
+                                        {" "}
+                                        {f.text}{" "}
+                                    </p>{" "}
                                 </article>
-                            ))}
-                        </div>
-                    </div>
-                </div>
+                            ))}{" "}
+                        </div>{" "}
+                    </div>{" "}
+                </div>{" "}
             </section>
 
             {/* ─── Section 4: Final CTA + SEO appendix ─── */}
             <section className={pub.sectionLight}>
+                {" "}
                 <div className={pub.sectionWrap}>
+                    {" "}
                     <div className={styles.ctaLayout}>
+                        {" "}
                         <h2 className={`${styles.ctaHeading}`}>
-                            הפכו את כרטיס הביקור שלכם{" "}
-                            <span className={pub.h2Gold}>למכונת לידים! </span>
-                        </h2>
+                            {" "}
+                            הפכו את כרטיס הביקור שלכם <br />
+                            <span className={pub.h2Gold}>
+                                {" "}
+                                לכרטיס דיגיטלי שמביא פניות{" "}
+                            </span>{" "}
+                        </h2>{" "}
                         <div className={styles.ctaCopy}>
                             {" "}
                             <p className={styles.ctaText}>
-                                תוך כמה דקות תוכלו לבחור תבנית, להוסיף תוכן
-                                ולשתף כרטיס שנראה מקצועי בכל מסך.
-                            </p>
+                                {" "}
+                                תוך כמה דקות תוכלו לבחור תבנית, להוסיף את פרטי
+                                העסק ולשתף כרטיס ביקור דיגיטלי שנראה מקצועי
+                                בנייד, במחשב ובכל מסך.{" "}
+                            </p>{" "}
                             <div className={styles.ctaActions}>
+                                {" "}
                                 <Button
                                     as={Link}
                                     to="/edit"
@@ -510,30 +554,33 @@ export default function Cards() {
                                         })
                                     }
                                 >
-                                    צרו כרטיס דיגיטלי בחינם
-                                </Button>
+                                    {" "}
+                                    צרו כרטיס דיגיטלי בחינם{" "}
+                                </Button>{" "}
                                 <Button
                                     as={Link}
                                     to="/pricing/"
                                     variant="secondary"
                                 >
-                                    מסלולים ומחירים
-                                </Button>
-                            </div>
-                        </div>
+                                    {" "}
+                                    מסלולים ומחירים{" "}
+                                </Button>{" "}
+                            </div>{" "}
+                        </div>{" "}
                         <div className={styles.ctaVisual}>
+                            {" "}
                             <img
                                 src="/images/sample-card-page/cards-cta/cards-cta.webp"
-                                alt="כרטיס ביקור דיגיטלי לעסקים - Cardigo"
+                                alt="דוגמה לכרטיס ביקור דיגיטלי לעסק - Cardigo"
                                 className={styles.ctaImage}
                                 width={800}
                                 height={450}
                                 loading="lazy"
                                 decoding="async"
-                            />
-                        </div>
-                    </div>
-                </div>
+                            />{" "}
+                        </div>{" "}
+                    </div>{" "}
+                </div>{" "}
             </section>
 
             {/* ─── FAQ ─── */}
