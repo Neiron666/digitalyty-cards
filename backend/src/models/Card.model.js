@@ -220,6 +220,109 @@ const FaqSchema = new mongoose.Schema(
     { _id: false },
 );
 
+// ─── Custom Contact Action (premium-only) ──────────────────────────────────
+// Allowed actionTypes (MVP): phone, whatsapp, address, email, facebook, website, url.
+// navigation/waze/maps are intentionally NOT included.
+// "address" stores plain text (a business address), not a Waze/maps URL.
+// "url" is a generic safe http/https link (booking, menu, catalog, form, etc.).
+// "website" is specifically for the business website.
+// "facebook" is specifically for a Facebook page/profile.
+const CUSTOM_ACTION_TYPES = new Set([
+    "phone",
+    "whatsapp",
+    "address",
+    "email",
+    "facebook",
+    "website",
+    "url",
+]);
+const CUSTOM_ACTION_ADDRESS_MAX = 200;
+
+// isValidAddressText: safe plain-text validator for the address actionType target.
+// Allows any printable text (Hebrew, English, digits, punctuation).
+// Rejects control characters. Caps at CUSTOM_ACTION_ADDRESS_MAX chars.
+function isValidAddressText(v) {
+    if (!v) return false;
+    const s = String(v).trim();
+    if (!s) return false;
+    if (/[\x00-\x1F\x7F]/.test(s)) return false;
+    if (s.length > CUSTOM_ACTION_ADDRESS_MAX) return false;
+    return true;
+}
+
+const CustomActionItemSchema = new mongoose.Schema(
+    {
+        label: {
+            type: String,
+            trim: true,
+            required: [true, "contact.customActions[*].label is required"],
+            maxlength: [
+                80,
+                "contact.customActions[*].label must not exceed 80 characters",
+            ],
+        },
+        actionType: {
+            type: String,
+            required: [true, "contact.customActions[*].actionType is required"],
+            enum: {
+                values: [
+                    "phone",
+                    "whatsapp",
+                    "address",
+                    "email",
+                    "facebook",
+                    "website",
+                    "url",
+                ],
+                message:
+                    "contact.customActions[*].actionType must be one of: phone, whatsapp, address, email, facebook, website, url",
+            },
+        },
+        target: {
+            type: String,
+            trim: true,
+            required: [true, "contact.customActions[*].target is required"],
+            maxlength: [
+                2048,
+                "contact.customActions[*].target must not exceed 2048 characters",
+            ],
+            validate: {
+                // Type-sensitive validator: delegates to the per-type rule matching
+                // the same patterns used by the existing built-in contact fields.
+                // Arrow function cannot be used here — 'this' must refer to the item document.
+                validator: function (v) {
+                    if (!v) return false;
+                    const type = this.actionType;
+                    switch (type) {
+                        case "phone":
+                            return /^\+?[\d\s\-()+.*#,]+(?:\s*(?:x|ext\.?)\s*\d{1,6})?$/i.test(
+                                v,
+                            );
+                        case "whatsapp":
+                            return /^\+?[\d\s\-()+]{4,20}$/.test(v);
+                        case "address":
+                            return isValidAddressText(v);
+                        case "email":
+                            return /^[^\s@<>?&][^@<>?&]*@[^@<>?&]+\.[^@<>?&\s]+$/.test(
+                                v,
+                            );
+                        case "facebook":
+                        case "website":
+                        case "url":
+                            return isValidContactUrl(v);
+                        default:
+                            return false;
+                    }
+                },
+                message:
+                    "contact.customActions[*].target is invalid for the given actionType",
+            },
+        },
+    },
+    { _id: false },
+);
+// ─── End Custom Contact Action ─────────────────────────────────────────────
+
 const ServicesSchema = new mongoose.Schema(
     {
         title: {
@@ -702,6 +805,24 @@ const CardSchema = new mongoose.Schema(
                 },
             },
             extraLines: [String],
+
+            // Premium-only: up to 5 custom contact/action buttons.
+            // navigation/waze/maps are intentionally excluded from the allowed types.
+            // default: undefined preserves backward compatibility — existing documents
+            // without this field remain valid and are unaffected by schema addition.
+            customActions: {
+                type: [CustomActionItemSchema],
+                default: undefined,
+                validate: {
+                    validator: (arr) => {
+                        if (arr === undefined || arr === null) return true;
+                        if (!Array.isArray(arr)) return false;
+                        return arr.length <= 5;
+                    },
+                    message:
+                        "contact.customActions must contain at most 5 items",
+                },
+            },
         },
 
         content: {

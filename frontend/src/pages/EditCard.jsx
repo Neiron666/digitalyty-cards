@@ -1575,6 +1575,43 @@ function EditCard() {
 
         if (Object.keys(payload).length === 0) return false;
 
+        // Pre-save guard: validate contact.customActions before sending to backend.
+        // Prevents surprise row loss when backend normalizer silently strips incomplete rows.
+        if (
+            payload.contact &&
+            Array.isArray(payload.contact.customActions) &&
+            payload.contact.customActions.length > 0
+        ) {
+            const ALLOWED_CUSTOM_TYPES = new Set([
+                "phone",
+                "whatsapp",
+                "address",
+                "email",
+                "facebook",
+                "website",
+                "url",
+            ]);
+            const hasInvalidRow = payload.contact.customActions.some((item) => {
+                const label =
+                    typeof item?.label === "string" ? item.label.trim() : "";
+                const target =
+                    typeof item?.target === "string" ? item.target.trim() : "";
+                const actionType =
+                    typeof item?.actionType === "string" ? item.actionType : "";
+                return (
+                    !label || !target || !ALLOWED_CUSTOM_TYPES.has(actionType)
+                );
+            });
+            if (hasInvalidRow) {
+                const msg =
+                    "כפתורים מותאמים אישית מכילים ערך לא תקין. בדקו שם, סוג ויעד של כל כפתור.";
+                setSaveState("error");
+                setSaveErrorText(msg);
+                setFieldErrors({ "contact.customActions": msg });
+                return false;
+            }
+        }
+
         setSaveState("saving");
         setSaveErrorText(null);
         setFieldErrors({});
@@ -1664,11 +1701,16 @@ function EditCard() {
                     "contact.tiktok": "יש להזין קישור TikTok תקין",
                     "contact.waze":
                         "יש להזין קישור Waze או קישור http/https תקין",
+                    "contact.customActions":
+                        "כפתורים מותאמים אישית מכילים ערך לא תקין. בדקו שם, סוג ויעד של כל כפתור.",
                 };
                 const nextFieldErrors = {};
                 for (const field of list) {
                     if (contactMessageByField[field]) {
                         nextFieldErrors[field] = contactMessageByField[field];
+                    } else if (field.startsWith("contact.customActions")) {
+                        nextFieldErrors["contact.customActions"] =
+                            contactMessageByField["contact.customActions"];
                     }
                 }
                 if (Object.keys(nextFieldErrors).length > 0) {

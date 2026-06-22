@@ -10,6 +10,58 @@ const cx = (...classes) => classes.filter(Boolean).join(" ");
 
 const WA_PREFILL_TEXT = "היי, הגעתי אליך דרך הכרטיס הדיגיטלי שלך ב-Cardigo 👋";
 
+const CUSTOM_ACTION_TYPES_ALLOWED = new Set([
+    "phone",
+    "whatsapp",
+    "address",
+    "email",
+    "facebook",
+    "website",
+    "url",
+]);
+
+// Maps actionType to CSS Module class name string.
+// Resolved at render via styles[name]; falls back to styles.iconLink.
+const CUSTOM_ACTION_ICON_NAMES = {
+    phone: "iconPhone",
+    whatsapp: "iconWhatsapp",
+    address: "iconAddress",
+    email: "iconEmail",
+    facebook: "iconFacebook",
+    website: "iconWebsite",
+    url: "iconLink",
+};
+
+function buildCustomActionHref(actionType, target) {
+    if (!target) return "";
+    switch (actionType) {
+        case "phone": {
+            const normalized = normalizeForTel(target);
+            return normalized ? `tel:${normalized}` : "";
+        }
+        case "whatsapp": {
+            const normalized = normalizeForWaMe(target);
+            return normalized
+                ? `https://wa.me/${normalized}?text=${encodeURIComponent(WA_PREFILL_TEXT)}`
+                : "";
+        }
+        case "email":
+            if (!/^[^\s@<>?&][^@<>?&]*@[^@<>?&]+\.[^@<>?&\s]+$/.test(target))
+                return "";
+            return `mailto:${target}`;
+        case "address":
+            return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(target)}`;
+        case "facebook":
+        case "website":
+        case "url": {
+            const href = ensureHttpUrl(target);
+            return href || "";
+        }
+        default:
+            return "";
+    }
+}
+
 function ContactButtons({ card }) {
     const { contact } = card;
     const locationAddress = String(card?.business?.address || "").trim();
@@ -46,6 +98,32 @@ function ContactButtons({ card }) {
             ? `https://waze.com/ul?q=${encodeURIComponent(locationQuery)}&navigate=yes`
             : "";
 
+    const rawCustomActions = Array.isArray(contact?.customActions)
+        ? contact.customActions
+        : [];
+    const customActionButtons = rawCustomActions
+        .filter((item) => {
+            if (!item || typeof item !== "object") return false;
+            const label =
+                typeof item.label === "string" ? item.label.trim() : "";
+            const actionType =
+                typeof item.actionType === "string" ? item.actionType : "";
+            const target =
+                typeof item.target === "string" ? item.target.trim() : "";
+            if (
+                !label ||
+                !CUSTOM_ACTION_TYPES_ALLOWED.has(actionType) ||
+                !target
+            )
+                return false;
+            return !!buildCustomActionHref(actionType, target);
+        })
+        .map((item) => ({
+            label: item.label.trim(),
+            actionType: item.actionType,
+            href: buildCustomActionHref(item.actionType, item.target.trim()),
+        }));
+
     if (
         !telHref &&
         !waHref &&
@@ -55,7 +133,8 @@ function ContactButtons({ card }) {
         !tiktokHref &&
         !contact?.email &&
         !websiteHref &&
-        !locationWazeHref
+        !locationWazeHref &&
+        customActionButtons.length === 0
     ) {
         return null;
     }
@@ -228,6 +307,37 @@ function ContactButtons({ card }) {
                     <span className={styles.label}>ווייז</span>
                 </a>
             )}
+
+            {customActionButtons.map((btn, i) => {
+                const isExternal =
+                    !btn.href.startsWith("tel:") &&
+                    !btn.href.startsWith("mailto:");
+                return (
+                    <a
+                        key={i}
+                        href={btn.href}
+                        {...(isExternal
+                            ? { target: "_blank", rel: "noreferrer" }
+                            : {})}
+                        className={styles.item}
+                        aria-label={`${btn.label} (${btn.actionType})`}
+                        onClick={() => trackClick(card?.slug, "custom_action")}
+                    >
+                        <span className={styles.bubble} aria-hidden="true">
+                            <span
+                                className={cx(
+                                    styles.icon,
+                                    styles[
+                                        CUSTOM_ACTION_ICON_NAMES[btn.actionType]
+                                    ] || styles.iconLink,
+                                )}
+                                aria-hidden="true"
+                            />
+                        </span>
+                        <span className={styles.label}>{btn.label}</span>
+                    </a>
+                );
+            })}
         </div>
     );
 }

@@ -137,6 +137,16 @@
     mask-image: url("/icons/twitter.svg");
 }
 
+.iconAddress {
+    -webkit-mask-image: url("/icons/navigation.svg");
+    mask-image: url("/icons/navigation.svg");
+}
+
+.iconLink {
+    -webkit-mask-image: url("/icons/link.svg");
+    mask-image: url("/icons/link.svg");
+}
+
 @media (min-width: 1024px) {
     .bubble {
         width: var(--contact-btn-size-lg, 70px);

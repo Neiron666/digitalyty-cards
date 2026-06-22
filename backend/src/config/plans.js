@@ -13,6 +13,7 @@ export const PLANS = {
         slugChange: false,
         businessHours: false,
         services: false,
+        customActions: false,
         contentParagraphs: 1,
     },
 
@@ -30,6 +31,7 @@ export const PLANS = {
         slugChange: true,
         businessHours: true,
         services: true,
+        customActions: true,
         contentParagraphs: 3,
     },
 
@@ -47,6 +49,7 @@ export const PLANS = {
         slugChange: true,
         businessHours: true,
         services: true,
+        customActions: true,
         contentParagraphs: 3,
     },
 
@@ -64,6 +67,7 @@ export const PLANS = {
         slugChange: true,
         businessHours: true,
         services: true,
+        customActions: true,
         contentParagraphs: 3,
     },
 };

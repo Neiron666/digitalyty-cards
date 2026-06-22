@@ -771,6 +771,39 @@ export default function AnalyticsPanel({ card }) {
                                                       )}
                                             </td>
                                         </tr>
+                                        <tr>
+                                            <td>כפתורים מותאמים אישית</td>
+                                            <td>
+                                                {actions1 === null
+                                                    ? "-"
+                                                    : formatInt(
+                                                          Number(
+                                                              actions1?.actions
+                                                                  ?.custom_action,
+                                                          ) || 0,
+                                                      )}
+                                            </td>
+                                            <td>
+                                                {actions7 === null
+                                                    ? "-"
+                                                    : formatInt(
+                                                          Number(
+                                                              actions7?.actions
+                                                                  ?.custom_action,
+                                                          ) || 0,
+                                                      )}
+                                            </td>
+                                            <td>
+                                                {actions30 === null
+                                                    ? "-"
+                                                    : formatInt(
+                                                          Number(
+                                                              actions30?.actions
+                                                                  ?.custom_action,
+                                                          ) || 0,
+                                                      )}
+                                            </td>
+                                        </tr>
                                     </tbody>
                                 </table>
                             </div>

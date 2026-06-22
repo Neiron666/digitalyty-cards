@@ -158,6 +158,7 @@ function normalizeAction(action) {
         "twitter",
         "lead",
         "booking",
+        "custom_action",
         "other",
     ]);
     return allowed.has(a) ? a : "other";

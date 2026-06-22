@@ -46,6 +46,7 @@ import { normalizeAboutParagraphs } from "../utils/about.js";
 import { normalizeFaqForWrite } from "../utils/faq.util.js";
 import { normalizeBusinessForWrite } from "../utils/business.util.js";
 import { normalizeServicesForWrite } from "../utils/services.util.js";
+import { normalizeCustomActionsForWrite } from "../utils/customActions.util.js";
 import { toIsrael } from "../utils/time.util.js";
 import { DEFAULT_TENANT_KEY } from "../utils/tenant.util.js";
 import { getPersonalOrgId } from "../utils/personalOrg.util.js";
@@ -1256,6 +1257,33 @@ export async function createCard(req, res) {
             }
         }
 
+        // Explicit feature gate: block or normalize contact.customActions based on plan.
+        if (data.contact && typeof data.contact === "object") {
+            if (!hasAccess(createFeaturePlan, "customActions")) {
+                // Non-entitled: delete to avoid storing anything; do NOT set to [].
+                delete data.contact.customActions;
+            } else if (
+                Object.prototype.hasOwnProperty.call(
+                    data.contact,
+                    "customActions",
+                )
+            ) {
+                // Entitled and explicitly provided: normalize before schema validation.
+                // normalizeCustomActionsForWrite returns undefined for non-array input
+                // (null, {}, "string", etc.) — in that case delete the key so
+                // buildSetUpdateFromPatch never emits $set["contact.customActions"]
+                // and stored data is preserved.
+                const normalizedCustomActions = normalizeCustomActionsForWrite(
+                    data.contact.customActions,
+                );
+                if (Array.isArray(normalizedCustomActions)) {
+                    data.contact.customActions = normalizedCustomActions;
+                } else {
+                    delete data.contact.customActions;
+                }
+            }
+        }
+
         // Batch 7A: gallery is fully premium-only - strip on free.
         if (!hasAccess(createFeaturePlan, "gallery")) delete data.gallery;
 
@@ -1397,6 +1425,16 @@ export async function createCard(req, res) {
         for (const key of Object.keys(data.contact)) {
             if (!FREE_CONTACT_ALLOWLIST.has(key)) delete data.contact[key];
         }
+    }
+
+    // Explicit feature gate: anonymous is always free, never entitled to customActions.
+    // Delete to avoid overwriting stored data; do NOT set to [].
+    if (
+        data.contact &&
+        typeof data.contact === "object" &&
+        !hasAccess("free", "customActions")
+    ) {
+        delete data.contact.customActions;
     }
 
     // Batch 7A: gallery is fully premium-only - strip on free (anonymous = always free).
@@ -2068,6 +2106,34 @@ export async function updateCard(req, res) {
     ) {
         for (const key of Object.keys(patch.contact)) {
             if (!FREE_CONTACT_ALLOWLIST.has(key)) delete patch.contact[key];
+        }
+    }
+
+    // Explicit feature gate for customActions (complementary to Batch 3 above).
+    // This ensures correctness even if effectiveWritePlan is non-free but the plan
+    // matrix has customActions:false (defense-in-depth for future plan changes).
+    // Critical: delete-not-clear — do NOT set to [] when non-entitled.
+    // This preserves stored customActions on downgrade (dot-path $set never touches
+    // fields absent from the patch, so existing DB data is never overwritten).
+    if (patch.contact && typeof patch.contact === "object") {
+        if (!hasAccess(effectiveWritePlan, "customActions")) {
+            delete patch.contact.customActions;
+        } else if (
+            Object.prototype.hasOwnProperty.call(patch.contact, "customActions")
+        ) {
+            // Entitled and explicitly provided: normalize before buildSetUpdateFromPatch.
+            // normalizeCustomActionsForWrite returns undefined for non-array input
+            // (null, {}, "string", etc.) — in that case delete the key so
+            // buildSetUpdateFromPatch never emits $set["contact.customActions"]
+            // and stored data is preserved.
+            const normalizedCustomActions = normalizeCustomActionsForWrite(
+                patch.contact.customActions,
+            );
+            if (Array.isArray(normalizedCustomActions)) {
+                patch.contact.customActions = normalizedCustomActions;
+            } else {
+                delete patch.contact.customActions;
+            }
         }
     }
 

@@ -87,6 +87,7 @@ export function computeEntitlements(
         canUseAnalyticsPremium: hasAccess(featurePlan, "analytics"),
         canUseBusinessHours: hasAccess(featurePlan, "businessHours"),
         canUseServices: hasAccess(featurePlan, "services"),
+        canUseCustomActions: hasAccess(featurePlan, "customActions"),
         maxContentParagraphs,
         analyticsLevel,
         canViewAnalytics,
@@ -359,6 +360,20 @@ export function toCardDTO(
                 }
             }
             dto.contact = filtered;
+        }
+
+        // Explicit feature gate for customActions.
+        // Complements FREE_PUBLIC_CONTACT (which covers free tier broadly).
+        // This gate also fires for non-free tiers where canUseCustomActions is false,
+        // providing defense-in-depth for future plan matrix changes.
+        // Downgraded premium users: stored DB data is preserved but hidden here.
+        if (
+            !entitlements.canUseCustomActions &&
+            dto.contact &&
+            typeof dto.contact === "object" &&
+            Object.prototype.hasOwnProperty.call(dto.contact, "customActions")
+        ) {
+            delete dto.contact.customActions;
         }
     }
 
