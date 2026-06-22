@@ -136,8 +136,13 @@ export default function CardLayout({
                         <img
                             className={styles.cover}
                             src={coverUrl}
-                            alt=""
-                            aria-hidden="true"
+                            alt={
+                                name && subtitle
+                                    ? `תמונת כותרת של ${name} - ${subtitle}`
+                                    : name
+                                      ? `תמונת כותרת של ${name}`
+                                      : "תמונת כותרת של העסק"
+                            }
                             decoding="async"
                             loading="eager"
                             referrerPolicy="no-referrer"
@@ -161,9 +166,11 @@ export default function CardLayout({
                                 <img
                                     src={avatar}
                                     alt={
-                                        name
-                                            ? `${name} – profile photo`
-                                            : "Profile photo"
+                                        name && subtitle
+                                            ? `תמונת פרופיל של ${name} - ${subtitle}`
+                                            : name
+                                              ? `תמונת פרופיל של ${name}`
+                                              : "תמונת פרופיל של העסק"
                                     }
                                 />
                             </div>

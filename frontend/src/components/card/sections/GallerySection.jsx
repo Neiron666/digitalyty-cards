@@ -19,6 +19,11 @@ const STAGGER = [styles.delay0, styles.delay1, styles.delay2, styles.delay3];
 
 function GallerySection({ card, mode }) {
     const rawGallery = Array.isArray(card?.gallery) ? card.gallery : [];
+    const businessName =
+        card?.business?.name ||
+        card?.business?.businessName ||
+        card?.business?.ownerName ||
+        "";
 
     const items = useMemo(() => {
         const out = [];
@@ -49,7 +54,9 @@ function GallerySection({ card, mode }) {
                 typeof item.alt === "string" &&
                 item.alt.trim()
                     ? item.alt.trim()
-                    : `תמונה ${visibleIndex + 1} בגלריה`;
+                    : businessName
+                      ? `תמונה ${visibleIndex + 1} בגלריה של ${businessName}`
+                      : `תמונה ${visibleIndex + 1} בגלריה`;
 
             out.push({
                 id: `${fullUrl}|${createdAtPart}|${pathPart}|${rawIndex}`,
@@ -61,7 +68,7 @@ function GallerySection({ card, mode }) {
         }
 
         return out;
-    }, [rawGallery]);
+    }, [rawGallery, businessName]);
 
     const [isOpen, setIsOpen] = useState(false);
     const [activeIndex, setActiveIndex] = useState(0);
@@ -220,7 +227,11 @@ function GallerySection({ card, mode }) {
                         ref={revealRef}
                         className={cx(styles.imageWrapper, STAGGER[index % 4])}
                         onClick={(e) => openLightbox(index, e.currentTarget)}
-                        aria-label={`פתח תמונה ${index + 1}`}
+                        aria-label={
+                            businessName
+                                ? `פתח תמונה ${index + 1} בגלריה של ${businessName}`
+                                : `פתח תמונה ${index + 1}`
+                        }
                     >
                         <img
                             src={it.thumbUrl}
