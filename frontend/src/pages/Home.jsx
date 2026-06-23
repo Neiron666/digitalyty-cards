@@ -546,25 +546,27 @@ export default function Home() {
             <section className={pub.sectionLight}>
                 <div className={pub.sectionWrap}>
                     <h2 className={pub.h2Gold}>
-                        יותר מכרטיס ביקור דיגיטלי לעסק
-                        <span> העמוד העסקי שלכם שמוכן לשיתוף</span>
+                        מה זה כרטיס ביקור דיגיטלי לעסק?
+                        <span> עמוד עסקי אחד שמרכז את כל מה שלקוח צריך</span>
                     </h2>
+
                     <p className={styles.presenceLead}>
                         כרטיס ביקור דיגיטלי של{" "}
                         <strong className={styles.presenceLeadBrand}>
                             Cardigo
                         </strong>{" "}
-                        זה לא רק פרטי קשר. זהו עמוד עסקי קומפקטי עם{" "}
+                        הוא עמוד אינטרנט עסקי שמרכז במקום אחד את פרטי הקשר,
+                        וואטסאפ, חיוג ישיר, ניווט, שעות פעילות, גלריית תמונות,
+                        שירותים, המלצות, שאלות נפוצות, טופס פנייה ואפשרות קביעת
+                        פגישות. במקום לשלוח ללקוחות כמה קישורים שונים, אפשר לשתף{" "}
                         <span className={`${pub.goldUnderline} ${pub.boldTxt}`}>
                             {" "}
-                            אפשרות קביעת פגישות
-                        </span>
-                        , גלריה, וידאו, המלצות, שאלות נפוצות, טופס פנייה ועוד...
-                        -{" "}
-                        <em className={styles.presenceLeadPunch}>
-                            הכל בקישור אחד שנראה מקצועי ונוח לשיתוף.
-                        </em>
+                            כרטיס דיגיטלי אחד
+                        </span>{" "}
+                        שנראה מקצועי, נפתח מהר ונוח לשיתוף בוואטסאפ, QR, רשתות
+                        חברתיות וקמפיינים.
                     </p>
+
                     <div className={styles.presenceMedia}>
                         <div
                             className={`${styles.phoneStage} ${scroll.scrollZoomSoft} ${styles.strongerZoom}`}
@@ -576,7 +578,7 @@ export default function Home() {
                                 src={encodeURI(
                                     `${SECTION_1_IMG}/יותר-מכרטיס-ביקור-טלפון עצמו.webp`,
                                 )}
-                                alt="כרטיס ביקור דיגיטלי בנייד"
+                                alt="כרטיס ביקור דיגיטלי לעסק בנייד עם פרטי קשר, וואטסאפ וגלריה"
                                 width={340}
                                 height={600}
                                 loading="lazy"
@@ -597,19 +599,26 @@ export default function Home() {
                         ))}
                     </div>
 
-                    <p className={styles.presenceMore}>
-                        ועוד הרבה כלים נוספים&hellip;
-                    </p>
-
                     <div className={pub.highlight}>
-                        {" "}
-                        כרטיס ביקור דיגיטלי של{" "}
-                        <span className={styles.presenceLeadBrand}>
-                            {" "}
-                            כרדיגו
-                        </span>{" "}
-                        מתאים לעצמאים, קליניקות, חנויות מקומיות ונותני שירות
-                        שרוצים להציג את העסק בצורה מסודרת.
+                        <h3 className={pub.h3Gold}>
+                            למי מתאים כרטיס ביקור דיגיטלי?
+                            <span>לעצמאים שרוצים נוכחות דיגיטלית</span>
+                        </h3>
+
+                        <p className={styles.presenceLead}>
+                            כרטיס ביקור דיגיטלי לעסק מתאים לעצמאים, עסקים קטנים,
+                            קליניקות, חנויות מקומיות ונותני שירות
+                            <span
+                                className={`${pub.goldUnderline} ${pub.boldTxt}`}
+                            >
+                                {" "}
+                                שרוצים להציג את העסק בצורה מסודרת בלי להקים אתר
+                                מלא.
+                            </span>
+                            לכל כרטיס יש קישור אישי, מבנה ברור ותוכן שניתן לעדכן
+                            בכל רגע, כך שלקוחות יכולים להבין במהירות מי אתם, מה
+                            אתם מציעים ואיך ליצור איתכם קשר.
+                        </p>
                     </div>
                 </div>
             </section>
