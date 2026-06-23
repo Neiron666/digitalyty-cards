@@ -1096,27 +1096,53 @@ export async function createCard(req, res) {
             return res.status(401).json({ message: "Unauthorized" });
         }
 
+        // Personal scope definition for POST /cards (mirrors getMyCard contract).
+        // POST /cards is a personal-card-only endpoint; org cards must never be
+        // created or returned from this path.
+        const personalScopeOr = [
+            { orgId: new mongoose.Types.ObjectId(personalOrgId) },
+            { orgId: null },
+            { orgId: { $exists: false } },
+        ];
+
         if (user.cardId) {
             const existing = await Card.findById(user.cardId);
-            if (existing) {
-                return res.status(200).json(toCardDTO(existing, now, { user }));
+            // Only return if it is personal-scoped. If user.cardId was poisoned
+            // to point to an org card (invited-user edge case), ignore and fall
+            // through to the personal-scope fallback / create flow.
+            const existingOrgId = existing?.orgId ? String(existing.orgId) : "";
+            const existingIsPersonal =
+                existing &&
+                (!existingOrgId || existingOrgId === String(personalOrgId));
+            if (existingIsPersonal) {
+                const dto = toCardDTO(existing, now, { user });
+                if (dto?.slug) dto.publicPath = `/card/${dto.slug}`;
+                return res.status(200).json(dto);
             }
 
+            // Clear poisoned or missing/non-personal user.cardId so the
+            // race-safe reservation below can proceed cleanly.
             user.cardId = undefined;
             await user.save();
         }
 
-        // Extra safety: if duplicates already exist (or cardId wasn't set yet),
-        // return a deterministic existing card rather than creating another.
-        const existingByUser = await Card.findOne({ user: user._id }).sort({
-            createdAt: -1,
-        });
+        // Extra safety: if a personal-scoped card already exists (or cardId
+        // was not set yet), return it deterministically rather than creating
+        // another. Query is scoped to personal-only to prevent returning an
+        // org card when the user is also an org member (invited-user case).
+        const existingByUser = await Card.findOne({
+            user: user._id,
+            isActive: true,
+            $or: personalScopeOr,
+        }).sort({ createdAt: -1 });
         if (existingByUser) {
-            user.cardId = existingByUser._id;
-            await user.save();
-            return res
-                .status(200)
-                .json(toCardDTO(existingByUser, now, { user }));
+            if (String(user.cardId || "") !== String(existingByUser._id)) {
+                user.cardId = existingByUser._id;
+                await user.save();
+            }
+            const dto = toCardDTO(existingByUser, now, { user });
+            if (dto?.slug) dto.publicPath = `/card/${dto.slug}`;
+            return res.status(200).json(dto);
         }
 
         // Race-safe reservation: atomically claim a new cardId on the user.
@@ -1139,22 +1165,26 @@ export async function createCard(req, res) {
             if (freshId) {
                 for (let i = 0; i < 40; i += 1) {
                     const maybe = await Card.findById(freshId);
-                    if (maybe)
-                        return res
-                            .status(200)
-                            .json(toCardDTO(maybe, now, { user: fresh }));
+                    if (maybe) {
+                        const dto = toCardDTO(maybe, now, { user: fresh });
+                        if (dto?.slug) dto.publicPath = `/card/${dto.slug}`;
+                        return res.status(200).json(dto);
+                    }
                     await sleep(50);
                 }
             }
 
-            // Fallback: deterministic lookup.
-            const fallback = await Card.findOne({ user: user._id }).sort({
-                createdAt: -1,
-            });
-            if (fallback)
-                return res
-                    .status(200)
-                    .json(toCardDTO(fallback, now, { user: fresh || user }));
+            // Fallback: deterministic lookup (personal-scope only).
+            const fallback = await Card.findOne({
+                user: user._id,
+                isActive: true,
+                $or: personalScopeOr,
+            }).sort({ createdAt: -1 });
+            if (fallback) {
+                const dto = toCardDTO(fallback, now, { user: fresh || user });
+                if (dto?.slug) dto.publicPath = `/card/${dto.slug}`;
+                return res.status(200).json(dto);
+            }
 
             // Do NOT create a new card here; card creation is in-flight or user state is inconsistent.
             console.warn("[cards] create in-flight", {
@@ -1313,7 +1343,10 @@ export async function createCard(req, res) {
                 await user.save();
             }
 
-            return res.status(201).json(toCardDTO(card, now, { user }));
+            const createdDto = toCardDTO(card, now, { user });
+            if (createdDto?.slug)
+                createdDto.publicPath = `/card/${createdDto.slug}`;
+            return res.status(201).json(createdDto);
         } catch (err) {
             // After enforcing uniqueness (unique+sparse on Card.user), concurrent creates may
             // race into E11000. In that case, return the existing user card.
@@ -1323,9 +1356,12 @@ export async function createCard(req, res) {
                     (err.keyValue && err.keyValue.user);
 
                 if (isUserDup) {
+                    // Scope to personal-only to prevent returning an org card
+                    // in the E11000 race path (same invariant as the happy path).
                     const existing = await Card.findOne({
                         user: user._id,
                         isActive: true,
+                        $or: personalScopeOr,
                     }).sort({ createdAt: -1 });
 
                     if (existing) {
@@ -1340,9 +1376,9 @@ export async function createCard(req, res) {
                         }
 
                         const fresh = await User.findById(user._id);
-                        return res
-                            .status(200)
-                            .json(toCardDTO(existing, now, { user: fresh }));
+                        const dto = toCardDTO(existing, now, { user: fresh });
+                        if (dto?.slug) dto.publicPath = `/card/${dto.slug}`;
+                        return res.status(200).json(dto);
                     }
                 }
             }

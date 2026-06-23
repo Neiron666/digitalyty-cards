@@ -680,6 +680,13 @@ function EditCard() {
                                         claimStatus,
                                         claimErr?.response?.data || claimErr,
                                     );
+                                    // P0 fix: clear stale draftCard before showing
+                                    // no-personal-card CTA so draftCard._id is falsy
+                                    // and the !draftCard?._id gate becomes reachable.
+                                    setDraftCard(emptyCard);
+                                    setDirtyPaths(new Set());
+                                    setSaveState("idle");
+                                    setSaveErrorText(null);
                                     setNeedsCreateUserCard(true);
                                     setClaimRecoveryError(
                                         "לא הצלחנו לשחזר את הכרטיס הקיים. נסו לרענן את הדף.",
@@ -691,6 +698,13 @@ function EditCard() {
                             }
                         }
 
+                        // P0 fix: clear stale draftCard before showing
+                        // no-personal-card CTA so draftCard._id is falsy
+                        // and the !draftCard?._id gate becomes reachable.
+                        setDraftCard(emptyCard);
+                        setDirtyPaths(new Set());
+                        setSaveState("idle");
+                        setSaveErrorText(null);
                         setNeedsCreateUserCard(true);
                         setCreateUserCardError(null);
                         setClaimRecoveryError(null);
@@ -1575,6 +1589,32 @@ function EditCard() {
 
         if (Object.keys(payload).length === 0) return false;
 
+        // Context-integrity guard: prevent saving if the UI context (activeOrgSlug)
+        // and the draftCard's publicPath clearly disagree. This is a last-resort
+        // defence against the stale-draftCard scenario (P0 data-integrity).
+        // publicPath is the most reliable context discriminator available in
+        // draftCard: /card/:slug = personal, /c/:orgSlug/:slug = org card.
+        const draftPublicPath =
+            typeof draftCard?.publicPath === "string"
+                ? draftCard.publicPath
+                : "";
+        if (draftPublicPath) {
+            const cardIsPersonal = draftPublicPath.startsWith("/card/");
+            const cardIsThisOrg =
+                Boolean(activeOrgSlug) &&
+                draftPublicPath.startsWith(`/c/${activeOrgSlug}/`);
+            const mismatch =
+                (!activeOrgSlug && !cardIsPersonal) ||
+                (Boolean(activeOrgSlug) && !cardIsThisOrg);
+            if (mismatch) {
+                setSaveState("error");
+                setSaveErrorText(
+                    "טעינת הכרטיס לא תואמת להקשר שנבחר. רעננו את העמוד ונסו שוב.",
+                );
+                return false;
+            }
+        }
+
         // Pre-save guard: validate contact.customActions before sending to backend.
         // Prevents surprise row loss when backend normalizer silently strips incomplete rows.
         if (
@@ -1724,7 +1764,7 @@ function EditCard() {
             setSaveErrorText(String(message));
             return false;
         }
-    }, [dirtyPaths, draftCard]);
+    }, [dirtyPaths, draftCard, activeOrgSlug]);
 
     const proceedPendingNavigation = useCallback(() => {
         if (pendingAction?.kind === "tab" && pendingAction.to) {
