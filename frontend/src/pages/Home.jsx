@@ -472,7 +472,10 @@ export default function Home() {
                                     src="/images/brand-logo/cardigo-logo.png"
                                     alt="כרטיס ביקור דיגיטלי - כרדיגו"
                                     className={styles.heroLogoImage}
+                                    width={212}
+                                    height={80}
                                     loading="eager"
+                                    fetchPriority="high"
                                     decoding="async"
                                 />
                             </picture>
