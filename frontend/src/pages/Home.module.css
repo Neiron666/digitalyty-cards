@@ -1624,6 +1624,7 @@
 @media (max-width: 640px) {
     .heroInner {
         width: 95%;
+        backdrop-filter: none;
     }
 
     .heroCta {
@@ -1634,6 +1635,12 @@
 
     .heroCardImg {
         border-radius: clamp(6px, 1vw, 12px);
+        animation: none;
+        will-change: auto;
+    }
+
+    .h1Accent {
+        filter: none;
     }
 
     .heroLogoImage {
