@@ -1267,3 +1267,430 @@ export async function sendMarketingCampaignEmailBestEffort({
         };
     }
 }
+
+// ---------------------------------------------------------------------------
+// URL normalizer — private, used only for owner notification CTA hrefs.
+// Returns the URL object's normalized href if the protocol is http/https,
+// or null for any other input (javascript:, data:, mailto:, tel:, empty,
+// malformed, protocol-relative, or non-string values).
+// Callers MUST use the returned safeInboxUrl in both TextPart and HTML href.
+// ---------------------------------------------------------------------------
+function normalizeSafeInboxUrl(value) {
+    if (typeof value !== "string" || !value.trim()) return null;
+    try {
+        const u = new URL(value.trim());
+        if (u.protocol !== "http:" && u.protocol !== "https:") return null;
+        return u.href;
+    } catch {
+        return null;
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Safe display text — private, used for all user-supplied display values
+// (names, labels, date/time strings) before they enter TextPart or HTML.
+// Strips ASCII control characters (\x00–\x1f, \x7f), collapses repeated
+// whitespace to a single space, trims, and slices to maxLen.
+// Must be applied BEFORE escapeHtml for HTML contexts.
+// ---------------------------------------------------------------------------
+function safeDisplayText(value, maxLen) {
+    if (typeof value !== "string") return "";
+    return value
+        .replace(/[\x00-\x1f\x7f]/g, " ")
+        .replace(/\s{2,}/g, " ")
+        .trim()
+        .slice(0, maxLen);
+}
+
+// ---------------------------------------------------------------------------
+// Owner lead notification email — transactional.
+// Sent best-effort when a new lead is submitted to the owner's card.
+// Caller MUST NOT await — fire-and-forget only.
+// Must NOT include customer phone, email, or message body.
+// Must NOT add List-Unsubscribe (transactional, not marketing).
+// ---------------------------------------------------------------------------
+export async function sendLeadNotificationEmailMailjetBestEffort({
+    toEmail,
+    ownerFirstName,
+    visitorName,
+    cardLabel,
+    inboxUrl,
+    userId,
+}) {
+    const cfg = getMailjetConfig();
+    const toEmailNormalized = normalizeEmail(toEmail);
+    const safeInboxUrl = normalizeSafeInboxUrl(inboxUrl);
+
+    // Validate inputs before environment check — INVALID_INPUT is returned
+    // regardless of Mailjet configuration state. This keeps security tests
+    // independent of deployment environment.
+    if (!toEmailNormalized || !safeInboxUrl) {
+        return { ok: false, skipped: true, reason: "INVALID_INPUT" };
+    }
+
+    if (!cfg.enabled) {
+        return { ok: true, skipped: true, reason: "MAILJET_NOT_CONFIGURED" };
+    }
+
+    const auth = Buffer.from(`${cfg.apiKey}:${cfg.apiSecret}`).toString(
+        "base64",
+    );
+
+    // --- Safe string helpers -------------------------------------------------
+    const escapeHtml = (str) =>
+        str
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#39;");
+
+    // Subject helper: reuses module-level safeDisplayText with subject max.
+    const sanitizeSubjectFragment = (str) =>
+        typeof str === "string" ? safeDisplayText(str, 150) : "";
+
+    // --- Resolved display values (all optional) ----------------------------
+    // safeDisplayText strips control chars, collapses whitespace, trims,
+    // and bounds each value to its field-appropriate maximum length.
+    const trimmedFirstName = safeDisplayText(ownerFirstName, 80);
+    const trimmedVisitor = safeDisplayText(visitorName, 120);
+    const trimmedCardLabel = safeDisplayText(cardLabel, 120);
+
+    // --- Subject -------------------------------------------------------------
+    // visitorName is user-supplied PII — sanitized for subject use only.
+    // The full name is NOT logged.
+    const subjectVisitor = sanitizeSubjectFragment(trimmedVisitor);
+    const subject = subjectVisitor
+        ? `קיבלת פנייה חדשה מ-${subjectVisitor} ב-Cardigo`
+        : "קיבלת פנייה חדשה ב-Cardigo";
+
+    // --- Text part -----------------------------------------------------------
+    const greeting = trimmedFirstName ? `שלום, ${trimmedFirstName},` : "שלום,";
+    const fromLine = trimmedVisitor
+        ? `מחכה לך פנייה חדשה מ-${trimmedVisitor} באזור האישי של Cardigo.`
+        : "מחכה לך פנייה חדשה מלקוח באזור האישי של Cardigo.";
+    const cardLine = trimmedCardLabel ? `כרטיס: ${trimmedCardLabel}` : "";
+
+    const text = [
+        greeting,
+        "",
+        fromLine,
+        "כדי לראות את הפרטים ולהמשיך טיפול, היכנס לתיבת הפניות שלך.",
+        ...(cardLine ? [cardLine] : []),
+        "",
+        safeInboxUrl,
+        "",
+        "צוות Cardigo",
+    ].join("\n");
+
+    // --- HTML part -----------------------------------------------------------
+    // All user-controlled values are escaped before insertion.
+    // safeInboxUrl (normalized href from normalizeSafeInboxUrl) is used in
+    // both TextPart and HTML href — raw inboxUrl is never inserted.
+    const logoBlock = cfg.trialReminderLogoUrl
+        ? `<img src="${cfg.trialReminderLogoUrl}" alt="Cardigo" width="120" height="auto" style="display:block;margin:0 auto 24px auto;border:0;" />`
+        : `<p style="margin:0 0 24px 0;font-size:20px;font-weight:bold;color:#1a1a1a;text-align:center;">Cardigo</p>`;
+
+    const greetingHtml = trimmedFirstName
+        ? `שלום, ${escapeHtml(trimmedFirstName)},`
+        : "שלום,";
+
+    const fromLineHtml = trimmedVisitor
+        ? `מחכה לך פנייה חדשה מ-<strong>${escapeHtml(trimmedVisitor)}</strong> באזור האישי של Cardigo.`
+        : "מחכה לך פנייה חדשה מלקוח באזור האישי של Cardigo.";
+
+    const cardLabelHtml = trimmedCardLabel
+        ? `<p style="margin:0 0 8px 0;font-size:13px;color:#888888;text-align:center;">כרטיס: ${escapeHtml(trimmedCardLabel)}</p>`
+        : "";
+
+    const htmlPart = `<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width,initial-scale=1" /></head>
+<body style="margin:0;padding:0;background-color:#f4f4f5;font-family:Arial,sans-serif;direction:rtl;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#f4f4f5;padding:32px 16px;">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="100%" style="max-width:520px;background-color:#ffffff;border-radius:8px;padding:40px 32px;">
+          <tr><td style="text-align:center;padding-bottom:8px;">
+            ${logoBlock}
+          </td></tr>
+          <tr><td style="padding-bottom:16px;">
+            <p style="margin:0;font-size:16px;font-weight:bold;color:#1a1a1a;text-align:right;">${greetingHtml}</p>
+          </td></tr>
+          <tr><td style="padding-bottom:16px;">
+            <p style="margin:0;font-size:15px;line-height:1.6;color:#444444;text-align:center;">${fromLineHtml}</p>
+          </td></tr>
+          <tr><td style="padding-bottom:24px;">
+            <p style="margin:0;font-size:15px;line-height:1.6;color:#444444;text-align:center;">
+              כדי לראות את הפרטים ולהמשיך טיפול, היכנס לתיבת הפניות שלך.
+            </p>
+          </td></tr>
+          ${cardLabelHtml ? `<tr><td style="padding-bottom:16px;">${cardLabelHtml}</td></tr>` : ""}
+          <tr><td style="text-align:center;padding-bottom:24px;">
+            <a href="${safeInboxUrl}" style="display:inline-block;padding:14px 32px;background-color:#6c47ff;color:#ffffff;font-size:16px;font-weight:bold;text-decoration:none;border-radius:6px;">פתח את תיבת הפניות</a>
+          </td></tr>
+          <tr><td style="border-top:1px solid #e5e7eb;padding-top:16px;text-align:center;">
+            <p style="margin:0;font-size:12px;color:#aaaaaa;">הודעה זו נשלחת מסיבות תפעוליות. צוות Cardigo</p>
+          </td></tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
+
+    const payload = {
+        Messages: [
+            {
+                From: {
+                    Email: cfg.fromEmail,
+                    Name: cfg.fromName,
+                },
+                To: [{ Email: toEmailNormalized }],
+                Subject: subject,
+                TextPart: text,
+                HTMLPart: htmlPart,
+            },
+        ],
+    };
+
+    const body = JSON.stringify(payload);
+
+    try {
+        const res = await httpsRequestJson({
+            hostname: "api.mailjet.com",
+            path: "/v3.1/send",
+            method: "POST",
+            timeoutMs: 10_000,
+            headers: {
+                Authorization: `Basic ${auth}`,
+                "Content-Type": "application/json",
+                "Content-Length": Buffer.byteLength(body),
+            },
+            body,
+        });
+
+        const ok = res.statusCode >= 200 && res.statusCode < 300;
+        if (!ok) {
+            console.error("[mailjet] lead-notification send failed", {
+                statusCode: res.statusCode,
+                userId: String(userId || ""),
+            });
+        }
+
+        return { ok };
+    } catch (err) {
+        console.error("[mailjet] lead-notification send error", {
+            userId: String(userId || ""),
+            error: err?.message || err,
+        });
+        return { ok: false };
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Owner booking notification email — transactional.
+// Sent best-effort when a new booking request (status: pending) is submitted
+// to the owner's card.
+// Caller MUST NOT await — fire-and-forget only.
+// Must NOT include customer phone, customer email, or private booking notes.
+// Must NOT add List-Unsubscribe (transactional, not marketing).
+// ---------------------------------------------------------------------------
+export async function sendBookingNotificationEmailMailjetBestEffort({
+    toEmail,
+    ownerFirstName,
+    customerName,
+    cardLabel,
+    dateKeyIl,
+    localStartHHmm,
+    inboxUrl,
+    userId,
+}) {
+    const cfg = getMailjetConfig();
+    const toEmailNormalized = normalizeEmail(toEmail);
+    const safeInboxUrl = normalizeSafeInboxUrl(inboxUrl);
+
+    // Validate inputs before environment check — INVALID_INPUT is returned
+    // regardless of Mailjet configuration state. This keeps security tests
+    // independent of deployment environment.
+    if (!toEmailNormalized || !safeInboxUrl) {
+        return { ok: false, skipped: true, reason: "INVALID_INPUT" };
+    }
+
+    if (!cfg.enabled) {
+        return { ok: true, skipped: true, reason: "MAILJET_NOT_CONFIGURED" };
+    }
+
+    const auth = Buffer.from(`${cfg.apiKey}:${cfg.apiSecret}`).toString(
+        "base64",
+    );
+
+    // --- Safe string helpers -------------------------------------------------
+    const escapeHtml = (str) =>
+        str
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#39;");
+
+    // Subject helper: reuses module-level safeDisplayText with subject max.
+    const sanitizeSubjectFragment = (str) =>
+        typeof str === "string" ? safeDisplayText(str, 150) : "";
+
+    // --- Resolved display values (all optional) ----------------------------
+    // safeDisplayText strips control chars, collapses whitespace, trims,
+    // and bounds each value to its field-appropriate maximum length.
+    const trimmedFirstName = safeDisplayText(ownerFirstName, 80);
+    const trimmedCustomer = safeDisplayText(customerName, 120);
+    const trimmedCardLabel = safeDisplayText(cardLabel, 120);
+    // Date/time fields: safeDisplayText with field-appropriate max lengths.
+    const trimmedDate = safeDisplayText(dateKeyIl, 20);
+    const trimmedTime = safeDisplayText(localStartHHmm, 10);
+
+    // --- Subject -------------------------------------------------------------
+    // customerName is user-supplied — sanitized for subject use only.
+    // The full name is NOT logged.
+    const subjectCustomer = sanitizeSubjectFragment(trimmedCustomer);
+    const subject = subjectCustomer
+        ? `בקשת תיאום חדשה מ-${subjectCustomer}`
+        : "בקשת תיאום חדשה ב-Cardigo";
+
+    // --- Text part -----------------------------------------------------------
+    const greeting = trimmedFirstName ? `שלום, ${trimmedFirstName},` : "שלום,";
+    const fromLine = trimmedCustomer
+        ? `מחכה לך בקשת תיאום חדשה מ-${trimmedCustomer} באזור האישי של Cardigo.`
+        : "מחכה לך בקשת תיאום חדשה באזור האישי של Cardigo.";
+    const timeLine =
+        trimmedDate && trimmedTime
+            ? `מועד מבוקש: ${trimmedDate} בשעה ${trimmedTime}`
+            : trimmedDate
+              ? `מועד מבוקש: ${trimmedDate}`
+              : "";
+    const cardLine = trimmedCardLabel ? `כרטיס: ${trimmedCardLabel}` : "";
+
+    const text = [
+        greeting,
+        "",
+        fromLine,
+        "ניתן לפתוח את תיבת הפניות כדי לראות את הפרטים ולאשר או לטפל בבקשה.",
+        ...(timeLine ? [timeLine] : []),
+        ...(cardLine ? [cardLine] : []),
+        "",
+        safeInboxUrl,
+        "",
+        "צוות Cardigo",
+    ].join("\n");
+
+    // --- HTML part -----------------------------------------------------------
+    // All user-controlled values are escaped before insertion.
+    // safeInboxUrl (normalized href from normalizeSafeInboxUrl) is used in
+    // both TextPart and HTML href — raw inboxUrl is never inserted.
+    const logoBlock = cfg.trialReminderLogoUrl
+        ? `<img src="${cfg.trialReminderLogoUrl}" alt="Cardigo" width="120" height="auto" style="display:block;margin:0 auto 24px auto;border:0;" />`
+        : `<p style="margin:0 0 24px 0;font-size:20px;font-weight:bold;color:#1a1a1a;text-align:center;">Cardigo</p>`;
+
+    const greetingHtml = trimmedFirstName
+        ? `שלום, ${escapeHtml(trimmedFirstName)},`
+        : "שלום,";
+
+    const fromLineHtml = trimmedCustomer
+        ? `מחכה לך בקשת תיאום חדשה מ-<strong>${escapeHtml(trimmedCustomer)}</strong> באזור האישי של Cardigo.`
+        : "מחכה לך בקשת תיאום חדשה באזור האישי של Cardigo.";
+
+    const timeLineHtml =
+        trimmedDate && trimmedTime
+            ? `<p style="margin:0 0 8px 0;font-size:14px;color:#444444;text-align:center;">מועד מבוקש: <strong>${escapeHtml(trimmedDate)}</strong> בשעה <strong>${escapeHtml(trimmedTime)}</strong></p>`
+            : trimmedDate
+              ? `<p style="margin:0 0 8px 0;font-size:14px;color:#444444;text-align:center;">מועד מבוקש: <strong>${escapeHtml(trimmedDate)}</strong></p>`
+              : "";
+
+    const cardLabelHtml = trimmedCardLabel
+        ? `<p style="margin:0 0 8px 0;font-size:13px;color:#888888;text-align:center;">כרטיס: ${escapeHtml(trimmedCardLabel)}</p>`
+        : "";
+
+    const htmlPart = `<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width,initial-scale=1" /></head>
+<body style="margin:0;padding:0;background-color:#f4f4f5;font-family:Arial,sans-serif;direction:rtl;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#f4f4f5;padding:32px 16px;">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="100%" style="max-width:520px;background-color:#ffffff;border-radius:8px;padding:40px 32px;">
+          <tr><td style="text-align:center;padding-bottom:8px;">
+            ${logoBlock}
+          </td></tr>
+          <tr><td style="padding-bottom:16px;">
+            <p style="margin:0;font-size:16px;font-weight:bold;color:#1a1a1a;text-align:right;">${greetingHtml}</p>
+          </td></tr>
+          <tr><td style="padding-bottom:16px;">
+            <p style="margin:0;font-size:15px;line-height:1.6;color:#444444;text-align:center;">${fromLineHtml}</p>
+          </td></tr>
+          <tr><td style="padding-bottom:16px;">
+            <p style="margin:0;font-size:15px;line-height:1.6;color:#444444;text-align:center;">
+              ניתן לפתוח את תיבת הפניות כדי לראות את הפרטים ולאשר או לטפל בבקשה.
+            </p>
+          </td></tr>
+          ${timeLineHtml ? `<tr><td style="padding-bottom:12px;">${timeLineHtml}</td></tr>` : ""}
+          ${cardLabelHtml ? `<tr><td style="padding-bottom:16px;">${cardLabelHtml}</td></tr>` : ""}
+          <tr><td style="text-align:center;padding-bottom:24px;">
+            <a href="${safeInboxUrl}" style="display:inline-block;padding:14px 32px;background-color:#6c47ff;color:#ffffff;font-size:16px;font-weight:bold;text-decoration:none;border-radius:6px;">פתח את תיבת הפניות</a>
+          </td></tr>
+          <tr><td style="border-top:1px solid #e5e7eb;padding-top:16px;text-align:center;">
+            <p style="margin:0;font-size:12px;color:#aaaaaa;">הודעה זו נשלחת מסיבות תפעוליות. צוות Cardigo</p>
+          </td></tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
+
+    const payload = {
+        Messages: [
+            {
+                From: {
+                    Email: cfg.fromEmail,
+                    Name: cfg.fromName,
+                },
+                To: [{ Email: toEmailNormalized }],
+                Subject: subject,
+                TextPart: text,
+                HTMLPart: htmlPart,
+            },
+        ],
+    };
+
+    const body = JSON.stringify(payload);
+
+    try {
+        const res = await httpsRequestJson({
+            hostname: "api.mailjet.com",
+            path: "/v3.1/send",
+            method: "POST",
+            timeoutMs: 10_000,
+            headers: {
+                Authorization: `Basic ${auth}`,
+                "Content-Type": "application/json",
+                "Content-Length": Buffer.byteLength(body),
+            },
+            body,
+        });
+
+        const ok = res.statusCode >= 200 && res.statusCode < 300;
+        if (!ok) {
+            console.error("[mailjet] booking-notification send failed", {
+                statusCode: res.statusCode,
+                userId: String(userId || ""),
+            });
+        }
+
+        return { ok };
+    } catch (err) {
+        console.error("[mailjet] booking-notification send error", {
+            userId: String(userId || ""),
+            error: err?.message || err,
+        });
+        return { ok: false };
+    }
+}

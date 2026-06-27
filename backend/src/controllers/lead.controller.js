@@ -11,6 +11,8 @@ import {
 import { sanitizeLeadInput } from "../utils/leadSanitize.js";
 import { isValidObjectId } from "../utils/orgMembership.util.js";
 import { getPersonalOrgId } from "../utils/personalOrg.util.js";
+import { sendLeadNotificationEmailMailjetBestEffort } from "../services/mailjet.service.js";
+import { getSiteUrl } from "../utils/siteUrl.util.js";
 
 // Fake ObjectId returned to bots (honeypot) - looks valid, never in DB.
 const FAKE_LEAD_ID = "000000000000000000000000";
@@ -114,6 +116,41 @@ export async function createLead(req, res) {
             phone,
             message,
         });
+
+        // Best-effort owner notification — must not block 201.
+        // Owner email/name resolved server-side from card.user.
+        // inboxUrl built from trusted app origin only — never from request.
+        if (card.user) {
+            User.findById(String(card.user))
+                .select("email firstName isVerified")
+                .lean()
+                .then((owner) => {
+                    if (!owner?.email || !owner?.isVerified) return;
+                    const inboxUrl = `${getSiteUrl()}/inbox`;
+                    const cardLabel =
+                        card.business?.name ||
+                        card.business?.businessName ||
+                        card.slug ||
+                        "";
+                    return sendLeadNotificationEmailMailjetBestEffort({
+                        toEmail: owner.email,
+                        ownerFirstName: owner.firstName ?? null,
+                        visitorName: lead.name ?? null,
+                        cardLabel,
+                        inboxUrl,
+                        userId: String(owner._id),
+                    });
+                })
+                .catch((notifyErr) => {
+                    // Safe log — no owner email, no customer PII.
+                    console.error("[lead] owner notify error", {
+                        leadId: String(lead._id),
+                        cardId: String(cardId),
+                        ownerId: String(card.user),
+                        error: notifyErr?.message || "unknown",
+                    });
+                });
+        }
 
         res.status(201).json({
             success: true,
