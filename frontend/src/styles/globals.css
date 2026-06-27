@@ -1,5 +1,45 @@
 @import "./variables.module.css";
 
+@font-face {
+    font-family: "Heebo";
+    src: url("/fonts/heebo/heebo-400.woff2") format("woff2");
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: "Heebo";
+    src: url("/fonts/heebo/heebo-600.woff2") format("woff2");
+    font-weight: 600;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: "Heebo";
+    src: url("/fonts/heebo/heebo-700.woff2") format("woff2");
+    font-weight: 700;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: "Heebo";
+    src: url("/fonts/heebo/heebo-800.woff2") format("woff2");
+    font-weight: 800;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: "Heebo";
+    src: url("/fonts/heebo/heebo-900.woff2") format("woff2");
+    font-weight: 900;
+    font-style: normal;
+    font-display: swap;
+}
+
 * {
     box-sizing: border-box;
 }
