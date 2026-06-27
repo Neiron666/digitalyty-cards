@@ -1,7 +1,7 @@
 # Bookings & Owner Inbox - Architecture & Specification (SSoT)
 
 > **Owner:** Full-stack (Backend + Frontend).  
-> **Last updated:** 2026-04-21.  
+> **Last updated:** 2026-06-27.  
 > **Related docs:** [Ops Runbook → docs/runbooks/bookings-indexes-ops.md](runbooks/bookings-indexes-ops.md)
 
 ---
@@ -318,7 +318,58 @@ Archive/hide, manual delete, and broader cleanup actions are not implemented. Se
 
 ---
 
-## 9. Deferred / Not Yet Built
+## 9. Owner Email Notification
+
+**Status:** PRODUCTION VERIFIED (2026-06-27)
+
+When a booking request is successfully created, the card owner receives a best-effort transactional Mailjet email.
+
+### 9.1 Trigger
+
+Fires after `Booking.create` (status `"pending"`) succeeds in `createPublicBooking` (`booking.controller.js`). Placed before `res.status(201)` but **not awaited** — the public response is unconditionally independent of email delivery.
+
+Does **not** fire on: approve, cancel, expire, reconcile, list, or availability checks.
+
+### 9.2 Recipient resolution
+
+`card.user → User.findById(card.user).select("email firstName isVerified")`
+
+Skipped silently if:
+
+- `card.user` is null or missing (field is `required: false` on Card schema)
+- owner document not found
+- `owner.email` missing
+- `owner.isVerified !== true`
+
+No org-admin fanout. No notification to unrelated users.
+
+### 9.3 Email contents
+
+| Field                                  | Included | Notes                                            |
+| -------------------------------------- | -------- | ------------------------------------------------ |
+| Customer name (`booking.customerName`) | ✅       | Bounded to 120 chars via `safeDisplayText`       |
+| Date (`booking.dateKeyIl`)             | ✅       | Israel-local `YYYY-MM-DD`                        |
+| Time (`booking.localStartHHmm`)        | ✅       | Israel-local `HH:mm`                             |
+| Card label                             | ✅       | `card.business.name \|\| businessName \|\| slug` |
+| CTA → `/inbox`                         | ✅       | Built server-side from `getSiteUrl()`            |
+| Customer phone                         | ❌       | Never included                                   |
+| personKey / publicIpHash / slotKey     | ❌       | Internal dedup/anti-abuse keys                   |
+| consentAcceptedAt / consentVersions    | ❌       | Internal evidence fields                         |
+| booking.\_id / card.\_id               | ❌       | Not owner-facing                                 |
+
+### 9.4 Error logging
+
+On failure, logs only: `bookingId`, `cardId`, `ownerId`, `error.message`. No PII.
+
+### 9.5 Implementation
+
+See: `backend/src/controllers/booking.controller.js` lines 23–24 (imports), 498–531 (notification block).
+Sender: `backend/src/services/mailjet.service.js` line 1499.
+Full handoff: `docs/handoffs/current/Cardigo_Enterprise_Handoff_2026-06-27_OwnerEmailNotifications_LeadsAndBookings_Closed.md`.
+
+---
+
+## 10. Deferred / Not Yet Built
 
 The following are recognized product directions but are **not implemented** and must not be described as current functionality:
 
@@ -328,12 +379,14 @@ The following are recognized product directions but are **not implemented** and 
 - **Broader CRUD expansion** - edit, reschedule, or advanced booking management actions.
 - **Reschedule / advanced scheduling** - no reschedule flow, recurring bookings, or calendar integration.
 - **Hard delete strategy** - not the current default; lifecycle transitions + TTL is the accepted pattern.
+- **Click action email notifications** - phone/WhatsApp/navigation clicks do not send emails. Requires dedupe, bot suppression, opt-in preference, and rate-limiting before implementation.
 
 ---
 
-## 10. Related Docs
+## 11. Related Docs
 
-| Document                                                                  | Scope                                                                                      |
-| ------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
-| [docs/runbooks/bookings-indexes-ops.md](runbooks/bookings-indexes-ops.md) | Booking index governance, manual index creation commands, retention vs. expiry distinction |
-| [docs/leads-inbox-architecture.md](leads-inbox-architecture.md)           | Leads & Inbox architecture (separate workstream sharing the same Inbox page)               |
+| Document                                                                                                                                                                                                                    | Scope                                                                                      |
+| --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| [docs/runbooks/bookings-indexes-ops.md](runbooks/bookings-indexes-ops.md)                                                                                                                                                   | Booking index governance, manual index creation commands, retention vs. expiry distinction |
+| [docs/leads-inbox-architecture.md](leads-inbox-architecture.md)                                                                                                                                                             | Leads & Inbox architecture (separate workstream sharing the same Inbox page)               |
+| [docs/handoffs/current/Cardigo_Enterprise_Handoff_2026-06-27_OwnerEmailNotifications_LeadsAndBookings_Closed.md](handoffs/current/Cardigo_Enterprise_Handoff_2026-06-27_OwnerEmailNotifications_LeadsAndBookings_Closed.md) | Owner email notifications handoff and closure                                              |

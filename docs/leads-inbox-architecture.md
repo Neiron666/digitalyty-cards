@@ -495,24 +495,71 @@ cardKind =
 
 ## 7. PROOF Index
 
-| What                  | File                                                        | Lines    |
-| --------------------- | ----------------------------------------------------------- | -------- |
-| Lead schema + indexes | `backend/src/models/Lead.model.js`                          | L1–81    |
-| Lead sanitizer        | `backend/src/utils/leadSanitize.js`                         | L1–83    |
-| Routes + rate limits  | `backend/src/routes/lead.routes.js`                         | L1–140   |
-| createLead            | `backend/src/controllers/lead.controller.js`                | L14–112  |
-| getOwnerCardIds       | `backend/src/controllers/lead.controller.js`                | L116–121 |
-| getMyLeads + DTO      | `backend/src/controllers/lead.controller.js`                | L128–253 |
-| getUnreadCount        | `backend/src/controllers/lead.controller.js`                | L257–280 |
-| markLeadRead          | `backend/src/controllers/lead.controller.js`                | L284–325 |
-| updateLeadFlags       | `backend/src/controllers/lead.controller.js`                | L329–417 |
-| hardDeleteLead        | `backend/src/controllers/lead.controller.js`                | L421–456 |
-| PERSONAL_ORG_SLUG     | `backend/src/utils/personalOrg.util.js`                     | L3       |
-| getPersonalOrgId      | `backend/src/utils/personalOrg.util.js`                     | L59–67   |
-| LeadForm component    | `frontend/src/components/card/sections/LeadForm.jsx`        | L1–216   |
-| LeadForm CSS          | `frontend/src/components/card/sections/LeadForm.module.css` | L1–136   |
-| Notice component      | `frontend/src/components/ui/Notice/Notice.jsx`              | L1–24    |
-| Notice CSS            | `frontend/src/components/ui/Notice/Notice.module.css`       | L1–50    |
-| UnreadCountContext    | `frontend/src/context/UnreadCountContext.jsx`               | L1–119   |
-| Inbox page            | `frontend/src/pages/Inbox.jsx`                              | L1–525+  |
-| FE leads service      | `frontend/src/services/leads.service.js`                    | L1–37    |
+| What                     | File                                                        | Lines            |
+| ------------------------ | ----------------------------------------------------------- | ---------------- |
+| Lead schema + indexes    | `backend/src/models/Lead.model.js`                          | L1–81            |
+| Lead sanitizer           | `backend/src/utils/leadSanitize.js`                         | L1–83            |
+| Routes + rate limits     | `backend/src/routes/lead.routes.js`                         | L1–140           |
+| createLead               | `backend/src/controllers/lead.controller.js`                | L14–112          |
+| getOwnerCardIds          | `backend/src/controllers/lead.controller.js`                | L116–121         |
+| getMyLeads + DTO         | `backend/src/controllers/lead.controller.js`                | L128–253         |
+| getUnreadCount           | `backend/src/controllers/lead.controller.js`                | L257–280         |
+| markLeadRead             | `backend/src/controllers/lead.controller.js`                | L284–325         |
+| updateLeadFlags          | `backend/src/controllers/lead.controller.js`                | L329–417         |
+| hardDeleteLead           | `backend/src/controllers/lead.controller.js`                | L421–456         |
+| PERSONAL_ORG_SLUG        | `backend/src/utils/personalOrg.util.js`                     | L3               |
+| getPersonalOrgId         | `backend/src/utils/personalOrg.util.js`                     | L59–67           |
+| LeadForm component       | `frontend/src/components/card/sections/LeadForm.jsx`        | L1–216           |
+| LeadForm CSS             | `frontend/src/components/card/sections/LeadForm.module.css` | L1–136           |
+| Notice component         | `frontend/src/components/ui/Notice/Notice.jsx`              | L1–24            |
+| Notice CSS               | `frontend/src/components/ui/Notice/Notice.module.css`       | L1–50            |
+| UnreadCountContext       | `frontend/src/context/UnreadCountContext.jsx`               | L1–119           |
+| Inbox page               | `frontend/src/pages/Inbox.jsx`                              | L1–525+          |
+| FE leads service         | `frontend/src/services/leads.service.js`                    | L1–37            |
+| Owner email sender       | `backend/src/services/mailjet.service.js`                   | L1312+           |
+| Lead notification wiring | `backend/src/controllers/lead.controller.js`                | L14–15, L121–155 |
+
+---
+
+## 8. Owner Email Notification
+
+**Status:** PRODUCTION VERIFIED (2026-06-27)
+
+When a lead is successfully created, the card owner receives a best-effort transactional Mailjet email.
+
+### 8.1 Trigger
+
+Fires after `Lead.create` succeeds in `createLead` (`lead.controller.js`). Placed before `res.status(201)` but **not awaited** — the public response is unconditionally independent of email delivery.
+
+### 8.2 Recipient resolution
+
+`card.user → User.findById(card.user).select("email firstName isVerified")`
+
+Skipped silently if:
+
+- `card.user` is null or missing
+- owner document not found
+- `owner.email` missing
+- `owner.isVerified !== true`
+
+No org-admin fanout. No notification to unrelated users.
+
+### 8.3 Email contents
+
+| Field                      | Included | Notes                                            |
+| -------------------------- | -------- | ------------------------------------------------ |
+| Visitor name (`lead.name`) | ✅       | Bounded to 120 chars via `safeDisplayText`       |
+| Card label                 | ✅       | `card.business.name \|\| businessName \|\| slug` |
+| CTA → `/inbox`             | ✅       | Built server-side from `getSiteUrl()`            |
+| Customer phone             | ❌       | Never included                                   |
+| Customer email             | ❌       | Never included                                   |
+| Customer message body      | ❌       | Never included                                   |
+| lead.\_id / card.\_id      | ❌       | Not owner-facing                                 |
+
+### 8.4 Error logging
+
+On failure, logs only: `leadId`, `cardId`, `ownerId`, `error.message`. No PII.
+
+### 8.5 Deferred
+
+Click/action email notifications (phone, WhatsApp, navigation) are not implemented. See handoff: `docs/handoffs/current/Cardigo_Enterprise_Handoff_2026-06-27_OwnerEmailNotifications_LeadsAndBookings_Closed.md`.

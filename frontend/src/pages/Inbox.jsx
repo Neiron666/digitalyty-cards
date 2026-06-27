@@ -18,15 +18,15 @@ import SeoHelmet from "../components/seo/SeoHelmet";
 
 const VIEWS = [
     { key: "active", label: "הכל" },
-    { key: "important", label: "חשובים" },
-    { key: "archived", label: "ארכיון" },
-    { key: "trash", label: "פח" },
+    { key: "important", label: " ⭐חשובים" },
+    { key: "archived", label: "ארכיון 🗄️" },
+    { key: "trash", label: "פח 🗑️" },
 ];
 
 const CATEGORIES = [
-    { key: "leads", label: "פניות" },
-    { key: "bookings", label: "בקשות תיאום" },
-    { key: "futureMeetings", label: "פגישות עתידיות" },
+    { key: "leads", label: "פניות 📬" },
+    { key: "bookings", label: "בקשות תיאום 📅" },
+    { key: "futureMeetings", label: "פגישות עתידיות 🕒" },
 ];
 
 const STATUS_LABELS = {
@@ -501,7 +501,7 @@ export default function Inbox() {
                                                         >
                                                             {lead.isImportant
                                                                 ? "הסר חשוב"
-                                                                : "סמן חשוב"}
+                                                                : " ⭐סמן חשוב"}
                                                         </button>
                                                         <button
                                                             type="button"
@@ -516,8 +516,8 @@ export default function Inbox() {
                                                             }
                                                         >
                                                             {lead.archivedAt
-                                                                ? "בטל ארכיון"
-                                                                : "העבר לארכיון"}
+                                                                ? "בטל ארכיון 🗄️"
+                                                                : "העבר לארכיון 🗄️"}
                                                         </button>
                                                         <button
                                                             type="button"
@@ -530,7 +530,7 @@ export default function Inbox() {
                                                                 })
                                                             }
                                                         >
-                                                            העבר לפח
+                                                            העבר לפח 🗑️
                                                         </button>
                                                     </>
                                                 ) : (
