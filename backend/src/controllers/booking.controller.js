@@ -20,6 +20,8 @@ import { assertSlotLegalAgainstBusinessHoursOrThrow } from "../utils/bookingBusi
 import { getPersonalOrgId } from "../utils/personalOrg.util.js";
 import { toIsrael, addIsraelDaysFromNow } from "../utils/time.util.js";
 import { resolveEffectiveBookingHorizon } from "../utils/bookingHorizon.util.js";
+import { sendBookingNotificationEmailMailjetBestEffort } from "../services/mailjet.service.js";
+import { getSiteUrl } from "../utils/siteUrl.util.js";
 
 const FAKE_BOOKING_ID = "000000000000000000000000";
 
@@ -493,6 +495,40 @@ export async function createPublicBooking(req, res) {
             publicIpHash: ipHashBestEffort(getClientIp(req)),
             slotKey: input.slotKey,
         });
+
+        if (card.user) {
+            User.findById(String(card.user))
+                .select("email firstName isVerified")
+                .lean()
+                .then((owner) => {
+                    if (!owner?.email || !owner?.isVerified) return;
+                    const inboxUrl = `${getSiteUrl()}/inbox`;
+                    const cardLabel =
+                        card.business?.name ||
+                        card.business?.businessName ||
+                        card.slug ||
+                        "";
+                    return sendBookingNotificationEmailMailjetBestEffort({
+                        toEmail: owner.email,
+                        ownerFirstName: owner.firstName ?? null,
+                        customerName: booking.customerName ?? null,
+                        cardLabel,
+                        dateKeyIl: booking.dateKeyIl ?? null,
+                        localStartHHmm: booking.localStartHHmm ?? null,
+                        inboxUrl,
+                        userId: String(owner._id),
+                    });
+                })
+                .catch((notifyErr) => {
+                    // Safe log — no owner email, no customer PII.
+                    console.error("[booking] owner notify error", {
+                        bookingId: String(booking._id),
+                        cardId: String(booking.card),
+                        ownerId: String(card.user),
+                        error: notifyErr?.message || "unknown",
+                    });
+                });
+        }
 
         return res.status(201).json({ success: true, bookingId: booking._id });
     } catch (err) {
