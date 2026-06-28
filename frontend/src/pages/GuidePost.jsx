@@ -287,30 +287,47 @@ export default function GuidePost() {
                         className={styles.heroImage}
                         src={post.heroImageUrl || GUIDE_OG_FALLBACK}
                         alt={post.heroImageAlt || post.title || ""}
+                        loading="eager"
+                        fetchpriority="high"
+                        decoding="async"
+                        width={1200}
+                        height={675}
                     />
 
-                    {(post.sections || []).map((section, i) => (
-                        <section key={i} className={styles.section}>
-                            {section.heading && (
-                                <h2 className={styles.sectionHeading}>
-                                    {section.heading}
-                                </h2>
-                            )}
-                            {section.imageUrl && (
-                                <img
-                                    className={styles.sectionImage}
-                                    src={section.imageUrl}
-                                    alt={section.imageAlt || ""}
-                                    loading="lazy"
-                                />
-                            )}
-                            {textToParagraphs(section.body).map((para, j) => (
-                                <p key={j} className={styles.sectionBody}>
-                                    {renderLinkedText(para)}
-                                </p>
-                            ))}
-                        </section>
-                    ))}
+                    {(post.sections || []).map((section, i) => {
+                        const sectionImageUrl =
+                            typeof section.imageUrl === "string"
+                                ? section.imageUrl.trim()
+                                : "";
+                        return (
+                            <section key={i} className={styles.section}>
+                                {section.heading && (
+                                    <h2 className={styles.sectionHeading}>
+                                        {section.heading}
+                                    </h2>
+                                )}
+                                {sectionImageUrl && (
+                                    <img
+                                        className={styles.sectionImage}
+                                        src={sectionImageUrl}
+                                        alt={section.imageAlt || ""}
+                                        loading="lazy"
+                                        decoding="async"
+                                    />
+                                )}
+                                {textToParagraphs(section.body).map(
+                                    (para, j) => (
+                                        <p
+                                            key={j}
+                                            className={styles.sectionBody}
+                                        >
+                                            {renderLinkedText(para)}
+                                        </p>
+                                    ),
+                                )}
+                            </section>
+                        );
+                    })}
 
                     {post.authorName && (
                         <aside
