@@ -37,6 +37,60 @@ function escapeHtml(str) {
         .replace(/'/g, "&#39;");
 }
 
+// ── Cover preload helpers ─────────────────────────────────────────────────
+
+// Extract the og:image URL from an already-scoped <head> HTML string.
+// Supports both attribute orders (property before content, content before property).
+// Returns null on any failure; never throws.
+function extractOgImageUrl(headHtml) {
+    if (typeof headHtml !== "string" || !headHtml) return null;
+    try {
+        // Match <meta ... property="og:image" ... content="..."> in either attribute order.
+        const m =
+            headHtml.match(
+                /<meta\s[^>]*property=["']og:image["'][^>]*content=["']([^"']+)["'][^>]*>/i,
+            ) ||
+            headHtml.match(
+                /<meta\s[^>]*content=["']([^"']+)["'][^>]*property=["']og:image["'][^>]*>/i,
+            );
+        if (!m) return null;
+        const url = String(m[1] || "").trim();
+        return url || null;
+    } catch {
+        return null;
+    }
+}
+
+// Validate that a URL is eligible for cover preload injection.
+// Only Supabase Storage public URLs that point to a background or cover asset pass.
+function isCoverPreloadEligible(url) {
+    if (typeof url !== "string" || !url) return false;
+    let parsed;
+    try {
+        parsed = new URL(url);
+    } catch {
+        return false;
+    }
+    if (parsed.protocol !== "https:") return false;
+    if (!parsed.hostname.endsWith(".supabase.co")) return false;
+    const path = parsed.pathname;
+    if (!path.includes("/storage/v1/object/public/")) return false;
+    // Must be a background or cover asset path, not logo/avatar/gallery/gallerythumb.
+    if (!path.includes("/background/") && !path.includes("/cover/"))
+        return false;
+    return true;
+}
+
+// Build a safe <link rel="preload"> tag for the cover image.
+// href is HTML-attribute-escaped via escapeHtml.
+// referrerpolicy="no-referrer" must match CardLayout.jsx cover img referrerPolicy
+// so the browser reuses the preloaded resource rather than making a duplicate fetch.
+function buildCoverPreloadTag(url) {
+    return `<link rel="preload" as="image" href="${escapeHtml(url)}" fetchpriority="high" referrerpolicy="no-referrer">`;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+
 function buildStaticMarketingOgHtml({
     title,
     description,
@@ -362,6 +416,31 @@ async function serveCardEnrichedShell(backendPath, context, { isCrawler }) {
         // Visible body fallback temporarily disabled: P1 product-trust/perceived-performance issue.
         // Preserve Edge head + JSON-LD only. Root fix: PUBLIC_CARD_DATA_ISLAND_FOR_FAST_HYDRATION_P1_AUDIT.
         let finalHtml = headInjectedHtml;
+
+        // PUBLIC_CARD_EDGE_COVER_PRELOAD_P2_MINIMAL: inject cover image preload link.
+        // Scope: only valid 200 responses for /card and /c routes reaching this block.
+        // Social branch, direct /og, unknown slugs, 404/410 never reach this point.
+        try {
+            const ogHeadMatch = ogHtml.match(/<head[^>]*>([\s\S]*?)<\/head>/i);
+            const ogHeadBlock = ogHeadMatch ? ogHeadMatch[1] : "";
+            const coverUrl = extractOgImageUrl(ogHeadBlock);
+            if (
+                coverUrl &&
+                isCoverPreloadEligible(coverUrl) &&
+                finalHtml.includes("</head>") &&
+                !finalHtml.includes(
+                    `rel="preload" as="image" href="${escapeHtml(coverUrl)}"`,
+                )
+            ) {
+                const preloadTag = buildCoverPreloadTag(coverUrl);
+                finalHtml = finalHtml.replace(
+                    "</head>",
+                    preloadTag + "\n</head>",
+                );
+            }
+        } catch {
+            // Cover preload injection failed — continue with finalHtml as-is.
+        }
         return new Response(finalHtml, {
             status: 200,
             headers: {
