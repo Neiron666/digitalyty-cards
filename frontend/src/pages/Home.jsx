@@ -476,7 +476,7 @@ export default function Home() {
                                     height={80}
                                     loading="eager"
                                     fetchpriority="high"
-                                    decoding="async"
+                                    decoding="sync"
                                 />
                             </picture>
                         </Link>
