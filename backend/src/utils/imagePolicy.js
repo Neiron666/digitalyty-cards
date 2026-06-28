@@ -27,10 +27,18 @@ export const AGGRESSIVE_QUALITIES = [82, 78, 74];
 // Keys must be lowercase - resolveProfile() normalises input via .toLowerCase().
 const PROFILES = {
     gallery: { maxLongSide: 2048, minLongSide: 1024, gentleQuality: 83 },
-    bloghero: { maxLongSide: 2048, minLongSide: 1024 },
-    blogsectionimage: { maxLongSide: 1600, minLongSide: 800 },
-    guidehero: { maxLongSide: 2048, minLongSide: 1024 },
-    guidesectionimage: { maxLongSide: 1600, minLongSide: 800 },
+    bloghero: { maxLongSide: 1200, minLongSide: 800, gentleQuality: 82 },
+    blogsectionimage: {
+        maxLongSide: 1200,
+        minLongSide: 800,
+        gentleQuality: 82,
+    },
+    guidehero: { maxLongSide: 1200, minLongSide: 800, gentleQuality: 82 },
+    guidesectionimage: {
+        maxLongSide: 1200,
+        minLongSide: 800,
+        gentleQuality: 82,
+    },
     background: { maxLongSide: 1200, minLongSide: 800 },
     avatar: { maxLongSide: 480, minLongSide: 400 },
     gallerythumb: { maxLongSide: 480, minLongSide: 320 },
