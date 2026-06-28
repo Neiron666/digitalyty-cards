@@ -153,6 +153,12 @@ const PRESENCE_FEATURES = [
 ];
 
 const SECTION_1_IMG = "/images/home-page/main-sections/Section-1";
+const phoneSrc = encodeURI(
+    `${SECTION_1_IMG}/יותר-מכרטיס-ביקור-טלפון עצמו.webp`,
+);
+const phoneSmallSrc = encodeURI(
+    `${SECTION_1_IMG}/יותר-מכרטיס-ביקור-טלפון עצמו-sm.webp`,
+);
 
 const PRESENCE_PROOF_CARDS = [
     {
@@ -594,12 +600,12 @@ export default function Home() {
                         >
                             <img
                                 className={styles.phoneImage}
-                                src={encodeURI(
-                                    `${SECTION_1_IMG}/יותר-מכרטיס-ביקור-טלפון עצמו.webp`,
-                                )}
+                                src={phoneSrc}
+                                srcSet={`${phoneSmallSrc} 480w, ${phoneSrc} 719w`}
+                                sizes="(min-width: 80rem) 278px, (min-width: 48rem) 241px, 155px"
                                 alt="כרטיס ביקור דיגיטלי לעסק בנייד עם פרטי קשר, וואטסאפ וגלריה"
                                 width={340}
-                                height={600}
+                                height={690}
                                 loading="lazy"
                                 decoding="async"
                             />
