@@ -122,12 +122,26 @@ export async function createSignedUrls({ bucket, paths, expiresIn } = {}) {
     return out;
 }
 
+// ── Cache-control constants for Supabase uploads ───────────────────────────
+// Public uploads use UUID-based object paths that are effectively immutable:
+// each upload produces a unique path, and the DB is updated to the new URL
+// after upload. Old URLs are dereferenced (and deleted for background/avatar)
+// so a 30-day TTL is safe — no stale content can appear on a card after the
+// owner replaces an image.
+// Signed/private uploads (anonymous actor) keep a short TTL to avoid a
+// cache-policy mismatch with signed URLs, which expire in 15 minutes by
+// default. Applying a 30-day TTL to a private object whose URL changes on
+// each request would be semantically incorrect.
+const PUBLIC_IMMUTABLE_CACHE_CONTROL = "2592000"; // 30 days
+const PRIVATE_SIGNED_CACHE_CONTROL = "3600"; // 1 hour
+
 export async function uploadBuffer({
     buffer,
     mime,
     path,
     bucket,
     signedUrlExpiresIn,
+    cacheControl,
 }) {
     if (!buffer) throw new Error("Missing buffer");
     if (!mime) throw new Error("Missing mime");
@@ -136,12 +150,25 @@ export async function uploadBuffer({
     const supabase = getClient();
     const bucketName = bucket || getBucket();
 
+    // Derive effective cache policy from upload context.
+    // signedUrlExpiresIn being a positive finite number reliably identifies
+    // private-bucket uploads (anonymous actor path in upload.controller.js).
+    // All other callers go to the public bucket and get the long immutable TTL.
+    // An explicit cacheControl argument always takes precedence.
+    const signedUrlTtl = Number(signedUrlExpiresIn);
+    const isSignedUrlUpload = Number.isFinite(signedUrlTtl) && signedUrlTtl > 0;
+    const effectiveCacheControl =
+        cacheControl ??
+        (isSignedUrlUpload
+            ? PRIVATE_SIGNED_CACHE_CONTROL
+            : PUBLIC_IMMUTABLE_CACHE_CONTROL);
+
     const { error } = await supabase.storage
         .from(bucketName)
         .upload(path, buffer, {
             contentType: mime,
             upsert: false,
-            cacheControl: "3600",
+            cacheControl: effectiveCacheControl,
         });
 
     if (error) {
