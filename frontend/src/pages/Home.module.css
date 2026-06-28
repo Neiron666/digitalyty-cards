@@ -1643,6 +1643,10 @@
         filter: none;
     }
 
+    .heroCards::before {
+        filter: none;
+    }
+
     .heroLogoImage {
         block-size: 5rem;
     }
