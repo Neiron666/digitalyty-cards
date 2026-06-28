@@ -27,7 +27,6 @@
     color: var(--text-main);
 
     box-shadow: var(--shadow-soft);
-    backdrop-filter: blur(8px);
 }
 
 .text {
