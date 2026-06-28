@@ -145,6 +145,7 @@ export default function CardLayout({
                             }
                             decoding="async"
                             loading="eager"
+                            fetchpriority="high"
                             referrerPolicy="no-referrer"
                         />
                     ) : null}
