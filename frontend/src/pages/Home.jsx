@@ -571,8 +571,8 @@ export default function Home() {
             <section className={pub.sectionLight}>
                 <div className={pub.sectionWrap}>
                     <h2 className={pub.h2Gold}>
-                        מה זה כרטיס ביקור דיגיטלי לעסק?
-                        <span> עמוד עסקי אחד שמרכז את כל מה שלקוח צריך</span>
+                        כרטיס ביקור דיגיטלי לעסק
+                        <span>הפכו את המתעניינים ללקוחות שלכם!</span>
                     </h2>
 
                     <p className={styles.presenceLead}>
@@ -580,18 +580,18 @@ export default function Home() {
                         <strong className={styles.presenceLeadBrand}>
                             Cardigo
                         </strong>{" "}
-                        הוא עמוד אינטרנט עסקי שמרכז במקום אחד את פרטי הקשר,
-                        וואטסאפ, חיוג ישיר, ניווט, שעות פעילות, גלריית תמונות,
-                        שירותים, המלצות, שאלות נפוצות, טופס פנייה ואפשרות קביעת
-                        פגישות. במקום לשלוח ללקוחות כמה קישורים שונים, אפשר לשתף{" "}
+                        מציג את העסק שלכם בצורה מקצועית, ברורה ויוקרתית. במקום
+                        לשלוח כמה קישורים, להסביר שוב ושוב מה אתם עושים, שתפו{" "}
                         <span className={`${pub.goldUnderline} ${pub.boldTxt}`}>
-                            {" "}
-                            כרטיס דיגיטלי אחד
+                            כרטיס ביקור דיגיטלי אחד
                         </span>{" "}
-                        שנראה מקצועי, נפתח מהר ונוח לשיתוף בוואטסאפ, QR, רשתות
-                        חברתיות וקמפיינים.
+                        עם כל הפרטים של העסק במקום אחד. הכרטיס משפר את התוצאות
+                        שלכם בגוגל, נוח לשיתוף, עם מבנה ברור שעוזר ללקוחות להבין
+                        מי אתם, מה אתם מציעים ולמה כדאי לפנות דווקא אליכם.
                     </p>
-
+                    <h3 className={pub.h3Gold}>
+                        מה כולל כרטיס ביקור דיגיטלי של Cardigo?
+                    </h3>
                     <div className={styles.presenceMedia}>
                         <div
                             className={`${styles.phoneStage} ${scroll.scrollZoomSoft} ${styles.strongerZoom}`}
@@ -609,6 +609,7 @@ export default function Home() {
                                 loading="lazy"
                                 decoding="async"
                             />
+
                             {PRESENCE_PROOF_CARDS.map((card) => (
                                 <ProofCard key={card.posClass} {...card} />
                             ))}
