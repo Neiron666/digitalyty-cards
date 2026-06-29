@@ -28,6 +28,7 @@ import {
 } from "../services/admin.service";
 import AdminAnalyticsView from "./admin/AdminAnalyticsView";
 import AdminBlogView from "./admin/AdminBlogView";
+import AdminCardsShowcaseView from "./admin/AdminCardsShowcaseView";
 import AdminGuidesView from "./admin/AdminGuidesView";
 import AdminMarketingView from "./admin/AdminMarketingView";
 import AdminOrganizationsView from "./admin/AdminOrganizationsView";
@@ -1746,6 +1747,19 @@ export default function Admin() {
                             onClick={() => setAdminMode("marketing")}
                         >
                             שליחת אימיילים
+                        </button>
+                        <button
+                            type="button"
+                            className={`${styles.tab} ${
+                                adminMode === "cards-showcase"
+                                    ? styles.tabActive
+                                    : ""
+                            }`}
+                            role="tab"
+                            aria-selected={adminMode === "cards-showcase"}
+                            onClick={() => setAdminMode("cards-showcase")}
+                        >
+                            דוגמאות כרטיסים
                         </button>
                     </div>
                 </div>
@@ -7157,6 +7171,8 @@ export default function Admin() {
                     <AdminGuidesView />
                 ) : adminMode === "marketing" ? (
                     <AdminMarketingView />
+                ) : adminMode === "cards-showcase" ? (
+                    <AdminCardsShowcaseView />
                 ) : (
                     <AdminAnalyticsView refreshKey={analyticsRefreshKey} />
                 )}

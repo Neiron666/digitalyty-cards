@@ -27,6 +27,7 @@ import accountRoutes from "./routes/account.routes.js";
 import unsubscribeRoutes from "./routes/unsubscribe.routes.js";
 import blogRoutes from "./routes/blog.routes.js";
 import guideRoutes from "./routes/guide.routes.js";
+import cardsShowcaseRoutes from "./routes/cardsShowcase.routes.js";
 import aiRoutes from "./routes/ai.routes.js";
 import bookingRoutes from "./routes/booking.routes.js";
 import { csrfGuard } from "./middlewares/csrf.middleware.js";
@@ -179,6 +180,9 @@ app.use("/api/blog", blogRoutes);
 
 // Guides public read API
 app.use("/api/guides", guideRoutes);
+
+// Cards showcase public read API (SSG data island source)
+app.use("/api/cards-showcase", cardsShowcaseRoutes);
 
 // API fallback: never return HTML for /api/*
 app.use("/api", (req, res) => {

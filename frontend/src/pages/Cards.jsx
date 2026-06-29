@@ -12,6 +12,7 @@ import {
     trackSiteClick,
 } from "../services/siteAnalytics.client";
 import { SITE_ACTIONS } from "../services/siteAnalytics.actions";
+import { useInitialListingData } from "../seo/initialListingData";
 import pub from "../styles/public-sections.module.css";
 import styles from "./Cards.module.css";
 import whatsappStyles from "../components/marketing/WhatsAppCtaSkin.module.css";
@@ -199,6 +200,15 @@ export default function Cards() {
     useEffect(() => {
         trackSitePageView();
     }, []);
+
+    /* Phase 2C: consume build-time SSG initial listing data for cards showcase. */
+    const showcaseSeed = useInitialListingData("cards-showcase");
+    const showcaseItems =
+        showcaseSeed &&
+        Array.isArray(showcaseSeed.items) &&
+        showcaseSeed.items.length > 0
+            ? showcaseSeed.items
+            : null;
 
     return (
         <main data-page="site">
@@ -394,48 +404,106 @@ export default function Cards() {
                         </div>{" "}
                     </div>{" "}
                     {/* ── Curated showcase rail ── */}{" "}
-                    <div className={styles.showcaseRail}>
+                    <div
+                        className={
+                            showcaseItems && showcaseItems.length < 4
+                                ? styles.showcaseRailCompact
+                                : styles.showcaseRail
+                        }
+                    >
                         {" "}
-                        <div className={styles.showcaseGrid}>
+                        <div
+                            className={
+                                showcaseItems && showcaseItems.length < 4
+                                    ? styles.showcaseGridCompact
+                                    : styles.showcaseGrid
+                            }
+                        >
                             {" "}
-                            {SHOWCASE_CARDS.map((card, i) => (
-                                <article
-                                    key={i}
-                                    className={styles.showcaseCard}
-                                >
-                                    {" "}
-                                    <img
-                                        src={encodeURI(card.src)}
-                                        alt={card.alt}
-                                        className={styles.showcaseImg}
-                                        width={280}
-                                        height={560}
-                                        loading="lazy"
-                                        decoding="async"
-                                    />{" "}
-                                    <span className={styles.showcaseNiche}>
-                                        {" "}
-                                        {card.niche}{" "}
-                                    </span>{" "}
-                                    <p className={styles.showcaseDesc}>
-                                        {" "}
-                                        {card.desc}{" "}
-                                    </p>{" "}
-                                    <Link
-                                        to="/edit/card/templates"
-                                        className={styles.showcaseLink}
-                                        onClick={() =>
-                                            trackSiteClick({
-                                                action: SITE_ACTIONS.cards_showcase_card_cta,
-                                                pagePath: "/cards",
-                                            })
-                                        }
-                                    >
-                                        {" "}
-                                        התחילו ליצור כרטיס &larr;{" "}
-                                    </Link>{" "}
-                                </article>
-                            ))}{" "}
+                            {showcaseItems
+                                ? showcaseItems.map((item) => (
+                                      <article
+                                          key={item.id}
+                                          className={styles.showcaseCard}
+                                      >
+                                          {" "}
+                                          <img
+                                              src={item.imageUrl}
+                                              alt={item.imageAlt}
+                                              className={styles.showcaseImg}
+                                              width={280}
+                                              height={560}
+                                              loading="lazy"
+                                              decoding="async"
+                                          />{" "}
+                                          <span
+                                              className={styles.showcaseNiche}
+                                          >
+                                              {" "}
+                                              {item.title}{" "}
+                                          </span>{" "}
+                                          <p className={styles.showcaseDesc}>
+                                              {" "}
+                                              {item.description}{" "}
+                                          </p>{" "}
+                                          <a
+                                              href={item.ctaUrl}
+                                              className={styles.showcaseLink}
+                                              target="_blank"
+                                              rel="noopener noreferrer"
+                                              onClick={() =>
+                                                  trackSiteClick({
+                                                      action: SITE_ACTIONS.cards_showcase_card_cta,
+                                                      pagePath: "/cards",
+                                                  })
+                                              }
+                                          >
+                                              {" "}
+                                              {item.ctaLabel ||
+                                                  "צפו בכרטיס ←"}{" "}
+                                          </a>{" "}
+                                      </article>
+                                  ))
+                                : SHOWCASE_CARDS.map((card, i) => (
+                                      <article
+                                          key={i}
+                                          className={styles.showcaseCard}
+                                      >
+                                          {" "}
+                                          <img
+                                              src={encodeURI(card.src)}
+                                              alt={card.alt}
+                                              className={styles.showcaseImg}
+                                              width={280}
+                                              height={560}
+                                              loading="lazy"
+                                              decoding="async"
+                                          />{" "}
+                                          <span
+                                              className={styles.showcaseNiche}
+                                          >
+                                              {" "}
+                                              {card.niche}{" "}
+                                          </span>{" "}
+                                          <p className={styles.showcaseDesc}>
+                                              {" "}
+                                              {card.desc}{" "}
+                                          </p>{" "}
+                                          <Link
+                                              to="/edit/card/templates"
+                                              className={styles.showcaseLink}
+                                              onClick={() =>
+                                                  trackSiteClick({
+                                                      action: SITE_ACTIONS.cards_showcase_card_cta,
+                                                      pagePath: "/cards",
+                                                  })
+                                              }
+                                          >
+                                              {" "}
+                                              התחילו ליצור כרטיס &larr;{" "}
+                                          </Link>{" "}
+                                      </article>
+                                  ))}{" "}
                         </div>{" "}
                     </div>{" "}
                     {/* ── Section-bottom CTA ── */}{" "}
@@ -453,7 +521,7 @@ export default function Cards() {
                             }
                         >
                             {" "}
-                            ראו את כל התבניות{" "}
+                            צרו כרטיס דיגיטלי משלכם{" "}
                         </Button>{" "}
                     </div>{" "}
                 </div>{" "}

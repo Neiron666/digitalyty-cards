@@ -456,3 +456,43 @@ export function removeAdminGuideSectionImage(id, sectionIdx) {
         `/admin/guides/posts/${id}/sections/${sectionIdx}/remove-image`,
     );
 }
+
+// Cards showcase admin CRUD
+export function listAdminCardsShowcaseItems(params = {}) {
+    return api.get("/admin/cards-showcase", { params });
+}
+
+export function getAdminCardsShowcaseItemById(id) {
+    return api.get(`/admin/cards-showcase/${id}`);
+}
+
+export function createAdminCardsShowcaseItem(body) {
+    return api.post("/admin/cards-showcase", body);
+}
+
+export function updateAdminCardsShowcaseItem(id, body) {
+    return api.patch(`/admin/cards-showcase/${id}`, body);
+}
+
+export function activateAdminCardsShowcaseItem(id) {
+    return api.post(`/admin/cards-showcase/${id}/activate`);
+}
+
+export function deactivateAdminCardsShowcaseItem(id) {
+    return api.post(`/admin/cards-showcase/${id}/deactivate`);
+}
+
+export function deleteAdminCardsShowcaseItem(id) {
+    return api.post(`/admin/cards-showcase/${id}/delete`);
+}
+
+export function removeAdminCardsShowcaseImage(id) {
+    return api.post(`/admin/cards-showcase/${id}/remove-image`);
+}
+
+export function uploadAdminCardsShowcaseImage(id, file, alt) {
+    const fd = new FormData();
+    fd.append("image", file);
+    fd.append("alt", alt);
+    return api.post(`/admin/cards-showcase/${id}/upload-image`, fd);
+}

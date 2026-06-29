@@ -18,6 +18,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { fetchListingForSsg } from "./lib/fetchListingForSsg.mjs";
+import { fetchCardsShowcaseForSsg } from "./lib/fetchCardsShowcaseForSsg.mjs";
 import { fetchAllSlugsForSsg } from "./lib/fetchAllSlugsForSsg.mjs";
 import { fetchDetailForSsg } from "./lib/fetchDetailForSsg.mjs";
 import { fetchAliasMapForSsg } from "./lib/fetchAliasMapForSsg.mjs";
@@ -44,7 +45,13 @@ const DETAIL_DATA_ISLAND_ELEMENT_ID = "cardigo-initial-detail-data";
 
 const SSG_ROUTES = [
     { url: "/", out: path.join(DIST, "index.html") },
-    { url: "/cards/", out: path.join(DIST, "cards", "index.html") },
+    {
+        url: "/cards/",
+        out: path.join(DIST, "cards", "index.html"),
+        listingKey: "cards-showcase",
+        listingEndpoint: "/api/cards-showcase/active",
+        listingFetcher: fetchCardsShowcaseForSsg,
+    },
     { url: "/pricing/", out: path.join(DIST, "pricing", "index.html") },
     { url: "/contact/", out: path.join(DIST, "contact", "index.html") },
     {
@@ -61,7 +68,7 @@ const SSG_ROUTES = [
     },
 ];
 
-const listingStatus = { blog: "N/A", guides: "N/A" };
+const listingStatus = { "cards-showcase": "N/A", blog: "N/A", guides: "N/A" };
 
 // Validate pre-conditions before starting.
 if (!fs.existsSync(DIST)) {
@@ -111,7 +118,8 @@ for (const route of SSG_ROUTES) {
         let initialListingData = {};
         let dataIslandPayload = null;
         if (listingKey) {
-            const result = await fetchListingForSsg({
+            const fetcher = route.listingFetcher || fetchListingForSsg;
+            const result = await fetcher({
                 key: listingKey,
                 endpoint: listingEndpoint,
                 origin: SSG_LISTING_API_ORIGIN,
@@ -128,7 +136,7 @@ for (const route of SSG_ROUTES) {
                 initialListingData = { [listingKey]: payload };
                 dataIslandPayload = { [listingKey]: payload };
                 listingStatus[listingKey] =
-                    result.items.length > 0 ? "FULL" : "DEGRADED";
+                    result.items.length > 0 ? "FULL" : "EMPTY";
             } else {
                 console.warn(
                     `[ssg] WARN: ${url} initial listing fetch failed — emitting DEGRADED data island`,
@@ -203,7 +211,7 @@ for (const route of SSG_ROUTES) {
 
 console.log("SSG_DONE: all routes complete");
 console.log(
-    `SSG_LISTING_STATUS: blog=${listingStatus.blog} guides=${listingStatus.guides}`,
+    `SSG_LISTING_STATUS: cards-showcase=${listingStatus["cards-showcase"]} blog=${listingStatus.blog} guides=${listingStatus.guides}`,
 );
 
 /* ------------------------------------------------------------------ */

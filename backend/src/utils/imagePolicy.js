@@ -42,6 +42,8 @@ const PROFILES = {
     background: { maxLongSide: 1200, minLongSide: 800 },
     avatar: { maxLongSide: 480, minLongSide: 400 },
     gallerythumb: { maxLongSide: 480, minLongSide: 320 },
+    // Portrait phone-screenshot images for the /cards/ showcase section.
+    showcaseimage: { maxLongSide: 1200, minLongSide: 800, gentleQuality: 82 },
 };
 
 const DEFAULT_PROFILE = { maxLongSide: 2048, minLongSide: 1024 };

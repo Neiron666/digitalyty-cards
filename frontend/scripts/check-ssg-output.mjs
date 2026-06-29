@@ -75,6 +75,9 @@ const ROUTES = [
             "https://cardigo.co.il/cards#faq",
             '"https://cardigo.co.il/cards"',
         ],
+        dataIslandRequired: true,
+        dataIslandKey: "cards-showcase",
+        dataIslandNoSlug: true,
     },
     {
         label: "pricing",
@@ -173,7 +176,7 @@ const ROUTES = [
 ];
 
 const DATA_ISLAND_ELEMENT_ID = "cardigo-initial-listing-data";
-const listingFullness = { blog: "N/A", guides: "N/A" };
+const listingFullness = { "cards-showcase": "N/A", blog: "N/A", guides: "N/A" };
 
 // ---- helpers ----
 
@@ -375,7 +378,7 @@ for (const route of ROUTES) {
         }
     }
 
-    // 12. Data island (listing routes only — blog, guides).
+    // 12. Data island (listing routes only — blog, guides, cards-showcase).
     if (route.dataIslandRequired) {
         const islandRe = new RegExp(
             `<script[^>]+type=["']application/json["'][^>]+id=["']${DATA_ISLAND_ELEMENT_ID}["'][^>]*>([\\s\\S]*?)</script>`,
@@ -412,6 +415,30 @@ for (const route of ROUTES) {
                 );
                 if (route.dataIslandKey) {
                     listingFullness[route.dataIslandKey] = "DEGRADED";
+                }
+            } else if (route.dataIslandNoSlug) {
+                // cards-showcase: no slug, no detail-href check.
+                // Empty items = SSG built with no active examples (fallback to
+                // SHOWCASE_CARDS constant). Not a build failure.
+                if (keyed.items.length === 0) {
+                    listingFullness[route.dataIslandKey] = "EMPTY_FALLBACK";
+                } else {
+                    const first = keyed.items[0];
+                    if (
+                        !first ||
+                        (typeof first.id !== "string" &&
+                            typeof first.id !== "number") ||
+                        typeof first.imageUrl !== "string" ||
+                        !first.imageUrl
+                    ) {
+                        fail(
+                            label,
+                            `data island first item missing id or imageUrl`,
+                        );
+                        listingFullness[route.dataIslandKey] = "DEGRADED";
+                    } else {
+                        listingFullness[route.dataIslandKey] = "FULL";
+                    }
                 }
             } else if (keyed.items.length === 0) {
                 listingFullness[route.dataIslandKey] = "DEGRADED";
@@ -1346,7 +1373,7 @@ if (errors.length > 0) {
 
 console.log("PASS: SSG output valid. Checked 7 files and _redirects contract.");
 console.log(
-    `LISTING_FULLNESS: blog=${listingFullness.blog} guides=${listingFullness.guides}`,
+    `LISTING_FULLNESS: cards-showcase=${listingFullness["cards-showcase"]} blog=${listingFullness.blog} guides=${listingFullness.guides}`,
 );
 console.log(
     `SSG_PAGINATION_STATUS: blog=${paginationStatus.blog} count=${paginationCounts.blog} guides=${paginationStatus.guides} count=${paginationCounts.guides}`,

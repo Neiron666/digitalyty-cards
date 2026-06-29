@@ -1,0 +1,288 @@
+.wrap {
+    display: block;
+}
+
+/* ── Notice banner ──────────────────────────────────────────────── */
+
+.notice {
+    margin-bottom: 16px;
+    padding: 10px 14px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: rgba(59, 130, 246, 0.06);
+    font-size: var(--fs-body-sm);
+    color: var(--text-muted);
+}
+
+/* ── Top row ──────────────────────────────────────────────────── */
+
+.topRow {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.h2 {
+    margin: 0;
+    font-size: var(--fs-h6);
+    color: var(--text-main);
+}
+
+.h3 {
+    margin: 0 0 12px;
+    font-size: var(--fs-body);
+    color: var(--text-main);
+}
+
+/* ── Two-panel layout (flex, mobile-first) ────────────────────── */
+
+.grid {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+@media (min-width: 1000px) {
+    .grid {
+        flex-direction: row;
+        align-items: flex-start;
+    }
+}
+
+.panel {
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px;
+    flex: 1 1 0;
+    min-width: 0;
+    background: var(--bg-surface);
+}
+
+@media (min-width: 1000px) {
+    .panel:first-child {
+        flex: 0 0 300px;
+        max-width: 340px;
+    }
+}
+/* ── Search row ───────────────────────────────────────────────────────── */
+
+.searchRow {
+    display: flex;
+    gap: 10px;
+    align-items: flex-end;
+    margin-block-end: 12px;
+}
+/* ── Item list ────────────────────────────────────────────────── */
+
+.muted {
+    color: var(--text-muted);
+    font-size: var(--fs-body-sm);
+}
+
+.itemList {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.itemRow {
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--bg-card);
+    transition:
+        background 0.15s,
+        border-color 0.15s;
+}
+
+.itemRow:hover {
+    border-color: var(--primary);
+}
+
+.itemRowActive {
+    border-color: var(--primary);
+    background: rgba(59, 130, 246, 0.08);
+}
+
+.itemBtn {
+    all: unset;
+    display: flex;
+    width: 100%;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 12px;
+    cursor: pointer;
+    border-radius: 8px;
+    font-size: var(--fs-body-sm);
+    color: var(--text-main);
+    box-sizing: border-box;
+}
+
+.itemBtn:focus-visible {
+    outline: 2px solid var(--clr-focus, #2563eb);
+    outline-offset: 2px;
+}
+
+.itemThumb {
+    flex: 0 0 48px;
+    width: 48px;
+    height: 48px;
+    border-radius: 6px;
+    object-fit: cover;
+    display: block;
+}
+
+.itemInfo {
+    flex: 1 1 auto;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.itemTitle {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--text-main);
+}
+
+.itemInternal {
+    font-size: var(--fs-caption);
+    color: var(--text-muted);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* ── Badges ───────────────────────────────────────────────────── */
+
+.badge {
+    flex: 0 0 auto;
+    font-size: var(--fs-caption);
+    padding: 2px 8px;
+    border-radius: 9999px;
+    white-space: nowrap;
+}
+
+.badgeActive {
+    background: rgba(34, 197, 94, 0.15);
+    color: #22c55e;
+}
+
+.badgeInactive {
+    background: rgba(255, 255, 255, 0.06);
+    color: var(--text-muted);
+}
+
+/* ── Form ──────────────────────────────────────────────────────── */
+
+.form {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.fieldLabel {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    font-size: var(--fs-body-sm);
+    color: var(--text-color);
+}
+
+.fieldHint {
+    font-size: var(--fs-caption);
+    color: var(--text-muted);
+}
+
+.textarea {
+    width: 100%;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px;
+    font: inherit;
+    font-size: var(--fs-body-sm);
+    resize: vertical;
+    box-sizing: border-box;
+    background: var(--card-bg);
+    color: var(--card-text);
+}
+
+.textarea:focus-visible {
+    outline: 2px solid var(--clr-focus, #2563eb);
+    outline-offset: 1px;
+}
+
+/* ── Image preview ─────────────────────────────────────────────── */
+
+.imgPreview {
+    margin-bottom: 10px;
+    max-width: 320px;
+}
+
+.previewImg {
+    display: block;
+    width: 100%;
+    border-radius: 8px;
+    object-fit: cover;
+}
+
+.uploadFields {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+/* ── Action row (activate/deactivate/delete) ───────────────────── */
+
+.actionRow {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-top: 4px;
+}
+
+/* ── File input ─────────────────────────────────────────────────── */
+
+.fileInput {
+    font-size: var(--fs-body-sm);
+    color: var(--text-main);
+}
+
+/* ── Image section ──────────────────────────────────────────────── */
+
+.imageSection {
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px;
+    background: var(--bg-card);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.imageSectionHeading {
+    margin: 0;
+    font-size: var(--fs-ui);
+    color: var(--text-main);
+}
+
+.uploadHint {
+    margin: 0;
+    font-size: var(--fs-body-sm);
+    color: var(--text-muted);
+}
+
+.activationHint {
+    margin: 0;
+    font-size: var(--fs-caption);
+    color: var(--text-muted);
+}

@@ -72,6 +72,17 @@ import {
     uploadGuideSectionImage,
     removeGuideSectionImage,
 } from "../controllers/adminGuide.controller.js";
+import {
+    getAdminShowcaseItemById,
+    listAdminShowcaseItems,
+    createShowcaseItem,
+    updateShowcaseItem,
+    activateShowcaseItem,
+    deactivateShowcaseItem,
+    deleteShowcaseItem,
+    uploadShowcaseImage,
+    removeShowcaseImage,
+} from "../controllers/adminCardsShowcase.controller.js";
 import { listMarketingRecipients } from "../controllers/adminMarketing.controller.js";
 import {
     previewMarketingCampaign,
@@ -254,5 +265,20 @@ router.post(
     removeGuideSectionImage,
 );
 router.post("/guides/posts/:id/delete", deleteGuidePost);
+
+// Cards showcase admin CRUD
+router.get("/cards-showcase", listAdminShowcaseItems);
+router.get("/cards-showcase/:id", getAdminShowcaseItemById);
+router.post("/cards-showcase", createShowcaseItem);
+router.patch("/cards-showcase/:id", updateShowcaseItem);
+router.post("/cards-showcase/:id/activate", activateShowcaseItem);
+router.post("/cards-showcase/:id/deactivate", deactivateShowcaseItem);
+router.post(
+    "/cards-showcase/:id/upload-image",
+    upload.single("image"),
+    uploadShowcaseImage,
+);
+router.post("/cards-showcase/:id/remove-image", removeShowcaseImage);
+router.post("/cards-showcase/:id/delete", deleteShowcaseItem);
 
 export default router;
