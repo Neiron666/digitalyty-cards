@@ -549,6 +549,12 @@ export default function Home() {
                             rel="noopener noreferrer"
                             variant="primary"
                             className={`${styles.heroCta} ${whatsappStyles.skin}`}
+                            onClick={() =>
+                                trackSiteClick({
+                                    action: SITE_ACTIONS.home_hero_secondary_whatsapp,
+                                    pagePath: "/",
+                                })
+                            }
                         >
                             <span
                                 className={whatsappStyles.icon}

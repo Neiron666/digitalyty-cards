@@ -84,7 +84,7 @@ All are primary register-intent CTAs. No frontend code changes were required —
 The following `SITE_ACTIONS` are **not** in the allowlist and will **not** fire `CardigoStartFreeCardIntent`:
 
 - `home_templates_see_all` — content-browse intent, explicitly verified negative in GTM Preview.
-- `home_hero_secondary_examples` — content-browse / discovery CTA.
+- `home_hero_secondary_whatsapp` — content-browse / discovery CTA.
 - `pricing_*` — maps to `InitiateCheckout` (separate downstream commercial intent event).
 - `contact_*` — maps to `Lead` / `Contact` (separate post-interest signals).
 - `blog_article_click` — content engagement signal.

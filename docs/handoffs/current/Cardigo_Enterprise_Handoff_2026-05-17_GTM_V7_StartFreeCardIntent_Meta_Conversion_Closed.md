@@ -95,7 +95,7 @@ The following `SITE_ACTIONS` are **not** in the trigger regex and will **not** f
 | Excluded action / group        | Reason for exclusion                                                               |
 | ------------------------------ | ---------------------------------------------------------------------------------- |
 | `home_templates_see_all`       | Content-browse intent, not register intent. Explicitly GTM-Preview verified.       |
-| `home_hero_secondary_examples` | Content-browse / discovery CTA, not register intent.                               |
+| `home_hero_secondary_whatsapp` | Content-browse / discovery CTA, not register intent.                               |
 | `pricing_*` (all pricing CTAs) | Maps to `InitiateCheckout` — separate commercial intent event, not middle-funnel.  |
 | `contact_*`                    | Maps to `Lead` / `Contact` — separate post-interest signal.                        |
 | `blog_article_click`           | Content engagement signal, not register intent.                                    |

@@ -65,7 +65,7 @@ function sourceLabel(key) {
 /** Local human-readable Hebrew labels for analytics action keys. */
 const ACTION_LABELS = {
     home_hero_primary_register: "לחיצה על הכפתור הראשי בכותרת הבית",
-    home_hero_secondary_examples: "לחיצה על כפתור הדוגמאות בכותרת הבית",
+    home_hero_secondary_whatsapp: "לחיצה על כפתור וואטסאפ בכותרת הבית",
     home_templates_cta: "לחיצה על בחירת תבנית בעמוד הבית",
     home_bottom_cta: "לחיצה על הכפתור התחתון בעמוד הבית",
     pricing_trial_start: "לחיצה על התחלת ניסיון בעמוד המחירים",

@@ -449,7 +449,7 @@ function hashHex16(siteKey, rawId) {
  */
 const IMPORTANT_ACTIONS_SET = new Set([
     "home_hero_primary_register",
-    "home_hero_secondary_examples",
+    "home_hero_secondary_whatsapp",
     "home_templates_cta",
     "home_templates_see_all",
     "home_bottom_cta",
