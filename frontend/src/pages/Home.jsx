@@ -502,7 +502,7 @@ export default function Home() {
                             <span
                                 className={`${styles.h1Accent} ${pub.goldUnderline}`}
                             >
-                                לעסק שמביא תוצאות
+                                שמביא יותר תוצאות
                             </span>
                         </h1>
                     </div>
@@ -571,7 +571,7 @@ export default function Home() {
             <section className={pub.sectionLight}>
                 <div className={pub.sectionWrap}>
                     <h2 className={pub.h2Gold}>
-                        כרטיס ביקור דיגיטלי לעסק
+                        כרטיס ביקור דיגיטלי
                         <span>הפכו את המתעניינים ללקוחות שלכם!</span>
                     </h2>
 
