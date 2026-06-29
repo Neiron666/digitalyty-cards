@@ -289,7 +289,7 @@ export default function Cards() {
                                     className={whatsappStyles.icon}
                                     aria-hidden="true"
                                 />
-                                עזרו לי ליצור כרטיס בחינם
+                                אני רוצה חודש ניסיון במתנה!🎁
                             </Button>
                         </div>
                     </div>

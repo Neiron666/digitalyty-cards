@@ -554,7 +554,7 @@ export default function Home() {
                                 className={whatsappStyles.icon}
                                 aria-hidden="true"
                             />
-                            עזרו לי ליצור כרטיס בחינם
+                            אני רוצה חודש ניסיון במתנה!🎁
                         </Button>
                         <span className={styles.heroTrialNote}>
                             כולל 10 ימי פרימיום למשתמשים חדשים
