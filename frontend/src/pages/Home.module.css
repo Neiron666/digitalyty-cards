@@ -170,6 +170,7 @@
     align-items: center;
     margin-top: 10px;
     gap: 14px;
+    max-width: fit-content;
 }
 
 /* ── Hero CTA (premium gold) ─────────────────────────── */
@@ -180,8 +181,8 @@
     background: linear-gradient(135deg, #d4af37 0%, #c5962c 40%, #e6c44d 100%);
     color: #0f172a;
     border: none;
-    width: 400px;
     white-space: nowrap;
+    padding: 0.75rem 1.5rem;
 }
 
 .heroCta:hover {
@@ -1623,8 +1624,12 @@
         backdrop-filter: none;
     }
 
+    .heroActions {
+        width: min(95vw, 320px);
+    }
+
     .heroCta {
-        width: 250px;
+        width: 100%;
         padding: 10px 15px;
         font-size: var(--fs-body-sm);
     }
