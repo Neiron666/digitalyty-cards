@@ -447,20 +447,34 @@
 }
 
 /* ── Showcase rail compact (real active items, < 4) ─── */
-/* Removes mask fade + horizontal scroll; centers items.  */
+/* Mobile: identical scroll rail behavior.               */
+/* Desktop 48rem+: centered wrap, no scroll.             */
 
 .showcaseRailCompact {
+    position: relative;
     align-self: stretch;
     margin-block: 2rem 1.5rem;
 }
 
 .showcaseGridCompact {
     display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
+    flex-wrap: nowrap;
+    justify-content: flex-start;
     gap: 1rem;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scroll-snap-type: x proximity;
+    scroll-padding-inline: 1.5rem;
     padding-inline: 1.5rem;
     padding-block: 0.5rem 0.75rem;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-inline: contain;
+    touch-action: pan-x pan-y;
+}
+
+.showcaseGridCompact::-webkit-scrollbar {
+    display: none;
 }
 
 /* ── SEO appendix (temporary, subordinate) ───────────── */
@@ -550,6 +564,24 @@
         scroll-snap-align: unset;
         width: calc(50% - 1rem);
         max-width: 18rem;
+    }
+
+    /* compact rail: switch to centered wrap on desktop */
+    .showcaseRailCompact {
+        margin-block: 0;
+    }
+
+    .showcaseGridCompact {
+        flex-wrap: wrap;
+        justify-content: center;
+        overflow-x: visible;
+        scroll-snap-type: none;
+        scroll-padding-inline: 0;
+        padding-inline: 0;
+        padding-block: 0;
+        overscroll-behavior-inline: auto;
+        gap: 2.5rem 2rem;
+        margin: 3rem 0;
     }
 }
 
