@@ -308,7 +308,7 @@ export default function Cards() {
                         <CrownIcon className={styles.heroTrialCrown} />
                     </span>
                     <p className={styles.heroNote}>
-                        הדוגמאות בעמוד זה מיועדות להמחשה
+                        בעמוד זה ניתן לראות כרטיסים דיגיטליים לעסק
                     </p>
                 </div>
             </section>
