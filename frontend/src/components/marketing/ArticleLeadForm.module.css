@@ -1,0 +1,230 @@
+/* ══════════════════════════════════════════════════════════════
+   ArticleLeadForm – Inline contact form inside ArticleConversionBlock.
+   Light-bg context. Mobile-first. Flex only. No grid.
+   Font sizes via var(--fs-*) only. No inline styles.
+   ══════════════════════════════════════════════════════════════ */
+
+/* ── Form root ────────────────────────────────────────────── */
+
+.form {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    width: 100%;
+    text-align: start;
+}
+
+/* ── Honeypot — RTL-safe visually hidden ──────────────────── */
+
+.hp {
+    position: absolute;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    border: 0;
+}
+
+/* ── Fields row — stacked on mobile, inline on desktop ───── */
+
+.fieldsRow {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    width: 100%;
+}
+
+@media (min-width: 40rem) {
+    .fieldsRow {
+        flex-direction: row;
+        gap: 12px;
+    }
+
+    .fieldsRow .fieldGroup {
+        flex: 1 1 0;
+        min-width: 0;
+    }
+}
+
+/* ── Field group ──────────────────────────────────────────── */
+
+.fieldGroup {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    width: 100%;
+}
+
+/* ── Label ────────────────────────────────────────────────── */
+
+.label {
+    font-size: var(--fs-body-sm);
+    font-weight: 600;
+    color: var(--text-main, #1e293b);
+    line-height: 1.4;
+}
+
+/* ── Input ────────────────────────────────────────────────── */
+
+.input {
+    font-family: inherit;
+    font-size: var(--fs-body);
+    line-height: 1.5;
+    color: #1e293b;
+    background: #fff;
+    border: 1px solid rgba(0, 0, 0, 0.15);
+    border-radius: 0.5rem;
+    padding-block: 0.6rem;
+    padding-inline: 0.8rem;
+    width: 100%;
+    transition: border-color 0.18s ease;
+}
+
+.input::placeholder {
+    color: rgba(0, 0, 0, 0.38);
+}
+
+.input:focus {
+    outline: none;
+    border-color: var(--gold, #d4af37);
+}
+
+.input:focus-visible {
+    outline: 2px solid var(--gold, #d4af37);
+    outline-offset: 1px;
+}
+
+.inputError {
+    border-color: var(--c-danger, #c62828);
+}
+
+/* ── Field-level error ────────────────────────────────────── */
+
+.fieldError {
+    font-size: var(--fs-body-sm);
+    color: var(--c-danger, #c62828);
+    line-height: 1.4;
+}
+
+/* ── Consent row ──────────────────────────────────────────── */
+
+.consentRow {
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start;
+    gap: 0.5rem;
+    width: 100%;
+}
+
+.consentCheck {
+    flex-shrink: 0;
+    margin-block-start: 0.15rem;
+    accent-color: var(--gold, #d4af37);
+}
+
+.consentLabel {
+    font-size: var(--fs-body-sm);
+    color: var(--text-muted, #475569);
+    line-height: 1.5;
+    cursor: pointer;
+}
+
+.consentLabel a {
+    color: var(--primary, #6c47ff);
+    text-decoration: underline;
+}
+
+/* ── Submit button ────────────────────────────────────────── */
+
+.submitBtn {
+    font-family: inherit;
+    font-size: var(--fs-body);
+    font-weight: 700;
+    line-height: 1.4;
+    padding-block: 0.75rem;
+    padding-inline: 2rem;
+    border: none;
+    border-radius: 999px;
+    cursor: pointer;
+    background: linear-gradient(135deg, #d4af37 0%, #c5962c 40%, #e6c44d 100%);
+    color: #0f172a;
+    align-self: flex-start;
+    transition:
+        opacity 0.18s ease,
+        transform 0.18s ease;
+}
+
+.submitBtn:hover:not(:disabled) {
+    opacity: 0.9;
+    transform: translateY(-1px);
+}
+
+.submitBtn:active:not(:disabled) {
+    transform: scale(0.98);
+    transition-duration: 0.08s;
+}
+
+.submitBtn:focus-visible {
+    outline: 2px solid var(--gold, #d4af37);
+    outline-offset: 2px;
+}
+
+.submitBtn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* ── WhatsApp link shown in error / success states ────────── */
+
+.waLink {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding-block: 0.625rem;
+    padding-inline: 1.25rem;
+    border-radius: 999px;
+    font-size: var(--fs-body-sm);
+    font-weight: 700;
+    text-decoration: none;
+    cursor: pointer;
+    align-self: flex-start;
+}
+
+/* ── Reset button (after success) ────────────────────────── */
+
+.resetBtn {
+    font-family: inherit;
+    font-size: var(--fs-body-sm);
+    font-weight: 600;
+    color: var(--text-muted, #475569);
+    background: transparent;
+    border: 1px solid rgba(0, 0, 0, 0.15);
+    border-radius: 999px;
+    padding-block: 0.4rem;
+    padding-inline: 1rem;
+    cursor: pointer;
+    transition: border-color 0.15s ease;
+    align-self: flex-start;
+}
+
+.resetBtn:hover {
+    border-color: var(--gold, #d4af37);
+}
+
+.resetBtn:focus-visible {
+    outline: 2px solid var(--gold, #d4af37);
+    outline-offset: 2px;
+}
+
+/* ── Success wrap ─────────────────────────────────────────── */
+
+.successWrap {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+    width: 100%;
+    text-align: start;
+}

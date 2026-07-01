@@ -21,6 +21,11 @@ export const SITE_ACTIONS = Object.freeze({
 
     guide_article_click: "guide_article_click",
 
+    article_detail_whatsapp_cta: "article_detail_whatsapp_cta",
+    article_detail_lead_form_submit: "article_detail_lead_form_submit",
+    article_detail_lead_form_success: "article_detail_lead_form_success",
+    article_detail_lead_form_error: "article_detail_lead_form_error",
+
     contact_email_click: "contact_email_click",
     contact_form_submit: "contact_form_submit",
     contact_whatsapp_click: "contact_whatsapp_click",

@@ -30,6 +30,7 @@ import guideRoutes from "./routes/guide.routes.js";
 import cardsShowcaseRoutes from "./routes/cardsShowcase.routes.js";
 import aiRoutes from "./routes/ai.routes.js";
 import bookingRoutes from "./routes/booking.routes.js";
+import siteInquiriesRoutes from "./routes/siteInquiries.routes.js";
 import { csrfGuard } from "./middlewares/csrf.middleware.js";
 import path from "path";
 
@@ -153,6 +154,8 @@ app.use("/api/analytics", analyticsRoutes);
 app.use("/api/site-analytics", siteAnalyticsRoutes);
 app.use("/api/leads", leadRoutes);
 app.use("/api/bookings", bookingRoutes);
+// Public site inquiry form (article detail pages — Mailjet-only, no DB)
+app.use("/api/site-inquiries", siteInquiriesRoutes);
 app.use(multerErrorHandler);
 // Cards API
 app.use("/api/cards", cardRoutes);

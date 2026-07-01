@@ -80,3 +80,65 @@ export function sanitizeLeadInput(body) {
 
     return { cardId: cardIdRaw, name, email, phone, message, hp, consent };
 }
+
+// ---------------------------------------------------------------------------
+// Strict source path regex for article inquiry form.
+// Allows /blog/{slug} or /guides/{slug} with optional trailing slash.
+// Rejects: absolute URLs, protocol-relative, query strings, hashes,
+// double slashes, dot traversal, percent-encoding, other path prefixes.
+// ---------------------------------------------------------------------------
+const ARTICLE_SOURCE_PATH_RE = /^\/(?:blog|guides)\/[a-zA-Z0-9_-]{1,120}\/?$/;
+
+/**
+ * Sanitize raw req.body for the article inquiry form.
+ * Returns { ok: true, value: {...} } or { ok: false, code: "..." }.
+ * Does not throw for normal validation errors.
+ */
+export function sanitizeArticleInquiryInput(body) {
+    const raw = body && typeof body === "object" ? body : {};
+
+    // ── honeypot (hp field) ──
+    const hp = stripTags(String(raw.hp ?? ""), { maxLen: 120 });
+
+    // ── name (required) ──
+    const name = stripTags(raw.name, { maxLen: 100 });
+    if (!name) {
+        return { ok: false, code: "NAME_REQUIRED" };
+    }
+
+    // ── phone (required) ──
+    const phone = stripTags(raw.phone, { maxLen: 20 });
+    if (!phone) {
+        return { ok: false, code: "PHONE_REQUIRED" };
+    }
+
+    // ── email (optional; validate format if present) ──
+    const emailRaw = stripTags(raw.email, { maxLen: 254 }).toLowerCase();
+    let email = null;
+    if (emailRaw) {
+        if (!EMAIL_RE.test(emailRaw)) {
+            return { ok: false, code: "INVALID_EMAIL" };
+        }
+        email = emailRaw;
+    }
+
+    // ── sourcePath (required, strict allowlist) ──
+    const sourcePathRaw =
+        typeof raw.sourcePath === "string" ? raw.sourcePath.trim() : "";
+    if (!ARTICLE_SOURCE_PATH_RE.test(sourcePathRaw)) {
+        return { ok: false, code: "INVALID_SOURCE_PATH" };
+    }
+    const sourcePath = sourcePathRaw;
+
+    // ── sourceTitle (optional, display-only) ──
+    const sourceTitle = stripTags(raw.sourceTitle, { maxLen: 120 }) || null;
+
+    // ── consent (required boolean) ──
+    // Controller handles CONSENT_REQUIRED after honeypot check.
+    const consent = raw.consent === true;
+
+    return {
+        ok: true,
+        value: { name, phone, email, sourcePath, sourceTitle, consent, hp },
+    };
+}

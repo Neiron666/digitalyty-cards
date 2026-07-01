@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import SeoHelmet from "../components/seo/SeoHelmet";
+import ArticleConversionBlock from "../components/marketing/ArticleConversionBlock";
 import { buildCardigoPublisherJsonLd } from "../seo/brandConstants.js";
 import { trackSitePageView } from "../services/siteAnalytics.client";
 import { useInitialDetailData } from "../seo/initialDetailData";
@@ -354,6 +355,8 @@ export default function GuidePost() {
                             </div>
                         </aside>
                     )}
+
+                    <ArticleConversionBlock sourceTitle={post.title} />
 
                     {related.length > 0 && (
                         <nav

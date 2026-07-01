@@ -129,6 +129,12 @@ function getMailjetConfig() {
                 ? process.env.MAILJET_RENEWAL_FAILED_TEXT_PREFIX.trim()
                 : "") ||
             "חיוב חידוש הפרימיום נכשל. הגישה שלך נשמרת עד סיום תקופת התשלום הנוכחית.",
+        // Recipient for article inquiry notifications (article detail contact form).
+        // Defaults to support@cardigo.co.il if not configured.
+        inquiryRecipientEmail:
+            (typeof process.env.MAILJET_INQUIRY_RECIPIENT_EMAIL === "string"
+                ? process.env.MAILJET_INQUIRY_RECIPIENT_EMAIL.trim()
+                : "") || "support@cardigo.co.il",
     };
 }
 
@@ -1692,5 +1698,157 @@ export async function sendBookingNotificationEmailMailjetBestEffort({
             error: err?.message || err,
         });
         return { ok: false };
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Article inquiry email — operational notification to Cardigo support.
+// Sent when a user submits the contact form on /blog/:slug or /guides/:slug.
+//
+// IMPORTANT: This function is NOT "BestEffort".
+// The controller AWAITS this result and returns 502 to the client on failure.
+// Do not rename to BestEffort — the caller's HTTP response depends on this.
+// ---------------------------------------------------------------------------
+export async function sendArticleInquiryEmailMailjet({
+    inquiryId,
+    name,
+    phone,
+    email,
+    sourcePath,
+    sourceTitle,
+}) {
+    const cfg = getMailjetConfig();
+
+    if (!cfg.enabled) {
+        return { ok: false, error: "MAILJET_NOT_CONFIGURED" };
+    }
+
+    const auth = Buffer.from(`${cfg.apiKey}:${cfg.apiSecret}`).toString(
+        "base64",
+    );
+
+    // --- Safe string helpers ------------------------------------------------
+    const escapeHtml = (str) =>
+        str
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#39;");
+
+    // --- Sanitize all user-supplied display values --------------------------
+    // safeDisplayText strips ASCII control chars, collapses whitespace, trims.
+    // Applied before escapeHtml for all values that enter HTMLPart.
+    const safeName = safeDisplayText(name, 100);
+    const safePhone = safeDisplayText(phone, 20);
+    const safeEmail = email ? safeDisplayText(email, 254) : null;
+    const safeSourcePath = safeDisplayText(sourcePath, 200);
+    const safeSourceTitle = sourceTitle
+        ? safeDisplayText(sourceTitle, 120)
+        : null;
+    const safeInquiryId = safeDisplayText(inquiryId, 20);
+
+    // --- Recipient (fixed — never user-controlled) --------------------------
+    const toEmail = cfg.inquiryRecipientEmail;
+
+    // --- Subject (static — no user data in subject line) -------------------
+    const subject = "פנייה חדשה דרך מאמר/מדריך באתר Cardigo";
+
+    // --- Text part ----------------------------------------------------------
+    const textLines = [
+        "פנייה חדשה התקבלה דרך מאמר או מדריך באתר Cardigo.",
+        "",
+        `שם: ${safeName}`,
+        `טלפון: ${safePhone}`,
+        ...(safeEmail ? [`אימייל: ${safeEmail}`] : []),
+        "",
+        `מקור: ${safeSourcePath}`,
+        ...(safeSourceTitle ? [`כותרת: ${safeSourceTitle}`] : []),
+        "",
+        `מזהה פנייה: ${safeInquiryId}`,
+        "",
+        "---",
+        "הודעה זו נשלחת מסיבות תפעוליות. Cardigo",
+    ];
+    const text = textLines.join("\n");
+
+    // --- HTML part ----------------------------------------------------------
+    // All user-controlled values are escaped before insertion.
+    // No raw user input is placed in href or src attributes.
+    const emailLineHtml = safeEmail
+        ? `<tr><td style="padding:4px 0;font-size:14px;color:#444444;"><strong>אימייל:</strong> <a href="mailto:${escapeHtml(safeEmail)}" style="color:#6c47ff;">${escapeHtml(safeEmail)}</a></td></tr>`
+        : "";
+    const sourceTitleHtml = safeSourceTitle
+        ? `<tr><td style="padding:4px 0;font-size:13px;color:#888888;"><strong>כותרת:</strong> ${escapeHtml(safeSourceTitle)}</td></tr>`
+        : "";
+
+    const htmlPart = `<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width,initial-scale=1" /></head>
+<body style="margin:0;padding:0;background-color:#f4f4f5;font-family:Arial,sans-serif;direction:rtl;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#f4f4f5;padding:32px 16px;">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="100%" style="max-width:520px;background-color:#ffffff;border-radius:8px;padding:40px 32px;">
+          <tr><td style="padding-bottom:8px;text-align:center;">
+            <p style="margin:0;font-size:20px;font-weight:bold;color:#1a1a1a;">Cardigo</p>
+          </td></tr>
+          <tr><td style="padding-bottom:24px;">
+            <h1 style="margin:0;font-size:20px;font-weight:bold;color:#1a1a1a;text-align:center;">פנייה חדשה דרך מאמר/מדריך</h1>
+          </td></tr>
+          <tr><td style="padding-bottom:24px;">
+            <table width="100%" cellpadding="0" cellspacing="0">
+              <tr><td style="padding:4px 0;font-size:14px;color:#444444;"><strong>שם:</strong> ${escapeHtml(safeName)}</td></tr>
+              <tr><td style="padding:4px 0;font-size:14px;color:#444444;"><strong>טלפון:</strong> ${escapeHtml(safePhone)}</td></tr>
+              ${emailLineHtml}
+              <tr><td style="padding:8px 0 4px 0;font-size:14px;color:#444444;border-top:1px solid #f0f0f0;"><strong>מקור:</strong> <code style="font-size:12px;color:#666;">${escapeHtml(safeSourcePath)}</code></td></tr>
+              ${sourceTitleHtml}
+            </table>
+          </td></tr>
+          <tr><td style="border-top:1px solid #e5e7eb;padding-top:16px;text-align:center;">
+            <p style="margin:0;font-size:11px;color:#bbbbbb;">מזהה: ${escapeHtml(safeInquiryId)} — Cardigo</p>
+          </td></tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
+
+    const payload = {
+        Messages: [
+            {
+                From: {
+                    Email: cfg.fromEmail,
+                    Name: cfg.fromName,
+                },
+                To: [{ Email: toEmail }],
+                Subject: subject,
+                TextPart: text,
+                HTMLPart: htmlPart,
+            },
+        ],
+    };
+
+    const body = JSON.stringify(payload);
+
+    try {
+        const res = await httpsRequestJson({
+            hostname: "api.mailjet.com",
+            path: "/v3.1/send",
+            method: "POST",
+            timeoutMs: 10_000,
+            headers: {
+                Authorization: `Basic ${auth}`,
+                "Content-Type": "application/json",
+                "Content-Length": Buffer.byteLength(body),
+            },
+            body,
+        });
+
+        const ok = res.statusCode >= 200 && res.statusCode < 300;
+        return { ok, statusCode: res.statusCode };
+    } catch (err) {
+        return { ok: false, error: err?.message || String(err) };
     }
 }

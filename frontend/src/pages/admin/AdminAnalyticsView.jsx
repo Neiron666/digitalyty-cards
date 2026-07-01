@@ -80,6 +80,10 @@ const ACTION_LABELS = {
     cards_showcase_card_cta: "לחיצה על התחלה מכרטיס תבנית",
     cards_showcase_view_all_cta: "לחיצה על צפייה בכל התבניות",
     cards_bottom_cta: "לחיצה על הכפתור התחתון בעמוד הדוגמאות",
+    article_detail_whatsapp_cta: "לחיצה על כפתור וואטסאפ במאמר/מדריך",
+    article_detail_lead_form_submit: "שליחת טופס פנייה במאמר/מדריך",
+    article_detail_lead_form_success: "טופס פנייה במאמר/מדריך — נשלח בהצלחה",
+    article_detail_lead_form_error: "שגיאה בטופס פנייה במאמר/מדריך",
 };
 
 function readOptOut() {
