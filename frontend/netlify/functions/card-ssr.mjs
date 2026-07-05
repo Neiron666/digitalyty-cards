@@ -342,10 +342,45 @@ function assertNoForbiddenSsrPayloadFields(card) {
     }
 }
 
+// ── Server-Timing helpers ─────────────────────────────────────────────────────
+// _fmtDur: formats start→end as ms with 1 decimal, or returns null on any failure.
+// Never throws. Both parameters must be finite numbers and end >= start.
+function _fmtDur(start, end) {
+    try {
+        if (!Number.isFinite(start) || !Number.isFinite(end)) return null;
+        const d = end - start;
+        if (d < 0) return null;
+        return d.toFixed(1);
+    } catch {
+        return null;
+    }
+}
+
+// _buildLambdaServerTiming: builds the server-timing string for the Lambda 200 path.
+// Returns a comma-separated string of lambda_* metrics, or null if all fail.
+// Never throws.
+function _buildLambdaServerTiming(tL0, tL1, tA0, tA1, tR0, tR1, tAs0, tAs1) {
+    try {
+        const parts = [];
+        const api = _fmtDur(tA0, tA1);
+        const render = _fmtDur(tR0, tR1);
+        const assemble = _fmtDur(tAs0, tAs1);
+        const total = _fmtDur(tL0, tL1);
+        if (api !== null) parts.push(`lambda_api;dur=${api}`);
+        if (render !== null) parts.push(`lambda_render;dur=${render}`);
+        if (assemble !== null) parts.push(`lambda_assemble;dur=${assemble}`);
+        if (total !== null) parts.push(`lambda_total;dur=${total}`);
+        return parts.length ? parts.join(", ") : null;
+    } catch {
+        return null;
+    }
+}
+
 // ── Main handler ──────────────────────────────────────────────────────────────
 
 export const handler = async (event, context) => {
     let stage = "init";
+    const _tLambda0 = performance.now();
     try {
         // Stage: validate_env
         stage = "validate_env";
@@ -487,6 +522,7 @@ export const handler = async (event, context) => {
 
         // Stage: fetch_card
         stage = "fetch_card";
+        const _tApi0 = performance.now();
         const apiPath = isOrg
             ? `/api/c/${encodeURIComponent(orgSlug)}/${encodeURIComponent(slug)}`
             : `/api/cards/${encodeURIComponent(slug)}`;
@@ -590,6 +626,7 @@ export const handler = async (event, context) => {
                 code: "INVALID_DTO",
             });
         }
+        const _tApi1 = performance.now();
 
         // Stage: sanitize_dto
         stage = "sanitize_dto";
@@ -600,13 +637,16 @@ export const handler = async (event, context) => {
         stage = "render_ssr";
         const routeKey = isOrg ? `c/${orgSlug}/${slug}` : `card/${slug}`;
         const initialDetailData = { [routeKey]: safeCard };
+        const _tRender0 = performance.now();
         const { html: appHtml, helmetContext } = await renderCardRoute(
             cardPath,
             { initialDetailData },
         );
+        const _tRender1 = performance.now();
 
         // Stage: assemble_html
         stage = "assemble_html";
+        const _tAssemble0 = performance.now();
         const { helmet } = helmetContext ?? {};
         const headParts = [
             helmet?.title?.toString() ?? "",
@@ -627,6 +667,24 @@ export const handler = async (event, context) => {
             headParts,
             dataIslandHtml,
         );
+        const _tAssemble1 = performance.now();
+
+        const _lambdaSt = (() => {
+            try {
+                return _buildLambdaServerTiming(
+                    _tLambda0,
+                    _tAssemble1,
+                    _tApi0,
+                    _tApi1,
+                    _tRender0,
+                    _tRender1,
+                    _tAssemble0,
+                    _tAssemble1,
+                );
+            } catch {
+                return null;
+            }
+        })();
 
         return {
             statusCode: 200,
@@ -635,6 +693,7 @@ export const handler = async (event, context) => {
                 "cache-control": "no-store, max-age=0",
                 "x-cardigo-ssr": "1",
                 ...(!isRealRoute ? { "x-robots-tag": "noindex" } : {}),
+                ...(_lambdaSt ? { "server-timing": _lambdaSt } : {}),
             },
             body: finalHtml,
         };

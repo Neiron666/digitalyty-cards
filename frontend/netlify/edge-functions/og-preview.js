@@ -347,18 +347,33 @@ function extractRobotsContent(ogHtml) {
     }
 }
 
+// _fmtDur: formats start→end as ms with 1 decimal, or returns null on any failure.
+// Never throws. Used by serveCardEnrichedShell Server-Timing assembly.
+function _fmtDur(start, end) {
+    try {
+        if (!Number.isFinite(start) || !Number.isFinite(end)) return null;
+        const d = end - start;
+        if (d < 0) return null;
+        return d.toFixed(1);
+    } catch {
+        return null;
+    }
+}
+
 // Unified browser+crawler enriched-shell helper for /card and /c routes.
 // Behavior parity: both UA classes receive the same enriched SPA shell body
 // for 200 backend responses. Differs only on 404/410: crawlers get propagated
 // status with no-store; browsers fail-open to context.next() to preserve the
 // existing browser route-status contract (unknown slug = SPA shell 200).
 async function serveCardEnrichedShell(backendPath, context, { isCrawler }) {
+    const _tEdge0 = performance.now();
     const proxySecret = Netlify.env.get(SECRET_ENV_KEY) || "";
     if (!proxySecret) {
         return context.next();
     }
 
     let ogResponse;
+    const _tOg0 = performance.now();
     const _ogAbortController = new AbortController();
     const _ogTimeoutId = setTimeout(() => _ogAbortController.abort(), 5000);
     try {
@@ -417,9 +432,12 @@ async function serveCardEnrichedShell(backendPath, context, { isCrawler }) {
     }
 
     const ogHtml = await ogResponse.text();
+    const _tOg1 = performance.now();
 
     // context.next() called exactly once — only after backend fetch succeeds
+    const _tCnStart = performance.now();
     const shellResponse = await context.next();
+    const _tCnEnd = performance.now();
 
     if (shellResponse.status !== 200) {
         return shellResponse;
@@ -431,6 +449,7 @@ async function serveCardEnrichedShell(backendPath, context, { isCrawler }) {
     }
 
     try {
+        const _tInject0 = performance.now();
         const shellClone = shellResponse.clone();
         const shellHtml = await shellClone.text();
         const headInjectedHtml = injectMetadataIntoShell(ogHtml, shellHtml);
@@ -463,8 +482,26 @@ async function serveCardEnrichedShell(backendPath, context, { isCrawler }) {
             // Cover preload injection failed — continue with finalHtml as-is.
         }
         const robotsContent = extractRobotsContent(ogHtml);
+        const _tInject1 = performance.now();
         const isExplicitlyIndexable =
             robotsContent !== null && !robotsContent.includes("noindex");
+        let _edgeSt = null;
+        try {
+            const parts = [];
+            const og = _fmtDur(_tOg0, _tOg1);
+            const lambda = _fmtDur(_tCnStart, _tCnEnd);
+            const inject = _fmtDur(_tInject0, _tInject1);
+            const total = _fmtDur(_tEdge0, _tInject1);
+            if (og !== null) parts.push(`edge_og;dur=${og}`);
+            if (lambda !== null) parts.push(`edge_lambda;dur=${lambda}`);
+            if (inject !== null) parts.push(`edge_inject;dur=${inject}`);
+            if (total !== null) parts.push(`edge_total;dur=${total}`);
+            const lambdaSt = shellResponse.headers.get("server-timing") || "";
+            if (lambdaSt) parts.push(lambdaSt);
+            if (parts.length) _edgeSt = parts.join(", ");
+        } catch {
+            /* timing must never break response */
+        }
         return new Response(finalHtml, {
             status: 200,
             headers: {
@@ -488,6 +525,7 @@ async function serveCardEnrichedShell(backendPath, context, { isCrawler }) {
                           "cache-control": "no-store, max-age=0",
                       }),
                 vary: "User-Agent",
+                ...(_edgeSt ? { "server-timing": _edgeSt } : {}),
             },
         });
     } catch (_injErr) {
