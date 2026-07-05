@@ -481,8 +481,8 @@ if (!fs.existsSync(redirectsPath)) {
         .map((l) => l.replace(/\s+/g, " "));
 
     const REQUIRED_RULES = [
-        "/card/* /spa-shell.html 200",
-        "/c/* /spa-shell.html 200",
+        "/card/* /.netlify/functions/card-ssr/card/:splat 200",
+        "/c/* /.netlify/functions/card-ssr/c/:splat 200",
         "/gate.html /spa-shell.html 404",
         "/blog/page/* /404.html 404",
         "/blog/* /404.html 404",
@@ -515,12 +515,7 @@ if (!fs.existsSync(redirectsPath)) {
 
     // Exact-set verification of every source whose target is /spa-shell.html.
     // Antidrift: any extra/missing source vs the expected set fails the gate.
-    const EXPECTED_SPA_SHELL_SOURCES = new Set([
-        "/card/*",
-        "/c/*",
-        "/gate.html",
-        "/*",
-    ]);
+    const EXPECTED_SPA_SHELL_SOURCES = new Set(["/gate.html", "/*"]);
     const actualSpaShellSources = new Set();
     for (const line of normLines) {
         const parts = line.split(" ");
