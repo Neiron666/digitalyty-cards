@@ -29,6 +29,51 @@ const SLUG_PART_RE = /^[A-Za-z0-9_-]+$/;
 const PERSONAL_PATH_RE = /^\/card\/([A-Za-z0-9_-]+)$/;
 const ORG_PATH_RE = /^\/c\/([A-Za-z0-9_-]+)\/([A-Za-z0-9_-]+)$/;
 
+// ── Real-route mode detection ─────────────────────────────────────────────────
+// Follows the same path-forwarding pattern as proxy.js:
+// _redirects: /card/*  /.netlify/functions/card-ssr/card/:splat  200
+// Netlify sets event.path = "/.netlify/functions/card-ssr/card/:slug"
+// (destination path including the function prefix and forwarded splat).
+
+const CARD_SSR_FUNCTION_PREFIX = "/.netlify/functions/card-ssr";
+
+function getString(value) {
+    if (value === null || value === undefined) return "";
+    return String(value).trim();
+}
+
+function stripFunctionPrefix(eventPath) {
+    const raw = getString(eventPath);
+    if (raw.startsWith(CARD_SSR_FUNCTION_PREFIX)) {
+        const sliced = raw.slice(CARD_SSR_FUNCTION_PREFIX.length);
+        return sliced.startsWith("/") ? sliced : `/${sliced}`;
+    }
+    return raw;
+}
+
+// Returns { cardPath, isRealRoute, source }.
+// Priority:
+//   1. Real route: event.path starts with function prefix + "/card/" or "/c/"
+//      (set by Netlify when _redirects uses path-forwarding destination).
+//   2. Preview: event.queryStringParameters.path (explicit ?path= query param).
+// Never reads rawUrl, referer, host, or user-supplied mode param.
+function resolveRequestedCardPath(event) {
+    const eventPath = getString(event?.path);
+    const prefix = CARD_SSR_FUNCTION_PREFIX;
+    const isForwardedCard = eventPath.startsWith(prefix + "/card/");
+    const isForwardedOrg = eventPath.startsWith(prefix + "/c/");
+    if (isForwardedCard || isForwardedOrg) {
+        const stripped = stripFunctionPrefix(eventPath);
+        return { cardPath: stripped, isRealRoute: true, source: "event.path" };
+    }
+    const qsPath = getString(event?.queryStringParameters?.path);
+    return {
+        cardPath: qsPath,
+        isRealRoute: false,
+        source: "queryStringParameters",
+    };
+}
+
 // Also used to validate SLUG_MOVED redirectTo.
 function isSafePersonalOrOrgPath(value) {
     if (typeof value !== "string") return false;
@@ -292,6 +337,7 @@ export const handler = async (event, context) => {
                 headers: {
                     "content-type": "text/plain; charset=utf-8",
                     "cache-control": "no-store",
+                    "x-robots-tag": "noindex",
                 },
                 body: "SSR_PREVIEW_UNAVAILABLE: backend origin not configured",
             };
@@ -307,6 +353,7 @@ export const handler = async (event, context) => {
                 headers: {
                     "content-type": "text/plain; charset=utf-8",
                     "cache-control": "no-store",
+                    "x-robots-tag": "noindex",
                 },
                 body: "SSR_PREVIEW_UNAVAILABLE: proxy secret not configured",
             };
@@ -314,7 +361,8 @@ export const handler = async (event, context) => {
 
         // Stage: validate_path
         stage = "validate_path";
-        const rawPath = (event.queryStringParameters?.path ?? "").trim();
+        const { cardPath: rawPath, isRealRoute } =
+            resolveRequestedCardPath(event);
         const personalMatch = rawPath.match(PERSONAL_PATH_RE);
         const orgMatch = rawPath.match(ORG_PATH_RE);
         if (!personalMatch && !orgMatch) {
@@ -323,6 +371,7 @@ export const handler = async (event, context) => {
                 headers: {
                     "content-type": "text/plain; charset=utf-8",
                     "cache-control": "no-store",
+                    "x-robots-tag": "noindex",
                 },
                 body: "SSR_PREVIEW_INVALID_PATH: allowed patterns: /card/<slug> or /c/<orgSlug>/<slug>",
             };
@@ -458,6 +507,7 @@ export const handler = async (event, context) => {
                             "/__card-ssr-preview?path=" +
                             encodeURIComponent(body404.redirectTo),
                         "cache-control": "no-store",
+                        "x-robots-tag": "noindex",
                     },
                     body: "",
                 };
@@ -468,6 +518,7 @@ export const handler = async (event, context) => {
                 headers: {
                     "content-type": "text/plain; charset=utf-8",
                     "cache-control": "no-store",
+                    "x-robots-tag": "noindex",
                 },
                 body: "SSR_PREVIEW_NOT_FOUND",
             };
@@ -480,6 +531,7 @@ export const handler = async (event, context) => {
                 headers: {
                     "content-type": "text/plain; charset=utf-8",
                     "cache-control": "no-store",
+                    "x-robots-tag": "noindex",
                 },
                 body: "SSR_PREVIEW_CARD_EXPIRED",
             };
@@ -496,6 +548,7 @@ export const handler = async (event, context) => {
                 headers: {
                     "content-type": "text/html; charset=utf-8",
                     "cache-control": "no-store",
+                    "x-robots-tag": "noindex",
                 },
                 body: shellHtml,
             };
@@ -558,7 +611,7 @@ export const handler = async (event, context) => {
                 "content-type": "text/html; charset=utf-8",
                 "cache-control": "no-store, max-age=0",
                 "x-cardigo-ssr": "1",
-                "x-robots-tag": "noindex",
+                ...(!isRealRoute ? { "x-robots-tag": "noindex" } : {}),
             },
             body: finalHtml,
         };
@@ -576,6 +629,7 @@ export const handler = async (event, context) => {
             headers: {
                 "content-type": "text/plain; charset=utf-8",
                 "cache-control": "no-store",
+                "x-robots-tag": "noindex",
             },
             body: `SSR_PREVIEW_FAILED_STAGE:${stage}`,
         };
