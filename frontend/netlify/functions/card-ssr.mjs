@@ -18,7 +18,8 @@
  *   fallback spa-shell       — backend error/timeout (no x-cardigo-ssr)
  */
 
-import { readFile } from "fs/promises";
+import { readFile, access } from "fs/promises";
+import { constants as fsConstants } from "fs";
 import { join } from "path";
 import { pathToFileURL } from "url";
 
@@ -59,9 +60,7 @@ async function findFile(relPath) {
     ];
     for (const p of candidates) {
         try {
-            await import("fs/promises").then(({ access }) =>
-                access(p, (await import("fs")).constants.R_OK),
-            );
+            await access(p, fsConstants.R_OK);
             return p;
         } catch {
             // try next
@@ -348,9 +347,7 @@ export const handler = async (event, context) => {
 
         // Stage: render_ssr
         stage = "render_ssr";
-        const routeKey = isOrg
-            ? `c/${orgSlug}/${slug}`
-            : `card/${slug}`;
+        const routeKey = isOrg ? `c/${orgSlug}/${slug}` : `card/${slug}`;
         const initialDetailData = { [routeKey]: dto };
         const { html: appHtml, helmetContext } = await renderCardRoute(
             cardPath,
