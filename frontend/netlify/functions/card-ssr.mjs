@@ -122,6 +122,131 @@ function assembleHtml(shellHtml, appHtml, headTags, dataIslandHtml) {
     return page;
 }
 
+// ── SSR DTO sanitizer ─────────────────────────────────────────────────────────
+
+const FORBIDDEN_TOP_LEVEL = new Set([
+    "_id",
+    "user",
+    "owner",
+    "userId",
+    "anonymousId",
+    "billing",
+    "adminOverride",
+    "uploads",
+    "headSnippets",
+    "adminTier",
+    "effectiveBilling",
+    "effectiveTier",
+    "tierSource",
+    "tierUntil",
+    "trialStartedAt",
+    "trialEndsAt",
+    "trialEndsAtIsrael",
+    "trialDeleteAt",
+    "createdAt",
+    "updatedAt",
+]);
+
+const ENTITLEMENTS_ALLOWLIST = new Set([
+    "canUseGallery",
+    "galleryLimit",
+    "canUseLeads",
+    "canUseBooking",
+    "canUseVideo",
+    "canUseReviews",
+    "canUseBusinessHours",
+    "canUseServices",
+    "maxContentParagraphs",
+]);
+
+const DESIGN_PATH_SUFFIX_RE = /Path$/;
+
+function sanitizePublicCardForSsr(rawCard) {
+    if (!rawCard || typeof rawCard !== "object") return rawCard;
+    const card = { ...rawCard };
+    // Remove forbidden top-level fields
+    for (const key of FORBIDDEN_TOP_LEVEL) {
+        delete card[key];
+    }
+    // Remove internal storage path fields from design
+    if (card.design && typeof card.design === "object") {
+        const design = { ...card.design };
+        for (const key of Object.keys(design)) {
+            if (DESIGN_PATH_SUFFIX_RE.test(key)) {
+                delete design[key];
+            }
+        }
+        card.design = design;
+    }
+    // Remove internal storage path fields from gallery items
+    if (Array.isArray(card.gallery)) {
+        card.gallery = card.gallery.map((item) => {
+            if (!item || typeof item !== "object") return item;
+            const g = { ...item };
+            delete g.path;
+            delete g.thumbPath;
+            delete g.storagePath;
+            delete g.internalPath;
+            delete g.createdAt;
+            return g;
+        });
+    }
+    // Replace entitlements with public allowlist only
+    if (card.entitlements && typeof card.entitlements === "object") {
+        const pub = {};
+        for (const key of ENTITLEMENTS_ALLOWLIST) {
+            if (key in card.entitlements) pub[key] = card.entitlements[key];
+        }
+        card.entitlements = pub;
+    }
+    return card;
+}
+
+const FORBIDDEN_SSR_MARKERS = [
+    "effectiveBilling",
+    "effectiveTier",
+    "tierSource",
+    "tierUntil",
+    "adminOverride",
+    "billing",
+    "headSnippets",
+    "adminTier",
+    "trialDeleteAt",
+    "anonymousId",
+    "canEdit",
+    "lockedReason",
+    "analyticsLevel",
+    "canViewAnalytics",
+    "analyticsRetentionDays",
+    "canUploadGallery",
+    "canPublish",
+    "canEditSeo",
+    "canChangeSlug",
+    "canUseAnalyticsPremium",
+    "backgroundImagePath",
+    "coverImagePath",
+    "avatarImagePath",
+    "logoPath",
+    "thumbPath",
+];
+
+function assertNoForbiddenSsrPayloadFields(card) {
+    const json = JSON.stringify(card);
+    for (const marker of FORBIDDEN_SSR_MARKERS) {
+        if (json.includes(`"${marker}"`)) {
+            throw Object.assign(new Error(`Forbidden SSR field: ${marker}`), {
+                code: "FORBIDDEN_SSR_FIELD",
+            });
+        }
+    }
+    if (json.includes('"path":"cards/') || json.includes('"path": "cards/')) {
+        throw Object.assign(
+            new Error("Forbidden storage path in SSR payload"),
+            { code: "FORBIDDEN_SSR_FIELD" },
+        );
+    }
+}
+
 // ── Main handler ──────────────────────────────────────────────────────────────
 
 export const handler = async (event, context) => {
@@ -363,10 +488,15 @@ export const handler = async (event, context) => {
             });
         }
 
+        // Stage: sanitize_dto
+        stage = "sanitize_dto";
+        const safeCard = sanitizePublicCardForSsr(dto);
+        assertNoForbiddenSsrPayloadFields(safeCard);
+
         // Stage: render_ssr
         stage = "render_ssr";
         const routeKey = isOrg ? `c/${orgSlug}/${slug}` : `card/${slug}`;
-        const initialDetailData = { [routeKey]: dto };
+        const initialDetailData = { [routeKey]: safeCard };
         const { html: appHtml, helmetContext } = await renderCardRoute(
             cardPath,
             { initialDetailData },
