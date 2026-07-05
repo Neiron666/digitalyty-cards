@@ -6,7 +6,7 @@
 ## Scope и важные условия
 
 - Все значения сохраняются в `card.seo.*`.
-- Публичная карточка (`/card/:slug`, `/c/:orgSlug/:slug`) применяет SEO meta и скрипты **после загрузки JS** (SPA + Helmet) для Googlebot и браузеров. Social preview bots (Facebook, WhatsApp и др.) получают OG HTML через Netlify Edge Function → backend `/og/card/:slug` (не через SPA).
+- Публичная карточка (`/card/:slug`, `/c/:orgSlug/:slug`) теперь доставляет title, canonical, OG-мета, JSON-LD и полный HTML карточки в **первоначальном HTML-ответе** через card-ssr Netlify Function + Edge-обогащение (SSR_REAL_ROUTE_PRODUCTION_ROLLOUT — CLOSED / PASS / PRODUCTION VERIFIED 2026-07-05). Это означает что Googlebot и браузеры получают полный контент без необходимости выполнения JS. Social preview bots (Facebook, WhatsApp и др.) по-прежнему получают OG HTML через Netlify Edge Function → backend `/og/card/:slug` (без изменений).
 - Preview (`/preview/...`) всегда `noindex,nofollow,noarchive` и **без трекеров**.
 - Editor (`/edit/...`) **без трекеров**.
 - `frontend/index.html` **не содержит** глобальный `<meta name="robots" content="noindex, nofollow">` в продакшене. Глобальный noindex был удалён при запуске продакшена (2026-05-03). Индексация управляется через route-specific noindex / X-Robots-Tag и политику robots.txt.

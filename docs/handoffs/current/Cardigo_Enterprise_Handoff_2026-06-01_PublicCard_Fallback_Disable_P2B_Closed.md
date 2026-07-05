@@ -1,5 +1,13 @@
 # Cardigo Enterprise Handoff — Public Card Fallback Disable P2B — CLOSED
 
+---
+
+> **SUPERSEDED UPDATE — 2026-07-05:**
+> SSR_REAL_ROUTE_PRODUCTION_ROLLOUT is now CLOSED / PASS / PRODUCTION VERIFIED.
+> Production /card/* and /c/* now serve full SSR HTML with sanitized data island for browser/Googlebot paths, while social UA remains raw OG HTML.
+> See `docs/handoffs/current/Cardigo_Enterprise_Handoff_2026-07-05_SSR_Real_Route_Production_Rollout_Closed.md` and `docs/runbooks/seo-public-indexability-runbook.md` Section 23 for current truth.
+
+
 > **Tier 1 — Product/Security Canon**
 > Closure record for PUBLIC_CARD_FALLBACK_DISABLE_P2B_MINIMAL.
 > This is a follow-on contour to PUBLIC_CARD_SEO_RENDERING_D1_CHAIN (see `docs/handoffs/current/Cardigo_Enterprise_Handoff_2026-06-01_PublicCard_SEO_Rendering_D1_Closed.md`).

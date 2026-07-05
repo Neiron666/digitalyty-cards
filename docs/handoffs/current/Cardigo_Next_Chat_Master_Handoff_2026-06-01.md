@@ -1,5 +1,13 @@
 # Cardigo - Next Chat Master Handoff
 
+---
+
+> **SUPERSEDED UPDATE — 2026-07-05:**
+> SSR_REAL_ROUTE_PRODUCTION_ROLLOUT is now CLOSED / PASS / PRODUCTION VERIFIED.
+> Production /card/* and /c/* now serve full SSR HTML with sanitized data island for browser/Googlebot paths, while social UA remains raw OG HTML.
+> See `docs/handoffs/current/Cardigo_Enterprise_Handoff_2026-07-05_SSR_Real_Route_Production_Rollout_Closed.md` and `docs/runbooks/seo-public-indexability-runbook.md` Section 23 for current truth.
+
+
 Date: 2026-06-01
 Status: active project continuity handoff for the next ChatGPT window
 Role expected from ChatGPT: Senior Project Architect / Senior Full-Stack Engineer / Backend Engineer / Frontend Engineer / Security Engineer / SEO Engineer / Enterprise Consultant

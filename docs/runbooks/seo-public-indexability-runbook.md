@@ -1,4 +1,4 @@
-# SEO Public Indexability вЂ” Operational Runbook (Cardigo)
+﻿# SEO Public Indexability вЂ” Operational Runbook (Cardigo)
 
 **Scope:** Full public indexability of cardigo.co.il вЂ” blog, guides, cards, marketing pages.
 **Status:** Live (gate removed 2026-05-03). 13 SEO contours CLOSED as of 2026-05-09. PUBLIC*CARD_OG_INITIAL_METADATA_EDGE_INJECTION_P2A CLOSED/PRODUCTION VERIFIED 2026-05-09. STATIC_SOCIAL_META_HELMET_DEDUP_P2 CLOSED/PRODUCTION VERIFIED 2026-05-09. MARKETING_STATIC_ROUTES_INITIAL_METADATA_AUDIT_P1 CLOSED/PRODUCTION VERIFIED 2026-05-09. SEO_HOMEPAGE_TITLE_SINGULAR_INTENT CLOSED/PRODUCTION VERIFIED 2026-05-23. SEO_TWITTER_CARD_GUARD_P2 CLOSED/PRODUCTION VERIFIED 2026-05-23. SEO_BACKEND_OG_METADATA_PARITY_P2 CLOSED/PRODUCTION VERIFIED 2026-05-23. (Count baseline 13 as of 2026-05-09 preserved; total not incremented — a comprehensive recount including post-2026-05-09 SCHEMA*\_, AUTHCONTEXT\_\_, and WRS contour closures is needed before asserting a new total.) PUBLIC_CARD_SEO_RENDERING_D1_CHAIN CLOSED/PRODUCTION VERIFIED 2026-06-01: P2A-FIX CLOSED/PASS, P2B-1 CLOSED/PASS, P2B-2 CLOSED/PASS, P2B-3 CLOSED/PASS, PUBLIC_CARD_EDGE_VISIBLE_BODY_FALLBACK_D1 CLOSED/PASS. See Section 21 and `docs/handoffs/current/Cardigo_Enterprise_Handoff_2026-06-01_PublicCard_SEO_Rendering_D1_Closed.md`. PUBLIC_CARD_FALLBACK_DISABLE_P2B_MINIMAL CLOSED/PRODUCTION VERIFIED 2026-06-01. See Section 22 and `docs/handoffs/current/Cardigo_Enterprise_Handoff_2026-06-01_PublicCard_Fallback_Disable_P2B_Closed.md`.
@@ -82,12 +82,21 @@ Request в†’ cardigo.co.il
                     в”‚
                    YES
                     в†“
-             Netlify _redirects SPA fallback в†’ SPA (index.html + JS bundle)
-             в†’ react-helmet-async SeoHelmet
-             в†’ head tags injected at JS runtime
-             в†’ Googlebot (WRS) executes JS, sees rendered head for blog/guides
-             в†’ Blog/GuidePost.jsx emits JSON-LD + BreadcrumbList
-             в†’ SeoHelmet emits og:*, article:*, twitter:*, og:locale, og:site_name
+             path is /card/:slug or /c/:orgSlug/:slug?
+             |
+            YES --> Edge (og-preview.js) --> context.next() --> card-ssr Netlify Function
+                  (SSR_REAL_ROUTE_PRODUCTION_ROLLOUT -- CLOSED / PASS / PRODUCTION VERIFIED 2026-07-05)
+                  card-ssr renders full React SSR body + sanitized data island.
+                  Edge injects title/canonical/og:*/JSON-LD (data-cardigo-edge-ld="1") into head.
+                  Cache-Control: no-store, max-age=0, Vary: User-Agent.
+                  [Browser/Googlebot receives full SSR HTML with data island in #root]
+             |
+            NO --> Netlify _redirects SPA fallback --> SPA (index.html + JS bundle)
+             --> react-helmet-async SeoHelmet
+             --> head tags injected at JS runtime
+             --> Googlebot (WRS) executes JS, sees rendered head for blog/guides
+             --> Blog/GuidePost.jsx emits JSON-LD + BreadcrumbList
+             --> SeoHelmet emits og:*, article:*, twitter:*, og:locale, og:site_name
 ```
 
 **Static fallback (index.html):**
@@ -213,9 +222,9 @@ Any change to robots.txt requires explicit contour with rationale and WRS impact
 | /blog/:slug                                | YES вЂ” SOCIAL branch (og-preview.js)  | /og/blog/:slug                                 | facebookexternalhit, WhatsApp, Twitterbot, LinkedInBot, TelegramBot, Slackbot, Slack-ImgProxy, Discordbot, Pinterest, vkShare                     |
 | /guides/:slug                              | YES вЂ” SOCIAL branch (og-preview.js)  | /og/guides/:slug                               | same social allowlist                                                                                                                             |
 | /card/:slug                                | YES вЂ” SOCIAL branch (og-preview.js)  | /og/card/:slug                                 | same social allowlist                                                                                                                             |
-| /card/:slug                                | YES вЂ” CRAWLER branch (og-preview.js) | /og/card/:slug (metadata only)                 | Googlebot, Googlebot-Image, bingbot вЂ” SPA shell with injected head                                                                              |
+| /card/:slug                                | YES вЂ” CRAWLER branch (og-preview.js) | /og/card/:slug (head enrichment) + card-ssr SSR | Googlebot, Googlebot-Image, bingbot вЂ” full SSR HTML + data island + Edge JSON-LD (SSR_REAL_ROUTE_PRODUCTION_ROLLOUT CLOSED 2026-07-05)           |
 | /c/:orgSlug/:slug                          | YES вЂ” SOCIAL branch (og-preview.js)  | /og/c/:orgSlug/:slug                           | same social allowlist                                                                                                                             |
-| /c/:orgSlug/:slug                          | YES вЂ” CRAWLER branch (og-preview.js) | /og/c/:orgSlug/:slug (metadata only)           | Googlebot, Googlebot-Image, bingbot вЂ” SPA shell with injected head                                                                              |
+| /c/:orgSlug/:slug                          | YES вЂ” CRAWLER branch (og-preview.js) | /og/c/:orgSlug/:slug (head enrichment) + card-ssr SSR | Googlebot, Googlebot-Image, bingbot вЂ” full SSR HTML + data island + Edge JSON-LD (SSR_REAL_ROUTE_PRODUCTION_ROLLOUT CLOSED 2026-07-05)       |
 | /pricing, /blog, /guides, /cards, /contact | YES вЂ” CRAWLER branch (og-preview.js) | marketingMeta.config.js (no backend /og fetch) | Googlebot, Googlebot-Image, bingbot вЂ” SPA shell with route-specific head injected. See Section 18.                                              |
 | / and marketing pages (social/browser)     | NO (falls through)                     | вЂ”                                            | Social bots and browsers use index.html static fallback. Social bot OG for marketing routes deferred under SEO_MARKETING_PAGES_SOCIAL_PREVIEW_P1. |
 
@@ -479,7 +488,7 @@ When ready, steps:
 | og-drift CI check                                                      | вЂ”                                                       | P3                                      | Alignment check: index.html vs Home.jsx OG                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
 | sitemap index / image sitemap                                          | вЂ”                                                       | Scale                                   | Post-GSC-data decision                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
 | True HTTP 404 for SPA not-found                                        | вЂ”                                                       | P2                                      | Infrastructure/hosting contour                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
-| SSR/prerender indexability (INTERMEDIATE)                              | вЂ“                                                       | INTERMEDIATE CLOSED 2026-06-01          | D1 CHAIN closed 2026-06-01. Full SSR HOLD. See Section 21 and Cardigo_Enterprise_Handoff_2026-06-01_PublicCard_SEO_Rendering_D1_Closed.md                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| SSR/prerender indexability (INTERMEDIATE)                              | вЂ“                                                       | INTERMEDIATE CLOSED 2026-06-01          | D1 CHAIN closed 2026-06-01; Full React SSR rollout CLOSED / PASS / PRODUCTION VERIFIED 2026-07-05. /card/* and /c/* now serve full SSR HTML with data island. See Section 23 and Cardigo_Enterprise_Handoff_2026-07-05_SSR_Real_Route_Production_Rollout_Closed.md                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
 | fb:app_id / Meta app governance                                        | вЂ”                                                       | P3                                      | Product decision required                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
 | Free-tier card noindex policy review                                   | вЂ”                                                       | P3                                      | Product decision: OG preview vs noindex                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
 | Static shell canonical policy gate                                     | SEO_STATIC_SHELL_POLICY_GATE_P1                           | CLOSED                                  | CI/local gate preventing static canonical reintroduction and preserving homepage og:url fallback. Command: `npm.cmd run check:seo-static-shell`. Invariants protected: (1) no static `rel="canonical"` in `frontend/index.html`; (2) exactly one static `og:url`; (3) `og:url` value is `https://cardigo.co.il/`. Production result: initial HTML has no canonical; runtime canonical supplied by SeoHelmet; homepage og:url fallback remains. No source code, package.json, or handoff changes in this contour.                                                                                                                                                                                                    |
@@ -1158,8 +1167,8 @@ Final rule order in `dist/_redirects` (first-match-wins):
 1. `/api/*` proxy 200
 2. `/sitemap.xml` proxy 200
 3. `/og/*` proxy 200
-4. `/card/*` SPA shell 200
-5. `/c/*` SPA shell 200
+4. `/card/*` → `/.netlify/functions/card-ssr/card/:splat 200` (SSR_REAL_ROUTE_PRODUCTION_ROLLOUT CLOSED 2026-07-05)
+5. `/c/*` → `/.netlify/functions/card-ssr/c/:splat 200` (SSR_REAL_ROUTE_PRODUCTION_ROLLOUT CLOSED 2026-07-05)
 6. Alias marker block (`# cardigo-generated-alias-redirects:start` ... `:end`) - one `301` per alias pair, both with and without trailing slash
 7. `/blog/page/*` -> `/404.html` 404
 8. `/blog/*` -> `/404.html` 404
@@ -1301,8 +1310,8 @@ Production smoke results:
 
 - GSC index coverage validation: operator task — monitor Google Search Console for rendering coverage improvements over 3–4 week window.
 - Cache purge at deploy: Netlify edge cache purge is automatic on deploy; no manual action required.
-- Full SSR (React/Node hydrateRoot): ON HOLD — not needed given current intermediate architecture. Re-evaluate if GSC coverage does not improve.
-- PUBLIC_CARD_EDGE_FALLBACK_VISUAL_SWAP_P1_AUDIT: The D1 fallback is plain semantic HTML, not styled CardLayout. On production, the operator confirmed the fallback can be visible long enough to screenshot before the styled React card UI replaces it. This is accepted D1 behavior and not a rollback reason. Audit whether to reduce or eliminate the visible plain-fallback flash using a data island, faster cleanup, loading-skeleton coordination, minimal static fallback CSS, or another safe approach. Must not use hidden SEO content, must not inject into #root, and must not reopen CardLayout/templates/skins casually. Full React SSR remains HOLD.
+- Full React SSR: CLOSED — SSR_REAL_ROUTE_PRODUCTION_ROLLOUT CLOSED / PASS / PRODUCTION VERIFIED 2026-07-05. /card/* and /c/* now serve full SSR HTML with sanitized data island. See Section 23.
+- PUBLIC_CARD_EDGE_FALLBACK_VISUAL_SWAP_P1_AUDIT: The D1 fallback is plain semantic HTML, not styled CardLayout. On production, the operator confirmed the fallback can be visible long enough to screenshot before the styled React card UI replaces it. This is accepted D1 behavior and not a rollback reason. Audit whether to reduce or eliminate the visible plain-fallback flash using a data island, faster cleanup, loading-skeleton coordination, minimal static fallback CSS, or another safe approach. Must not use hidden SEO content, must not inject into #root, and must not reopen CardLayout/templates/skins casually. Full React SSR is now live — see Section 23 (SSR_REAL_ROUTE_PRODUCTION_ROLLOUT CLOSED 2026-07-05).
 
 ### 21.6 Canonical References
 
@@ -1357,7 +1366,7 @@ SeoHelmet P2B-1/P2B-3 suppression: unchanged and active.
 Social branch: unchanged (receives raw backend /og body, not SPA shell).
 Unknown slug (Googlebot): HTTP 404, no-store -- unchanged.
 
-This is NOT full SSR. CardLayout, templates, and skins are client-rendered. Full React SSR remains HOLD.
+Full React SSR is now live in production (SSR_REAL_ROUTE_PRODUCTION_ROLLOUT CLOSED / PASS / PRODUCTION VERIFIED 2026-07-05). CardLayout, templates, and skins remain client-rendered on hydration; the SSR renderToString pass produces the initial HTML body. See Section 23.
 
 ### 22.5 P2A Residue (inert, do not clean casually)
 
@@ -1384,10 +1393,107 @@ Do NOT hide any fallback if ever re-enabled (cloaking prohibition).
 Do NOT put content inside <div id="root"></div> in Edge HTML (triggers React hydration mismatch).
 Do NOT change data-cardigo-edge-ld="1" coupling without full P2B-1/P2B-2 cross-phase audit.
 Do NOT clean P2A residue without data island contour decision.
-Full React SSR remains HOLD.
+Full React SSR: CLOSED / PASS / PRODUCTION VERIFIED 2026-07-05. See Section 23.
 
 ### 22.8 Open Tails
 
 PRIMARY: PUBLIC_CARD_DATA_ISLAND_FOR_FAST_HYDRATION_P1_AUDIT -- data island for zero-loading-state hydration.
 DEFERRED: P2A residue cleanup (globals.css, PublicCard.jsx) -- decide in data island contour.
 OPERATOR: GSC / WRS monitoring -- no regression expected (SEO head + JSON-LD active).
+
+
+---
+
+## 23. SSR_REAL_ROUTE_PRODUCTION_ROLLOUT (2026-07-05, CLOSED/PASS/PRODUCTION VERIFIED)
+
+### 23.1 Contour Summary
+
+**Status:** CLOSED / PASS / PRODUCTION VERIFIED 2026-07-05
+
+Real public card routes `/card/:slug` and `/c/:orgSlug/:slug` now deliver full React SSR HTML with a sanitized data island for browser and Googlebot paths. Social UAs continue to receive raw backend OG HTML (unchanged). Direct `/og/*` paths remain proxy-routed (unchanged).
+
+### 23.2 Production Routing Truth
+
+| Route | Method | Handler |
+|-------|--------|---------|
+| /card/* | GET browser/Googlebot | Edge enrichment + card-ssr Netlify Function (SSR) |
+| /c/* | GET browser/Googlebot | Edge enrichment + card-ssr Netlify Function (SSR) |
+| /card/* | GET social UA | Edge SOCIAL branch → raw /og/card/:slug backend HTML |
+| /c/* | GET social UA | Edge SOCIAL branch → raw /og/c/:orgSlug/:slug backend HTML |
+| /og/* | GET any | proxy → backend /og/* (unchanged) |
+| /__card-ssr-preview?path=... | GET any | card-ssr Netlify Function (preview, noindex) |
+
+_redirects lines 7-8 (current production):
+```
+/card/*       /.netlify/functions/card-ssr/card/:splat   200
+/c/*          /.netlify/functions/card-ssr/c/:splat      200
+```
+
+### 23.3 UA Behavior Matrix
+
+| UA class | /card/:slug and /c/:orgSlug/:slug |
+|----------|-----------------------------------|
+| Browser | Edge enriches card-ssr SSR response; receives full SSR HTML + data island in #root + Edge-injected head tags |
+| Googlebot/bingbot | Same as browser |
+| Social bot (Facebook, WhatsApp, Twitter, etc.) | Edge SOCIAL branch; receives raw /og/* backend HTML; no data island; Cache-Control: public max-age=300 |
+| Direct /og/* | proxy → backend; not SSR-routed |
+
+### 23.4 Noindex / Indexability Policy
+
+| Route / context | X-Robots-Tag |
+|-----------------|--------------|
+| Published real /card/* and /c/* (browser/Googlebot) | ABSENT — indexable |
+| Unknown slug /card/* or /c/* | noindex (function returns 404 + noindex) |
+| /__card-ssr-preview?path=... | noindex (always) |
+| All failure/error branches (400/404/410/503/500) | noindex |
+| Netlify Deploy Preview platform | Global platform noindex added to ALL Deploy Preview responses; this is expected Netlify platform behavior and is NOT present in production |
+
+### 23.5 Data Island Privacy Policy
+
+The SSR data island uses the sanitized public card DTO only:
+- Built from `PUBLIC_CARD_SSR_TOP_LEVEL_ALLOWLIST` (slug, status, isActive, business, contact, content, businessHours, bookingSettings, faq, design, gallery, reviews, seo, seoResolved, publicPath, ogPath, entitlements).
+- 17 forbidden top-level keys removed (billing, adminOverride, effectiveBilling, effectiveTier, etc.).
+- Design `*Path` storage paths removed; gallery path/thumbPath/storagePath removed.
+- Entitlements filtered to 8 public keys only.
+- `assertNoForbiddenSsrPayloadFields` assertion runs before any data is served.
+- Production privacy scan result: 0 matches for all forbidden markers.
+
+### 23.6 Production Smoke Results (2026-07-05, PASS)
+
+| Check | /card/digitalyty | /c/zman-lhofsha/vacation-deals |
+|-------|-----------------|-------------------------------|
+| HTTP status | 200 | 200 |
+| div count | 46 | 45 |
+| title count | 1 | 1 |
+| canonical count | 1 | 1 |
+| og:title count | 1 | 1 |
+| JSON-LD script count | 2 | 2 |
+| X-Robots-Tag | ABSENT | ABSENT |
+| data island | present | present |
+| privacy scan | 0 matches | 0 matches |
+
+Social UA: raw OG HTML, no data island. Direct /og/card/: 200 no-cache no noindex. Unknown personal/org routes: 404 no-store noindex.
+
+### 23.7 Rollback Plan
+
+To revert to pre-SSR routing:
+1. Restore `frontend/public/_redirects` lines 7-8 to `/card/*  /spa-shell.html  200` and `/c/*  /spa-shell.html  200`.
+2. Restore `frontend/scripts/check-ssg-output.mjs` REQUIRED_RULES and EXPECTED_SPA_SHELL_SOURCES to expect SPA shell routing.
+3. Rebuild and deploy. Do not use git force-push or destructive operations.
+4. Verify: `/card/digitalyty` returns empty #root (SPA shell), no data island.
+
+### 23.8 Monitoring Notes
+
+- Function logs should show only `Duration` and `Memory Usage` lines after normal requests.
+- No `CARD_SSR_PREVIEW_FAILED` in production function logs (indicates backend/env issue if present).
+- No stack traces in function logs.
+- GSC reindexing: may request re-crawl via Search Console URL Inspection for key published cards after monitoring period.
+- Performance monitoring: card route TTFB increase (Lambda cold start ~100-500ms) can be tracked as separate operator concern.
+
+### 23.9 Anti-Regression Rules
+
+- Do NOT revert routing without a bounded Phase 1 audit and operator approval.
+- Do NOT serve SSR body for social UAs (social must receive raw /og/* backend HTML).
+- Do NOT bypass the SSR sanitizer (`sanitizePublicCardForSsr` + `assertNoForbiddenSsrPayloadFields`).
+- Do NOT add X-Robots-Tag: noindex to real route 200 success responses.
+- Do NOT change the /__card-ssr-preview noindex policy.

@@ -1,3 +1,4 @@
+import { useCallback, useEffect, useRef, useState } from "react";
 import Section from "./Section";
 import styles from "./LocationSection.module.css";
 import { trackClick } from "../../../services/analytics.client";
@@ -20,21 +21,68 @@ function LocationSection({ card }) {
         ? `https://www.google.com/maps/embed/v1/place?key=${encodeURIComponent(mapsApiKey)}&q=${encodeURIComponent(query)}`
         : null;
 
+    // Lazy map state — starts false so iframe is never in the initial DOM.
+    // Set to true by IntersectionObserver (auto, when container nears viewport)
+    // or by explicit user click (manual fallback).
+    const [shouldLoadMap, setShouldLoadMap] = useState(false);
+    const mapBoxRef = useRef(null);
+
+    const loadMap = useCallback(() => setShouldLoadMap(true), []);
+
+    useEffect(() => {
+        if (!embedUrl || shouldLoadMap) return;
+        const el = mapBoxRef.current;
+        if (!el) return;
+
+        if (typeof IntersectionObserver === "undefined") {
+            // IntersectionObserver unavailable — stay with user-click fallback only.
+            return;
+        }
+
+        const io = new IntersectionObserver(
+            (entries) => {
+                if (entries[0]?.isIntersecting) {
+                    setShouldLoadMap(true);
+                    io.disconnect();
+                }
+            },
+            { rootMargin: "200px" },
+        );
+        io.observe(el);
+        return () => io.disconnect();
+    }, [embedUrl, shouldLoadMap]);
+
     return (
         <Section title="מיקום">
             <p className={styles.address}>
                 {address}, {city}
             </p>
             {embedUrl && (
-                <div className={styles.mapBox}>
-                    <iframe
-                        className={styles.mapIframe}
-                        title={`מפה: ${address}, ${city}`}
-                        src={embedUrl}
-                        loading="lazy"
-                        allowFullScreen
-                        referrerPolicy="no-referrer-when-downgrade"
-                    />
+                <div className={styles.mapBox} ref={mapBoxRef}>
+                    {shouldLoadMap ? (
+                        <iframe
+                            className={styles.mapIframe}
+                            title={`מפה: ${address}, ${city}`}
+                            src={embedUrl}
+                            loading="lazy"
+                            allowFullScreen
+                            referrerPolicy="no-referrer-when-downgrade"
+                        />
+                    ) : (
+                        <div className={styles.mapPlaceholder}>
+                            <p className={styles.mapPlaceholderText}>
+                                מפה תיטען בקרבת מקום
+                            </p>
+                            <button
+                                type="button"
+                                className={styles.mapLoadButton}
+                                onClick={loadMap}
+                                aria-label={`פתח מפה: ${address}, ${city}`}
+                            >
+                                הצג מפה
+                            </button>
+                        </div>
+                    )}
                 </div>
             )}
             <div className={styles.navBubbles}>

@@ -1,0 +1,56 @@
+# Cardigo
+
+> Cardigo is a Hebrew-language SaaS platform for creating digital business cards and public business mini-sites for small businesses and self-employed professionals in Israel.
+
+Cardigo helps Israeli businesses create a professional public business page that can include contact actions, WhatsApp messaging, phone calls, navigation links, opening hours, photo galleries, services, customer recommendations, FAQ, lead forms, booking options, QR sharing, analytics, and SEO-friendly public pages.
+
+עברית: Cardigo היא פלטפורמה ליצירת כרטיס ביקור דיגיטלי, מיני אתר אינטרנט, ודף עסקי קטן לעסקים בישראל.
+
+## Core product pages
+
+- [Cardigo homepage](https://cardigo.co.il/): Main product overview for creating a digital business card for a business.
+- [Digital business card examples](https://cardigo.co.il/cards/): Examples and templates that show how Cardigo business cards can look.
+- [Pricing](https://cardigo.co.il/pricing/): Public pricing information, including the free plan and premium options.
+- [Contact Cardigo](https://cardigo.co.il/contact/): Contact and support page for Cardigo.
+
+## Product guides and explanations
+
+- [How to create a digital business card](https://cardigo.co.il/blog/how-to-create-digital-business-card/): Step-by-step explanation of creating a digital business card.
+- [Digital business card examples](https://cardigo.co.il/blog/digital-business-card-examples/): Examples of digital business card use cases.
+- [Digital business card for small businesses](https://cardigo.co.il/blog/digital-card-small-business/): Why small businesses use a digital business card.
+- [Digital presence for small businesses](https://cardigo.co.il/blog/digital-presence-small-business/): How a digital business card supports online business presence.
+- [Free digital business card](https://cardigo.co.il/blog/free-digital-business-card/): Information about creating a free digital business card.
+- [Business website vs digital business card](https://cardigo.co.il/blog/website-for-small-business-vs-digital-card/): Comparison between a full website and a digital business card.
+- [Digital business card price](https://cardigo.co.il/blog/digital-business-card-price/): Pricing context for digital business cards.
+
+## Features and sharing
+
+- [WhatsApp digital business card](https://cardigo.co.il/blog/blog-digital-business-card-whatsapp/): How WhatsApp can be used with a digital business card.
+- [QR code for business card](https://cardigo.co.il/blog/qr-code-for-business-card/): How QR codes can help share a business card.
+- [Cardigo guides](https://cardigo.co.il/guides/): Public guides for using and improving Cardigo cards.
+- [SEO guide for Cardigo cards](https://cardigo.co.il/guides/seo/): Guidance for improving the public visibility of a Cardigo business card.
+- [Choose a Cardigo card design](https://cardigo.co.il/guides/choose-card-design-cardigo/): Guide for choosing a suitable digital card design.
+
+## Use cases by profession
+
+- [Digital business card for real estate agents](https://cardigo.co.il/blog/digital-business-card-real-estate-agent/): Use case for real estate professionals.
+- [Digital business card for architects](https://cardigo.co.il/blog/digital-business-card-architect/): Use case for architects and design professionals.
+- [Digital business card for therapists](https://cardigo.co.il/blog/digital-business-card-therapist/): Use case for therapists and treatment providers.
+- [Digital business card for photographers](https://cardigo.co.il/blog/digital-business-card-photographer/): Use case for photographers.
+- [Digital business card for renovation contractors](https://cardigo.co.il/blog/digital-business-card-renovation-contractor/): Use case for renovation contractors.
+- [Digital business card for insurance agents](https://cardigo.co.il/blog/blog-digital-business-card-insurance-agent/): Use case for insurance agents.
+- [Digital business card for mortgage advisors](https://cardigo.co.il/blog/digital-business-card-mortgage-advisor/): Use case for mortgage advisors.
+- [Digital business card for interior designers](https://cardigo.co.il/blog/digital-business-card-interior-designer/): Use case for interior designers.
+
+## Trust and policies
+
+- [Privacy policy](https://cardigo.co.il/privacy/): Privacy information for Cardigo users and visitors.
+- [Terms of service](https://cardigo.co.il/terms/): Terms for using Cardigo.
+- [Accessibility statement](https://cardigo.co.il/accessibility-statement/): Accessibility information for the Cardigo website.
+- [Payment policy](https://cardigo.co.il/payment-policy/): Public payment policy information.
+
+## Notes for AI agents
+
+Cardigo public marketing pages, guides, and blog articles are the preferred sources for understanding the Cardigo platform. User-created business card pages are customer-generated business pages and should not be treated as official Cardigo product documentation unless the user specifically asks about a particular public card.
+
+Do not infer guaranteed search engine rankings from Cardigo content. Cardigo provides SEO-friendly public pages and tools that can help businesses present themselves online, but search visibility depends on many external factors.
