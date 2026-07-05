@@ -1,20 +1,22 @@
 /**
  * card-ssr-spike.mjs — SSR_P3_NETLIFY_FUNCTION_SSR_RUNTIME_SPIKE_PATH_RESOLUTION_DIAGNOSTIC
  *
- * Phase 2D: Added safe path-resolution diagnostics.
- * ENOENT at read_spa_shell confirmed in Deploy Preview.
- * This version probes multiple candidate paths to find where included_files land.
+ * Phase 2E: Robust path diagnostic — fixes ERR_INVALID_ARG_TYPE from undefined import.meta.url.
  *
- * Candidates probed (spa-shell + entry-server):
- *   cwd_dist            — process.cwd()/dist/...
- *   import_meta_rel     — import.meta.url relative ../../dist/...
- *   import_meta_dir     — __dirname equivalent + dist/...
- *   var_task_dist       — /var/task/dist/...
- *   var_task_fe_dist    — /var/task/frontend/dist/...
+ * Root cause (Phase 2D): buildCandidates called fileURLToPath(import.meta.url) at module scope.
+ * In esbuild-bundled Netlify Lambda, import.meta.url may be undefined, causing
+ * fileURLToPath(undefined) → TypeError: ERR_INVALID_ARG_TYPE before any probing occurred.
  *
- * Logs: SSR_RUNTIME_SPIKE_PATH_DIAGNOSTIC (safe, no abs paths, no secrets)
- * Success: 200 + x-cardigo-ssr: 1 + marker
- * Failure: 500 + x-cardigo-ssr-spike-failed-stage + safe body only
+ * Fix: candidate array with explicit type guards. isUsablePathValue() checks before any
+ * fs.access/stat/readFile/import call. Unsafe candidates logged as { invalid: true }.
+ * SSR_RUNTIME_SPIKE_PATH_DIAGNOSTIC always logged before any throw.
+ *
+ * Candidates probed:
+ *   cwd           — process.cwd() / relSuffix   (always safe)
+ *   var_task      — /var/task/ relSuffix         (always safe)
+ *   var_task_fe   — /var/task/frontend/ relSuffix (always safe)
+ *   meta_rel      — import.meta.url up 2 levels  (guarded — may be undefined in Lambda)
+ *   meta_dir      — import.meta.url same dir     (guarded — may be undefined in Lambda)
  *
  * NOT real card SSR. Diagnostic only. Route: /__ssr-runtime-spike.
  */
@@ -38,50 +40,88 @@ function sanitizeMessage(raw) {
     return s.slice(0, 240);
 }
 
-// Probe a single file path candidate safely. Returns existence + file size.
-// Logs nothing by itself — caller logs the aggregated result.
-async function probeCandidate(absPath) {
+// Guard: only non-empty strings or URL instances are safe path arguments.
+function isUsablePathValue(value) {
+    if (value instanceof URL) return true;
+    if (typeof value === "string" && value.length > 0) return true;
+    return false;
+}
+
+// Probe a single candidate safely. Returns safe result or invalid marker.
+// Never throws. Never exposes absolute path in result.
+async function probeCandidate(candidate) {
+    const { key, pathValue } = candidate;
+    // Guard: skip fs calls entirely for invalid path values.
+    if (!isUsablePathValue(pathValue)) {
+        return {
+            key,
+            exists: false,
+            isFile: false,
+            invalid: true,
+            type: typeof pathValue,
+        };
+    }
     try {
-        await access(absPath, fsConstants.R_OK);
-        const info = await stat(absPath);
-        return { exists: true, isFile: info.isFile(), size: info.size };
+        await access(pathValue, fsConstants.R_OK);
+        const info = await stat(pathValue);
+        return {
+            key,
+            exists: true,
+            isFile: info.isFile(),
+            size: info.size,
+        };
     } catch {
-        return { exists: false, isFile: false, size: 0 };
+        return { key, exists: false, isFile: false };
     }
 }
 
-// Build candidate absolute paths for a relative suffix like "dist/spa-shell.html".
-// Returns an object: { key: absPath, ... }
+// Safely compute import.meta.url-relative path without throwing.
+// Returns null if import.meta.url is not a valid string URL.
+function safeMetaRelPath(relSuffix) {
+    try {
+        if (typeof import.meta.url !== "string" || !import.meta.url) {
+            return null;
+        }
+        const metaDir = dirname(fileURLToPath(import.meta.url));
+        return join(metaDir, relSuffix);
+    } catch {
+        return null;
+    }
+}
+
+// Build candidate array. Each element has { key, pathValue }.
+// pathValue may be null/undefined if computation failed — guarded by isUsablePathValue.
 function buildCandidates(relSuffix) {
-    const cwd = process.cwd();
-    // import.meta.url points to this .mjs file in the Lambda bundle.
-    // From there: ../../<relSuffix> navigates up through netlify/functions/ to base.
-    const metaDir = dirname(fileURLToPath(import.meta.url));
-    return {
-        cwd_dist: join(cwd, relSuffix),
-        import_meta_rel: join(metaDir, "../..", relSuffix),
-        import_meta_dir: join(metaDir, relSuffix),
-        var_task_dist: "/var/task/" + relSuffix,
-        var_task_fe_dist: "/var/task/frontend/" + relSuffix,
-    };
+    return [
+        { key: "cwd", pathValue: join(process.cwd(), relSuffix) },
+        { key: "var_task", pathValue: "/var/task/" + relSuffix },
+        { key: "var_task_fe", pathValue: "/var/task/frontend/" + relSuffix },
+        {
+            key: "meta_rel",
+            pathValue: safeMetaRelPath("../.." + "/" + relSuffix),
+        },
+        { key: "meta_dir", pathValue: safeMetaRelPath(relSuffix) },
+    ];
 }
 
 // Probe all candidates and log safe diagnostics. Returns first existing abs path or null.
+// Always logs SSR_RUNTIME_SPIKE_PATH_DIAGNOSTIC before returning or throwing.
 async function findExistingCandidate(relSuffix, logLabel) {
     const candidates = buildCandidates(relSuffix);
     const results = {};
-    let firstFound = null;
+    let firstFoundPath = null;
 
-    for (const [key, absPath] of Object.entries(candidates)) {
-        const probe = await probeCandidate(absPath);
+    for (const candidate of candidates) {
+        const probe = await probeCandidate(candidate);
         // Safe log entry: key and result only — no absolute path in payload.
-        results[key] = {
+        results[candidate.key] = {
             exists: probe.exists,
             isFile: probe.isFile,
             ...(probe.exists ? { size: probe.size } : {}),
+            ...(probe.invalid ? { invalid: true, type: probe.type } : {}),
         };
-        if (probe.exists && probe.isFile && firstFound === null) {
-            firstFound = absPath;
+        if (probe.exists && probe.isFile && firstFoundPath === null) {
+            firstFoundPath = candidate.pathValue;
         }
     }
 
@@ -89,27 +129,24 @@ async function findExistingCandidate(relSuffix, logLabel) {
         label: logLabel,
         candidates: results,
     });
-    return firstFound;
+    return firstFoundPath;
 }
 
 export const handler = async (event, context) => {
     let stage = "init";
     try {
         stage = "compute_paths";
-        // (module-level constants retained as reference; resolution now dynamic)
 
-        // Stage: read_spa_shell — probe candidates first, use first found
+        // Stage: read_spa_shell — probe candidates, use first found
         stage = "read_spa_shell";
         const spaShellPath = await findExistingCandidate(
             "dist/spa-shell.html",
             "spa_shell",
         );
-        if (!spaShellPath) {
+        if (!isUsablePathValue(spaShellPath)) {
             throw Object.assign(
                 new Error("spa-shell.html not found in any candidate path"),
-                {
-                    code: "ENOENT_ALL_CANDIDATES",
-                },
+                { code: "ENOENT_ALL_CANDIDATES" },
             );
         }
         const shellHtml = await readFile(spaShellPath, "utf-8");
@@ -120,14 +157,12 @@ export const handler = async (event, context) => {
             "dist_ssr/entry-server.js",
             "ssr_entry",
         );
-        if (!ssrEntryPath) {
+        if (!isUsablePathValue(ssrEntryPath)) {
             throw Object.assign(
                 new Error(
                     "dist_ssr/entry-server.js not found in any candidate path",
                 ),
-                {
-                    code: "ENOENT_ALL_CANDIDATES",
-                },
+                { code: "ENOENT_ALL_CANDIDATES" },
             );
         }
         const entryModule = await import(pathToFileURL(ssrEntryPath).href);
