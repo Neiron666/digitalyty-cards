@@ -485,7 +485,12 @@ router.get("/og/card/:slug", async (req, res) => {
     // seo.canonicalUrl is ignored: same-origin and same-domain cross-card canonicals
     // are both forbidden — the only valid canonical for a card route is the card's own URL.
 
-    const dto = toCardDTO(card, now, { includePrivate: false, org: null });
+    const dto = toCardDTO(card, now, {
+        includePrivate: false,
+        org: null,
+        stripBillingDetails: true,
+        publicEntitlementsOnly: true,
+    });
     const dtoForProjection = {
         ...dto,
         seo: { ...(dto.seo || {}), robots: robotsValue },
@@ -577,7 +582,12 @@ router.get("/og/c/:orgSlug/:slug", async (req, res) => {
     // seo.canonicalUrl is ignored: same-origin and same-domain cross-card canonicals
     // are both forbidden — the only valid canonical for a card route is the card's own URL.
 
-    const dto = toCardDTO(card, now, { includePrivate: false, org });
+    const dto = toCardDTO(card, now, {
+        includePrivate: false,
+        org,
+        stripBillingDetails: true,
+        publicEntitlementsOnly: true,
+    });
     const dtoForProjection = {
         ...dto,
         seo: { ...(dto.seo || {}), robots: robotsValue },

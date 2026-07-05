@@ -140,6 +140,7 @@
 
 .submitBtn {
     font-family: inherit;
+    width: 100%;
     font-size: var(--fs-body);
     font-weight: 700;
     line-height: 1.4;
@@ -150,7 +151,7 @@
     cursor: pointer;
     background: linear-gradient(135deg, #d4af37 0%, #c5962c 40%, #e6c44d 100%);
     color: #0f172a;
-    align-self: flex-start;
+    align-self: center;
     transition:
         opacity 0.18s ease,
         transform 0.18s ease;
@@ -189,7 +190,7 @@
     font-weight: 700;
     text-decoration: none;
     cursor: pointer;
-    align-self: flex-start;
+    align-self: center;
 }
 
 /* ── Reset button (after success) ────────────────────────── */

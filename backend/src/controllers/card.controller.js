@@ -58,6 +58,8 @@ import {
 } from "../utils/consentVersions.js";
 import { isUserTrialEligible } from "../config/trial.js";
 import SlugRedirect from "../models/SlugRedirect.model.js";
+import { getSiteUrl } from "../utils/siteUrl.util.js";
+import { toCardPublicSeoDTO } from "../utils/cardPublicProjection.util.js";
 
 function resolveCleanupBucketsForCard(card) {
     const isAnonymousOwned = !card?.user && Boolean(card?.anonymousId);
@@ -2745,13 +2747,28 @@ export async function getCardBySlug(req, res) {
         .select("adminTier adminTierUntil")
         .lean();
 
-    const dto = toCardDTO(card, now, { user: userTier });
+    const dto = toCardDTO(card, now, {
+        user: userTier,
+        stripBillingDetails: true,
+        publicEntitlementsOnly: true,
+    });
     if (dto?.slug) {
         dto.publicPath = `/card/${dto.slug}`;
         dto.ogPath = `/og/card/${dto.slug}`;
     }
 
     stripPremiumLocationFieldsForPublicDto(dto);
+
+    if (dto.publicPath) {
+        const siteUrl = getSiteUrl();
+        const publicUrl = `${siteUrl}${dto.publicPath}`;
+        const {
+            jsonLdItems: _jsonLdItems,
+            robotsResolved,
+            ...seoResolved
+        } = toCardPublicSeoDTO(dto, { siteUrl, publicUrl });
+        dto.seoResolved = { ...seoResolved, robots: robotsResolved };
+    }
 
     if (card.status !== "published") {
         setDraftNoStore(res);
@@ -2858,7 +2875,12 @@ export async function getCompanyCardByOrgSlugAndSlug(req, res) {
         .select("adminTier adminTierUntil")
         .lean();
 
-    const dto = toCardDTO(card, now, { user: userTier, org });
+    const dto = toCardDTO(card, now, {
+        user: userTier,
+        org,
+        stripBillingDetails: true,
+        publicEntitlementsOnly: true,
+    });
     if (dto?.slug) {
         const canonicalOrgSlug = org?.slug ? String(org.slug) : orgSlug;
         dto.publicPath = `/c/${canonicalOrgSlug}/${dto.slug}`;
@@ -2866,6 +2888,17 @@ export async function getCompanyCardByOrgSlugAndSlug(req, res) {
     }
 
     stripPremiumLocationFieldsForPublicDto(dto);
+
+    if (dto.publicPath) {
+        const siteUrl = getSiteUrl();
+        const publicUrl = `${siteUrl}${dto.publicPath}`;
+        const {
+            jsonLdItems: _jsonLdItems,
+            robotsResolved,
+            ...seoResolved
+        } = toCardPublicSeoDTO(dto, { siteUrl, publicUrl });
+        dto.seoResolved = { ...seoResolved, robots: robotsResolved };
+    }
 
     if (card.status !== "published") {
         setDraftNoStore(res);

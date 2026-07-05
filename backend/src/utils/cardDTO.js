@@ -99,6 +99,47 @@ export function computeEntitlements(
     };
 }
 
+// Returns the minimum public-safe entitlement projection for public card DTOs.
+// Allowlist-based: future private entitlement keys cannot accidentally leak into
+// JSON API responses or SSR hydration payloads.
+// Only invoked when publicEntitlementsOnly=true; does not mutate the input object.
+function toPublicEntitlements(ent) {
+    const safe = ent && typeof ent === "object" ? ent : {};
+    return {
+        canUseServices: safe.canUseServices === true,
+        canUseLeads: safe.canUseLeads === true,
+        canUseBooking: safe.canUseBooking === true,
+        canUseVideo: safe.canUseVideo === true,
+        canUseBusinessHours: safe.canUseBusinessHours === true,
+        maxContentParagraphs: Number.isFinite(safe.maxContentParagraphs)
+            ? safe.maxContentParagraphs
+            : 1,
+    };
+}
+
+// Internal raw storage-path fields on card.design. These duplicate the public/
+// signed URL fields (backgroundImage/coverImage/avatarImage/logo) and are
+// backend-only. They must never appear in a public (non-private) DTO.
+const INTERNAL_DESIGN_PATH_FIELDS = [
+    "backgroundImagePath",
+    "coverImagePath",
+    "avatarImagePath",
+    "logoPath",
+];
+
+// Returns a shallow copy of the design object with internal raw storage-path
+// fields removed. Public URL fields are intentionally preserved for rendering.
+function stripInternalDesignPaths(design) {
+    if (!design || typeof design !== "object" || Array.isArray(design)) {
+        return design;
+    }
+    const next = { ...design };
+    for (const key of INTERNAL_DESIGN_PATH_FIELDS) {
+        delete next[key];
+    }
+    return next;
+}
+
 function pickSafeCardFields(cardObj) {
     return {
         _id: cardObj._id,
@@ -133,6 +174,8 @@ export function toCardDTO(
         user = null,
         exposeSlugPolicy = false,
         org = null,
+        stripBillingDetails = false,
+        publicEntitlementsOnly = false,
     } = {},
 ) {
     if (!card) return null;
@@ -242,18 +285,17 @@ export function toCardDTO(
         };
     }
 
-    // Anonymous cards: never leak internal storage paths in the default DTO.
+    // Public DTOs must never carry internal raw storage-path fields on design.
+    // These duplicate the public/signed URL fields and are backend-only.
     // Paths remain available only via includePrivate=true (admin/debug).
-    if (!includePrivate && isAnonymousOwned) {
+    if (!includePrivate) {
         if (dto.design && typeof dto.design === "object") {
-            const nextDesign = { ...dto.design };
-            delete nextDesign.backgroundImagePath;
-            delete nextDesign.coverImagePath;
-            delete nextDesign.avatarImagePath;
-            delete nextDesign.logoPath;
-            dto.design = nextDesign;
+            dto.design = stripInternalDesignPaths(dto.design);
         }
 
+        // Public DTOs must never carry raw internal storage-path fields on gallery items.
+        // These duplicate the public URL fields (url/thumbUrl) and are backend-only.
+        // Paths remain available only via includePrivate=true (admin/debug).
         if (Array.isArray(dto.gallery)) {
             dto.gallery = dto.gallery.map((item) => {
                 if (!item || typeof item !== "object" || Array.isArray(item)) {
@@ -266,6 +308,16 @@ export function toCardDTO(
                 return next;
             });
         }
+    }
+
+    // SSR_P2_EFFECTIVE_BILLING_POLICY_LOCK: Public card API responses must not
+    // expose detailed subscription/billing state (source, plan, expiry dates).
+    // Defaults to false for backward compat; only public card routes opt in.
+    if (stripBillingDetails) {
+        delete dto.effectiveBilling;
+        delete dto.effectiveTier;
+        delete dto.tierSource;
+        delete dto.tierUntil;
     }
 
     if (includePrivate) {
@@ -375,6 +427,17 @@ export function toCardDTO(
         ) {
             delete dto.contact.customActions;
         }
+    }
+
+    // SSR_P2_PUBLIC_DTO_ENTITLEMENT_MINIMIZATION: Replace full entitlements with
+    // an allowlist-based public projection for public card API responses.
+    // Prevents editor/admin/subscription-tier fields (analyticsLevel, canEdit,
+    // lockedReason, galleryLimit, etc.) from leaking via public JSON API or
+    // future SSR hydration payloads. Allowlist is future-safe: new private
+    // entitlement keys cannot accidentally leak.
+    // Defaults to false for backward compat; only public card routes opt in.
+    if (publicEntitlementsOnly) {
+        dto.entitlements = toPublicEntitlements(dto.entitlements);
     }
 
     return dto;

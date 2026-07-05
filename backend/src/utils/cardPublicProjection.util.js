@@ -75,6 +75,14 @@ const FORBIDDEN_TOP_LEVEL_KEYS = Object.freeze([
     "paymentToken",
     "apiToken",
     "secret",
+    // Computed billing/tier residue: present in default toCardDTO output but
+    // must never appear in a public OG/SSR projection DTO. Added in
+    // SSR_P2_OG_DTO_SERIALIZATION_GUARD so assertPublicDto structurally
+    // rejects any DTO that still carries these fields.
+    "effectiveBilling",
+    "effectiveTier",
+    "tierSource",
+    "tierUntil",
 ]);
 
 /* ── pure text helpers ─────────────────────────────────────────── */

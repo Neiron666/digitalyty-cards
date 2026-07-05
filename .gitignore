@@ -94,3 +94,12 @@ frontend/.env.*.local
 # Closed-contour local scan scripts
 /run_scans_final.ps1
 
+# Ephemeral audit/smoke artifacts — Cardigo SSR-readiness workstream
+/api-d.json
+/og-d.html
+/tmp_*.txt
+/_tmp_*.html
+/_p1b_*.txt
+*.tmp
+/backend/cards-*.html
+

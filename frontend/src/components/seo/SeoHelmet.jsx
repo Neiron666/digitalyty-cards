@@ -209,7 +209,9 @@ export default function SeoHelmet({
                 : "none"
         : "none";
 
-    const [suppressJsonLd, setSuppressJsonLd] = useState(false);
+    const [suppressJsonLd, setSuppressJsonLd] = useState(() =>
+        hasTrustedEdgeJsonLd(canonicalUrl),
+    );
     useEffect(() => {
         setSuppressJsonLd(hasTrustedEdgeJsonLd(canonicalUrl));
     }, [canonicalUrl]);
