@@ -144,6 +144,21 @@ export const handler = async (event, context) => {
                 body: "SSR_PREVIEW_UNAVAILABLE: backend origin not configured",
             };
         }
+        const proxySecret = process.env.CARDIGO_PROXY_SHARED_SECRET ?? "";
+        if (!proxySecret) {
+            console.error("CARD_SSR_PREVIEW_FAILED", {
+                stage,
+                reason: "CARDIGO_PROXY_SHARED_SECRET missing",
+            });
+            return {
+                statusCode: 503,
+                headers: {
+                    "content-type": "text/plain; charset=utf-8",
+                    "cache-control": "no-store",
+                },
+                body: "SSR_PREVIEW_UNAVAILABLE: proxy secret not configured",
+            };
+        }
 
         // Stage: validate_path
         stage = "validate_path";
@@ -259,7 +274,10 @@ export const handler = async (event, context) => {
         try {
             apiResponse = await fetch(apiUrl, {
                 method: "GET",
-                headers: { Accept: "application/json" },
+                headers: {
+                    Accept: "application/json",
+                    "x-cardigo-proxy-secret": proxySecret,
+                },
                 signal: controller.signal,
             });
         } finally {
