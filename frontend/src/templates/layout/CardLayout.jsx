@@ -173,6 +173,9 @@ export default function CardLayout({
                                               ? `תמונת פרופיל של ${name}`
                                               : "תמונת פרופיל של העסק"
                                     }
+                                    width={480}
+                                    height={480}
+                                    decoding="async"
                                 />
                             </div>
                         )}

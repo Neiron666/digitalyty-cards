@@ -237,6 +237,8 @@ function GallerySection({ card, mode }) {
                             src={it.thumbUrl}
                             alt={it.alt}
                             className={styles.image}
+                            width={480}
+                            height={480}
                             loading="lazy"
                             decoding="async"
                         />

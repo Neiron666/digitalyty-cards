@@ -3863,6 +3863,8 @@ function GallerySection({ card: card2, mode }) {
             src: it.thumbUrl,
             alt: it.alt,
             className: styles$a.image,
+            width: 480,
+            height: 480,
             loading: "lazy",
             decoding: "async"
           }
@@ -5804,7 +5806,10 @@ function CardLayout({
                 "img",
                 {
                   src: avatar,
-                  alt: name2 && subtitle2 ? `תמונת פרופיל של ${name2} - ${subtitle2}` : name2 ? `תמונת פרופיל של ${name2}` : "תמונת פרופיל של העסק"
+                  alt: name2 && subtitle2 ? `תמונת פרופיל של ${name2} - ${subtitle2}` : name2 ? `תמונת פרופיל של ${name2}` : "תמונת פרופיל של העסק",
+                  width: 480,
+                  height: 480,
+                  decoding: "async"
                 }
               )
             }
