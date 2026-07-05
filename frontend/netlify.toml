@@ -6,3 +6,12 @@
 [functions.card-ssr-spike]
   included_files = ["dist_ssr/**", "dist/spa-shell.html"]
   node_bundler = "esbuild"
+  external_node_modules = [
+    "react",
+    "react-dom",
+    "react-router-dom",
+    "axios",
+    "react-fast-compare",
+    "invariant",
+    "shallowequal"
+  ]
