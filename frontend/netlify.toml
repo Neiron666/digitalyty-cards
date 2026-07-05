@@ -4,5 +4,5 @@
 # Adds only the card-ssr-spike function bundler and included artifact paths.
 
 [functions.card-ssr-spike]
-  included_files = ["dist_ssr/**", "dist/spa-shell.html"]
+  included_files = ["package.json", "dist_ssr/**", "dist/spa-shell.html"]
   node_bundler = "esbuild"
