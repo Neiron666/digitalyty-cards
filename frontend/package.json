@@ -7,7 +7,7 @@
         "dev": "vite",
         "build": "npm run build:client && npm run build:ssr && npm run generate:ssg && npm run check:ssg-output",
         "build:client": "vite build",
-        "build:ssr": "vite build --ssr src/entry-server.jsx",
+        "build:ssr": "vite build --ssr src/entry-server.jsx && node scripts/write-ssr-package-type.mjs",
         "generate:ssg": "node scripts/generate-static.mjs",
         "check:ssg-output": "node scripts/check-ssg-output.mjs",
         "lint": "eslint .",
