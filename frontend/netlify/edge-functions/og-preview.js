@@ -326,6 +326,27 @@ function injectBodyFallback(sanitizedBody, shellHtml) {
     );
 }
 
+// Extracts the robots meta content value from the ogHtml <head> block.
+// Returns the lowercase content string, or null on any of:
+// - head block not found, no robots meta tag, no content attr, any parse error.
+// Caller treats null as not cacheable (fail-closed).
+function extractRobotsContent(ogHtml) {
+    try {
+        const headMatch = ogHtml.match(/<head[^>]*>([\s\S]*?)<\/head>/i);
+        if (!headMatch) return null;
+        const ogHead = headMatch[1];
+        const robotsMatch = ogHead.match(
+            /<meta\s[^>]*name=["']robots["'][^>]*>/i,
+        );
+        if (!robotsMatch) return null;
+        const contentMatch = robotsMatch[0].match(/content=["']([^"']*)["']/i);
+        if (!contentMatch) return null;
+        return contentMatch[1].toLowerCase();
+    } catch {
+        return null;
+    }
+}
+
 // Unified browser+crawler enriched-shell helper for /card and /c routes.
 // Behavior parity: both UA classes receive the same enriched SPA shell body
 // for 200 backend responses. Differs only on 404/410: crawlers get propagated
@@ -441,16 +462,31 @@ async function serveCardEnrichedShell(backendPath, context, { isCrawler }) {
         } catch {
             // Cover preload injection failed — continue with finalHtml as-is.
         }
+        const robotsContent = extractRobotsContent(ogHtml);
+        const isExplicitlyIndexable =
+            robotsContent !== null && !robotsContent.includes("noindex");
         return new Response(finalHtml, {
             status: 200,
             headers: {
                 "content-type": "text/html; charset=utf-8",
-                // P2C: Dynamic SEO metadata (robots/canonical/JSON-LD) depends on
-                // billing/adminTier/org entitlement. no-store prevents a stale
-                // noindex entry from being served after a card becomes indexable.
-                // Vary: User-Agent is REQUIRED because the same URL returns a
-                // different body to social UAs (backend OG body verbatim).
-                "cache-control": "no-store, max-age=0",
+                // PUBLIC_CARD_CONDITIONAL_EDGE_CACHE_PHASE_2A_MINIMAL:
+                // CDN cache only for explicitly indexable published cards.
+                // isExplicitlyIndexable requires robots meta explicitly present
+                // AND content not containing "noindex" (fail-closed).
+                // Netlify-CDN-Cache-Control scopes CDN TTL to 30s without
+                // affecting browser cache (max-age=0 must-revalidate).
+                // Absent robots, parse failure, or noindex → no-store.
+                // Vary: User-Agent REQUIRED — same URL returns different body
+                // to social UAs (backend OG HTML verbatim).
+                ...(isExplicitlyIndexable
+                    ? {
+                          "Netlify-CDN-Cache-Control":
+                              "public, max-age=30, stale-while-revalidate=10",
+                          "cache-control": "public, max-age=0, must-revalidate",
+                      }
+                    : {
+                          "cache-control": "no-store, max-age=0",
+                      }),
                 vary: "User-Agent",
             },
         });
@@ -477,6 +513,7 @@ export const config = {
         "/guides",
     ],
     method: ["GET"],
+    cache: "manual",
 };
 
 export default async function ogPreview(request, context) {
