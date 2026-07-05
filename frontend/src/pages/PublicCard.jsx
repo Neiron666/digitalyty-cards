@@ -203,15 +203,6 @@ function PublicCard() {
     // useInitialDetailData returns null when no data island exists (SPA navigation, local dev).
     const routeKey = orgSlug ? `c/${orgSlug}/${slug}` : `card/${slug}`;
     const initialCardData = useInitialDetailData(routeKey);
-    if (typeof window === "undefined") {
-        console.log("CARD_SSR_PROBE_PUBLIC_CARD", {
-            slug,
-            orgSlugPresent: Boolean(orgSlug),
-            routeKey,
-            hasInitialCardData: Boolean(initialCardData),
-            loadingInitial: !initialCardData,
-        });
-    }
 
     // Seed initial state from SSR data island when present.
     // Lazy initializers run synchronously during both client mount and SSR renderToString,
