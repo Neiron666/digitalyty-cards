@@ -145,6 +145,7 @@ const FORBIDDEN_TOP_LEVEL = new Set([
     "trialDeleteAt",
     "createdAt",
     "updatedAt",
+    "flags",
 ]);
 
 const ENTITLEMENTS_ALLOWLIST = new Set([
@@ -161,10 +162,34 @@ const ENTITLEMENTS_ALLOWLIST = new Set([
 
 const DESIGN_PATH_SUFFIX_RE = /Path$/;
 
+const PUBLIC_CARD_SSR_TOP_LEVEL_ALLOWLIST = new Set([
+    "slug",
+    "status",
+    "isActive",
+    "business",
+    "contact",
+    "content",
+    "businessHours",
+    "bookingSettings",
+    "faq",
+    "design",
+    "gallery",
+    "reviews",
+    "seo",
+    "seoResolved",
+    "publicPath",
+    "ogPath",
+    "entitlements",
+]);
+
 function sanitizePublicCardForSsr(rawCard) {
     if (!rawCard || typeof rawCard !== "object") return rawCard;
-    const card = { ...rawCard };
-    // Remove forbidden top-level fields
+    // Build from explicit allowlist only — unknown top-level keys are never copied
+    const card = {};
+    for (const key of PUBLIC_CARD_SSR_TOP_LEVEL_ALLOWLIST) {
+        if (key in rawCard) card[key] = rawCard[key];
+    }
+    // Belt-and-suspenders: also remove known-forbidden keys in case allowlist changes
     for (const key of FORBIDDEN_TOP_LEVEL) {
         delete card[key];
     }
@@ -228,6 +253,8 @@ const FORBIDDEN_SSR_MARKERS = [
     "avatarImagePath",
     "logoPath",
     "thumbPath",
+    "flags",
+    "isTemplateSeeded",
 ];
 
 function assertNoForbiddenSsrPayloadFields(card) {
