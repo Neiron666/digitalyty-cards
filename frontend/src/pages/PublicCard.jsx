@@ -4,6 +4,7 @@ import { getCardBySlug, getCompanyCardBySlug } from "../services/cards.service";
 import { trackView } from "../services/analytics.client";
 import { getCardConsentState } from "../utils/cookieConsent";
 import { DEFAULT_OG_IMAGE_PATH } from "../utils/seoConstants.js";
+import { useInitialDetailData } from "../seo/initialDetailData";
 import CardOwnerConsentBanner from "../components/ui/CardOwnerConsentBanner/CardOwnerConsentBanner";
 import CardRenderer from "../components/card/CardRenderer";
 import SeoHelmet, {
@@ -195,8 +196,24 @@ function sanitizeLocationFieldsForNonPremiumJsonLd(rawJsonLd) {
 
 function PublicCard() {
     const { slug, orgSlug } = useParams();
-    const [card, setCard] = useState(null);
-    const [loading, setLoading] = useState(true);
+
+    // SSR_P3_PUBLIC_CARD_INITIAL_DATA_CONSUMPTION_MINIMAL:
+    // Derive route key and consume SSR-provided initial card data from the data island.
+    // Key contract: personal = card/${slug}, org = c/${orgSlug}/${slug}.
+    // useInitialDetailData returns null when no data island exists (SPA navigation, local dev).
+    const routeKey = orgSlug ? `c/${orgSlug}/${slug}` : `card/${slug}`;
+    const initialCardData = useInitialDetailData(routeKey);
+
+    // Seed initial state from SSR data island when present.
+    // Lazy initializers run synchronously during both client mount and SSR renderToString,
+    // allowing PublicCard to render past the loading guard without a client-side fetch.
+    const [card, setCard] = useState(() => initialCardData ?? null);
+    const [loading, setLoading] = useState(!initialCardData);
+    // Track which routeKey owns the current `card` state — guards against stale renders
+    // when slug/orgSlug changes before the data-loading useEffect fires.
+    const [loadedRouteKey, setLoadedRouteKey] = useState(() =>
+        initialCardData ? routeKey : null,
+    );
     const [error, setError] = useState(null);
     const [errorStatus, setErrorStatus] = useState(null);
     const trackedRef = useRef(false);
@@ -214,16 +231,43 @@ function PublicCard() {
     }, []);
 
     useEffect(() => {
+        // If initial card data was provided for this route (via SSR data island),
+        // seed state from it and skip the API fetch.
+        // On SPA navigation: routeKey changes, initialCardData re-evaluates via context.
+        // If initialCardData is non-null for the new key, use it; if null, fetch as before.
+        if (initialCardData) {
+            setCard(initialCardData);
+            setLoadedRouteKey(routeKey);
+            setLoading(false);
+            setError(null);
+            setErrorStatus(null);
+            return;
+        }
+
+        // SSR_P3_RACE_ERROR_FIX: cancellation flag prevents stale async responses
+        // from writing state after the effect has been cleaned up (slug/orgSlug changed).
+        let cancelled = false;
+
         async function loadCard() {
+            // Disown previous card immediately so render guard shows loading
+            // on any commit that occurs before this useEffect fires.
+            setLoadedRouteKey(null);
+            setCard(null);
+            setLoading(true);
             setError(null);
             setErrorStatus(null);
             try {
                 const data = orgSlug
                     ? await getCompanyCardBySlug(orgSlug, slug)
                     : await getCardBySlug(slug);
+                // Guard: discard response if this effect was already cleaned up.
+                if (cancelled) return;
                 slugMovedNavigatedRef.current = false;
                 setCard(data);
+                setLoadedRouteKey(routeKey);
             } catch (err) {
+                // Guard: discard error if this effect was already cleaned up.
+                if (cancelled) return;
                 const status = err?.response?.status;
                 const data = err?.response?.data;
 
@@ -244,16 +288,23 @@ function PublicCard() {
                     }
                 }
 
+                // Mark error ownership with current routeKey so stale errors
+                // from previous routes are not shown under the new route.
                 if (status === 410) setError("הניסיון הסתיים");
                 else setError("כרטיס לא נמצא");
                 setErrorStatus(typeof status === "number" ? status : null);
+                setLoadedRouteKey(routeKey);
             } finally {
-                setLoading(false);
+                // Do not clear the loading state for a stale (cancelled) request.
+                if (!cancelled) setLoading(false);
             }
         }
 
         loadCard();
-    }, [slug, orgSlug, navigate]);
+        return () => {
+            cancelled = true;
+        };
+    }, [slug, orgSlug, navigate, initialCardData]);
 
     useEffect(() => {
         if (!card?.slug || trackedRef.current) return;
@@ -267,7 +318,17 @@ function PublicCard() {
         if (fallback) fallback.remove();
     }, [card]);
 
-    if (loading) return hasEdgeFallback ? null : <p>טוען כרטיס...</p>;
+    // Synchronous stale-render guard: show loading when card exists but belongs
+    // to a previous routeKey. Prevents old card content from rendering between
+    // a slug/orgSlug change and the data-loading useEffect commit.
+    const hasCurrentRouteCard = Boolean(card && loadedRouteKey === routeKey);
+    if (
+        loading ||
+        (card && !hasCurrentRouteCard) ||
+        (error && loadedRouteKey !== routeKey)
+    ) {
+        return hasEdgeFallback ? null : <p>טוען כרטיס...</p>;
+    }
     if (error) {
         const errorTitle =
             errorStatus === 410
@@ -307,10 +368,11 @@ function PublicCard() {
         card.content?.aboutText?.slice(0, 160) ||
         "כרטיס ביקור דיגיטלי לעסקים – Cardigo";
 
-    const title = card.seo?.title || fallbackTitle;
-    const description = card.seo?.description || fallbackDescription;
+    const title = card.seoResolved?.title || fallbackTitle;
+    const description = card.seoResolved?.description || fallbackDescription;
 
     const image =
+        card.seoResolved?.ogImage ||
         card.design?.coverImage ||
         card.design?.logo ||
         getPublicOrigin() + DEFAULT_OG_IMAGE_PATH;
@@ -320,13 +382,15 @@ function PublicCard() {
         !cleanedTitle ||
         cleanedTitle === "כרטיס ביקור דיגיטלי" ||
         /\s[-–]\s*כרטיס ביקור דיגיטלי$/.test(cleanedTitle);
-    const imageAlt = !isGenericAlt
-        ? cleanedTitle
-        : cleanPlatformBrand(
-              String(card.business?.name || "")
-                  .replace(/\s+/g, " ")
-                  .trim(),
-          ) || "כרטיס ביקור דיגיטלי";
+    const imageAlt =
+        card.seoResolved?.ogImageAlt ||
+        (!isGenericAlt
+            ? cleanedTitle
+            : cleanPlatformBrand(
+                  String(card.business?.name || "")
+                      .replace(/\s+/g, " ")
+                      .trim(),
+              ) || "כרטיס ביקור דיגיטלי");
 
     const publicOrigin = getPublicOrigin();
 
@@ -343,8 +407,8 @@ function PublicCard() {
               : "");
     const canonicalResolved = normalizeAbsoluteUrl(publicOrigin, selfPath);
 
-    const canonicalUrl = canonicalResolved;
-    const url = canonicalResolved;
+    const canonicalUrl = card.seoResolved?.canonicalUrl || canonicalResolved;
+    const url = canonicalUrl;
 
     const faqJsonLd = buildFaqJsonLd(card, canonicalResolved);
 
@@ -382,7 +446,7 @@ function PublicCard() {
                     title={title}
                     description={description}
                     suppressSiteName={true}
-                    robots={card.seo?.robots}
+                    robots={card.seoResolved?.robots || card.seo?.robots}
                     googleSiteVerification={card.seo?.googleSiteVerification}
                     facebookDomainVerification={
                         card.seo?.facebookDomainVerification
