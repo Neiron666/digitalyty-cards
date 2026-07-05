@@ -53,19 +53,42 @@ function stripFunctionPrefix(eventPath) {
 
 // Returns { cardPath, isRealRoute, source }.
 // Priority:
-//   1. Real route: event.path starts with function prefix + "/card/" or "/c/"
-//      (set by Netlify when _redirects uses path-forwarding destination).
-//   2. Preview: event.queryStringParameters.path (explicit ?path= query param).
+//   1. Real route (A): event.path starts with function prefix + "/card/" or "/c/"
+//      (Netlify path-forwarding destination — defensive, may not trigger in practice).
+//   2. Real route (B): event.path is the original public path matching PERSONAL/ORG regex
+//      (actual Netlify behavior: event.path = "/card/:slug" or "/c/:org/:slug").
+//   3. Preview: event.queryStringParameters.path (explicit ?path= query param).
 // Never reads rawUrl, referer, host, or user-supplied mode param.
 function resolveRequestedCardPath(event) {
     const eventPath = getString(event?.path);
     const prefix = CARD_SSR_FUNCTION_PREFIX;
+
+    // Branch A: function-prefix-forwarded (defensive, preserved for correctness)
     const isForwardedCard = eventPath.startsWith(prefix + "/card/");
     const isForwardedOrg = eventPath.startsWith(prefix + "/c/");
     if (isForwardedCard || isForwardedOrg) {
         const stripped = stripFunctionPrefix(eventPath);
-        return { cardPath: stripped, isRealRoute: true, source: "event.path" };
+        return {
+            cardPath: stripped,
+            isRealRoute: true,
+            source: "event.path.prefixed",
+        };
     }
+
+    // Branch B: original public path (actual Netlify event.path for real routes).
+    // PERSONAL_PATH_RE and ORG_PATH_RE enforce strict slug-only validation.
+    // Any path with extra segments, traversal, or non-slug chars is rejected here.
+    const isPublicPersonal = PERSONAL_PATH_RE.test(eventPath);
+    const isPublicOrg = ORG_PATH_RE.test(eventPath);
+    if (isPublicPersonal || isPublicOrg) {
+        return {
+            cardPath: eventPath,
+            isRealRoute: true,
+            source: "event.path.public",
+        };
+    }
+
+    // Branch C: preview mode via explicit query string parameter.
     const qsPath = getString(event?.queryStringParameters?.path);
     return {
         cardPath: qsPath,
