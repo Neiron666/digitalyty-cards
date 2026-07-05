@@ -12,4 +12,5 @@
 /blog/*         /404.html         404
 /guides/page/*  /404.html         404
 /guides/*       /404.html         404
+/__ssr-runtime-spike  /.netlify/functions/card-ssr-spike  200
 /*            /spa-shell.html   200

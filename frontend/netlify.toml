@@ -1,0 +1,8 @@
+# SSR_P3_NETLIFY_FUNCTION_SSR_RUNTIME_SPIKE_MINIMAL
+# Minimal per-function config for the SSR runtime spike.
+# Does NOT define [build] — Netlify UI owns build/publish/functions directory settings.
+# Adds only the card-ssr-spike function bundler and included artifact paths.
+
+[functions.card-ssr-spike]
+  included_files = ["dist_ssr/**", "dist/spa-shell.html"]
+  node_bundler = "esbuild"
