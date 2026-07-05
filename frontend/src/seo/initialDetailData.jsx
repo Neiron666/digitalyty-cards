@@ -22,6 +22,16 @@ export function useInitialDetailData(key) {
     const ctx = useContext(InitialDetailDataContext) || EMPTY;
     if (typeof key !== "string" || key.length === 0) return null;
     const v = ctx[key];
+    if (typeof window === "undefined") {
+        console.log("CARD_SSR_PROBE_USE_INITIAL", {
+            key,
+            contextKeys: Object.keys(ctx),
+            found: Boolean(v),
+            hasSlug: Boolean(
+                v && typeof v.slug === "string" && v.slug.length > 0,
+            ),
+        });
+    }
     if (!v || typeof v !== "object" || Array.isArray(v)) return null;
     if (typeof v.slug !== "string" || v.slug.length === 0) return null;
     return v;
