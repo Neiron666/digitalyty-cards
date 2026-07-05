@@ -84,6 +84,7 @@ cg_cookies.txt
 # Extra defense for frontend build output
 /frontend/dist/
 /frontend/dist_ssr/
+/frontend/dist_ssr_card/
 
 # Vite local env files (may contain API keys — never commit)
 .env.local

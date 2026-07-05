@@ -1,6 +1,0 @@
-User-agent: *
-Allow: /
-Disallow: /.netlify/
-Disallow: /og/
-
-Sitemap: https://cardigo.co.il/sitemap.xml
