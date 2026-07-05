@@ -15,3 +15,17 @@
     "invariant",
     "shallowequal"
   ]
+
+[functions.card-ssr]
+  included_files = ["dist_ssr_card/**", "dist/spa-shell.html", "scripts/lib/jsonForHtml.mjs"]
+  node_bundler = "esbuild"
+  external_node_modules = [
+    "react",
+    "react-dom",
+    "react-router-dom",
+    "axios",
+    "react-fast-compare",
+    "invariant",
+    "shallowequal",
+    "qrcode.react"
+  ]
