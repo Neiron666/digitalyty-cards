@@ -55,7 +55,7 @@ function isTextLikeContentType(contentType) {
     return false;
 }
 
-exports.handler = async function handler(event) {
+export const handler = async (event) => {
     try {
         const targetPath = normalizeTargetPath(event.path);
         if (!isAllowedPath(targetPath)) {
