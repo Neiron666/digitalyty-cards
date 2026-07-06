@@ -18,11 +18,28 @@ function isAbsoluteUrl(value) {
     return /^https?:\/\//i.test(String(value || "").trim());
 }
 
+// SSR-safe origin resolution (mirrors QRCodeBlock/SaveContactButton getPublicOrigin):
+// env-first so SSR and client compute the same share URL and render the share
+// block identically on first render, preventing hydration mismatch.
+// window.location.origin is only a client-side fallback. Never throws.
+function getPublicOrigin() {
+    const raw = import.meta.env.VITE_PUBLIC_ORIGIN;
+    if (typeof raw === "string" && raw.trim())
+        return raw.trim().replace(/\/$/, "");
+    try {
+        if (typeof window !== "undefined" && window.location?.origin)
+            return String(window.location.origin).trim().replace(/\/$/, "");
+    } catch {
+        // ignore
+    }
+    return "";
+}
+
 function buildShareUrl(publicPath) {
-    if (typeof window === "undefined") return "";
     const raw = typeof publicPath === "string" ? publicPath.trim() : "";
     if (!raw) return "";
-    const origin = window.location.origin;
+    const origin = getPublicOrigin();
+    if (!origin) return "";
     if (isAbsoluteUrl(raw)) {
         return raw.startsWith(origin) ? raw : "";
     }
