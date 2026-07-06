@@ -7,13 +7,31 @@ function isAbsoluteUrl(value) {
     return /^https?:\/\//i.test(String(value || "").trim());
 }
 
+// SSR-safe origin resolution (mirrors SaveContactButton.getPublicOrigin):
+// env-first so SSR and client compute the same QR URL and render identically.
+// window.location.origin is only a client-side fallback. Never throws.
+function getPublicOrigin() {
+    const raw = import.meta.env.VITE_PUBLIC_ORIGIN;
+    if (typeof raw === "string" && raw.trim())
+        return raw.trim().replace(/\/$/, "");
+    try {
+        if (typeof window !== "undefined" && window.location?.origin)
+            return String(window.location.origin).trim().replace(/\/$/, "");
+    } catch {
+        // ignore
+    }
+    return "";
+}
+
 export default function QRCodeBlock({ slug, publicPath }) {
     const wrapRef = useRef(null);
 
     // SSoT: URL comes ONLY from backend DTO publicPath - no fallback guessing.
+    // Origin is resolved env-first (VITE_PUBLIC_ORIGIN) so SSR and client render
+    // the identical QR section on first render, preventing hydration mismatch.
     const url = useMemo(() => {
-        if (typeof window === "undefined") return "";
-        const origin = window.location.origin;
+        const origin = getPublicOrigin();
+        if (!origin) return "";
 
         const raw = typeof publicPath === "string" ? publicPath.trim() : "";
         if (!raw) return "";
