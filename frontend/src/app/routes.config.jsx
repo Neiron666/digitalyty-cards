@@ -40,8 +40,10 @@ const Admin = lazy(() => import("../pages/Admin"));
 const OrgInvites = lazy(() => import("../pages/OrgInvites"));
 const Inbox = lazy(() => import("../pages/Inbox"));
 
-// public card
-const PublicCard = lazy(() => import("../pages/PublicCard"));
+// public card — PublicCard is eagerly imported for SSR-hydrated routes (/card/:slug, /c/:orgSlug/:slug).
+// Using React.lazy + Suspense here causes hydrateRoot mismatch: SSR renderToString does not
+// emit Suspense boundary markers (<!--$-->), so hydrateRoot cannot reconcile the Suspense fiber.
+import PublicCard from "../pages/PublicCard";
 const PreviewCard = lazy(() => import("../pages/PreviewCard"));
 import NotFound from "../pages/NotFound";
 
@@ -293,23 +295,25 @@ const routes = [
     },
     {
         // Standalone public card page (no marketing Header/Footer)
+        // SSR_HYDRATION: no Suspense wrapper — SSR produces no Suspense markers;
+        // hydrateRoot requires structural match. ChunkErrorBoundary is render-neutral
+        // on success path (returns children directly, no DOM wrapper).
         path: "/card/:slug",
         element: (
             <ChunkErrorBoundary label="שגיאת טעינה בכרטיס">
-                <Suspense fallback={<RouteFallback label="טוען כרטיס…" />}>
-                    <PublicCard />
-                </Suspense>
+                <PublicCard />
             </ChunkErrorBoundary>
         ),
     },
     {
         // Standalone company card page (no marketing Header/Footer)
+        // SSR_HYDRATION: no Suspense wrapper — SSR produces no Suspense markers;
+        // hydrateRoot requires structural match. ChunkErrorBoundary is render-neutral
+        // on success path (returns children directly, no DOM wrapper).
         path: "/c/:orgSlug/:slug",
         element: (
             <ChunkErrorBoundary label="שגיאת טעינה בכרטיס">
-                <Suspense fallback={<RouteFallback label="טוען כרטיס…" />}>
-                    <PublicCard />
-                </Suspense>
+                <PublicCard />
             </ChunkErrorBoundary>
         ),
     },
