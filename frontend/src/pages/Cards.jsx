@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import Button from "../components/ui/Button";
 import SeoHelmet from "../components/seo/SeoHelmet";
@@ -201,14 +201,55 @@ export default function Cards() {
         trackSitePageView();
     }, []);
 
-    /* Phase 2C: consume build-time SSG initial listing data for cards showcase. */
+    /* Phase 2C: seed from build-time SSG island; Phase 2 fix: runtime fetch fallback. */
     const showcaseSeed = useInitialListingData("cards-showcase");
-    const showcaseItems =
+    const seededItems =
         showcaseSeed &&
         Array.isArray(showcaseSeed.items) &&
         showcaseSeed.items.length > 0
             ? showcaseSeed.items
             : null;
+
+    const [showcaseItems, setShowcaseItems] = useState(seededItems);
+    const [showcaseResolved, setShowcaseResolved] = useState(
+        seededItems != null,
+    );
+    /* Skip exactly the first effect-driven fetch when seeded (SSG fast path). */
+    const skipFirstShowcaseFetchRef = useRef(seededItems != null);
+
+    useEffect(() => {
+        if (skipFirstShowcaseFetchRef.current) {
+            skipFirstShowcaseFetchRef.current = false;
+            return;
+        }
+        let cancelled = false;
+        async function loadShowcase() {
+            try {
+                const res = await fetch("/api/cards-showcase/active", {
+                    headers: { Accept: "application/json" },
+                });
+                if (!res.ok) throw new Error("cards-showcase fetch failed");
+                const data = await res.json();
+                const items =
+                    data && Array.isArray(data.items) ? data.items : [];
+                if (cancelled) return;
+                setShowcaseItems(items.length > 0 ? items : null);
+            } catch {
+                if (!cancelled) setShowcaseItems(null);
+            } finally {
+                if (!cancelled) setShowcaseResolved(true);
+            }
+        }
+        loadShowcase();
+        return () => {
+            cancelled = true;
+        };
+    }, []);
+
+    const hasLiveShowcase =
+        Array.isArray(showcaseItems) && showcaseItems.length > 0;
+    const showFallbackShowcase = showcaseResolved && !hasLiveShowcase;
+    const compactShowcase = hasLiveShowcase && showcaseItems.length < 4;
 
     return (
         <main data-page="site">
@@ -406,7 +447,7 @@ export default function Cards() {
                     {/* ── Curated showcase rail ── */}{" "}
                     <div
                         className={
-                            showcaseItems && showcaseItems.length < 4
+                            compactShowcase
                                 ? styles.showcaseRailCompact
                                 : styles.showcaseRail
                         }
@@ -414,13 +455,13 @@ export default function Cards() {
                         {" "}
                         <div
                             className={
-                                showcaseItems && showcaseItems.length < 4
+                                compactShowcase
                                     ? styles.showcaseGridCompact
                                     : styles.showcaseGrid
                             }
                         >
                             {" "}
-                            {showcaseItems
+                            {hasLiveShowcase
                                 ? showcaseItems.map((item) => (
                                       <article
                                           key={item.id}
@@ -449,8 +490,16 @@ export default function Cards() {
                                           <a
                                               href={item.ctaUrl}
                                               className={styles.showcaseLink}
-                                              target="_blank"
-                                              rel="noopener noreferrer"
+                                              target={
+                                                  item.ctaTargetBlank
+                                                      ? "_blank"
+                                                      : undefined
+                                              }
+                                              rel={
+                                                  item.ctaTargetBlank
+                                                      ? "noopener noreferrer"
+                                                      : undefined
+                                              }
                                               onClick={() =>
                                                   trackSiteClick({
                                                       action: SITE_ACTIONS.cards_showcase_card_cta,
@@ -464,46 +513,48 @@ export default function Cards() {
                                           </a>{" "}
                                       </article>
                                   ))
-                                : SHOWCASE_CARDS.map((card, i) => (
-                                      <article
-                                          key={i}
-                                          className={styles.showcaseCard}
-                                      >
-                                          {" "}
-                                          <img
-                                              src={encodeURI(card.src)}
-                                              alt={card.alt}
-                                              className={styles.showcaseImg}
-                                              width={280}
-                                              height={560}
-                                              loading="lazy"
-                                              decoding="async"
-                                          />{" "}
-                                          <span
-                                              className={styles.showcaseNiche}
-                                          >
-                                              {" "}
-                                              {card.niche}{" "}
-                                          </span>{" "}
-                                          <p className={styles.showcaseDesc}>
-                                              {" "}
-                                              {card.desc}{" "}
-                                          </p>{" "}
-                                          <Link
-                                              to="/edit/card/templates"
-                                              className={styles.showcaseLink}
-                                              onClick={() =>
-                                                  trackSiteClick({
-                                                      action: SITE_ACTIONS.cards_showcase_card_cta,
-                                                      pagePath: "/cards",
-                                                  })
-                                              }
-                                          >
-                                              {" "}
-                                              התחילו ליצור כרטיס &larr;{" "}
-                                          </Link>{" "}
-                                      </article>
-                                  ))}{" "}
+                                : showFallbackShowcase
+                                  ? SHOWCASE_CARDS.map((card, i) => (
+                                        <article
+                                            key={i}
+                                            className={styles.showcaseCard}
+                                        >
+                                            {" "}
+                                            <img
+                                                src={encodeURI(card.src)}
+                                                alt={card.alt}
+                                                className={styles.showcaseImg}
+                                                width={280}
+                                                height={560}
+                                                loading="lazy"
+                                                decoding="async"
+                                            />{" "}
+                                            <span
+                                                className={styles.showcaseNiche}
+                                            >
+                                                {" "}
+                                                {card.niche}{" "}
+                                            </span>{" "}
+                                            <p className={styles.showcaseDesc}>
+                                                {" "}
+                                                {card.desc}{" "}
+                                            </p>{" "}
+                                            <Link
+                                                to="/edit/card/templates"
+                                                className={styles.showcaseLink}
+                                                onClick={() =>
+                                                    trackSiteClick({
+                                                        action: SITE_ACTIONS.cards_showcase_card_cta,
+                                                        pagePath: "/cards",
+                                                    })
+                                                }
+                                            >
+                                                {" "}
+                                                התחילו ליצור כרטיס &larr;{" "}
+                                            </Link>{" "}
+                                        </article>
+                                    ))
+                                  : null}{" "}
                         </div>{" "}
                     </div>{" "}
                     {/* ── Section-bottom CTA ── */}{" "}
