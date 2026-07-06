@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import Section from "./Section";
+import { getPublicCardLabels } from "../../../utils/publicCardLabels";
 import styles from "./LocationSection.module.css";
 import { trackClick } from "../../../services/analytics.client";
 
 function LocationSection({ card }) {
     const isPremium = card?.entitlements?.canUseServices === true;
+    const labels = getPublicCardLabels(card?.language);
     const address = String(card?.business?.address || "").trim();
     const city = String(card?.business?.city || "").trim();
 
@@ -79,7 +81,7 @@ function LocationSection({ card }) {
                                 onClick={loadMap}
                                 aria-label={`פתח מפה: ${address}, ${city}`}
                             >
-                                הצג מפה
+                                {labels.showMap}
                             </button>
                         </div>
                     )}

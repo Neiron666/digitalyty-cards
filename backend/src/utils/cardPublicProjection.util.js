@@ -564,7 +564,11 @@ export function toCardPublicSeoDTO(dto, ctx) {
     // seo.canonicalUrl is never used. Owner-provided JSON-LD with the same
     // FAQPage @id (${publicUrl}#faq) is suppressed so the auto item wins.
     const publicFaqItems = extractPublicFaqItems(dto);
-    const autoFaqJsonLd = buildCardFaqJsonLd(publicFaqItems, publicUrl);
+    const autoFaqJsonLd = buildCardFaqJsonLd(
+        publicFaqItems,
+        publicUrl,
+        dto.language === "ru" ? "ru" : "he",
+    );
     const autoFaqId = getCardFaqJsonLdId(publicUrl);
     const filteredUserItems = autoFaqJsonLd
         ? userJsonLdItems.filter(

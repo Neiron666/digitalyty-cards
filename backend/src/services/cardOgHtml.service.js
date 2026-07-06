@@ -17,7 +17,7 @@
  */
 
 /* ── constants ─────────────────────────────────────────────────── */
-
+import { getCardOgLabels } from "../utils/cardOgLabels.js";
 const ALLOWED_HREF_SCHEMES = Object.freeze(["https:", "tel:", "mailto:"]);
 const LANG_RE = /^[a-z]{2}(-[A-Z]{2})?$/;
 const DEFAULT_LANG = "he";
@@ -34,15 +34,6 @@ const DAY_ORDER = Object.freeze([
     "fri",
     "sat",
 ]);
-const DAY_HEBREW = Object.freeze({
-    sun: "ראשון",
-    mon: "שני",
-    tue: "שלישי",
-    wed: "רביעי",
-    thu: "חמישי",
-    fri: "שישי",
-    sat: "שבת",
-});
 
 const SOCIAL_KEY_ORDER = Object.freeze([
     "instagram",
@@ -240,7 +231,7 @@ function pickDescription(seo) {
 
 /* ── HEAD ──────────────────────────────────────────────────────── */
 
-function renderHead(seo, h1) {
+function renderHead(seo, h1, lang) {
     const title = pickTitle(seo, h1);
     const description = pickDescription(seo);
     const robots = pickRobots(seo);
@@ -277,6 +268,11 @@ function renderHead(seo, h1) {
     );
     lines.push(
         '<meta property="og:type" content="' + escapeAttr(ogType) + '">',
+    );
+    lines.push(
+        '<meta property="og:locale" content="' +
+            escapeAttr(lang === "ru" ? "ru_RU" : "he_IL") +
+            '">',
     );
     if (ogImage) {
         lines.push(
@@ -317,7 +313,7 @@ function renderHead(seo, h1) {
 
 /* ── BODY sections ─────────────────────────────────────────────── */
 
-function renderAbout(render) {
+function renderAbout(render, labels) {
     const text = nonEmptyString(render.aboutText)
         ? render.aboutText.trim()
         : "";
@@ -331,10 +327,12 @@ function renderAbout(render) {
           : [];
     if (!ps.length) return "";
     const rendered = ps.map((p) => "<p>" + escapeHtml(p) + "</p>").join("\n");
-    return "<section><h2>אודות</h2>\n" + rendered + "\n</section>";
+    return (
+        "<section><h2>" + labels.about + "</h2>\n" + rendered + "\n</section>"
+    );
 }
 
-function renderContactLinks(render) {
+function renderContactLinks(render, labels) {
     const c = isPlainObject(render.contactLinks) ? render.contactLinks : {};
     const items = [];
     if (nonEmptyString(c.phone)) {
@@ -383,13 +381,15 @@ function renderContactLinks(render) {
     }
     if (!items.length) return "";
     return (
-        "<section><h2>צור קשר</h2>\n<ul>\n" +
+        "<section><h2>" +
+        labels.contact +
+        "</h2>\n<ul>\n" +
         items.join("\n") +
         "\n</ul>\n</section>"
     );
 }
 
-function renderServices(render) {
+function renderServices(render, labels) {
     if (!Array.isArray(render.services) || !render.services.length) return "";
     const items = [];
     for (const s of render.services) {
@@ -402,10 +402,16 @@ function renderServices(render) {
         items.push("<article>" + parts.join("\n") + "</article>");
     }
     if (!items.length) return "";
-    return "<section><h2>שירותים</h2>\n" + items.join("\n") + "\n</section>";
+    return (
+        "<section><h2>" +
+        labels.services +
+        "</h2>\n" +
+        items.join("\n") +
+        "\n</section>"
+    );
 }
 
-function renderFaq(render) {
+function renderFaq(render, labels) {
     if (!Array.isArray(render.faqItems) || !render.faqItems.length) return "";
     const items = [];
     for (const f of render.faqItems) {
@@ -419,13 +425,15 @@ function renderFaq(render) {
     }
     if (!items.length) return "";
     return (
-        "<section><h2>שאלות נפוצות</h2>\n<dl>\n" +
+        "<section><h2>" +
+        labels.faq +
+        "</h2>\n<dl>\n" +
         items.join("\n") +
         "\n</dl>\n</section>"
     );
 }
 
-function renderBusinessHours(render) {
+function renderBusinessHours(render, labels) {
     const bh = render.businessHours;
     if (!isPlainObject(bh) || bh.enabled !== true) return "";
     const week = isPlainObject(bh.week) ? bh.week : {};
@@ -445,7 +453,7 @@ function renderBusinessHours(render) {
         if (!safe.length) continue;
         rows.push(
             "<tr><th>" +
-                escapeHtml(DAY_HEBREW[day]) +
+                escapeHtml(labels.days[day]) +
                 "</th><td>" +
                 safe.join(", ") +
                 "</td></tr>",
@@ -453,13 +461,15 @@ function renderBusinessHours(render) {
     }
     if (!rows.length) return "";
     return (
-        "<section><h2>שעות פעילות</h2>\n<table>\n" +
+        "<section><h2>" +
+        labels.businessHours +
+        "</h2>\n<table>\n" +
         rows.join("\n") +
         "\n</table>\n</section>"
     );
 }
 
-function renderGallery(render) {
+function renderGallery(render, labels) {
     if (!Array.isArray(render.gallery) || !render.gallery.length) return "";
     const items = [];
     for (const g of render.gallery) {
@@ -477,10 +487,16 @@ function renderGallery(render) {
         items.push(parts.join(" ") + ">");
     }
     if (!items.length) return "";
-    return "<section><h2>גלריה</h2>\n" + items.join("\n") + "\n</section>";
+    return (
+        "<section><h2>" +
+        labels.gallery +
+        "</h2>\n" +
+        items.join("\n") +
+        "\n</section>"
+    );
 }
 
-function renderSocialLinks(render) {
+function renderSocialLinks(render, labels) {
     const s = isPlainObject(render.socialLinks) ? render.socialLinks : {};
     const items = [];
     for (const key of SOCIAL_KEY_ORDER) {
@@ -498,13 +514,15 @@ function renderSocialLinks(render) {
     }
     if (!items.length) return "";
     return (
-        "<section><h2>רשתות חברתיות</h2>\n<ul>\n" +
+        "<section><h2>" +
+        labels.social +
+        "</h2>\n<ul>\n" +
         items.join("\n") +
         "\n</ul>\n</section>"
     );
 }
 
-function renderBody(seo, render, h1) {
+function renderBody(seo, render, h1, labels) {
     const lines = [];
     lines.push("<body>");
     lines.push("<main>");
@@ -537,13 +555,13 @@ function renderBody(seo, render, h1) {
         lines.push("<p>" + escapeHtml(render.slogan.trim()) + "</p>");
     }
     const sections = [
-        renderAbout(render),
-        renderContactLinks(render),
-        renderServices(render),
-        renderFaq(render),
-        renderBusinessHours(render),
-        renderGallery(render),
-        renderSocialLinks(render),
+        renderAbout(render, labels),
+        renderContactLinks(render, labels),
+        renderServices(render, labels),
+        renderFaq(render, labels),
+        renderBusinessHours(render, labels),
+        renderGallery(render, labels),
+        renderSocialLinks(render, labels),
     ];
     for (const section of sections) {
         if (section) lines.push(section);
@@ -571,8 +589,9 @@ export function renderCardOgHtml(input) {
     const safeLang = validateLang(lang);
     const safeDir = validateDir(dir);
     const h1 = pickH1(render, seo);
-    const head = renderHead(seo, h1);
-    const body = renderBody(seo, render, h1);
+    const labels = getCardOgLabels(safeLang);
+    const head = renderHead(seo, h1, safeLang);
+    const body = renderBody(seo, render, h1, labels);
     return (
         "<!doctype html>\n" +
         '<html lang="' +

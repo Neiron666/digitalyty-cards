@@ -233,6 +233,7 @@ const DESIGN_PATH_SUFFIX_RE = /Path$/;
 const PUBLIC_CARD_SSR_TOP_LEVEL_ALLOWLIST = new Set([
     "slug",
     "status",
+    "language",
     "isActive",
     "business",
     "contact",

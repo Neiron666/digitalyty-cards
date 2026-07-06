@@ -122,9 +122,14 @@ export default function CardLayout({
 
     const rootClass = cx(styles.root, skin?.theme, extraThemeClass);
 
+    const cardLang = card?.language === "ru" ? "ru" : "he";
+    const cardDir = cardLang === "ru" ? "ltr" : "rtl";
+
     return (
         <div
             className={rootClass}
+            lang={cardLang}
+            dir={cardDir}
             data-mode={mode}
             data-cardigo-scope="card"
             data-template-id={String(templateId || "")}
@@ -268,6 +273,7 @@ export default function CardLayout({
                             <QRCodeBlock
                                 slug={card.slug}
                                 publicPath={card?.publicPath}
+                                language={card?.language}
                             />
                         )}
                         <LocationSection card={card} />
@@ -279,6 +285,7 @@ export default function CardLayout({
                                 entitlements={card?.entitlements}
                                 onUpgrade={onUpgrade}
                                 mode={mode}
+                                language={card?.language}
                             />
                         </div>
                     </section>

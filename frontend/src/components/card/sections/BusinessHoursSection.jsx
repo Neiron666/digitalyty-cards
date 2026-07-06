@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import Section from "./Section";
 import { WorkHoursIcon } from "../../icons/EditorTabIcons";
+import { getPublicCardLabels } from "../../../utils/publicCardLabels";
 import styles from "./BusinessHoursSection.module.css";
 
 const WEEKDAYS = [
@@ -79,6 +80,7 @@ function normalizeBusinessHours(card) {
 
 export default function BusinessHoursSection({ card, mode }) {
     const data = useMemo(() => normalizeBusinessHours(card), [card]);
+    const labels = getPublicCardLabels(card?.language);
     const initialOpen = false;
     const [open, setOpen] = useState(initialOpen);
 
@@ -93,7 +95,9 @@ export default function BusinessHoursSection({ card, mode }) {
             contentClassName={styles.content}
         >
             <div className={styles.wrap}>
-                <h2 className={styles.sectionTitle}>{data.title}</h2>
+                <h2 className={styles.sectionTitle}>
+                    {labels.businessHoursTitle}
+                </h2>
                 <button
                     type="button"
                     className={styles.toggle}
@@ -102,7 +106,9 @@ export default function BusinessHoursSection({ card, mode }) {
                 >
                     <WorkHoursIcon className={styles.tabIcon} />
                     <span className={styles.toggleText}>
-                        {open ? "הסתר שעות פעילות" : "הצג שעות פעילות"}
+                        {open
+                            ? labels.businessHoursHide
+                            : labels.businessHoursShow}
                     </span>
                     <span className={styles.icon} aria-hidden="true" />
                 </button>
@@ -111,11 +117,13 @@ export default function BusinessHoursSection({ card, mode }) {
                     <div className={styles.table}>
                         {data.days.map((d) => (
                             <div key={d.key} className={styles.row}>
-                                <div className={styles.day}>{d.label}</div>
+                                <div className={styles.day}>
+                                    {labels.weekdaysFull[d.key] || d.label}
+                                </div>
                                 <div className={styles.hours}>
                                     {d.closed ? (
                                         <span className={styles.closed}>
-                                            סגור
+                                            {labels.closed}
                                         </span>
                                     ) : (
                                         <span className={styles.ranges}>

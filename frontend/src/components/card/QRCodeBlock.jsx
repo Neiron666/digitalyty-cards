@@ -1,6 +1,7 @@
 import { useMemo, useRef } from "react";
 import { QRCodeCanvas } from "qrcode.react";
 import Section from "./sections/Section";
+import { getPublicCardLabels } from "../../utils/publicCardLabels";
 import styles from "./QRCodeBlock.module.css";
 
 function isAbsoluteUrl(value) {
@@ -23,8 +24,9 @@ function getPublicOrigin() {
     return "";
 }
 
-export default function QRCodeBlock({ slug, publicPath }) {
+export default function QRCodeBlock({ slug, publicPath, language }) {
     const wrapRef = useRef(null);
+    const labels = getPublicCardLabels(language);
 
     // SSoT: URL comes ONLY from backend DTO publicPath - no fallback guessing.
     // Origin is resolved env-first (VITE_PUBLIC_ORIGIN) so SSR and client render
@@ -70,7 +72,7 @@ export default function QRCodeBlock({ slug, publicPath }) {
                     className={styles.download}
                     onClick={handleDownload}
                 >
-                    הורד QR
+                    {labels.downloadQr}
                 </button>
             </div>
         </Section>

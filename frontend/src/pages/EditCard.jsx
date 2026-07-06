@@ -2342,6 +2342,30 @@ function EditCard() {
         }
     }, [draftCard?._id]);
 
+    // Phase 2A-5: owner-facing public card language selector.
+    // Direct top-level PATCH (mirrors publish/unpublish); only { language } is sent.
+    const handleUpdateLanguage = useCallback(
+        async (nextLanguage) => {
+            if (!draftCard?._id) return;
+
+            const normalizedLanguage = nextLanguage === "ru" ? "ru" : "he";
+            const currentLanguage = draftCard.language === "ru" ? "ru" : "he";
+            if (normalizedLanguage === currentLanguage) return;
+
+            try {
+                const res = await api.patch(`/cards/${draftCard._id}`, {
+                    language: normalizedLanguage,
+                });
+                const normalized = normalizeCardForEditor(res.data);
+                setDraftCard(normalized);
+            } catch (err) {
+                const message = err?.response?.data?.message;
+                alert(message || "שגיאה בעדכון שפת הכרטיס");
+            }
+        },
+        [draftCard?._id, draftCard?.language],
+    );
+
     // Mini-guide hook: must be called unconditionally before any early return.
     // Uses inline null-safe booleans; showGuideDropdown / cardIsPublished below
     // remain the render SSoT and are unaffected by this early placement.
@@ -2779,6 +2803,7 @@ function EditCard() {
                         onPublish={handlePublish}
                         onUnpublish={handleUnpublish}
                         onUpdateSlug={handleUpdateSlug}
+                        onUpdateLanguage={handleUpdateLanguage}
                         // Phase 2: draft-first save infrastructure (wired for Phase 3 UI)
                         commitDraft={commitDraft}
                         dirtyPaths={dirtyPaths}

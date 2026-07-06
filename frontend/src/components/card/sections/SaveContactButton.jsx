@@ -1,3 +1,4 @@
+import { getPublicCardLabels } from "../../../utils/publicCardLabels";
 import styles from "./SaveContactButton.module.css";
 
 function getPublicOrigin() {
@@ -36,6 +37,7 @@ function deriveOgPathFromPublicPath(publicPath) {
 
 function SaveContactButton({ card }) {
     const { business, contact } = card;
+    const labels = getPublicCardLabels(card?.language);
 
     const businessName =
         business?.name || business?.businessName || business?.ownerName || "";
@@ -140,7 +142,7 @@ function SaveContactButton({ card }) {
                 title={
                     !canShare
                         ? !published
-                            ? "אפשר לשתף רק אחרי פרסום הכרטיס"
+                            ? labels.shareUnavailableUntilPublished
                             : "קישור לשיתוף לא זמין כרגע"
                         : undefined
                 }
@@ -149,12 +151,12 @@ function SaveContactButton({ card }) {
                     className={`${styles.icon} ${styles.iconShare}`}
                     aria-hidden="true"
                 />
-                שתף
+                {labels.share}
             </button>
             {!canShare && (
                 <div className={styles.shareHint}>
                     {!published
-                        ? "אפשר לשתף רק אחרי פרסום הכרטיס."
+                        ? `${labels.shareUnavailableUntilPublished}.`
                         : "קישור לשיתוף לא זמין כרגע."}
                 </div>
             )}
@@ -168,7 +170,7 @@ function SaveContactButton({ card }) {
                     className={`${styles.icon} ${styles.iconSave}`}
                     aria-hidden="true"
                 />
-                שמור אותי באנשי קשר
+                {labels.saveToContacts}
             </button>
         </div>
     );

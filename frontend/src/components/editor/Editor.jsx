@@ -31,6 +31,7 @@ export default function Editor({
     onPublish,
     onUnpublish,
     onUpdateSlug,
+    onUpdateLanguage,
     previewHeader,
     previewFooter,
     commitDraft,
@@ -608,6 +609,7 @@ export default function Editor({
                         onPublish={onPublish}
                         onUnpublish={onUnpublish}
                         onUpdateSlug={onUpdateSlug}
+                        onUpdateLanguage={onUpdateLanguage}
                         fieldErrors={fieldErrors}
                     />
                     <EditorSaveBar

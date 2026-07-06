@@ -1,4 +1,5 @@
 import Section from "./Section";
+import { getPublicCardLabels } from "../../../utils/publicCardLabels";
 import styles from "./VideoSection.module.css";
 
 function toYouTubeEmbedUrl(raw) {
@@ -62,6 +63,7 @@ function toYouTubeEmbedUrl(raw) {
 
 function VideoSection({ card }) {
     const videoUrl = card.content?.videoUrl;
+    const labels = getPublicCardLabels(card?.language);
 
     // Defense-in-depth: respect entitlement even if data leaked through.
     if (!card?.entitlements?.canUseVideo) return null;
@@ -71,7 +73,7 @@ function VideoSection({ card }) {
     if (!embedUrl) return null;
 
     return (
-        <Section title="וידאו">
+        <Section title={labels.videoTitle}>
             <iframe
                 width="100%"
                 height="auto"

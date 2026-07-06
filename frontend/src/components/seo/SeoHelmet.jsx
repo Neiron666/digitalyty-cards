@@ -182,6 +182,7 @@ export default function SeoHelmet({
     articleModifiedTime,
     articleAuthor,
     imageAlt,
+    ogLocale = "he_IL",
     suppressSiteName = false,
 }) {
     const scripts = normalizeJsonLdItems(jsonLd, jsonLdItems);
@@ -247,7 +248,9 @@ export default function SeoHelmet({
             ) : null}
 
             {/* OpenGraph */}
-            <meta property="og:locale" content="he_IL" />
+            {!suppressEdgeManagedMeta ? (
+                <meta property="og:locale" content={ogLocale} />
+            ) : null}
             {!suppressSiteName ? (
                 <meta property="og:site_name" content="Cardigo" />
             ) : null}

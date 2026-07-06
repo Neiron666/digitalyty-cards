@@ -500,7 +500,9 @@ router.get("/og/card/:slug", async (req, res) => {
         siteUrl,
         publicUrl,
     });
-    const html = renderCardOgHtml({ seo, render, lang: "he", dir: "rtl" });
+    const ogLang = dtoForProjection.language === "ru" ? "ru" : "he";
+    const ogDir = ogLang === "ru" ? "ltr" : "rtl";
+    const html = renderCardOgHtml({ seo, render, lang: ogLang, dir: ogDir });
 
     res.setHeader("Content-Type", "text/html; charset=utf-8");
     res.send(html);
@@ -597,7 +599,9 @@ router.get("/og/c/:orgSlug/:slug", async (req, res) => {
         siteUrl,
         publicUrl,
     });
-    const html = renderCardOgHtml({ seo, render, lang: "he", dir: "rtl" });
+    const ogLang = dtoForProjection.language === "ru" ? "ru" : "he";
+    const ogDir = ogLang === "ru" ? "ltr" : "rtl";
+    const html = renderCardOgHtml({ seo, render, lang: ogLang, dir: ogDir });
 
     res.setHeader("Content-Type", "text/html; charset=utf-8");
     res.send(html);

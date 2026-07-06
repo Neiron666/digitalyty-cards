@@ -39,7 +39,6 @@ function cleanPlatformBrand(s) {
 function buildFaqJsonLd(card, canonicalUrl) {
     const faq = card?.faq && typeof card.faq === "object" ? card.faq : null;
     const rawItems = Array.isArray(faq?.items) ? faq.items : [];
-
     const items = rawItems
         .map((item) => {
             if (!item || typeof item !== "object") return null;
@@ -64,8 +63,7 @@ function buildFaqJsonLd(card, canonicalUrl) {
         "@type": "FAQPage",
         ...(faqId ? { "@id": faqId } : {}),
         ...(canonicalResolved ? { url: canonicalResolved } : {}),
-        // TODO: bind to card.locale/lang when contract is introduced.
-        inLanguage: "he",
+        inLanguage: card?.language === "ru" ? "ru" : "he",
         ...(isPartOf ? { isPartOf } : {}),
         mainEntity: items.map((it) => ({
             "@type": "Question",
@@ -410,6 +408,8 @@ function PublicCard() {
     const canonicalUrl = card.seoResolved?.canonicalUrl || canonicalResolved;
     const url = canonicalUrl;
 
+    const cardOgLocale = card.language === "ru" ? "ru_RU" : "he_IL";
+
     const faqJsonLd = buildFaqJsonLd(card, canonicalResolved);
 
     const allowTracking = getAllowTracking();
@@ -446,6 +446,7 @@ function PublicCard() {
                     title={title}
                     description={description}
                     suppressSiteName={true}
+                    ogLocale={cardOgLocale}
                     robots={card.seoResolved?.robots || card.seo?.robots}
                     googleSiteVerification={card.seo?.googleSiteVerification}
                     facebookDomainVerification={

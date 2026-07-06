@@ -5,6 +5,7 @@ import Section from "./Section";
 import formStyles from "../../ui/Form.module.css";
 import { trackClick } from "../../../services/analytics.client";
 import Notice from "../../ui/Notice/Notice";
+import { getPublicCardLabels } from "../../../utils/publicCardLabels";
 import styles from "./LeadForm.module.css";
 
 const INITIAL_FORM = {
@@ -22,11 +23,13 @@ export default function LeadForm({
     entitlements,
     onUpgrade,
     mode,
+    language,
 }) {
+    const labels = getPublicCardLabels(language);
     if (!entitlements?.canUseLeads) {
         if (mode === "public") return null;
         return (
-            <Section title="צרו קשר" contentClassName={styles.content}>
+            <Section title={labels.leadTitle} contentClassName={styles.content}>
                 <Paywall
                     text="טופס יצירת קשר זמין למנויים בלבד"
                     onUpgrade={onUpgrade}
@@ -107,24 +110,24 @@ export default function LeadForm({
 
     if (status === "success") {
         return (
-            <Section title="צרו קשר" contentClassName={styles.content}>
-                <Notice variant="success">תודה! פנייתך נשלחה בהצלחה</Notice>
+            <Section title={labels.leadTitle} contentClassName={styles.content}>
+                <Notice variant="success">{labels.leadSuccess}</Notice>
                 <button
                     type="button"
                     className={styles.resetBtn}
                     onClick={handleReset}
                 >
-                    שלח הודעה נוספת
+                    {labels.leadResend}
                 </button>
             </Section>
         );
     }
 
     return (
-        <Section title="צרו קשר" contentClassName={styles.content}>
+        <Section title={labels.leadTitle} contentClassName={styles.content}>
             <form className={styles.form} onSubmit={handleSubmit}>
                 <input
-                    placeholder="שם מלא"
+                    placeholder={labels.leadName}
                     value={form.name}
                     required
                     maxLength={100}
@@ -134,7 +137,7 @@ export default function LeadForm({
 
                 <input
                     type="email"
-                    placeholder="אימייל"
+                    placeholder={labels.leadEmail}
                     value={form.email}
                     maxLength={254}
                     onChange={(e) => update("email", e.target.value)}
@@ -153,7 +156,7 @@ export default function LeadForm({
                 />
 
                 <input
-                    placeholder="טלפון"
+                    placeholder={labels.leadPhone}
                     value={form.phone}
                     maxLength={20}
                     onChange={(e) => update("phone", e.target.value)}
@@ -161,7 +164,7 @@ export default function LeadForm({
                 />
 
                 <textarea
-                    placeholder="הודעה"
+                    placeholder={labels.leadMessage}
                     rows={3}
                     value={form.message}
                     maxLength={1000}
@@ -177,27 +180,27 @@ export default function LeadForm({
                         required
                     />
                     <span className={styles.consentText}>
-                        אני מסכים ל
+                        {labels.consentPrefixLead}
                         <a
                             href="/privacy"
                             target="_blank"
                             rel="noopener noreferrer"
                         >
-                            מדיניות הפרטיות
+                            {labels.privacyPolicy}
                         </a>{" "}
-                        וגם ל
+                        {labels.consentConnectorLead}
                         <a
                             href="/terms"
                             target="_blank"
                             rel="noopener noreferrer"
                         >
-                            תנאי השימוש באתר
+                            {labels.termsOfUseSite}
                         </a>
                     </span>
                 </label>
 
                 <button type="submit" disabled={status === "loading"}>
-                    שלח
+                    {labels.leadSubmit}
                 </button>
 
                 {status === "error" && errorMsg ? (

@@ -45,6 +45,7 @@ export default function SettingsPanel({
     onPublish,
     onUnpublish,
     onUpdateSlug,
+    onUpdateLanguage,
 }) {
     const { isAuthenticated, logout } = useAuth();
     const slug = card?.slug;
@@ -114,6 +115,8 @@ export default function SettingsPanel({
     const [receiptProfileOk, setReceiptProfileOk] = useState("");
 
     const [delCardConfirm, setDelCardConfirm] = useState("");
+
+    const [langPending, setLangPending] = useState(false);
 
     const [delConfirm, setDelConfirm] = useState("");
     const [delPassword, setDelPassword] = useState("");
@@ -790,6 +793,30 @@ export default function SettingsPanel({
                 {/* ── Section 1: כרטיס ── */}
                 <div className={styles.section}>
                     <div className={styles.sectionTitle}>כרטיס</div>
+
+                    <div className={styles.urlBlock}>
+                        <div className={styles.urlTitle}>שפת הכרטיס</div>
+                        <select
+                            value={card?.language === "ru" ? "ru" : "he"}
+                            disabled={editingDisabled || langPending}
+                            onChange={(e) => {
+                                const next =
+                                    e.target.value === "ru" ? "ru" : "he";
+                                if (typeof onUpdateLanguage !== "function")
+                                    return;
+                                setLangPending(true);
+                                Promise.resolve(onUpdateLanguage(next)).finally(
+                                    () => setLangPending(false),
+                                );
+                            }}
+                        >
+                            <option value="he">עברית</option>
+                            <option value="ru">Русский</option>
+                        </select>
+                        <div className={styles.urlNote}>
+                            קובע את שפת התצוגה הציבורית של הכרטיס.
+                        </div>
+                    </div>
 
                     <div className={styles.strong}>
                         סטטוס:{" "}

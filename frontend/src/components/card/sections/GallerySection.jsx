@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Section from "./Section";
 import useReveal from "../../../hooks/useReveal";
+import { getPublicCardLabels } from "../../../utils/publicCardLabels";
 import styles from "./GallerySection.module.css";
 import {
     galleryItemToOriginalUrl,
@@ -19,6 +20,7 @@ const STAGGER = [styles.delay0, styles.delay1, styles.delay2, styles.delay3];
 
 function GallerySection({ card, mode }) {
     const rawGallery = Array.isArray(card?.gallery) ? card.gallery : [];
+    const labels = getPublicCardLabels(card?.language);
     const businessName =
         card?.business?.name ||
         card?.business?.businessName ||
@@ -55,8 +57,11 @@ function GallerySection({ card, mode }) {
                 item.alt.trim()
                     ? item.alt.trim()
                     : businessName
-                      ? `תמונה ${visibleIndex + 1} בגלריה של ${businessName}`
-                      : `תמונה ${visibleIndex + 1} בגלריה`;
+                      ? labels.galleryAltWithName(
+                            visibleIndex + 1,
+                            businessName,
+                        )
+                      : labels.galleryAltNoName(visibleIndex + 1);
 
             out.push({
                 id: `${fullUrl}|${createdAtPart}|${pathPart}|${rawIndex}`,
@@ -218,7 +223,7 @@ function GallerySection({ card, mode }) {
     if (!hasItems) return null;
 
     return (
-        <Section title="גלריה">
+        <Section title={labels.galleryTitle}>
             <div className={styles.gallery}>
                 {items.map((it, index) => (
                     <button

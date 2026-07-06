@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import styles from "./CardFooter.module.css";
 import { trackClick } from "../../../services/analytics.client";
+import { getPublicCardLabels } from "../../../utils/publicCardLabels";
 import useInstallPrompt from "../../../hooks/useInstallPrompt";
 
 // SSoT: same field priority as getDisplayName in CardLayout.jsx
@@ -64,6 +65,7 @@ function tryCopyToClipboard(url) {
 
 function CardFooter({ card }) {
     const brandName = getBrandName(card);
+    const labels = getPublicCardLabels(card?.language);
 
     const {
         canPrompt,
@@ -99,7 +101,9 @@ function CardFooter({ card }) {
             {shareUrl && (
                 <div className={styles.shareBlock}>
                     <p className={styles.shareTitle}>
-                        {brandName ? `שתפו את ${brandName}` : "שתפו"}
+                        {brandName
+                            ? `${labels.footerSharePrefix}${brandName}`
+                            : labels.footerShareFallback}
                     </p>
 
                     <div
@@ -112,7 +116,7 @@ function CardFooter({ card }) {
                             target="_blank"
                             rel="noreferrer noopener"
                             className={styles.shareIcon}
-                            aria-label="שתף בפייסבוק"
+                            aria-label={labels.shareFacebook}
                             onClick={() => {
                                 tryCopyToClipboard(shareUrl);
                                 trackClick(card?.slug, "facebook");
@@ -127,7 +131,7 @@ function CardFooter({ card }) {
                         <a
                             href={emailShareHref}
                             className={styles.shareIcon}
-                            aria-label="שתף במייל"
+                            aria-label={labels.shareEmail}
                             onClick={() => {
                                 tryCopyToClipboard(shareUrl);
                                 trackClick(card?.slug, "email");
@@ -144,7 +148,7 @@ function CardFooter({ card }) {
                             target="_blank"
                             rel="noreferrer noopener"
                             className={styles.shareIcon}
-                            aria-label="שתף בוואטסאפ"
+                            aria-label={labels.shareWhatsapp}
                             onClick={() => {
                                 tryCopyToClipboard(shareUrl);
                                 trackClick(card?.slug, "whatsapp");
@@ -183,7 +187,7 @@ function CardFooter({ card }) {
             </a>
 
             <p className={styles.promo}>
-                נבנה ב־
+                {labels.footerBuiltPrefix}
                 <a
                     href="https://cardigo.co.il"
                     target="_blank"
@@ -192,7 +196,7 @@ function CardFooter({ card }) {
                 >
                     Cardigo
                 </a>
-                {" - הדרך החכמה לכרטיס ביקור דיגיטלי מקצועי"}
+                {labels.footerBuiltSuffix}
             </p>
 
             <InstallRow
@@ -205,6 +209,7 @@ function CardFooter({ card }) {
                 showIOSGuide={showIOSGuide}
                 highlighted={installHelpHl}
                 onToggleHighlight={() => setInstallHelpHl((v) => !v)}
+                installLabel={labels.footerInstallAndroid}
             />
         </footer>
     );
@@ -220,6 +225,7 @@ function InstallRow({
     showIOSGuide,
     highlighted,
     onToggleHighlight,
+    installLabel,
 }) {
     let helpText;
     if (isInstalled) {
@@ -254,7 +260,7 @@ function InstallRow({
                 className={styles.installBtn}
                 onClick={handleClick}
             >
-                התקינו את Cardigo לאנדרואיד
+                {installLabel}
             </button>
             {helpText && <p className={helpClass}>{helpText}</p>}
         </div>

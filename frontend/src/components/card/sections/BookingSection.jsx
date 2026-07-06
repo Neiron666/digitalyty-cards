@@ -6,9 +6,8 @@ import {
 import { trackClick } from "../../../services/analytics.client";
 import Section from "./Section";
 import Notice from "../../ui/Notice/Notice";
+import { getPublicCardLabels } from "../../../utils/publicCardLabels";
 import styles from "./BookingSection.module.css";
-
-const WEEKDAY_HEADERS = ["א", "ב", "ג", "ד", "ה", "ו", "ש"];
 
 const WEEKDAY_LABELS = {
     sun: "ראשון",
@@ -75,7 +74,7 @@ function deriveMonths(days) {
  * Days in the month not present in the backend array render as "outside".
  * No overflow into adjacent months - one month at a time only.
  */
-function buildStrictMonthGrid(days, year, month) {
+function buildStrictMonthGrid(days, year, month, monthLabels) {
     if (!days || !year || !month) return null;
 
     const dayMap = new Map();
@@ -83,7 +82,7 @@ function buildStrictMonthGrid(days, year, month) {
 
     const daysInMonth = new Date(year, month, 0).getDate();
     const firstWeekday = new Date(year, month - 1, 1).getDay();
-    const title = `${MONTH_LABELS[month - 1]} ${year}`;
+    const title = `${(monthLabels || MONTH_LABELS)[month - 1]} ${year}`;
 
     const rows = [];
     let currentRow = [];
@@ -132,6 +131,7 @@ export default function BookingSection({ card }) {
 
     if (!canUseBooking) return null;
 
+    const labels = getPublicCardLabels(card?.language);
     const cardId = card?._id;
     const slug = card?.slug;
 
@@ -234,9 +234,10 @@ export default function BookingSection({ card }) {
                       days,
                       activeMonthData.year,
                       activeMonthData.month,
+                      labels.bookingMonths,
                   )
                 : null,
-        [days, activeMonthData],
+        [days, activeMonthData, labels],
     );
 
     // ── Month navigation (local, between months present in the window) ──
@@ -355,7 +356,10 @@ export default function BookingSection({ card }) {
     // ── Loading state ──
     if (days === null && !loadError) {
         return (
-            <Section title=" תיאום תור" contentClassName={styles.content}>
+            <Section
+                title={labels.bookingTitle}
+                contentClassName={styles.content}
+            >
                 <div className={styles.loading}>טוען זמינות…</div>
             </Section>
         );
@@ -364,7 +368,10 @@ export default function BookingSection({ card }) {
     // ── Load error ──
     if (loadError) {
         return (
-            <Section title=" תיאום תור" contentClassName={styles.content}>
+            <Section
+                title={labels.bookingTitle}
+                contentClassName={styles.content}
+            >
                 <Notice variant="error">{loadError}</Notice>
             </Section>
         );
@@ -376,7 +383,10 @@ export default function BookingSection({ card }) {
     // ── Success state ──
     if (submitStatus === "success") {
         return (
-            <Section title=" תיאום תור" contentClassName={styles.content}>
+            <Section
+                title={labels.bookingTitle}
+                contentClassName={styles.content}
+            >
                 <Notice variant="success">
                     בקשת התיאום התקבלה! בעל העסק ייצור איתך קשר לאישור המועד.
                 </Notice>
@@ -385,10 +395,8 @@ export default function BookingSection({ card }) {
     }
 
     return (
-        <Section title=" תיאום תור" contentClassName={styles.content}>
-            <p className={styles.intro}>
-                בחרו יום ושעה מתאימים, ובעל העסק ייצור איתכם קשר לאישור.
-            </p>
+        <Section title={labels.bookingTitle} contentClassName={styles.content}>
+            <p className={styles.intro}>{labels.bookingIntro}</p>
 
             {/* ── Month-view calendar (strict single-month, local navigation) ── */}
             {calendarGrid && (
@@ -399,7 +407,7 @@ export default function BookingSection({ card }) {
                         <button
                             type="button"
                             className={styles.calNavBtn}
-                            aria-label="חודש קודם"
+                            aria-label={labels.bookingPrevMonth}
                             onClick={handlePrevMonth}
                             disabled={activeMonthIndex <= 0}
                         >
@@ -412,7 +420,7 @@ export default function BookingSection({ card }) {
                         <button
                             type="button"
                             className={styles.calNavBtn}
-                            aria-label="חודש הבא"
+                            aria-label={labels.bookingNextMonth}
                             onClick={handleNextMonth}
                             disabled={activeMonthIndex >= monthList.length - 1}
                         >
@@ -422,7 +430,7 @@ export default function BookingSection({ card }) {
 
                     {/* Weekday headers */}
                     <div className={styles.calRow}>
-                        {WEEKDAY_HEADERS.map((h) => (
+                        {labels.bookingWeekdayHeaders.map((h) => (
                             <span key={h} className={styles.calHeaderCell}>
                                 {h}
                             </span>
@@ -567,7 +575,7 @@ export default function BookingSection({ card }) {
                     <form className={styles.form} onSubmit={handleSubmit}>
                         <input
                             type="text"
-                            placeholder="שם מלא"
+                            placeholder={labels.leadName}
                             value={form.name}
                             required
                             maxLength={100}
@@ -578,7 +586,7 @@ export default function BookingSection({ card }) {
 
                         <input
                             type="tel"
-                            placeholder="טלפון"
+                            placeholder={labels.leadPhone}
                             value={form.phone}
                             required
                             maxLength={20}
@@ -610,21 +618,21 @@ export default function BookingSection({ card }) {
                                 required
                             />
                             <span className={styles.consentText}>
-                                אני מסכים/ה ל
+                                {labels.consentPrefixBooking}
                                 <a
                                     href="/privacy"
                                     target="_blank"
                                     rel="noopener noreferrer"
                                 >
-                                    מדיניות הפרטיות
+                                    {labels.privacyPolicy}
                                 </a>{" "}
-                                ול
+                                {labels.consentConnectorBooking}
                                 <a
                                     href="/terms"
                                     target="_blank"
                                     rel="noopener noreferrer"
                                 >
-                                    תנאי השימוש
+                                    {labels.termsOfUse}
                                 </a>
                             </span>
                         </label>
@@ -635,8 +643,8 @@ export default function BookingSection({ card }) {
                             disabled={submitStatus === "submitting"}
                         >
                             {submitStatus === "submitting"
-                                ? "שולח…"
-                                : "שליחת בקשה"}
+                                ? labels.bookingSubmitting
+                                : labels.bookingSubmit}
                         </button>
 
                         {submitStatus === "error" && submitError && (

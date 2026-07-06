@@ -48,9 +48,10 @@ function isAbsoluteHttpsUrl(u) {
  *
  * @param {Array<{question:string, answer:string}>} faqItems
  * @param {string} canonicalUrl - absolute https public URL of the card page.
+ * @param {string} [language] - card language ("ru" => "ru"; anything else => "he").
  * @returns {object|null} FAQPage JSON-LD object, or null if not emittable.
  */
-export function buildCardFaqJsonLd(faqItems, canonicalUrl) {
+export function buildCardFaqJsonLd(faqItems, canonicalUrl, language) {
     if (!Array.isArray(faqItems) || faqItems.length === 0) return null;
     if (!isAbsoluteHttpsUrl(canonicalUrl)) return null;
 
@@ -75,7 +76,7 @@ export function buildCardFaqJsonLd(faqItems, canonicalUrl) {
         "@type": "FAQPage",
         "@id": `${canonicalUrl}#faq`,
         url: canonicalUrl,
-        inLanguage: "he",
+        inLanguage: language === "ru" ? "ru" : "he",
         isPartOf: { "@id": canonicalUrl },
         mainEntity,
     };

@@ -1,6 +1,7 @@
 import styles from "../layout/ContactButtons.module.css";
 import { trackClick } from "../../../services/analytics.client";
 import ensureHttpUrl from "../../../utils/ensureHttpUrl";
+import { getPublicCardLabels } from "../../../utils/publicCardLabels";
 import {
     normalizeForTel,
     normalizeForWaMe,
@@ -64,6 +65,7 @@ function buildCustomActionHref(actionType, target) {
 
 function ContactButtons({ card }) {
     const { contact } = card;
+    const labels = getPublicCardLabels(card?.language);
     const locationAddress = String(card?.business?.address || "").trim();
     const locationCity = String(card?.business?.city || "").trim();
 
@@ -154,7 +156,7 @@ function ContactButtons({ card }) {
                             aria-hidden="true"
                         />
                     </span>
-                    <span className={styles.label}>טלפון</span>
+                    <span className={styles.label}>{labels.contactPhone}</span>
                 </a>
             )}
 
@@ -173,7 +175,9 @@ function ContactButtons({ card }) {
                             aria-hidden="true"
                         />
                     </span>
-                    <span className={styles.label}>וואטסאפ</span>
+                    <span className={styles.label}>
+                        {labels.contactWhatsapp}
+                    </span>
                 </a>
             )}
 
@@ -192,7 +196,9 @@ function ContactButtons({ card }) {
                             aria-hidden="true"
                         />
                     </span>
-                    <span className={styles.label}>פייסבוק</span>
+                    <span className={styles.label}>
+                        {labels.contactFacebook}
+                    </span>
                 </a>
             )}
 
@@ -211,7 +217,9 @@ function ContactButtons({ card }) {
                             aria-hidden="true"
                         />
                     </span>
-                    <span className={styles.label}>אינסטגרם</span>
+                    <span className={styles.label}>
+                        {labels.contactInstagram}
+                    </span>
                 </a>
             )}
 
@@ -230,7 +238,7 @@ function ContactButtons({ card }) {
                             aria-hidden="true"
                         />
                     </span>
-                    <span className={styles.label}>טוויטר</span>
+                    <span className={styles.label}>{labels.twitter}</span>
                 </a>
             )}
 
@@ -249,7 +257,7 @@ function ContactButtons({ card }) {
                             aria-hidden="true"
                         />
                     </span>
-                    <span className={styles.label}>טיקטוק</span>
+                    <span className={styles.label}>{labels.tiktok}</span>
                 </a>
             )}
 
@@ -266,7 +274,7 @@ function ContactButtons({ card }) {
                             aria-hidden="true"
                         />
                     </span>
-                    <span className={styles.label}>אימייל</span>
+                    <span className={styles.label}>{labels.contactEmail}</span>
                 </a>
             )}
 
@@ -285,7 +293,7 @@ function ContactButtons({ card }) {
                             aria-hidden="true"
                         />
                     </span>
-                    <span className={styles.label}>אתר</span>
+                    <span className={styles.label}>{labels.website}</span>
                 </a>
             )}
 

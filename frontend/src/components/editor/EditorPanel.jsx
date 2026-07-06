@@ -29,6 +29,7 @@ export default function EditorPanel({
     onPublish,
     onUnpublish,
     onUpdateSlug,
+    onUpdateLanguage,
     fieldErrors = {},
 }) {
     const effectivePlan = card?.effectiveBilling?.plan || "free";
@@ -214,6 +215,7 @@ export default function EditorPanel({
                     onPublish={onPublish}
                     onUnpublish={onUnpublish}
                     onUpdateSlug={onUpdateSlug}
+                    onUpdateLanguage={onUpdateLanguage}
                 />
             );
 

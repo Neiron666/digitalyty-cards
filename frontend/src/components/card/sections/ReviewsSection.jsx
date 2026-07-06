@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Section from "./Section";
+import { getPublicCardLabels } from "../../../utils/publicCardLabels";
 import styles from "./ReviewsSection.module.css";
 
 const INTERVAL_MS = 2000;
@@ -48,6 +49,7 @@ function mod(n, m) {
 }
 
 function ReviewsSection({ card }) {
+    const labels = getPublicCardLabels(card?.language);
     const items = useMemo(() => {
         const raw = Array.isArray(card?.reviews) ? card.reviews : [];
         return raw.map(normalizeReviewItem).filter(Boolean).slice(0, 5);
@@ -415,7 +417,7 @@ function ReviewsSection({ card }) {
             <div
                 className={styles.stars}
                 role="img"
-                aria-label={`דירוג ${r} מתוך 5`}
+                aria-label={labels.starRatingAria(r)}
             >
                 {Array.from({ length: 5 }).map((_, i) => (
                     <span
@@ -455,7 +457,7 @@ function ReviewsSection({ card }) {
         : `active:${activeIndex}`;
 
     return (
-        <Section title="המלצות">
+        <Section title={labels.reviewsTitle}>
             <div
                 ref={rootRef}
                 className={styles.slider}
@@ -472,7 +474,7 @@ function ReviewsSection({ card }) {
                             type="button"
                             className={`${styles.btn} ${styles.btnPrev}`}
                             onClick={onPrevClick}
-                            aria-label="המלצה הקודמת"
+                            aria-label={labels.reviewPrev}
                             disabled={!hasControls}
                         >
                             ‹
@@ -481,7 +483,7 @@ function ReviewsSection({ card }) {
                             type="button"
                             className={`${styles.btn} ${styles.btnNext}`}
                             onClick={onNextClick}
-                            aria-label="המלצה הבאה"
+                            aria-label={labels.reviewNext}
                             disabled={!hasControls}
                         >
                             ›
@@ -496,7 +498,7 @@ function ReviewsSection({ card }) {
                         onPointerUp={onPointerUp}
                         onPointerCancel={onPointerCancel}
                         role="group"
-                        aria-label="המלצות"
+                        aria-label={labels.reviewsAria}
                     >
                         {t ? (
                             <div

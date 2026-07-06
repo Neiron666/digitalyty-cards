@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import Section from "./Section";
 import { ServicesIcon } from "../../icons/EditorTabIcons";
+import { getPublicCardLabels } from "../../../utils/publicCardLabels";
 import styles from "./ServicesSection.module.css";
 
 function normalizeServices(card) {
@@ -22,13 +23,14 @@ function normalizeServices(card) {
     if (!items.length) return null;
 
     return {
-        title: title || "שירותים",
+        title,
         items,
     };
 }
 
 export default function ServicesSection({ card, mode }) {
     const services = useMemo(() => normalizeServices(card), [card]);
+    const labels = getPublicCardLabels(card?.language);
     const initialOpen = false;
     const [open, setOpen] = useState(initialOpen);
 
@@ -36,9 +38,10 @@ export default function ServicesSection({ card, mode }) {
     if (!card?.entitlements?.canUseServices) return null;
     if (!services) return null;
 
+    const displayTitle = services.title || labels.servicesTitle;
     const toggleLabel = open
-        ? `הסתר ${services.title}`
-        : `הצג ${services.title}`;
+        ? `${labels.hide} ${displayTitle}`
+        : `${labels.show} ${displayTitle}`;
 
     return (
         <Section
@@ -47,7 +50,7 @@ export default function ServicesSection({ card, mode }) {
             contentClassName={styles.content}
         >
             <div className={styles.wrap}>
-                <h2 className={styles.sectionTitle}>{services.title}</h2>
+                <h2 className={styles.sectionTitle}>{displayTitle}</h2>
                 <button
                     type="button"
                     className={styles.toggle}
