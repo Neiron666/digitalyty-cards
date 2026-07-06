@@ -654,6 +654,7 @@ function sanitizeWritablePatch(raw) {
         "design",
         "seo",
         "flags",
+        "language",
     ]);
 
     const patch = {};

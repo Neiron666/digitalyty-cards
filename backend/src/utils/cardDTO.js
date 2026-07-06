@@ -13,6 +13,13 @@ export function planFromTier(tier) {
     return "free";
 }
 
+// Normalize card-level display language for the public DTO boundary.
+// Only "ru" is honored; everything else (including "he", undefined, null,
+// empty string, or any unknown value) resolves to "he". Never throws.
+export function normalizeCardLanguage(value) {
+    return value === "ru" ? "ru" : "he";
+}
+
 function isTrialExpiredForWrite(card, now = new Date()) {
     const endsAt = card?.trialEndsAt
         ? new Date(card.trialEndsAt).getTime()
@@ -145,6 +152,7 @@ function pickSafeCardFields(cardObj) {
         _id: cardObj._id,
         slug: cardObj.slug,
         status: cardObj.status,
+        language: normalizeCardLanguage(cardObj.language),
         isActive: cardObj.isActive,
         business: cardObj.business,
         contact: cardObj.contact,

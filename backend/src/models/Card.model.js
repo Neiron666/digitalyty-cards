@@ -520,6 +520,14 @@ const CardSchema = new mongoose.Schema(
             index: true,
         },
 
+        // Card-level display language (public render + SEO metadata only).
+        // Existing docs without this field resolve to "he" via the schema default.
+        language: {
+            type: String,
+            enum: ["he", "ru"],
+            default: "he",
+        },
+
         // Plain trial fields (no automatic behavior in the model).
         trialStartedAt: { type: Date, default: null },
         trialEndsAt: { type: Date, default: null },
