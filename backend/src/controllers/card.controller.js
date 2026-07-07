@@ -2756,6 +2756,11 @@ export async function getCardBySlug(req, res) {
     if (dto?.slug) {
         dto.publicPath = `/card/${dto.slug}`;
         dto.ogPath = `/og/card/${dto.slug}`;
+        const selfHref = selfThemeCssHrefFor(
+            dto.design,
+            `/api/cards/slug/${encodeURIComponent(dto.slug)}`,
+        );
+        if (selfHref) dto.selfThemeCssHref = selfHref;
     }
 
     stripPremiumLocationFieldsForPublicDto(dto);
@@ -2886,6 +2891,11 @@ export async function getCompanyCardByOrgSlugAndSlug(req, res) {
         const canonicalOrgSlug = org?.slug ? String(org.slug) : orgSlug;
         dto.publicPath = `/c/${canonicalOrgSlug}/${dto.slug}`;
         dto.ogPath = `/og/c/${canonicalOrgSlug}/${dto.slug}`;
+        const selfHref = selfThemeCssHrefFor(
+            dto.design,
+            `/api/c/${encodeURIComponent(canonicalOrgSlug)}/${encodeURIComponent(dto.slug)}`,
+        );
+        if (selfHref) dto.selfThemeCssHref = selfHref;
     }
 
     stripPremiumLocationFieldsForPublicDto(dto);
@@ -2994,6 +3004,12 @@ export async function getSelfThemeCssById(req, res) {
         }
     }
 
+    return emitSelfThemeCss(res, st);
+}
+
+// Shared self-theme CSS emitter. Writes ONLY normalized hex color variables
+// (no arbitrary CSS injection). Callers must have validated public access.
+function emitSelfThemeCss(res, st) {
     const bg = normalizeHexColor(st.bg);
     const text = normalizeHexColor(st.text);
     const primary = normalizeHexColor(st.primary);
@@ -3044,6 +3060,105 @@ export async function getSelfThemeCssById(req, res) {
     res.setHeader("X-Content-Type-Options", "nosniff");
     res.setHeader("Cache-Control", "no-store");
     return res.status(200).send(cssLines.join("\n") + "\n");
+}
+
+// Builds a public-safe slug-based self-theme CSS href for the public DTO.
+// Returns null unless the card is customV1 with a selfThemeV1 object.
+// basePath must already be slug/orgSlug-scoped and encoded by the caller.
+function selfThemeCssHrefFor(design, basePath) {
+    if (!design || typeof design !== "object") return null;
+    if (String(design.templateId || "").trim() !== "customV1") return null;
+    const st = design.selfThemeV1;
+    if (!st || typeof st !== "object") return null;
+    const v = Number(st.version) > 0 ? Number(st.version) : 1;
+    return `${basePath}/self-theme.css?v=${v}`;
+}
+
+// Public self-theme CSS resolved by personal slug (SSR data island has no _id).
+// Mirrors getCardBySlug public-access rules; published personal cards only.
+export async function getSelfThemeCssBySlug(req, res) {
+    const slug = normalizeSlugInput(req.params.slug);
+    if (!isValidSlug(slug)) return asNotFound(res);
+
+    const personalOrgId = await getPersonalOrgId();
+    const card = await Card.findOne({
+        slug,
+        isActive: true,
+        $or: [
+            { orgId: new mongoose.Types.ObjectId(personalOrgId) },
+            { orgId: { $exists: false } },
+            { orgId: null },
+        ],
+    });
+    if (!card) return asNotFound(res);
+
+    // Defense in depth: anon-owned cards must never be publicly resolvable.
+    if (card.anonymousId && !card.user) return asNotFound(res);
+    if (!card.user) return asNotFound(res);
+
+    // Public-only: unpublished cards are not resolvable via this CSS route.
+    if (card.status !== "published") return asNotFound(res);
+
+    const now = new Date();
+    if (isTrialExpired(card, now) && !isEntitled(card, now)) {
+        return asNotFound(res);
+    }
+
+    if (String(card?.design?.templateId || "").trim() !== "customV1") {
+        return asNotFound(res);
+    }
+    const st =
+        card?.design && typeof card.design === "object"
+            ? card.design.selfThemeV1
+            : null;
+    if (!st || typeof st !== "object") return asNotFound(res);
+
+    return emitSelfThemeCss(res, st);
+}
+
+// Public self-theme CSS resolved by org slug + card slug.
+// Mirrors getCompanyCardByOrgSlugAndSlug anti-enumeration rules.
+export async function getSelfThemeCssByOrgSlugAndSlug(req, res) {
+    const orgSlug = normalizeSlugInput(req.params.orgSlug);
+    const slug = normalizeSlugInput(req.params.slug);
+    if (!isValidSlug(orgSlug) || !isValidSlug(slug)) return asNotFound(res);
+
+    const org = await Organization.findOne({ slug: orgSlug, isActive: true })
+        .select("_id slug isActive")
+        .lean();
+    if (!org?._id) return asNotFound(res);
+
+    const card = await Card.findOne({ orgId: org._id, slug, isActive: true });
+    if (!card) return asNotFound(res);
+
+    // Public-only: unpublished org cards are not resolvable via this CSS route.
+    if (card.status !== "published") return asNotFound(res);
+
+    // Anti-enumeration: owner must be an active org member.
+    const ownerMember = await OrganizationMember.findOne({
+        orgId: org._id,
+        userId: String(card.user),
+        status: "active",
+    })
+        .select("_id")
+        .lean();
+    if (!ownerMember?._id) return asNotFound(res);
+
+    const now = new Date();
+    if (isTrialExpired(card, now) && !isEntitled(card, now)) {
+        return asNotFound(res);
+    }
+
+    if (String(card?.design?.templateId || "").trim() !== "customV1") {
+        return asNotFound(res);
+    }
+    const st =
+        card?.design && typeof card.design === "object"
+            ? card.design.selfThemeV1
+            : null;
+    if (!st || typeof st !== "object") return asNotFound(res);
+
+    return emitSelfThemeCss(res, st);
 }
 
 function normalizeSlugInput(value) {

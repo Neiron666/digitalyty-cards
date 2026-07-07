@@ -145,7 +145,10 @@ export default function TemplateRenderer({ card, onUpgrade, mode }) {
         mode === "editor" && isCustomV1 && hasSelfTheme;
 
     const selfThemePublicActive =
-        mode !== "editor" && isCustomV1 && hasSelfTheme && Boolean(card?._id);
+        mode !== "editor" &&
+        isCustomV1 &&
+        hasSelfTheme &&
+        (Boolean(card?.selfThemeCssHref) || Boolean(card?._id));
 
     const selfThemeScopeActive = selfThemeEditorActive || selfThemePublicActive;
 
@@ -238,7 +241,10 @@ export default function TemplateRenderer({ card, onUpgrade, mode }) {
                     ) : selfThemePublicActive ? (
                         <link
                             rel="stylesheet"
-                            href={`/api/cards/${card._id}/self-theme.css?v=${selfThemeVersion}`}
+                            href={
+                                card?.selfThemeCssHref ||
+                                `/api/cards/${card._id}/self-theme.css?v=${selfThemeVersion}`
+                            }
                         />
                     ) : null}
                 </Helmet>

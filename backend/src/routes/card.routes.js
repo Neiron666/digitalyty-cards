@@ -6,6 +6,7 @@ import {
     updateCard,
     getCardBySlug,
     getSelfThemeCssById,
+    getSelfThemeCssBySlug,
     deleteCard,
     deleteDesignAsset,
     claimCard,
@@ -49,6 +50,9 @@ router.delete("/:id", requireAuthOrAnonymous, deleteCard);
 
 // Self theme stylesheet (id-based; must be above /:slug)
 router.get("/:id/self-theme.css", optionalAuth, getSelfThemeCssById);
+
+// Self theme stylesheet (public slug-based; SSR data island carries no _id)
+router.get("/slug/:slug/self-theme.css", optionalAuth, getSelfThemeCssBySlug);
 
 // Public route (optional auth allows owner-only preview access)
 router.get("/:slug", optionalAuth, getCardBySlug);

@@ -248,6 +248,7 @@ const PUBLIC_CARD_SSR_TOP_LEVEL_ALLOWLIST = new Set([
     "seoResolved",
     "publicPath",
     "ogPath",
+    "selfThemeCssHref",
     "entitlements",
 ]);
 
