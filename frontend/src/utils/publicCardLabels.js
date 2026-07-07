@@ -110,6 +110,15 @@ const LABELS = Object.freeze({
         footerBuiltSuffix: " - הדרך החכמה לכרטיס ביקור דיגיטלי מקצועי",
         footerInstallAndroid: "התקינו את Cardigo לאנדרואיד",
         shareUnavailableUntilPublished: "אפשר לשתף רק אחרי פרסום הכרטיס",
+        locationTitle: "מיקום",
+        navGoogle: "נווט עם גוגל ",
+        navWaze: "נווט עם Waze",
+        wazeLabel: "ווייז",
+        mapTitlePrefix: "מפה",
+        mapPlaceholder: "מפה תיטען בקרבת מקום",
+        openMapAriaPrefix: "פתח מפה",
+        navGoogleAriaPrefix: "נווט עם Google Maps",
+        navWazeAriaPrefix: "נווט עם Waze",
     }),
     ru: Object.freeze({
         businessHoursTitle: "Часы работы",
@@ -206,6 +215,15 @@ const LABELS = Object.freeze({
         footerInstallAndroid: "Установить Cardigo для Android",
         shareUnavailableUntilPublished:
             "Поделиться можно только после публикации карточки",
+        locationTitle: "Местоположение",
+        navGoogle: "Маршрут в Google Maps",
+        navWaze: "Маршрут в Waze",
+        wazeLabel: "Waze",
+        mapTitlePrefix: "Карта",
+        mapPlaceholder: "Карта загрузится рядом",
+        openMapAriaPrefix: "Открыть карту",
+        navGoogleAriaPrefix: "Открыть маршрут в Google Maps",
+        navWazeAriaPrefix: "Открыть маршрут в Waze",
     }),
 });
 

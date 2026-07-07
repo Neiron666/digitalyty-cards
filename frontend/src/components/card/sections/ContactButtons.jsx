@@ -303,7 +303,7 @@ function ContactButtons({ card }) {
                     target="_blank"
                     rel="noreferrer"
                     className={styles.item}
-                    aria-label={`נווט עם Waze: ${locationAddress}, ${locationCity}`}
+                    aria-label={`${labels.navWazeAriaPrefix}: ${locationAddress}, ${locationCity}`}
                     onClick={() => trackClick(card?.slug, "waze")}
                 >
                     <span className={styles.bubble} aria-hidden="true">
@@ -312,7 +312,7 @@ function ContactButtons({ card }) {
                             aria-hidden="true"
                         />
                     </span>
-                    <span className={styles.label}>ווייז</span>
+                    <span className={styles.label}>{labels.wazeLabel}</span>
                 </a>
             )}
 

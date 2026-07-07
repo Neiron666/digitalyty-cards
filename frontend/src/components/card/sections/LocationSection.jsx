@@ -55,7 +55,7 @@ function LocationSection({ card }) {
     }, [embedUrl, shouldLoadMap]);
 
     return (
-        <Section title="מיקום">
+        <Section title={labels.locationTitle}>
             <p className={styles.address}>
                 {address}, {city}
             </p>
@@ -64,7 +64,7 @@ function LocationSection({ card }) {
                     {shouldLoadMap ? (
                         <iframe
                             className={styles.mapIframe}
-                            title={`מפה: ${address}, ${city}`}
+                            title={`${labels.mapTitlePrefix}: ${address}, ${city}`}
                             src={embedUrl}
                             loading="lazy"
                             allowFullScreen
@@ -73,13 +73,13 @@ function LocationSection({ card }) {
                     ) : (
                         <div className={styles.mapPlaceholder}>
                             <p className={styles.mapPlaceholderText}>
-                                מפה תיטען בקרבת מקום
+                                {labels.mapPlaceholder}
                             </p>
                             <button
                                 type="button"
                                 className={styles.mapLoadButton}
                                 onClick={loadMap}
-                                aria-label={`פתח מפה: ${address}, ${city}`}
+                                aria-label={`${labels.openMapAriaPrefix}: ${address}, ${city}`}
                             >
                                 {labels.showMap}
                             </button>
@@ -93,7 +93,7 @@ function LocationSection({ card }) {
                     target="_blank"
                     rel="noreferrer noopener"
                     className={styles.navItem}
-                    aria-label={`נווט עם Google Maps: ${address}, ${city}`}
+                    aria-label={`${labels.navGoogleAriaPrefix}: ${address}, ${city}`}
                     onClick={() => trackClick(card?.slug, "maps")}
                 >
                     <span className={styles.navBubble} aria-hidden="true">
@@ -102,14 +102,14 @@ function LocationSection({ card }) {
                             aria-hidden="true"
                         />
                     </span>
-                    <span className={styles.navLabel}>נווט עם גוגל </span>
+                    <span className={styles.navLabel}>{labels.navGoogle}</span>
                 </a>
                 <a
                     href={wazeHref}
                     target="_blank"
                     rel="noreferrer noopener"
                     className={styles.navItem}
-                    aria-label={`נווט עם Waze: ${address}, ${city}`}
+                    aria-label={`${labels.navWazeAriaPrefix}: ${address}, ${city}`}
                     onClick={() => trackClick(card?.slug, "waze")}
                 >
                     <span className={styles.navBubble} aria-hidden="true">
@@ -118,7 +118,7 @@ function LocationSection({ card }) {
                             aria-hidden="true"
                         />
                     </span>
-                    <span className={styles.navLabel}>נווט עם Waze</span>
+                    <span className={styles.navLabel}>{labels.navWaze}</span>
                 </a>
             </div>
         </Section>
