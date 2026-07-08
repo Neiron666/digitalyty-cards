@@ -55,7 +55,7 @@ function readBody(event) {
     return { rawBody: cleaned, parseError: true };
 }
 
-exports.handler = async function handler(event) {
+export const handler = async function handler(event) {
     try {
         // 1. POST only
         const method = String(

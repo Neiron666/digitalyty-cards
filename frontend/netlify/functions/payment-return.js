@@ -24,7 +24,7 @@
 //   ?status=success&target=iframe -> 303 /payment/iframe-return?status=success  (iframe relay)
 //   ?status=fail&target=iframe    -> 303 /payment/iframe-return?status=fail     (iframe relay)
 
-exports.handler = async function handler(event) {
+export const handler = async function handler(event) {
     const qs = event && event.queryStringParameters;
 
     // status allowlist: only "success" is accepted; everything else maps to "fail".
