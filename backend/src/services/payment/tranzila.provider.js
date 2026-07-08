@@ -2002,6 +2002,32 @@ export default {
         // ── 1. Stable replay key guard ────────────────────────────────────────────
         // No stable replay key: cannot safely create ledger record or extend subscription.
         if (!providerTxnId) {
+            // Strong sanitized signal: charged-but-unfulfilled is otherwise
+            // invisible (no ledger row on this path). Presence booleans only —
+            // never the raw payload / tokens / card data.
+            incrementMetric("payment.notify.failed", {
+                provider: "tranzila",
+                flow: "sto_recurring",
+                reason: "no_provider_txn_id",
+            });
+            console.warn(
+                "[sto-notify] no_provider_txn_id — cannot derive replay key; no ledger written",
+                {
+                    event: "sto_recurring_no_provider_txn_id",
+                    reason: "no_provider_txn_id",
+                    hasStoExternalId: Boolean(stoId),
+                    hasIndex: Boolean(String(payload?.index ?? "").trim()),
+                    hasTempref: Boolean(String(payload?.Tempref ?? "").trim()),
+                    hasResponse: Boolean(responseCode),
+                    hasSupplier: Boolean(supplier),
+                    hasSum: payload?.sum !== undefined && payload?.sum !== null,
+                    hasCurrency: Boolean(currency),
+                    payloadKeyCount:
+                        payload && typeof payload === "object"
+                            ? Object.keys(payload).length
+                            : 0,
+                },
+            );
             return { ok: false, reason: "no_provider_txn_id" };
         }
 

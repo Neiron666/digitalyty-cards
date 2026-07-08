@@ -55,13 +55,31 @@ function readBody(event) {
     return { rawBody: cleaned, parseError: true };
 }
 
+// Safe per-invocation correlation id. Never contains secrets.
+function makeRequestId() {
+    try {
+        if (
+            globalThis.crypto &&
+            typeof globalThis.crypto.randomUUID === "function"
+        ) {
+            return globalThis.crypto.randomUUID();
+        }
+    } catch {
+        // fall through to timestamp/random fallback
+    }
+    return `fn-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+}
+
 exports.handler = async function handler(event) {
+    const requestId = makeRequestId();
     try {
         // 1. POST only
         const method = String(
             event && event.httpMethod ? event.httpMethod : "",
         ).toUpperCase();
-        console.log(`[sto-notify-fn] received method=${method}`);
+        console.log(
+            `[sto-notify-fn] received requestId=${requestId} method=${method}`,
+        );
         if (method !== "POST") {
             return {
                 statusCode: 405,
@@ -80,7 +98,9 @@ exports.handler = async function handler(event) {
             process.env.CARDIGO_STO_NOTIFY_TOKEN || "",
         ).trim();
         if (!expected) {
-            console.error("[sto-notify-fn] tokenConfigured=false");
+            console.error(
+                `[sto-notify-fn] tokenConfigured=false requestId=${requestId}`,
+            );
             return { statusCode: 500, body: "ERROR" };
         }
 
@@ -90,12 +110,18 @@ exports.handler = async function handler(event) {
         ).trim();
         if (provided !== expected) {
             const hasSnk = provided.length > 0;
-            console.warn(`[sto-notify-fn] tokenMatched=false hasSnk=${hasSnk}`);
+            console.warn(
+                `[sto-notify-fn] tokenMatched=false requestId=${requestId} hasSnk=${hasSnk}`,
+            );
             return { statusCode: 403, body: "ERROR" };
         }
 
         // 4. Parse cascade (best-effort)
         const parsedBody = readBody(event);
+        const bodyLen = event.body != null ? String(event.body).length : 0;
+        console.log(
+            `[sto-notify-fn] tokenConfigured=true tokenMatched=true requestId=${requestId} bodyLen=${bodyLen}`,
+        );
 
         // 5. Forward to backend
         const proxySecret = String(
@@ -115,6 +141,7 @@ exports.handler = async function handler(event) {
                 "content-type": "application/json; charset=utf-8",
                 "x-cardigo-proxy-secret": proxySecret,
                 "x-cardigo-sto-notify-token": expected,
+                "x-cardigo-webhook-request-id": requestId,
             },
             body: JSON.stringify(parsedBody),
             signal: ac.signal,
@@ -126,7 +153,7 @@ exports.handler = async function handler(event) {
         const status = response.status;
         const upstreamOk = status >= 200 && status < 300;
         console.log(
-            `[sto-notify-fn] upstreamStatus=${status} upstreamOk=${upstreamOk}`,
+            `[sto-notify-fn] upstreamStatus=${status} upstreamOk=${upstreamOk} requestId=${requestId}`,
         );
         const outwardBody = upstreamOk ? "OK" : "ERROR";
 
@@ -136,7 +163,7 @@ exports.handler = async function handler(event) {
         const errorName = err?.name || "unknown";
         const errorMessage = String(err?.message || "unknown").slice(0, 160);
         console.error(
-            `[sto-notify-fn] network failure name=${errorName} message=${errorMessage}`,
+            `[sto-notify-fn] network failure requestId=${requestId} name=${errorName} message=${errorMessage}`,
         );
         return { statusCode: 502, body: "ERROR" };
     }

@@ -344,13 +344,19 @@ router.post("/notify", async (req, res) => {
  * БЕЗ requireAuth - fail-closed via CARDIGO_STO_NOTIFY_TOKEN (must be set, else 503)
  */
 router.post("/sto-notify", async (req, res) => {
+    // Correlation id: prefer the id forwarded by the Netlify function; else
+    // generate a safe backend fallback. Never contains secrets.
+    const requestId =
+        req.header("x-cardigo-webhook-request-id")?.trim() ||
+        `bk-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
     try {
-        console.log("[sto-notify] received");
+        console.log("[sto-notify] received", { requestId });
         // A. Read expected token — fail-closed: 503 if not configured
         const expectedStoToken = process.env.CARDIGO_STO_NOTIFY_TOKEN?.trim();
         if (!expectedStoToken) {
             console.error(
                 "[sto-notify] CARDIGO_STO_NOTIFY_TOKEN is not configured",
+                { requestId },
             );
             return res.status(503).send("ERROR");
         }
@@ -358,14 +364,38 @@ router.post("/sto-notify", async (req, res) => {
         // B. Validate provided token from header
         const provided = req.header("x-cardigo-sto-notify-token")?.trim();
         if (provided !== expectedStoToken) {
-            // Anti-oracle: do not reveal mismatch to caller
-            console.warn("[sto-notify] tokenMatched=false");
+            // Anti-oracle: do not reveal mismatch to caller (still 200 OK).
+            // Strong sanitized signal so a silent drop is detectable in ops.
+            const contentType = String(req.header("content-type") || "")
+                .split(";")[0]
+                .slice(0, 64);
+            console.warn("[sto-notify] tokenMatched=false", {
+                requestId,
+                reason: "sto_notify_token_mismatch",
+                route: "sto-notify",
+                hasHeaderToken: Boolean(provided),
+                contentType,
+            });
+            const sentryActive =
+                typeof Sentry.getClient === "function" && !!Sentry.getClient();
+            if (sentryActive) {
+                Sentry.captureMessage("sto_notify_token_mismatch", {
+                    level: "warning",
+                    tags: {
+                        area: "payments",
+                        route: "sto-notify",
+                        reason: "sto_notify_token_mismatch",
+                    },
+                    extra: { requestId, hasHeaderToken: Boolean(provided) },
+                });
+            }
             return res.status(200).send("OK");
         }
 
         // C. Token matched — call handler
         const stoResult = await paymentProvider.handleStoNotify(req.body);
         console.log("[sto-notify] handler result", {
+            requestId,
             ok: stoResult?.ok,
             duplicate: stoResult?.duplicate ?? false,
             reason: stoResult?.reason ?? null,
@@ -381,7 +411,10 @@ router.post("/sto-notify", async (req, res) => {
     } catch (err) {
         // Only infra failures (DB down, network) reach here.
         // Business failures are handled inside handleStoNotify (no throw).
-        console.error("[sto-notify] infra failure:", err.message);
+        console.error("[sto-notify] infra failure:", {
+            requestId,
+            message: err.message,
+        });
         const sentryActive =
             typeof Sentry.getClient === "function" && !!Sentry.getClient();
         if (sentryActive) {
@@ -391,6 +424,7 @@ router.post("/sto-notify", async (req, res) => {
                     route: "sto-notify",
                     failureType: "infra_failure",
                 },
+                extra: { requestId },
             });
         }
         res.status(500).send("ERROR");
