@@ -330,7 +330,9 @@ export default function EditorSidebar({
                             aria-hidden="true"
                         >
                             <div>
-                                <span className={styles.planLabel}>מסלול:</span>
+                                <span className={styles.planLabel}>
+                                    מסלול:{" "}
+                                </span>
                                 <span className={styles.planValue}>חינם</span>
                             </div>
                             <div className={styles.trialUpgradeText}>
