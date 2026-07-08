@@ -1664,6 +1664,24 @@ export default {
 
         await user.save();
 
+        // [CARDID-PARITY] Best-effort: enrich first-payment ledger row with cardId.
+        // user.cardId is only available after User.findById above; txnDoc was created
+        // before the user lookup (ledger-first invariant) so cardId was null at insert time.
+        // This update is non-blocking and must never affect fulfillment outcome.
+        if (txnDoc?._id && user.cardId) {
+            PaymentTransaction.updateOne(
+                { _id: txnDoc._id, cardId: null },
+                { $set: { cardId: user.cardId } },
+            ).catch((err) => {
+                console.warn("[payment] cardId enrichment failed", {
+                    event: "txn_cardid_enrich_failed",
+                    txnDocIdPresent: Boolean(txnDoc._id),
+                    cardIdPresent: Boolean(user.cardId),
+                    errCode: err?.code ?? null,
+                });
+            });
+        }
+
         if (user.cardId) {
             const paidUntil = expiresAt;
 
