@@ -1,5 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import styles from "./EditorSidebar.module.css";
+import { Link } from "react-router-dom";
 import {
     getAccountSummary,
     updateEmailPreferences,
@@ -324,8 +325,24 @@ export default function EditorSidebar({
                     </>
                 ) : (
                     <>
-                        <span className={styles.planLabel}>מסלול:</span>
-                        <span className={styles.planValue}>חינם</span>
+                        <div
+                            className={styles.planBadgeFreeIcon}
+                            aria-hidden="true"
+                        >
+                            <div>
+                                <span className={styles.planLabel}>מסלול:</span>
+                                <span className={styles.planValue}>חינם</span>
+                            </div>
+                            <div className={styles.trialUpgradeText}>
+                                <span>כדי להופיע בגוגל - </span>
+                                <Link
+                                    to="/pricing/#plans"
+                                    className={styles.trialCta}
+                                >
+                                    שדרגו למסלול חודשי/שנתי
+                                </Link>
+                            </div>
+                        </div>
                     </>
                 )}
             </div>
@@ -339,9 +356,13 @@ export default function EditorSidebar({
                               ? "נותר עוד יום לניסיון פרמיום"
                               : "נותר פחות מיום לניסיון פרמיום"}
                     </div>
-                    <a href="/pricing" className={styles.trialCta}>
-                        עבור למסלולים
-                    </a>
+
+                    <div className={styles.trialUpgradeText}>
+                        <span>כדי להופיע בגוגל - </span>
+                        <Link to="/pricing/#plans" className={styles.trialCta}>
+                            שדרגו למסלול חודשי/שנתי
+                        </Link>
+                    </div>
                 </div>
             )}
 
