@@ -70,7 +70,7 @@ function makeRequestId() {
     return `fn-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
 }
 
-exports.handler = async function handler(event) {
+export const handler = async function handler(event) {
     const requestId = makeRequestId();
     try {
         // 1. POST only
