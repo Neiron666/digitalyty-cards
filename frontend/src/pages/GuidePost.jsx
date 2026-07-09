@@ -118,6 +118,10 @@ export default function GuidePost() {
     const navigate = useNavigate();
 
     const skipFirstFetchRef = useRef(hasSeed);
+    /* Phase 2 fix: tracks which slug the current `post` state actually belongs to.
+       Prevents the alias-redirect effect below from acting on stale post data
+       left over from a previous slug during SPA navigation. */
+    const loadedForSlugRef = useRef(hasSeed ? slug : null);
 
     useEffect(() => {
         trackSitePageView();
@@ -145,7 +149,10 @@ export default function GuidePost() {
                 }
                 if (!res.ok) throw new Error("שגיאה בטעינת המדריך");
                 const data = await res.json();
-                if (!cancelled) setPost(data);
+                if (!cancelled) {
+                    loadedForSlugRef.current = slug;
+                    setPost(data);
+                }
             } catch (err) {
                 if (!cancelled) setError(err.message || "שגיאה בטעינת המדריך");
             } finally {
@@ -180,6 +187,10 @@ export default function GuidePost() {
 
     /* ── Alias redirect: normalize URL to canonical slug ── */
     useEffect(() => {
+        /* Phase 2 fix: only trust `post` for the canonical-slug check once it is
+           confirmed to have been loaded for the CURRENT slug. Otherwise `post`
+           may still be stale data from the previously-displayed post. */
+        if (loadedForSlugRef.current !== slug) return;
         if (post && post.slug && post.slug !== slug) {
             navigate(`/guides/${post.slug}/`, { replace: true });
         }
