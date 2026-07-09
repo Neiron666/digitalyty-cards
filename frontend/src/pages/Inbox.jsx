@@ -462,7 +462,14 @@ export default function Inbox() {
                                                         styles.detailLine
                                                     }
                                                 >
-                                                    אימייל: {lead.senderEmail}
+                                                    <span
+                                                        className={
+                                                            styles.boldLabel
+                                                        }
+                                                    >
+                                                        אימייל:{" "}
+                                                    </span>
+                                                    {lead.senderEmail}
                                                 </div>
                                             ) : null}
                                             {lead.senderPhone ? (
@@ -471,16 +478,30 @@ export default function Inbox() {
                                                         styles.detailLine
                                                     }
                                                 >
-                                                    טלפון: {lead.senderPhone}
+                                                    <span
+                                                        className={
+                                                            styles.boldLabel
+                                                        }
+                                                    >
+                                                        טלפון:{" "}
+                                                    </span>
+                                                    {lead.senderPhone}
                                                 </div>
                                             ) : null}
                                             {lead.message ? (
                                                 <div
                                                     className={
-                                                        styles.detailLine
+                                                        styles.detailMessage
                                                     }
                                                 >
-                                                    הודעה: {lead.message}
+                                                    <span
+                                                        className={
+                                                            styles.boldLabel
+                                                        }
+                                                    >
+                                                        הודעה: <br />
+                                                    </span>
+                                                    {lead.message}
                                                 </div>
                                             ) : null}
 
