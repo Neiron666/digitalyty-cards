@@ -303,6 +303,84 @@ function PublicCard() {
             cancelled = true;
         };
     }, [slug, orgSlug, navigate, initialCardData]);
+    // SSR_P3_PUBLIC_CARD_ID_BACKFILL_MINIMAL:
+    // card-ssr.mjs intentionally strips `_id` from the SSR data island (anti-enumeration
+    // hardening — see card-ssr.mjs FORBIDDEN_TOP_LEVEL / allowlist). BookingSection and
+    // LeadForm both require card._id as their public runtime identifier, so on any
+    // SSR-seeded page load it stays permanently undefined without this backfill.
+    // This effect never replaces the SSR-rendered card object — it only merges the
+    // `_id` field in, once, via the SAME public DTO endpoints already used above for
+    // non-seeded routes. It runs only after the current route's card has settled
+    // (loadedRouteKey === routeKey), so it never races the primary load effect.
+    useEffect(() => {
+        if (!card || card._id) return;
+        if (!slug) return;
+        if (loadedRouteKey !== routeKey) return;
+
+        let cancelled = false;
+        const requestedSlug = slug;
+        const requestedOrgSlug = orgSlug;
+        const expectedPath = requestedOrgSlug
+            ? `/c/${requestedOrgSlug}/${requestedSlug}`
+            : `/card/${requestedSlug}`;
+
+        async function backfillCardId() {
+            try {
+                const fetched = requestedOrgSlug
+                    ? await getCompanyCardBySlug(
+                          requestedOrgSlug,
+                          requestedSlug,
+                      )
+                    : await getCardBySlug(requestedSlug);
+
+                // Guard: discard response if this effect was already cleaned up
+                // (route changed / component unmounted while the request was in flight).
+                if (cancelled) return;
+
+                const fetchedId =
+                    typeof fetched?._id === "string" ? fetched._id.trim() : "";
+
+                if (!/^[0-9a-fA-F]{24}$/.test(fetchedId)) {
+                    return;
+                }
+
+                const normalizePublicPath = (value) =>
+                    typeof value === "string" ? value.replace(/\/+$/, "") : "";
+
+                const fetchedPath = normalizePublicPath(fetched.publicPath);
+
+                // Identity check: the fetched DTO must resolve to the same public
+                // route we requested, before its `_id` is trusted for a merge.
+                if (fetchedPath && fetchedPath !== expectedPath) {
+                    return;
+                }
+
+                // Merge-only update: never replace the SSR-rendered card object.
+                // Re-checks identity against the LATEST card state (not the closed-over
+                // `card` variable) to avoid backfilling a stale `_id` into a different card.
+                setCard((prev) => {
+                    if (!prev || prev._id) return prev;
+                    if (
+                        prev.slug &&
+                        fetched.slug &&
+                        prev.slug !== fetched.slug
+                    ) {
+                        return prev;
+                    }
+                    return { ...prev, _id: fetchedId };
+                });
+            } catch {
+                // Fail-open: public rendering must never break because of a missing
+                // runtime identifier. Booking/leads simply remain unavailable for
+                // this session, same as before this backfill existed.
+            }
+        }
+
+        backfillCardId();
+        return () => {
+            cancelled = true;
+        };
+    }, [card, slug, orgSlug, routeKey, loadedRouteKey]);
 
     useEffect(() => {
         if (!card?.slug || trackedRef.current) return;
