@@ -27,14 +27,6 @@ function normalizeAbsoluteUrl(origin, value) {
     return `${originTrimmed}/${rawValue}`;
 }
 
-function deriveOgPathFromPublicPath(publicPath) {
-    const p = typeof publicPath === "string" ? publicPath.trim() : "";
-    if (!p) return "";
-    if (p.startsWith("/c/")) return `/og${p}`;
-    if (p.startsWith("/card/")) return `/og${p}`;
-    return "";
-}
-
 function SaveContactButton({ card }) {
     const { business, contact } = card;
     const labels = getPublicCardLabels(card?.language);
@@ -53,17 +45,17 @@ function SaveContactButton({ card }) {
     const email = contact?.email || "";
     const website = contact?.website || "";
 
-    // SSoT-only: share URL must come from ogPath/publicPath. No guessing fallbacks.
+    // SSoT-only: user-facing share URL must come from the canonical publicPath
+    // (/card/:slug or /c/:orgSlug/:slug). card.ogPath is an internal/social-preview
+    // route and must never be used or derived-from here. No guessing fallbacks.
     const shareOrigin = getPublicOrigin();
-    const ogPath = typeof card?.ogPath === "string" ? card.ogPath.trim() : "";
-    const publicPathRaw =
+    const publicPath =
         typeof card?.publicPath === "string" ? card.publicPath.trim() : "";
-    const derivedOgPath = deriveOgPathFromPublicPath(publicPathRaw);
-    const shareUrl = ogPath
-        ? normalizeAbsoluteUrl(shareOrigin, ogPath)
-        : derivedOgPath
-          ? normalizeAbsoluteUrl(shareOrigin, derivedOgPath)
-          : "";
+    const isValidPublicCardPath =
+        publicPath.startsWith("/card/") || publicPath.startsWith("/c/");
+    const shareUrl = isValidPublicCardPath
+        ? normalizeAbsoluteUrl(shareOrigin, publicPath)
+        : "";
     const published = card?.status === "published";
     const canShare = published && Boolean(shareUrl);
 
