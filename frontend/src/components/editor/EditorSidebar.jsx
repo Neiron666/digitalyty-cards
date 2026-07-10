@@ -336,7 +336,7 @@ export default function EditorSidebar({
                                 <span className={styles.planValue}>חינם</span>
                             </div>
                             <div className={styles.trialUpgradeText}>
-                                <span>כדי להופיע בגוגל - </span>
+                                🌐<span>כדי להופיע בגוגל - </span>
                                 <Link
                                     to="/pricing/#plans"
                                     className={styles.trialCta}
@@ -360,7 +360,7 @@ export default function EditorSidebar({
                     </div>
 
                     <div className={styles.trialUpgradeText}>
-                        <span>כדי להופיע בגוגל - </span>
+                        🌐<span>כדי להופיע בגוגל - </span>
                         <Link to="/pricing/#plans" className={styles.trialCta}>
                             שדרגו למסלול חודשי/שנתי
                         </Link>
