@@ -114,6 +114,30 @@ export default function CardLayout({
         revealClass: styles.isRevealed,
         skip: mode !== "public",
     });
+
+    const coverFallbackAlt =
+        name && subtitle
+            ? `תמונת כותרת של ${name} - ${subtitle}`
+            : name
+              ? `תמונת כותרת של ${name}`
+              : "תמונת כותרת של העסק";
+    const customCoverAlt =
+        typeof design?.backgroundImageAlt === "string"
+            ? design.backgroundImageAlt.trim()
+            : "";
+    const coverAlt = customCoverAlt || coverFallbackAlt;
+
+    const avatarFallbackAlt =
+        name && subtitle
+            ? `תמונת פרופיל של ${name} - ${subtitle}`
+            : name
+              ? `תמונת פרופיל של ${name}`
+              : "תמונת פרופיל של העסק";
+    const customAvatarAlt =
+        typeof design?.avatarImageAlt === "string"
+            ? design.avatarImageAlt.trim()
+            : "";
+    const avatarAlt = customAvatarAlt || avatarFallbackAlt;
     const overlayOpacity = Math.min(0.7, Math.max(0, overlayValue / 100));
     const overlayStep = Math.min(
         70,
@@ -141,13 +165,7 @@ export default function CardLayout({
                         <img
                             className={styles.cover}
                             src={coverUrl}
-                            alt={
-                                name && subtitle
-                                    ? `תמונת כותרת של ${name} - ${subtitle}`
-                                    : name
-                                      ? `תמונת כותרת של ${name}`
-                                      : "תמונת כותרת של העסק"
-                            }
+                            alt={coverAlt}
                             decoding="async"
                             loading="eager"
                             fetchpriority="high"
@@ -171,13 +189,7 @@ export default function CardLayout({
                             >
                                 <img
                                     src={avatar}
-                                    alt={
-                                        name && subtitle
-                                            ? `תמונת פרופיל של ${name} - ${subtitle}`
-                                            : name
-                                              ? `תמונת פרופיל של ${name}`
-                                              : "תמונת פרופיל של העסק"
-                                    }
+                                    alt={avatarAlt}
                                     width={480}
                                     height={480}
                                     decoding="async"

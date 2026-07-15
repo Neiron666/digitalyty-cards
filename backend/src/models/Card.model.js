@@ -237,6 +237,7 @@ const CUSTOM_ACTION_TYPES = new Set([
     "url",
 ]);
 const CUSTOM_ACTION_ADDRESS_MAX = 200;
+const CARD_IMAGE_ALT_MAX = 200;
 
 // isValidAddressText: safe plain-text validator for the address actionType target.
 // Allows any printable text (Hebrew, English, digits, punctuation).
@@ -1263,6 +1264,21 @@ const CardSchema = new mongoose.Schema(
             // optional Supabase storage paths (for deletion)
             coverImagePath: String,
             logoPath: String,
+
+            // optional custom alt text for public image accessibility/SEO.
+            // Sanitized on write in card.controller.js (sanitizeCardImageAlt).
+            backgroundImageAlt: {
+                type: String,
+                trim: true,
+                default: "",
+                maxlength: CARD_IMAGE_ALT_MAX,
+            },
+            avatarImageAlt: {
+                type: String,
+                trim: true,
+                default: "",
+                maxlength: CARD_IMAGE_ALT_MAX,
+            },
         },
 
         // Tracks all uploaded objects (useful for deletion/cleanup even if client only stores URL fields).

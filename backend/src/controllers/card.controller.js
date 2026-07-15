@@ -636,6 +636,19 @@ function stripServerOnlyFields(patch) {
     }
 }
 
+// Sanitizes a card image alt text for safe DB storage. Plain text only.
+// Strips HTML tags, normalizes whitespace/line-breaks, clips to 200 chars.
+// Mirrors the convention used in blog/guide/showcase alt sanitizers.
+function sanitizeCardImageAlt(value) {
+    if (!value || typeof value !== "string") return "";
+    return value
+        .replace(/<\/?[^>]+>/g, " ") // strip HTML tags -> space
+        .replace(/[\r\n\t]+/g, " ") // normalize line-breaks/tabs
+        .replace(/\s+/g, " ") // collapse whitespace
+        .trim()
+        .slice(0, 200);
+}
+
 function sanitizeWritablePatch(raw) {
     if (!raw || typeof raw !== "object") return {};
 
@@ -2174,6 +2187,37 @@ export async function updateCard(req, res) {
                 delete patch.contact.customActions;
             }
         }
+    }
+
+    // Alt text sanitization for card images: strip HTML, normalize whitespace, clip to 200.
+    // Applied after all feature/entitlement gates, before $set construction.
+    // Does not touch *Path stripping, gallery limit/entitlement, or orphan-upload reconciliation.
+    if (patch.design && typeof patch.design === "object") {
+        if (
+            Object.prototype.hasOwnProperty.call(
+                patch.design,
+                "backgroundImageAlt",
+            )
+        ) {
+            patch.design.backgroundImageAlt = sanitizeCardImageAlt(
+                patch.design.backgroundImageAlt,
+            );
+        }
+        if (
+            Object.prototype.hasOwnProperty.call(patch.design, "avatarImageAlt")
+        ) {
+            patch.design.avatarImageAlt = sanitizeCardImageAlt(
+                patch.design.avatarImageAlt,
+            );
+        }
+    }
+    if (Array.isArray(patch.gallery)) {
+        patch.gallery = patch.gallery.map((item) => {
+            if (!item || typeof item !== "object" || Array.isArray(item))
+                return item;
+            if (!Object.prototype.hasOwnProperty.call(item, "alt")) return item;
+            return { ...item, alt: sanitizeCardImageAlt(item.alt) };
+        });
     }
 
     const $set = buildSetUpdateFromPatch(patch);

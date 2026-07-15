@@ -276,6 +276,34 @@ function DesignEditor({
                             שמור/י את הכרטיס כדי להעלות תמונות.
                         </p>
                     ) : null}
+
+                    <div className={styles.altField}>
+                        <label
+                            className={styles.altLabel}
+                            htmlFor="design-background-alt"
+                        >
+                            טקסט חלופי לתמונת כותרת
+                        </label>
+                        <input
+                            id="design-background-alt"
+                            type="text"
+                            className={styles.altInput}
+                            placeholder="לדוגמה: תמונת כותרת של העסק"
+                            maxLength={200}
+                            value={safeDesign.backgroundImageAlt || ""}
+                            onChange={(e) =>
+                                onChange({
+                                    ...safeDesign,
+                                    backgroundImageAlt: e.target.value,
+                                })
+                            }
+                            disabled={editingDisabled}
+                        />
+                        <p className={styles.helper}>
+                            אופציונלי. אם השדה ריק, Cardigo ישתמש בתיאור ברירת
+                            המחדל.
+                        </p>
+                    </div>
                 </section>
             )}
 
@@ -347,6 +375,34 @@ function DesignEditor({
                                 )
                             }
                         />
+                    </div>
+
+                    <div className={styles.altField}>
+                        <label
+                            className={styles.altLabel}
+                            htmlFor="design-avatar-alt"
+                        >
+                            טקסט חלופי לתמונת פרופיל
+                        </label>
+                        <input
+                            id="design-avatar-alt"
+                            type="text"
+                            className={styles.altInput}
+                            placeholder="לדוגמה: לוגו או תמונת פרופיל של העסק"
+                            maxLength={200}
+                            value={safeDesign.avatarImageAlt || ""}
+                            onChange={(e) =>
+                                onChange({
+                                    ...safeDesign,
+                                    avatarImageAlt: e.target.value,
+                                })
+                            }
+                            disabled={editingDisabled}
+                        />
+                        <p className={styles.helper}>
+                            אופציונלי. אם השדה ריק, Cardigo ישתמש בתיאור ברירת
+                            המחדל.
+                        </p>
                     </div>
                 </section>
             )}

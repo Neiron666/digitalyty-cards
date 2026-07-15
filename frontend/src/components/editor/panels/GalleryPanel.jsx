@@ -402,24 +402,73 @@ export default function GalleryPanel({
                                 : url;
 
                             return (
-                                <li key={key} className={styles.row}>
-                                    <img
-                                        src={previewSrc}
-                                        alt=""
-                                        className={styles.thumb}
-                                    />
-                                    <Button
-                                        variant="secondary"
-                                        size="small"
-                                        onClick={() => removeImage(index)}
-                                        disabled={
-                                            cropOpen ||
-                                            isApplying ||
-                                            isUploading
-                                        }
-                                    >
-                                        הסר
-                                    </Button>
+                                <li key={key} className={styles.item}>
+                                    <div className={styles.row}>
+                                        <img
+                                            src={previewSrc}
+                                            alt=""
+                                            className={styles.thumb}
+                                        />
+                                        <Button
+                                            variant="secondary"
+                                            size="small"
+                                            onClick={() => removeImage(index)}
+                                            disabled={
+                                                cropOpen ||
+                                                isApplying ||
+                                                isUploading
+                                            }
+                                        >
+                                            הסר
+                                        </Button>
+                                    </div>
+                                    <div className={styles.altField}>
+                                        <label
+                                            className={styles.altLabel}
+                                            htmlFor={`gallery-alt-${index}`}
+                                        >
+                                            טקסט חלופי לתמונה
+                                        </label>
+                                        <input
+                                            id={`gallery-alt-${index}`}
+                                            type="text"
+                                            className={styles.altInput}
+                                            placeholder="לדוגמה: עבודת שיפוץ מטבח לפני ואחרי"
+                                            maxLength={200}
+                                            value={
+                                                item && typeof item === "object"
+                                                    ? item.alt || ""
+                                                    : ""
+                                            }
+                                            onChange={(e) => {
+                                                const value = e.target.value;
+                                                onChange(
+                                                    gallery.map((g, i) => {
+                                                        if (i !== index)
+                                                            return g;
+                                                        if (
+                                                            typeof g ===
+                                                            "string"
+                                                        ) {
+                                                            return {
+                                                                url: g,
+                                                                alt: value,
+                                                            };
+                                                        }
+                                                        return {
+                                                            ...g,
+                                                            alt: value,
+                                                        };
+                                                    }),
+                                                );
+                                            }}
+                                            disabled={
+                                                cropOpen ||
+                                                isApplying ||
+                                                isUploading
+                                            }
+                                        />
+                                    </div>
                                 </li>
                             );
                         });

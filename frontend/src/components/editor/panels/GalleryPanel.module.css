@@ -153,3 +153,38 @@
     outline: 2px solid var(--gold, #d4a017);
     outline-offset: 2px;
 }
+
+.item {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding-block-end: 8px;
+}
+
+.altField {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.altLabel {
+    font-size: var(--fs-caption);
+    color: var(--text-muted, #94a3b8);
+}
+
+.altInput {
+    width: 100%;
+    padding: 4px 8px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 6px;
+    background: rgba(255, 255, 255, 0.05);
+    color: inherit;
+    font-size: var(--fs-caption);
+    font-family: inherit;
+    box-sizing: border-box;
+}
+
+.altInput:focus {
+    outline: 2px solid var(--gold);
+    outline-offset: 1px;
+}

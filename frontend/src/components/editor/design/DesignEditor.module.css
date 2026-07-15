@@ -130,3 +130,33 @@
         width: 100%;
     }
 }
+
+.altField {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    width: 100%;
+}
+
+.altLabel {
+    font-weight: 700;
+    font-size: var(--fs-body-sm);
+    text-align: start;
+}
+
+.altInput {
+    width: 100%;
+    padding: 6px 10px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.05);
+    color: inherit;
+    font-size: var(--fs-body-sm);
+    font-family: inherit;
+    box-sizing: border-box;
+}
+
+.altInput:focus {
+    outline: 2px solid var(--gold);
+    outline-offset: 1px;
+}
