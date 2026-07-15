@@ -113,7 +113,10 @@ export default function BusinessHoursSection({ card, mode }) {
                     <span className={styles.icon} aria-hidden="true" />
                 </button>
 
-                {open ? (
+                <div
+                    className={styles.contentWrap}
+                    data-open={open ? "true" : "false"}
+                >
                     <div className={styles.table}>
                         {data.days.map((d) => (
                             <div key={d.key} className={styles.row}>
@@ -139,7 +142,7 @@ export default function BusinessHoursSection({ card, mode }) {
                             </div>
                         ))}
                     </div>
-                ) : null}
+                </div>
             </div>
         </Section>
     );

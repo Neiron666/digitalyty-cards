@@ -62,7 +62,10 @@ export default function ServicesSection({ card, mode }) {
                     <span className={styles.icon} aria-hidden="true" />
                 </button>
 
-                {open ? (
+                <div
+                    className={styles.contentWrap}
+                    data-open={open ? "true" : "false"}
+                >
                     <ul className={styles.list} role="list">
                         {services.items.map((item, idx) => (
                             <li key={`${idx}-${item}`} className={styles.item}>
@@ -70,7 +73,7 @@ export default function ServicesSection({ card, mode }) {
                             </li>
                         ))}
                     </ul>
-                ) : null}
+                </div>
             </div>
         </Section>
     );
