@@ -6,7 +6,8 @@ import styles from "./PromoPopup.module.css";
 // ── Constants ──────────────────────────────────────────────────────────────────
 const PROMO_LS_KEY = "cardigo_promo_popup_v1";
 const PROMO_COOLDOWN_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
-const PROMO_DELAY_MS = 6000; // 6 seconds
+const PROMO_DELAY_MS = 10000; // 10 seconds
+const PROMO_CLOSE_COUNTDOWN_SECONDS = 3; // close control stays a countdown for this long
 const PROMO_MESSAGE =
     "היי, אשמח לקבל חודש פרימיום מתנה ועזרה בהקמת כרטיס דיגיטלי ב-Cardigo";
 const PROMO_HREF = buildSupportWhatsAppHref(PROMO_MESSAGE);
@@ -65,6 +66,10 @@ function writeDismissed() {
 
 export default function PromoPopup() {
     const [visible, setVisible] = useState(false);
+    const [closeSecondsLeft, setCloseSecondsLeft] = useState(
+        PROMO_CLOSE_COUNTDOWN_SECONDS,
+    );
+    const canCloseByButton = closeSecondsLeft <= 0;
     const titleId = useId();
     const bodyId = useId();
     const dialogRef = useRef(null);
@@ -79,6 +84,13 @@ export default function PromoPopup() {
         setVisible(false);
     }, []);
 
+    // Gated close-button click — no-ops while the countdown is still active.
+    // Escape (below) and the CTA are never gated by this.
+    const handleCloseButtonClick = useCallback(() => {
+        if (!canCloseByButton) return;
+        handleClose();
+    }, [canCloseByButton, handleClose]);
+
     // Start delay timer — runs once on mount.
     // Fails closed if: env disabled | localStorage unavailable | within cooldown.
     useEffect(() => {
@@ -90,6 +102,25 @@ export default function PromoPopup() {
         const timerId = setTimeout(() => setVisible(true), PROMO_DELAY_MS);
         return () => clearTimeout(timerId);
     }, []); // intentionally empty — runs once on mount
+
+    // Close countdown — resets to PROMO_CLOSE_COUNTDOWN_SECONDS whenever the
+    // popup becomes visible, then ticks down once per second until 0. Only
+    // gates the visible close-button click (handleCloseButtonClick above);
+    // Escape and the CTA are never affected. Cleared on hide/unmount.
+    useEffect(() => {
+        if (!visible) return;
+        setCloseSecondsLeft(PROMO_CLOSE_COUNTDOWN_SECONDS);
+        const intervalId = setInterval(() => {
+            setCloseSecondsLeft((prev) => {
+                if (prev <= 1) {
+                    clearInterval(intervalId);
+                    return 0;
+                }
+                return prev - 1;
+            });
+        }, 1000);
+        return () => clearInterval(intervalId);
+    }, [visible]);
 
     // Focus close button when popup opens.
     useEffect(() => {
@@ -167,12 +198,17 @@ export default function PromoPopup() {
                         type="button"
                         className={styles.closeBtn}
                         aria-label="סגירת חלון קידום"
-                        onClick={handleClose}
+                        aria-disabled={canCloseByButton ? undefined : "true"}
+                        onClick={handleCloseButtonClick}
                     >
-                        ×
+                        {canCloseByButton ? (
+                            "×"
+                        ) : (
+                            <span aria-live="polite">{closeSecondsLeft}</span>
+                        )}
                     </button>
                     <h2 id={titleId} className={styles.title}>
-                        <span>קבלו כרטיס דיגיטלי מקצועי לעסק</span>
+                        <span>חודש פרמיום במתנה!</span>
                         <span aria-hidden="true" className={styles.titleEmoji}>
                             {" "}
                             🎁
@@ -180,17 +216,16 @@ export default function PromoPopup() {
                     </h2>
 
                     <p className={styles.premium}>
-                        אנחנו מקימים לכם את הכרטיס בחינם ונותנים{" "}
+                        אנחנו נקים לכם את הכרטיס בחינם וניתן{" "}
                         <span className={styles.premiumHighlight}>
-                            חודש פרימיום במתנה
+                            חודש פרימיום במתנה!
                         </span>
                     </p>
 
                     <p id={bodyId} className={styles.body}>
-                        שלחו לנו וואטסאפ, ספרו בכמה מילים על העסק,
-                        <br />
-                        ואנחנו נעזור לכם להפוך אותו לנוכחות דיגיטלית מסודרת
-                        ומקצועית.
+                        אין צורך בכרטיס אשראי.😊 <br />
+                        רק ללקוחות חדשים.⭐ <br />
+                        שלחו וואטסאפ עכשיו!👋
                     </p>
                     <a
                         href={PROMO_HREF}
