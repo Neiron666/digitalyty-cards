@@ -34,7 +34,7 @@ import {
 // Must be consolidated when og.routes.js is wired to this projection
 // (Phase 2B3). Keep in sync manually until then.
 const DEFAULT_OG_IMAGE_SUFFIX =
-    "/images/og/cardigo-home-og-1200x630.jpg?v=20260519";
+    "/images/og/cardigo-home-og-1200x630.jpg?v=20260721";
 
 const TITLE_MAX = 65;
 const DESCRIPTION_MAX = 160;
