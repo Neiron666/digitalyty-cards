@@ -587,7 +587,7 @@ export default function Home() {
                         העסק שלכם בצורה מקצועית, ברורה ויוקרתית. במקום לשלוח כמה
                         קישורים, להסביר שוב ושוב מה אתם עושים, שתפו{" "}
                         <Link
-                            to="/cards/#showcase-grid"
+                            to="/cards#showcase-grid"
                             className={`${pub.boldTxt} ${pub.goldUnderline} ${styles.caveatLink}`}
                         >
                             כרטיס ביקור דיגיטלי אחד
