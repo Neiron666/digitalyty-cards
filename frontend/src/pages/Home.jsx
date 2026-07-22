@@ -583,18 +583,21 @@ export default function Home() {
 
                     <p className={styles.presenceLead}>
                         כרטיס ביקור דיגיטלי של{" "}
-                        <strong className={styles.presenceLeadBrand}>
-                            Cardigo
-                        </strong>{" "}
-                        מציג את העסק שלכם בצורה מקצועית, ברורה ויוקרתית. במקום
-                        לשלוח כמה קישורים, להסביר שוב ושוב מה אתם עושים, שתפו{" "}
-                        <span className={`${pub.goldUnderline} ${pub.boldTxt}`}>
+                        <strong className={pub.boldTxt}>Cardigo</strong> מציג את
+                        העסק שלכם בצורה מקצועית, ברורה ויוקרתית. במקום לשלוח כמה
+                        קישורים, להסביר שוב ושוב מה אתם עושים, שתפו{" "}
+                        <Link
+                            to="/cards/#showcase-grid"
+                            className={`${pub.boldTxt} ${pub.goldUnderline} ${styles.caveatLink}`}
+                        >
                             כרטיס ביקור דיגיטלי אחד
-                        </span>{" "}
+                        </Link>{" "}
                         עם כל הפרטים של העסק במקום אחד. הכרטיס משפר את התוצאות
                         שלכם בגוגל, נוח לשיתוף, עם מבנה ברור שעוזר ללקוחות להבין
                         מי אתם, מה אתם מציעים ולמה כדאי לפנות דווקא אליכם.
+                        <br />
                     </p>
+
                     <h3 className={pub.h3Gold}>
                         מה כולל כרטיס ביקור דיגיטלי של Cardigo?
                     </h3>
@@ -640,13 +643,14 @@ export default function Home() {
                         <p className={styles.presenceLead}>
                             כרטיס ביקור דיגיטלי לעסק מתאים לעצמאים, עסקים קטנים,
                             קליניקות, חנויות מקומיות ונותני שירות
-                            <span
-                                className={`${pub.goldUnderline} ${pub.boldTxt}`}
+                            <Link
+                                to="/blog/digital-card-small-business/"
+                                className={`${pub.boldTxt} ${styles.caveatLink}`}
                             >
                                 {" "}
                                 שרוצים להציג את העסק בצורה מסודרת בלי להקים אתר
                                 מלא.
-                            </span>
+                            </Link>
                             לכל כרטיס יש קישור אישי, מבנה ברור ותוכן שניתן לעדכן
                             בכל רגע, כך שלקוחות יכולים להבין במהירות מי אתם, מה
                             אתם מציעים ואיך ליצור איתכם קשר.
@@ -669,14 +673,19 @@ export default function Home() {
                             בקליק אחד{" "}
                         </span>{" "}
                     </h2>{" "}
-                    <p
-                        className={`${pub.sectionLeadLight} ${pub.goldUnderline}`}
-                    >
+                    <p className={`${pub.sectionLeadLight}`}>
                         {" "}
-                        כל כפתור בכרטיס עוזר ללקוח לפעול מיד - לשלוח וואטסאפ,
-                        להתקשר, לנווט, לפתוח קישור או להשאיר פרטים בצורה פשוטה
-                        וברורה.{" "}
-                        <span className={`${pub.goldHilight} ${pub.boldTxt}`}>
+                        כל כפתור בכרטיס עוזר ללקוח לפעול מיד -
+                        <Link
+                            to="/blog/blog-digital-business-card-whatsapp/"
+                            className={`${pub.goldHilight} ${pub.boldTxt}  ${pub.goldUnderline}`}
+                        >
+                            {" "}
+                            לשלוח וואטסאפ{" "}
+                        </Link>{" "}
+                        , להתקשר, לנווט, לפתוח קישור או להשאיר פרטים בצורה פשוטה
+                        וברורה. <br />
+                        <span className={` ${pub.boldTxt}`}>
                             {" "}
                             כך הופכים צפייה להזדמנות אמיתית ליצירת קשר.{" "}
                         </span>{" "}
@@ -818,7 +827,13 @@ export default function Home() {
                                 </span>{" "}
                                 <span className={styles.shareCheckDesc}>
                                     {" "}
-                                    שלחו את הכרטיס בקישור, וואטסאפ, אימייל, QR
+                                    שלחו את הכרטיס בקישור, וואטסאפ, אימייל,{" "}
+                                    <Link
+                                        to="/blog/qr-code-for-business-card/"
+                                        className={`${pub.boldTxt} ${pub.goldUnderline} `}
+                                    >
+                                        QR
+                                    </Link>{" "}
                                     או קמפיין ממומן - בצורה פשוטה ונוחה
                                     ללקוח{" "}
                                 </span>{" "}
@@ -1002,9 +1017,15 @@ export default function Home() {
                     </h2>
                     <p className={pub.sectionLeadLight}>
                         מחכים לכם עיצובים מוכנים לכרטיס ביקור דיגיטלי, שנראים
-                        מקצועיים, ועובדים מצוין גם בטלפון. פשוט בוחרים תבנית,
-                        מוסיפים את פרטי העסק ומשתפים קישור אחד ברור עם וואטסאפ,
-                        טלפון, ניווט וכל מה שלקוח צריך כדי לפנות אליכם.
+                        מקצועיים, ועובדים מצוין גם בטלפון. פשוט{" "}
+                        <Link
+                            to="/guides/choose-card-design-cardigo/"
+                            className={`${pub.boldTxt} ${pub.goldUnderline} `}
+                        >
+                            בוחרים תבנית
+                        </Link>
+                        , מוסיפים את פרטי העסק ומשתפים קישור אחד ברור עם
+                        וואטסאפ, טלפון, ניווט וכל מה שלקוח צריך כדי לפנות אליכם.
                     </p>
                     <p
                         className={`${pub.sectionLeadLight} ${pub.goldHilight} ${pub.boldTxt}`}
@@ -1106,23 +1127,29 @@ export default function Home() {
                     <div className={styles.ctaInner}>
                         <h2 className={styles.ctaTitle}>
                             {" "}
-                            צרו כרטיס ביקור דיגיטלי לעסק בחינם{" "}
-                            <span
-                                className={`${pub.goldHilight} ${pub.goldUnderline}`}
+                            צרו כרטיס ביקור דיגיטלי לעסק{" "}
+                            <Link
+                                to="/pricing/#plans"
+                                className={`${pub.boldTxt} ${pub.goldUnderline}`}
                             >
+                                בחינם{" "}
+                            </Link>
+                            <span className={`${pub.goldHilight}`}>
                                 <br />
                                 והתחילו לקבל יותר פניות!{" "}
                             </span>
                         </h2>
                         <p className={styles.ctaText}>
-                            עם{" "}
-                            <span
-                                className={`${pub.goldHilight} ${pub.goldUnderline} ${pub.boldTxt}`}
+                            עם <span className={`${pub.boldTxt}`}>Cardigo</span>{" "}
+                            בונים{" "}
+                            <Link
+                                to="/blog/how-to-create-digital-business-card/"
+                                className={`${pub.boldTxt} ${pub.goldUnderline}`}
                             >
-                                Cardigo
-                            </span>{" "}
-                            בונים דף עסקי מקצועי ונוח לשיתוף - עם וואטסאפ,
-                            טלפון, ניווט ועדכון פרטים בכל זמן.
+                                דף עסקי
+                            </Link>{" "}
+                            מקצועי ונוח לשיתוף - עם וואטסאפ, טלפון, ניווט ועדכון
+                            פרטים בכל זמן.
                         </p>
                         <img
                             className={styles.ctaImg}

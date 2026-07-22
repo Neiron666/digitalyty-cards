@@ -454,6 +454,7 @@ export default function Cards() {
                     >
                         {" "}
                         <div
+                            id="showcase-grid"
                             className={
                                 compactShowcase
                                     ? styles.showcaseGridCompact
