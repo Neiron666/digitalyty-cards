@@ -132,42 +132,21 @@ export default function Footer({ onOpenPrivacyPrefs }) {
                     >
                         קוד QR לעסק
                     </Link>
-                    <Link
-                        to="/blog/qr-code-for-business-card/"
-                        className={styles.link}
-                    >
-                        קוד QR לעסק
-                    </Link>
+
                     <Link
                         to="/blog/blog-mini-site-for-small-business/"
                         className={styles.link}
                     >
                         מיני אתר לעסק קטן
                     </Link>
-                    <Link
-                        to="/blog/blog-mini-site-for-small-business/"
-                        className={styles.link}
-                    >
-                        מיני אתר לעסק קטן
-                    </Link>
+
                     <Link
                         to="/blog/how-to-create-digital-business-card/"
                         className={styles.link}
                     >
                         איך ליצור כרטיס ביקור דיגיטלי
                     </Link>
-                    <Link
-                        to="/blog/how-to-create-digital-business-card/"
-                        className={styles.link}
-                    >
-                        איך ליצור כרטיס ביקור דיגיטלי
-                    </Link>
-                    <Link
-                        to="/blog/digital-business-card-price/"
-                        className={styles.link}
-                    >
-                        מחיר לכרטיס ביקור דיגיטלי
-                    </Link>
+
                     <Link
                         to="/blog/digital-business-card-price/"
                         className={styles.link}
