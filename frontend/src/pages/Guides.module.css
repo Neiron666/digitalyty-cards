@@ -5,7 +5,15 @@
                  pub.sectionLight, pub.sectionLeadLight,
                  pub.h2Gold, pub.faq
    ══════════════════════════════════════════════════════════ */
+.ctaLink {
+    text-decoration: underline 1px;
+    text-underline-offset: 3px;
+    transition: text-decoration-color 0.2s ease;
+}
 
+.ctaLink:hover {
+    text-decoration-color: #8b6914;
+}
 /* ── Hero composition (extends pub.sectionWrap) ──────── */
 
 .heroWrap {

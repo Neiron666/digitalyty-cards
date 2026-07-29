@@ -648,10 +648,16 @@ export default function Pricing() {
                             הופך לבחירה חכמה יותר.
                         </p>
                         <p className={styles.annualParagraph}>
-                            המסלול השנתי מתאים לעסקים שרוצים פחות התעסקות, יותר
-                            רצף וחיסכון אמיתי לעומת תשלום חודשי מצטבר. במקום
-                            לחשוב כל חודש מחדש, אפשר לבחור פעם אחת ולהמשיך קדימה
-                            עם נוכחות מקצועית, מסודרת ויציבה.
+                            <Link
+                                to="/pricing#plans"
+                                className={styles.annualLink}
+                            >
+                                המסלול השנתי
+                            </Link>{" "}
+                            מתאים לעסקים שרוצים פחות התעסקות, יותר רצף וחיסכון
+                            אמיתי לעומת תשלום חודשי מצטבר. במקום לחשוב כל חודש
+                            מחדש, אפשר לבחור פעם אחת ולהמשיך קדימה עם נוכחות
+                            מקצועית, מסודרת ויציבה.
                         </p>
                     </div>
 
@@ -702,8 +708,14 @@ export default function Pricing() {
 
                         <ul className={styles.ctaList}>
                             <li className={styles.ctaItem}>
-                                כרטיס ביקור דיגיטלי שנראה מקצועי ועובד היטב
-                                בנייד
+                                כרטיס ביקור דיגיטלי
+                                <Link
+                                    to="/cards#showcase-grid"
+                                    className={styles.ctaLink}
+                                >
+                                    שנראה מקצועי
+                                </Link>{" "}
+                                ועובד היטב בנייד
                             </li>
                             <li className={styles.ctaItem}>
                                 שיתוף מהיר עם לקוחות בוואטסאפ, בלינק וב־QR

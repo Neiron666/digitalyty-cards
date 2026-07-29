@@ -164,8 +164,14 @@ export default function Contact() {
                         />
 
                         <p className={pub.sectionLeadLight}>
-                            רוצים לדעת מה מתאים לעסק שלכם, לשאול על מחירים או
-                            לברר פרטים לפני ההתחלה? כתבו לנו.
+                            רוצים לדעת מה מתאים לעסק שלכם, לשאול על{" "}
+                            <Link
+                                to="/pricing#plans"
+                                className={styles.ctaLink}
+                            >
+                                מחירים
+                            </Link>{" "}
+                            או לברר פרטים לפני ההתחלה? כתבו לנו.
                         </p>
 
                         <div className={styles.heroActions}>
@@ -257,8 +263,15 @@ export default function Contact() {
                                         מחירים ומסלולים
                                     </h3>
                                     <p className={styles.valueBridgeText}>
-                                        לא בטוחים איזה מסלול מתאים? נשמח לפרט על
-                                        ההבדלים בין המסלולים ולענות על כל שאלה.
+                                        לא בטוחים איזה{" "}
+                                        <Link
+                                            to="/pricing#plans"
+                                            className={styles.ctaLink}
+                                        >
+                                            מסלול
+                                        </Link>{" "}
+                                        מתאים? נשמח לפרט על ההבדלים בין המסלולים
+                                        ולענות על כל שאלה.
                                     </p>
                                 </div>
                             </article>
@@ -281,7 +294,13 @@ export default function Contact() {
                                     </h3>
                                     <p className={styles.valueBridgeText}>
                                         מחפשים פתרון לכמה אנשי צוות או לארגון?
-                                        פנו אלינו ונבדוק ביחד מה מתאים.
+                                        <Link
+                                            to="/contact#contact-form"
+                                            className={styles.ctaLink}
+                                        >
+                                            פנו אלינו
+                                        </Link>{" "}
+                                        ונבדוק ביחד מה מתאים.
                                     </p>
                                 </div>
                             </article>
@@ -291,7 +310,7 @@ export default function Contact() {
             </section>
 
             {/* ── Contact form + info ──────────────────────── */}
-            <section className={pub.sectionDark}>
+            <section className={pub.sectionDark} id="contact-form">
                 <div className={`${pub.sectionWrap} ${styles.sectionFormWrap}`}>
                     <h2 className={pub.h2White}>נשמח לשמוע מכם</h2>
                     <p className={pub.sectionLeadLight}>

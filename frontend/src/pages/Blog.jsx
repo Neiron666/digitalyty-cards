@@ -225,9 +225,12 @@ export default function Blog() {
                         />
 
                         <p className={pub.sectionLeadLight}>
-                            מאמרים, מדריכים ותובנות פרקטיות על כרטיסי ביקור
-                            דיגיטליים, נוכחות עסקית, לידים, SEO ותקשורת עסקית
-                            חכמה לעסקים בישראל.
+                            מאמרים, מדריכים ותובנות פרקטיות על{" "}
+                            <Link to="/" className={styles.ctaLink}>
+                                כרטיסי ביקור דיגיטליים
+                            </Link>
+                            , נוכחות עסקית, לידים, SEO ותקשורת עסקית חכמה לעסקים
+                            בישראל.
                         </p>
                     </div>
                 </div>
@@ -238,9 +241,16 @@ export default function Blog() {
                 <div className={`${pub.sectionWrap} ${styles.listingWrap}`}>
                     <h2 className={pub.h2Gold}>מאמרים אחרונים</h2>
                     <p className={pub.sectionLead}>
-                        כאן תמצאו תוכן מעשי שיעזור לכם להבין איך להציג את העסק
-                        טוב יותר, לחזק נוכחות דיגיטלית, לשפר תקשורת עם לקוחות
-                        ולהפיק יותר ערך מכרטיס ביקור דיגיטלי.
+                        כאן תמצאו תוכן מעשי שיעזור לכם להבין איך
+                        <Link
+                            to="/cards#showcase-grid"
+                            className={styles.ctaLink}
+                        >
+                            {" "}
+                            להציג את העסק טוב יותר
+                        </Link>
+                        , לחזק נוכחות דיגיטלית, לשפר תקשורת עם לקוחות ולהפיק
+                        יותר ערך מכרטיס ביקור דיגיטלי.
                     </p>
 
                     {loading && posts.length === 0 && (

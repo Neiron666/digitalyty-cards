@@ -220,8 +220,12 @@ export default function Guides() {
 
                         <p className={pub.sectionLeadLight}>
                             מדריכים מעשיים, צעד אחרי צעד, שיעזרו לכם לבנות, לעצב
-                            ולשתף כרטיס ביקור דיגיטלי שעובד נכון - החל מהגדרות
-                            בסיסיות ועד טיפים מתקדמים.
+                            ולשתף
+                            <Link to="/" className={styles.ctaLink}>
+                                {" "}
+                                כרטיס ביקור דיגיטלי
+                            </Link>{" "}
+                            שעובד נכון - החל מהגדרות בסיסיות ועד טיפים מתקדמים.
                         </p>
                     </div>
                 </div>
@@ -232,9 +236,16 @@ export default function Guides() {
                 <div className={`${pub.sectionWrap} ${styles.listingWrap}`}>
                     <h2 className={pub.h2Gold}>מדריכים אחרונים</h2>
                     <p className={pub.sectionLead}>
-                        כאן תמצאו הדרכות מעשיות שיעזרו לכם ליצור כרטיס ביקור
-                        דיגיטלי מקצועי, לנהל את הנוכחות העסקית שלכם, ולשפר את
-                        הדרך שבה לקוחות מוצאים ומכירים אתכם.
+                        כאן תמצאו הדרכות מעשיות שיעזרו לכם ליצור
+                        <Link
+                            to="/cards#showcase-grid"
+                            className={styles.ctaLink}
+                        >
+                            {" "}
+                            כרטיס ביקור דיגיטלי מקצועי{" "}
+                        </Link>{" "}
+                        , לנהל את הנוכחות העסקית שלכם, ולשפר את הדרך שבה לקוחות
+                        מוצאים ומכירים אתכם.
                     </p>
 
                     {loading && posts.length === 0 && (
