@@ -540,6 +540,20 @@
 
 /* highlight: Extracted to styles/public-sections.module.css */
 
+/* ── 1a. Presence intro illustration ────────────────────── */
+
+.presenceIntroImg {
+    width: 100%;
+    max-width: 44rem;
+    border-radius: 1rem;
+    object-fit: cover;
+    height: auto;
+    margin-block: 1.5rem;
+    box-shadow:
+        5px 5px 7px rgba(0, 0, 0, 0.12),
+        0 0 0 1px rgba(212, 175, 55, 0.2);
+}
+
 /* ── 1b. Phone-stage media composition ──────────────────── */
 
 .presenceMedia {

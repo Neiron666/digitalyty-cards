@@ -443,6 +443,7 @@ export default function Home() {
     }, []);
 
     const stageZoom = useScrollProgress();
+    const presenceIntroZoom = useScrollProgress();
     const dashZoom = useScrollProgress();
     const editorZoom = useScrollProgress();
     const insightScroll = useScrollProgress();
@@ -450,6 +451,8 @@ export default function Home() {
     const conversionScroll = useScrollProgress();
     const shareScroll = useScrollProgress();
     const stepsScroll = useScrollProgress();
+    const highlightSlide = useScrollProgress();
+    const highlight2Slide = useScrollProgress();
 
     const homeWebSiteJsonLd = buildHomeWebSiteJsonLd();
     const homeOrganizationJsonLd = buildCardigoOrganizationJsonLd();
@@ -580,25 +583,46 @@ export default function Home() {
                         כרטיס ביקור דיגיטלי
                         <span>הפכו את המתעניינים ללקוחות שלכם!</span>
                     </h2>
-
-                    <p className={styles.presenceLead}>
-                        כרטיס ביקור דיגיטלי של{" "}
-                        <strong className={pub.boldTxt}>Cardigo</strong> מציג את
-                        העסק שלכם בצורה מקצועית, ברורה ויוקרתית. במקום לשלוח כמה
-                        קישורים, להסביר שוב ושוב מה אתם עושים, שתפו{" "}
-                        <Link
-                            to="/cards#showcase-grid"
-                            className={`${pub.boldTxt} ${pub.goldUnderline} ${styles.caveatLink}`}
-                        >
-                            כרטיס ביקור דיגיטלי אחד
-                        </Link>{" "}
-                        עם כל הפרטים של העסק במקום אחד. הכרטיס משפר את התוצאות
-                        שלכם בגוגל, נוח לשיתוף, עם מבנה ברור שעוזר ללקוחות להבין
-                        מי אתם, מה אתם מציעים ולמה כדאי לפנות דווקא אליכם.
-                        <br />
-                    </p>
-
-                    <h3 className={pub.h3Gold}>
+                    <div
+                        className={scroll.scrollSlideFromStart}
+                        ref={presenceIntroZoom.ref}
+                    >
+                        <img
+                            className={`${styles.presenceIntroImg} ${scroll.scrollZoomSoft} ${styles.dashboardZoom}`}
+                            src={`${SECTION_1_IMG}/cardigo-digital-business-card-brings-new-customers.webp`}
+                            alt="כרטיס ביקור דיגיטלי שמביא לקוחות חדשים לעסק - Cardigo"
+                            width={800}
+                            height={450}
+                            loading="lazy"
+                            decoding="async"
+                        />
+                    </div>
+                    <div
+                        className={`${pub.highlight} ${scroll.scrollSlideFromEnd}`}
+                        ref={highlightSlide.ref}
+                    >
+                        <h3 className={`${pub.h3Gold} ${pub.upperGap}`}>
+                            מה זה כרטיס ביקור דיגיטלי?{" "}
+                            <span>מיני אתר מקצועי שמביא יותר לקוחות </span>
+                        </h3>
+                        <p className={styles.presenceLead}>
+                            <Link
+                                to="/cards#showcase-grid"
+                                className={`${pub.boldTxt} ${pub.goldUnderline} `}
+                            >
+                                כרטיס ביקור דיגיטלי של Cardigo{" "}
+                            </Link>{" "}
+                            הוא מיני אתר, שמציג את העסק שלכם בצורה מקצועית,
+                            ברורה ויוקרתית. במקום לשלוח כמה קישורים, להסביר שוב
+                            ושוב מה אתם עושים, שתפו כרטיס ביקור דיגיטלי אחד עם
+                            כל הפרטים של העסק במקום אחד. הכרטיס משפר את התוצאות
+                            שלכם בגוגל, נוח לשיתוף, עם מבנה ברור שעוזר ללקוחות
+                            להבין מי אתם, מה אתם מציעים ולמה כדאי לפנות דווקא
+                            אליכם.
+                            <br />
+                        </p>
+                    </div>
+                    <h3 className={`${pub.h3Gold} ${pub.upDivider}`}>
                         מה כולל כרטיס ביקור דיגיטלי של Cardigo?
                     </h3>
                     <div className={styles.presenceMedia}>
@@ -634,7 +658,10 @@ export default function Home() {
                         ))}
                     </div>
 
-                    <div className={pub.highlight}>
+                    <div
+                        className={`${pub.highlight} ${scroll.scrollSlideFromStart}`}
+                        ref={highlight2Slide.ref}
+                    >
                         <h3 className={pub.h3Gold}>
                             למי מתאים כרטיס ביקור דיגיטלי?
                             <span>לעצמאים שרוצים נוכחות דיגיטלית</span>
@@ -905,7 +932,7 @@ export default function Home() {
                 <div className={pub.sectionWrap}>
                     <h2 className={pub.h2Gold}>
                         {" "}
-                        עדכון הכרטיס הדיגיטלי שלכם - בכל זמן
+                        עדכנו את הכרטיס הדיגיטלי שלכם - 24/7
                     </h2>
 
                     <ul className={styles.editChecklist}>

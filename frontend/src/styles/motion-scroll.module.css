@@ -57,13 +57,44 @@
     will-change: transform;
 }
 
+/* ── Slide in from inline-end (right in RTL) ───────────────────── */
+/*
+ * Element starts offset to inline-end and fades in as --scroll-progress 0→1.
+ * Tuneable: --scroll-slide-distance (default 6rem)
+ */
+.scrollSlideFromEnd {
+    transform: translateX(
+        calc(
+            (1 - clamp(0, var(--scroll-progress, 0) * 3, 1)) *
+                var(--scroll-slide-distance, 6rem)
+        )
+    );
+    opacity: clamp(0, calc(var(--scroll-progress, 0) * 2.5), 1);
+    will-change: transform, opacity;
+}
+
+/* ── Slide in from inline-start (left in RTL) ──────────────────── */
+.scrollSlideFromStart {
+    transform: translateX(
+        calc(
+            (1 - clamp(0, var(--scroll-progress, 0) * 3, 1)) *
+                calc(var(--scroll-slide-distance, 6rem) * -1)
+        )
+    );
+    opacity: clamp(0, calc(var(--scroll-progress, 0) * 2.5), 1);
+    will-change: transform, opacity;
+}
+
 /* ── Reduced motion ─────────────────────────────────────────────── */
 
 @media (prefers-reduced-motion: reduce) {
     .scrollZoomSoft,
     .scrollParallaxSoft,
-    .scrollDriftInline {
+    .scrollDriftInline,
+    .scrollSlideFromEnd,
+    .scrollSlideFromStart {
         transform: none;
+        opacity: 1;
         will-change: auto;
     }
 }
