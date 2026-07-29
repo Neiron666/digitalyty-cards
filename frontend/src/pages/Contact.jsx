@@ -293,7 +293,7 @@ export default function Contact() {
                                         התאמה לעסק או לצוות
                                     </h3>
                                     <p className={styles.valueBridgeText}>
-                                        מחפשים פתרון לכמה אנשי צוות או לארגון?
+                                        מחפשים פתרון לכמה אנשי צוות או לארגון?{" "}
                                         <Link
                                             to="/contact#contact-form"
                                             className={styles.ctaLink}
