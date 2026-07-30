@@ -325,10 +325,29 @@ export default function Cards() {
                                     })
                                 }
                             >
-                                צרו כרטיס דיגיטלי בחינם
+                                צרו כרטיס דיגיטלי בחינם 🎁
                             </Button>
-
                             <Button
+                                as="a"
+                                href={buildSupportWhatsAppHref()}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                variant="primary"
+                                className={`${styles.heroCta} ${whatsappStyles.skin}`}
+                                onClick={() =>
+                                    trackSiteClick({
+                                        action: SITE_ACTIONS.home_hero_secondary_whatsapp,
+                                        pagePath: "/",
+                                    })
+                                }
+                            >
+                                <span
+                                    className={whatsappStyles.icon}
+                                    aria-hidden="true"
+                                />
+                                דברו איתנו בוואטסאפ
+                            </Button>
+                            {/* <Button
                                 as="a"
                                 href={buildSupportWhatsAppHref()}
                                 target="_blank"
@@ -341,7 +360,7 @@ export default function Cards() {
                                     aria-hidden="true"
                                 />
                                 קבלו חודש Premium במתנה!🎁
-                            </Button>
+                            </Button> */}
                         </div>
                     </div>
                     <span className={styles.heroTrialNote}>

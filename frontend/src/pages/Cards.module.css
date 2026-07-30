@@ -85,6 +85,7 @@
 .heroCta:active {
     transform: translateY(0) scale(0.99);
 }
+
 .heroTrialNote {
     display: inline-flex;
     align-items: center;

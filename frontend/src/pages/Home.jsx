@@ -461,8 +461,8 @@ export default function Home() {
     return (
         <main className={styles.page} data-page="site">
             <SeoHelmet
-                title="כרטיס ביקור דיגיטלי לעסק | Cardigo"
-                description="כרטיס ביקור דיגיטלי לעסק של Cardigo מאפשר ליצור עמוד עסקי מקצועי, לשתף ב-QR, בוואטסאפ ובקישורים ייעודיים, ולעדכן הכול בקלות - עם תבניות, אנליטיקה וכלי שיתוף לעסק שלכם."
+                title="כרטיס ביקור דיגיטלי לעסק שמביא יותר לקוחות | Cardigo"
+                description="צרו כרטיס ביקור דיגיטלי מקצועי לעסק בחינם - עם וואטסאפ, קוד QR, גלריה, טופס פניות ואנליטיקה. שתפו בקלות, עדכנו בכל רגע והפכו צפיות לפניות."
                 canonicalUrl={`${ORIGIN}/`}
                 url={`${ORIGIN}/`}
                 image={`${ORIGIN}${DEFAULT_OG_IMAGE_PATH}`}
@@ -543,7 +543,7 @@ export default function Home() {
                                 })
                             }
                         >
-                            צרו כרטיס דיגיטלי בחינם
+                            צרו כרטיס דיגיטלי בחינם 🎁
                         </Button>
                         <Button
                             as="a"
@@ -563,8 +563,28 @@ export default function Home() {
                                 className={whatsappStyles.icon}
                                 aria-hidden="true"
                             />
-                            קבלו חודש Premium במתנה!🎁
+                            דברו איתנו בוואטסאפ
                         </Button>
+                        {/* <Button
+                            as="a"
+                            href={buildSupportWhatsAppHref()}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            variant="primary"
+                            className={`${styles.heroCta} ${whatsappStyles.skin}`}
+                            onClick={() =>
+                                trackSiteClick({
+                                    action: SITE_ACTIONS.home_hero_secondary_whatsapp,
+                                    pagePath: "/",
+                                })
+                            }
+                        >
+                            <span
+                                className={whatsappStyles.icon}
+                                aria-hidden="true"
+                            />
+                            קבלו חודש Premium במתנה!🎁
+                        </Button> */}
                         <span className={styles.heroTrialNote}>
                             כולל 10 ימי פרימיום למשתמשים חדשים
                             <CrownIcon className={styles.heroTrialCrown} />
