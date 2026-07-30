@@ -340,7 +340,7 @@ export default function Cards() {
                                     className={whatsappStyles.icon}
                                     aria-hidden="true"
                                 />
-                                קבלו חודש ניסיון ללא התחייבות!🎁
+                                קבלו חודש Premium במתנה!🎁
                             </Button>
                         </div>
                     </div>
