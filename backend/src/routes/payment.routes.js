@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { requireAuth } from "../middlewares/auth.middleware.js";
 import paymentProvider from "../services/payment/index.js";
+import { classifyCheckoutBillingScope } from "../services/payment/tranzila.provider.js";
 import PaymentIntent from "../models/PaymentIntent.model.js";
 import User from "../models/User.model.js";
 import { PRICES_AGOROT } from "../config/plans.js";
@@ -157,6 +158,26 @@ router.post("/create", requireAuth, async (req, res) => {
         return res
             .status(400)
             .json({ message: "Iframe checkout is not configured" });
+    }
+
+    // ── Personal-billing checkout gate (Section I) ────────────────────────────
+    // A new checkout may be started ONLY for a PERSONAL_BILLING_CARD. REAL_ORG_CARD
+    // and UNKNOWN fail closed here, before any PaymentIntent write or provider
+    // call, on BOTH the flag-off and flag-on paths. Organization entitlement is
+    // never touched. Response is generic to avoid scope enumeration.
+    let billingScope;
+    try {
+        billingScope = await classifyCheckoutBillingScope(req.userId);
+    } catch {
+        // Transient classification failure — fail closed, no provider call.
+        return res
+            .status(503)
+            .json({ message: "Checkout temporarily unavailable" });
+    }
+    if (billingScope !== "personal") {
+        return res
+            .status(403)
+            .json({ message: "Personal billing is required for checkout" });
     }
 
     if (process.env.PAYMENT_INTENT_ENABLED !== "true") {

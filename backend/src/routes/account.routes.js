@@ -28,6 +28,7 @@ import { validatePasswordPolicy } from "../utils/passwordPolicy.js";
 import {
     cancelTranzilaStoForUser,
     createTranzilaStoForUser,
+    classifyCheckoutBillingScope,
 } from "../services/payment/tranzila.provider.js";
 import ActivePasswordReset from "../models/ActivePasswordReset.model.js";
 import MailJob from "../models/MailJob.model.js";
@@ -1337,6 +1338,27 @@ router.post("/resume-auto-renewal", requireAuth, async (req, res) => {
                 }
             }
 
+            // ── Personal-billing boundary (Phase 2A.2, Section D) ─────────────────
+            // Only a PERSONAL_BILLING_CARD (exact User.cardId) may initiate a
+            // provider STO create. REAL_ORG / UNKNOWN → generic business
+            // rejection with no scope enumeration and no provider call. A
+            // transient DB error → retryable service error (503), no provider call.
+            let billingScope;
+            try {
+                billingScope = await classifyCheckoutBillingScope(req.userId);
+            } catch {
+                return res.status(503).json({
+                    ok: false,
+                    messageKey: "resume_unavailable",
+                });
+            }
+            if (billingScope !== "personal") {
+                return res.status(403).json({
+                    ok: false,
+                    messageKey: "resume_unavailable",
+                });
+            }
+
             // ── Recreate STO from stored token ────────────────────────────────────
             // plan and firstChargeDate come exclusively from the user document —
             // never from the request body. This prevents entitlement drift.
@@ -1344,7 +1366,10 @@ router.post("/resume-auto-renewal", requireAuth, async (req, res) => {
                 user,
                 user.plan,
                 user.subscription.expiresAt,
-                { allowRecreateAfterCancel: true },
+                {
+                    allowRecreateAfterCancel: true,
+                    personalScopeVerified: true,
+                },
             );
 
             if (!result.ok) {

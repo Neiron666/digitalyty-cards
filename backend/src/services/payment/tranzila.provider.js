@@ -13,6 +13,12 @@ import {
 } from "../yeshinvoice.service.js";
 import Receipt from "../../models/Receipt.model.js";
 import PaymentIntent from "../../models/PaymentIntent.model.js";
+import PaymentEventInbox from "../../models/PaymentEventInbox.model.js";
+import {
+    getPersonalOrgIdReadOnly,
+    isPersonalBillingCard,
+    isRealOrgCard,
+} from "../../utils/personalOrg.util.js";
 import { incrementMetric } from "../../utils/sentryMetrics.util.js";
 
 /**
@@ -144,6 +150,710 @@ function deriveStoProviderTxnId(payload) {
     if (tempref) return `sto:${stoId}:tempref:${tempref}`;
 
     return null;
+}
+
+// ── PaymentEventInbox durable capture (Phase 2A.1) ──────────────────────────
+// Captures authenticated provider-event evidence AFTER all applicable provider
+// trust checks and BEFORE User/Card business correlation. The durable inbox
+// upsert never waits on User/Card/personalOrg resolution — a crash during
+// correlation still leaves the trusted event persisted. Never grants
+// entitlement. Never stores token/card/PII/raw payload/STO id/receipt number.
+
+const PAYMENT_EVENT_CAPTURE_VERSION = 1;
+
+// Strict positive allowlist — only non-identifying provider fields are stored
+// in PaymentEventInbox.payloadAllowlisted. Anything not listed is dropped,
+// regardless of provider payload drift.
+const INBOX_SAFE_KEYS = [
+    "Response",
+    "sum",
+    "currency",
+    "supplier",
+    "index",
+    "tranmode",
+    "ConfirmationCode",
+    "authnr",
+];
+
+function buildInboxSafePayload(payload) {
+    const safe = {};
+    if (!payload || typeof payload !== "object") return safe;
+    for (const key of INBOX_SAFE_KEYS) {
+        const v = payload[key];
+        if (v === undefined || v === null) continue;
+        if (typeof v === "number") {
+            safe[key] = Number.isFinite(v) ? v : null;
+        } else {
+            safe[key] = String(v).slice(0, 64);
+        }
+    }
+    return safe;
+}
+
+function sanitizeResponseCode(raw) {
+    const s = String(raw ?? "").trim();
+    return /^[A-Za-z0-9]{1,8}$/.test(s) ? s : null;
+}
+
+function normalizeCurrencyForInbox(raw) {
+    const s = String(raw ?? "").trim();
+    if (s === "1") return "ILS"; // DirectNG numeric ILS code
+    if (/^[A-Za-z]{3}$/.test(s)) return s.toUpperCase();
+    return null;
+}
+
+// Deterministic scalar normalization for the canonical evidence fingerprint.
+function normalizeInboxScalar(v) {
+    if (v === undefined || v === null) return null;
+    if (typeof v === "number") return Number.isFinite(v) ? v : null;
+    return String(v);
+}
+
+/**
+ * Canonical duplicate-integrity fingerprint over a FIXED normalized scalar
+ * tuple. Independent of provider payload key order, unrelated optional fields,
+ * nested payload content and any token/card/PII. Identical semantic retries
+ * produce the same fingerprint; a change to any immutable financial scalar
+ * changes it. This is the authoritative duplicate-integrity value — NOT
+ * computeRawPayloadHash.
+ */
+function computeInboxEvidenceFingerprint({
+    provider,
+    canonicalTerminal,
+    eventType,
+    legacyProviderTxnId,
+    providerPaymentStatus,
+    providerResponseCode,
+    amountAgorot,
+    currency,
+    paymentIntentId,
+}) {
+    const tuple = [
+        PAYMENT_EVENT_CAPTURE_VERSION,
+        normalizeInboxScalar(provider),
+        normalizeInboxScalar(canonicalTerminal),
+        normalizeInboxScalar(eventType),
+        legacyProviderTxnId ? String(legacyProviderTxnId) : null,
+        normalizeInboxScalar(providerPaymentStatus),
+        providerResponseCode ? String(providerResponseCode) : null,
+        Number.isInteger(amountAgorot) ? amountAgorot : null,
+        currency ? String(currency) : null,
+        paymentIntentId ? String(paymentIntentId) : null,
+    ];
+    return crypto
+        .createHash("sha256")
+        .update(JSON.stringify(tuple))
+        .digest("hex");
+}
+
+// SHA-256 of the exact unchanged legacyProviderTxnId (never truncated).
+function computeLegacyProviderTxnIdHash(legacyProviderTxnId) {
+    if (
+        typeof legacyProviderTxnId !== "string" ||
+        legacyProviderTxnId.trim() === ""
+    ) {
+        return null;
+    }
+    return crypto
+        .createHash("sha256")
+        .update(legacyProviderTxnId)
+        .digest("hex");
+}
+
+/**
+ * Deterministic eventKey + identity classification over FIXED tuples.
+ *   - Stable:  [version, provider, canonicalTerminal, exact legacyProviderTxnId]
+ *   - Unkeyed: [version, provider, canonicalTerminal, evidenceFingerprint]
+ * The canonicalTerminal is the strictly-validated configured terminal for the
+ * flow — never a lossily sanitized value and never "unknown".
+ */
+function deriveInboxEventKey({
+    provider,
+    canonicalTerminal,
+    legacyProviderTxnId,
+    evidenceFingerprint,
+}) {
+    const hasStableId =
+        typeof legacyProviderTxnId === "string" &&
+        legacyProviderTxnId.trim() !== "";
+    const tuple = hasStableId
+        ? [
+              PAYMENT_EVENT_CAPTURE_VERSION,
+              provider,
+              canonicalTerminal,
+              legacyProviderTxnId,
+          ]
+        : [
+              PAYMENT_EVENT_CAPTURE_VERSION,
+              provider,
+              canonicalTerminal,
+              evidenceFingerprint,
+          ];
+    const eventKey = crypto
+        .createHash("sha256")
+        .update(JSON.stringify(tuple))
+        .digest("hex");
+    return {
+        eventKey,
+        identityStatus: hasStableId ? "stable" : "manual_review",
+    };
+}
+
+const defaultCaptureDeps = {
+    PaymentEventInbox,
+    User,
+    Card,
+    getPersonalOrgIdReadOnly,
+    isPersonalBillingCard,
+    isRealOrgCard,
+    incrementMetric,
+};
+
+/**
+ * Durable, idempotent capture of ONE trusted provider event.
+ *
+ * Section F contract: the durable upsert does NOT wait on any User/Card/org
+ * lookup. Identity/financial evidence is insert-only ($setOnInsert); a crash
+ * during downstream correlation leaves this row persisted. The caller MUST have
+ * already passed all applicable provider trust checks and MUST pass the
+ * strictly-validated canonicalTerminal for the flow.
+ *
+ * Atomic collision protection is delegated to the UNIQUE eventKey index and the
+ * UNIQUE PARTIAL legacyProviderTxnIdHash index — E11000 is authoritative, not a
+ * non-atomic pre-read.
+ *
+ * @returns {Promise<{status:string, eventKey:string, evidenceFingerprint:string,
+ *   identityStatus?:string, correlationStatus?:string, captured:boolean,
+ *   duplicate:boolean, identityCollision?:boolean, integrityCollision?:boolean,
+ *   existing?:object}>}
+ */
+async function captureAuthenticatedPaymentEvent(input, deps = defaultCaptureDeps) {
+    const {
+        eventType,
+        provider,
+        canonicalTerminal,
+        legacyProviderTxnId,
+        rawPayloadHash,
+        safePayload,
+        providerPaymentStatus,
+        providerResponseCode,
+        plan,
+        amountAgorot,
+        currency,
+        paymentIntentId,
+    } = input;
+
+    const normalizedLegacyTxnId =
+        typeof legacyProviderTxnId === "string" &&
+        legacyProviderTxnId.trim() !== ""
+            ? legacyProviderTxnId
+            : null;
+
+    const evidenceFingerprint = computeInboxEvidenceFingerprint({
+        provider,
+        canonicalTerminal,
+        eventType,
+        legacyProviderTxnId: normalizedLegacyTxnId,
+        providerPaymentStatus,
+        providerResponseCode,
+        amountAgorot,
+        currency,
+        paymentIntentId,
+    });
+
+    const { eventKey, identityStatus } = deriveInboxEventKey({
+        provider,
+        canonicalTerminal,
+        legacyProviderTxnId: normalizedLegacyTxnId,
+        evidenceFingerprint,
+    });
+
+    const legacyProviderTxnIdHash = computeLegacyProviderTxnIdHash(
+        normalizedLegacyTxnId,
+    );
+
+    const baseCorrelationStatus =
+        identityStatus === "manual_review"
+            ? "manual_review"
+            : "correlation_pending";
+
+    const insertDoc = {
+        eventKey,
+        provider,
+        providerTerminal: canonicalTerminal,
+        legacyProviderTxnId: normalizedLegacyTxnId,
+        legacyProviderTxnIdHash,
+        eventType,
+        identityStatus,
+        providerPaymentStatus,
+        providerResponseCode: providerResponseCode ?? null,
+        payloadAllowlisted: safePayload ?? null,
+        rawPayloadHash: rawPayloadHash ?? null,
+        evidenceFingerprint,
+        firstObservedAt: new Date(),
+        correlationStatus: baseCorrelationStatus,
+        correlatedUserId: null,
+        correlatedCardId: null,
+        paymentIntentId: paymentIntentId ?? null,
+        plan: plan ?? null,
+        amountAgorot: Number.isInteger(amountAgorot) ? amountAgorot : null,
+        currency: currency ?? null,
+        captureVersion: PAYMENT_EVENT_CAPTURE_VERSION,
+        safeErrorCode: null,
+    };
+
+    let inserted = false;
+    let existing = null;
+    try {
+        const pre = await deps.PaymentEventInbox.findOneAndUpdate(
+            { eventKey },
+            { $setOnInsert: insertDoc },
+            { upsert: true, new: false },
+        );
+        if (pre === null) inserted = true;
+        else existing = pre;
+    } catch (e) {
+        if (e?.code !== 11000) throw e;
+        const conflictField = e?.keyPattern
+            ? Object.keys(e.keyPattern)[0]
+            : null;
+        const msg = String(e?.message ?? "");
+        const isLegacyHashConflict =
+            conflictField === "legacyProviderTxnIdHash" ||
+            msg.includes("legacyProviderTxnIdHash");
+        const isEventKeyConflict =
+            conflictField === "eventKey" || msg.includes("eventKey");
+
+        if (isLegacyHashConflict) {
+            // Re-read the existing keyed row and verify EXACT immutable identity
+            // values (Section F) — never rely on SHA-256 improbability alone.
+            const other = await deps.PaymentEventInbox.findOne({
+                legacyProviderTxnIdHash,
+            }).lean();
+            if (!other) throw e; // transient race — retryable
+
+            const sameExactId =
+                other.legacyProviderTxnId === normalizedLegacyTxnId;
+            const sameProvider = other.provider === provider;
+            const sameTerminal = other.providerTerminal === canonicalTerminal;
+
+            if (sameExactId && sameProvider && !sameTerminal) {
+                // Same exact legacyProviderTxnId under a different terminal.
+                await markInboxCollisionReview(
+                    deps,
+                    other.eventKey,
+                    "provider_identity_collision",
+                );
+                deps.incrementMetric("payment.inbox.identity_collision", {
+                    provider,
+                    flow: eventType,
+                });
+                return {
+                    status: "identity_collision",
+                    eventKey,
+                    evidenceFingerprint,
+                    identityStatus: "integrity_collision",
+                    correlationStatus: "manual_review",
+                    safeErrorCode: "provider_identity_collision",
+                    captured: false,
+                    duplicate: false,
+                    identityCollision: true,
+                    quarantined: true,
+                };
+            }
+
+            if (!sameExactId) {
+                // Different exact id colliding on the same hash — never treat as
+                // an ordinary duplicate. Emit a sanitized critical metric.
+                await markInboxCollisionReview(
+                    deps,
+                    other.eventKey,
+                    "legacy_identity_hash_collision",
+                );
+                deps.incrementMetric(
+                    "payment.inbox.legacy_hash_collision_critical",
+                    { provider, flow: eventType },
+                );
+                return {
+                    status: "identity_collision",
+                    eventKey,
+                    evidenceFingerprint,
+                    identityStatus: "integrity_collision",
+                    correlationStatus: "manual_review",
+                    safeErrorCode: "legacy_identity_hash_collision",
+                    captured: false,
+                    duplicate: false,
+                    identityCollision: true,
+                    quarantined: true,
+                };
+            }
+
+            // Same exact id + same terminal but the eventKey did not match:
+            // deterministic eventKey derivation drift (data integrity).
+            await markInboxCollisionReview(
+                deps,
+                other.eventKey,
+                "data_integrity_drift",
+            );
+            deps.incrementMetric("payment.inbox.data_integrity_drift", {
+                provider,
+                flow: eventType,
+            });
+            return {
+                status: "identity_collision",
+                eventKey,
+                evidenceFingerprint,
+                identityStatus: "integrity_collision",
+                correlationStatus: "manual_review",
+                safeErrorCode: "data_integrity_drift",
+                captured: false,
+                duplicate: false,
+                identityCollision: true,
+                quarantined: true,
+            };
+        }
+
+        if (isEventKeyConflict) {
+            existing = await deps.PaymentEventInbox.findOne({
+                eventKey,
+            }).lean();
+            if (!existing) throw e; // transient race — retryable
+        } else {
+            throw e; // unexpected index conflict — retryable infra error
+        }
+    }
+
+    if (inserted) {
+        return {
+            status: "inserted",
+            eventKey,
+            evidenceFingerprint,
+            identityStatus,
+            correlationStatus: baseCorrelationStatus,
+            captured: true,
+            duplicate: false,
+            quarantined: identityStatus === "manual_review",
+        };
+    }
+
+    // Duplicate delivery: authoritative comparison uses evidenceFingerprint +
+    // immutable financial scalars. Original row is never overwritten.
+    const amountPresent = Number.isInteger(amountAgorot);
+    const currencyPresent = currency !== null && currency !== undefined;
+    const conflict =
+        existing.evidenceFingerprint !== evidenceFingerprint ||
+        existing.provider !== provider ||
+        existing.providerTerminal !== canonicalTerminal ||
+        existing.eventType !== eventType ||
+        existing.providerPaymentStatus !== providerPaymentStatus ||
+        (amountPresent && existing.amountAgorot !== amountAgorot) ||
+        (currencyPresent && existing.currency !== currency);
+
+    if (conflict) {
+        deps.incrementMetric("payment.inbox.integrity_collision", {
+            provider,
+            flow: eventType,
+        });
+        // Durable review state (Section E) — guarded update of the existing row
+        // by its own eventKey. Immutable evidence is never overwritten.
+        await markInboxCollisionReview(
+            deps,
+            existing.eventKey,
+            "provider_event_integrity_collision",
+        );
+        return {
+            status: "integrity_collision",
+            eventKey,
+            evidenceFingerprint,
+            identityStatus: existing.identityStatus,
+            correlationStatus: existing.correlationStatus,
+            safeErrorCode: "provider_event_integrity_collision",
+            captured: false,
+            duplicate: true,
+            integrityCollision: true,
+            quarantined: true,
+            existing,
+        };
+    }
+
+    return {
+        status: "duplicate",
+        eventKey,
+        evidenceFingerprint,
+        identityStatus: existing.identityStatus,
+        correlationStatus: existing.correlationStatus,
+        safeErrorCode: existing.safeErrorCode ?? null,
+        captured: false,
+        duplicate: true,
+        quarantined: isRowQuarantined(existing),
+        existing,
+    };
+}
+
+// Guarded correlation-only update. Identity/financial evidence is never
+// touched here — only correlation fields on the already-durable row.
+// Phase 2A.3: guarded correlation update — never overwrites a collision /
+// manual-review quarantine. Returns the raw updateOne result so callers can
+// inspect matchedCount (0 ⇒ quarantine blocked the write or the row vanished).
+async function updateInboxCorrelation(deps, eventKey, fields) {
+    return deps.PaymentEventInbox.updateOne(
+        {
+            eventKey,
+            identityStatus: { $nin: ["integrity_collision", "manual_review"] },
+            correlationStatus: { $ne: "manual_review" },
+        },
+        { $set: fields },
+    );
+}
+
+// Phase 2A.3: quarantine predicate derived from persisted row state.
+function isRowQuarantined(row) {
+    return (
+        row?.identityStatus === "integrity_collision" ||
+        row?.identityStatus === "manual_review" ||
+        row?.correlationStatus === "manual_review"
+    );
+}
+
+// Phase 2A.3: durable business-mismatch review marker. Guarded so a collision
+// quarantine (integrity_collision / prior manual_review) always takes
+// precedence and its safeErrorCode is never overwritten.
+async function markInboxBusinessMismatchReview(deps, eventKey, safeErrorCode) {
+    return deps.PaymentEventInbox.updateOne(
+        {
+            eventKey,
+            identityStatus: { $nin: ["integrity_collision", "manual_review"] },
+            correlationStatus: { $ne: "manual_review" },
+        },
+        {
+            $set: {
+                correlationStatus: "manual_review",
+                safeErrorCode,
+            },
+        },
+    );
+}
+
+/**
+ * Durable collision-review marker (Section E). Guarded update of ONLY the
+ * review fields on the already-persisted row identified by its own eventKey.
+ * Immutable identity/financial evidence, firstObservedAt and safe payload are
+ * never touched. Idempotent (re-marking is a no-op).
+ */
+async function markInboxCollisionReview(deps, eventKey, safeErrorCode) {
+    await deps.PaymentEventInbox.updateOne(
+        { eventKey },
+        {
+            $set: {
+                identityStatus: "integrity_collision",
+                correlationStatus: "manual_review",
+                safeErrorCode,
+                collisionObservedAt: new Date(),
+            },
+        },
+    );
+}
+
+// Bounded safeErrorCode allowlists for the generic personal-billing
+// continuation. First-payment keeps the historical single "unknown_scope"
+// mapping; STO uses the richer Phase 2A.2 allowlist (Section B).
+const FIRST_PAYMENT_CONTINUATION_CODES = {
+    userNotFound: "unknown_scope",
+    cardMissing: "unknown_scope",
+    cardNotFound: "unknown_scope",
+    sentinelUnresolved: "unknown_scope",
+    realOrg: "real_org_card",
+    distinguishUserMissing: false,
+};
+
+const STO_CONTINUATION_CODES = {
+    userNotFound: "sto_user_not_found",
+    cardMissing: "primary_card_missing",
+    cardNotFound: "unknown_card_scope",
+    sentinelUnresolved: "personal_sentinel_unresolved",
+    realOrg: "real_org_card",
+    distinguishUserMissing: true,
+};
+
+/**
+ * Generic post-capture personal-billing continuation decision (Section B).
+ * Runs AFTER the durable inbox insert. Reads only user.cardId → the exact
+ * User.cardId Card → read-only personalOrgId, classifies through the canonical
+ * predicates, and updates ONLY inbox correlation fields.
+ *
+ * Accepts an already-resolved `user` (STO) or a `userId` to resolve read-only
+ * (first-payment). Returns { continue, correlationStatus, safeErrorCode?,
+ * correlatedCardId?, stopReason? }. A transient User/Card/sentinel lookup
+ * failure THROWS a retryable error so the route returns 500 — the already
+ * captured event stays durable. Never selects another Card owned by the User
+ * and never reads/modifies Card.adminOverride or any Organization record.
+ */
+async function resolvePersonalBillingContinuation(
+    { eventKey, user, userId, codes },
+    deps,
+) {
+    try {
+        let resolvedUser = user;
+        if (resolvedUser === undefined) {
+            resolvedUser = userId
+                ? await deps.User.findById(userId).select("cardId").lean()
+                : null;
+        }
+        const resolvedUserId = resolvedUser?._id ?? userId ?? null;
+        const cardId = resolvedUser?.cardId ?? null;
+
+        // Distinguish a missing User only when the flow requires it (STO).
+        if (!resolvedUser && codes.distinguishUserMissing) {
+            await updateInboxCorrelation(deps, eventKey, {
+                correlationStatus: "manual_review",
+                safeErrorCode: codes.userNotFound,
+            });
+            return {
+                continue: false,
+                correlationStatus: "manual_review",
+                safeErrorCode: codes.userNotFound,
+                stopReason: codes.userNotFound,
+            };
+        }
+
+        if (!cardId) {
+            await updateInboxCorrelation(deps, eventKey, {
+                correlationStatus: "manual_review",
+                safeErrorCode: codes.cardMissing,
+            });
+            return {
+                continue: false,
+                correlationStatus: "manual_review",
+                safeErrorCode: codes.cardMissing,
+                stopReason: codes.cardMissing,
+            };
+        }
+
+        const card = await deps.Card.findById(cardId).select("orgId").lean();
+        if (!card) {
+            await updateInboxCorrelation(deps, eventKey, {
+                correlationStatus: "manual_review",
+                safeErrorCode: codes.cardNotFound,
+                correlatedCardId: cardId,
+            });
+            return {
+                continue: false,
+                correlationStatus: "manual_review",
+                safeErrorCode: codes.cardNotFound,
+                stopReason: codes.cardNotFound,
+            };
+        }
+
+        const personalOrgId = await deps.getPersonalOrgIdReadOnly();
+
+        if (deps.isPersonalBillingCard(card, personalOrgId)) {
+            const upd = await updateInboxCorrelation(deps, eventKey, {
+                correlationStatus: "correlated",
+                correlatedUserId: resolvedUserId,
+                correlatedCardId: cardId,
+            });
+            // Phase 2A.3 race guard (Section I): a matched count of zero means a
+            // concurrent delivery quarantined the row (or it vanished) between
+            // capture and correlation — never silently fulfill.
+            if ((upd?.matchedCount ?? 0) === 0) {
+                const current = await deps.PaymentEventInbox.findOne({
+                    eventKey,
+                })
+                    .select("identityStatus correlationStatus")
+                    .lean();
+                if (!current) {
+                    const missingErr = new Error(
+                        "inbox_correlation_row_missing",
+                    );
+                    missingErr.retryable = true;
+                    throw missingErr;
+                }
+                return {
+                    continue: false,
+                    correlationStatus: current.correlationStatus,
+                    quarantined: true,
+                    stopReason: "quarantined",
+                };
+            }
+            return {
+                continue: true,
+                correlationStatus: "correlated",
+                correlatedCardId: cardId,
+            };
+        }
+
+        if (deps.isRealOrgCard(card, personalOrgId)) {
+            await updateInboxCorrelation(deps, eventKey, {
+                correlationStatus: "manual_review",
+                safeErrorCode: codes.realOrg,
+                correlatedCardId: cardId,
+            });
+            return {
+                continue: false,
+                correlationStatus: "manual_review",
+                safeErrorCode: codes.realOrg,
+                stopReason: codes.realOrg,
+            };
+        }
+
+        // Fail closed — unresolved scope (e.g. non-null orgId, missing sentinel).
+        await updateInboxCorrelation(deps, eventKey, {
+            correlationStatus: "manual_review",
+            safeErrorCode: codes.sentinelUnresolved,
+            correlatedCardId: cardId,
+        });
+        return {
+            continue: false,
+            correlationStatus: "manual_review",
+            safeErrorCode: codes.sentinelUnresolved,
+            stopReason: codes.sentinelUnresolved,
+        };
+    } catch (corrErr) {
+        // Transient infra failure — preserve the durable event, best-effort mark
+        // correlation_pending, then throw retryable so the route returns 500.
+        try {
+            await updateInboxCorrelation(deps, eventKey, {
+                correlationStatus: "correlation_pending",
+            });
+        } catch {
+            // ignore — the durable event is already persisted
+        }
+        const err = new Error("inbox_correlation_transient_failure");
+        err.retryable = true;
+        err.cause = corrErr;
+        throw err;
+    }
+}
+
+/**
+ * Post-capture first-payment correlation + continuation decision (Section J).
+ * Thin wrapper over resolvePersonalBillingContinuation with the first-payment
+ * safeErrorCode mapping — behavior is unchanged from Phase 2A.1.
+ */
+async function resolveFirstPaymentContinuation({ eventKey, userId }, deps) {
+    return resolvePersonalBillingContinuation(
+        { eventKey, userId, codes: FIRST_PAYMENT_CONTINUATION_CODES },
+        deps,
+    );
+}
+
+/**
+ * Read-only personal-billing checkout classification (Section I).
+ * Loads User → exact User.cardId Card → read-only personalOrgId and classifies.
+ * Never inspects any other user-owned Card. Returns "personal" | "real_org" |
+ * "unknown". Used by the checkout route gate and createPayment defense-in-depth.
+ */
+async function classifyCheckoutBillingScope(userId, deps = defaultCaptureDeps) {
+    if (!userId) return "unknown";
+    const user = await deps.User.findById(userId).select("cardId").lean();
+    const cardId = user?.cardId ?? null;
+    if (!cardId) return "unknown";
+    const card = await deps.Card.findById(cardId).select("orgId").lean();
+    if (!card) return "unknown";
+    const personalOrgId = await deps.getPersonalOrgIdReadOnly();
+    if (deps.isPersonalBillingCard(card, personalOrgId)) return "personal";
+    if (deps.isRealOrgCard(card, personalOrgId)) return "real_org";
+    return "unknown";
 }
 
 /**
@@ -515,6 +1225,18 @@ async function createTranzilaStoForUser(
     firstChargeDate,
     opts = {},
 ) {
+    // ── Defense in depth (Phase 2A.2, Section D) ──
+    // Fail closed for any non-personal scope. Callers that have already proven
+    // personal scope pass opts.personalScopeVerified === true to skip the extra
+    // read; otherwise re-classify read-only by the exact User.cardId Card. A
+    // transient DB error propagates (retryable) — it never opens the gate.
+    if (opts.personalScopeVerified !== true) {
+        const scope = await classifyCheckoutBillingScope(user._id);
+        if (scope !== "personal") {
+            return { ok: false, skipped: true, reason: "non_personal_scope" };
+        }
+    }
+
     const currentSto = ensureTranzilaStoState(user);
 
     // ── A. Idempotency guard ──
@@ -1167,6 +1889,19 @@ export default {
             throw new Error("Invalid plan");
         }
 
+        // ── Personal-billing checkout gate (Section I — defense in depth) ──────
+        // A new personal checkout may be created ONLY for a PERSONAL_BILLING_CARD.
+        // This guards against an upstream caller that forgot the route gate. It
+        // never inspects any other user-owned Card and never mutates Organization
+        // data. REAL_ORG_CARD / UNKNOWN fail closed before any provider call.
+        const billingScope = await classifyCheckoutBillingScope(userId);
+        if (billingScope !== "personal") {
+            const gateErr = new Error("personal_billing_required");
+            gateErr.code = "PERSONAL_BILLING_REQUIRED";
+            gateErr.scope = billingScope;
+            throw gateErr;
+        }
+
         const sumStr = `${Math.floor(ag / 100)}.${String(ag % 100).padStart(2, "0")}`;
 
         // ── Handshake: amount-lock at Tranzila server ──────────────────────────
@@ -1384,6 +2119,289 @@ export default {
             if (!indexPresent) failReason = failReason || "missing_index";
         }
 
+        // ── 5.3. Pre-capture provider trust: read-only PaymentIntent + thtk ───────
+        // Phase 2A.3 (Sections C/E): provider AUTHENTICATION is separated from
+        // BUSINESS CORRELATION. The intent is loaded by immutable _id ONLY (no
+        // userId/plan/amount/status/expiry filter) so a provider-authenticated
+        // but business-mismatched event is still durably captured in §5.4. thtk
+        // verification (when enabled) is the DirectNG trust anchor. A provider
+        // trust failure preserves the existing safe response posture (isPaid=false
+        // + failReason) and never establishes authenticated evidence.
+        let precaptureIntent = null;
+        let directNgProviderTrusted = false;
+        let thtkVerified = false;
+        const providerPaidSignal = responseOk;
+        const intentGatingEnabled =
+            process.env.PAYMENT_INTENT_ENABLED === "true";
+        // Decoupled from isPaid so a business-mismatched (but paid) DirectNG event
+        // still reaches thtk verification and durable capture.
+        const eligiblePaidDirectNg = providerPaidSignal && !hasLegacySignature;
+
+        if (eligiblePaidDirectNg && intentGatingEnabled) {
+            if (rawIntentId === null || !looksLikeObjectId(rawIntentId)) {
+                isPaid = false;
+                status = "failed";
+                failReason = failReason || "payment_intent_required";
+                console.warn(
+                    "[payment_intent] pre-capture blocked: no valid intentId in paid DirectNG notify",
+                    {
+                        event: "payment_intent_gate_blocked",
+                        reason: "missing_intent_id",
+                        userId,
+                        plan: validPlan,
+                    },
+                );
+            } else {
+                let intentLookupOk = true;
+                try {
+                    // Immutable _id trust lookup only (Section C.1–C.2).
+                    precaptureIntent = await PaymentIntent.findOne({
+                        _id: rawIntentId,
+                    });
+                } catch (intentLookupErr) {
+                    intentLookupOk = false;
+                    isPaid = false;
+                    status = "failed";
+                    failReason =
+                        failReason || "payment_intent_lookup_failed";
+                    console.warn(
+                        "[payment_intent] pre-capture lookup threw",
+                        {
+                            event: "payment_intent_gate_error",
+                            message: intentLookupErr?.message,
+                            userId,
+                            plan: validPlan,
+                        },
+                    );
+                }
+                if (intentLookupOk && precaptureIntent === null) {
+                    isPaid = false;
+                    status = "failed";
+                    failReason =
+                        failReason ||
+                        "payment_intent_not_found_or_consumed";
+                    console.warn(
+                        "[payment_intent] pre-capture blocked: intent not found by id",
+                        {
+                            event: "payment_intent_gate_blocked",
+                            reason: "not_found",
+                            userId,
+                            plan: validPlan,
+                        },
+                    );
+                } else if (intentLookupOk && precaptureIntent !== null) {
+                    if (isHandshakeEnabled()) {
+                        const storedHash =
+                            precaptureIntent?.handshakeThtkHash ?? null;
+                        const isValidSha256Hex =
+                            typeof storedHash === "string" &&
+                            storedHash.length === 64 &&
+                            /^[a-f0-9]{64}$/i.test(storedHash);
+                        if (!isValidSha256Hex) {
+                            isPaid = false;
+                            status = "failed";
+                            failReason = "handshake_hash_missing";
+                            console.warn(
+                                "[handshake] pre-capture blocked: handshakeThtkHash invalid or missing on intent",
+                                {
+                                    event: "handshake_verify_blocked",
+                                    reason: "hash_missing",
+                                    userId,
+                                    plan: validPlan,
+                                },
+                            );
+                        } else if (
+                            notifyThtk === null ||
+                            notifyThtk.trim() === ""
+                        ) {
+                            isPaid = false;
+                            status = "failed";
+                            failReason = "handshake_thtk_missing";
+                            console.warn(
+                                "[handshake] pre-capture blocked: thtk absent in notify payload",
+                                {
+                                    event: "handshake_verify_blocked",
+                                    reason: "thtk_missing",
+                                    userId,
+                                    plan: validPlan,
+                                },
+                            );
+                        } else {
+                            const notifyThtkHash = crypto
+                                .createHash("sha256")
+                                .update(notifyThtk)
+                                .digest("hex");
+                            if (notifyThtkHash === storedHash) {
+                                thtkVerified = true;
+                            } else {
+                                isPaid = false;
+                                status = "failed";
+                                failReason = "handshake_thtk_mismatch";
+                                console.warn(
+                                    "[handshake] pre-capture blocked: thtk hash mismatch",
+                                    {
+                                        event: "handshake_verify_blocked",
+                                        reason: "thtk_mismatch",
+                                        userId,
+                                        plan: validPlan,
+                                    },
+                                );
+                            }
+                        }
+                    }
+                    // Handshake disabled: no thtk requirement; provider trust is
+                    // finalized by the supplier/index formula below.
+                }
+            }
+            // Phase 2A.3-R2 (Section C): PaymentIntent existence, thtk, supplier
+            // and index are each necessary but individually insufficient.
+            directNgProviderTrusted =
+                Boolean(precaptureIntent) &&
+                supplierOk &&
+                indexPresent &&
+                (!isHandshakeEnabled() || thtkVerified);
+        } else if (!hasLegacySignature && providerPaidSignal) {
+            // Intent gating disabled: supplier terminal + structural index only.
+            directNgProviderTrusted = supplierOk && indexPresent;
+        }
+
+        // ── 5.4. Durable capture (Phase 2A.1 / 2A.3) ─────────────────────────────
+        // Capture condition = providerAuthenticated && providerPaidSignal, so a
+        // provider-authenticated paid event is NEVER lost merely because local
+        // business correlation fails (Sections C/E). Automatic fulfillment
+        // additionally requires businessCorrelationOk, a stable non-quarantined
+        // identity and a PERSONAL_BILLING_CARD. Runs BEFORE the §5.5 consuming CAS
+        // and any User/Card correlation.
+        const providerAuthenticated = hasLegacySignature
+            ? legacySigOk
+            : directNgProviderTrusted;
+        // Phase 2A.3-R2 (Section D): the PaymentIntent schema requires userId,
+        // plan and amountAgorot, so a missing authoritative field is a FALSE
+        // correlation, never a pass. No == null short-circuit.
+        const intentUserOk =
+            precaptureIntent?.userId != null &&
+            String(precaptureIntent.userId) === String(userId);
+        const intentPlanOk =
+            precaptureIntent?.plan != null &&
+            precaptureIntent.plan === validPlan;
+        const intentAmountOk =
+            Number.isFinite(precaptureIntent?.amountAgorot) &&
+            precaptureIntent.amountAgorot === amountAgorot;
+        const businessCorrelationOk = hasLegacySignature
+            ? legacySigOk &&
+              Boolean(userId) &&
+              Boolean(validPlan) &&
+              sumOk &&
+              currencyOk
+            : Boolean(userId) &&
+              Boolean(validPlan) &&
+              sumOk &&
+              currencyOk &&
+              intentUserOk &&
+              intentPlanOk &&
+              intentAmountOk;
+
+        if (providerAuthenticated && providerPaidSignal) {
+            const captureResult = await captureAuthenticatedPaymentEvent({
+                eventType: "first_payment",
+                provider: "tranzila",
+                canonicalTerminal: String(TRANZILA_CONFIG.terminal ?? ""),
+                legacyProviderTxnId: providerTxnId,
+                rawPayloadHash,
+                safePayload: buildInboxSafePayload(payload),
+                providerPaymentStatus: "paid",
+                providerResponseCode: sanitizeResponseCode(data.Response),
+                plan: validPlan,
+                amountAgorot,
+                currency: normalizeCurrencyForInbox(data.currency),
+                paymentIntentId: looksLikeObjectId(rawIntentId)
+                    ? rawIntentId
+                    : null,
+            });
+
+            // Sticky quarantine / collision (Section H) → fail-closed safe ACK.
+            if (
+                captureResult.identityCollision ||
+                captureResult.integrityCollision ||
+                captureResult.quarantined ||
+                captureResult.identityStatus === "manual_review" ||
+                captureResult.identityStatus === "integrity_collision" ||
+                captureResult.correlationStatus === "manual_review"
+            ) {
+                incrementMetric("payment.inbox.blocked", {
+                    provider: "tranzila",
+                    flow: "first_payment",
+                    reason: captureResult.status,
+                });
+                return; // safe ACK — no downstream personal fulfillment
+            }
+
+            // Provider-authenticated but business correlation failed (Section C/D):
+            // durable manual_review, no consuming CAS, no ledger/User/Card/Receipt.
+            // The provider-facing response never reveals which field mismatched.
+            if (!businessCorrelationOk) {
+                const businessMismatchCode = hasLegacySignature
+                    ? "legacy_payment_business_mismatch"
+                    : "payment_intent_business_mismatch";
+                const reviewRes = await markInboxBusinessMismatchReview(
+                    defaultCaptureDeps,
+                    captureResult.eventKey,
+                    businessMismatchCode,
+                );
+                // Phase 2A.3-R3 durable-evidence guard: a successful provider
+                // ACK is only safe when the manual_review transition was applied,
+                // or a stronger quarantine already owns the row.
+                if ((reviewRes?.matchedCount ?? 0) === 0) {
+                    const current = await defaultCaptureDeps.PaymentEventInbox.findOne(
+                        { eventKey: captureResult.eventKey },
+                    )
+                        .select("identityStatus correlationStatus safeErrorCode")
+                        .lean();
+                    if (!current) {
+                        const missingErr = new Error(
+                            "inbox_business_review_row_missing",
+                        );
+                        missingErr.retryable = true;
+                        throw missingErr;
+                    }
+                    if (!isRowQuarantined(current)) {
+                        const notAppliedErr = new Error(
+                            "inbox_business_review_not_applied",
+                        );
+                        notAppliedErr.retryable = true;
+                        throw notAppliedErr;
+                    }
+                    // Row already durably quarantined by a stronger state → the
+                    // existing evidence stands; fall through to the safe ACK.
+                }
+                incrementMetric("payment.inbox.blocked", {
+                    provider: "tranzila",
+                    flow: "first_payment",
+                    reason: businessMismatchCode,
+                });
+                return; // safe non-throw manual-review posture
+            }
+
+            // Stable identity + business correlation OK → resolve continuation.
+            // Throws a retryable error on transient User/Card lookup failure so
+            // the route returns 500; the durable event stays persisted.
+            const continuation = await resolveFirstPaymentContinuation(
+                { eventKey: captureResult.eventKey, userId },
+                defaultCaptureDeps,
+            );
+            if (!continuation.continue) {
+                incrementMetric("payment.inbox.blocked", {
+                    provider: "tranzila",
+                    flow: "first_payment",
+                    reason:
+                        continuation.safeErrorCode ||
+                        continuation.stopReason ||
+                        "blocked",
+                });
+                return; // REAL_ORG_CARD / UNKNOWN → no downstream personal writes
+            }
+        }
+
         // ── 5.5. PaymentIntent strict atomic gate ──
         // For paid DirectNG notifies with PAYMENT_INTENT_ENABLED=true:
         //   - udf3/rawIntentId is required and must reference a valid pending intent.
@@ -1394,8 +2412,6 @@ export default {
         let resolvedPaymentIntentId = null;
         let resolvedPaymentIntent = null;
         const isDirectNgPaidCandidate = isPaid && !hasLegacySignature;
-        const intentGatingEnabled =
-            process.env.PAYMENT_INTENT_ENABLED === "true";
 
         if (isDirectNgPaidCandidate && intentGatingEnabled) {
             // Gate 1: rawIntentId must be present and a valid ObjectId.
@@ -1492,85 +2508,12 @@ export default {
             }
         }
 
-        // ── 5.6. Handshake thtk hash verification ─────────────────────────────────────
-        // Enforced only on the paid DirectNG path with both PAYMENT_INTENT_ENABLED and
-        // TRANZILA_HANDSHAKE_ENABLED set to "true". All other paths are unconditionally exempt.
-        //
-        // Exempt: legacy signed path, failed payments, STO notify, handshake disabled, intent gating disabled.
-        //
-        // Why !hasLegacySignature and not isDirectNgPaidCandidate:
-        //   isDirectNgPaidCandidate is a snapshot from before §5.5 and can be stale if §5.5 blocked.
-        //   !hasLegacySignature is the canonical, stable discriminator for the DirectNG path.
-        //
-        // ANTI-DRIFT: notifyThtk must never appear in log values, stored fields, or forwarded objects.
-        // ANTI-DRIFT: Only event/reason/userId/plan may be logged — no hashes, no tokens, no payload.
-        // ANTI-DRIFT: storedHash format validated (sha256 hex, 64 chars) — rejects placeholder/null/malformed.
-        //
-        // PaymentIntent consuming→failed behavior (file:line proof, no extra code needed):
-        //   §6.5 at line ~1370: intentFinalStatus = isPaid ? "completed" : "failed".
-        //   When §5.6 sets isPaid=false: intentFinalStatus="failed", filter={_id:resolvedPaymentIntentId}.
-        //   updateOne fires unconditionally — transitions consuming→failed. No stuck intent.
-        if (
-            isPaid &&
-            !hasLegacySignature &&
-            intentGatingEnabled &&
-            isHandshakeEnabled()
-        ) {
-            const storedHash = resolvedPaymentIntent?.handshakeThtkHash ?? null;
-            const isValidSha256Hex =
-                typeof storedHash === "string" &&
-                storedHash.length === 64 &&
-                /^[a-f0-9]{64}$/i.test(storedHash);
-
-            if (!isValidSha256Hex) {
-                // Intent created before Handshake was enabled, hash not written, or hash malformed.
-                // Operator must drain in-flight pending intents before enabling the flag.
-                isPaid = false;
-                status = "failed";
-                failReason = "handshake_hash_missing";
-                console.warn(
-                    "[handshake] notify blocked: handshakeThtkHash invalid or missing on intent",
-                    {
-                        event: "handshake_verify_blocked",
-                        reason: "hash_missing",
-                        userId,
-                        plan: validPlan,
-                    },
-                );
-            } else if (notifyThtk === null || notifyThtk.trim() === "") {
-                isPaid = false;
-                status = "failed";
-                failReason = "handshake_thtk_missing";
-                console.warn(
-                    "[handshake] notify blocked: thtk absent in notify payload",
-                    {
-                        event: "handshake_verify_blocked",
-                        reason: "thtk_missing",
-                        userId,
-                        plan: validPlan,
-                    },
-                );
-            } else {
-                const notifyThtkHash = crypto
-                    .createHash("sha256")
-                    .update(notifyThtk)
-                    .digest("hex");
-                if (notifyThtkHash !== storedHash) {
-                    isPaid = false;
-                    status = "failed";
-                    failReason = "handshake_thtk_mismatch";
-                    console.warn(
-                        "[handshake] notify blocked: thtk hash mismatch",
-                        {
-                            event: "handshake_verify_blocked",
-                            reason: "thtk_mismatch",
-                            userId,
-                            plan: validPlan,
-                        },
-                    );
-                }
-            }
-        }
+        // ── 5.6. Handshake thtk hash verification ── moved to §5.3 ───────────────
+        // Handshake thtk verification now runs BEFORE durable capture (§5.3) as a
+        // pure read-only trust check, so no authenticated inbox row is written on
+        // a thtk mismatch. When §5.3 sets isPaid=false, the §5.5 non-blocking
+        // resolve still sets resolvedPaymentIntentId and §6.5 syncs the intent to
+        // "failed" — no stuck intent.
 
         // ── 6. Ledger insert (idempotency via unique providerTxnId) ──
         let txnDoc;
@@ -1729,6 +2672,10 @@ export default {
                     user,
                     validPlan,
                     expiresAt,
+                    // First payment already passed the personal-card boundary
+                    // (§5.4 resolveFirstPaymentContinuation) — proof avoids a
+                    // duplicate scope read.
+                    { personalScopeVerified: true },
                 );
                 logStoCreateOutcome({
                     userId,
@@ -2017,6 +2964,55 @@ export default {
         const responseCode = String(payload.Response ?? "").trim();
         const isPaid = responseCode === "000";
 
+        // ── 0.5. Supplier trust gate + durable capture (Phase 2A.1) ──────────────
+        // Section D: capture only AFTER exact supplier/terminal validation
+        // (non-lossy trim only). A supplier-mismatch event is NEVER stored as
+        // authenticated inbox evidence — it falls through to the existing §1/§2
+        // response behavior. A supplier-valid but unkeyed event is still captured
+        // as manual_review, then stops at the §1 guard below. Identity uses the
+        // canonical STO terminal (Section E). Awaited — infra failure throws →
+        // route returns retryable 500.
+        const supplierOk =
+            expectedSupplier !== "" && supplier === expectedSupplier;
+        let captureEventKey = null;
+        if (supplierOk) {
+            const captureResult = await captureAuthenticatedPaymentEvent({
+                eventType: "sto_recurring",
+                provider: "tranzila",
+                canonicalTerminal: expectedSupplier,
+                legacyProviderTxnId: providerTxnId,
+                rawPayloadHash,
+                safePayload: buildInboxSafePayload(payload),
+                providerPaymentStatus: isPaid
+                    ? "paid"
+                    : responseCode !== ""
+                      ? "failed"
+                      : "unknown",
+                providerResponseCode: sanitizeResponseCode(responseCode),
+                plan: null,
+                amountAgorot,
+                currency: normalizeCurrencyForInbox(currency),
+                paymentIntentId: null,
+            });
+            captureEventKey = captureResult.eventKey ?? null;
+            // Sticky quarantine / collision (Phase 2A.3, Section H) → fail-closed.
+            if (
+                captureResult.identityCollision ||
+                captureResult.integrityCollision ||
+                captureResult.quarantined ||
+                captureResult.identityStatus === "manual_review" ||
+                captureResult.identityStatus === "integrity_collision" ||
+                captureResult.correlationStatus === "manual_review"
+            ) {
+                incrementMetric("payment.inbox.blocked", {
+                    provider: "tranzila",
+                    flow: "sto_recurring",
+                    reason: captureResult.status,
+                });
+                return { ok: true, duplicate: true, providerTxnId };
+            }
+        }
+
         // ── 1. Stable replay key guard ────────────────────────────────────────────
         // No stable replay key: cannot safely create ledger record or extend subscription.
         if (!providerTxnId) {
@@ -2111,36 +3107,33 @@ export default {
             return { ok: false, reason: "currency_mismatch", providerTxnId };
         }
 
-        // ── 3. User lookup ────────────────────────────────────────────────────────
+        // ── 3. User lookup (trusted STO identity) ─────────────────────────────────
         const user = await User.findOne({ "tranzilaSto.stoId": stoId });
-        if (!user) {
-            try {
-                await PaymentTransaction.create({
-                    providerTxnId,
-                    provider: "tranzila",
-                    status: "failed",
-                    userId: null,
-                    cardId: null,
-                    plan: null,
-                    amountAgorot,
-                    currency,
-                    payloadAllowlisted,
-                    rawPayloadHash,
-                    failReason: "user_not_found",
-                    idempotencyNote: "sto_recurring_notify",
-                });
-            } catch (e) {
-                if (e.code === 11000) {
-                    return { ok: true, duplicate: true, providerTxnId };
-                }
-                throw e;
-            }
-            incrementMetric("payment.notify.failed", {
+
+        // ── 3.5 Personal-billing boundary (Phase 2A.2, Section C) ─────────────────
+        // Runs immediately after the durable capture and BEFORE any tranzilaSto
+        // materialization, user-correlated ledger row, cancellation handling,
+        // plan recovery, paid ledger, or User/Card/Receipt mutation. Only a
+        // PERSONAL_BILLING_CARD (exact User.cardId) may enter the legacy handler.
+        // Missing User / missing / real-org / unknown-scope Card → durable inbox
+        // manual_review + safe non-throw ACK (no personal writes, no retry
+        // storm). A transient Card/sentinel lookup failure throws retryable so
+        // the route returns 500 (the event is already durably captured).
+        const stoContinuation = await resolvePersonalBillingContinuation(
+            {
+                eventKey: captureEventKey,
+                user: user ?? null,
+                codes: STO_CONTINUATION_CODES,
+            },
+            defaultCaptureDeps,
+        );
+        if (!stoContinuation.continue) {
+            incrementMetric("payment.inbox.manual_review", {
                 provider: "tranzila",
                 flow: "sto_recurring",
-                reason: "user_not_found",
+                reason: stoContinuation.safeErrorCode,
             });
-            return { ok: false, reason: "user_not_found", providerTxnId };
+            return { ok: true, manualReview: true, providerTxnId };
         }
 
         // ── 4. Materialize tranzilaSto subdoc ─────────────────────────────────────
@@ -2675,4 +3668,17 @@ export {
     createTranzilaStoForUser,
     cancelTranzilaStoForUser,
     STO_PENDING_STALE_MS,
+    captureAuthenticatedPaymentEvent,
+    resolveFirstPaymentContinuation,
+    resolvePersonalBillingContinuation,
+    STO_CONTINUATION_CODES,
+    classifyCheckoutBillingScope,
+    deriveInboxEventKey,
+    computeInboxEvidenceFingerprint,
+    computeLegacyProviderTxnIdHash,
+    buildInboxSafePayload,
+    sanitizeResponseCode,
+    normalizeCurrencyForInbox,
+    deriveProviderTxnId,
+    deriveStoProviderTxnId,
 };
