@@ -461,8 +461,8 @@ export default function Home() {
     return (
         <main className={styles.page} data-page="site">
             <SeoHelmet
-                title="כרטיס ביקור דיגיטלי לעסק שמביא יותר לקוחות | Cardigo"
-                description="צרו כרטיס ביקור דיגיטלי מקצועי לעסק בחינם - עם וואטסאפ, קוד QR, גלריה, טופס פניות ואנליטיקה. שתפו בקלות, עדכנו בכל רגע והפכו צפיות לפניות."
+                title="כרטיס ביקור דיגיטלי חינם - מיני אתר לעסק | Cardigo"
+                description="צרו כרטיס ביקור דיגיטלי שהוא גם מיני אתר לעסק - בחינם. עריכה עצמאית 24/7, ללא צורך באיש מקצוע וללא כרטיס אשראי."
                 canonicalUrl={`${ORIGIN}/`}
                 url={`${ORIGIN}/`}
                 image={`${ORIGIN}${DEFAULT_OG_IMAGE_PATH}`}
