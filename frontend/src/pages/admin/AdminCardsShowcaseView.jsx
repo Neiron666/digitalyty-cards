@@ -52,6 +52,7 @@ export default function AdminCardsShowcaseView() {
     /* ── List state ─────────────────────────────── */
     const [items, setItems] = useState([]);
     const [itemsTotal, setItemsTotal] = useState(0);
+    const [homepageBusyIds, setHomepageBusyIds] = useState(() => new Set());
     const [page, setPage] = useState(1);
     const [limit] = useState(25);
     const [searchQ, setSearchQ] = useState("");
@@ -255,6 +256,34 @@ export default function AdminCardsShowcaseView() {
         }
     }
 
+    /* ── Inline homepage-selection toggle (per-row, pessimistic) ── */
+
+    async function handleToggleShowOnHomepage(item) {
+        if (homepageBusyIds.has(item.id)) return;
+        const nextValue = !item.showOnHomepage;
+        setHomepageBusyIds((prev) => {
+            const next = new Set(prev);
+            next.add(item.id);
+            return next;
+        });
+        try {
+            const res = await updateAdminCardsShowcaseItem(item.id, {
+                showOnHomepage: nextValue,
+            });
+            setItems((prev) =>
+                prev.map((it) => (it.id === res.data.id ? res.data : it)),
+            );
+        } catch (err) {
+            showFlash("error", mapShowcaseApiError(err));
+        } finally {
+            setHomepageBusyIds((prev) => {
+                const next = new Set(prev);
+                next.delete(item.id);
+                return next;
+            });
+        }
+    }
+
     /* ── Delete ─────────────────────────────────── */
 
     async function handleDelete() {
@@ -443,6 +472,22 @@ export default function AdminCardsShowcaseView() {
                                         {item.isActive ? "פעיל" : "לא פעיל"}
                                     </span>
                                 </button>
+                                <label className={styles.homepageToggle}>
+                                    <input
+                                        type="checkbox"
+                                        checked={Boolean(item.showOnHomepage)}
+                                        disabled={homepageBusyIds.has(item.id)}
+                                        onChange={() =>
+                                            handleToggleShowOnHomepage(item)
+                                        }
+                                        aria-label={`הצגה בעמוד הבית - ${
+                                            item.title ||
+                                            item.internalName ||
+                                            "פריט ללא שם"
+                                        }`}
+                                    />
+                                    <span>להציג בעמוד הבית</span>
+                                </label>
                             </li>
                         ))}
                     </ul>
