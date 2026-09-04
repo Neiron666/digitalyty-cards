@@ -19,6 +19,10 @@
  *   imageUrl — must start with https://  (Supabase storage always returns https)
  *   ctaUrl   — must match /card/{slug} or /c/{orgSlug}/{slug} exactly;
  *              rejects all external/protocol/query/fragment forms
+ *
+ * Optional strictContractValidation mode (default false, used only by the
+ * homepage route): enforces strict envelope + exact-key-set + full-field DTO
+ * validation via a separate picker below. Legacy path above is untouched.
  */
 
 const ALLOWED_ITEM_FIELDS = [
@@ -86,12 +90,126 @@ function pickItemFields(raw) {
     return out;
 }
 
+/**
+ * Strict homepage CTA policy — mirrors the CURRENT backend public
+ * cards-showcase URL policy (cardsShowcaseUrlPolicy.util.js RE_CARD_PATH /
+ * RE_ORG_CARD_PATH), intentionally broader than the legacy CARD_URL_RE /
+ * ORG_CARD_URL_RE above. Update deliberately if that backend contract changes.
+ * Never used by /cards/ — legacy isSafeCtaUrl above is untouched.
+ */
+const STRICT_CARD_URL_RE = /^\/card\/[^/\s?#%]{1,200}$/;
+const STRICT_ORG_CARD_URL_RE = /^\/c\/[^/\s?#%]{1,200}\/[^/\s?#%]{1,200}$/;
+
+function isStrictSafeCtaUrl(url) {
+    if (typeof url !== "string" || !url) return false;
+    if (url.includes("?") || url.includes("#") || url.includes("%")) {
+        return false;
+    }
+    return STRICT_CARD_URL_RE.test(url) || STRICT_ORG_CARD_URL_RE.test(url);
+}
+
+const STRICT_APPROVED_ITEM_KEYS = [
+    "id",
+    "imageUrl",
+    "imageAlt",
+    "title",
+    "description",
+    "ctaLabel",
+    "ctaUrl",
+    "ctaTargetBlank",
+    "sortOrder",
+];
+const STRICT_APPROVED_ITEM_KEY_SET = new Set(STRICT_APPROVED_ITEM_KEYS);
+
+/**
+ * Strict homepage item validator — exact key-set equality plus full-field
+ * type/value contract. Separate from legacy pickItemFields; never used by
+ * /cards/. Rejects (never silently drops fields from) any item that is
+ * missing an approved key, has an extra/unknown key, or has a malformed
+ * field value.
+ */
+function pickStrictHomepageItemFields(raw) {
+    if (raw === null || typeof raw !== "object" || Array.isArray(raw)) {
+        return { ok: false, reason: "ITEM_NOT_OBJECT" };
+    }
+    const rawKeys = Object.keys(raw);
+    if (rawKeys.length !== STRICT_APPROVED_ITEM_KEYS.length) {
+        return { ok: false, reason: "KEY_SET_MISMATCH" };
+    }
+    for (const k of rawKeys) {
+        if (!STRICT_APPROVED_ITEM_KEY_SET.has(k)) {
+            return { ok: false, reason: "UNKNOWN_KEY" };
+        }
+    }
+
+    const {
+        id,
+        imageUrl,
+        imageAlt,
+        title,
+        description,
+        ctaLabel,
+        ctaUrl,
+        ctaTargetBlank,
+        sortOrder,
+    } = raw;
+
+    if (typeof id !== "string" || !/^[a-f0-9]{24}$/.test(id)) {
+        return { ok: false, reason: "INVALID_ID" };
+    }
+    if (typeof imageUrl !== "string" || !isSafeImageUrl(imageUrl)) {
+        return { ok: false, reason: "INVALID_IMAGE_URL" };
+    }
+    if (typeof imageAlt !== "string" || imageAlt.trim().length === 0) {
+        return { ok: false, reason: "INVALID_IMAGE_ALT" };
+    }
+    if (typeof title !== "string" || title.trim().length === 0) {
+        return { ok: false, reason: "INVALID_TITLE" };
+    }
+    if (typeof description !== "string" || description.trim().length === 0) {
+        return { ok: false, reason: "INVALID_DESCRIPTION" };
+    }
+    if (typeof ctaLabel !== "string" || ctaLabel.trim().length === 0) {
+        return { ok: false, reason: "INVALID_CTA_LABEL" };
+    }
+    if (typeof ctaUrl !== "string" || !isStrictSafeCtaUrl(ctaUrl)) {
+        return { ok: false, reason: "INVALID_CTA_URL" };
+    }
+    if (ctaTargetBlank !== true) {
+        return { ok: false, reason: "INVALID_CTA_TARGET_BLANK" };
+    }
+    if (
+        typeof sortOrder !== "number" ||
+        !Number.isInteger(sortOrder) ||
+        sortOrder < 0 ||
+        sortOrder > 999
+    ) {
+        return { ok: false, reason: "INVALID_SORT_ORDER" };
+    }
+
+    return {
+        ok: true,
+        item: {
+            id,
+            imageUrl,
+            imageAlt,
+            title,
+            description,
+            ctaLabel,
+            ctaUrl,
+            ctaTargetBlank,
+            sortOrder,
+        },
+    };
+}
+
 export async function fetchCardsShowcaseForSsg({
     key,
     endpoint,
     origin,
     timeoutMs = 8000,
     logger = console,
+    strictContractValidation = false,
 }) {
     const FAIL = { ok: false, key, page: 1, total: 0, items: [] };
 
@@ -133,6 +251,54 @@ export async function fetchCardsShowcaseForSsg({
             );
             return FAIL;
         }
+
+        if (strictContractValidation) {
+            if (!Number.isInteger(data.page) || data.page !== 1) {
+                logger?.warn?.(
+                    `[ssg] fetchCardsShowcaseForSsg(${key}): strict mode — envelope page invalid`,
+                );
+                return FAIL;
+            }
+            if (!Number.isInteger(data.total) || data.total < 0) {
+                logger?.warn?.(
+                    `[ssg] fetchCardsShowcaseForSsg(${key}): strict mode — envelope total invalid`,
+                );
+                return FAIL;
+            }
+            if (!Array.isArray(data.items)) {
+                logger?.warn?.(
+                    `[ssg] fetchCardsShowcaseForSsg(${key}): strict mode — envelope items not an array`,
+                );
+                return FAIL;
+            }
+            if (data.total !== data.items.length) {
+                logger?.warn?.(
+                    `[ssg] fetchCardsShowcaseForSsg(${key}): strict mode — total/items.length mismatch`,
+                );
+                return FAIL;
+            }
+
+            const validatedItems = [];
+            for (let i = 0; i < data.items.length; i++) {
+                const result = pickStrictHomepageItemFields(data.items[i]);
+                if (!result.ok) {
+                    logger?.warn?.(
+                        `[ssg] fetchCardsShowcaseForSsg(${key}): strict mode — item at index ${i} invalid (${result.reason})`,
+                    );
+                    return FAIL;
+                }
+                validatedItems.push(result.item);
+            }
+
+            return {
+                ok: true,
+                key,
+                page: 1,
+                total: validatedItems.length,
+                items: validatedItems,
+            };
+        }
+
         if (typeof data.page !== "number" || typeof data.total !== "number") {
             logger?.warn?.(
                 `[ssg] fetchCardsShowcaseForSsg(${key}): response missing page/total numbers`,

@@ -53,6 +53,9 @@ const ROUTES = [
         homepageLeakCheck: false,
         jsonLdExpected: null,
         requireHebrew: true,
+        dataIslandRequired: true,
+        dataIslandKey: "home-showcase",
+        dataIslandNoSlug: true,
     },
     {
         label: "cards",

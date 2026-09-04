@@ -44,7 +44,15 @@ const DATA_ISLAND_ELEMENT_ID = "cardigo-initial-listing-data";
 const DETAIL_DATA_ISLAND_ELEMENT_ID = "cardigo-initial-detail-data";
 
 const SSG_ROUTES = [
-    { url: "/", out: path.join(DIST, "index.html") },
+    {
+        url: "/",
+        out: path.join(DIST, "index.html"),
+        listingKey: "home-showcase",
+        listingEndpoint: "/api/cards-showcase/homepage",
+        listingFetcher: fetchCardsShowcaseForSsg,
+        strictContractValidation: true,
+        listingRequired: true,
+    },
     {
         url: "/cards/",
         out: path.join(DIST, "cards", "index.html"),
@@ -126,6 +134,9 @@ for (const route of SSG_ROUTES) {
                 limit: 12,
                 timeoutMs: 8000,
                 logger: console,
+                strictContractValidation: Boolean(
+                    route.strictContractValidation,
+                ),
             });
             if (result.ok) {
                 const payload = {
@@ -137,6 +148,11 @@ for (const route of SSG_ROUTES) {
                 dataIslandPayload = { [listingKey]: payload };
                 listingStatus[listingKey] =
                     result.items.length > 0 ? "FULL" : "EMPTY";
+            } else if (route.listingRequired) {
+                // Required listing: fail the build instead of substituting an empty payload.
+                throw new Error(
+                    `[ssg] Required listing fetch failed for "${listingKey}" at ${url} — aborting build.`,
+                );
             } else {
                 console.warn(
                     `[ssg] WARN: ${url} initial listing fetch failed — emitting DEGRADED data island`,
