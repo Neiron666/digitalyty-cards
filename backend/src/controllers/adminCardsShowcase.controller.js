@@ -90,6 +90,7 @@ function pickAdminDTO(item) {
         ctaLabel: obj.ctaLabel || "",
         ctaUrl: obj.ctaUrl || "",
         isActive: Boolean(obj.isActive),
+        showOnHomepage: Boolean(obj.showOnHomepage),
         sortOrder: obj.sortOrder ?? 0,
         createdByAdminId: obj.createdByAdminId
             ? String(obj.createdByAdminId)
@@ -273,6 +274,17 @@ export async function updateShowcaseItem(req, res) {
         }
         if (Object.prototype.hasOwnProperty.call(body, "ctaLabel")) {
             $set.ctaLabel = truncate(body.ctaLabel, SHOWCASE_CTA_LABEL_MAX);
+        }
+
+        // showOnHomepage: strict JSON boolean only — rejects truthy strings like "false".
+        if (Object.prototype.hasOwnProperty.call(body, "showOnHomepage")) {
+            if (typeof body.showOnHomepage !== "boolean") {
+                return res.status(422).json({
+                    code: "VALIDATION",
+                    message: "showOnHomepage must be a boolean (true or false)",
+                });
+            }
+            $set.showOnHomepage = body.showOnHomepage;
         }
 
         if (Object.prototype.hasOwnProperty.call(body, "ctaUrl")) {

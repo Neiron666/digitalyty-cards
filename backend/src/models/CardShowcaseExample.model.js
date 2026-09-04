@@ -57,6 +57,10 @@ const CardShowcaseExampleSchema = new mongoose.Schema(
             type: Boolean,
             default: false,
         },
+        showOnHomepage: {
+            type: Boolean,
+            default: false,
+        },
         sortOrder: {
             type: Number,
             default: 0,
