@@ -54,3 +54,32 @@ export async function listActiveShowcaseItems(req, res) {
         return res.status(500).json({ message: "Server error" });
     }
 }
+
+// Public read: homepage-selected showcase items (curated subset).
+// Eligibility invariant: isActive AND showOnHomepage AND readiness-valid.
+// No cap by design — every eligible selected item is returned.
+export async function listHomepageShowcaseItems(req, res) {
+    try {
+        const items = await CardShowcaseExample.find({
+            isActive: true,
+            showOnHomepage: true,
+        })
+            .sort({ sortOrder: 1, createdAt: 1 })
+            .lean();
+
+        // Defense-in-depth: same readiness gate as /active. showOnHomepage
+        // must never resurrect an item that fails the public readiness contract.
+        const safeItems = items
+            .filter((item) => checkShowcaseItemReadiness(item).ok)
+            .map(pickPublicDTO);
+
+        return res.json({
+            page: 1,
+            total: safeItems.length,
+            items: safeItems,
+        });
+    } catch (err) {
+        console.error("[cardsShowcase] listHomepageShowcaseItems error:", err);
+        return res.status(500).json({ message: "Server error" });
+    }
+}
