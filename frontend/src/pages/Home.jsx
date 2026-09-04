@@ -1149,8 +1149,9 @@ export default function Home() {
                             Cardigo
                         </h2>
                         <p className={pub.sectionLead}>
-                            הצצה לכרטיסים אמיתיים שנבנו ב-Cardigo לעסקים מתחומים
-                            שונים.
+                            ראו איך עסקים מתחומים שונים משתמשים בכרטיסי ביקור
+                            דיגיטליים של Cardigo כדי להציג את העסק שלהם בצורה
+                            מקצועית.
                         </p>
                         <div className={styles.realBusinessRow}>
                             {homepageShowcaseItems.map((item) => (
