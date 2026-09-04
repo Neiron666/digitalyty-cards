@@ -17,7 +17,7 @@ import {
     buildPersonKey,
 } from "../utils/bookingSanitize.js";
 import { assertSlotLegalAgainstBusinessHoursOrThrow } from "../utils/bookingBusinessHours.util.js";
-import { getPersonalOrgId } from "../utils/personalOrg.util.js";
+import { getPersonalOrgIdReadOnly } from "../utils/personalOrg.util.js";
 import { toIsrael, addIsraelDaysFromNow } from "../utils/time.util.js";
 import { resolveEffectiveBookingHorizon } from "../utils/bookingHorizon.util.js";
 import { sendBookingNotificationEmailMailjetBestEffort } from "../services/mailjet.service.js";
@@ -118,7 +118,7 @@ async function assertBookingEntitled(card) {
     // Load org for org cards so entitlement check reflects org entitlement.
     let org = null;
     if (card?.orgId) {
-        const personalOrgId = await getPersonalOrgId();
+        const personalOrgId = await getPersonalOrgIdReadOnly();
         if (String(card.orgId) !== String(personalOrgId)) {
             org = await Organization.findById(card.orgId)
                 .select("_id isActive orgEntitlement")
@@ -628,7 +628,7 @@ export async function listMyBookings(req, res) {
             .limit(limit)
             .lean();
 
-        const personalOrgId = await getPersonalOrgId();
+        const personalOrgId = await getPersonalOrgIdReadOnly();
 
         const bookings = docs.map((d) => {
             const meta = cardsById.get(String(d.card)) || null;

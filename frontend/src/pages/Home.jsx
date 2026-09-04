@@ -865,7 +865,7 @@ export default function Home() {
                         <span
                             className={`${pub.h2Gold} ${pub.goldUnderline} ${styles.strongerUnderline}`}
                         >
-                            את הכרטיס ביקור הדיגיטלי שלכם
+                            את כרטיס הביקור הדיגיטלי שלכם{" "}
                         </span>
                     </h2>
                     <ul className={styles.shareChecklist}>

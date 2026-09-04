@@ -1,4 +1,9 @@
 import Organization from "../models/Organization.model.js";
+import { BILLING_SCOPE } from "./billingScope.constants.js";
+
+// Re-exported so callers of the classifier can consume the vocabulary from a
+// single import. Same frozen object identity as billingScope.constants.js.
+export { BILLING_SCOPE };
 
 export const PERSONAL_ORG_SLUG = "personal";
 export const PERSONAL_ORG_NAME = "Personal";
@@ -126,4 +131,126 @@ export function isRealOrgCard(card, personalOrgId) {
     if (orgId === null || orgId === undefined) return false;
     if (!personalOrgId) return true;
     return String(orgId) !== String(personalOrgId);
+}
+
+/**
+ * Safe identifier normalization for scope classification only. Private.
+ *
+ * Accepts exactly two forms and returns null for everything else:
+ *   - a non-empty (post-trim) string;
+ *   - an ObjectId-like object whose `toHexString` property reads as a function
+ *     and returns a non-empty string when invoked.
+ *
+ * Arrays are rejected structurally, before any property read, so an Array that
+ * carries or inherits a callable toHexString is still not an identifier.
+ *
+ * There is deliberately NO String(value), template interpolation or implicit
+ * coercion: those would silently normalize numbers, Symbols and plain objects
+ * into comparable strings and would propagate a caller-supplied toString.
+ *
+ * Never throws. The Array check, the property READ and the INVOCATION are each
+ * guarded, so a revoked Proxy, a throwing getter, a throwing method, a Proxy
+ * get trap and a Proxy apply trap all resolve to null.
+ *
+ * @param {unknown} value
+ * @returns {string|null}
+ */
+function normalizeScopeId(value) {
+    if (typeof value === "string") {
+        const trimmed = value.trim();
+        return trimmed === "" ? null : trimmed;
+    }
+    // Rejects null, undefined, number, bigint, boolean, Symbol and function.
+    if (value === null || typeof value !== "object") return null;
+
+    // Structural rejection: an Array is never a valid identifier, even when it
+    // carries or inherits a callable toHexString. Array.isArray sees through a
+    // Proxy and throws on a revoked one, so it is itself guarded.
+    try {
+        if (Array.isArray(value)) return null;
+    } catch {
+        return null; // revoked Proxy
+    }
+
+    let toHex;
+    try {
+        toHex = value.toHexString;
+    } catch {
+        return null; // throwing getter / Proxy get trap
+    }
+    if (typeof toHex !== "function") return null;
+
+    let hex;
+    try {
+        hex = toHex.call(value);
+    } catch {
+        return null; // throwing method / Proxy apply trap
+    }
+    if (typeof hex !== "string") return null;
+    const trimmed = hex.trim();
+    return trimmed === "" ? null : trimmed;
+}
+
+/**
+ * Canonical normalized billing-scope classifier. Pure — no DB access, no
+ * Organization create/update, no fallback Card lookup, no mutation, and no
+ * exception under any input.
+ *
+ * Card container: must be a non-null, non-Array object. A lean object or a
+ * plain projected Card is accepted; a Mongoose document instance is NOT
+ * required. Every other container (undefined, null, string, number, bigint,
+ * boolean, Symbol, function, Array) fails closed to UNKNOWN.
+ *
+ * Truth table for a valid container:
+ *   - Card.orgId absent or null                     → PERSONAL (no sentinel needed)
+ *   - reading Card.orgId throws                     → UNKNOWN (fail closed)
+ *   - non-null Card.orgId, personalOrgId missing    → UNKNOWN (fail closed)
+ *   - Card.orgId not normalizable                   → UNKNOWN (fail closed)
+ *   - personalOrgId not normalizable                → UNKNOWN (fail closed)
+ *   - normalized ids equal                          → PERSONAL
+ *   - normalized ids differ                         → REAL_ORG
+ *
+ * The outer boundary catches any residual exception (for example a revoked
+ * Proxy, on which Array.isArray itself throws) and fails closed to UNKNOWN. It
+ * can never mask a DB error because this function performs no DB operation.
+ *
+ * personalOrgId MUST be resolved read-only by the caller
+ * (getPersonalOrgIdReadOnly) and passed here as an immutable value.
+ *
+ * @param {{orgId?: unknown} | null | undefined} card
+ * @param {string | null | undefined} personalOrgId
+ * @returns {"PERSONAL"|"REAL_ORG"|"UNKNOWN"}
+ */
+export function classifyBillingScope(card, personalOrgId) {
+    try {
+        if (card === null || typeof card !== "object") {
+            return BILLING_SCOPE.UNKNOWN;
+        }
+        if (Array.isArray(card)) return BILLING_SCOPE.UNKNOWN;
+
+        let orgId;
+        try {
+            orgId = card.orgId;
+        } catch {
+            return BILLING_SCOPE.UNKNOWN; // throwing getter / Proxy get trap
+        }
+
+        if (orgId === null || orgId === undefined) {
+            return BILLING_SCOPE.PERSONAL;
+        }
+        if (personalOrgId === null || personalOrgId === undefined) {
+            return BILLING_SCOPE.UNKNOWN;
+        }
+
+        const normalizedOrgId = normalizeScopeId(orgId);
+        if (normalizedOrgId === null) return BILLING_SCOPE.UNKNOWN;
+        const normalizedSentinel = normalizeScopeId(personalOrgId);
+        if (normalizedSentinel === null) return BILLING_SCOPE.UNKNOWN;
+
+        return normalizedOrgId === normalizedSentinel
+            ? BILLING_SCOPE.PERSONAL
+            : BILLING_SCOPE.REAL_ORG;
+    } catch {
+        return BILLING_SCOPE.UNKNOWN;
+    }
 }

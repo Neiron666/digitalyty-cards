@@ -65,6 +65,24 @@ const paymentTransactionSchema = new mongoose.Schema(
             type: String,
             default: null,
         },
+        // --- Step 2: additive local-fulfillment marker (see billing/payment
+        // atomicity contour). status stays the pure economic/provider outcome;
+        // fulfillmentStatus is the pure LOCAL Premium-fulfillment outcome.
+        // Absent on every historical row and on any row this Step does not
+        // author — absence must never be treated as "fulfilled".
+        fulfillmentStatus: {
+            type: String,
+            enum: ["fulfilled", "manual_review"],
+            default: undefined,
+        },
+        fulfilledAt: {
+            type: Date,
+            default: undefined,
+        },
+        entitlementAppliedUntil: {
+            type: Date,
+            default: undefined,
+        },
     },
     { timestamps: true },
 );

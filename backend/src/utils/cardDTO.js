@@ -28,14 +28,55 @@ function isTrialExpiredForWrite(card, now = new Date()) {
     return new Date(now).getTime() >= endsAt;
 }
 
-export function resolveEffectiveBilling(card, now = new Date(), org = null) {
+// Fail-closed extraction of { billingScope, personalPaidGrace48hEnabled }
+// from an arbitrary caller-supplied value. Never throws. Malformed input
+// (null, non-object, Array, throwing property access, revoked Proxy) yields
+// the same no-grace defaults resolveBilling itself already falls back to.
+// billingScope is never coerced or inferred — only read verbatim.
+function safeBillingContext(value) {
+    const NO_GRACE_CONTEXT = { billingScope: null, personalPaidGrace48hEnabled: false };
+    if (value === null || typeof value !== "object") {
+        return NO_GRACE_CONTEXT;
+    }
+    try {
+        if (Array.isArray(value)) return NO_GRACE_CONTEXT;
+    } catch {
+        return NO_GRACE_CONTEXT; // revoked Proxy
+    }
+
+    // Both properties are read inside one shared try/catch so a throw on
+    // either resets BOTH values atomically — never a partial context.
+    let billingScope = null;
+    let personalPaidGrace48hEnabled = false;
+    try {
+        const rawBillingScope = value.billingScope;
+        billingScope = rawBillingScope === undefined ? null : rawBillingScope;
+        personalPaidGrace48hEnabled =
+            value.personalPaidGrace48hEnabled === true;
+    } catch {
+        billingScope = null;
+        personalPaidGrace48hEnabled = false; // throwing getter / Proxy get trap
+    }
+
+    return { billingScope, personalPaidGrace48hEnabled };
+}
+
+export function resolveEffectiveBilling(
+    card,
+    now = new Date(),
+    org = null,
+    options = {},
+) {
     // Org entitlement pre-check: computed premium for org-owned cards.
+    // PERSONAL grace options never override an active Organization entitlement.
     if (card?.orgId && org) {
         const orgBilling = resolveOrgEntitlementBilling(org, now);
         if (orgBilling) return orgBilling;
     }
     // Single source of truth: the billing resolver returns the effectiveBilling contract.
-    return resolveBilling(card, now);
+    const { billingScope, personalPaidGrace48hEnabled } =
+        safeBillingContext(options);
+    return resolveBilling(card, now, { billingScope, personalPaidGrace48hEnabled });
 }
 
 export function computeEntitlements(
@@ -184,6 +225,7 @@ export function toCardDTO(
         org = null,
         stripBillingDetails = false,
         publicEntitlementsOnly = false,
+        billingContext = null,
     } = {},
 ) {
     if (!card) return null;
@@ -191,7 +233,14 @@ export function toCardDTO(
     const cardObj =
         typeof card.toObject === "function" ? card.toObject() : card;
 
-    const effectiveBillingRaw = resolveEffectiveBilling(cardObj, now, org);
+    // billingContext is forwarded as-is: resolveEffectiveBilling applies the
+    // same fail-closed safeBillingContext() extraction to whatever it receives.
+    const effectiveBillingRaw = resolveEffectiveBilling(
+        cardObj,
+        now,
+        org,
+        billingContext,
+    );
     const effectiveBilling = {
         ...effectiveBillingRaw,
         untilIsrael: effectiveBillingRaw?.until

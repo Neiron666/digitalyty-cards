@@ -1,4 +1,5 @@
 import crypto from "crypto";
+import mongoose from "mongoose";
 import { TRANZILA_CONFIG } from "../../config/tranzila.js";
 import User from "../../models/User.model.js";
 import Card from "../../models/Card.model.js";
@@ -18,6 +19,7 @@ import {
     getPersonalOrgIdReadOnly,
     isPersonalBillingCard,
     isRealOrgCard,
+    classifyBillingScope,
 } from "../../utils/personalOrg.util.js";
 import { incrementMetric } from "../../utils/sentryMetrics.util.js";
 
@@ -921,6 +923,170 @@ async function resolveRecoveryPlanFromLedger(user) {
     }
 
     return null;
+}
+
+// ── Step-2 atomic payment fulfillment — pure/bounded helper seams ──────────
+// No DB access, no side effects. Exported for test-only direct access.
+
+const MONTH_MS = 30 * 24 * 60 * 60 * 1000;
+const YEAR_MS = 365 * 24 * 60 * 60 * 1000;
+
+function purchasedPeriodMs(plan) {
+    return plan === "yearly" ? YEAR_MS : MONTH_MS;
+}
+
+/**
+ * Monotonic base-expiry: a genuine new payment must never reduce an existing
+ * valid later expiry from either User or Card. fulfillmentNow is captured
+ * once per webhook handler, outside the retryable transaction callback, and
+ * reused unchanged across every retry attempt.
+ */
+function computeMonotonicExpiry({
+    fulfillmentNow,
+    userExpiresAt,
+    cardPaidUntil,
+    plan,
+}) {
+    const candidates = [fulfillmentNow.getTime()];
+    const userMs = userExpiresAt ? new Date(userExpiresAt).getTime() : NaN;
+    if (Number.isFinite(userMs) && userMs > fulfillmentNow.getTime()) {
+        candidates.push(userMs);
+    }
+    const cardMs = cardPaidUntil ? new Date(cardPaidUntil).getTime() : NaN;
+    if (Number.isFinite(cardMs) && cardMs > fulfillmentNow.getTime()) {
+        candidates.push(cardMs);
+    }
+    const baseExpiry = Math.max(...candidates);
+    return new Date(baseExpiry + purchasedPeriodMs(plan));
+}
+
+// Supported Card billing shapes only: missing/undefined, plain object, or
+// explicit null. Any other shape is a deterministic, permanent local
+// invariant failure (Step 2, unsupported-shape contract).
+function classifyCardBillingShape(card) {
+    const billing = card?.billing;
+    if (billing === undefined || billing === null) return "supported";
+    if (typeof billing === "object" && !Array.isArray(billing)) {
+        return "supported";
+    }
+    return "unsupported";
+}
+
+// Existing-transaction identity: compares ONLY immutable incoming event
+// fields against the stored row — never against current User/Card/entitlement
+// state (Step 2, event-local identity contract).
+function existingTransactionIdentityMatches({ existingTxn, incoming }) {
+    return (
+        String(existingTxn.userId) === String(incoming.userId) &&
+        existingTxn.plan === incoming.plan &&
+        existingTxn.amountAgorot === incoming.amountAgorot
+    );
+}
+
+/**
+ * Classify an existing PaymentTransaction row found by providerTxnId against
+ * a new incoming authenticated economic-success event. Never grants another
+ * entitlement period from an existing row.
+ */
+function classifyExistingTransaction({ existingTxn, incoming }) {
+    if (!existingTransactionIdentityMatches({ existingTxn, incoming })) {
+        return { action: "integrity_collision" };
+    }
+    if (existingTxn.status === "paid") {
+        if (existingTxn.fulfillmentStatus === "fulfilled") {
+            return { action: "idempotent_success" };
+        }
+        return {
+            action: "manual_review",
+            reason: existingTxn.fulfillmentStatus
+                ? "already_manual_review"
+                : "legacy_marker_absent",
+        };
+    }
+    // refunded / failed / pending — conservative, never automatic entitlement.
+    return {
+        action: "manual_review",
+        reason: `existing_status_${existingTxn.status}`,
+    };
+}
+
+// Exact Card fulfillment CAS filters: relation + PERSONAL scope + billing
+// shape all pinned to the transactional snapshot just read.
+function buildCardFulfillmentFilters({ cardId, userId, personalOrgId }) {
+    const personalScopeOr = [
+        { orgId: { $exists: false } },
+        { orgId: null },
+        { orgId: personalOrgId },
+    ];
+    return {
+        objectVariant: {
+            _id: cardId,
+            user: userId,
+            $and: [
+                { $or: personalScopeOr },
+                {
+                    $or: [
+                        { billing: { $exists: false } },
+                        { billing: { $type: "object" } },
+                    ],
+                },
+            ],
+        },
+        nullVariant: {
+            _id: cardId,
+            user: userId,
+            $and: [{ $or: personalScopeOr }, { billing: null }],
+        },
+    };
+}
+
+// PaymentIntent normal-fulfillment claim filter (pending -> consuming).
+function buildPaymentIntentClaimFilter({
+    paymentIntentId,
+    userId,
+    plan,
+    amountAgorot,
+    now,
+}) {
+    return {
+        _id: paymentIntentId,
+        userId,
+        plan,
+        amountAgorot,
+        status: "pending",
+        checkoutExpiresAt: { $gt: now },
+    };
+}
+
+// PaymentIntent manual-review terminal filter (pending -> completed).
+// checkoutExpiresAt is deliberately NOT required — economic success is
+// already independently proven by this point (Step 2, Section E/J).
+function buildPaymentIntentManualReviewFilter({
+    paymentIntentId,
+    userId,
+    plan,
+    amountAgorot,
+}) {
+    return {
+        _id: paymentIntentId,
+        userId,
+        plan,
+        amountAgorot,
+        status: "pending",
+    };
+}
+
+// PaymentIntent normal-fulfillment terminal filter (consuming -> completed).
+function buildPaymentIntentCompletionFilter({ paymentIntentId }) {
+    return { _id: paymentIntentId, status: "consuming" };
+}
+
+// Classifies a caught fulfillment-transaction error as transient (safely
+// retryable — the provider's own webhook retry may re-enter cleanly) or a
+// duplicate-key race against a concurrent handler for the SAME providerTxnId.
+function classifyFulfillmentTransactionError(err) {
+    if (err?.code === 11000) return "concurrent_duplicate";
+    return "transient";
 }
 
 // ── [BATCH-3] STO private service ─────────────────────────────────────────────
@@ -2402,16 +2568,15 @@ export default {
             }
         }
 
-        // ── 5.5. PaymentIntent strict atomic gate ──
-        // For paid DirectNG notifies with PAYMENT_INTENT_ENABLED=true:
-        //   - udf3/rawIntentId is required and must reference a valid pending intent.
-        //   - Atomic consume: pending → consuming (findOneAndUpdate).
-        //   - If gate fails: fulfillment is BLOCKED (isPaid forced false, no User/Card update).
-        // For all other paths (legacy signed, failed DirectNG, gating disabled):
-        //   - Best-effort resolve only — does not block fulfillment.
+        // ── 5.5. PaymentIntent Gate 1: format/presence check only (pure, no DB). ──
+        // The actual pending→consuming CAS claim now happens INSIDE the atomic
+        // fulfillment transaction (Step 2), after relation/PERSONAL/billing-shape
+        // validation — never before it, so a permanently-invalid target never
+        // burns the customer's intent.
         let resolvedPaymentIntentId = null;
         let resolvedPaymentIntent = null;
         const isDirectNgPaidCandidate = isPaid && !hasLegacySignature;
+        let intentClaimRequired = false;
 
         if (isDirectNgPaidCandidate && intentGatingEnabled) {
             // Gate 1: rawIntentId must be present and a valid ObjectId.
@@ -2429,56 +2594,8 @@ export default {
                     },
                 );
             } else {
-                // Gate 2: atomic consume — pending → consuming.
-                try {
-                    const intentNow = new Date();
-                    const preUpdateIntent =
-                        await PaymentIntent.findOneAndUpdate(
-                            {
-                                _id: rawIntentId,
-                                userId,
-                                plan: validPlan,
-                                amountAgorot,
-                                status: "pending",
-                                checkoutExpiresAt: { $gt: intentNow },
-                            },
-                            { $set: { status: "consuming" } },
-                            { new: false }, // return pre-update doc for receiptProfileSnapshot
-                        );
-                    if (preUpdateIntent === null) {
-                        isPaid = false;
-                        status = "failed";
-                        failReason =
-                            failReason ||
-                            "payment_intent_not_found_or_consumed";
-                        console.warn(
-                            "[payment_intent] gate blocked: atomic consume returned null",
-                            {
-                                event: "payment_intent_gate_blocked",
-                                reason: "not_found_or_consumed",
-                                userId,
-                                plan: validPlan,
-                            },
-                        );
-                    } else {
-                        resolvedPaymentIntent = preUpdateIntent;
-                        resolvedPaymentIntentId = preUpdateIntent._id;
-                    }
-                } catch (intentConsumeErr) {
-                    // DB infra failure — fail-safe: treat as blocked, not fail-open.
-                    isPaid = false;
-                    status = "failed";
-                    failReason = failReason || "payment_intent_lookup_failed";
-                    console.warn(
-                        "[payment_intent] gate error: atomic consume threw",
-                        {
-                            event: "payment_intent_gate_error",
-                            message: intentConsumeErr?.message,
-                            userId,
-                            plan: validPlan,
-                        },
-                    );
-                }
+                resolvedPaymentIntentId = rawIntentId;
+                intentClaimRequired = true;
             }
         } else if (
             rawIntentId !== null &&
@@ -2511,56 +2628,46 @@ export default {
         // ── 5.6. Handshake thtk hash verification ── moved to §5.3 ───────────────
         // Handshake thtk verification now runs BEFORE durable capture (§5.3) as a
         // pure read-only trust check, so no authenticated inbox row is written on
-        // a thtk mismatch. When §5.3 sets isPaid=false, the §5.5 non-blocking
-        // resolve still sets resolvedPaymentIntentId and §6.5 syncs the intent to
-        // "failed" — no stuck intent.
+        // a thtk mismatch.
 
-        // ── 6. Ledger insert (idempotency via unique providerTxnId) ──
-        let txnDoc;
-        try {
-            txnDoc = await PaymentTransaction.create({
-                providerTxnId,
-                provider: "tranzila",
-                userId,
-                plan: validPlan,
-                amountAgorot,
-                status,
-                payloadAllowlisted,
-                rawPayloadHash,
-                failReason,
-                paymentIntentId: resolvedPaymentIntentId,
-            });
-        } catch (e) {
-            if (e.code === 11000) {
-                // Duplicate providerTxnId - idempotent replay, no-op.
-                return;
-            }
-            // Infra failure - throw so route returns 500 and provider retries.
-            throw e;
-        }
+        // ── 6. Atomic economic ledger + local Premium fulfillment (Step 2) ──────
+        // fulfillmentNow is captured ONCE, before the retryable transaction
+        // wrapper, and reused unchanged across every retry attempt.
+        const fulfillmentNow = new Date();
 
-        // ── 6.5. PaymentIntent final status sync ──
-        // Paid DirectNG gated path: intent is in "consuming" — update to "completed" only
-        //   when filter includes status:"consuming" (prevents stale/duplicate writes).
-        // Non-blocking path (legacy/failed): update best-effort with no status filter.
-        if (resolvedPaymentIntentId !== null) {
-            const intentFinalStatus = isPaid ? "completed" : "failed";
-            const intentUpdateFilter =
-                isPaid && !hasLegacySignature && intentGatingEnabled
-                    ? { _id: resolvedPaymentIntentId, status: "consuming" }
-                    : { _id: resolvedPaymentIntentId };
-            void PaymentIntent.updateOne(intentUpdateFilter, {
-                $set: { status: intentFinalStatus },
-            }).catch((intentSyncErr) => {
-                console.warn("[payment_intent] status sync failed", {
-                    event: "payment_intent_status_sync_failed",
-                    message: intentSyncErr?.message,
-                });
-            });
-        }
-
-        // ── 7. If not paid → stop (already logged in ledger) ──
         if (!isPaid) {
+            // Provider genuinely declined / notify unauthenticated → status:"failed".
+            // Economic failure; no fulfillment attempted. Ledger insert is the
+            // sole durable write, guarded by the existing providerTxnId uniqueness.
+            try {
+                const txn = new PaymentTransaction({
+                    providerTxnId,
+                    provider: "tranzila",
+                    userId,
+                    plan: validPlan,
+                    amountAgorot,
+                    status: "failed",
+                    payloadAllowlisted,
+                    rawPayloadHash,
+                    failReason,
+                    paymentIntentId: resolvedPaymentIntentId,
+                });
+                await txn.save();
+            } catch (e) {
+                if (e.code !== 11000) throw e;
+                // Duplicate providerTxnId — idempotent replay, no-op.
+            }
+            if (resolvedPaymentIntentId !== null) {
+                void PaymentIntent.updateOne(
+                    { _id: resolvedPaymentIntentId },
+                    { $set: { status: "failed" } },
+                ).catch((intentSyncErr) => {
+                    console.warn("[payment_intent] status sync failed", {
+                        event: "payment_intent_status_sync_failed",
+                        message: intentSyncErr?.message,
+                    });
+                });
+            }
             incrementMetric("payment.notify.failed", {
                 provider: "tranzila",
                 flow: "first_payment",
@@ -2571,136 +2678,418 @@ export default {
         if (!validPlan) return;
         if (!userId) return;
 
-        // ── 8. Fulfillment: User + Card updates (existing logic) ──
-        const user = await User.findById(userId);
-        if (!user) return;
+        // isPaid === true: provider-authenticated economic success. Run the
+        // atomic fulfillment transaction — commits PaymentTransaction + User +
+        // Card + PaymentIntent together, or commits nothing at all.
+        let fulfillment;
+        try {
+            fulfillment = await mongoose.connection.transaction(
+                async (session) => {
+                    const existingTxn = await PaymentTransaction.findOne({
+                        providerTxnId,
+                    }).session(session);
 
-        const expiresAt =
-            validPlan === "monthly"
-                ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
-                : new Date(Date.now() + 365 * 24 * 60 * 60 * 1000);
+                    if (existingTxn) {
+                        return classifyExistingTransaction({
+                            existingTxn,
+                            incoming: {
+                                userId,
+                                plan: validPlan,
+                                amountAgorot,
+                            },
+                        });
+                    }
 
-        user.plan = validPlan;
-        user.subscription = {
-            status: "active",
-            provider: "tranzila",
-            expiresAt,
-        };
+                    const transactionalUser =
+                        await User.findById(userId).session(session);
 
-        // [BATCH-0] Persist token only on successful paid path.
-        // tranzilaToken is not logged and not stored in audit payload.
-        if (capturedToken) {
-            user.tranzilaToken = capturedToken;
-            // [BATCH-1] Persist expiry metadata alongside token.
-            // Only stored when both values are valid and a token is present.
-            // Do not store partial metadata. Does not block fulfillment if absent.
-            if (capturedExpMonth !== null && capturedExpYear !== null) {
-                user.tranzilaTokenMeta = {
-                    expMonth: capturedExpMonth,
-                    expYear: capturedExpYear,
-                };
+                    if (!transactionalUser) {
+                        const txn = new PaymentTransaction({
+                            providerTxnId,
+                            provider: "tranzila",
+                            userId,
+                            plan: validPlan,
+                            amountAgorot,
+                            status: "paid",
+                            fulfillmentStatus: "manual_review",
+                            fulfilledAt: fulfillmentNow,
+                            payloadAllowlisted,
+                            rawPayloadHash,
+                            paymentIntentId: resolvedPaymentIntentId,
+                        });
+                        await txn.save({ session });
+                        return {
+                            action: "manual_review",
+                            reason: "user_missing",
+                            txnDoc: txn,
+                        };
+                    }
+
+                    const card = transactionalUser.cardId
+                        ? await Card.findById(
+                              transactionalUser.cardId,
+                          ).session(session)
+                        : null;
+
+                    const relationOk = Boolean(
+                        card &&
+                            card.user != null &&
+                            String(card.user) ===
+                                String(transactionalUser._id),
+                    );
+                    let scope = null;
+                    let personalOrgId = null;
+                    let billingShape = "unsupported";
+                    if (relationOk) {
+                        personalOrgId = await getPersonalOrgIdReadOnly();
+                        scope = classifyBillingScope(card, personalOrgId);
+                        billingShape = classifyCardBillingShape(card);
+                    }
+
+                    const permanentTargetFailure =
+                        !relationOk ||
+                        scope !== "PERSONAL" ||
+                        billingShape !== "supported";
+
+                    if (permanentTargetFailure) {
+                        const txn = new PaymentTransaction({
+                            providerTxnId,
+                            provider: "tranzila",
+                            userId,
+                            plan: validPlan,
+                            amountAgorot,
+                            status: "paid",
+                            fulfillmentStatus: "manual_review",
+                            fulfilledAt: fulfillmentNow,
+                            payloadAllowlisted,
+                            rawPayloadHash,
+                            paymentIntentId: resolvedPaymentIntentId,
+                        });
+                        await txn.save({ session });
+
+                        if (resolvedPaymentIntentId) {
+                            // Best-effort terminalization — if the intent's own
+                            // identity is unproven for this event, it is left
+                            // untouched (never mutate a possibly unrelated intent).
+                            await PaymentIntent.updateOne(
+                                buildPaymentIntentManualReviewFilter({
+                                    paymentIntentId: resolvedPaymentIntentId,
+                                    userId,
+                                    plan: validPlan,
+                                    amountAgorot,
+                                }),
+                                { $set: { status: "completed" } },
+                                { session },
+                            );
+                        }
+
+                        return {
+                            action: "manual_review",
+                            reason: !relationOk
+                                ? "relation_mismatch"
+                                : scope !== "PERSONAL"
+                                  ? "non_personal_scope"
+                                  : "unsupported_card_billing_shape",
+                            txnDoc: txn,
+                            user: transactionalUser,
+                        };
+                    }
+
+                    // Valid PERSONAL target — claim PaymentIntent if required.
+                    if (intentClaimRequired) {
+                        const claimed = await PaymentIntent.findOneAndUpdate(
+                            buildPaymentIntentClaimFilter({
+                                paymentIntentId: resolvedPaymentIntentId,
+                                userId,
+                                plan: validPlan,
+                                amountAgorot,
+                                now: fulfillmentNow,
+                            }),
+                            { $set: { status: "consuming" } },
+                            { new: false, session },
+                        );
+                        if (claimed === null) {
+                            const txn = new PaymentTransaction({
+                                providerTxnId,
+                                provider: "tranzila",
+                                userId,
+                                plan: validPlan,
+                                amountAgorot,
+                                status: "paid",
+                                fulfillmentStatus: "manual_review",
+                                fulfilledAt: fulfillmentNow,
+                                payloadAllowlisted,
+                                rawPayloadHash,
+                                paymentIntentId: resolvedPaymentIntentId,
+                            });
+                            await txn.save({ session });
+                            return {
+                                action: "manual_review",
+                                reason: "intent_not_claimable",
+                                txnDoc: txn,
+                                user: transactionalUser,
+                            };
+                        }
+                        resolvedPaymentIntent = claimed;
+                    }
+
+                    const newExpiry = computeMonotonicExpiry({
+                        fulfillmentNow,
+                        userExpiresAt:
+                            transactionalUser.subscription?.expiresAt,
+                        cardPaidUntil: card.billing?.paidUntil,
+                        plan: validPlan,
+                    });
+
+                    const cardFilters = buildCardFulfillmentFilters({
+                        cardId: card._id,
+                        userId: transactionalUser._id,
+                        personalOrgId,
+                    });
+
+                    const r1 = await Card.updateOne(
+                        cardFilters.objectVariant,
+                        {
+                            $set: {
+                                plan: validPlan,
+                                "billing.status": "active",
+                                "billing.plan": validPlan,
+                                "billing.paidUntil": newExpiry,
+                                downgradedAt: null,
+                            },
+                        },
+                        { session },
+                    );
+                    const r2 = await Card.updateOne(
+                        cardFilters.nullVariant,
+                        {
+                            $set: {
+                                plan: validPlan,
+                                billing: {
+                                    status: "active",
+                                    plan: validPlan,
+                                    paidUntil: newExpiry,
+                                },
+                                downgradedAt: null,
+                            },
+                        },
+                        { session },
+                    );
+                    const matched =
+                        (r1.matchedCount || 0) + (r2.matchedCount || 0);
+
+                    if (matched !== 1) {
+                        // Deterministic local failure after full prevalidation
+                        // against this same transactional snapshot — never a
+                        // transient conflict (a genuine conflict surfaces as a
+                        // driver-level write-conflict, handled by the wrapper).
+                        const txn = new PaymentTransaction({
+                            providerTxnId,
+                            provider: "tranzila",
+                            userId,
+                            plan: validPlan,
+                            amountAgorot,
+                            status: "paid",
+                            fulfillmentStatus: "manual_review",
+                            fulfilledAt: fulfillmentNow,
+                            payloadAllowlisted,
+                            rawPayloadHash,
+                            paymentIntentId: resolvedPaymentIntentId,
+                        });
+                        await txn.save({ session });
+
+                        if (intentClaimRequired) {
+                            await PaymentIntent.updateOne(
+                                {
+                                    _id: resolvedPaymentIntentId,
+                                    status: "consuming",
+                                },
+                                { $set: { status: "completed" } },
+                                { session },
+                            );
+                        }
+
+                        return {
+                            action: "manual_review",
+                            reason: "card_match_zero",
+                            txnDoc: txn,
+                            user: transactionalUser,
+                        };
+                    }
+
+                    transactionalUser.plan = validPlan;
+                    transactionalUser.subscription = {
+                        status: "active",
+                        provider: "tranzila",
+                        expiresAt: newExpiry,
+                    };
+                    // [BATCH-0] Persist token only on successful paid path.
+                    if (capturedToken) {
+                        transactionalUser.tranzilaToken = capturedToken;
+                        if (
+                            capturedExpMonth !== null &&
+                            capturedExpYear !== null
+                        ) {
+                            transactionalUser.tranzilaTokenMeta = {
+                                expMonth: capturedExpMonth,
+                                expYear: capturedExpYear,
+                            };
+                        }
+                    }
+                    // [5.10a.3.1] Clear renewal failure marker on success.
+                    transactionalUser.renewalFailedAt = null;
+                    await transactionalUser.save({ session });
+
+                    const txn = new PaymentTransaction({
+                        providerTxnId,
+                        provider: "tranzila",
+                        userId,
+                        cardId: card._id,
+                        plan: validPlan,
+                        amountAgorot,
+                        status: "paid",
+                        fulfillmentStatus: "fulfilled",
+                        fulfilledAt: fulfillmentNow,
+                        entitlementAppliedUntil: newExpiry,
+                        payloadAllowlisted,
+                        rawPayloadHash,
+                        paymentIntentId: resolvedPaymentIntentId,
+                    });
+                    await txn.save({ session });
+
+                    if (intentClaimRequired) {
+                        const rc = await PaymentIntent.updateOne(
+                            buildPaymentIntentCompletionFilter({
+                                paymentIntentId: resolvedPaymentIntentId,
+                            }),
+                            { $set: { status: "completed" } },
+                            { session },
+                        );
+                        if (rc.matchedCount !== 1) {
+                            throw new Error(
+                                "payment_intent_completion_cas_miss",
+                            );
+                        }
+                    }
+
+                    return {
+                        action: "fulfilled",
+                        txnDoc: txn,
+                        user: transactionalUser,
+                        newExpiry,
+                    };
+                },
+                {
+                    readConcern: { level: "snapshot" },
+                    writeConcern: { w: "majority" },
+                    readPreference: "primary",
+                },
+            );
+        } catch (fulfillmentErr) {
+            if (
+                classifyFulfillmentTransactionError(fulfillmentErr) ===
+                "concurrent_duplicate"
+            ) {
+                // A concurrent handler for the SAME providerTxnId won the
+                // race. Reconverge by re-checking the now-committed row.
+                const existingTxn = await PaymentTransaction.findOne({
+                    providerTxnId,
+                });
+                fulfillment = existingTxn
+                    ? classifyExistingTransaction({
+                          existingTxn,
+                          incoming: { userId, plan: validPlan, amountAgorot },
+                      })
+                    : { action: "manual_review", reason: "race_unresolved" };
+            } else {
+                // Infra/transient failure — throw so the route returns 500
+                // and the provider retries the identical notify.
+                throw fulfillmentErr;
             }
         }
 
-        // [5.10a.3.1] Clear renewal failure marker on successful first payment.
-        user.renewalFailedAt = null;
+        if (
+            fulfillment.action === "idempotent_success" ||
+            fulfillment.action === "integrity_collision"
+        ) {
+            incrementMetric("payment.notify.duplicate", {
+                provider: "tranzila",
+                flow: "first_payment",
+                reason: fulfillment.action,
+            });
+            return;
+        }
 
-        await user.save();
+        if (fulfillment.action === "manual_review") {
+            incrementMetric("payment.fulfillment.manual_review", {
+                provider: "tranzila",
+                flow: "first_payment",
+                reason: fulfillment.reason,
+            });
+            console.warn(
+                "[payment] economic success, local fulfillment manual_review",
+                {
+                    event: "first_payment_manual_review",
+                    providerTxnId,
+                    userId,
+                    plan: validPlan,
+                    reason: fulfillment.reason,
+                },
+            );
+        }
 
-        // [CARDID-PARITY] Best-effort: enrich first-payment ledger row with cardId.
-        // user.cardId is only available after User.findById above; txnDoc was created
-        // before the user lookup (ledger-first invariant) so cardId was null at insert time.
-        // This update is non-blocking and must never affect fulfillment outcome.
-        if (txnDoc?._id && user.cardId) {
-            PaymentTransaction.updateOne(
-                { _id: txnDoc._id, cardId: null },
-                { $set: { cardId: user.cardId } },
-            ).catch((err) => {
-                console.warn("[payment] cardId enrichment failed", {
-                    event: "txn_cardid_enrich_failed",
-                    txnDocIdPresent: Boolean(txnDoc._id),
-                    cardIdPresent: Boolean(user.cardId),
-                    errCode: err?.code ?? null,
-                });
+        const txnDoc = fulfillment.txnDoc;
+        const user = fulfillment.user;
+        const expiresAt = fulfillment.newExpiry;
+
+        if (fulfillment.action === "fulfilled") {
+            // ── 9. [BATCH-3/5.4] STO schedule create — non-blocking, after full fulfillment ──
+            // STO is a follow-on lifecycle operation and must not block first-payment fulfillment.
+            if (isStoCreateEnabled()) {
+                try {
+                    const stoResult = await createTranzilaStoForUser(
+                        user,
+                        validPlan,
+                        expiresAt,
+                        // First payment already passed the personal-card boundary
+                        // (§5.4 resolveFirstPaymentContinuation) — proof avoids a
+                        // duplicate scope read.
+                        { personalScopeVerified: true },
+                    );
+                    logStoCreateOutcome({
+                        userId,
+                        plan: validPlan,
+                        result: stoResult,
+                    });
+                } catch (_stoErr) {
+                    logStoCreateOutcome({
+                        userId,
+                        plan: validPlan,
+                        unexpectedError: true,
+                    });
+                    // Swallow — first payment is already fulfilled. Do not rethrow.
+                }
+            }
+
+            incrementMetric("payment.notify.success", {
+                provider: "tranzila",
+                flow: "first_payment",
+                plan: validPlan,
             });
         }
 
-        if (user.cardId) {
-            const paidUntil = expiresAt;
-
-            // Phase 2C: never overwrite billing wholesale (preserve billing.features + billing.payer).
-            // 1) Dot-path update for normal cases (billing missing or object).
-            await Card.updateOne(
-                {
-                    _id: user.cardId,
-                    $or: [
-                        { billing: { $exists: false } },
-                        { billing: { $type: "object" } },
-                    ],
-                },
-                {
-                    $set: {
-                        plan: validPlan,
-                        "billing.status": "active",
-                        "billing.plan": validPlan,
-                        "billing.paidUntil": paidUntil,
-                    },
-                },
-            );
-
-            // 2) Fallback for billing === null (dot-path would fail). Do NOT set payer/features.
-            await Card.updateOne(
-                { _id: user.cardId, billing: null },
-                {
-                    $set: {
-                        plan: validPlan,
-                        billing: {
-                            status: "active",
-                            plan: validPlan,
-                            paidUntil: paidUntil,
-                        },
-                    },
-                },
-            );
-        }
-
-        // ── 9. [BATCH-3/5.4] STO schedule create — non-blocking, after full fulfillment ──
-        // STO is a follow-on lifecycle operation and must not block first-payment fulfillment.
-        if (isStoCreateEnabled()) {
-            try {
-                const stoResult = await createTranzilaStoForUser(
-                    user,
-                    validPlan,
-                    expiresAt,
-                    // First payment already passed the personal-card boundary
-                    // (§5.4 resolveFirstPaymentContinuation) — proof avoids a
-                    // duplicate scope read.
-                    { personalScopeVerified: true },
-                );
-                logStoCreateOutcome({
-                    userId,
-                    plan: validPlan,
-                    result: stoResult,
-                });
-            } catch (_stoErr) {
-                logStoCreateOutcome({
-                    userId,
-                    plan: validPlan,
-                    unexpectedError: true,
-                });
-                // Swallow — first payment is already fulfilled. Do not rethrow.
-            }
-        }
-
         // ── 10. [Y3D.2] YeshInvoice receipt create — non-blocking, after full fulfillment ──
-        // Receipt issuance is a follow-on artifact. Must never block first-payment fulfillment.
+        // Economic success (fulfilled OR manual_review) still deserves a receipt —
+        // money genuinely changed hands. Requires a loaded User for the customer
+        // profile; skipped (not fabricated) when unavailable (e.g. user_missing).
+        // Receipt issuance is a follow-on artifact. Must never block the ACK path.
         // Outer try/catch swallows all unexpected setup/provider-call errors.
-        incrementMetric("payment.notify.success", {
-            provider: "tranzila",
-            flow: "first_payment",
-            plan: validPlan,
-        });
-        if (isYeshInvoiceEnabled()) {
+        if (
+            (fulfillment.action === "fulfilled" ||
+                fulfillment.action === "manual_review") &&
+            user &&
+            isYeshInvoiceEnabled()
+        ) {
             try {
                 const documentUniqueKey =
                     buildYeshInvoiceDocumentUniqueKey(providerTxnId);
@@ -3306,123 +3695,299 @@ export default {
             return { ok: false, reason: "amount_mismatch", providerTxnId };
         }
 
-        // ── 6. Success path ───────────────────────────────────────────────────────
-        // All validations passed. Create paid ledger record FIRST.
-        // Invariant: no User/Card mutation before successful PaymentTransaction.create.
-        let txnDoc;
+        // ── 6. Atomic economic ledger + local Premium fulfillment (Step 2) ──────
+        // fulfillmentNow is captured ONCE, before the retryable transaction
+        // wrapper, and reused unchanged across every retry attempt.
+        const fulfillmentNow = new Date();
+
+        let fulfillment;
         try {
-            txnDoc = await PaymentTransaction.create({
-                providerTxnId,
-                provider: "tranzila",
-                status: "paid",
-                userId: user._id,
-                cardId: user.cardId ?? null,
-                plan: validPlan,
-                amountAgorot,
-                currency: "ILS",
-                payloadAllowlisted,
-                rawPayloadHash,
-                failReason: null,
-                idempotencyNote: "sto_recurring_notify",
-            });
-        } catch (e) {
-            if (e.code === 11000) {
-                // Duplicate providerTxnId — idempotent replay, no extension.
-                return { ok: true, duplicate: true, providerTxnId };
+            fulfillment = await mongoose.connection.transaction(
+                async (session) => {
+                    const existingTxn = await PaymentTransaction.findOne({
+                        providerTxnId,
+                    }).session(session);
+
+                    if (existingTxn) {
+                        return classifyExistingTransaction({
+                            existingTxn,
+                            incoming: {
+                                userId: user._id,
+                                plan: validPlan,
+                                amountAgorot,
+                            },
+                        });
+                    }
+
+                    const transactionalUser = await User.findById(
+                        user._id,
+                    ).session(session);
+                    if (!transactionalUser) {
+                        const txn = new PaymentTransaction({
+                            providerTxnId,
+                            provider: "tranzila",
+                            status: "paid",
+                            userId: user._id,
+                            plan: validPlan,
+                            amountAgorot,
+                            currency: "ILS",
+                            payloadAllowlisted,
+                            rawPayloadHash,
+                            failReason: null,
+                            idempotencyNote: "sto_recurring_notify",
+                            fulfillmentStatus: "manual_review",
+                            fulfilledAt: fulfillmentNow,
+                        });
+                        await txn.save({ session });
+                        return {
+                            action: "manual_review",
+                            reason: "user_missing",
+                            txnDoc: txn,
+                        };
+                    }
+
+                    const card = transactionalUser.cardId
+                        ? await Card.findById(
+                              transactionalUser.cardId,
+                          ).session(session)
+                        : null;
+
+                    const relationOk = Boolean(
+                        card &&
+                            card.user != null &&
+                            String(card.user) ===
+                                String(transactionalUser._id),
+                    );
+                    let scope = null;
+                    let personalOrgId = null;
+                    let billingShape = "unsupported";
+                    if (relationOk) {
+                        personalOrgId = await getPersonalOrgIdReadOnly();
+                        scope = classifyBillingScope(card, personalOrgId);
+                        billingShape = classifyCardBillingShape(card);
+                    }
+
+                    const permanentTargetFailure =
+                        !relationOk ||
+                        scope !== "PERSONAL" ||
+                        billingShape !== "supported";
+
+                    const baseTxnFields = {
+                        providerTxnId,
+                        provider: "tranzila",
+                        status: "paid",
+                        userId: transactionalUser._id,
+                        cardId: transactionalUser.cardId ?? null,
+                        plan: validPlan,
+                        amountAgorot,
+                        currency: "ILS",
+                        payloadAllowlisted,
+                        rawPayloadHash,
+                        failReason: null,
+                        idempotencyNote: "sto_recurring_notify",
+                        fulfilledAt: fulfillmentNow,
+                    };
+
+                    if (permanentTargetFailure) {
+                        const txn = new PaymentTransaction({
+                            ...baseTxnFields,
+                            fulfillmentStatus: "manual_review",
+                        });
+                        await txn.save({ session });
+                        return {
+                            action: "manual_review",
+                            reason: !relationOk
+                                ? "relation_mismatch"
+                                : scope !== "PERSONAL"
+                                  ? "non_personal_scope"
+                                  : "unsupported_card_billing_shape",
+                            txnDoc: txn,
+                            user: transactionalUser,
+                        };
+                    }
+
+                    // ── Subscription renewal — monotonic expiry ──
+                    const newExpiresAt = computeMonotonicExpiry({
+                        fulfillmentNow,
+                        userExpiresAt:
+                            transactionalUser.subscription?.expiresAt,
+                        cardPaidUntil: card.billing?.paidUntil,
+                        plan: validPlan,
+                    });
+
+                    const cardFilters = buildCardFulfillmentFilters({
+                        cardId: card._id,
+                        userId: transactionalUser._id,
+                        personalOrgId,
+                    });
+
+                    const r1 = await Card.updateOne(
+                        cardFilters.objectVariant,
+                        {
+                            $set: {
+                                plan: validPlan,
+                                downgradedAt: null,
+                                "billing.status": "active",
+                                "billing.plan": validPlan,
+                                "billing.paidUntil": newExpiresAt,
+                            },
+                        },
+                        { session },
+                    );
+                    const r2 = await Card.updateOne(
+                        cardFilters.nullVariant,
+                        {
+                            $set: {
+                                plan: validPlan,
+                                downgradedAt: null,
+                                billing: {
+                                    status: "active",
+                                    plan: validPlan,
+                                    paidUntil: newExpiresAt,
+                                },
+                            },
+                        },
+                        { session },
+                    );
+                    const matched =
+                        (r1.matchedCount || 0) + (r2.matchedCount || 0);
+
+                    if (matched !== 1) {
+                        const txn = new PaymentTransaction({
+                            ...baseTxnFields,
+                            fulfillmentStatus: "manual_review",
+                        });
+                        await txn.save({ session });
+                        return {
+                            action: "manual_review",
+                            reason: "card_match_zero",
+                            txnDoc: txn,
+                            user: transactionalUser,
+                        };
+                    }
+
+                    // Clear last error on successful renewal.
+                    const stoState = ensureTranzilaStoState(transactionalUser);
+                    stoState.lastErrorCode = null;
+                    stoState.lastErrorMessage = null;
+                    stoState.lastErrorAt = null;
+                    // [5.10a.3.1] Clear renewal failure marker on success.
+                    transactionalUser.renewalFailedAt = null;
+                    // plan: resolved validPlan (restores Premium on recovery).
+                    // DB-/ledger-sourced, never payload.pdesc (anti-drift).
+                    transactionalUser.plan = validPlan;
+                    transactionalUser.subscription = {
+                        status: "active",
+                        provider: "tranzila",
+                        expiresAt: newExpiresAt,
+                    };
+                    await transactionalUser.save({ session });
+
+                    const txn = new PaymentTransaction({
+                        ...baseTxnFields,
+                        fulfillmentStatus: "fulfilled",
+                        entitlementAppliedUntil: newExpiresAt,
+                    });
+                    await txn.save({ session });
+
+                    return {
+                        action: "fulfilled",
+                        txnDoc: txn,
+                        user: transactionalUser,
+                        newExpiresAt,
+                    };
+                },
+                {
+                    readConcern: { level: "snapshot" },
+                    writeConcern: { w: "majority" },
+                    readPreference: "primary",
+                },
+            );
+        } catch (fulfillmentErr) {
+            if (
+                classifyFulfillmentTransactionError(fulfillmentErr) ===
+                "concurrent_duplicate"
+            ) {
+                const existingTxn = await PaymentTransaction.findOne({
+                    providerTxnId,
+                });
+                fulfillment = existingTxn
+                    ? classifyExistingTransaction({
+                          existingTxn,
+                          incoming: {
+                              userId: user._id,
+                              plan: validPlan,
+                              amountAgorot,
+                          },
+                      })
+                    : { action: "manual_review", reason: "race_unresolved" };
+            } else {
+                // Infra/transient failure — throw so the route returns 500
+                // and the provider retries the identical notify.
+                throw fulfillmentErr;
             }
-            throw e;
         }
 
-        // ── 7. Subscription renewal ───────────────────────────────────────────────
-        // Use max(now, current paidUntil): do NOT use Date.now()+period alone.
-        // Early webhook delivery must not cause paid-time loss (anti-drift).
-        const now = new Date();
-        const currentExpiry = user.subscription?.expiresAt;
-        const baseDate =
-            currentExpiry instanceof Date && currentExpiry > now
-                ? currentExpiry
-                : now;
-        const newExpiresAt =
-            validPlan === "monthly"
-                ? new Date(baseDate.getTime() + 30 * 24 * 60 * 60 * 1000)
-                : new Date(baseDate.getTime() + 365 * 24 * 60 * 60 * 1000);
+        if (
+            fulfillment.action === "idempotent_success" ||
+            fulfillment.action === "integrity_collision"
+        ) {
+            incrementMetric("payment.notify.duplicate", {
+                provider: "tranzila",
+                flow: "sto_recurring",
+                reason: fulfillment.action,
+            });
+            return { ok: true, duplicate: true, providerTxnId };
+        }
 
-        // Clear last error on successful renewal.
-        sto.lastErrorCode = null;
-        sto.lastErrorMessage = null;
-        sto.lastErrorAt = null;
-        // [5.10a.3.1] Clear renewal failure marker on successful recurring renewal.
-        user.renewalFailedAt = null;
-
-        // plan: resolved validPlan (restores Premium on recovery). DB-/ledger-sourced,
-        // never payload.pdesc (anti-drift). Assigned AFTER the paid ledger insert above.
-        user.plan = validPlan;
-        user.subscription = {
-            status: "active",
-            provider: "tranzila",
-            expiresAt: newExpiresAt,
-        };
-
-        await user.save();
-
-        // ── 8. Card billing dual-path update ─────────────────────────────────────
-        // Never overwrite billing wholesale (preserve billing.features + billing.payer).
-        if (user.cardId) {
-            const paidUntil = newExpiresAt;
-
-            // 1) Dot-path update for normal cases (billing missing or object).
-            //    downgradedAt:null clears the retentionPurge trigger on recovery.
-            await Card.updateOne(
+        if (fulfillment.action === "manual_review") {
+            incrementMetric("payment.fulfillment.manual_review", {
+                provider: "tranzila",
+                flow: "sto_recurring",
+                reason: fulfillment.reason,
+            });
+            console.warn(
+                "[payment] economic success, local fulfillment manual_review",
                 {
-                    _id: user.cardId,
-                    $or: [
-                        { billing: { $exists: false } },
-                        { billing: { $type: "object" } },
-                    ],
-                },
-                {
-                    $set: {
-                        plan: validPlan,
-                        downgradedAt: null,
-                        "billing.status": "active",
-                        "billing.plan": validPlan,
-                        "billing.paidUntil": paidUntil,
-                    },
+                    event: "sto_recurring_manual_review",
+                    providerTxnId,
+                    userId: String(user._id),
+                    plan: validPlan,
+                    reason: fulfillment.reason,
                 },
             );
+        }
 
-            // 2) Fallback for billing === null (dot-path would fail). Do NOT set payer/features.
-            await Card.updateOne(
-                { _id: user.cardId, billing: null },
-                {
-                    $set: {
-                        plan: validPlan,
-                        downgradedAt: null,
-                        billing: {
-                            status: "active",
-                            plan: validPlan,
-                            paidUntil: paidUntil,
-                        },
-                    },
-                },
-            );
+        const txnDoc = fulfillment.txnDoc;
+        const fulfilledUser = fulfillment.user;
+        const newExpiresAt = fulfillment.newExpiresAt;
+
+        if (fulfillment.action === "fulfilled") {
+            incrementMetric("payment.notify.success", {
+                provider: "tranzila",
+                flow: "sto_recurring",
+                plan: fulfilledUser.plan,
+            });
         }
 
         // ── 9. [Y3E.2] YeshInvoice receipt create — non-blocking, after full fulfillment ──
+        // Economic success (fulfilled OR manual_review) still deserves a receipt.
+        // Requires a loaded transactionalUser for the customer profile —
+        // skipped (not fabricated) when unavailable (e.g. user_missing).
         // Receipt issuance is a follow-on artifact. Must never block recurring fulfillment.
         // Outer try/catch swallows all unexpected setup/provider-call errors.
-        incrementMetric("payment.notify.success", {
-            provider: "tranzila",
-            flow: "sto_recurring",
-            plan: user.plan,
-        });
-        if (isYeshInvoiceEnabled()) {
+        if (
+            (fulfillment.action === "fulfilled" ||
+                fulfillment.action === "manual_review") &&
+            fulfilledUser &&
+            isYeshInvoiceEnabled()
+        ) {
             try {
                 const documentUniqueKey =
                     buildYeshInvoiceDocumentUniqueKey(providerTxnId);
-                const customer = buildStoCustomer(user);
+                const customer = buildStoCustomer(fulfilledUser);
                 const description =
-                    user.plan === "monthly"
+                    fulfilledUser.plan === "monthly"
                         ? "מנוי Cardigo - חודשי"
                         : "מנוי Cardigo - שנתי";
 
@@ -3437,15 +4002,15 @@ export default {
                     incrementMetric("receipt.create.failed", {
                         provider: "yeshinvoice",
                         flow: "sto_recurring",
-                        plan: user.plan,
+                        plan: fulfilledUser.plan,
                         reason: "create_failed",
                     });
                     console.warn("[receipt] recurring provider call failed", {
                         event: "receipt_recurring_provider_failed",
                         providerTxnId,
                         paymentTransactionIdPresent: Boolean(txnDoc?._id),
-                        userId: String(user._id),
-                        plan: user.plan,
+                        userId: String(fulfilledUser._id),
+                        plan: fulfilledUser.plan,
                         ok: false,
                         failReason: String(receiptResult.error ?? "").slice(
                             0,
@@ -3454,9 +4019,9 @@ export default {
                     });
                     await persistFailedReceiptBestEffort({
                         txnDocId: txnDoc._id,
-                        userId: user._id,
+                        userId: fulfilledUser._id,
                         amountAgorot,
-                        plan: user.plan,
+                        plan: fulfilledUser.plan,
                         documentUniqueKey,
                         failReason: receiptResult.error,
                         recipientSnapshot: buildRecipientSnapshot(
@@ -3470,7 +4035,7 @@ export default {
                     try {
                         const createdReceipt = await Receipt.create({
                             paymentTransactionId: txnDoc._id,
-                            userId: user._id,
+                            userId: fulfilledUser._id,
                             provider: "yeshinvoice",
                             providerDocId: receiptResult.providerDocId,
                             providerDocNumber: receiptResult.providerDocNumber,
@@ -3478,7 +4043,7 @@ export default {
                             pdfUrl: receiptResult.pdfUrl,
                             documentUrl: receiptResult.documentUrl,
                             amountAgorot,
-                            plan: user.plan,
+                            plan: fulfilledUser.plan,
                             status: "created",
                             failReason: null,
                             documentUniqueKey,
@@ -3528,8 +4093,10 @@ export default {
                                         ),
                                         providerTxnIdPresent:
                                             Boolean(providerTxnId),
-                                        userIdPresent: Boolean(user?._id),
-                                        plan: user.plan,
+                                        userIdPresent: Boolean(
+                                            fulfilledUser?._id,
+                                        ),
+                                        plan: fulfilledUser.plan,
                                         shareFailReason: String(
                                             shareResult.error ?? "unknown",
                                         ).slice(0, 200),
@@ -3549,8 +4116,8 @@ export default {
                                             receiptId: String(
                                                 createdReceipt._id,
                                             ),
-                                            userId: String(user._id),
-                                            plan: user.plan,
+                                            userId: String(fulfilledUser._id),
+                                            plan: fulfilledUser.plan,
                                             ok: false,
                                             failReason: String(
                                                 _updateErr?.message ?? "",
@@ -3570,8 +4137,10 @@ export default {
                                     ),
                                     providerTxnIdPresent:
                                         Boolean(providerTxnId),
-                                    userIdPresent: Boolean(user?._id),
-                                    plan: user.plan,
+                                    userIdPresent: Boolean(
+                                        fulfilledUser?._id,
+                                    ),
+                                    plan: fulfilledUser.plan,
                                     errorMessage: String(
                                         _shareErr?.message ?? "unknown",
                                     ).slice(0, 200),
@@ -3603,8 +4172,8 @@ export default {
                                     event: "receipt_recurring_duplicate",
                                     providerTxnId,
                                     paymentTransactionIdPresent: true,
-                                    userId: String(user._id),
-                                    plan: user.plan,
+                                    userId: String(fulfilledUser._id),
+                                    plan: fulfilledUser.plan,
                                     duplicate: true,
                                 },
                             );
@@ -3617,8 +4186,8 @@ export default {
                                     paymentTransactionIdPresent: Boolean(
                                         txnDoc?._id,
                                     ),
-                                    userId: String(user._id),
-                                    plan: user.plan,
+                                    userId: String(fulfilledUser._id),
+                                    plan: fulfilledUser.plan,
                                     ok: false,
                                     failReason: String(
                                         _receiptErr?.message ?? "",
@@ -3635,8 +4204,8 @@ export default {
                     {
                         event: "receipt_recurring_hook_unexpected_error",
                         providerTxnId,
-                        userId: String(user._id),
-                        plan: user.plan,
+                        userId: String(fulfilledUser._id),
+                        plan: fulfilledUser.plan,
                         failReason: String(
                             _outerReceiptErr?.message ?? "",
                         ).slice(0, 200),
@@ -3649,10 +4218,14 @@ export default {
         return {
             ok: true,
             providerTxnId,
-            userId: String(user._id),
-            cardIdPresent: Boolean(user.cardId),
-            plan: user.plan,
-            paidUntil: newExpiresAt,
+            userId: fulfilledUser
+                ? String(fulfilledUser._id)
+                : String(user._id),
+            cardIdPresent: fulfilledUser
+                ? Boolean(fulfilledUser.cardId)
+                : undefined,
+            plan: fulfilledUser ? fulfilledUser.plan : validPlan,
+            paidUntil: newExpiresAt ?? null,
         };
     },
 };
@@ -3681,4 +4254,14 @@ export {
     normalizeCurrencyForInbox,
     deriveProviderTxnId,
     deriveStoProviderTxnId,
+    purchasedPeriodMs,
+    computeMonotonicExpiry,
+    classifyCardBillingShape,
+    existingTransactionIdentityMatches,
+    classifyExistingTransaction,
+    buildCardFulfillmentFilters,
+    buildPaymentIntentClaimFilter,
+    buildPaymentIntentManualReviewFilter,
+    buildPaymentIntentCompletionFilter,
+    classifyFulfillmentTransactionError,
 };

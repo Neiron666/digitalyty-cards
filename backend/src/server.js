@@ -121,11 +121,16 @@ async function start() {
     });
 
     // Retention purge: remove premium-only surplus data after grace window.
-    startRetentionPurgeJob({
-        intervalMs:
-            Number(process.env.RETENTION_PURGE_INTERVAL_MS) ||
-            6 * 60 * 60 * 1000,
-    });
+    // Emergency containment gate: fail-closed by default (P0 destructive-purge review pending).
+    if (process.env.CARDIGO_RETENTION_PURGE_ENABLED === "true") {
+        startRetentionPurgeJob({
+            intervalMs:
+                Number(process.env.RETENTION_PURGE_INTERVAL_MS) ||
+                6 * 60 * 60 * 1000,
+        });
+    } else {
+        console.warn("[retention] purge job disabled");
+    }
 
     // Pre-expiry trial reminder: sends reminder email ~day-9, daytime window (Asia/Jerusalem), claim/send idempotency.
     startTrialReminderJob({

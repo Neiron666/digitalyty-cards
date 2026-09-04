@@ -1,19 +1,16 @@
 import mongoose from "mongoose";
 import Card from "../models/Card.model.js";
-import User from "../models/User.model.js";
 import AiUsageMonthly from "../models/AiUsageMonthly.model.js";
 import {
     generateAboutSuggestion,
     generateSeoSuggestion,
     generateFaqSuggestion,
 } from "../services/gemini.service.js";
-import Organization from "../models/Organization.model.js";
 import { hasAccess } from "../utils/planAccess.js";
-import { resolveEffectiveTier } from "../utils/tier.js";
-import { planFromTier, resolveEffectiveBilling } from "../utils/cardDTO.js";
-import { getPersonalOrgId } from "../utils/personalOrg.util.js";
+import { getPersonalOrgIdReadOnly } from "../utils/personalOrg.util.js";
 import { assertActiveOrgAndMembershipOrNotFound } from "../utils/orgMembership.util.js";
 import { HttpError } from "../utils/httpError.js";
+import { resolveAiFeaturePlan } from "../services/aiFeaturePlan.service.js";
 import {
     BUSINESS_NAME_MAX,
     BUSINESS_SUBTITLE_MAX,
@@ -94,40 +91,7 @@ function checkRateLimit(userId, limit) {
 // --- Tier resolution (reuses project SSoT) ----------------------------------
 
 async function resolveFeaturePlan(card, userId, now) {
-    if (!userId) return { plan: "free", billingSource: "unknown" };
-
-    // Org-aware: load Organization for non-personal org cards only
-    let org = null;
-    if (card?.orgId) {
-        const personalOrgId = await getPersonalOrgId();
-        const isNonPersonalOrg = String(card.orgId) !== String(personalOrgId);
-        if (isNonPersonalOrg) {
-            org = await Organization.findById(card.orgId)
-                .select("_id isActive orgEntitlement")
-                .lean();
-        }
-    }
-
-    const user = await User.findById(userId)
-        .select("adminTier adminTierUntil")
-        .lean();
-    const effectiveBilling = resolveEffectiveBilling(card, now, org);
-    const effectiveTier = resolveEffectiveTier({
-        card,
-        user,
-        effectiveBilling,
-        now,
-    });
-
-    // Preserve org plan semantics (PLANS.org) for future org-specific feature/quota policy
-    if (effectiveBilling?.source === "organization") {
-        return { plan: "org", billingSource: "organization" };
-    }
-
-    return {
-        plan: planFromTier(effectiveTier?.tier || "free"),
-        billingSource: effectiveBilling?.source || "unknown",
-    };
+    return resolveAiFeaturePlan(card, userId, now);
 }
 
 // --- Monthly quota (persistent, success-only) ------------------------------
@@ -264,7 +228,7 @@ export async function suggestAbout(req, res) {
 
     // 5. Org membership gate (anti-enumeration: 404 for non-members)
     if (card.orgId) {
-        const personalOrgId = await getPersonalOrgId();
+        const personalOrgId = await getPersonalOrgIdReadOnly();
         const cardOrgId = String(card.orgId);
         const isNonPersonalOrg =
             Boolean(cardOrgId) && cardOrgId !== String(personalOrgId);
@@ -579,7 +543,7 @@ export async function getAiQuota(req, res) {
 
     // 4. Org membership gate (same posture as suggest)
     if (card.orgId) {
-        const personalOrgId = await getPersonalOrgId();
+        const personalOrgId = await getPersonalOrgIdReadOnly();
         const cardOrgId = String(card.orgId);
         const isNonPersonalOrg =
             Boolean(cardOrgId) && cardOrgId !== String(personalOrgId);
@@ -696,7 +660,7 @@ export async function suggestSeo(req, res) {
 
     // 5. Org membership gate (anti-enumeration: 404)
     if (card.orgId) {
-        const personalOrgId = await getPersonalOrgId();
+        const personalOrgId = await getPersonalOrgIdReadOnly();
         const cardOrgId = String(card.orgId);
         const isNonPersonalOrg =
             Boolean(cardOrgId) && cardOrgId !== String(personalOrgId);
@@ -984,7 +948,7 @@ export async function suggestFaq(req, res) {
 
     // 5. Org membership gate (anti-enumeration: 404)
     if (card.orgId) {
-        const personalOrgId = await getPersonalOrgId();
+        const personalOrgId = await getPersonalOrgIdReadOnly();
         const cardOrgId = String(card.orgId);
         const isNonPersonalOrg =
             Boolean(cardOrgId) && cardOrgId !== String(personalOrgId);

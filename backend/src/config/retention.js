@@ -28,3 +28,15 @@ export const PREMIUM_CONTACT_FIELDS = [
     "contact.officePhone",
     "contact.fax",
 ];
+
+/** Max Supabase paths a single retention/storage cleanup work item may carry. */
+export const MAX_RETENTION_PATHS_PER_WORK = 200;
+
+/** Max UTF-8 byte sum of a single cleanup work item's deduplicated paths. */
+export const MAX_RETENTION_PATH_BYTES_PER_WORK = 32768;
+
+/** Max simultaneous pending entries in a Card's pendingStorageCleanups queue. */
+export const MAX_PENDING_STORAGE_CLEANUPS_PER_CARD = 5;
+
+/** Max retained entries in a Card's completedRetentionPurgeSummaries history. */
+export const MAX_COMPLETED_RETENTION_SUMMARIES_PER_CARD = 20;

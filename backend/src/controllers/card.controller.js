@@ -703,6 +703,71 @@ function sanitizeWritablePatch(raw) {
     return patch;
 }
 
+// Exported for test-only direct access; call from createCard only.
+export function stripServerOnlyCreateFields(data) {
+    if (!data || typeof data !== "object") return;
+    delete data.billing;
+    delete data.plan;
+    delete data.trialStartedAt;
+    delete data.trialEndsAt;
+    delete data.trialDeleteAt;
+    delete data.uploads;
+    delete data.adminOverride;
+    delete data.tenantKey;
+    // Slug must be changed via PATCH /cards/slug (policy + rate limit).
+    delete data.slug;
+    delete data.orgId;
+    delete data.slugChange;
+    // Admin-only feature tier override must never be set by user endpoints.
+    delete data.adminTier;
+    delete data.adminTierUntil;
+    delete data.adminTierByAdmin;
+    delete data.adminTierReason;
+    delete data.adminTierCreatedAt;
+    // Internal retention lifecycle metadata — must never be authored by external requests.
+    delete data.retentionCoordinationEpoch;
+    delete data.retentionLifecycle;
+    delete data.pendingStorageCleanups;
+
+    // Also strip dot-path variants (defense in depth).
+    for (const k of Object.keys(data)) {
+        if (typeof k !== "string" || !k.includes(".")) continue;
+        if (
+            k === "billing" ||
+            k.startsWith("billing.") ||
+            k === "adminOverride" ||
+            k.startsWith("adminOverride.") ||
+            k === "trialStartedAt" ||
+            k.startsWith("trialStartedAt.") ||
+            k === "trialEndsAt" ||
+            k.startsWith("trialEndsAt.") ||
+            k === "trialDeleteAt" ||
+            k.startsWith("trialDeleteAt.") ||
+            k === "uploads" ||
+            k.startsWith("uploads.") ||
+            k === "plan" ||
+            k.startsWith("plan.") ||
+            k === "adminTier" ||
+            k.startsWith("adminTier.") ||
+            k === "adminTierUntil" ||
+            k.startsWith("adminTierUntil.") ||
+            k === "adminTierByAdmin" ||
+            k.startsWith("adminTierByAdmin.") ||
+            k === "adminTierReason" ||
+            k.startsWith("adminTierReason.") ||
+            k === "adminTierCreatedAt" ||
+            k.startsWith("adminTierCreatedAt.") ||
+            k === "retentionCoordinationEpoch" ||
+            k === "retentionLifecycle" ||
+            k.startsWith("retentionLifecycle.") ||
+            k === "pendingStorageCleanups" ||
+            k.startsWith("pendingStorageCleanups.")
+        ) {
+            delete data[k];
+        }
+    }
+}
+
 export async function getMyCard(req, res) {
     const owner = resolveOwnerContext(req);
     if (!owner) return res.status(401).json({ message: "Unauthorized" });
@@ -1044,61 +1109,8 @@ export async function createCard(req, res) {
         );
     }
 
-    // Client must not set billing or server-only flags.
-    if (data && typeof data === "object") {
-        delete data.billing;
-        delete data.plan;
-        delete data.trialStartedAt;
-        delete data.trialEndsAt;
-        delete data.trialDeleteAt;
-        delete data.uploads;
-        delete data.adminOverride;
-        delete data.tenantKey;
-        // Slug must be changed via PATCH /cards/slug (policy + rate limit).
-        delete data.slug;
-        delete data.orgId;
-        delete data.slugChange;
-
-        // Admin-only feature tier override must never be set by user endpoints.
-        delete data.adminTier;
-        delete data.adminTierUntil;
-        delete data.adminTierByAdmin;
-        delete data.adminTierReason;
-        delete data.adminTierCreatedAt;
-
-        // Also strip dot-path variants (defense in depth).
-        for (const k of Object.keys(data)) {
-            if (typeof k !== "string" || !k.includes(".")) continue;
-            if (
-                k === "billing" ||
-                k.startsWith("billing.") ||
-                k === "adminOverride" ||
-                k.startsWith("adminOverride.") ||
-                k === "trialStartedAt" ||
-                k.startsWith("trialStartedAt.") ||
-                k === "trialEndsAt" ||
-                k.startsWith("trialEndsAt.") ||
-                k === "trialDeleteAt" ||
-                k.startsWith("trialDeleteAt.") ||
-                k === "uploads" ||
-                k.startsWith("uploads.") ||
-                k === "plan" ||
-                k.startsWith("plan.") ||
-                k === "adminTier" ||
-                k.startsWith("adminTier.") ||
-                k === "adminTierUntil" ||
-                k.startsWith("adminTierUntil.") ||
-                k === "adminTierByAdmin" ||
-                k.startsWith("adminTierByAdmin.") ||
-                k === "adminTierReason" ||
-                k.startsWith("adminTierReason.") ||
-                k === "adminTierCreatedAt" ||
-                k.startsWith("adminTierCreatedAt.")
-            ) {
-                delete data[k];
-            }
-        }
-    }
+    // Client must not set billing, admin-only, or internal retention fields.
+    stripServerOnlyCreateFields(data);
 
     // Personal cards always belong to PERSONAL_ORG (server-controlled).
     if (data && typeof data === "object") {

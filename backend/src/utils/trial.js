@@ -1,7 +1,16 @@
 import { HttpError } from "./httpError.js";
 import { TRIAL_DURATION_DAYS } from "../config/trial.js";
+import { BILLING_SCOPE } from "./billingScope.constants.js";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
+
+// Canonical operational grace applied on top of the economic paid period.
+// Never persisted, never a renewal base.
+const PAID_GRACE_MS = 48 * 60 * 60 * 1000;
+
+// Largest absolute epoch representable by a JavaScript Date. Beyond this a
+// derived boundary is an Invalid Date and toISOString() would throw.
+const MAX_DATE_MS = 8.64e15;
 
 function isAnonymousOwned(card) {
     return !card?.user && Boolean(card?.anonymousId);
@@ -58,6 +67,18 @@ function getBillingObject(card) {
         : null;
 }
 
+// Canonical pure paidUntil parser shared by resolveBilling and the lifecycle
+// downgrade decision service. Fail-closed: missing/null/malformed values
+// resolve to null (never coerced to epoch-0 or any other default).
+export function parseBillingPaidUntilMs(value) {
+    if (value === null || value === undefined) {
+        return null;
+    }
+
+    const ms = new Date(value).getTime();
+    return Number.isFinite(ms) ? ms : null;
+}
+
 export function isPaid(card, now = new Date()) {
     const billing = getBillingObject(card);
     const status = billing?.status;
@@ -107,8 +128,17 @@ export function isEntitled(card, now = new Date()) {
     return false;
 }
 
-export function resolveBilling(card, now = new Date()) {
+export function resolveBilling(card, now = new Date(), options = {}) {
     const nowMs = new Date(now).getTime();
+    const { billingScope = null, personalPaidGrace48hEnabled = false } =
+        options ?? {};
+
+    // Additive fields for every branch that can never carry personal paid grace.
+    const NO_GRACE = {
+        economicPaidUntil: null,
+        effectiveAccessUntil: null,
+        isInPaidGrace: false,
+    };
 
     // 1) adminOverride
     const admin = resolveAdminOverride(card, now);
@@ -119,29 +149,69 @@ export function resolveBilling(card, now = new Date()) {
             until: admin.until ? new Date(admin.until).toISOString() : null,
             isEntitled: true,
             isPaid: true,
+            ...NO_GRACE,
         };
     }
 
     // 2) billing (real payment)
     const billing = getBillingObject(card);
     const billingStatus = billing?.status;
-    const paidUntilIso = billing?.paidUntil
-        ? new Date(billing.paidUntil).toISOString()
-        : null;
-    const paidUntilMs = paidUntilIso ? new Date(paidUntilIso).getTime() : null;
+    const billingStatusPaid =
+        billingStatus === "active" || billingStatus === "paid";
+
+    // Fail-closed parse: missing/null/malformed paidUntil yields null (never throws).
+    const paidUntilMs = parseBillingPaidUntilMs(billing?.paidUntil);
+    const paidUntilIso =
+        paidUntilMs === null ? null : new Date(paidUntilMs).toISOString();
+
     const paid =
-        (billing?.status === "active" || billing?.status === "paid") &&
-        Boolean(paidUntilMs) &&
-        paidUntilMs > nowMs;
+        billingStatusPaid && paidUntilMs !== null && paidUntilMs > nowMs;
+
+    // Grace plan evidence: the raw Card billing.plan only. Never card.plan
+    // (legacy top-level field), never a fallback/default, never coerced —
+    // exact lowercase "monthly"/"yearly" or grace is denied.
+    const recognizedPaidBillingPlan =
+        billing?.plan === "monthly" || billing?.plan === "yearly";
+
+    // Grace is derived only from the stored economic paidUntil. No STO field is
+    // read. Requires the flag, PERSONAL scope, a paid status, a recognized paid
+    // plan and a valid date.
+    const graceEligible =
+        personalPaidGrace48hEnabled === true &&
+        billingScope === BILLING_SCOPE.PERSONAL &&
+        billingStatusPaid &&
+        recognizedPaidBillingPlan &&
+        paidUntilMs !== null;
+    // A derived boundary outside the representable Date range yields no grace
+    // instead of an Invalid Date (toISOString would throw).
+    const derivedGraceMs = graceEligible ? paidUntilMs + PAID_GRACE_MS : null;
+    const effectiveAccessUntilMs =
+        derivedGraceMs !== null &&
+        Number.isFinite(derivedGraceMs) &&
+        Math.abs(derivedGraceMs) <= MAX_DATE_MS
+            ? derivedGraceMs
+            : null;
+    const effectiveAccessUntil =
+        effectiveAccessUntilMs === null
+            ? null
+            : new Date(effectiveAccessUntilMs).toISOString();
+    // Strict boundary: access is denied at exactly paidUntil + 48h.
+    const inPaidGrace =
+        effectiveAccessUntilMs !== null &&
+        !paid &&
+        nowMs < effectiveAccessUntilMs;
 
     const billingPlan = normalizePlan(billing?.plan || card?.plan || "free");
-    if (paid) {
+    if (paid || inPaidGrace) {
         return {
             source: "billing",
             plan: billingPlan,
             until: paidUntilIso,
             isEntitled: true,
             isPaid: true,
+            economicPaidUntil: paidUntilIso,
+            effectiveAccessUntil,
+            isInPaidGrace: inPaidGrace,
         };
     }
 
@@ -154,6 +224,7 @@ export function resolveBilling(card, now = new Date()) {
             until: null,
             isEntitled: true,
             isPaid: false,
+            ...NO_GRACE,
         };
     }
 
@@ -173,6 +244,7 @@ export function resolveBilling(card, now = new Date()) {
                 until: trialEndsAtIso,
                 isEntitled: true,
                 isPaid: true,
+                ...NO_GRACE,
             };
         }
         // Trial expired - fall through to user-owned free block below.
@@ -186,6 +258,7 @@ export function resolveBilling(card, now = new Date()) {
             until: null,
             isEntitled: true,
             isPaid: false,
+            ...NO_GRACE,
         };
     }
 
@@ -211,6 +284,7 @@ export function resolveBilling(card, now = new Date()) {
             until: trialEndsAtIso,
             isEntitled: true,
             isPaid: false,
+            ...NO_GRACE,
         };
     }
 
@@ -223,6 +297,7 @@ export function resolveBilling(card, now = new Date()) {
             until: null,
             isEntitled: true,
             isPaid: false,
+            ...NO_GRACE,
         };
     }
 
@@ -233,6 +308,7 @@ export function resolveBilling(card, now = new Date()) {
         until: null,
         isEntitled: false,
         isPaid: false,
+        ...NO_GRACE,
     };
 }
 

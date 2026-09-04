@@ -14,6 +14,10 @@ import {
     REVIEWS_RATING_MAX,
 } from "../config/reviews.js";
 import {
+    MAX_PENDING_STORAGE_CLEANUPS_PER_CARD,
+    MAX_COMPLETED_RETENTION_SUMMARIES_PER_CARD,
+} from "../config/retention.js";
+import {
     BUSINESS_NAME_MAX,
     BUSINESS_SLOGAN_MAX,
     BUSINESS_SUBTITLE_MAX,
@@ -452,6 +456,81 @@ const PayerSchema = new mongoose.Schema(
             default: null,
         },
         updatedAt: { type: Date, default: null },
+    },
+    { _id: false },
+);
+
+// --- Retention foundation sub-schemas (additive, inert; see docs contour R4.9) ---
+// No production writer references these paths yet. Lazy semantics: every array
+// and the single-nested RetentionLifecycleSchema use default: undefined so an
+// ordinary Card never materializes retention state until first genuine use.
+const CompletedRetentionPurgeSummarySchema = new mongoose.Schema(
+    {
+        workId: { type: mongoose.Schema.Types.ObjectId, required: true },
+        freeCycleId: { type: mongoose.Schema.Types.ObjectId, required: true },
+        retentionGenerationId: {
+            type: mongoose.Schema.Types.ObjectId,
+            required: true,
+        },
+        logicalPurgedAt: { type: Date, required: true },
+        cleanupCompletedAt: { type: Date, required: true },
+        objectCount: { type: Number, required: true, min: 0 },
+        attemptCount: { type: Number, default: 0, min: 0 },
+    },
+    { _id: false },
+);
+
+const PendingStorageCleanupSchema = new mongoose.Schema(
+    {
+        workId: { type: mongoose.Schema.Types.ObjectId, required: true },
+        workType: {
+            type: String,
+            required: true,
+            enum: [
+                "retention_purge",
+                "gallery_delete",
+                "design_asset_delete",
+                "upload_compensation",
+            ],
+        },
+        relatedFreeCycleId: { type: mongoose.Schema.Types.ObjectId },
+        relatedRetentionGenerationId: { type: mongoose.Schema.Types.ObjectId },
+        createdAt: { type: Date, required: true },
+        // Mongoose arrays otherwise implicitly materialize []; keep this explicit.
+        paths: { type: [String], default: undefined },
+        pathCount: { type: Number, required: true, min: 0 },
+        cleanupStatus: {
+            type: String,
+            enum: ["pending", "in_progress", "needs_review"],
+            default: "pending",
+        },
+        attemptCount: { type: Number, default: 0, min: 0 },
+        lastAttemptAt: { type: Date },
+        lastErrorSummary: { type: String, maxlength: 300 },
+        claimedBy: { type: String },
+        claimedAt: { type: Date },
+        attemptId: { type: mongoose.Schema.Types.ObjectId },
+    },
+    { _id: false },
+);
+
+const RetentionLifecycleSchema = new mongoose.Schema(
+    {
+        currentFreeCycleId: { type: mongoose.Schema.Types.ObjectId },
+        currentRetentionGenerationId: { type: mongoose.Schema.Types.ObjectId },
+        lastLogicalPurgeGenerationId: { type: mongoose.Schema.Types.ObjectId },
+        lastLogicalPurgeAt: { type: Date },
+        completedRetentionPurgeSummaries: {
+            type: [CompletedRetentionPurgeSummarySchema],
+            default: undefined,
+            validate: {
+                validator: (arr) =>
+                    !arr ||
+                    arr.length <= MAX_COMPLETED_RETENTION_SUMMARIES_PER_CARD,
+                message:
+                    "completedRetentionPurgeSummaries exceeds retained history bound",
+            },
+        },
     },
     { _id: false },
 );
@@ -1296,6 +1375,26 @@ const CardSchema = new mongoose.Schema(
         anonConsentAcceptedAt: { type: Date, default: null },
         anonTermsVersion: { type: String, default: null, trim: true },
         anonPrivacyVersion: { type: String, default: null, trim: true },
+
+        // --- Retention foundation (additive, inert; see docs contour R4.9) ---
+        // No production writer sets/reads these yet. No default on the epoch;
+        // default: undefined on the array/subdocument so ordinary Cards never
+        // materialize retention state until first genuine retention-related write.
+        retentionCoordinationEpoch: { type: Number, min: 0 },
+        retentionLifecycle: {
+            type: RetentionLifecycleSchema,
+            default: undefined,
+        },
+        pendingStorageCleanups: {
+            type: [PendingStorageCleanupSchema],
+            default: undefined,
+            validate: {
+                validator: (arr) =>
+                    !arr || arr.length <= MAX_PENDING_STORAGE_CLEANUPS_PER_CARD,
+                message:
+                    "pendingStorageCleanups exceeds the maximum allowed simultaneous cleanup entries",
+            },
+        },
     },
     { timestamps: true, runSettersOnQuery: true },
 );
