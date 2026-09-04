@@ -1145,12 +1145,10 @@ export default function Home() {
                 <section className={pub.sectionLight}>
                     <div className={pub.sectionWrap}>
                         <h2 className={pub.h2Gold}>
-                            עסקים אמיתיים עם כרטיס ביקור דיגיטלי של Cardigo
+                            ראו כמה מהעסקים שכבר משתמשים בכרטיס ביקור דיגיטלי של Cardigo
                         </h2>
                         <p className={pub.sectionLead}>
-                            ראו איך עסקים מתחומים שונים מציגים את השירותים,
-                            התמונות ודרכי יצירת הקשר שלהם בכרטיס דיגיטלי
-                            מקצועי.
+                            הצצה לכרטיסים אמיתיים שנבנו ב-Cardigo לעסקים מתחומים שונים.
                         </p>
                         <div className={styles.realBusinessRow}>
                             {homepageShowcaseItems.map((item) => (
@@ -1172,9 +1170,6 @@ export default function Home() {
                                     >
                                         {item.title}
                                     </h3>
-                                    <p className={styles.realBusinessDesc}>
-                                        {item.description}
-                                    </p>
                                     <a
                                         href={item.ctaUrl}
                                         className={styles.realBusinessLink}
@@ -1193,6 +1188,11 @@ export default function Home() {
                                     </a>
                                 </article>
                             ))}
+                        </div>
+                        <div className={styles.center}>
+                            <Button as={Link} to="/cards/" variant="primary">
+                                צפו בכל כרטיסי העסקים של Cardigo
+                            </Button>
                         </div>
                     </div>
                 </section>

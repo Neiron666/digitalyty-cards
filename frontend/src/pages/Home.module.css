@@ -1304,29 +1304,16 @@
     font-size: var(--fs-h6);
     font-weight: 700;
     color: var(--card-text, #020617);
-    margin: 0.875rem 1rem 0;
-}
-
-.realBusinessDesc {
-    font-size: var(--fs-body-sm);
-    color: #475569;
-    line-height: 1.6;
-    margin: 0.5rem 1rem 1rem;
+    margin: 0.875rem 1rem 0.5rem;
 }
 
 .realBusinessLink {
     font-size: var(--fs-body-sm);
     font-weight: 600;
     color: var(--gold);
-    text-decoration: none;
-    margin-top: auto;
-    border: 1px solid var(--gold);
-    border-radius: 999px;
-    padding: 0.375rem 1.25rem;
-}
-
-.realBusinessLink:hover {
     text-decoration: underline;
+    text-underline-offset: 3px;
+    margin-top: auto;
 }
 
 /* ── 7. Steps (2 + 1 image-led cards) ───────────────────── */
