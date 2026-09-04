@@ -1271,28 +1271,39 @@
 
 .realBusinessRow {
     display: flex;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     gap: 1.25rem;
     width: 100%;
     max-width: 65rem;
-    justify-content: center;
+    justify-content: flex-start;
     margin-top: 1.5rem;
     background: #ffffff;
     border: 1px solid rgba(212, 175, 55, 0.667);
     border-radius: 1rem;
     padding: 1.25rem;
     margin-bottom: 1.5rem;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scroll-snap-type: x proximity;
+    scroll-padding-inline: 1.25rem;
+    scrollbar-width: none;
+    overscroll-behavior-inline: contain;
+}
+
+.realBusinessRow::-webkit-scrollbar {
+    display: none;
 }
 
 .realBusinessCard {
-    flex: 1 1 100%;
+    flex: 0 0 auto;
+    width: 14rem;
+    scroll-snap-align: start;
     min-width: 0;
     display: flex;
     flex-direction: column;
     align-items: center;
     text-align: center;
     overflow: hidden;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
     padding: 0 0 1.25rem;
 }
 
@@ -1547,8 +1558,19 @@
         flex: 0 0 calc((100% - 3.75rem) / 3);
     }
 
+    .realBusinessRow {
+        flex-wrap: wrap;
+        justify-content: center;
+        overflow: visible;
+        scroll-snap-type: none;
+        scroll-padding-inline: 0;
+        overscroll-behavior-inline: auto;
+    }
+
     .realBusinessCard {
         flex: 0 1 calc((100% - 2.5rem) / 3);
+        width: auto;
+        scroll-snap-align: unset;
     }
 
     .controlItems {
