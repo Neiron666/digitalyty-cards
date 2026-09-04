@@ -12,6 +12,7 @@ import { SITE_ACTIONS } from "../services/siteAnalytics.actions";
 import scroll from "../styles/motion-scroll.module.css";
 import useScrollProgress from "../hooks/useScrollProgress";
 import pub from "../styles/public-sections.module.css";
+import { useInitialListingData } from "../seo/initialListingData";
 import CrownIcon from "../components/icons/CrownIcon";
 import styles from "./Home.module.css";
 import whatsappStyles from "../components/marketing/WhatsAppCtaSkin.module.css";
@@ -457,6 +458,11 @@ export default function Home() {
     const homeWebSiteJsonLd = buildHomeWebSiteJsonLd();
     const homeOrganizationJsonLd = buildCardigoOrganizationJsonLd();
     const homeFaqJsonLd = buildHomeFaqJsonLd();
+
+    const homepageShowcaseData = useInitialListingData("home-showcase");
+    const homepageShowcaseItems = Array.isArray(homepageShowcaseData?.items)
+        ? homepageShowcaseData.items
+        : [];
 
     return (
         <main className={styles.page} data-page="site">
@@ -1134,6 +1140,63 @@ export default function Home() {
                     </div>
                 </div>
             </section>
+            {/* ── 6b. REAL BUSINESS SHOWCASE (admin-selected) ── */}
+            {homepageShowcaseItems.length > 0 && (
+                <section className={pub.sectionLight}>
+                    <div className={pub.sectionWrap}>
+                        <h2 className={pub.h2Gold}>
+                            עסקים אמיתיים עם כרטיס ביקור דיגיטלי של Cardigo
+                        </h2>
+                        <p className={pub.sectionLead}>
+                            ראו איך עסקים מתחומים שונים מציגים את השירותים,
+                            התמונות ודרכי יצירת הקשר שלהם בכרטיס דיגיטלי
+                            מקצועי.
+                        </p>
+                        <div className={styles.realBusinessRow}>
+                            {homepageShowcaseItems.map((item) => (
+                                <article
+                                    key={item.id}
+                                    className={styles.realBusinessCard}
+                                >
+                                    <img
+                                        src={item.imageUrl}
+                                        alt={item.imageAlt}
+                                        className={styles.realBusinessImg}
+                                        width={280}
+                                        height={560}
+                                        loading="lazy"
+                                        decoding="async"
+                                    />
+                                    <h3
+                                        className={styles.realBusinessTitle}
+                                    >
+                                        {item.title}
+                                    </h3>
+                                    <p className={styles.realBusinessDesc}>
+                                        {item.description}
+                                    </p>
+                                    <a
+                                        href={item.ctaUrl}
+                                        className={styles.realBusinessLink}
+                                        target={
+                                            item.ctaTargetBlank
+                                                ? "_blank"
+                                                : undefined
+                                        }
+                                        rel={
+                                            item.ctaTargetBlank
+                                                ? "noopener noreferrer"
+                                                : undefined
+                                        }
+                                    >
+                                        {item.ctaLabel}
+                                    </a>
+                                </article>
+                            ))}
+                        </div>
+                    </div>
+                </section>
+            )}
             {/* ── 7. HOW IT WORKS (3 steps) ──────────────────── */}
             <section className={pub.sectionLight} id="how">
                 <div className={pub.sectionWrap}>
