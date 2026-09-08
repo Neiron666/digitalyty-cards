@@ -569,7 +569,7 @@ export default function Home() {
                                 className={whatsappStyles.icon}
                                 aria-hidden="true"
                             />
-                            דברו איתנו בוואטסאפ
+                            רוצים שנבנה לכם כרטיס מקצועי?
                         </Button>
                         {/* <Button
                             as="a"
