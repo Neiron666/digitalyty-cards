@@ -1107,6 +1107,29 @@ export default function SettingsPanel({
 
                         {/* ── Section 3: תשלומים ── */}
                         {(() => {
+                            // Card-scope billing branch: never derive scope/expiry client-side.
+                            // Both scope and currentlyActive come pre-resolved from the server.
+                            const ownerScope = card?.ownerPaymentContext?.scope;
+                            const isPersonalScope = ownerScope === "personal";
+                            const orgSummary =
+                                card?.ownerPaymentContext?.organization || null;
+                            // Structural validity gate: scope="organization" alone is not
+                            // sufficient — a malformed/incomplete payload must fail closed
+                            // rather than render fabricated fallback values (e.g. "חינם"/"לא פעיל"/"-").
+                            const isValidOrgPaymentContext =
+                                ownerScope === "organization" &&
+                                orgSummary !== null &&
+                                typeof orgSummary === "object" &&
+                                typeof orgSummary.currentlyActive ===
+                                    "boolean" &&
+                                ["none", "active", "revoked"].includes(
+                                    orgSummary.status,
+                                ) &&
+                                (orgSummary.plan === "org" ||
+                                    orgSummary.plan === null) &&
+                                (typeof orgSummary.expiresAt === "string" ||
+                                    orgSummary.expiresAt === null);
+
                             const sub = account?.subscription || {};
                             const acPlan = account?.plan || "free";
                             const subStatus = sub.status || "inactive";
@@ -1167,79 +1190,97 @@ export default function SettingsPanel({
                                         תשלומים
                                     </div>
 
-                                    {accountLoading && (
+                                    {isPersonalScope && accountLoading && (
                                         <div className={styles.billingNote}>
                                             טוען...
                                         </div>
                                     )}
 
-                                    {!accountLoading && account && (
-                                        <>
-                                            <div className={styles.billingRow}>
-                                                <span
+                                    {!accountLoading &&
+                                        account &&
+                                        isPersonalScope && (
+                                            <>
+                                                <div
                                                     className={
-                                                        styles.billingLabel
+                                                        styles.billingRow
                                                     }
                                                 >
-                                                    תוכנית:
-                                                </span>
-                                                <span
-                                                    className={
-                                                        styles.billingValue
-                                                    }
-                                                >
-                                                    {acPlan === "yearly"
-                                                        ? "שנתית"
-                                                        : acPlan === "monthly"
-                                                          ? "חודשית"
-                                                          : "חינם"}
-                                                </span>
-                                            </div>
+                                                    <span
+                                                        className={
+                                                            styles.billingLabel
+                                                        }
+                                                    >
+                                                        תוכנית:
+                                                    </span>
+                                                    <span
+                                                        className={
+                                                            styles.billingValue
+                                                        }
+                                                    >
+                                                        {acPlan === "yearly"
+                                                            ? "שנתית"
+                                                            : acPlan ===
+                                                                "monthly"
+                                                              ? "חודשית"
+                                                              : "חינם"}
+                                                    </span>
+                                                </div>
 
-                                            <div className={styles.billingRow}>
-                                                <span
+                                                <div
                                                     className={
-                                                        styles.billingLabel
+                                                        styles.billingRow
                                                     }
                                                 >
-                                                    סטטוס מנוי:
-                                                </span>
-                                                <span
-                                                    className={
-                                                        styles.billingValue
-                                                    }
-                                                >
-                                                    {subStatus === "active" &&
-                                                    !isExpired
-                                                        ? "פעיל"
-                                                        : subStatus ===
-                                                                "expired" ||
-                                                            isExpired
-                                                          ? "פג תוקף"
-                                                          : "לא פעיל"}
-                                                </span>
-                                            </div>
+                                                    <span
+                                                        className={
+                                                            styles.billingLabel
+                                                        }
+                                                    >
+                                                        סטטוס מנוי:
+                                                    </span>
+                                                    <span
+                                                        className={
+                                                            styles.billingValue
+                                                        }
+                                                    >
+                                                        {subStatus ===
+                                                            "active" &&
+                                                        !isExpired
+                                                            ? "פעיל"
+                                                            : subStatus ===
+                                                                    "expired" ||
+                                                                isExpired
+                                                              ? "פג תוקף"
+                                                              : "לא פעיל"}
+                                                    </span>
+                                                </div>
 
-                                            <div className={styles.billingRow}>
-                                                <span
+                                                <div
                                                     className={
-                                                        styles.billingLabel
+                                                        styles.billingRow
                                                     }
                                                 >
-                                                    בתוקף עד:
-                                                </span>
-                                                <span
-                                                    className={
-                                                        styles.billingValue
-                                                    }
-                                                >
-                                                    {expiresAt
-                                                        ? formatDate(expiresAt)
-                                                        : "-"}
-                                                </span>
-                                            </div>
+                                                    <span
+                                                        className={
+                                                            styles.billingLabel
+                                                        }
+                                                    >
+                                                        בתוקף עד:
+                                                    </span>
+                                                    <span
+                                                        className={
+                                                            styles.billingValue
+                                                        }
+                                                    >
+                                                        {expiresAt
+                                                            ? formatDate(
+                                                                  expiresAt,
+                                                              )
+                                                            : "-"}
+                                                    </span>
+                                                </div>
 
-                                            {/* <div className={styles.billingRow}>
+                                                {/* <div className={styles.billingRow}>
                                                 <span
                                                     className={
                                                         styles.billingLabel
@@ -1257,401 +1298,41 @@ export default function SettingsPanel({
                                                 </span>
                                             </div> */}
 
-                                            {showCta && (
-                                                <>
-                                                    <div
-                                                        className={
-                                                            styles.billingDisclosure
-                                                        }
-                                                    >
-                                                        <span>
-                                                            מסלול חודשי: חיוב
-                                                            אוטומטי עד לביטול.
-                                                            ניתן לבטל לפני מועד
-                                                            החיוב הבא.
-                                                        </span>
-                                                        <span>
-                                                            מסלול שנתי: תשלום
-                                                            ₪299 מראש. חידוש
-                                                            שנתי אוטומטי רק אם
-                                                            תסמן/י את האפשרות
-                                                            למטה.
-                                                        </span>
-                                                        <a
-                                                            href="/payment-policy"
-                                                            target="_blank"
-                                                            rel="noreferrer"
+                                                {showCta && (
+                                                    <>
+                                                        <div
                                                             className={
-                                                                styles.billingDisclosureLink
+                                                                styles.billingDisclosure
                                                             }
                                                         >
-                                                            תנאי תשלום, חידוש,
-                                                            ביטול והחזרים
-                                                        </a>
-                                                    </div>
-                                                    <div
-                                                        className={
-                                                            styles.billingActions
-                                                        }
-                                                    >
-                                                        <Button
-                                                            variant="secondary"
-                                                            loading={
-                                                                billingBusy
-                                                            }
-                                                            disabled={
-                                                                billingBusy ||
-                                                                Boolean(
-                                                                    accountError,
-                                                                )
-                                                            }
-                                                            onClick={() =>
-                                                                handlePayment(
-                                                                    "monthly",
-                                                                )
-                                                            }
-                                                        >
-                                                            חודשי - ₪29/חודש
-                                                        </Button>
-                                                        <Button
-                                                            variant="secondary"
-                                                            loading={
-                                                                billingBusy
-                                                            }
-                                                            disabled={
-                                                                billingBusy ||
-                                                                Boolean(
-                                                                    accountError,
-                                                                ) ||
-                                                                !yearlyOptIn
-                                                            }
-                                                            onClick={() =>
-                                                                handlePayment(
-                                                                    "yearly",
-                                                                )
-                                                            }
-                                                        >
-                                                            שנתי - ₪299/שנה
-                                                            (חוסך ₪49)
-                                                        </Button>
-                                                    </div>
-                                                    <label
-                                                        className={
-                                                            styles.billingOptIn
-                                                        }
-                                                    >
-                                                        <input
-                                                            type="checkbox"
-                                                            checked={
-                                                                yearlyOptIn
-                                                            }
-                                                            onChange={(e) =>
-                                                                setYearlyOptIn(
-                                                                    e.target
-                                                                        .checked,
-                                                                )
-                                                            }
-                                                        />
-                                                        <span
-                                                            className={
-                                                                styles.billingOptInLabel
-                                                            }
-                                                        >
-                                                            אני מאשר/ת חידוש
-                                                            שנתי אוטומטי של ₪299
-                                                            לפני תחילת שנה שנייה
-                                                        </span>
-                                                    </label>
-                                                </>
-                                            )}
-
-                                            {billingMsg && (
-                                                <div
-                                                    className={
-                                                        styles.billingError
-                                                    }
-                                                >
-                                                    {billingMsg}
-                                                </div>
-                                            )}
-
-                                            {/* ── Renewal failed warning banner ── */}
-                                            {showRenewalFailedBanner && (
-                                                <div
-                                                    className={
-                                                        styles.renewalWarning
-                                                    }
-                                                >
-                                                    <div
-                                                        className={
-                                                            styles.renewalWarningTitle
-                                                        }
-                                                    >
-                                                        ניסיון חיוב חידוש
-                                                        Premium נכשל
-                                                    </div>
-                                                    <div
-                                                        className={
-                                                            styles.renewalWarningText
-                                                        }
-                                                    >
-                                                        גישת Premium פעילה עד{" "}
-                                                        <span dir="ltr">
-                                                            {formatDate(
-                                                                renewalPaidUntil,
-                                                            )}
-                                                        </span>
-                                                        . יש לחדש לפני תאריך זה
-                                                        כדי להמשיך.
-                                                    </div>
-                                                    <div
-                                                        className={
-                                                            styles.renewalWarningActions
-                                                        }
-                                                    >
-                                                        <a
-                                                            href="/pricing"
-                                                            className={
-                                                                styles.renewalWarningCta
-                                                            }
-                                                        >
-                                                            חדש Premium עכשיו
-                                                        </a>
-                                                        <a
-                                                            href="mailto:support@cardigo.co.il"
-                                                            className={
-                                                                styles.renewalWarningHelp
-                                                            }
-                                                        >
-                                                            לתמיכה
-                                                        </a>
-                                                    </div>
-                                                </div>
-                                            )}
-
-                                            {/* ── Cancel renewal block ── */}
-                                            {renewalStatus !== "none" && (
-                                                <div
-                                                    className={
-                                                        styles.cancelRenewalBlock
-                                                    }
-                                                >
-                                                    {renewalStatus ===
-                                                        "active" &&
-                                                        autoRenewal.canCancel && (
-                                                            <>
-                                                                <div
-                                                                    className={
-                                                                        styles.billingRow
-                                                                    }
-                                                                >
-                                                                    <span
-                                                                        className={
-                                                                            styles.billingLabel
-                                                                        }
-                                                                    >
-                                                                        חידוש
-                                                                        אוטומטי:
-                                                                    </span>
-                                                                    <span
-                                                                        className={
-                                                                            styles.billingValue
-                                                                        }
-                                                                    >
-                                                                        פעיל
-                                                                    </span>
-                                                                </div>
-
-                                                                {renewalPaidUntil && (
-                                                                    <div
-                                                                        className={
-                                                                            styles.billingNote
-                                                                        }
-                                                                    >
-                                                                        הכרטיס
-                                                                        יישאר
-                                                                        Premium
-                                                                        עד{" "}
-                                                                        {formatDate(
-                                                                            renewalPaidUntil,
-                                                                        )}
-                                                                    </div>
-                                                                )}
-
-                                                                <div
-                                                                    className={
-                                                                        styles.billingActions
-                                                                    }
-                                                                >
-                                                                    <Button
-                                                                        variant="secondary"
-                                                                        disabled={
-                                                                            cancelBusy
-                                                                        }
-                                                                        onClick={() => {
-                                                                            setCancelError(
-                                                                                "",
-                                                                            );
-                                                                            setCancelModalOpen(
-                                                                                true,
-                                                                            );
-                                                                        }}
-                                                                    >
-                                                                        ביטול
-                                                                        חידוש
-                                                                        אוטומטי
-                                                                    </Button>
-                                                                </div>
-                                                            </>
-                                                        )}
-
-                                                    {renewalStatus ===
-                                                        "cancelled" && (
-                                                        <>
-                                                            <div
+                                                            <span>
+                                                                מסלול חודשי:
+                                                                חיוב אוטומטי עד
+                                                                לביטול. ניתן
+                                                                לבטל לפני מועד
+                                                                החיוב הבא.
+                                                            </span>
+                                                            <span>
+                                                                מסלול שנתי:
+                                                                תשלום ₪299 מראש.
+                                                                חידוש שנתי
+                                                                אוטומטי רק אם
+                                                                תסמן/י את
+                                                                האפשרות למטה.
+                                                            </span>
+                                                            <a
+                                                                href="/payment-policy"
+                                                                target="_blank"
+                                                                rel="noreferrer"
                                                                 className={
-                                                                    styles.pwSuccess
+                                                                    styles.billingDisclosureLink
                                                                 }
                                                             >
-                                                                החידוש האוטומטי
-                                                                בוטל.{" "}
-                                                                {renewalPaidUntil
-                                                                    ? `הגישה Premium פעילה עד ${formatDate(renewalPaidUntil)}.`
-                                                                    : ""}
-                                                            </div>
-                                                            {canResumeAutoRenewal && (
-                                                                <>
-                                                                    <div
-                                                                        className={
-                                                                            styles.billingNote
-                                                                        }
-                                                                    >
-                                                                        המנוי
-                                                                        שלך
-                                                                        עדיין
-                                                                        פעיל עד
-                                                                        תאריך
-                                                                        הסיום.
-                                                                        אפשר
-                                                                        להפעיל
-                                                                        מחדש את
-                                                                        החידוש
-                                                                        האוטומטי
-                                                                        כדי
-                                                                        שהחיוב
-                                                                        הבא
-                                                                        יתבצע רק
-                                                                        בסיום
-                                                                        התקופה
-                                                                        הנוכחית.
-                                                                    </div>
-                                                                    <div
-                                                                        className={
-                                                                            styles.billingActions
-                                                                        }
-                                                                    >
-                                                                        <Button
-                                                                            variant="secondary"
-                                                                            loading={
-                                                                                resumeBusy
-                                                                            }
-                                                                            disabled={
-                                                                                resumeBusy
-                                                                            }
-                                                                            onClick={
-                                                                                handleResumeRenewal
-                                                                            }
-                                                                        >
-                                                                            {resumeBusy
-                                                                                ? "מחדש..."
-                                                                                : "חדש חידוש אוטומטי"}
-                                                                        </Button>
-                                                                    </div>
-                                                                </>
-                                                            )}
-                                                            {resumeError && (
-                                                                <div
-                                                                    className={
-                                                                        styles.billingError
-                                                                    }
-                                                                >
-                                                                    {
-                                                                        resumeError
-                                                                    }
-                                                                </div>
-                                                            )}
-                                                        </>
-                                                    )}
-
-                                                    {(renewalStatus ===
-                                                        "pending" ||
-                                                        renewalStatus ===
-                                                            "failed") && (
-                                                        <div
-                                                            className={
-                                                                styles.billingNote
-                                                            }
-                                                        >
-                                                            החידוש האוטומטי
-                                                            עדיין לא הופעל.
+                                                                תנאי תשלום,
+                                                                חידוש, ביטול
+                                                                והחזרים
+                                                            </a>
                                                         </div>
-                                                    )}
-
-                                                    {cancelError && (
-                                                        <div
-                                                            className={
-                                                                styles.billingError
-                                                            }
-                                                        >
-                                                            {cancelError}
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            )}
-
-                                            {account?.paymentMethod?.saved ===
-                                                true && (
-                                                <details
-                                                    className={`${styles.collapsible} ${styles.collapsibleDanger}`}
-                                                >
-                                                    <summary
-                                                        className={
-                                                            styles.collapsibleTrigger
-                                                        }
-                                                    >
-                                                        ניהול פרטי תשלום שמורים
-                                                    </summary>
-                                                    <div
-                                                        className={
-                                                            styles.collapsibleContent
-                                                        }
-                                                    >
-                                                        <div
-                                                            className={
-                                                                styles.billingNote
-                                                            }
-                                                        >
-                                                            המנוי יישאר פעיל עד
-                                                            תאריך הסיום. לאחר
-                                                            מחיקת פרטי התשלום לא
-                                                            ניתן יהיה לחדש את
-                                                            המנוי אוטומטית.
-                                                        </div>
-                                                        {account?.paymentMethod
-                                                            ?.canDelete !==
-                                                            true && (
-                                                            <div
-                                                                className={
-                                                                    styles.billingNote
-                                                                }
-                                                            >
-                                                                החידוש האוטומטי
-                                                                פעיל — יש לבטל
-                                                                אותו תחילה לפני
-                                                                מחיקת פרטי
-                                                                התשלום.
-                                                            </div>
-                                                        )}
                                                         <div
                                                             className={
                                                                 styles.billingActions
@@ -1659,137 +1340,563 @@ export default function SettingsPanel({
                                                         >
                                                             <Button
                                                                 variant="secondary"
-                                                                disabled={
-                                                                    deletePaymentMethodBusy ||
-                                                                    account
-                                                                        ?.paymentMethod
-                                                                        ?.canDelete !==
-                                                                        true
+                                                                loading={
+                                                                    billingBusy
                                                                 }
-                                                                onClick={() => {
-                                                                    if (
+                                                                disabled={
+                                                                    billingBusy ||
+                                                                    Boolean(
+                                                                        accountError,
+                                                                    )
+                                                                }
+                                                                onClick={() =>
+                                                                    handlePayment(
+                                                                        "monthly",
+                                                                    )
+                                                                }
+                                                            >
+                                                                חודשי - ₪29/חודש
+                                                            </Button>
+                                                            <Button
+                                                                variant="secondary"
+                                                                loading={
+                                                                    billingBusy
+                                                                }
+                                                                disabled={
+                                                                    billingBusy ||
+                                                                    Boolean(
+                                                                        accountError,
+                                                                    ) ||
+                                                                    !yearlyOptIn
+                                                                }
+                                                                onClick={() =>
+                                                                    handlePayment(
+                                                                        "yearly",
+                                                                    )
+                                                                }
+                                                            >
+                                                                שנתי - ₪299/שנה
+                                                                (חוסך ₪49)
+                                                            </Button>
+                                                        </div>
+                                                        <label
+                                                            className={
+                                                                styles.billingOptIn
+                                                            }
+                                                        >
+                                                            <input
+                                                                type="checkbox"
+                                                                checked={
+                                                                    yearlyOptIn
+                                                                }
+                                                                onChange={(e) =>
+                                                                    setYearlyOptIn(
+                                                                        e.target
+                                                                            .checked,
+                                                                    )
+                                                                }
+                                                            />
+                                                            <span
+                                                                className={
+                                                                    styles.billingOptInLabel
+                                                                }
+                                                            >
+                                                                אני מאשר/ת חידוש
+                                                                שנתי אוטומטי של
+                                                                ₪299 לפני תחילת
+                                                                שנה שנייה
+                                                            </span>
+                                                        </label>
+                                                    </>
+                                                )}
+
+                                                {billingMsg && (
+                                                    <div
+                                                        className={
+                                                            styles.billingError
+                                                        }
+                                                    >
+                                                        {billingMsg}
+                                                    </div>
+                                                )}
+
+                                                {/* ── Renewal failed warning banner ── */}
+                                                {showRenewalFailedBanner && (
+                                                    <div
+                                                        className={
+                                                            styles.renewalWarning
+                                                        }
+                                                    >
+                                                        <div
+                                                            className={
+                                                                styles.renewalWarningTitle
+                                                            }
+                                                        >
+                                                            ניסיון חיוב חידוש
+                                                            Premium נכשל
+                                                        </div>
+                                                        <div
+                                                            className={
+                                                                styles.renewalWarningText
+                                                            }
+                                                        >
+                                                            גישת Premium פעילה
+                                                            עד{" "}
+                                                            <span dir="ltr">
+                                                                {formatDate(
+                                                                    renewalPaidUntil,
+                                                                )}
+                                                            </span>
+                                                            . יש לחדש לפני תאריך
+                                                            זה כדי להמשיך.
+                                                        </div>
+                                                        <div
+                                                            className={
+                                                                styles.renewalWarningActions
+                                                            }
+                                                        >
+                                                            <a
+                                                                href="/pricing"
+                                                                className={
+                                                                    styles.renewalWarningCta
+                                                                }
+                                                            >
+                                                                חדש Premium
+                                                                עכשיו
+                                                            </a>
+                                                            <a
+                                                                href="mailto:support@cardigo.co.il"
+                                                                className={
+                                                                    styles.renewalWarningHelp
+                                                                }
+                                                            >
+                                                                לתמיכה
+                                                            </a>
+                                                        </div>
+                                                    </div>
+                                                )}
+
+                                                {/* ── Cancel renewal block ── */}
+                                                {renewalStatus !== "none" && (
+                                                    <div
+                                                        className={
+                                                            styles.cancelRenewalBlock
+                                                        }
+                                                    >
+                                                        {renewalStatus ===
+                                                            "active" &&
+                                                            autoRenewal.canCancel && (
+                                                                <>
+                                                                    <div
+                                                                        className={
+                                                                            styles.billingRow
+                                                                        }
+                                                                    >
+                                                                        <span
+                                                                            className={
+                                                                                styles.billingLabel
+                                                                            }
+                                                                        >
+                                                                            חידוש
+                                                                            אוטומטי:
+                                                                        </span>
+                                                                        <span
+                                                                            className={
+                                                                                styles.billingValue
+                                                                            }
+                                                                        >
+                                                                            פעיל
+                                                                        </span>
+                                                                    </div>
+
+                                                                    {renewalPaidUntil && (
+                                                                        <div
+                                                                            className={
+                                                                                styles.billingNote
+                                                                            }
+                                                                        >
+                                                                            הכרטיס
+                                                                            יישאר
+                                                                            Premium
+                                                                            עד{" "}
+                                                                            {formatDate(
+                                                                                renewalPaidUntil,
+                                                                            )}
+                                                                        </div>
+                                                                    )}
+
+                                                                    <div
+                                                                        className={
+                                                                            styles.billingActions
+                                                                        }
+                                                                    >
+                                                                        <Button
+                                                                            variant="secondary"
+                                                                            disabled={
+                                                                                cancelBusy
+                                                                            }
+                                                                            onClick={() => {
+                                                                                setCancelError(
+                                                                                    "",
+                                                                                );
+                                                                                setCancelModalOpen(
+                                                                                    true,
+                                                                                );
+                                                                            }}
+                                                                        >
+                                                                            ביטול
+                                                                            חידוש
+                                                                            אוטומטי
+                                                                        </Button>
+                                                                    </div>
+                                                                </>
+                                                            )}
+
+                                                        {renewalStatus ===
+                                                            "cancelled" && (
+                                                            <>
+                                                                <div
+                                                                    className={
+                                                                        styles.pwSuccess
+                                                                    }
+                                                                >
+                                                                    החידוש
+                                                                    האוטומטי
+                                                                    בוטל.{" "}
+                                                                    {renewalPaidUntil
+                                                                        ? `הגישה Premium פעילה עד ${formatDate(renewalPaidUntil)}.`
+                                                                        : ""}
+                                                                </div>
+                                                                {canResumeAutoRenewal && (
+                                                                    <>
+                                                                        <div
+                                                                            className={
+                                                                                styles.billingNote
+                                                                            }
+                                                                        >
+                                                                            המנוי
+                                                                            שלך
+                                                                            עדיין
+                                                                            פעיל
+                                                                            עד
+                                                                            תאריך
+                                                                            הסיום.
+                                                                            אפשר
+                                                                            להפעיל
+                                                                            מחדש
+                                                                            את
+                                                                            החידוש
+                                                                            האוטומטי
+                                                                            כדי
+                                                                            שהחיוב
+                                                                            הבא
+                                                                            יתבצע
+                                                                            רק
+                                                                            בסיום
+                                                                            התקופה
+                                                                            הנוכחית.
+                                                                        </div>
+                                                                        <div
+                                                                            className={
+                                                                                styles.billingActions
+                                                                            }
+                                                                        >
+                                                                            <Button
+                                                                                variant="secondary"
+                                                                                loading={
+                                                                                    resumeBusy
+                                                                                }
+                                                                                disabled={
+                                                                                    resumeBusy
+                                                                                }
+                                                                                onClick={
+                                                                                    handleResumeRenewal
+                                                                                }
+                                                                            >
+                                                                                {resumeBusy
+                                                                                    ? "מחדש..."
+                                                                                    : "חדש חידוש אוטומטי"}
+                                                                            </Button>
+                                                                        </div>
+                                                                    </>
+                                                                )}
+                                                                {resumeError && (
+                                                                    <div
+                                                                        className={
+                                                                            styles.billingError
+                                                                        }
+                                                                    >
+                                                                        {
+                                                                            resumeError
+                                                                        }
+                                                                    </div>
+                                                                )}
+                                                            </>
+                                                        )}
+
+                                                        {(renewalStatus ===
+                                                            "pending" ||
+                                                            renewalStatus ===
+                                                                "failed") && (
+                                                            <div
+                                                                className={
+                                                                    styles.billingNote
+                                                                }
+                                                            >
+                                                                החידוש האוטומטי
+                                                                עדיין לא הופעל.
+                                                            </div>
+                                                        )}
+
+                                                        {cancelError && (
+                                                            <div
+                                                                className={
+                                                                    styles.billingError
+                                                                }
+                                                            >
+                                                                {cancelError}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                )}
+
+                                                {account?.paymentMethod
+                                                    ?.saved === true && (
+                                                    <details
+                                                        className={`${styles.collapsible} ${styles.collapsibleDanger}`}
+                                                    >
+                                                        <summary
+                                                            className={
+                                                                styles.collapsibleTrigger
+                                                            }
+                                                        >
+                                                            ניהול פרטי תשלום
+                                                            שמורים
+                                                        </summary>
+                                                        <div
+                                                            className={
+                                                                styles.collapsibleContent
+                                                            }
+                                                        >
+                                                            <div
+                                                                className={
+                                                                    styles.billingNote
+                                                                }
+                                                            >
+                                                                המנוי יישאר פעיל
+                                                                עד תאריך הסיום.
+                                                                לאחר מחיקת פרטי
+                                                                התשלום לא ניתן
+                                                                יהיה לחדש את
+                                                                המנוי אוטומטית.
+                                                            </div>
+                                                            {account
+                                                                ?.paymentMethod
+                                                                ?.canDelete !==
+                                                                true && (
+                                                                <div
+                                                                    className={
+                                                                        styles.billingNote
+                                                                    }
+                                                                >
+                                                                    החידוש
+                                                                    האוטומטי
+                                                                    פעיל — יש
+                                                                    לבטל אותו
+                                                                    תחילה לפני
+                                                                    מחיקת פרטי
+                                                                    התשלום.
+                                                                </div>
+                                                            )}
+                                                            <div
+                                                                className={
+                                                                    styles.billingActions
+                                                                }
+                                                            >
+                                                                <Button
+                                                                    variant="secondary"
+                                                                    disabled={
+                                                                        deletePaymentMethodBusy ||
                                                                         account
                                                                             ?.paymentMethod
                                                                             ?.canDelete !==
-                                                                        true
-                                                                    ) {
-                                                                        return;
+                                                                            true
                                                                     }
-                                                                    setDeletePaymentMethodError(
-                                                                        "",
-                                                                    );
-                                                                    setDeletePaymentMethodSuccess(
-                                                                        false,
-                                                                    );
-                                                                    setDeletePaymentMethodModalOpen(
-                                                                        true,
-                                                                    );
-                                                                }}
-                                                            >
-                                                                מחק פרטי תשלום
-                                                            </Button>
+                                                                    onClick={() => {
+                                                                        if (
+                                                                            account
+                                                                                ?.paymentMethod
+                                                                                ?.canDelete !==
+                                                                            true
+                                                                        ) {
+                                                                            return;
+                                                                        }
+                                                                        setDeletePaymentMethodError(
+                                                                            "",
+                                                                        );
+                                                                        setDeletePaymentMethodSuccess(
+                                                                            false,
+                                                                        );
+                                                                        setDeletePaymentMethodModalOpen(
+                                                                            true,
+                                                                        );
+                                                                    }}
+                                                                >
+                                                                    מחק פרטי
+                                                                    תשלום
+                                                                </Button>
+                                                            </div>
                                                         </div>
-                                                    </div>
-                                                </details>
-                                            )}
+                                                    </details>
+                                                )}
 
-                                            {deletePaymentMethodSuccess && (
+                                                {deletePaymentMethodSuccess && (
+                                                    <div
+                                                        className={
+                                                            styles.billingNote
+                                                        }
+                                                    >
+                                                        פרטי התשלום נמחקו.
+                                                        לחידוש המנוי בעתיד יהיה
+                                                        צורך להזין פרטי תשלום
+                                                        מחדש.
+                                                    </div>
+                                                )}
+
+                                                {deletePaymentMethodError && (
+                                                    <div
+                                                        className={
+                                                            styles.billingError
+                                                        }
+                                                    >
+                                                        {
+                                                            deletePaymentMethodError
+                                                        }
+                                                    </div>
+                                                )}
+
                                                 <div
                                                     className={
                                                         styles.billingNote
                                                     }
                                                 >
-                                                    פרטי התשלום נמחקו. לחידוש
-                                                    המנוי בעתיד יהיה צורך להזין
-                                                    פרטי תשלום מחדש.
-                                                </div>
-                                            )}
-
-                                            {deletePaymentMethodError && (
-                                                <div
-                                                    className={
-                                                        styles.billingError
-                                                    }
-                                                >
-                                                    {deletePaymentMethodError}
-                                                </div>
-                                            )}
-
-                                            <div className={styles.billingNote}>
-                                                שינוי אמצעי תשלום? פנה לתמיכה:
-                                                support@cardigo.co.il
-                                            </div>
-
-                                            {/* ── Receipt profile form ── */}
-                                            <div
-                                                className={
-                                                    styles.receiptProfileBlock
-                                                }
-                                            >
-                                                <div
-                                                    className={
-                                                        styles.sectionTitle
-                                                    }
-                                                >
-                                                    פרטי קבלה
+                                                    שינוי אמצעי תשלום? פנה
+                                                    לתמיכה:
+                                                    support@cardigo.co.il
                                                 </div>
 
+                                                {/* ── Receipt profile form ── */}
                                                 <div
                                                     className={
-                                                        styles.billingDisclosure
-                                                    }
-                                                >
-                                                    <span>
-                                                        הפרטים ישמשו להפקת קבלות
-                                                        ומסמכי תשלום בלבד.
-                                                    </span>
-                                                    <span>
-                                                        שינויים לא יחולו על
-                                                        קבלות שכבר הופקו.
-                                                    </span>
-                                                    <span>
-                                                        המספר המזהה הוא
-                                                        אופציונלי ורגיש — מלאו
-                                                        אותו רק אם נדרש.
-                                                    </span>
-                                                    <a
-                                                        href="/privacy"
-                                                        className={
-                                                            styles.billingDisclosureLink
-                                                        }
-                                                    >
-                                                        מדיניות הפרטיות
-                                                    </a>
-                                                </div>
-
-                                                <div
-                                                    className={
-                                                        styles.receiptProfileFields
+                                                        styles.receiptProfileBlock
                                                     }
                                                 >
                                                     <div
                                                         className={
-                                                            styles.receiptProfileSelectRow
+                                                            styles.sectionTitle
                                                         }
                                                     >
-                                                        <label
-                                                            htmlFor="rp-recipient-type"
+                                                        פרטי קבלה
+                                                    </div>
+
+                                                    <div
+                                                        className={
+                                                            styles.billingDisclosure
+                                                        }
+                                                    >
+                                                        <span>
+                                                            הפרטים ישמשו להפקת
+                                                            קבלות ומסמכי תשלום
+                                                            בלבד.
+                                                        </span>
+                                                        <span>
+                                                            שינויים לא יחולו על
+                                                            קבלות שכבר הופקו.
+                                                        </span>
+                                                        <span>
+                                                            המספר המזהה הוא
+                                                            אופציונלי ורגיש —
+                                                            מלאו אותו רק אם
+                                                            נדרש.
+                                                        </span>
+                                                        <a
+                                                            href="/privacy"
                                                             className={
-                                                                styles.receiptProfileSelectLabel
+                                                                styles.billingDisclosureLink
                                                             }
                                                         >
-                                                            סוג נמען
-                                                        </label>
-                                                        <select
-                                                            id="rp-recipient-type"
+                                                            מדיניות הפרטיות
+                                                        </a>
+                                                    </div>
+
+                                                    <div
+                                                        className={
+                                                            styles.receiptProfileFields
+                                                        }
+                                                    >
+                                                        <div
                                                             className={
-                                                                styles.receiptProfileSelect
+                                                                styles.receiptProfileSelectRow
                                                             }
+                                                        >
+                                                            <label
+                                                                htmlFor="rp-recipient-type"
+                                                                className={
+                                                                    styles.receiptProfileSelectLabel
+                                                                }
+                                                            >
+                                                                סוג נמען
+                                                            </label>
+                                                            <select
+                                                                id="rp-recipient-type"
+                                                                className={
+                                                                    styles.receiptProfileSelect
+                                                                }
+                                                                value={
+                                                                    receiptProfileDraft.recipientType
+                                                                }
+                                                                disabled={
+                                                                    receiptProfileBusy
+                                                                }
+                                                                onChange={(
+                                                                    e,
+                                                                ) => {
+                                                                    setReceiptProfileDraft(
+                                                                        (
+                                                                            draft,
+                                                                        ) => ({
+                                                                            ...draft,
+                                                                            recipientType:
+                                                                                e
+                                                                                    .target
+                                                                                    .value,
+                                                                        }),
+                                                                    );
+                                                                    setReceiptProfileError(
+                                                                        "",
+                                                                    );
+                                                                    setReceiptProfileOk(
+                                                                        "",
+                                                                    );
+                                                                }}
+                                                            >
+                                                                <option value="">
+                                                                    לא צוין
+                                                                </option>
+                                                                <option value="private">
+                                                                    פרטי
+                                                                </option>
+                                                                <option value="business">
+                                                                    עסקי
+                                                                </option>
+                                                            </select>
+                                                        </div>
+
+                                                        <Input
+                                                            label="שם לקבלה"
+                                                            type="text"
                                                             value={
-                                                                receiptProfileDraft.recipientType
-                                                            }
-                                                            disabled={
-                                                                receiptProfileBusy
+                                                                receiptProfileDraft.name
                                                             }
                                                             onChange={(e) => {
                                                                 setReceiptProfileDraft(
@@ -1797,10 +1904,9 @@ export default function SettingsPanel({
                                                                         draft,
                                                                     ) => ({
                                                                         ...draft,
-                                                                        recipientType:
-                                                                            e
-                                                                                .target
-                                                                                .value,
+                                                                        name: e
+                                                                            .target
+                                                                            .value,
                                                                     }),
                                                                 );
                                                                 setReceiptProfileError(
@@ -1810,562 +1916,620 @@ export default function SettingsPanel({
                                                                     "",
                                                                 );
                                                             }}
-                                                        >
-                                                            <option value="">
-                                                                לא צוין
-                                                            </option>
-                                                            <option value="private">
-                                                                פרטי
-                                                            </option>
-                                                            <option value="business">
-                                                                עסקי
-                                                            </option>
-                                                        </select>
-                                                    </div>
+                                                            meta="אם יישאר ריק, נשתמש בשם החשבון או בדוא״ל החשבון."
+                                                            autoComplete="name"
+                                                            disabled={
+                                                                receiptProfileBusy
+                                                            }
+                                                        />
 
-                                                    <Input
-                                                        label="שם לקבלה"
-                                                        type="text"
-                                                        value={
-                                                            receiptProfileDraft.name
-                                                        }
-                                                        onChange={(e) => {
-                                                            setReceiptProfileDraft(
-                                                                (draft) => ({
-                                                                    ...draft,
-                                                                    name: e
-                                                                        .target
-                                                                        .value,
-                                                                }),
-                                                            );
-                                                            setReceiptProfileError(
-                                                                "",
-                                                            );
-                                                            setReceiptProfileOk(
-                                                                "",
-                                                            );
-                                                        }}
-                                                        meta="אם יישאר ריק, נשתמש בשם החשבון או בדוא״ל החשבון."
-                                                        autoComplete="name"
-                                                        disabled={
-                                                            receiptProfileBusy
-                                                        }
-                                                    />
-
-                                                    <Input
-                                                        label="דוא״ל לשליחת קבלה"
-                                                        type="email"
-                                                        value={
-                                                            receiptProfileDraft.email
-                                                        }
-                                                        onChange={(e) => {
-                                                            setReceiptProfileDraft(
-                                                                (draft) => ({
-                                                                    ...draft,
-                                                                    email: e
-                                                                        .target
-                                                                        .value,
-                                                                }),
-                                                            );
-                                                            setReceiptProfileError(
-                                                                "",
-                                                            );
-                                                            setReceiptProfileOk(
-                                                                "",
-                                                            );
-                                                        }}
-                                                        meta="אם יישאר ריק, הקבלה תישלח לדוא״ל החשבון."
-                                                        autoComplete="email"
-                                                        dir="ltr"
-                                                        disabled={
-                                                            receiptProfileBusy
-                                                        }
-                                                    />
-
-                                                    <Input
-                                                        label={
-                                                            receiptProfileDraft.recipientType ===
-                                                            "business"
-                                                                ? "ח.פ. / מספר עוסק"
-                                                                : receiptProfileDraft.recipientType ===
-                                                                    "private"
-                                                                  ? "ת.ז."
-                                                                  : "ת.ז. / ח.פ. / מספר עוסק"
-                                                        }
-                                                        type="text"
-                                                        value={
-                                                            receiptProfileDraft.numberId
-                                                        }
-                                                        onChange={(e) => {
-                                                            setReceiptProfileDraft(
-                                                                (draft) => ({
-                                                                    ...draft,
-                                                                    numberId:
-                                                                        e.target
+                                                        <Input
+                                                            label="דוא״ל לשליחת קבלה"
+                                                            type="email"
+                                                            value={
+                                                                receiptProfileDraft.email
+                                                            }
+                                                            onChange={(e) => {
+                                                                setReceiptProfileDraft(
+                                                                    (
+                                                                        draft,
+                                                                    ) => ({
+                                                                        ...draft,
+                                                                        email: e
+                                                                            .target
                                                                             .value,
-                                                                }),
-                                                            );
-                                                            setReceiptProfileClearNumberId(
-                                                                false,
-                                                            );
-                                                            setReceiptProfileError(
-                                                                "",
-                                                            );
-                                                            setReceiptProfileOk(
-                                                                "",
-                                                            );
-                                                        }}
-                                                        meta={
-                                                            account
-                                                                ?.receiptProfile
-                                                                ?.numberIdMasked
-                                                                ? `מספר מזהה שמור: ${account.receiptProfile.numberIdMasked}`
-                                                                : undefined
-                                                        }
-                                                        placeholder="אופציונלי"
-                                                        autoComplete="off"
-                                                        dir="ltr"
-                                                        disabled={
-                                                            receiptProfileBusy ||
-                                                            receiptProfileClearNumberId
-                                                        }
-                                                    />
+                                                                    }),
+                                                                );
+                                                                setReceiptProfileError(
+                                                                    "",
+                                                                );
+                                                                setReceiptProfileOk(
+                                                                    "",
+                                                                );
+                                                            }}
+                                                            meta="אם יישאר ריק, הקבלה תישלח לדוא״ל החשבון."
+                                                            autoComplete="email"
+                                                            dir="ltr"
+                                                            disabled={
+                                                                receiptProfileBusy
+                                                            }
+                                                        />
 
-                                                    {account?.receiptProfile
-                                                        ?.numberIdMasked && (
-                                                        <label
+                                                        <Input
+                                                            label={
+                                                                receiptProfileDraft.recipientType ===
+                                                                "business"
+                                                                    ? "ח.פ. / מספר עוסק"
+                                                                    : receiptProfileDraft.recipientType ===
+                                                                        "private"
+                                                                      ? "ת.ז."
+                                                                      : "ת.ז. / ח.פ. / מספר עוסק"
+                                                            }
+                                                            type="text"
+                                                            value={
+                                                                receiptProfileDraft.numberId
+                                                            }
+                                                            onChange={(e) => {
+                                                                setReceiptProfileDraft(
+                                                                    (
+                                                                        draft,
+                                                                    ) => ({
+                                                                        ...draft,
+                                                                        numberId:
+                                                                            e
+                                                                                .target
+                                                                                .value,
+                                                                    }),
+                                                                );
+                                                                setReceiptProfileClearNumberId(
+                                                                    false,
+                                                                );
+                                                                setReceiptProfileError(
+                                                                    "",
+                                                                );
+                                                                setReceiptProfileOk(
+                                                                    "",
+                                                                );
+                                                            }}
+                                                            meta={
+                                                                account
+                                                                    ?.receiptProfile
+                                                                    ?.numberIdMasked
+                                                                    ? `מספר מזהה שמור: ${account.receiptProfile.numberIdMasked}`
+                                                                    : undefined
+                                                            }
+                                                            placeholder="אופציונלי"
+                                                            autoComplete="off"
+                                                            dir="ltr"
+                                                            disabled={
+                                                                receiptProfileBusy ||
+                                                                receiptProfileClearNumberId
+                                                            }
+                                                        />
+
+                                                        {account?.receiptProfile
+                                                            ?.numberIdMasked && (
+                                                            <label
+                                                                className={
+                                                                    styles.billingOptIn
+                                                                }
+                                                            >
+                                                                <input
+                                                                    type="checkbox"
+                                                                    checked={
+                                                                        receiptProfileClearNumberId
+                                                                    }
+                                                                    disabled={
+                                                                        receiptProfileBusy
+                                                                    }
+                                                                    onChange={(
+                                                                        e,
+                                                                    ) => {
+                                                                        setReceiptProfileClearNumberId(
+                                                                            e
+                                                                                .target
+                                                                                .checked,
+                                                                        );
+                                                                        if (
+                                                                            e
+                                                                                .target
+                                                                                .checked
+                                                                        ) {
+                                                                            setReceiptProfileDraft(
+                                                                                (
+                                                                                    draft,
+                                                                                ) => ({
+                                                                                    ...draft,
+                                                                                    numberId:
+                                                                                        "",
+                                                                                }),
+                                                                            );
+                                                                        }
+                                                                        setReceiptProfileError(
+                                                                            "",
+                                                                        );
+                                                                        setReceiptProfileOk(
+                                                                            "",
+                                                                        );
+                                                                    }}
+                                                                />
+                                                                <span
+                                                                    className={
+                                                                        styles.billingOptInLabel
+                                                                    }
+                                                                >
+                                                                    מחק מספר
+                                                                    מזהה שמור
+                                                                </span>
+                                                            </label>
+                                                        )}
+
+                                                        <details
                                                             className={
-                                                                styles.billingOptIn
+                                                                styles.collapsible
                                                             }
                                                         >
-                                                            <input
-                                                                type="checkbox"
-                                                                checked={
-                                                                    receiptProfileClearNumberId
+                                                            <summary
+                                                                className={
+                                                                    styles.collapsibleTrigger
                                                                 }
-                                                                disabled={
-                                                                    receiptProfileBusy
+                                                            >
+                                                                פרטים נוספים
+                                                            </summary>
+                                                            <div
+                                                                className={
+                                                                    styles.collapsibleContent
                                                                 }
-                                                                onChange={(
-                                                                    e,
-                                                                ) => {
-                                                                    setReceiptProfileClearNumberId(
-                                                                        e.target
-                                                                            .checked,
-                                                                    );
-                                                                    if (
-                                                                        e.target
-                                                                            .checked
-                                                                    ) {
+                                                            >
+                                                                <Input
+                                                                    label="שם עסק / שם לחשבונית"
+                                                                    type="text"
+                                                                    value={
+                                                                        receiptProfileDraft.nameInvoice
+                                                                    }
+                                                                    onChange={(
+                                                                        e,
+                                                                    ) => {
                                                                         setReceiptProfileDraft(
                                                                             (
                                                                                 draft,
                                                                             ) => ({
                                                                                 ...draft,
-                                                                                numberId:
-                                                                                    "",
+                                                                                nameInvoice:
+                                                                                    e
+                                                                                        .target
+                                                                                        .value,
                                                                             }),
                                                                         );
+                                                                        setReceiptProfileError(
+                                                                            "",
+                                                                        );
+                                                                        setReceiptProfileOk(
+                                                                            "",
+                                                                        );
+                                                                    }}
+                                                                    disabled={
+                                                                        receiptProfileBusy
                                                                     }
-                                                                    setReceiptProfileError(
-                                                                        "",
-                                                                    );
-                                                                    setReceiptProfileOk(
-                                                                        "",
-                                                                    );
-                                                                }}
-                                                            />
-                                                            <span
-                                                                className={
-                                                                    styles.billingOptInLabel
-                                                                }
-                                                            >
-                                                                מחק מספר מזהה
-                                                                שמור
-                                                            </span>
-                                                        </label>
-                                                    )}
+                                                                />
 
-                                                    <details
-                                                        className={
-                                                            styles.collapsible
-                                                        }
-                                                    >
-                                                        <summary
-                                                            className={
-                                                                styles.collapsibleTrigger
-                                                            }
-                                                        >
-                                                            פרטים נוספים
-                                                        </summary>
-                                                        <div
-                                                            className={
-                                                                styles.collapsibleContent
-                                                            }
-                                                        >
-                                                            <Input
-                                                                label="שם עסק / שם לחשבונית"
-                                                                type="text"
-                                                                value={
-                                                                    receiptProfileDraft.nameInvoice
-                                                                }
-                                                                onChange={(
-                                                                    e,
-                                                                ) => {
-                                                                    setReceiptProfileDraft(
-                                                                        (
-                                                                            draft,
-                                                                        ) => ({
-                                                                            ...draft,
-                                                                            nameInvoice:
-                                                                                e
+                                                                <Input
+                                                                    label="כתובת"
+                                                                    type="text"
+                                                                    value={
+                                                                        receiptProfileDraft.address
+                                                                    }
+                                                                    onChange={(
+                                                                        e,
+                                                                    ) => {
+                                                                        setReceiptProfileDraft(
+                                                                            (
+                                                                                draft,
+                                                                            ) => ({
+                                                                                ...draft,
+                                                                                address:
+                                                                                    e
+                                                                                        .target
+                                                                                        .value,
+                                                                            }),
+                                                                        );
+                                                                        setReceiptProfileError(
+                                                                            "",
+                                                                        );
+                                                                        setReceiptProfileOk(
+                                                                            "",
+                                                                        );
+                                                                    }}
+                                                                    autoComplete="street-address"
+                                                                    disabled={
+                                                                        receiptProfileBusy
+                                                                    }
+                                                                />
+
+                                                                <Input
+                                                                    label="עיר"
+                                                                    type="text"
+                                                                    value={
+                                                                        receiptProfileDraft.city
+                                                                    }
+                                                                    onChange={(
+                                                                        e,
+                                                                    ) => {
+                                                                        setReceiptProfileDraft(
+                                                                            (
+                                                                                draft,
+                                                                            ) => ({
+                                                                                ...draft,
+                                                                                city: e
                                                                                     .target
                                                                                     .value,
-                                                                        }),
-                                                                    );
-                                                                    setReceiptProfileError(
-                                                                        "",
-                                                                    );
-                                                                    setReceiptProfileOk(
-                                                                        "",
-                                                                    );
-                                                                }}
-                                                                disabled={
-                                                                    receiptProfileBusy
-                                                                }
-                                                            />
+                                                                            }),
+                                                                        );
+                                                                        setReceiptProfileError(
+                                                                            "",
+                                                                        );
+                                                                        setReceiptProfileOk(
+                                                                            "",
+                                                                        );
+                                                                    }}
+                                                                    autoComplete="address-level2"
+                                                                    disabled={
+                                                                        receiptProfileBusy
+                                                                    }
+                                                                />
 
-                                                            <Input
-                                                                label="כתובת"
-                                                                type="text"
-                                                                value={
-                                                                    receiptProfileDraft.address
-                                                                }
-                                                                onChange={(
-                                                                    e,
-                                                                ) => {
-                                                                    setReceiptProfileDraft(
-                                                                        (
-                                                                            draft,
-                                                                        ) => ({
-                                                                            ...draft,
-                                                                            address:
-                                                                                e
-                                                                                    .target
-                                                                                    .value,
-                                                                        }),
-                                                                    );
-                                                                    setReceiptProfileError(
-                                                                        "",
-                                                                    );
-                                                                    setReceiptProfileOk(
-                                                                        "",
-                                                                    );
-                                                                }}
-                                                                autoComplete="street-address"
-                                                                disabled={
-                                                                    receiptProfileBusy
-                                                                }
-                                                            />
+                                                                <Input
+                                                                    label="מיקוד"
+                                                                    type="text"
+                                                                    value={
+                                                                        receiptProfileDraft.zipCode
+                                                                    }
+                                                                    onChange={(
+                                                                        e,
+                                                                    ) => {
+                                                                        setReceiptProfileDraft(
+                                                                            (
+                                                                                draft,
+                                                                            ) => ({
+                                                                                ...draft,
+                                                                                zipCode:
+                                                                                    e
+                                                                                        .target
+                                                                                        .value,
+                                                                            }),
+                                                                        );
+                                                                        setReceiptProfileError(
+                                                                            "",
+                                                                        );
+                                                                        setReceiptProfileOk(
+                                                                            "",
+                                                                        );
+                                                                    }}
+                                                                    autoComplete="postal-code"
+                                                                    dir="ltr"
+                                                                    disabled={
+                                                                        receiptProfileBusy
+                                                                    }
+                                                                />
+                                                            </div>
+                                                        </details>
 
-                                                            <Input
-                                                                label="עיר"
-                                                                type="text"
-                                                                value={
-                                                                    receiptProfileDraft.city
-                                                                }
-                                                                onChange={(
-                                                                    e,
-                                                                ) => {
-                                                                    setReceiptProfileDraft(
-                                                                        (
-                                                                            draft,
-                                                                        ) => ({
-                                                                            ...draft,
-                                                                            city: e
-                                                                                .target
-                                                                                .value,
-                                                                        }),
-                                                                    );
-                                                                    setReceiptProfileError(
-                                                                        "",
-                                                                    );
-                                                                    setReceiptProfileOk(
-                                                                        "",
-                                                                    );
-                                                                }}
-                                                                autoComplete="address-level2"
-                                                                disabled={
-                                                                    receiptProfileBusy
-                                                                }
-                                                            />
-
-                                                            <Input
-                                                                label="מיקוד"
-                                                                type="text"
-                                                                value={
-                                                                    receiptProfileDraft.zipCode
-                                                                }
-                                                                onChange={(
-                                                                    e,
-                                                                ) => {
-                                                                    setReceiptProfileDraft(
-                                                                        (
-                                                                            draft,
-                                                                        ) => ({
-                                                                            ...draft,
-                                                                            zipCode:
-                                                                                e
-                                                                                    .target
-                                                                                    .value,
-                                                                        }),
-                                                                    );
-                                                                    setReceiptProfileError(
-                                                                        "",
-                                                                    );
-                                                                    setReceiptProfileOk(
-                                                                        "",
-                                                                    );
-                                                                }}
-                                                                autoComplete="postal-code"
-                                                                dir="ltr"
-                                                                disabled={
-                                                                    receiptProfileBusy
-                                                                }
-                                                            />
-                                                        </div>
-                                                    </details>
-
-                                                    {receiptProfileError && (
-                                                        <div
-                                                            className={
-                                                                styles.billingError
-                                                            }
-                                                        >
-                                                            {
-                                                                receiptProfileError
-                                                            }
-                                                        </div>
-                                                    )}
-
-                                                    {receiptProfileOk && (
-                                                        <div
-                                                            className={
-                                                                styles.pwSuccess
-                                                            }
-                                                        >
-                                                            {receiptProfileOk}
-                                                        </div>
-                                                    )}
-
-                                                    <div
-                                                        className={
-                                                            styles.billingActions
-                                                        }
-                                                    >
-                                                        <Button
-                                                            variant="secondary"
-                                                            loading={
-                                                                receiptProfileBusy
-                                                            }
-                                                            disabled={
-                                                                receiptProfileBusy ||
-                                                                !isReceiptProfileDirty
-                                                            }
-                                                            onClick={
-                                                                handleReceiptProfileSave
-                                                            }
-                                                        >
-                                                            שמור פרטי קבלה
-                                                        </Button>
-                                                    </div>
-                                                </div>
-                                            </div>
-
-                                            {/* ── Receipt history ── */}
-                                            <details
-                                                className={styles.collapsible}
-                                            >
-                                                <summary
-                                                    className={
-                                                        styles.collapsibleTrigger
-                                                    }
-                                                >
-                                                    קבלות
-                                                </summary>
-                                                <div
-                                                    className={
-                                                        styles.collapsibleContent
-                                                    }
-                                                >
-                                                    {(() => {
-                                                        const dateFormatter =
-                                                            new Intl.DateTimeFormat(
-                                                                "he-IL",
-                                                                {
-                                                                    day: "2-digit",
-                                                                    month: "2-digit",
-                                                                    year: "numeric",
-                                                                },
-                                                            );
-                                                        const amountFormatter =
-                                                            new Intl.NumberFormat(
-                                                                "he-IL",
-                                                                {
-                                                                    style: "currency",
-                                                                    currency:
-                                                                        "ILS",
-                                                                },
-                                                            );
-                                                        return (
+                                                        {receiptProfileError && (
                                                             <div
                                                                 className={
-                                                                    styles.receiptsBlock
+                                                                    styles.billingError
                                                                 }
                                                             >
-                                                                {receiptsLoading && (
-                                                                    <div
-                                                                        className={
-                                                                            styles.billingNote
-                                                                        }
-                                                                    >
-                                                                        טוען
-                                                                        קבלות...
-                                                                    </div>
-                                                                )}
-                                                                {!receiptsLoading &&
-                                                                    receiptsError && (
-                                                                        <div
-                                                                            className={
-                                                                                styles.billingError
-                                                                            }
-                                                                        >
-                                                                            {
-                                                                                receiptsError
-                                                                            }
-                                                                        </div>
-                                                                    )}
-                                                                {!receiptsLoading &&
-                                                                    !receiptsError &&
-                                                                    receipts.length ===
-                                                                        0 && (
+                                                                {
+                                                                    receiptProfileError
+                                                                }
+                                                            </div>
+                                                        )}
+
+                                                        {receiptProfileOk && (
+                                                            <div
+                                                                className={
+                                                                    styles.pwSuccess
+                                                                }
+                                                            >
+                                                                {
+                                                                    receiptProfileOk
+                                                                }
+                                                            </div>
+                                                        )}
+
+                                                        <div
+                                                            className={
+                                                                styles.billingActions
+                                                            }
+                                                        >
+                                                            <Button
+                                                                variant="secondary"
+                                                                loading={
+                                                                    receiptProfileBusy
+                                                                }
+                                                                disabled={
+                                                                    receiptProfileBusy ||
+                                                                    !isReceiptProfileDirty
+                                                                }
+                                                                onClick={
+                                                                    handleReceiptProfileSave
+                                                                }
+                                                            >
+                                                                שמור פרטי קבלה
+                                                            </Button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                {/* ── Receipt history ── */}
+                                                <details
+                                                    className={
+                                                        styles.collapsible
+                                                    }
+                                                >
+                                                    <summary
+                                                        className={
+                                                            styles.collapsibleTrigger
+                                                        }
+                                                    >
+                                                        קבלות
+                                                    </summary>
+                                                    <div
+                                                        className={
+                                                            styles.collapsibleContent
+                                                        }
+                                                    >
+                                                        {(() => {
+                                                            const dateFormatter =
+                                                                new Intl.DateTimeFormat(
+                                                                    "he-IL",
+                                                                    {
+                                                                        day: "2-digit",
+                                                                        month: "2-digit",
+                                                                        year: "numeric",
+                                                                    },
+                                                                );
+                                                            const amountFormatter =
+                                                                new Intl.NumberFormat(
+                                                                    "he-IL",
+                                                                    {
+                                                                        style: "currency",
+                                                                        currency:
+                                                                            "ILS",
+                                                                    },
+                                                                );
+                                                            return (
+                                                                <div
+                                                                    className={
+                                                                        styles.receiptsBlock
+                                                                    }
+                                                                >
+                                                                    {receiptsLoading && (
                                                                         <div
                                                                             className={
                                                                                 styles.billingNote
                                                                             }
                                                                         >
-                                                                            אין
-                                                                            קבלות
-                                                                            עדיין.
+                                                                            טוען
+                                                                            קבלות...
                                                                         </div>
                                                                     )}
-                                                                {!receiptsLoading &&
-                                                                    !receiptsError &&
-                                                                    receipts.length >
-                                                                        0 && (
-                                                                        <ul
-                                                                            className={
-                                                                                styles.receiptsList
-                                                                            }
-                                                                        >
-                                                                            {receipts.map(
-                                                                                (
-                                                                                    r,
-                                                                                ) => {
-                                                                                    const dateVal =
-                                                                                        r.issuedAt ||
-                                                                                        r.createdAt;
-                                                                                    const dateStr =
-                                                                                        dateVal
-                                                                                            ? dateFormatter.format(
-                                                                                                  new Date(
-                                                                                                      dateVal,
-                                                                                                  ),
-                                                                                              )
-                                                                                            : "";
-                                                                                    const amountStr =
-                                                                                        typeof r.amountAgorot ===
-                                                                                        "number"
-                                                                                            ? amountFormatter.format(
-                                                                                                  r.amountAgorot /
-                                                                                                      100,
-                                                                                              )
-                                                                                            : "";
-                                                                                    const planLabel =
-                                                                                        r.plan ===
-                                                                                        "yearly"
-                                                                                            ? "שנתי"
-                                                                                            : r.plan ===
-                                                                                                "monthly"
-                                                                                              ? "חודשי"
-                                                                                              : "";
-                                                                                    return (
-                                                                                        <li
-                                                                                            key={
-                                                                                                r.id
-                                                                                            }
-                                                                                            className={
-                                                                                                styles.receiptRow
-                                                                                            }
-                                                                                        >
-                                                                                            <span
+                                                                    {!receiptsLoading &&
+                                                                        receiptsError && (
+                                                                            <div
+                                                                                className={
+                                                                                    styles.billingError
+                                                                                }
+                                                                            >
+                                                                                {
+                                                                                    receiptsError
+                                                                                }
+                                                                            </div>
+                                                                        )}
+                                                                    {!receiptsLoading &&
+                                                                        !receiptsError &&
+                                                                        receipts.length ===
+                                                                            0 && (
+                                                                            <div
+                                                                                className={
+                                                                                    styles.billingNote
+                                                                                }
+                                                                            >
+                                                                                אין
+                                                                                קבלות
+                                                                                עדיין.
+                                                                            </div>
+                                                                        )}
+                                                                    {!receiptsLoading &&
+                                                                        !receiptsError &&
+                                                                        receipts.length >
+                                                                            0 && (
+                                                                            <ul
+                                                                                className={
+                                                                                    styles.receiptsList
+                                                                                }
+                                                                            >
+                                                                                {receipts.map(
+                                                                                    (
+                                                                                        r,
+                                                                                    ) => {
+                                                                                        const dateVal =
+                                                                                            r.issuedAt ||
+                                                                                            r.createdAt;
+                                                                                        const dateStr =
+                                                                                            dateVal
+                                                                                                ? dateFormatter.format(
+                                                                                                      new Date(
+                                                                                                          dateVal,
+                                                                                                      ),
+                                                                                                  )
+                                                                                                : "";
+                                                                                        const amountStr =
+                                                                                            typeof r.amountAgorot ===
+                                                                                            "number"
+                                                                                                ? amountFormatter.format(
+                                                                                                      r.amountAgorot /
+                                                                                                          100,
+                                                                                                  )
+                                                                                                : "";
+                                                                                        const planLabel =
+                                                                                            r.plan ===
+                                                                                            "yearly"
+                                                                                                ? "שנתי"
+                                                                                                : r.plan ===
+                                                                                                    "monthly"
+                                                                                                  ? "חודשי"
+                                                                                                  : "";
+                                                                                        return (
+                                                                                            <li
+                                                                                                key={
+                                                                                                    r.id
+                                                                                                }
                                                                                                 className={
-                                                                                                    styles.receiptMain
+                                                                                                    styles.receiptRow
                                                                                                 }
                                                                                             >
                                                                                                 <span
                                                                                                     className={
-                                                                                                        styles.receiptDate
+                                                                                                        styles.receiptMain
                                                                                                     }
-                                                                                                    dir="ltr"
                                                                                                 >
-                                                                                                    {
-                                                                                                        dateStr
-                                                                                                    }
+                                                                                                    <span
+                                                                                                        className={
+                                                                                                            styles.receiptDate
+                                                                                                        }
+                                                                                                        dir="ltr"
+                                                                                                    >
+                                                                                                        {
+                                                                                                            dateStr
+                                                                                                        }
+                                                                                                    </span>
+                                                                                                    <span
+                                                                                                        className={
+                                                                                                            styles.receiptMeta
+                                                                                                        }
+                                                                                                    >
+                                                                                                        {[
+                                                                                                            amountStr,
+                                                                                                            planLabel,
+                                                                                                        ]
+                                                                                                            .filter(
+                                                                                                                Boolean,
+                                                                                                            )
+                                                                                                            .join(
+                                                                                                                " · ",
+                                                                                                            )}
+                                                                                                    </span>
                                                                                                 </span>
-                                                                                                <span
-                                                                                                    className={
-                                                                                                        styles.receiptMeta
-                                                                                                    }
-                                                                                                >
-                                                                                                    {[
-                                                                                                        amountStr,
-                                                                                                        planLabel,
-                                                                                                    ]
-                                                                                                        .filter(
-                                                                                                            Boolean,
-                                                                                                        )
-                                                                                                        .join(
-                                                                                                            " · ",
-                                                                                                        )}
-                                                                                                </span>
-                                                                                            </span>
-                                                                                            {r.hasPdf && (
-                                                                                                <a
-                                                                                                    href={`/api/account/receipts/${r.id}/download`}
-                                                                                                    className={
-                                                                                                        styles.receiptDownloadLink
-                                                                                                    }
-                                                                                                >
-                                                                                                    הורדת
-                                                                                                    קבלה
-                                                                                                </a>
-                                                                                            )}
-                                                                                        </li>
-                                                                                    );
-                                                                                },
-                                                                            )}
-                                                                        </ul>
-                                                                    )}
-                                                            </div>
-                                                        );
-                                                    })()}
-                                                </div>
-                                            </details>
+                                                                                                {r.hasPdf && (
+                                                                                                    <a
+                                                                                                        href={`/api/account/receipts/${r.id}/download`}
+                                                                                                        className={
+                                                                                                            styles.receiptDownloadLink
+                                                                                                        }
+                                                                                                    >
+                                                                                                        הורדת
+                                                                                                        קבלה
+                                                                                                    </a>
+                                                                                                )}
+                                                                                            </li>
+                                                                                        );
+                                                                                    },
+                                                                                )}
+                                                                            </ul>
+                                                                        )}
+                                                                </div>
+                                                            );
+                                                        })()}
+                                                    </div>
+                                                </details>
+                                            </>
+                                        )}
+
+                                    {isValidOrgPaymentContext && (
+                                        <>
+                                            <div className={styles.billingRow}>
+                                                <span
+                                                    className={
+                                                        styles.billingLabel
+                                                    }
+                                                >
+                                                    תוכנית:
+                                                </span>
+                                                <span
+                                                    className={
+                                                        styles.billingValue
+                                                    }
+                                                >
+                                                    {orgSummary?.plan === "org"
+                                                        ? "ארגוני"
+                                                        : "-"}
+                                                </span>
+                                            </div>
+
+                                            <div className={styles.billingRow}>
+                                                <span
+                                                    className={
+                                                        styles.billingLabel
+                                                    }
+                                                >
+                                                    סטטוס מנוי:
+                                                </span>
+                                                <span
+                                                    className={
+                                                        styles.billingValue
+                                                    }
+                                                >
+                                                    {orgSummary?.currentlyActive
+                                                        ? "פעיל"
+                                                        : orgSummary?.status ===
+                                                            "revoked"
+                                                          ? "מבוטל"
+                                                          : "לא פעיל"}
+                                                </span>
+                                            </div>
+
+                                            <div className={styles.billingRow}>
+                                                <span
+                                                    className={
+                                                        styles.billingLabel
+                                                    }
+                                                >
+                                                    בתוקף עד:
+                                                </span>
+                                                <span
+                                                    className={
+                                                        styles.billingValue
+                                                    }
+                                                >
+                                                    {orgSummary?.expiresAt
+                                                        ? formatDate(
+                                                              orgSummary.expiresAt,
+                                                          )
+                                                        : "-"}
+                                                </span>
+                                            </div>
+
+                                            <div className={styles.billingNote}>
+                                                שינוי אמצעי תשלום? פנה לתמיכה:
+                                                support@cardigo.co.il
+                                            </div>
                                         </>
                                     )}
 
                                     {!accountLoading &&
+                                        isAuthenticated &&
+                                        !isPersonalScope &&
+                                        !isValidOrgPaymentContext && (
+                                            <div className={styles.billingNote}>
+                                                לא ניתן להציג את סטטוס התשלום
+                                                כעת.
+                                            </div>
+                                        )}
+
+                                    {isPersonalScope &&
+                                        !accountLoading &&
                                         !account &&
                                         accountError && (
                                             <div className={styles.billingNote}>
