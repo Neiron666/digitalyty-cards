@@ -49,7 +49,13 @@ import { normalizeServicesForWrite } from "../utils/services.util.js";
 import { normalizeCustomActionsForWrite } from "../utils/customActions.util.js";
 import { toIsrael } from "../utils/time.util.js";
 import { DEFAULT_TENANT_KEY } from "../utils/tenant.util.js";
-import { getPersonalOrgId } from "../utils/personalOrg.util.js";
+import {
+    getPersonalOrgId,
+    getPersonalOrgIdReadOnly,
+    isPersonalBillingCard,
+    isRealOrgCard,
+} from "../utils/personalOrg.util.js";
+import { resolveOrgEntitlementBilling } from "../utils/orgEntitlement.util.js";
 import { assertActiveOrgAndMembershipOrNotFound } from "../utils/orgMembership.util.js";
 import { normalizeBookingHorizonInput } from "../utils/bookingHorizon.util.js";
 import {
@@ -703,6 +709,53 @@ function sanitizeWritablePatch(raw) {
     return patch;
 }
 
+// Owner/editor-only payment-context contract (Card scope + REAL_ORG entitlement
+// summary). Pure: no DB access, no writes. Never attached to public/preview DTOs.
+// Reuses the canonical isPersonalBillingCard/isRealOrgCard classifiers and the
+// existing resolveOrgEntitlementBilling activity resolver as the only sources
+// of truth — no second expiry/scope comparison is implemented here.
+// Exported (in addition to being used internally) solely for targeted testing.
+export function buildOwnerPaymentContext({ card, personalOrgId, org, now }) {
+    let scope;
+    if (isPersonalBillingCard(card, personalOrgId)) {
+        scope = "personal";
+    } else if (isRealOrgCard(card, personalOrgId)) {
+        scope = "organization";
+    } else {
+        scope = "unknown";
+    }
+
+    if (scope !== "organization") {
+        return { scope, organization: null };
+    }
+
+    const oe =
+        org && typeof org === "object" && org.orgEntitlement
+            ? org.orgEntitlement
+            : null;
+
+    const status =
+        oe && ["none", "active", "revoked"].includes(oe.status)
+            ? oe.status
+            : "none";
+    const plan = oe && oe.plan === "org" ? "org" : null;
+
+    const expiresAtDate = oe?.expiresAt ? new Date(oe.expiresAt) : null;
+    const expiresAt =
+        expiresAtDate && Number.isFinite(expiresAtDate.getTime())
+            ? expiresAtDate.toISOString()
+            : null;
+
+    const currentlyActive = Boolean(
+        org && resolveOrgEntitlementBilling(org, now),
+    );
+
+    return {
+        scope,
+        organization: { status, plan, expiresAt, currentlyActive },
+    };
+}
+
 export async function getMyCard(req, res) {
     const owner = resolveOwnerContext(req);
     if (!owner) return res.status(401).json({ message: "Unauthorized" });
@@ -773,6 +826,13 @@ export async function getMyCard(req, res) {
         const dto = toCardDTO(card, now, {
             user: user || null,
             exposeSlugPolicy: true,
+        });
+
+        dto.ownerPaymentContext = buildOwnerPaymentContext({
+            card,
+            personalOrgId,
+            org: null,
+            now,
         });
 
         if (dto?.slug) {
@@ -999,6 +1059,17 @@ export async function getOrCreateMyOrgCard(req, res) {
         org,
     });
 
+    // Classification-only lookup (no create/mutate) — this endpoint already
+    // resolves org/card via slug + active membership; personalOrgId is only
+    // needed here to run the canonical scope classifier.
+    const personalOrgId = await getPersonalOrgIdReadOnly();
+    dto.ownerPaymentContext = buildOwnerPaymentContext({
+        card,
+        personalOrgId,
+        org,
+        now,
+    });
+
     if (dto?.slug) {
         dto.publicPath = `/c/${orgSlug}/${dto.slug}`;
         dto.ogPath = `/og/c/${orgSlug}/${dto.slug}`;
@@ -1132,6 +1203,12 @@ export async function createCard(req, res) {
                 (!existingOrgId || existingOrgId === String(personalOrgId));
             if (existingIsPersonal) {
                 const dto = toCardDTO(existing, now, { user });
+                dto.ownerPaymentContext = buildOwnerPaymentContext({
+                    card: existing,
+                    personalOrgId,
+                    org: null,
+                    now,
+                });
                 if (dto?.slug) dto.publicPath = `/card/${dto.slug}`;
                 return res.status(200).json(dto);
             }
@@ -1157,6 +1234,12 @@ export async function createCard(req, res) {
                 await user.save();
             }
             const dto = toCardDTO(existingByUser, now, { user });
+            dto.ownerPaymentContext = buildOwnerPaymentContext({
+                card: existingByUser,
+                personalOrgId,
+                org: null,
+                now,
+            });
             if (dto?.slug) dto.publicPath = `/card/${dto.slug}`;
             return res.status(200).json(dto);
         }
@@ -1183,6 +1266,12 @@ export async function createCard(req, res) {
                     const maybe = await Card.findById(freshId);
                     if (maybe) {
                         const dto = toCardDTO(maybe, now, { user: fresh });
+                        dto.ownerPaymentContext = buildOwnerPaymentContext({
+                            card: maybe,
+                            personalOrgId,
+                            org: null,
+                            now,
+                        });
                         if (dto?.slug) dto.publicPath = `/card/${dto.slug}`;
                         return res.status(200).json(dto);
                     }
@@ -1198,6 +1287,12 @@ export async function createCard(req, res) {
             }).sort({ createdAt: -1 });
             if (fallback) {
                 const dto = toCardDTO(fallback, now, { user: fresh || user });
+                dto.ownerPaymentContext = buildOwnerPaymentContext({
+                    card: fallback,
+                    personalOrgId,
+                    org: null,
+                    now,
+                });
                 if (dto?.slug) dto.publicPath = `/card/${dto.slug}`;
                 return res.status(200).json(dto);
             }
@@ -1360,6 +1455,12 @@ export async function createCard(req, res) {
             }
 
             const createdDto = toCardDTO(card, now, { user });
+            createdDto.ownerPaymentContext = buildOwnerPaymentContext({
+                card,
+                personalOrgId,
+                org: null,
+                now,
+            });
             if (createdDto?.slug)
                 createdDto.publicPath = `/card/${createdDto.slug}`;
             return res.status(201).json(createdDto);
@@ -1393,6 +1494,12 @@ export async function createCard(req, res) {
 
                         const fresh = await User.findById(user._id);
                         const dto = toCardDTO(existing, now, { user: fresh });
+                        dto.ownerPaymentContext = buildOwnerPaymentContext({
+                            card: existing,
+                            personalOrgId,
+                            org: null,
+                            now,
+                        });
                         if (dto?.slug) dto.publicPath = `/card/${dto.slug}`;
                         return res.status(200).json(dto);
                     }
@@ -2398,6 +2505,14 @@ export async function updateCard(req, res) {
     }
 
     const dto = toCardDTO(card, now, { user: userTier, org: orgForDto });
+
+    // Zero additional queries: personalOrgId and orgForDto are already resolved above.
+    dto.ownerPaymentContext = buildOwnerPaymentContext({
+        card,
+        personalOrgId,
+        org: orgForDto,
+        now,
+    });
 
     // SSoT: always return correct public/og paths for PATCH responses.
     // Frontend may replace the whole draftCard with this DTO (publish/save).
@@ -4111,5 +4226,18 @@ export async function claimCard(req, res) {
             .json({ code: result.code, message: result.message });
     }
 
-    return res.json(result.card);
+    // Claim is structurally personal-only (claimAnonymousCardForUser normalizes
+    // orgId to the personal-org sentinel) — no lookup needed to classify it.
+    // Use toJSON() (not toObject()) to preserve the exact wire semantics the
+    // prior `res.json(result.card)` produced (Mongoose invokes toJSON() during
+    // JSON serialization; toObject()/toJSON() defaults are not guaranteed identical,
+    // e.g. flattenMaps).
+    const claimedCardObj =
+        result.card && typeof result.card.toJSON === "function"
+            ? result.card.toJSON()
+            : result.card;
+    return res.json({
+        ...claimedCardObj,
+        ownerPaymentContext: { scope: "personal", organization: null },
+    });
 }
