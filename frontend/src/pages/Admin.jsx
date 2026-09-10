@@ -311,8 +311,7 @@ const STR = {
         err_datetime_required: "יש לבחור תאריך ושעה.",
         err_datetime_must_be_empty_for_free:
             "במסלול חינמי יש להשאיר את השדה ריק.",
-        err_card_not_hydrated:
-            "נתוני הכרטיס עדיין נטענים. נסה שוב בעוד רגע.",
+        err_card_not_hydrated: "נתוני הכרטיס עדיין נטענים. נסה שוב בעוד רגע.",
     },
 };
 
@@ -1141,9 +1140,7 @@ export default function Admin() {
                 }
 
                 const nextPaidUntil = dto?.billing?.paidUntil || null;
-                setBillingCardPaidUntil(
-                    isoToDatetimeLocalValue(nextPaidUntil),
-                );
+                setBillingCardPaidUntil(isoToDatetimeLocalValue(nextPaidUntil));
 
                 setBillingCardPayerType("");
                 setBillingCardPayerNote(dto?.billing?.payer?.note ?? "");
@@ -1218,9 +1215,7 @@ export default function Admin() {
                 }
 
                 const nextPaidUntil = dto?.billing?.paidUntil || null;
-                setBillingCardPaidUntil(
-                    isoToDatetimeLocalValue(nextPaidUntil),
-                );
+                setBillingCardPaidUntil(isoToDatetimeLocalValue(nextPaidUntil));
             }
             if (dto?._id) {
                 setSelectedCard((current) =>
