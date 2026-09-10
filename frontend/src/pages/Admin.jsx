@@ -311,6 +311,8 @@ const STR = {
         err_datetime_required: "יש לבחור תאריך ושעה.",
         err_datetime_must_be_empty_for_free:
             "במסלול חינמי יש להשאיר את השדה ריק.",
+        err_card_not_hydrated:
+            "נתוני הכרטיס עדיין נטענים. נסה שוב בעוד רגע.",
     },
 };
 
@@ -540,6 +542,10 @@ export default function Admin() {
     const [billingCardPaidUntil, setBillingCardPaidUntil] = useState("");
     const [billingCardForceSync, setBillingCardForceSync] = useState(false);
     const [billingCardResult, setBillingCardResult] = useState(null);
+    // Explicit readiness marker: only equals billingCardId once THAT exact
+    // Card's own DTO has been fetched and applied. Never carried over across
+    // an identity change — mutations must check this, not billingCardId alone.
+    const [billingHydratedCardId, setBillingHydratedCardId] = useState(null);
 
     const [billingCardPayerType, setBillingCardPayerType] = useState("");
     const [billingCardPayerNote, setBillingCardPayerNote] = useState("");
@@ -561,9 +567,30 @@ export default function Admin() {
         [billingCardId],
     );
 
+    // Latest-target identity: the imperative source of truth for "which Card is
+    // the current billing target", read by async mutation-response guards.
+    // Never written during render or inside a setState updater — only via
+    // setBillingTarget, called from event handlers / effect control-flow at the
+    // exact moment a target transition is decided, so no async continuation can
+    // observe a stale value through a deferred passive-effect window.
+    const latestBillingTargetIdRef = useRef(billingCardIdTrimmed);
+
+    function setBillingTarget(nextId) {
+        const normalized = String(nextId || "").trim();
+        latestBillingTargetIdRef.current = normalized;
+        setBillingCardId(normalized);
+    }
+
+    const isBillingCardHydrated = useMemo(
+        () =>
+            Boolean(billingCardIdTrimmed) &&
+            billingHydratedCardId === billingCardIdTrimmed,
+        [billingCardIdTrimmed, billingHydratedCardId],
+    );
+
     const billingCardActionsDisabled = useMemo(
-        () => loading || !billingCardIdTrimmed,
-        [loading, billingCardIdTrimmed],
+        () => loading || !billingCardIdTrimmed || !isBillingCardHydrated,
+        [loading, billingCardIdTrimmed, isBillingCardHydrated],
     );
 
     const selectedCardOwner = useMemo(() => {
@@ -855,7 +882,14 @@ export default function Admin() {
         loadUserRequestIdRef.current = null;
         loadCard(c._id);
         if (c.ownerSummary?.type === "user" && c.ownerSummary?.userId) {
-            pendingBillingCardIdRef.current = String(c._id);
+            const targetUserId = String(c.ownerSummary.userId);
+            if (targetUserId === billingUserIdTrimmed) {
+                // Same-user click: billingUserId won't change, so the pending-pin
+                // consumer effect (keyed on billingUserId) would never fire — pin now.
+                setBillingTarget(String(c._id));
+            } else {
+                pendingBillingCardIdRef.current = String(c._id);
+            }
             loadUser(c.ownerSummary.userId);
             // loadUser sets loadUserRequestIdRef.current = userId synchronously.
         }
@@ -1064,6 +1098,25 @@ export default function Admin() {
         const r = requireReason();
         if (!r) return;
 
+        // Submit-time defense-in-depth: never mutate unless the form currently
+        // displayed is confirmed hydrated for THIS exact billingCardId, AND no
+        // newer target transition has already been requested (latestBillingTargetIdRef
+        // may outpace billingCardIdTrimmed across a not-yet-committed render).
+        if (
+            !isBillingCardHydrated ||
+            latestBillingTargetIdRef.current !== billingCardIdTrimmed
+        ) {
+            setActionError((prev) => ({
+                ...prev,
+                [actionKey]: t("err_card_not_hydrated"),
+            }));
+            return;
+        }
+
+        // Pin the resource identity this specific request is for; the admin may
+        // switch billing targets while this request is in flight.
+        const actionTargetId = billingCardIdTrimmed;
+
         setActionError((prev) => ({ ...prev, [actionKey]: "" }));
 
         setLoading(true);
@@ -1071,27 +1124,39 @@ export default function Admin() {
         setActionLoading((prev) => ({ ...prev, [actionKey]: true }));
         try {
             const dto = await fn(r);
-            setBillingCardResult(dto);
+            const isStillCurrentTarget =
+                latestBillingTargetIdRef.current === actionTargetId;
 
-            const nextCardId = dto?._id;
-            if (typeof nextCardId === "string" && nextCardId.trim()) {
-                setBillingCardId(nextCardId.trim());
+            if (isStillCurrentTarget) {
+                setBillingCardResult(dto);
+
+                const nextCardId = dto?._id;
+                if (typeof nextCardId === "string" && nextCardId.trim()) {
+                    setBillingCardId(nextCardId.trim());
+                }
+
+                const nextPlan = dto?.plan;
+                if (typeof nextPlan === "string" && nextPlan.trim()) {
+                    setBillingCardPlan(nextPlan.trim());
+                }
+
+                const nextPaidUntil = dto?.billing?.paidUntil || null;
+                setBillingCardPaidUntil(
+                    isoToDatetimeLocalValue(nextPaidUntil),
+                );
+
+                setBillingCardPayerType("");
+                setBillingCardPayerNote(dto?.billing?.payer?.note ?? "");
+                setBillingCardPayerNoteTouched(false);
             }
-
-            const nextPlan = dto?.plan;
-            if (typeof nextPlan === "string" && nextPlan.trim()) {
-                setBillingCardPlan(nextPlan.trim());
-            }
-
-            const nextPaidUntil = dto?.billing?.paidUntil || null;
-            setBillingCardPaidUntil(isoToDatetimeLocalValue(nextPaidUntil));
-
-            setBillingCardPayerType("");
-            setBillingCardPayerNote(dto?.billing?.payer?.note ?? "");
-            setBillingCardPayerNoteTouched(false);
-
-            if (dto?._id && selectedCard?._id === dto._id) {
-                setSelectedCard(dto);
+            // Card-list refresh is keyed by the DTO's own _id, not the current
+            // billing target, so it stays correct even for a superseded response.
+            if (dto?._id) {
+                setSelectedCard((current) =>
+                    String(current?._id || "") === String(dto._id)
+                        ? dto
+                        : current,
+                );
             }
             if (dto?._id) updateCardInList(dto);
 
@@ -1099,7 +1164,7 @@ export default function Admin() {
         } catch (err) {
             if (isAccessDenied(err)) {
                 setAccessDenied(true);
-            } else {
+            } else if (latestBillingTargetIdRef.current === actionTargetId) {
                 const msg = normalizeActionError(err);
                 setActionError((prev) => ({ ...prev, [actionKey]: msg }));
             }
@@ -1110,6 +1175,25 @@ export default function Admin() {
     }
 
     async function runBillingCardActionNoReason(actionKey, fn) {
+        // Submit-time defense-in-depth: never mutate unless the form currently
+        // displayed is confirmed hydrated for THIS exact billingCardId, AND no
+        // newer target transition has already been requested (latestBillingTargetIdRef
+        // may outpace billingCardIdTrimmed across a not-yet-committed render).
+        if (
+            !isBillingCardHydrated ||
+            latestBillingTargetIdRef.current !== billingCardIdTrimmed
+        ) {
+            setActionError((prev) => ({
+                ...prev,
+                [actionKey]: t("err_card_not_hydrated"),
+            }));
+            return;
+        }
+
+        // Pin the resource identity this specific request is for; the admin may
+        // switch billing targets while this request is in flight.
+        const actionTargetId = billingCardIdTrimmed;
+
         setActionError((prev) => ({ ...prev, [actionKey]: "" }));
 
         setLoading(true);
@@ -1117,29 +1201,39 @@ export default function Admin() {
         setActionLoading((prev) => ({ ...prev, [actionKey]: true }));
         try {
             const dto = await fn();
-            setBillingCardResult(dto);
+            const isStillCurrentTarget =
+                latestBillingTargetIdRef.current === actionTargetId;
 
-            const nextCardId = dto?._id;
-            if (typeof nextCardId === "string" && nextCardId.trim()) {
-                setBillingCardId(nextCardId.trim());
+            if (isStillCurrentTarget) {
+                setBillingCardResult(dto);
+
+                const nextCardId = dto?._id;
+                if (typeof nextCardId === "string" && nextCardId.trim()) {
+                    setBillingCardId(nextCardId.trim());
+                }
+
+                const nextPlan = dto?.plan;
+                if (typeof nextPlan === "string" && nextPlan.trim()) {
+                    setBillingCardPlan(nextPlan.trim());
+                }
+
+                const nextPaidUntil = dto?.billing?.paidUntil || null;
+                setBillingCardPaidUntil(
+                    isoToDatetimeLocalValue(nextPaidUntil),
+                );
             }
-
-            const nextPlan = dto?.plan;
-            if (typeof nextPlan === "string" && nextPlan.trim()) {
-                setBillingCardPlan(nextPlan.trim());
-            }
-
-            const nextPaidUntil = dto?.billing?.paidUntil || null;
-            setBillingCardPaidUntil(isoToDatetimeLocalValue(nextPaidUntil));
-
-            if (dto?._id && selectedCard?._id === dto._id) {
-                setSelectedCard(dto);
+            if (dto?._id) {
+                setSelectedCard((current) =>
+                    String(current?._id || "") === String(dto._id)
+                        ? dto
+                        : current,
+                );
             }
             if (dto?._id) updateCardInList(dto);
         } catch (err) {
             if (isAccessDenied(err)) {
                 setAccessDenied(true);
-            } else {
+            } else if (latestBillingTargetIdRef.current === actionTargetId) {
                 const msg = normalizeActionError(err);
                 setActionError((prev) => ({ ...prev, [actionKey]: msg }));
             }
@@ -1345,7 +1439,7 @@ export default function Admin() {
             setBillingCards([]);
             setBillingCardsStatus("idle");
             setBillingCardsError("");
-            setBillingCardId("");
+            setBillingTarget("");
             setBillingCardResult(null);
         }
 
@@ -1361,7 +1455,7 @@ export default function Admin() {
             setBillingCards([]);
             setBillingCardsStatus("idle");
             setBillingCardsError("");
-            setBillingCardId("");
+            setBillingTarget("");
             setBillingCardResult(null);
             return;
         }
@@ -1393,7 +1487,7 @@ export default function Admin() {
                         (c) => String(c?._id || "") === pendingId,
                     );
                     if (inList) {
-                        setBillingCardId(pendingId);
+                        setBillingTarget(pendingId);
                         setBillingCardResult(null);
                         return;
                     }
@@ -1401,32 +1495,33 @@ export default function Admin() {
                 }
 
                 if (items.length === 1 && items[0]?._id) {
-                    setBillingCardId(String(items[0]._id));
+                    setBillingTarget(String(items[0]._id));
                     setBillingCardResult(null);
                     return;
                 }
 
                 if (items.length === 0) {
-                    setBillingCardId("");
+                    setBillingTarget("");
                     setBillingCardResult(null);
                     return;
                 }
 
-                setBillingCardId((prev) => {
-                    const prevId = String(prev || "").trim();
-                    if (!prevId) return "";
-                    const stillExists = items.some(
-                        (c) => String(c?._id || "") === prevId,
-                    );
-                    return stillExists ? prevId : "";
-                });
+                {
+                    const prevId = String(
+                        latestBillingTargetIdRef.current || "",
+                    ).trim();
+                    const stillExists =
+                        prevId &&
+                        items.some((c) => String(c?._id || "") === prevId);
+                    setBillingTarget(stillExists ? prevId : "");
+                }
                 setBillingCardResult(null);
             } catch (err) {
                 if (cancelled) return;
                 setBillingCards([]);
                 setBillingCardsStatus("error");
                 setBillingCardsError(mapApiErrorToHebrew(err, "err_generic"));
-                setBillingCardId("");
+                setBillingTarget("");
                 setBillingCardResult(null);
             }
         })();
@@ -1436,18 +1531,73 @@ export default function Admin() {
         };
     }, [billingUserIdTrimmed, billingUserIdLooksValid]);
 
+    // Bootstrap fallback: pin billingCardId from the currently-viewed card only
+    // when nothing else (dropdown/pending-pin/slug-click) has set it yet.
     useEffect(() => {
-        const current = String(billingCardPaidUntil || "").trim();
-        if (current) return;
-        const iso = selectedCard?.billing?.paidUntil || null;
-        setBillingCardPaidUntil(isoToDatetimeLocalValue(iso));
-
         const currCardId = String(billingCardId || "").trim();
         if (!currCardId && selectedCard?._id) {
-            setBillingCardId(String(selectedCard._id));
+            setBillingTarget(String(selectedCard._id));
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [selectedCard?._id, selectedCard?.billing?.paidUntil]);
+    }, [selectedCard?._id]);
+
+    // Identity-keyed billing-editor hydration + explicit readiness gate.
+    // Every billingCardId change immediately invalidates billingHydratedCardId
+    // (synchronously, in the same effect pass, before any fetch starts) and
+    // resets the stale-leak-prone fields to safe non-actionable defaults, so a
+    // mutation submitted mid-flight can never carry a previous Card's payload.
+    // Always re-fetches on every identity transition (including a return to a
+    // previously-seen id) rather than trusting remembered state — small and
+    // deterministic instead of cached. Readiness is marked true only after the
+    // exact target Card's own values have been applied, and a cancelled/failed
+    // fetch leaves readiness false so mutation controls stay guarded.
+    useEffect(() => {
+        const targetId = billingCardIdTrimmed;
+
+        setBillingHydratedCardId(null);
+        setBillingCardResult(null);
+
+        if (!targetId) return;
+
+        setBillingCardPlan("free");
+        setBillingCardPaidUntil("");
+        setBillingCardPayerType("");
+        setBillingCardPayerNote("");
+        setBillingCardPayerNoteTouched(false);
+
+        let cancelled = false;
+        (async () => {
+            try {
+                const res = await getAdminCardById(targetId);
+                if (cancelled) return;
+                const dto = res?.data || null;
+
+                setBillingCardPlan(
+                    typeof dto?.plan === "string" && dto.plan.trim()
+                        ? dto.plan.trim()
+                        : "free",
+                );
+                setBillingCardPaidUntil(
+                    isoToDatetimeLocalValue(dto?.billing?.paidUntil || null),
+                );
+                setBillingCardResult(dto);
+                setBillingCardPayerType("");
+                setBillingCardPayerNote(dto?.billing?.payer?.note ?? "");
+                setBillingCardPayerNoteTouched(false);
+
+                // Mark ready only after this exact target's values are applied.
+                setBillingHydratedCardId(targetId);
+            } catch {
+                // Leave not-ready; billingCardId may remain targetId, but
+                // isBillingCardHydrated stays false until a later retry succeeds.
+            }
+        })();
+
+        return () => {
+            cancelled = true;
+        };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [billingCardIdTrimmed]);
 
     useEffect(() => {
         const cardId = String(selectedCard?._id || "").trim();
@@ -4247,7 +4397,7 @@ export default function Admin() {
                                                     className={styles.select}
                                                     value={billingCardId}
                                                     onChange={(e) => {
-                                                        setBillingCardId(
+                                                        setBillingTarget(
                                                             e.target.value,
                                                         );
                                                         setBillingCardResult(
