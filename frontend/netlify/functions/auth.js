@@ -1,4 +1,4 @@
-exports.handler = async function retiredAuthEndpoint() {
+export const handler = async function retiredAuthEndpoint() {
   return {
     statusCode: 404,
     headers: {
