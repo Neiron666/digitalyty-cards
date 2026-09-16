@@ -1315,7 +1315,7 @@
 
 .realBusinessTitle {
     font-size: var(--fs-h6);
-    font-weight: 700;
+    font-weight: 600;
     color: var(--card-text, #020617);
     margin: 0.875rem 1rem 0.5rem;
 }
