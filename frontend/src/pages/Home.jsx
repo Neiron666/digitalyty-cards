@@ -762,8 +762,19 @@ export default function Home() {
                             ))}
                         </div>
                         <div className={styles.center}>
-                            <Button as={Link} to="/cards/" variant="primary">
-                                צפו בכל כרטיסי העסקים של Cardigo
+                            <Button
+                                as={Link}
+                                to="/edit/card/templates"
+                                variant="primary"
+                                className={styles.ctaBtn}
+                                onClick={() =>
+                                    trackSiteClick({
+                                        action: SITE_ACTIONS.home_bottom_cta,
+                                        pagePath: "/",
+                                    })
+                                }
+                            >
+                                צרו כרטיס דיגיטלי בחינם
                             </Button>
                         </div>
                     </div>
