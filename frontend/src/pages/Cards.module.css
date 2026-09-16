@@ -353,14 +353,16 @@
 
 .showcaseLink {
     font-size: var(--fs-body-sm);
-    font-weight: 600;
-    color: var(--gold);
+    font-weight: 800;
+    color: var(--cta-text);
     text-decoration: none;
     margin-block-start: auto;
     padding-block-start: 0.25rem;
     border: 1px solid var(--gold);
+    background-color: var(--gold-soft);
     border-radius: 999px;
     padding: 0.25rem 1rem;
+    width: 100%;
 }
 
 .showcaseLink:hover {
