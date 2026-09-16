@@ -1324,9 +1324,12 @@
     font-size: var(--fs-body-sm);
     font-weight: 600;
     color: var(--gold);
-    text-decoration: underline;
-    text-underline-offset: 3px;
-    margin-top: auto;
+    text-decoration: none;
+    margin-block-start: auto;
+    padding-block-start: 0.25rem;
+    border: 1px solid var(--gold);
+    border-radius: 999px;
+    padding: 0.25rem 1rem;
 }
 
 /* ── 7. Steps (2 + 1 image-led cards) ───────────────────── */
