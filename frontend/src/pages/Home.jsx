@@ -837,6 +837,20 @@ export default function Home() {
                                 </div>{" "}
                             </div>
                         ))}{" "}
+                        <Button
+                            as={Link}
+                            to="/edit/card/templates"
+                            variant="primary"
+                            className={styles.ctaBtn}
+                            onClick={() =>
+                                trackSiteClick({
+                                    action: SITE_ACTIONS.home_bottom_cta,
+                                    pagePath: "/",
+                                })
+                            }
+                        >
+                            צרו כרטיס דיגיטלי בחינם
+                        </Button>
                     </div>{" "}
                 </div>{" "}
             </section>
@@ -1008,6 +1022,20 @@ export default function Home() {
                                 </div>
                             </div>
                         ))}
+                        <Button
+                            as={Link}
+                            to="/edit/card/templates"
+                            variant="primary"
+                            className={styles.ctaBtn}
+                            onClick={() =>
+                                trackSiteClick({
+                                    action: SITE_ACTIONS.home_bottom_cta,
+                                    pagePath: "/",
+                                })
+                            }
+                        >
+                            צרו כרטיס דיגיטלי בחינם
+                        </Button>
                     </div>
                 </div>
             </section>
