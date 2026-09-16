@@ -762,6 +762,9 @@ export default function Home() {
                             ))}
                         </div>
                         <div className={styles.center}>
+                            {/* <Button as={Link} to="/cards/" variant="primary">
+                                צפו בכל כרטיסי העסקים של Cardigo
+                            </Button> */}
                             <Button
                                 as={Link}
                                 to="/edit/card/templates"
