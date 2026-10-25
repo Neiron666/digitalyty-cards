@@ -598,76 +598,6 @@ export default function Home() {
                     </div>
                 </div>
             </section>
-            {/* ── 6b. REAL BUSINESS SHOWCASE (admin-selected) ── */}
-            {homepageShowcaseItems.length > 0 && (
-                <section className={pub.sectionLight}>
-                    <div className={pub.sectionWrap}>
-                        <h2 className={pub.h2Gold}>
-                            דוגמאות לכרטיסי ביקור דיגיטליים של עסקים ב-Cardigo
-                        </h2>
-                        <p className={pub.sectionLead}>
-                            ראו איך עסקים מציגים את השירותים שלהם, מקבלים פניות
-                            ומשתפים את העסק אונליין.
-                        </p>
-                        <div className={styles.realBusinessRow}>
-                            {homepageShowcaseItems.map((item) => (
-                                <article
-                                    key={item.id}
-                                    className={styles.realBusinessCard}
-                                >
-                                    <img
-                                        src={item.imageUrl}
-                                        alt={item.imageAlt}
-                                        className={styles.realBusinessImg}
-                                        width={280}
-                                        height={560}
-                                        loading="lazy"
-                                        decoding="async"
-                                    />
-                                    <h3 className={styles.realBusinessTitle}>
-                                        {item.title}
-                                    </h3>
-                                    <a
-                                        href={item.ctaUrl}
-                                        className={styles.realBusinessLink}
-                                        target={
-                                            item.ctaTargetBlank
-                                                ? "_blank"
-                                                : undefined
-                                        }
-                                        rel={
-                                            item.ctaTargetBlank
-                                                ? "noopener noreferrer"
-                                                : undefined
-                                        }
-                                    >
-                                        {item.ctaLabel}
-                                    </a>
-                                </article>
-                            ))}
-                        </div>
-                        <div className={styles.center}>
-                            {/* <Button as={Link} to="/cards/" variant="primary">
-                                צפו בכל כרטיסי העסקים של Cardigo
-                            </Button> */}
-                            <Button
-                                as={Link}
-                                to="/edit/card/templates"
-                                variant="primary"
-                                className={styles.ctaBtn}
-                                onClick={() =>
-                                    trackSiteClick({
-                                        action: SITE_ACTIONS.home_bottom_cta,
-                                        pagePath: "/",
-                                    })
-                                }
-                            >
-                                צרו כרטיס דיגיטלי בחינם
-                            </Button>
-                        </div>
-                    </div>
-                </section>
-            )}
             {/* ── 1. MINI-SITE / BUSINESS PRESENCE ────────────── */}
             <section className={pub.sectionLight}>
                 <div className={pub.sectionWrap}>
@@ -783,6 +713,76 @@ export default function Home() {
                     </div>
                 </div>
             </section>
+            {/* ── 6b. REAL BUSINESS SHOWCASE (admin-selected) ── */}
+            {homepageShowcaseItems.length > 0 && (
+                <section className={pub.sectionLight}>
+                    <div className={pub.sectionWrap}>
+                        <h2 className={pub.h2Gold}>
+                            דוגמאות לכרטיסי ביקור דיגיטליים של עסקים ב-Cardigo
+                        </h2>
+                        <p className={pub.sectionLead}>
+                            ראו איך עסקים מציגים את השירותים שלהם, מקבלים פניות
+                            ומשתפים את העסק אונליין.
+                        </p>
+                        <div className={styles.realBusinessRow}>
+                            {homepageShowcaseItems.map((item) => (
+                                <article
+                                    key={item.id}
+                                    className={styles.realBusinessCard}
+                                >
+                                    <img
+                                        src={item.imageUrl}
+                                        alt={item.imageAlt}
+                                        className={styles.realBusinessImg}
+                                        width={280}
+                                        height={560}
+                                        loading="lazy"
+                                        decoding="async"
+                                    />
+                                    <h3 className={styles.realBusinessTitle}>
+                                        {item.title}
+                                    </h3>
+                                    <a
+                                        href={item.ctaUrl}
+                                        className={styles.realBusinessLink}
+                                        target={
+                                            item.ctaTargetBlank
+                                                ? "_blank"
+                                                : undefined
+                                        }
+                                        rel={
+                                            item.ctaTargetBlank
+                                                ? "noopener noreferrer"
+                                                : undefined
+                                        }
+                                    >
+                                        {item.ctaLabel}
+                                    </a>
+                                </article>
+                            ))}
+                        </div>
+                        <div className={styles.center}>
+                            {/* <Button as={Link} to="/cards/" variant="primary">
+                                צפו בכל כרטיסי העסקים של Cardigo
+                            </Button> */}
+                            <Button
+                                as={Link}
+                                to="/edit/card/templates"
+                                variant="primary"
+                                className={styles.ctaBtn}
+                                onClick={() =>
+                                    trackSiteClick({
+                                        action: SITE_ACTIONS.home_bottom_cta,
+                                        pagePath: "/",
+                                    })
+                                }
+                            >
+                                צרו כרטיס דיגיטלי בחינם
+                            </Button>
+                        </div>
+                    </div>
+                </section>
+            )}
             {/* ── 2. CONVERSION - FROM VIEW TO CONTACT ────────── */}{" "}
             <section className={pub.sectionDark} id="features">
                 {" "}
