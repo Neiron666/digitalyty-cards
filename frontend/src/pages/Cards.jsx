@@ -345,7 +345,7 @@ export default function Cards() {
                                     className={whatsappStyles.icon}
                                     aria-hidden="true"
                                 />
-                                רוצים שנבנה לכם כרטיס מקצועי?
+                                בואו נבנה לכם כרטיס מקצועי
                             </Button>
                             {/* <Button
                                 as="a"
